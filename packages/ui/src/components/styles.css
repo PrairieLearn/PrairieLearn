@@ -11,6 +11,27 @@ body.pl-ui-no-user-select {
   padding-right: 2.5rem;
 }
 
+.pl-ui-tanstack-table-resize-handle {
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.pl-ui-tanstack-table-resize-handle::after {
+  content: '';
+  display: block;
+  width: 2px;
+  height: 100%;
+  margin-inline-start: auto;
+  background-color: var(--bs-gray-400);
+  transition: background-color 0.2s;
+}
+
+.pl-ui-tanstack-table-resize-handle:hover::after,
+.pl-ui-tanstack-table-resize-handle:focus-visible::after,
+.pl-ui-tanstack-table-resize-handle[data-resizing]::after {
+  background-color: var(--bs-primary);
+}
+
 .btn.btn-floating-icon {
   position: absolute;
   right: 0;
