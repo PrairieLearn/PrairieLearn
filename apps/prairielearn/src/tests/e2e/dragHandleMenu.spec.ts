@@ -5,9 +5,7 @@ import path from 'node:path';
 import { selectQuestionByQid } from '../../models/question.js';
 import { syncCourse } from '../helperCourse.js';
 
-import { createTest, expect } from './fixtures.js';
-
-const test = createTest({ isEnterprise: true });
+import { expect, test } from './fixtures.js';
 
 test('the rich text visibility menu opens from the keyboard and changes the selected panel', async ({
   page,

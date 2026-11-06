@@ -44,6 +44,10 @@ updates:
     rebase-strategy: disabled
     open-pull-requests-limit: 10
     ignore:
+      # Keep Node.js types aligned with our Node.js 24 runtime.
+      - dependency-name: '@types/node'
+        versions: ['>=25']
+
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'
@@ -101,14 +105,6 @@ updates:
       # https://github.com/slab/quill/issues/4509
       - dependency-name: 'quill'
         versions: ['>2.0.2']
-
-    cooldown:
-      # Dependabot does not understand the minimumReleaseAge setting in
-      # pnpm-workspace.yaml, so we set a cooldown here to obtain the same
-      # effect. Once https://github.com/dependabot/dependabot-core/issues/13405
-      # is resolved, we can remove this cooldown and rely on dependabot
-      # respecting the pnpm setting.
-      default-days: 3
 
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't

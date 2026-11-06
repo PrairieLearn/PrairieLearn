@@ -21,7 +21,6 @@ function escapePath(path) {
     .join('/');
 }
 
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export default class PLFilePreview {
   constructor(uuid) {
     const filePreview = document.querySelector('#file-preview-' + uuid);

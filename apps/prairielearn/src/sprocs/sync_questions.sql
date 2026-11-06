@@ -139,6 +139,7 @@ BEGIN
         directory = src.qid,
         type = (src.data->>'type')::enum_question_type,
         title = src.data->>'title',
+        authors = jsonb_array_to_text_array(src.data->'authors'),
         options = (src.data->'options')::JSONB,
         client_files = jsonb_array_to_text_array(src.data->'client_files'),
         partial_credit = (src.data->>'partial_credit')::boolean,

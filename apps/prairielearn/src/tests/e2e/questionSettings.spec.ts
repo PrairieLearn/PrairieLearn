@@ -43,7 +43,7 @@ test.describe('Question settings', () => {
     await titleInput.click();
     await titleInput.fill('Updated title from e2e test');
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
     await expect(saveButton).toBeVisible({ timeout: 10000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
 
@@ -71,7 +71,7 @@ test.describe('Question settings', () => {
     await expect(listbox).toBeVisible({ timeout: 5000 });
     await listbox.getByText('Calculus', { exact: true }).click();
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
     await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
@@ -98,7 +98,7 @@ test.describe('Question settings', () => {
     const singleVariantCheckbox = page.getByLabel('Single variant');
     await singleVariantCheckbox.click();
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
     await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
@@ -127,7 +127,7 @@ test.describe('Question settings', () => {
     const gradingMethodSelect = page.getByLabel('Grading method');
     await gradingMethodSelect.selectOption('Manual');
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
     await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
