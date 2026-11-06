@@ -3,6 +3,8 @@ import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
 import { logEvent, redactSecrets } from '../monitoring.js';
 
+import { CloneProgress } from './clone-progress.js';
+
 const SESSION = '/workspace/session';
 const NATIVE_PORT = 4500;
 export type CourseSource =
@@ -250,12 +252,15 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
     } else {
       log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
+      const progress = new CloneProgress(Date.now());
       // Only the tip is needed: reviews diff against the cloned branch tip, and nothing fetches
       // later. Full history made large course repositories take most of startup to clone.
-      await this.exec(
+      // Progress is read only to time each phase; it never contains course file contents.
+      const clone = await this.container.exec(
         [
           'git',
           'clone',
+          '--progress',
           '--depth',
           '1',
           '--single-branch',
@@ -265,8 +270,24 @@ export class CourseSandbox extends DurableObject<Env> {
           `http://repository.internal/${config.repository}.git`,
           `${SESSION}/course`,
         ],
-        'node',
+        { user: 'node', stdout: 'ignore', stderr: 'pipe' },
       );
+      const [exitCode] = await Promise.all([
+        clone.exitCode,
+        (async () => {
+          for await (const chunk of clone.stderr!.pipeThrough(new TextDecoderStream())) {
+            progress.push(chunk, Date.now());
+          }
+        })(),
+      ]);
+      if (exitCode !== 0) throw new Error(`Sandbox command failed: ${progress.errorOutput}`);
+      for (const { startMs, ...phase } of progress.phases(Date.now())) {
+        logEvent('sandbox_clone_phase', {
+          sandboxId: this.ctx.id.name,
+          ...phase,
+          elapsedMs: startMs,
+        });
+      }
       log('sandbox_clone_finished');
     }
     log('sandbox_files_ready', { source: config.type });
