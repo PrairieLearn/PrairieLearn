@@ -174,22 +174,19 @@ function QuestionInfo({
   }/question/${question.id}?variant_seed=${variant.variant_seed}`;
   const publicPreviewUrl = `/pl/public/course/${question.course_id}/question/${question.id}/preview`;
 
-  // We don't show the sharing name in the QID if the question is not shared
-  // publicly for importing, such as if only `share_source_publicly` is set.
+  // "Shared As" is only shown for questions that can be imported (shared
+  // publicly or via a sharing set), and importing always needs the sharing name.
   //
   // TODO: Remove the special-casing of the example course once its questions
   // have been updated to use `share_source_publicly`. This special-casing
   // predates the ability to share questions only for copying, not importing.
-  const sharingQid =
-    course.example_course || !question.share_publicly
-      ? question.qid
-      : `@${course.sharing_name}/${question.qid}`;
-
-  // "Shared As" is only shown for questions that can be imported (shared
-  // publicly or via a sharing set), and importing always needs the sharing name.
   const sharedAsQid = course.example_course
     ? question.qid
     : `@${course.sharing_name}/${question.qid}`;
+
+  // We don't show the sharing name in the QID if the question is not shared
+  // publicly for importing, such as if only `share_source_publicly` is set.
+  const sharingQid = question.share_publicly ? sharedAsQid : question.qid;
 
   return html`
     <h3 class="card-title h5">Question</h3>

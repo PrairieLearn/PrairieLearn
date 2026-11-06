@@ -36,6 +36,16 @@ describe('InstructorInfoPanel', () => {
     ).toBe('@my-course/addNumbers');
   });
 
+  it('includes the course sharing name for sharing-set questions whose source is public', () => {
+    expect(
+      renderSharedAs({
+        course: { sharing_name: 'my-course' },
+        question: { share_publicly: false, share_source_publicly: true },
+        question_is_shared: true,
+      }),
+    ).toBe('@my-course/addNumbers');
+  });
+
   it('includes the course sharing name for publicly shared questions', () => {
     expect(
       renderSharedAs({
