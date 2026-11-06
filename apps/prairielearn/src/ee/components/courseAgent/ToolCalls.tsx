@@ -388,24 +388,27 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
 /** File headers (`--- a/x`, `+++ b/x`) come before the first hunk; later lines are content. */
 function DiffLines({ diff }: { diff: string }) {
   let inHunk = false;
-  return diff.split('\n').map((line, i) => {
-    if (line.startsWith('@@')) inHunk = true;
-    const header = !inHunk && (line.startsWith('+++ ') || line.startsWith('--- '));
-    return (
-      <div
-        // Diff lines have no identity beyond their position.
-        // oxlint-disable-next-line react/no-array-index-key
-        key={i}
-        className={clsx({
-          'bg-success-subtle': !header && line.startsWith('+'),
-          'bg-danger-subtle': !header && line.startsWith('-'),
-          'text-body-secondary': header || line.startsWith('@@'),
-        })}
-      >
-        {line || ' '}
-      </div>
-    );
-  });
+  return diff
+    .replace(/\n$/, '')
+    .split('\n')
+    .map((line, i) => {
+      if (line.startsWith('@@')) inHunk = true;
+      const header = !inHunk && (line.startsWith('+++ ') || line.startsWith('--- '));
+      return (
+        <div
+          // Diff lines have no identity beyond their position.
+          // oxlint-disable-next-line react/no-array-index-key
+          key={i}
+          className={clsx({
+            'bg-success-subtle': !header && line.startsWith('+'),
+            'bg-danger-subtle': !header && line.startsWith('-'),
+            'text-body-secondary': header || line.startsWith('@@'),
+          })}
+        >
+          {line || ' '}
+        </div>
+      );
+    });
 }
 
 /** A scrollable, keyboard-focusable block of text, noting what history did not keep. */
