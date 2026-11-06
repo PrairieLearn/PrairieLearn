@@ -19,4 +19,13 @@ describe('private course agent service', () => {
     expect(response.status).toBe(401);
     expect(getAgentByName).not.toHaveBeenCalled();
   });
+
+  it('accepts the previous token during rotation', async () => {
+    const response = await app.request(
+      '/conversations/local',
+      { method: 'POST', headers: { Authorization: 'Bearer old-token' } },
+      { PL_SERVICE_TOKEN: 'new-token', PL_SERVICE_TOKEN_PREVIOUS: 'old-token' } as Partial<Env>,
+    );
+    expect(response.status).toBe(400);
+  });
 });

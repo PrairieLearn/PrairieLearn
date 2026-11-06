@@ -8,14 +8,11 @@ import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
 import { z } from 'zod';
 
-import {
-  PendingReviewSchema,
-  type ReviewDecision,
-  type ReviewOutcome,
-} from '@prairielearn/course-agent-types';
+import { type RequestChangesResult, ReviewSchema } from '@prairielearn/course-agent-types';
 import * as error from '@prairielearn/error';
 
 import { config } from '../../../lib/config.js';
+import { getActiveKey } from '../../../lib/key-ring.js';
 
 export function buildCourseAgentServiceRequest(path: string) {
   const { courseAgentServiceUrl, courseAgentServiceToken } = config;
@@ -27,7 +24,7 @@ export function buildCourseAgentServiceRequest(path: string) {
       path,
       courseAgentServiceUrl.endsWith('/') ? courseAgentServiceUrl : `${courseAgentServiceUrl}/`,
     ),
-    headers: { Authorization: `Bearer ${courseAgentServiceToken}` },
+    headers: { Authorization: `Bearer ${getActiveKey(courseAgentServiceToken)}` },
   };
 }
 
@@ -113,7 +110,7 @@ async function createConversation(
   return CreatedConversationSchema.parse(await response.json()).id;
 }
 
-/** Wait for workspace recovery; lifecycle updates keep connected browsers informed. */
+/** Wait for sandbox recovery; lifecycle updates keep connected browsers informed. */
 export async function resumeCourseAgentConversation(agentConversationId: string) {
   const { url, headers } = buildCourseAgentServiceRequest(
     `conversations/${encodeURIComponent(agentConversationId)}/resume`,
@@ -127,59 +124,43 @@ export async function resumeCourseAgentConversation(agentConversationId: string)
       response.status === 409 ? 409 : 503,
       response.status === 409
         ? 'Conversation is not blocked or is already recovering.'
-        : 'Could not recover the workspace.',
+        : 'Could not recover the course agent.',
     );
   }
   return z.strictObject({ recovered: z.literal(true) }).parse(await response.json());
 }
 
-export async function getCourseAgentPendingReview(agentConversationId: string) {
+/** The review and its snapshot, or null once the agent has received its result. */
+export async function getCourseAgentReview(agentConversationId: string, reviewId: string) {
   const { url, headers } = buildCourseAgentServiceRequest(
-    `conversations/${encodeURIComponent(agentConversationId)}/pending-review`,
+    `conversations/${encodeURIComponent(agentConversationId)}/reviews/${encodeURIComponent(reviewId)}`,
   );
   const response = await fetch(url, { headers });
   if (!response.ok) throw new error.HttpStatusError(502, 'Could not load the course agent review');
-  return PendingReviewSchema.nullable().parse(await response.json());
+  return ReviewSchema.nullable().parse(await response.json());
 }
 
-export async function recordCourseAgentReviewDecision(
+/** Repeats are harmless: the service keys results by review ID. */
+export async function deliverCourseAgentReviewResult(
   agentConversationId: string,
-  decision: ReviewDecision,
+  reviewId: string,
+  result: RequestChangesResult,
 ) {
   const { url, headers } = buildCourseAgentServiceRequest(
-    `conversations/${encodeURIComponent(agentConversationId)}/pending-review/decision`,
+    `conversations/${encodeURIComponent(agentConversationId)}/reviews/${encodeURIComponent(reviewId)}/outcome`,
   );
   const response = await fetch(url, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify(decision),
-    signal: AbortSignal.timeout(10_000),
+    body: JSON.stringify({ result }),
+    // The agent records the result and continues in the background, so this returns promptly.
+    signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) {
+    // 409 means the service already has a different result for this review.
     throw new error.HttpStatusError(
-      response.status === 409 ? 409 : 503,
-      'Could not record the review decision. Reload the review before continuing.',
-    );
-  }
-  z.strictObject({ decisionRecorded: z.literal(true) }).parse(await response.json());
-}
-
-export async function deliverCourseAgentReviewOutcome(
-  agentConversationId: string,
-  outcome: ReviewOutcome,
-) {
-  const { url, headers } = buildCourseAgentServiceRequest(
-    `conversations/${encodeURIComponent(agentConversationId)}/pending-review/outcome`,
-  );
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify(outcome),
-  });
-  if (!response.ok) {
-    throw new error.HttpStatusError(
-      response.status === 409 ? 409 : 503,
-      'Could not deliver the review result. Try again.',
+      response.status === 409 ? 409 : 502,
+      'Could not deliver the review result.',
     );
   }
   z.strictObject({ outcomeRecorded: z.literal(true) }).parse(await response.json());

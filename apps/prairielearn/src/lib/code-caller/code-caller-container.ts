@@ -33,7 +33,11 @@ const EXITING = Symbol('EXITING');
 const EXITED = Symbol('EXITED');
 
 type CallerState =
-  typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED;
+  | typeof CREATED
+  | typeof WAITING
+  | typeof IN_CALL
+  | typeof EXITING
+  | typeof EXITED;
 
 interface CodeCallerContainerOptions {
   questionTimeoutMilliseconds: number;

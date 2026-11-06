@@ -1,23 +1,21 @@
 import { z } from 'zod';
 
-import { IdSchema } from '@prairielearn/zod';
-
 export * from './budget.js';
 
 export type ConversationLifecycle =
-  // No live container. The next message initializes a workspace or restores the committed checkpoint.
+  // No live container. The next message initializes a sandbox or restores the committed checkpoint.
   | { status: 'offline' }
   // Creating or restoring the sandbox and configuring it before submitting the new input.
   | { status: 'starting' }
   // Preparing or executing a turn; new input waits for this turn and SDK response completion.
   | { status: 'waiting_for_agent' }
-  // The live workspace is ready for input; idle expiry will checkpoint it and shut it down.
+  // The live sandbox is ready for input; idle expiry will checkpoint it and shut it down.
   | { status: 'waiting_for_user' }
   // Stop was requested; native execution and SDK response completion must settle before reuse.
   | { status: 'stopping' }
   // Creating a replacement checkpoint or destroying its container; new input is not admitted.
   | { status: 'suspending' }
-  // Resume continues a task paused for credit; other failures repair the workspace without replaying input.
+  // Resume continues a task paused for credit; other failures repair the sandbox without replaying input.
   | {
       status: 'blocked';
       reason:
@@ -33,11 +31,15 @@ export type ConversationLifecycle =
     };
 
 /**
- * Public workspace lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.
+ * Public sandbox lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.
  * Other states represent in-flight operations and require recovery if their owning DO restarts.
  */
 export type ConversationState = ConversationLifecycle & {
   deadlineAt: string | null;
+  /** The container stopped unexpectedly; the sandbox was restored from its last checkpoint. */
+  sandboxLost: boolean;
+  /** A review whose outcome the agent has not yet received. New messages wait for it. */
+  reviewId: string | null;
   budget: { balanceMilliDollars: number };
 };
 
@@ -48,8 +50,12 @@ export const CreateConversationInput = z.strictObject({
   branch: z.string().min(1).max(1024),
 });
 
-export const MAX_REVIEW_FILE_BYTES = 64 * 1024;
-export const MAX_REVIEW_BYTES = 1024 * 1024;
+// Leave room for base64 encoding within the Durable Object's 2 MB storage-entry limit.
+// TODO: Store review contents in R2 and stream them to PL instead of buffering whole reviews.
+export const MAX_REVIEW_FILE_BYTES = 1024 * 1024;
+// Capture counts base64-encoded originals and proposed contents; leave room for metadata
+// under Cloudflare's 32 MiB serialized RPC limit.
+export const MAX_REVIEW_BYTES = 20 * 1024 * 1024;
 
 const ReviewPathSchema = z
   .string()
@@ -69,22 +75,6 @@ const ReviewPathSchema = z
 
 const ReviewContentsSchema = z.base64().max(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3));
 
-const ReviewBaseFileSchema = z.strictObject({
-  path: ReviewPathSchema,
-  contents: ReviewContentsSchema.nullable(),
-});
-
-export type ReviewBaseFile = z.infer<typeof ReviewBaseFileSchema>;
-
-export const ReviewBaseFilesSchema = z
-  .array(ReviewBaseFileSchema)
-  .max(100)
-  .refine(
-    (files) =>
-      new Set(files.map((file) => file.path)).size === files.length &&
-      files.reduce((size, file) => size + (file.contents?.length ?? 0), 0) <= MAX_REVIEW_BYTES,
-  );
-
 /** The save and sync outcomes are separate: files may be saved even if syncing fails. */
 export const RequestChangesResultSchema = z
   .strictObject({
@@ -96,13 +86,7 @@ export const RequestChangesResultSchema = z
         status: z.literal('conflict'),
         paths: z.array(ReviewPathSchema).min(1).max(100),
       }),
-      z.strictObject({
-        status: z.literal('published'),
-        commitSha: z
-          .string()
-          .regex(/^[0-9a-f]{40}$/)
-          .optional(),
-      }),
+      z.strictObject({ status: z.literal('published') }),
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
     ]),
     sync: z.discriminatedUnion('status', [
@@ -145,68 +129,28 @@ export const ReviewSnapshotSchema = z
       branch: CreateConversationInput.shape.branch,
       baseCommit: z.string().regex(/^[0-9a-f]{40}$/),
     }),
-    z.strictObject({
-      ...ReviewFilesShape,
-      type: z.literal('local'),
-      originals: z.array(ReviewBaseFileSchema).max(100),
-    }),
+    z.strictObject({ ...ReviewFilesShape, type: z.literal('local') }),
   ])
   .refine((snapshot) => {
     const paths = [...snapshot.additions, ...snapshot.deletions].map((file) => file.path);
-    const originals = snapshot.type === 'local' ? snapshot.originals : [];
     return (
       paths.length <= 100 &&
       new Set(paths).size === paths.length &&
-      (snapshot.type !== 'local' ||
-        (originals.length === paths.length &&
-          new Set(originals.map((file) => file.path)).size === paths.length &&
-          originals.every((file) => paths.includes(file.path)))) &&
-      [...snapshot.additions, ...originals].reduce(
-        (size, file) => size + (file.contents?.length ?? 0),
-        0,
-      ) <= MAX_REVIEW_BYTES
+      snapshot.additions.reduce((size, file) => size + file.contents.length, 0) <= MAX_REVIEW_BYTES
     );
   });
 
 export type ReviewSnapshot = z.infer<typeof ReviewSnapshotSchema>;
 
-/** Public review state returned to PrairieLearn for display and approval. */
-export const PendingReviewSchema = z.strictObject({
-  callId: z.string(),
-  // Identifies the request_changes tool part in chat history so its result can be updated.
-  request_changes_tool_part: z.strictObject({ messageId: z.string(), partId: z.string() }),
+/**
+ * A review the agent requested and whose outcome it has not yet received. PrairieLearn owns the
+ * decision and outcome; the agent service owns the snapshot and delivery to the agent.
+ */
+export const ReviewSchema = z.strictObject({
+  id: z.uuid(),
   snapshot: ReviewSnapshotSchema,
-  status: z.enum(['pending', 'running', 'blocked']),
-  jobSequenceId: IdSchema.nullable(),
-  error: z.string().nullable(),
 });
 
-export type PendingReview = z.infer<typeof PendingReviewSchema>;
+export type Review = z.infer<typeof ReviewSchema>;
 
-export const ReviewDecisionSchema = z.discriminatedUnion('decision', [
-  z.strictObject({
-    callId: z.string(),
-    decision: z.literal('approved'),
-    jobSequenceId: IdSchema,
-  }),
-  z.strictObject({ callId: z.string(), decision: z.literal('denied') }),
-]);
-
-export type ReviewDecision = z.infer<typeof ReviewDecisionSchema>;
-
-export const ReviewOutcomeSchema = z.strictObject({
-  callId: z.string(),
-  result: RequestChangesResultSchema,
-  // Private refresh data; file contents never enter SDK chat history.
-  conflictFiles: ReviewBaseFilesSchema.optional(),
-});
-
-export type ReviewOutcome = z.infer<typeof ReviewOutcomeSchema>;
-
-export const SavedJobOutcomeSchema = z.strictObject({
-  jobSequenceId: IdSchema,
-  status: z.enum(['running', 'completed', 'blocked']),
-  result: RequestChangesResultSchema.nullable(),
-  conflictFiles: ReviewBaseFilesSchema.optional(),
-  error: z.string().nullable(),
-});
+export const ReviewOutcomeSchema = z.strictObject({ result: RequestChangesResultSchema });

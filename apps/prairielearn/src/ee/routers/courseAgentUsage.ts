@@ -24,14 +24,12 @@ router.post(
   typedAsyncHandler<'plain'>(async (req, res) => {
     try {
       const supplied = Buffer.from(req.headers.authorization ?? '');
-      const expected = Buffer.from(`Bearer ${config.courseAgentServiceToken ?? ''}`);
-      if (
-        !config.courseAgentServiceToken ||
-        supplied.length !== expected.length ||
-        !timingSafeEqual(supplied, expected)
-      ) {
-        throw new HttpStatusError(401, 'Unauthorized');
-      }
+      // Accept every configured token so the Worker's secret can rotate before or after PL's.
+      const authorized = (config.courseAgentServiceToken ?? []).some((token) => {
+        const expected = Buffer.from(`Bearer ${token}`);
+        return supplied.length === expected.length && timingSafeEqual(supplied, expected);
+      });
+      if (!authorized) throw new HttpStatusError(401, 'Unauthorized');
       const { params, body } = parseRequest(req, PostRequestSchemas);
       const result = await applyCourseAgentBudgetRequest(params.agentId, body);
       const allocation = result.body.allocation;

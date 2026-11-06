@@ -64,7 +64,7 @@ export interface TabInfo {
   activeSubPage: NavSubPage | NavSubPage[];
   urlSuffix: string | ((resLocals: UntypedResLocals) => string);
   iconClasses: string;
-  tabLabel: string;
+  tabLabel: string | ((resLocals: UntypedResLocals) => string);
   htmlSuffix?: (resLocals: UntypedResLocals) => HtmlValue;
   renderCondition?: (resLocals: UntypedResLocals) => boolean;
 }

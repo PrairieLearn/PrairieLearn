@@ -1,4 +1,6 @@
 import { isUtf8 } from 'node:buffer';
+import { lstat, readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import { createTwoFilesPatch } from 'diff';
 import { execa } from 'execa';
@@ -15,19 +17,37 @@ import { config } from '../../../lib/config.js';
 import type { Course } from '../../../lib/db-types.js';
 import { getLockNameForCoursePath } from '../../../models/course.js';
 
-/** Read saved local originals or immutable Git objects without changing the checkout. */
+/** Local development reviews compare against, and then overwrite, the files on disk. */
+async function readLocalFiles(coursePath: string, snapshot: ReviewSnapshot) {
+  const files = new Map<string, Buffer | null>();
+  for (const { path: file } of [...snapshot.additions, ...snapshot.deletions]) {
+    const filePath = path.join(coursePath, file);
+    const stat = await lstat(filePath).catch((error: unknown) => {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (stat && (!stat.isFile() || stat.size > MAX_REVIEW_FILE_BYTES)) {
+      throw new HttpStatusError(400, `Course file cannot be reviewed: ${file}`);
+    }
+    files.set(file, stat ? await readFile(filePath) : null);
+  }
+  return files;
+}
+
+async function hasCommit(coursePath: string, commit: string) {
+  const result = await execa('git', ['cat-file', '-e', `${commit}^{commit}`], {
+    cwd: coursePath,
+    reject: false,
+  });
+  return result.exitCode === 0;
+}
+
+/** Read immutable Git objects (or local files in development) without changing the checkout. */
 export async function readReviewBaseFiles(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   snapshot: ReviewSnapshot,
 ) {
-  if (snapshot.type === 'local') {
-    return new Map(
-      snapshot.originals.map((file) => [
-        file.path,
-        file.contents === null ? null : Buffer.from(file.contents, 'base64'),
-      ]),
-    );
-  }
+  if (snapshot.type === 'local') return readLocalFiles(course.path, snapshot);
   const options = {
     cwd: course.path,
     env: {
@@ -35,15 +55,15 @@ export async function readReviewBaseFiles(
       ...(config.gitSshCommand ? { GIT_SSH_COMMAND: config.gitSshCommand } : {}),
     },
   };
-  const exists = await execa('git', ['cat-file', '-e', `${snapshot.baseCommit}^{commit}`], {
-    ...options,
-    reject: false,
-  });
-  if (exists.exitCode !== 0) {
+  if (!(await hasCommit(course.path, snapshot.baseCommit))) {
     await execa('git', ['fetch', '--', course.repository!, course.branch], {
       ...options,
       timeout: 30_000,
     });
+    // A force-push can remove the reviewed commit from the branch.
+    if (!(await hasCommit(course.path, snapshot.baseCommit))) {
+      throw new HttpStatusError(409, 'The reviewed version is no longer in the course repository.');
+    }
   }
   const paths = [...snapshot.additions, ...snapshot.deletions].map((file) => file.path);
   const entries = new Map<string, { mode: string; type: string; sha: string; size: number }>();
@@ -54,9 +74,9 @@ export async function readReviewBaseFiles(
       options,
     );
     for (const entry of stdout.split('\0').filter(Boolean)) {
-      const [metadata, path] = entry.split('\t');
+      const [metadata, entryPath] = entry.split('\t');
       const [mode, type, sha, size] = metadata.trim().split(/\s+/);
-      entries.set(path, { mode, type, sha, size: Number(size) });
+      entries.set(entryPath, { mode, type, sha, size: Number(size) });
     }
   }
   const additions = new Map(snapshot.additions.map((file) => [file.path, file.contents]));
@@ -96,39 +116,51 @@ export async function readReviewBaseFiles(
   return baseFiles;
 }
 
-/** Build the displayed diff from the immutable originals and proposed file contents. */
+/** Build the displayed diff from the base files and proposed file contents. */
 export async function createReviewDiff(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
   snapshot: ReviewSnapshot,
 ) {
-  return namedLocks.doWithLock(
-    getLockNameForCoursePath(course.path),
-    { timeout: 5000 },
-    async () => {
-      const baseFiles = await readReviewBaseFiles(course, snapshot);
-      const additions = new Map(snapshot.additions.map((file) => [file.path, file.contents]));
-      const patches: string[] = [];
-      for (const file of [...snapshot.additions, ...snapshot.deletions]) {
-        const base = baseFiles.get(file.path) ?? null;
-        const old = base ?? Buffer.alloc(0);
-        const contents = additions.get(file.path);
-        const next = contents === undefined ? Buffer.alloc(0) : Buffer.from(contents, 'base64');
-        if (old.includes(0) || next.includes(0) || !isUtf8(old) || !isUtf8(next)) {
-          patches.push(
-            `Binary file ${file.path}: ${base !== null ? (contents === undefined ? 'deleted' : 'modified') : 'added'}\n`,
-          );
-        } else {
-          patches.push(
-            createTwoFilesPatch(
-              base !== null ? file.path : '/dev/null',
-              contents === undefined ? '/dev/null' : file.path,
-              old.toString('utf8'),
-              next.toString('utf8'),
-            ),
-          );
-        }
+  // Committed objects can be read while an editor job holds the course lock for its whole
+  // save and sync. Only fetching a missing base or reading local files needs the lock.
+  const locked = snapshot.type === 'local' || !(await hasCommit(course.path, snapshot.baseCommit));
+  const run = <T>(fn: () => Promise<T>) =>
+    locked
+      ? namedLocks.doWithLock(
+          getLockNameForCoursePath(course.path),
+          {
+            timeout: 5000,
+            onNotAcquired: () => {
+              throw new HttpStatusError(409, 'The course is being updated. Try again shortly.');
+            },
+          },
+          fn,
+        )
+      : fn();
+  return run(async () => {
+    const baseFiles = await readReviewBaseFiles(course, snapshot);
+    const additions = new Map(snapshot.additions.map((file) => [file.path, file.contents]));
+    const patches: string[] = [];
+    for (const file of [...snapshot.additions, ...snapshot.deletions]) {
+      const base = baseFiles.get(file.path) ?? null;
+      const old = base ?? Buffer.alloc(0);
+      const contents = additions.get(file.path);
+      const next = contents === undefined ? Buffer.alloc(0) : Buffer.from(contents, 'base64');
+      if (old.includes(0) || next.includes(0) || !isUtf8(old) || !isUtf8(next)) {
+        patches.push(
+          `Binary file ${file.path}: ${base !== null ? (contents === undefined ? 'deleted' : 'modified') : 'added'}\n`,
+        );
+      } else {
+        patches.push(
+          createTwoFilesPatch(
+            base !== null ? file.path : '/dev/null',
+            contents === undefined ? '/dev/null' : file.path,
+            old.toString('utf8'),
+            next.toString('utf8'),
+          ),
+        );
       }
-      return patches.join('\n');
-    },
-  );
+    }
+    return patches.join('\n');
+  });
 }

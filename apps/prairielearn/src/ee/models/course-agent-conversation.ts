@@ -24,14 +24,6 @@ export async function recordCourseAgentConversationUsage(id: string, request: Bu
   });
 }
 
-export async function selectOptionalCourseAgentConversationByAgentId(agentConversationId: string) {
-  return queryOptionalRow(
-    sql.select_course_agent_conversation_by_agent_id,
-    { agent_conversation_id: agentConversationId },
-    CourseAgentConversationSchema,
-  );
-}
-
 /** Accounting may finish after a course is soft-deleted. Lock the row to serialize reports. */
 export async function selectOptionalCourseAgentConversationByAgentIdForUpdate(
   agentConversationId: string,

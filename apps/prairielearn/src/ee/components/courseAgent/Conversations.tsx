@@ -2,7 +2,7 @@ import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
-import { type UIMessage, isToolUIPart } from 'ai';
+import { type UIMessage } from 'ai';
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -13,6 +13,7 @@ import {
 } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
+import { z } from 'zod';
 
 import { type ConversationState } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
@@ -28,6 +29,23 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
+
+/** The agent service shows a review in chat history by its ID only. */
+const ReviewPartSchema = z.object({ reviewId: z.string() });
+
+/**
+ * Instructors decide a review while the sandbox is at rest. A credit block only pauses the agent's
+ * inference, so the decision is still saved and delivered once Resume renews credit.
+ */
+function reviewDecidable(state: ConversationState) {
+  if (state.status === 'waiting_for_user' || state.status === 'offline') return true;
+  return (
+    state.status === 'blocked' &&
+    ['budget_exhausted', 'budget_unavailable', 'usage_unavailable', 'access_revoked'].includes(
+      state.reason,
+    )
+  );
+}
 
 const NEW_CONVERSATION = 'new';
 
@@ -277,14 +295,7 @@ function Chat({
   });
   const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
   const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
-  const pendingReview = messages.some((message) =>
-    message.parts.some(
-      (part) =>
-        isToolUIPart(part) &&
-        part.type === 'tool-request_changes' &&
-        part.state !== 'output-available',
-    ),
-  );
+  const pendingReview = lifecycle?.reviewId != null;
   const readyToSend =
     !pendingReview && (lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user');
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
@@ -304,7 +315,7 @@ function Chat({
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const activity = run(() => {
     if (connectionFailed || connectionError) return null;
-    if (lifecycle?.status === 'starting') return 'Starting workspace…';
+    if (lifecycle?.status === 'starting') return 'Starting the course agent…';
     if (lifecycle?.status === 'waiting_for_agent') return 'Thinking…';
     return null;
   });
@@ -333,10 +344,10 @@ function Chat({
               key={message.id}
               message={message}
               conversationId={conversationId}
-              canReview={
-                lifecycle?.status === 'waiting_for_user' ||
-                lifecycle?.status === 'offline' ||
-                lifecycle?.status === 'blocked'
+              awaitingReviewId={
+                !responseActive && lifecycle && reviewDecidable(lifecycle)
+                  ? lifecycle.reviewId
+                  : null
               }
             />
           ))}
@@ -353,11 +364,17 @@ function Chat({
               onResume={() => resume.mutate({ conversationId })}
             />
           )}
+          {lifecycle?.sandboxLost && (
+            <Alert variant="warning">
+              The course agent stopped unexpectedly and lost the changes it made since it last
+              paused. Changes you already approved are in your course and are not affected.
+            </Alert>
+          )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
             <p className="text-muted" role="status">
               {lifecycle.status === 'stopping'
                 ? 'Stopping the course agent…'
-                : 'Saving your workspace…'}
+                : 'Pausing the course agent…'}
             </p>
           )}
           {resume.isError && (
@@ -381,7 +398,7 @@ function Chat({
         stopDisabled={!connected || !canStop}
         onDraftChange={setDraft}
         onSubmit={submit}
-        onStop={!pendingReview && (responseActive || canStop) ? () => void stop() : undefined}
+        onStop={responseActive || canStop ? () => void stop() : undefined}
       >
         {showConversationStats && <ConversationStats state={lifecycle} usage={usage} />}
       </Composer>
@@ -446,11 +463,12 @@ function Composer({
 function Message({
   message,
   conversationId,
-  canReview,
+  awaitingReviewId,
 }: {
   message: UIMessage;
   conversationId: string;
-  canReview: boolean;
+  /** An idle conversation's review whose result the agent has not received. */
+  awaitingReviewId: string | null;
 }) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
@@ -466,15 +484,14 @@ function Message({
         const key = `part-${index}`;
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-        if (isToolUIPart(part) && part.type === 'tool-request_changes') {
+        if (part.type === 'data-review') {
+          const { reviewId } = ReviewPartSchema.parse(part.data);
           return (
             <RequestChangesCard
               key={key}
               conversationId={conversationId}
-              messageId={message.id}
-              canReview={canReview}
-              partId={part.toolCallId}
-              output={part.state === 'output-available' ? part.output : undefined}
+              reviewId={reviewId}
+              canResume={awaitingReviewId === reviewId}
             />
           );
         }

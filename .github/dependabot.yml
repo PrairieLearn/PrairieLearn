@@ -44,6 +44,10 @@ updates:
     rebase-strategy: disabled
     open-pull-requests-limit: 10
     ignore:
+      # Keep Node.js types aligned with our Node.js 24 runtime.
+      - dependency-name: '@types/node'
+        versions: ['>=25']
+
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'

@@ -74,9 +74,8 @@ export function getCanonicalTimezones({
   at?: Date;
 } = {}): Timezone[] {
   const instant = Temporal.Instant.fromEpochMilliseconds(at.getTime());
-  const names = new Set(Intl.supportedValuesOf('timeZone'));
   // Intl.supportedValuesOf('timeZone') omits UTC and a few other entries.
-  names.add('UTC');
+  const names = new Set([...Intl.supportedValuesOf('timeZone'), 'UTC']);
 
   for (const name of alwaysInclude) {
     try {

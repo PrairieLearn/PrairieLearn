@@ -47,6 +47,9 @@ test('edits authors with keyboard entry, cancellation, and persistence', async (
     }
     await input.fill('saved-author');
     await input.press('Enter');
+    const orcidUrl = 'https://orcid.org/0000-0002-1825-0097';
+    await input.fill(orcidUrl);
+    await input.press('Enter');
     const myself = page.getByRole('button', { name: 'Add myself', exact: true });
     await myself.click();
     await expect(myself).toHaveCount(0);
@@ -55,8 +58,13 @@ test('edits authors with keyboard entry, cancellation, and persistence', async (
     await expect(
       page.getByRole('button', { name: 'Remove saved-author', exact: true }),
     ).toBeVisible();
+    await expect(page.getByRole('link', { name: /0000-0002-1825-0097/ })).toHaveAttribute(
+      'href',
+      orcidUrl,
+    );
     expect(JSON.parse(await fs.readFile(infoPath, 'utf8')).authors).toEqual([
       'saved-author',
+      orcidUrl,
       'dev@example.com',
     ]);
   } finally {

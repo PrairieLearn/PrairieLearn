@@ -14,7 +14,6 @@ import { SandboxTurn } from '../sandbox/turn.js';
 import { type BudgetState, Conversation } from './conversation.js';
 
 const sdk = vi.hoisted(() => ({
-  reviewReady: Promise.withResolvers<undefined>(),
   finishTurn: () => {},
   completeResponse: (_requestId: string) => Promise.resolve(),
 }));
@@ -26,6 +25,8 @@ vi.mock('@cloudflare/ai-chat', () => ({
     state: ConversationState = {
       status: 'offline',
       deadlineAt: null,
+      sandboxLost: false,
+      reviewId: null,
       budget: { balanceMilliDollars: 0 },
     };
 
@@ -38,7 +39,6 @@ vi.mock('@cloudflare/ai-chat', () => ({
 
     setState(state: ConversationState) {
       this.state = state;
-      if (state.status === 'waiting_for_user') sdk.reviewReady.resolve(undefined);
     }
 
     schedule = vi.fn();
@@ -65,7 +65,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
     }
   },
 }));
-vi.mock('../monitoring.js', () => ({ reportError: vi.fn() }));
+vi.mock('../monitoring.js', () => ({ logEvent: vi.fn(), reportError: vi.fn() }));
 vi.mock('../sandbox/turn.js', () => ({
   SandboxTurn: vi.fn(
     class {
@@ -102,7 +102,6 @@ const deniedResult = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal('scheduler', { wait: async () => {} });
-  sdk.reviewReady = Promise.withResolvers<undefined>();
 });
 
 afterEach(() => {
@@ -121,19 +120,14 @@ function fixture(saved = new Map<string, unknown>()) {
     },
   };
   const sandbox = {
+    isRunning: vi.fn(async () => true),
     prepare: vi.fn(),
+    addCourseFiles: vi.fn(),
+    advanceLocalBaseline: vi.fn(),
     stopProcesses: vi.fn(),
     checkpoint: vi.fn(async () => ({ id: 'checkpoint' })),
     destroy: vi.fn(),
     authorizeModel: vi.fn(async (_config: { executionId: string }) => {}),
-    captureReview: vi.fn(async () => ({
-      type: 'github',
-      repository: 'PrairieLearn/course',
-      branch: 'master',
-      baseCommit: 'a'.repeat(40),
-      additions: [],
-      deletions: [],
-    })),
   };
   const env = {
     OPENAI_MODEL: 'test',
@@ -154,58 +148,6 @@ function fixture(saved = new Map<string, unknown>()) {
     });
   }
   return { conversation, saved, ctx, env, sandbox };
-}
-
-async function pendingReview(budget: BudgetState) {
-  const { conversation, saved, ctx, env, sandbox } = fixture();
-  await conversation.persistMessages([
-    { id: 'user', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
-  ]);
-  await conversation.onChatMessage(undefined, { requestId: 'initial' });
-  const [, , options] = vi.mocked(SandboxTurn).mock.calls[0];
-  options.onThread('native-thread');
-  void options.onReview!(
-    {
-      callId: 'review',
-      threadId: 'native-thread',
-      turnId: 'turn',
-      namespace: null,
-      tool: 'request_changes',
-      arguments: {},
-    },
-    () => {
-      void conversation.persistMessages([
-        ...conversation.messages,
-        {
-          id: options.messageId,
-          role: 'assistant',
-          parts: [
-            {
-              type: 'tool-request_changes',
-              toolCallId: 'review',
-              state: 'input-available',
-              input: {},
-            },
-          ],
-        },
-      ]);
-      void sdk.completeResponse('initial');
-    },
-  );
-  await sdk.reviewReady.promise;
-  // A delayed decision sees saved state/history, with no in-memory native execution.
-  saved.set('conversation', {
-    ...(saved.get('conversation') as object),
-    sandboxId: null,
-    lifecycle: { status: 'offline' },
-    deadline: null,
-  });
-  saved.set('budget', budget);
-  const restored = new Conversation(ctx as unknown as DurableObjectState, env);
-  await restored.persistMessages(conversation.messages);
-  await restored.onStart();
-  vi.mocked(SandboxTurn).mockClear();
-  return { conversation: restored, saved, sandbox };
 }
 
 it('Stop ends native work while admitted inference finishes accounting before reuse', async () => {
@@ -313,32 +255,45 @@ it('Stop during a refill never forwards inference after the credit reply arrives
   expect(saved.get('budget')).toMatchObject({ balanceMilliDollars: 3000, blocked: null });
 });
 
-it('a restored review saves its outcome without credit and gates subsequent inference', async () => {
-  const fetch = vi.fn();
+it('saves a review result without credit and delivers it once Resume renews credit', async () => {
+  freezeTime();
+  const fetch = vi.fn().mockResolvedValueOnce(grant(1, '2026-10-27T05:00:00Z'));
   vi.stubGlobal('fetch', fetch);
-  vi.stubGlobal('scheduler', { wait: async () => {} });
-  const { conversation, saved, sandbox } = await pendingReview({
+  const { saved } = fixture();
+  saved.set('conversation', {
+    ...(saved.get('conversation') as object),
+    review: {
+      id: 'review',
+      snapshot: {
+        type: 'github',
+        repository: 'PrairieLearn/course',
+        branch: 'master',
+        baseCommit: 'a'.repeat(40),
+        additions: [],
+        deletions: [{ path: 'question.html' }],
+      },
+      result: null,
+      waitsForResume: false,
+    },
+  });
+  saved.set('budget', {
     balanceMilliDollars: 0,
     creditExpiresAt: null,
     lastAcknowledgedUsageReportCount: 0,
     accounting: { phase: 'idle', usage: emptyUsage() },
-    blocked: {
-      reason: 'budget_exhausted',
-      retryAt: new Date(Date.now() + 3_600_000).toISOString(),
-    },
-  });
-  conversation.recordReviewDecision({ callId: 'review', decision: 'denied' });
-  await expect(
-    conversation.recordReviewOutcome({ callId: 'review', result: deniedResult }),
-  ).resolves.toBe(true);
+    blocked: { reason: 'budget_exhausted', retryAt: expiresAt },
+  } satisfies BudgetState);
+  const { conversation } = fixture(saved);
+  await conversation.onStart();
+  expect(conversation.recordReviewResult('review', deniedResult)).toBe(true);
+  expect(SandboxTurn).not.toHaveBeenCalled();
+  expect(conversation.state).toMatchObject({ status: 'blocked', reviewId: 'review' });
+  expect(await conversation.resume()).toBe(false);
+  vi.setSystemTime('2026-10-27T04:01:00Z');
+  expect(await conversation.resume()).toBe(true);
   const options = vi.mocked(SandboxTurn).mock.calls[0][2];
-  expect(options.text).toEqual({ callId: 'review', result: deniedResult });
-  await options.prepare();
-  const { executionId } = sandbox.authorizeModel.mock.calls[0][0];
-  expect((await conversation.proxyModelRequest('{}', executionId)).status).toBe(429);
-  expect((saved.get('budget') as BudgetState).blocked?.reason).toBe('budget_exhausted');
-  expect(fetch).not.toHaveBeenCalled();
-  await sdk.completeResponse('continuation');
+  expect(options.input.text).toContain('The instructor reviewed the changes');
+  expect(budget(saved)).toMatchObject({ balanceMilliDollars: 3000, blocked: null });
 });
 
 const expiresAt = '2026-10-27T04:00:00Z';
@@ -366,6 +321,7 @@ async function runningConversation(saved?: Map<string, unknown>) {
   await options.prepare();
   options.onThread('native-thread');
   options.onReady();
+  options.onAccepted('native-turn');
   const { executionId } = sandbox.authorizeModel.mock.calls.at(-1)![0];
   return {
     ...state,
@@ -551,7 +507,7 @@ it('preserves debt through denial and Resume continues the existing task after r
   const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
   expect(options.startup).toBe(false);
   expect(options.thread.threadId).toBe('native-thread');
-  expect(options.text).toContain('Continue the interrupted task');
+  expect(options.input.text).toContain('Continue the interrupted task');
   expect(restored.messages.at(-1)?.id).toBe('partial');
   expect(restored.state.status).toBe('waiting_for_agent');
   expect(budget(state.saved)).toMatchObject({ balanceMilliDollars: 2600, blocked: null });
@@ -648,7 +604,9 @@ it('blocks a restart with an unresolved provider request without replaying infer
   await state.request();
   const restored = fixture(state.saved).conversation;
   await restored.onStart();
-  expect(restored.state).toMatchObject({ status: 'blocked', reason: 'usage_unavailable' });
+  // The interrupted turn is repaired first; the unknown usage still blocks further inference.
+  expect(restored.state).toMatchObject({ status: 'blocked', reason: 'runtime_failed' });
   expect(await restored.resume()).toBe(false);
+  expect(restored.state).toMatchObject({ status: 'blocked', reason: 'usage_unavailable' });
   expect(fetch).toHaveBeenCalledTimes(2);
 });

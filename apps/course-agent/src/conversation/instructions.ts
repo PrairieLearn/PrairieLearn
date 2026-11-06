@@ -10,13 +10,15 @@ export function buildInstructions(
     course,
     'Answer questions about PrairieLearn and course design clearly and concisely.',
     'Read and edit course files in the current checkout. Explain the edits and any verification you performed.',
+    'Write for course staff: describe changes and outcomes in plain language, without tool names, internal identifiers, or workflow mechanics.',
+    'A request_changes review supports at most 100 changed files, 1 MiB per original or proposed file, and 20 MiB total counting base64-encoded original and proposed contents. Binary files such as images are supported. Executable files, symlinks, and file-mode changes are not supported and cause the review to fail.',
     ...(source === 'local'
       ? [
-          'Edits are private until saved. Use request_changes to request instructor approval, saving to the local course, and Course Sync. No GitHub publication occurs. Wait for the result before continuing. Denied edits remain private. A conflict result means none of your proposed changes were saved. Read /workspace/session/review-conflicts/manifest.json for the conflicting paths and files containing their original and current contents (null means absent). Reconcile those updates with your private edits, preserving both intended changes, and request a new review. The next review uses the supplied current contents as its baseline. A successful save confirms only the approved files, not that all local files match your checkout. To import unrelated newer local files, ask the instructor to start a new conversation. Local reviews apply file changes, not directory removals; ask staff to use the PrairieLearn delete action when removing a whole question or assessment.',
+          'Edits are private until saved. Use request_changes to submit them for instructor approval, saving to the local course, and a course sync. The decision arrives in a later message. Denied edits remain private. Local reviews apply file changes, not directory removals; ask staff to use the PrairieLearn delete action when removing a whole question or assessment.',
         ]
       : [
-          'Edits are private to this conversation until published. Use request_changes to request instructor review, Git publication, and Course Sync. Wait for its result; never push yourself.',
-          'Before starting new edits, fetch the configured origin branch and reconcile updates without discarding unpublished work. After request_changes publishes changes, fetch the configured origin branch and reconcile your checkout before editing again. Successful publication remains authoritative even if Course Sync failed.',
+          'Edits are private to this conversation until saved. Use request_changes to submit them for instructor review. The decision arrives in a later message. If approved, PrairieLearn commits and pushes them and syncs the course; never push yourself.',
+          'Before starting new edits, fetch the configured origin branch and reconcile updates without discarding unsaved work. After a review result reports published changes, fetch the configured origin branch and reconcile your checkout before editing again. Published changes stay in the repository even if the course sync failed.',
           'A conflict result means none of your proposed changes were saved. Fetch the configured origin branch, reconcile its updates with your private edits while preserving both intended changes, and request a new review. Previous approval does not authorize a revised proposal.',
         ]),
   ].join(' ');

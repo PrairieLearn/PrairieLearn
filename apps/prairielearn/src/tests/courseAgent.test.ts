@@ -109,7 +109,7 @@ describe('Course agent access and conversation privacy', () => {
     Object.assign(config, {
       isEnterprise: true,
       courseAgentServiceUrl: `http://127.0.0.1:${address.port}`,
-      courseAgentServiceToken: 'test-token',
+      courseAgentServiceToken: ['test-token', 'next-token'],
       features: { ...config.features, 'course-agent': true },
     });
     await helperServer.before()();
@@ -189,7 +189,8 @@ describe('Course agent access and conversation privacy', () => {
       requestCredit: true,
     };
     expect((await report(request, 'wrong')).status).toBe(401);
-    const accepted = await report(request);
+    // A Worker still sending the second configured token is accepted during rotation.
+    const accepted = await report(request, 'next-token');
     expect(accepted.status).toBe(200);
     const first = BudgetResponseSchema.parse(await accepted.json());
     expect(first.allocation).toMatchObject({ status: 'granted', grantedMilliDollars: 3000 });

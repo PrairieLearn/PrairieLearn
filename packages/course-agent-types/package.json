@@ -1,15 +1,14 @@
 {
   "name": "@prairielearn/course-agent-types",
   "version": "0.0.0",
-  "type": "module",
   "private": true,
+  "type": "module",
   "exports": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@prairielearn/zod": "workspace:^",
     "zod": "^4.6.5"
   },
   "devDependencies": {

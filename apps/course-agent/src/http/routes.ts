@@ -1,22 +1,23 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
 
-import {
-  CreateConversationInput,
-  ReviewDecisionSchema,
-  ReviewOutcomeSchema,
-} from '@prairielearn/course-agent-types';
+import { CreateConversationInput, ReviewOutcomeSchema } from '@prairielearn/course-agent-types';
 
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
 
-const app = new Hono<{ Bindings: Env }>();
+// Set only while rotating PL_SERVICE_TOKEN, so it isn't a required secret in wrangler.jsonc.
+const app = new Hono<{ Bindings: Env & { PL_SERVICE_TOKEN_PREVIOUS?: string } }>();
 
 // PL's catalog is the existence/ownership authority for every conversation route.
 // Only its authenticated server may create conversations or forward SDK traffic here.
 app.use('*', async (c, next) => {
-  if (!isAuthorized(c.req.header('Authorization') ?? null, c.env.PL_SERVICE_TOKEN)) {
+  const header = c.req.header('Authorization') ?? null;
+  if (
+    !isAuthorized(header, c.env.PL_SERVICE_TOKEN) &&
+    !isAuthorized(header, c.env.PL_SERVICE_TOKEN_PREVIOUS)
+  ) {
     return c.text('Unauthorized', 401);
   }
   await next();
@@ -72,38 +73,24 @@ conversations.post('/:id/resume', async (c) => {
   } catch (error) {
     // This handled RPC failure would otherwise be returned as a successful HTTP handler.
     reportError(error);
-    return c.json({ error: 'Could not recover workspace' }, 503);
+    return c.json({ error: 'Could not recover the course agent' }, 503);
   }
 });
 
-conversations.get('/:id/pending-review', async (c) => {
+conversations.get('/:id/reviews/:reviewId', async (c) => {
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
-  return c.json(await conversation.getPendingReview());
+  return c.json(await conversation.getReview(c.req.param('reviewId')));
 });
 
-conversations.post('/:id/pending-review/decision', async (c) => {
-  const decision = ReviewDecisionSchema.safeParse(await c.req.json().catch(() => null));
-  if (!decision.success) return c.text('Invalid decision', 400);
-  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
-  if (!(await conversation.recordReviewDecision(decision.data))) {
-    return c.text('Review has changed', 409);
-  }
-  return c.json({ decisionRecorded: true });
-});
-
-conversations.post('/:id/pending-review/outcome', async (c) => {
+// PrairieLearn may send a result more than once; the review ID makes repeats harmless.
+conversations.post('/:id/reviews/:reviewId/outcome', async (c) => {
   const outcome = ReviewOutcomeSchema.safeParse(await c.req.json().catch(() => null));
   if (!outcome.success) return c.text('Invalid outcome', 400);
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
-  try {
-    if (!(await conversation.recordReviewOutcome(outcome.data))) {
-      return c.text('Review has changed', 409);
-    }
-    return c.json({ outcomeRecorded: true });
-  } catch (error) {
-    reportError(error);
-    return c.text('Could not incorporate review result', 503);
+  if (!(await conversation.recordReviewResult(c.req.param('reviewId'), outcome.data.result))) {
+    return c.text('This review already has a different result', 409);
   }
+  return c.json({ outcomeRecorded: true });
 });
 
 conversations.on('GET', ['/:id', '/:id/get-messages'], async (c) => {

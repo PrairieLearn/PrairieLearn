@@ -5,7 +5,6 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
 import express, { type ErrorRequestHandler, Router } from 'express';
-import { type HashElementNode, hashElement } from 'folder-hash';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
@@ -16,26 +15,27 @@ import staticNodeModules from '../middlewares/staticNodeModules.js';
 import elementFiles from '../pages/elementFiles/elementFiles.js';
 
 import { config } from './config.js';
+import { type FileTreeHash, hashFileTree } from './hash-file-tree.js';
 import { APP_ROOT_PATH } from './paths.js';
 
 let assetsPrefix: string | null = null;
-let elementsHash: HashElementNode | null = null;
-let publicHash: HashElementNode | null = null;
+let elementsHash: FileTreeHash | null = null;
+let publicHash: FileTreeHash | null = null;
 const cachedPackageVersionHashes: Record<string, string> = {};
 
 async function computeElementsHash() {
-  elementsHash = await hashElement(path.join(APP_ROOT_PATH, 'elements'), { encoding: 'hex' });
+  elementsHash = await hashFileTree(path.join(APP_ROOT_PATH, 'elements'));
 }
 
 async function computePublicHash() {
-  publicHash = await hashElement(path.join(APP_ROOT_PATH, 'public'), { encoding: 'hex' });
+  publicHash = await hashFileTree(path.join(APP_ROOT_PATH, 'public'));
 }
 
 /**
- * With a {@link HashElementNode} representing the hash of a directory, returns
+ * With a {@link FileTreeHash} representing the hash of a directory, returns
  * a hash of a file within that directory.
  */
-function getHashForPath(hashes: HashElementNode, assetPath: string): string {
+function getHashForPath(hashes: FileTreeHash, assetPath: string): string {
   const components = assetPath.split('/');
   let currentHashes = hashes;
   for (const component of components) {
@@ -177,7 +177,7 @@ export async function init() {
   assetsPrefix = config.assetsPrefix;
 
   await compiledAssets.init({
-    dev: config.devMode,
+    dev: config.compiledAssetsDevMode ?? config.devMode,
     sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
     buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
     publicPath: `${assetsPrefix}/build`,

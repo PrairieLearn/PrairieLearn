@@ -8,14 +8,15 @@ const blockedMessage = {
   budget_exhausted: 'Hourly AI usage limit reached.',
   budget_unavailable: 'Could not reach the AI credit service. Resume to try again.',
   usage_unavailable:
-    'Model usage could not be recorded. Your workspace is preserved. Contact support to recover this conversation.',
+    "Model usage could not be recorded. The course agent's changes are preserved. Contact support to recover this conversation.",
   access_revoked: 'You no longer have access to run the course agent in this course.',
   startup_failed:
-    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
+    'The course agent could not start. Resume to clear the incomplete setup, then send a new message.',
   runtime_failed:
-    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
-  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
-  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
+    "The course agent was interrupted. It may have made some changes, and its reply may be incomplete. Resume to continue; your previous message won't run again.",
+  checkpoint_failed:
+    "The course agent couldn't pause. Resume to try again; its changes are still there.",
+  cleanup_failed: 'The course agent paused, but cleanup did not finish. Resume to finish cleanup.',
 } satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
 
 export function BlockedNotice({

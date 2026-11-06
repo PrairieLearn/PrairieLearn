@@ -22,10 +22,13 @@ export function normalizeQuestionAuthors(authors: (string | LegacyQuestionAuthor
       uids.add(author.trim());
     } else if (author.email && QuestionAuthorUidSchema.safeParse(author.email).success) {
       uids.add(author.email.trim());
-    } else {
+    } else if (!author.orcid) {
       warnings.add(
         `Legacy author ${JSON.stringify(author)} cannot be converted to a UID because it has no usable email. Replace this entry with the author's UID in info.json.`,
       );
+    }
+    if (typeof author !== 'string' && author.orcid) {
+      uids.add(`https://orcid.org/${author.orcid}`);
     }
   }
   return { uids: [...uids], warnings: [...warnings] };
