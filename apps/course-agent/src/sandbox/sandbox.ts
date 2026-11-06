@@ -3,7 +3,12 @@ import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 
 import { logEvent, redactSecrets } from '../monitoring.js';
 
+import { CloneProgress } from './clone-progress.js';
+import { summarizeGitTraces } from './git-trace.js';
+
 const SESSION = '/workspace/session';
+const CLONE_TRACE2 = '/tmp/course-clone-trace2.txt';
+const CLONE_TRACE_CURL = '/tmp/course-clone-curl.txt';
 const NATIVE_PORT = 4500;
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
@@ -166,13 +171,14 @@ export class CourseSandbox extends DurableObject<Env> {
     this.container.start({
       image: this.container.images.courseAgent,
       enableInternet: false,
-      // `basic` is 1/4 vCPU, 1 GiB memory, and 4 GB disk. The default `lite` (256 MiB) is too
-      // small for Codex and course tooling, and running out of memory restarts the instance,
-      // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
-      instance: 'basic',
+      // `standard-1` is 1/2 vCPU, 4 GiB memory, and 8 GB disk. Cloning and checking out large
+      // course repositories is CPU bound on `basic` (1/4 vCPU). The default `lite` (256 MiB) is
+      // too small for Codex and course tooling, and running out of memory restarts the instance,
+      // losing unsaved edits. https://developers.cloudflare.com/containers/platform/limits/
+      instance: 'standard-1',
     });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
-    // Confirms the instance type actually applied: basic has 1 GiB, lite 256 MiB.
+    // Confirms the instance type actually applied: standard-1 has 4 GiB, basic 1 GiB.
     const [memTotal, cpus] = new TextDecoder()
       .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
       .trim()
@@ -234,10 +240,6 @@ export class CourseSandbox extends DurableObject<Env> {
           '-C',
           `${SESSION}/repository`,
           '-c',
-          'user.name=PrairieLearn',
-          '-c',
-          'user.email=course-agent@prairielearn.com',
-          '-c',
           'commit.gpgsign=false',
           'commit',
           '--allow-empty',
@@ -250,12 +252,15 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
     } else {
       log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
+      const progress = new CloneProgress(Date.now());
       // Only the tip is needed: reviews diff against the cloned branch tip, and nothing fetches
       // later. Full history made large course repositories take most of startup to clone.
-      await this.exec(
+      // Progress is read only to time each phase; it never contains course file contents.
+      const clone = await this.container.exec(
         [
           'git',
           'clone',
+          '--progress',
           '--depth',
           '1',
           '--single-branch',
@@ -265,8 +270,50 @@ export class CourseSandbox extends DurableObject<Env> {
           `http://repository.internal/${config.repository}.git`,
           `${SESSION}/course`,
         ],
-        'node',
+        {
+          user: 'node',
+          stdout: 'ignore',
+          stderr: 'pipe',
+          // Git's own step timings and HTTP request/response timings (headers only, no data)
+          // show whether a slow phase is Git working or waiting on the repository proxy.
+          env: {
+            GIT_TRACE2_PERF: CLONE_TRACE2,
+            GIT_TRACE_CURL: CLONE_TRACE_CURL,
+            GIT_TRACE_CURL_NO_DATA: '1',
+          },
+        },
       );
+      const [exitCode] = await Promise.all([
+        clone.exitCode,
+        (async () => {
+          for await (const chunk of clone.stderr!.pipeThrough(new TextDecoderStream())) {
+            progress.push(chunk, Date.now());
+          }
+        })(),
+      ]);
+      const [perf, curl] = await Promise.all(
+        [CLONE_TRACE2, CLONE_TRACE_CURL].map(async (file) => {
+          const { stdout } = await this.exec([
+            'sh',
+            '-c',
+            'cat "$1" 2>/dev/null; rm -f "$1"',
+            'sh',
+            file,
+          ]);
+          return new TextDecoder().decode(stdout);
+        }),
+      );
+      for (const { atMs, ...line } of summarizeGitTraces(perf, curl)) {
+        logEvent('sandbox_clone_trace', { sandboxId: this.ctx.id.name, ...line, elapsedMs: atMs });
+      }
+      if (exitCode !== 0) throw new Error(`Sandbox command failed: ${progress.errorOutput}`);
+      for (const { startMs, ...phase } of progress.phases(Date.now())) {
+        logEvent('sandbox_clone_phase', {
+          sandboxId: this.ctx.id.name,
+          ...phase,
+          elapsedMs: startMs,
+        });
+      }
       log('sandbox_clone_finished');
     }
     log('sandbox_files_ready', { source: config.type });
