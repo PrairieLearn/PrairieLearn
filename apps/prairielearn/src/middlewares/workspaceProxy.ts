@@ -1,4 +1,4 @@
-import http from 'http';
+import type http from 'http';
 import type { Socket } from 'net';
 
 import { type Express, type NextFunction, type Request, type Response } from 'express';
@@ -12,6 +12,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { WorkspaceSchema } from '../lib/db-types.js';
+import { createUpgradeResponse } from '../lib/http-upgrade.js';
 import { LocalCache } from '../lib/local-cache.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -27,13 +28,9 @@ const upgradeHeads = new WeakMap<http.IncomingMessage, Buffer>();
  */
 export function handleWorkspaceUpgrade(app: Express, req: http.IncomingMessage, head: Buffer) {
   if (!WORKSPACE_UPGRADE_PATH.test(req.url ?? '')) return false;
+  const res = createUpgradeResponse(req);
+  if (!res) return true;
   upgradeHeads.set(req, head);
-  const res = new http.ServerResponse(req);
-  res.assignSocket(req.socket);
-  // If Express responds instead of upgrading (e.g. authz fails), close the
-  // socket once that response is written.
-  res.shouldKeepAlive = false;
-  res.once('finish', () => req.socket.end());
   app(req, res);
   return true;
 }
