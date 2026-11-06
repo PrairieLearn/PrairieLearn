@@ -1,6 +1,8 @@
 import type { UIMessageChunk } from 'ai';
 
-import type { CodexAppServerClient } from './codex.js';
+import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
+
+import type { CodexAppServerClient, ToolReply, TurnInput } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 
 interface TurnResult {
@@ -9,7 +11,7 @@ interface TurnResult {
   error?: unknown;
 }
 
-/** One turn's cancellation and output; the workspace owns the longer-lived native connection. */
+/** One turn's cancellation and output; the sandbox owns the longer-lived native connection. */
 export class SandboxTurn {
   private abort = new AbortController();
   private interruptible = false;
@@ -22,7 +24,8 @@ export class SandboxTurn {
     private native: CodexAppServerClient,
     options: {
       messageId: string;
-      text: string;
+      input: TurnInput;
+      onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
       startup: boolean;
       prepare: () => Promise<void>;
       /** Runs alongside the runner start; the thread starts only after both finish. */
@@ -30,12 +33,13 @@ export class SandboxTurn {
       thread: { model: string; instructions: string; threadId: string | null };
       onThread: (id: string) => void;
       onReady: () => void;
-      onAccepted: (id: string) => void;
+      /** Receives the native turn ID, or null when an earlier attempt already submitted it. */
+      onAccepted: (id: string | null) => void;
       log: (event: string) => void;
     },
   ) {
     let replied = false;
-    this.stream = native.beginTurn(options.messageId).pipeThrough(
+    this.stream = native.beginTurn(options.messageId, options.onReview).pipeThrough(
       new TransformStream<UIMessageChunk, UIMessageChunk>({
         transform(chunk, controller) {
           if (!replied && (chunk.type === 'text-delta' || chunk.type === 'reasoning-delta')) {
@@ -105,7 +109,7 @@ export class SandboxTurn {
       this.abort.signal.throwIfAborted();
       this.interruptible = true;
       result.phase = 'execution';
-      await this.native.run(options.text, options.onAccepted);
+      await this.native.run(options.input, options.onAccepted);
       await this.native.finished;
     } catch (error) {
       if (!this.stopped) result.error = error;
