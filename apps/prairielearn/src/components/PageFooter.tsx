@@ -22,14 +22,21 @@ export function PageFooter() {
               />
             </a>
           </div>
-          <div className="col-6 d-flex flex-wrap justify-content-end gap-3">
+          <div className="col-6 d-flex flex-wrap align-items-center justify-content-end gap-3">
             <a
               href="https://prairielearn.com"
-              className="text-decoration-none page-footer-text d-none d-md-inline"
+              className="text-decoration-none page-footer-text"
+              aria-label="Company"
               target="_blank"
               rel="noreferrer"
             >
-              Company
+              <img
+                src={assetPath('images/scout.png')}
+                alt=""
+                width="320"
+                height="366"
+                style={{ width: '20px', height: 'auto' }}
+              />
             </a>
             <a
               href="https://github.com/PrairieLearn/PrairieLearn"
