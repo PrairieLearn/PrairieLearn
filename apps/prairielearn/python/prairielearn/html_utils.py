@@ -504,7 +504,9 @@ def _render_raw_input_value(value: str, formatter: Callable[[str], str]) -> str:
     )
 
 
-def render_raw_input_popover(raw_input: str, input_label: str) -> str:
+def render_raw_input_popover(
+    raw_input: str, input_label: str, *, show_if_ascii_only: bool = True
+) -> str:
     """Render raw input as an accessible popover button.
 
     The returned HTML and all supplied text are escaped, so the result is safe to
@@ -513,10 +515,14 @@ def render_raw_input_popover(raw_input: str, input_label: str) -> str:
     Args:
         raw_input: The scalar value to describe.
         input_label: The accessible name of the input associated with the value.
+        show_if_ascii_only: Whether to render the button for ASCII-only input.
 
     Returns:
-        The rendered HTML.
+        The rendered HTML, or an empty string when ASCII-only input is hidden.
     """
+    if not show_if_ascii_only and raw_input.isascii():
+        return ""
+
     content = render_raw_input_popover_content(raw_input)
     title = html.escape(f"Answer as entered for {input_label}", quote=True)
     return (
