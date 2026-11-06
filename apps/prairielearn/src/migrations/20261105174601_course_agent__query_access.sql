@@ -2,6 +2,10 @@
 -- `course_agent_reader`. The reader may only SELECT allowlisted columns, and
 -- row-level security limits it to the course named by signed claims. Every
 -- other role keeps unrestricted access through a permissive `true` policy.
+--
+-- Child policies use `= ANY (ARRAY(...))` rather than `IN (...)`. Postgres plans
+-- subqueries in policies as hashed filters, which scan the whole child table;
+-- an array of parent IDs can use the child's foreign-key index instead.
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -263,11 +267,13 @@ CREATE POLICY course_agent_read ON assessments AS RESTRICTIVE FOR
 SELECT
   TO course_agent_reader USING (
     deleted_at IS NULL
-    AND course_instance_id IN (
-      SELECT
-        id
-      FROM
-        course_instances
+    AND course_instance_id = ANY (
+      ARRAY(
+        SELECT
+          id
+        FROM
+          course_instances
+      )
     )
   );
 
@@ -297,11 +303,13 @@ CREATE POLICY course_agent_read ON assessment_questions AS RESTRICTIVE FOR
 SELECT
   TO course_agent_reader USING (
     deleted_at IS NULL
-    AND assessment_id IN (
-      SELECT
-        id
-      FROM
-        assessments
+    AND assessment_id = ANY (
+      ARRAY(
+        SELECT
+          id
+        FROM
+          assessments
+      )
     )
   );
 
@@ -314,11 +322,13 @@ WITH
 CREATE POLICY course_agent_read ON assessment_instances AS RESTRICTIVE FOR
 SELECT
   TO course_agent_reader USING (
-    assessment_id IN (
-      SELECT
-        id
-      FROM
-        assessments
+    assessment_id = ANY (
+      ARRAY(
+        SELECT
+          id
+        FROM
+          assessments
+      )
     )
   );
 
@@ -331,11 +341,13 @@ WITH
 CREATE POLICY course_agent_read ON instance_questions AS RESTRICTIVE FOR
 SELECT
   TO course_agent_reader USING (
-    assessment_instance_id IN (
-      SELECT
-        id
-      FROM
-        assessment_instances
+    assessment_instance_id = ANY (
+      ARRAY(
+        SELECT
+          id
+        FROM
+          assessment_instances
+      )
     )
   );
 
@@ -345,12 +357,18 @@ CREATE POLICY all_roles ON variants FOR ALL TO PUBLIC USING (true)
 WITH
   CHECK (true);
 
+-- variants has no course_id index, so scope it through instance_questions. This
+-- leaves out instructor previews, which have no instance question.
 CREATE POLICY course_agent_read ON variants AS RESTRICTIVE FOR
 SELECT
   TO course_agent_reader USING (
-    course_id = (
-      SELECT
-        course_agent.current_course_id ()
+    instance_question_id = ANY (
+      ARRAY(
+        SELECT
+          id
+        FROM
+          instance_questions
+      )
     )
   );
 
@@ -363,10 +381,12 @@ WITH
 CREATE POLICY course_agent_read ON submissions AS RESTRICTIVE FOR
 SELECT
   TO course_agent_reader USING (
-    variant_id IN (
-      SELECT
-        id
-      FROM
-        variants
+    variant_id = ANY (
+      ARRAY(
+        SELECT
+          id
+        FROM
+          variants
+      )
     )
   );
