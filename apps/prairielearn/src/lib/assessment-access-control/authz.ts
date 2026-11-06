@@ -58,10 +58,14 @@ function resolverResultToAssessmentAuthzResult(
   authzMode: EnumMode,
   displayTimezone: string,
   hasCompletedInstance: boolean,
+  reqDate: Date,
 ): AssessmentAuthzResult {
   return {
     authorized: resolveAuthorization(result.authorization, hasCompletedInstance),
     credit: result.credit,
+    credit_end_date: result.submittable
+      ? (result.accessTimeline.find((entry) => entry.current)?.endDate ?? null)
+      : null,
     credit_date_string: result.creditDateString,
     time_limit_min: result.timeLimitMin,
     password: result.password,
@@ -76,7 +80,7 @@ function resolverResultToAssessmentAuthzResult(
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     show_before_release: result.showBeforeRelease,
     next_active_time: result.nextActiveDate
-      ? formatDateShort(result.nextActiveDate, displayTimezone)
+      ? formatDateShort(result.nextActiveDate, displayTimezone, reqDate)
       : null,
     access_rules: [],
     access_timeline: result.accessTimeline,
@@ -116,6 +120,7 @@ export async function resolveModernAssessmentAccess(
     input.authzData.mode,
     input.courseInstance.display_timezone,
     false,
+    input.reqDate,
   );
 }
 
@@ -277,5 +282,6 @@ export function resolverResultToAssessmentAuthzResultForInstance({
     authzMode,
     displayTimezone,
     hasCompletedInstance,
+    reqDate,
   );
 }

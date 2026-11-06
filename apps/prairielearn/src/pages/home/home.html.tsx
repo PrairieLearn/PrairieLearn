@@ -1,11 +1,19 @@
 import { Hydrate } from '@prairielearn/react/server';
 
+import {
+  StudentAccessRulesSchedule,
+  StudentAccessTimelineSchedule,
+} from '../../components/StudentAccessSchedules.js';
 import { type StaffInstitution } from '../../lib/client/safe-db-types.js';
 import { type NewsItem } from '../../lib/db-types.js';
 
 import { HomeCards } from './components/HomeCards.js';
 import { NewsAlert } from './components/NewsAlert.js';
-import type { InstructorHomePageCourse, StudentHomePageCourse } from './home.types.js';
+import type {
+  InstructorHomePageCourse,
+  StudentHomePageCourse,
+  UpcomingAssessmentDeadline,
+} from './home.types.js';
 
 export function Home({
   canAddCourses,
@@ -19,6 +27,7 @@ export function Home({
   unreadNewsItems,
   blogUrl,
   now,
+  upcomingAssessmentDeadlines,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -31,6 +40,7 @@ export function Home({
   unreadNewsItems: NewsItem[];
   blogUrl: string | null;
   now: Date;
+  upcomingAssessmentDeadlines: UpcomingAssessmentDeadline[];
 }) {
   return (
     <div className="pt-5 mx-auto" style={{ maxWidth: 960 }}>
@@ -38,6 +48,7 @@ export function Home({
       <DevModeCard isDevMode={isDevMode} />
       <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
       <NewsAlert newsItems={unreadNewsItems} csrfToken={csrfToken} blogUrl={blogUrl} now={now} />
+      <UpcomingDeadlinesCard deadlines={upcomingAssessmentDeadlines} urlPrefix={urlPrefix} />
       <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
       <Hydrate>
         <HomeCards
@@ -50,6 +61,84 @@ export function Home({
           search={search}
         />
       </Hydrate>
+    </div>
+  );
+}
+
+function UpcomingDeadlinesCard({
+  deadlines,
+  urlPrefix,
+}: {
+  deadlines: UpcomingAssessmentDeadline[];
+  urlPrefix: string;
+}) {
+  if (deadlines.length === 0) return null;
+
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white">
+        <h2>Upcoming deadlines</h2>
+      </div>
+      <div className="table-responsive">
+        <table className="table table-sm table-hover mb-0" aria-label="Upcoming deadlines">
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Assessment</th>
+              <th className="text-center">Status</th>
+              <th className="text-center">Available credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deadlines.map((deadline) => (
+              <tr key={`${deadline.courseInstanceId}-${deadline.link}`}>
+                <td className="align-middle">
+                  <a href={`${urlPrefix}/course_instance/${deadline.courseInstanceId}`}>
+                    {deadline.courseShortName}
+                  </a>
+                  <div className="small text-muted">{deadline.courseInstanceLongName}</div>
+                </td>
+                <td className="align-middle">
+                  <span className={`badge color-${deadline.assessmentSetColor} me-2`}>
+                    {deadline.label}
+                  </span>
+                  <a
+                    href={`${urlPrefix}/course_instance/${deadline.courseInstanceId}${deadline.link}`}
+                  >
+                    {deadline.assessmentTitle}
+                  </a>
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: String(
+                        deadline.modernAccessControl
+                          ? StudentAccessTimelineSchedule({
+                              accessTimeline: deadline.accessTimeline,
+                              displayTimezone: deadline.displayTimezone,
+                            })
+                          : StudentAccessRulesSchedule({ accessRules: deadline.accessRules }),
+                      ),
+                    }}
+                  />
+                </td>
+                <td className="text-center align-middle">
+                  <span
+                    className={`badge ${
+                      deadline.status === 'In progress' ? 'text-bg-primary' : 'text-bg-secondary'
+                    }`}
+                  >
+                    {deadline.status}
+                  </span>
+                </td>
+                <td className="text-center align-middle text-nowrap">
+                  <time dateTime={deadline.deadline.toISOString()}>
+                    {deadline.creditDateString}
+                  </time>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
