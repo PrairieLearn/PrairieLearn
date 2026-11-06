@@ -12,11 +12,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cloudflare/ai-chat": "0.12.1",
+    "@cloudflare/ai-chat": "0.12.2",
     "@cloudflare/sandbox": "1.0.2",
     "@prairielearn/course-agent-types": "workspace:^",
     "@sentry/cloudflare": "^11.9.0",
-    "agents": "0.28.1",
+    "agents": "0.33.0",
     "ai": "^7.0.116",
     "hono": "^4.13.13",
     "vscode-jsonrpc": "^9.0.3",

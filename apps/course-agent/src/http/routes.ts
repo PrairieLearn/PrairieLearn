@@ -1,7 +1,10 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import {
+  CreateConversationInput,
+  RequestChangesResultSchema,
+} from '@prairielearn/course-agent-types';
 
 import { reportError } from '../monitoring.js';
 
@@ -73,8 +76,24 @@ conversations.post('/:id/resume', async (c) => {
   } catch (error) {
     // This handled RPC failure would otherwise be returned as a successful HTTP handler.
     reportError(error);
-    return c.json({ error: 'Could not recover workspace' }, 503);
+    return c.json({ error: 'Could not recover the course agent' }, 503);
   }
+});
+
+conversations.get('/:id/reviews/:reviewId', async (c) => {
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  return c.json(await conversation.getReview(c.req.param('reviewId')));
+});
+
+// PrairieLearn may send a result more than once; the review ID makes repeats harmless.
+conversations.post('/:id/reviews/:reviewId/outcome', async (c) => {
+  const result = RequestChangesResultSchema.safeParse(await c.req.json().catch(() => null));
+  if (!result.success) return c.text('Invalid result', 400);
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  if (!(await conversation.recordReviewResult(c.req.param('reviewId'), result.data))) {
+    return c.text('This review already has a different result', 409);
+  }
+  return c.json({ outcomeRecorded: true });
 });
 
 conversations.on('GET', ['/:id', '/:id/get-messages'], async (c) => {
