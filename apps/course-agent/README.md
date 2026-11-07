@@ -59,6 +59,10 @@ With `fileEditorUseGit: false`, approved changes are saved locally without commi
 
 Each review supports at most 100 changed files, with a 1 MiB limit on each original or proposed file and a 20 MiB aggregate limit counting base64-encoded original and proposed contents. Binary files such as images are supported. Executable files, symlinks, and file-mode changes are unsupported and cause the review to fail.
 
+## Sandbox image
+
+`SANDBOX_INSTANCE_TYPE` selects each environment's Cloudflare instance type (`standard-2` by default: 1 vCPU and 6 GiB). Cloning a large course is CPU-bound, and `standard-2` reached the first reply 3–5 s sooner than `standard-1` on staging for about 2¢ more per container-hour, since memory is billed as provisioned and CPU only as used. The image is Debian with Git, ripgrep, jq, procps, zstd, tini, Codex's app server from its GitHub release (`codex-app-server` with the code-mode host, ripgrep, and bubblewrap; no full Codex CLI), and the sandbox shim. It has no Node.js, so the agent can't run `node`, `npm`, or `npx`. The image includes the Codex config from `container/codex-config.toml`, which each sandbox installs into its workspace (and reinstalls after restoring a checkpoint). The config turns off Codex features the agent doesn't use, such as plugins, apps, browser and computer use, multi-agent, and shell snapshots. When upgrading Codex, update the release version and the asset's SHA-256 digest (shown on the GitHub release) in the Dockerfile and the feature flags in `container/codex-config.toml` to match.
+
 ## Deployment environments and monitoring
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.

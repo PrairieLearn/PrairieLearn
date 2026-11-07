@@ -7,6 +7,7 @@ import {
   SandboxFileError,
 } from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
+import { z } from 'zod';
 
 import {
   MAX_REVIEW_BYTES,
@@ -18,8 +19,11 @@ import {
 import { logEvent, redactSecrets } from '../monitoring.js';
 
 const SESSION = '/workspace/session';
-// The node user and group in the base container image both have ID 1000.
-const NODE_UID_GID = '1000:1000';
+// Installed by the image from container/codex-config.toml.
+const CODEX_CONFIG = '/etc/course-agent/codex-config.toml';
+// The image's unprivileged user. Checkpoints record file ownership by ID, so the ID must not change.
+const AGENT_USER = 'agent';
+const AGENT_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
 // Local reviews diff against this ref, which tracks the contents PrairieLearn has saved.
 const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
@@ -57,6 +61,16 @@ async function githubReviewBase(git: (...args: string[]) => Promise<string>, bra
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
+// https://developers.cloudflare.com/containers/platform-details/limits/
+const InstanceTypeSchema = z.enum([
+  'lite',
+  'basic',
+  'standard-1',
+  'standard-2',
+  'standard-3',
+  'standard-4',
+]);
+
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
@@ -212,24 +226,15 @@ export class CourseSandbox extends DurableObject<Env> {
     checkpoint: DirectoryBackupRecord | null,
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
-    const started = Date.now();
-    const log = (event: string, fields: Record<string, unknown> = {}) =>
-      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
+    const instance = InstanceTypeSchema.parse(this.env.SANDBOX_INSTANCE_TYPE);
+    // The default `lite` (256 MiB) is too small for Codex and course tooling, and running out of
+    // memory restarts the instance, losing unsaved edits.
     this.container.start({
       image: this.container.images.courseAgent,
       enableInternet: false,
-      // `basic` is 1/4 vCPU, 1 GiB memory, and 4 GB disk. The default `lite` (256 MiB) is too
-      // small for Codex and course tooling, and running out of memory restarts the instance,
-      // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
-      instance: 'basic',
+      instance,
     });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
-    // Confirms the instance type actually applied: basic has 1 GiB, lite 256 MiB.
-    const [memTotal, cpus] = new TextDecoder()
-      .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
-      .trim()
-      .split('\n');
-    log('sandbox_started', { memTotal, cpus });
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
@@ -242,26 +247,35 @@ export class CourseSandbox extends DurableObject<Env> {
         props: { model: config.model, sandboxId: this.ctx.id.name },
       }),
     );
-    await this.exec(['mkdir', '-p', '/workspace']);
     if (checkpoint) {
-      log('sandbox_restore_started');
       await this.backups.restore(checkpoint);
-      log('sandbox_restore_finished');
+      // The agent owns its home and may have deleted .codex.
+      await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`], AGENT_USER);
+      // The image's Codex config may be newer than the checkpoint's, so it is reinstalled.
+      await this.exec([
+        'install',
+        '-o',
+        '1000',
+        '-g',
+        '1000',
+        '-m',
+        '0644',
+        CODEX_CONFIG,
+        `${SESSION}/home/.codex/config.toml`,
+      ]);
+      // addCourseFiles() locks a fresh workspace once its files are in place.
+      await this.lockSession();
     } else {
-      await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
-      await this.exec(['chown', '-R', NODE_UID_GID, SESSION]);
+      // Run as the agent so the workspace directories that -D creates belong to it.
+      await this.exec(
+        ['install', '-D', '-m', '0644', CODEX_CONFIG, `${SESSION}/home/.codex/config.toml`],
+        AGENT_USER,
+      );
     }
-    // Configuration contains no credentials or repository data. It is reapplied after restoration.
-    const files = new Files(this.container);
-    await files.writeFile(
-      `${SESSION}/home/.codex/config.toml`,
-      'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
-    );
-    await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
-    // addCourseFiles() locks a fresh workspace once its files are in place.
-    if (checkpoint) await this.lockSession();
     this.freshContainer = true;
-    log('sandbox_codex_config_written');
+    // Returned rather than only logged: this Durable Object's logs can arrive late or not at all
+    // while its container keeps it busy, so the conversation logs startup instead.
+    return { instance };
   }
 
   /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
@@ -271,27 +285,27 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
   async addCourseFiles(config: CourseSource) {
-    const started = Date.now();
-    const log = (event: string, fields: Record<string, unknown> = {}) =>
-      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     if (config.type === 'local') {
       const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
       if (!archive) throw new Error('The local course snapshot is missing');
       const files = new Files(this.container);
       await files.writeFile('/tmp/course-source.tar.gz', archive.body);
-      await this.exec(['mkdir', '-p', `${SESSION}/repository`], 'node');
+      await this.exec(['mkdir', '-p', `${SESSION}/repository`], AGENT_USER);
       await this.exec(
         ['tar', '-xzf', '/tmp/course-source.tar.gz', '-C', `${SESSION}/repository`],
-        'node',
+        AGENT_USER,
       );
       await this.exec(['rm', '/tmp/course-source.tar.gz']);
-      await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
+      await this.exec(
+        ['git', 'init', '--initial-branch=local', `${SESSION}/repository`],
+        AGENT_USER,
+      );
       // Local Git must track exact bytes for both the baseline and later reviews.
       await files.writeFile(
         `${SESSION}/repository/.git/info/attributes`,
         '* -text -filter -ident -working-tree-encoding\n',
       );
-      await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
+      await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], AGENT_USER);
       await this.exec(
         [
           'git',
@@ -304,16 +318,18 @@ export class CourseSandbox extends DurableObject<Env> {
           '-m',
           'Initial local course snapshot',
         ],
-        'node',
+        AGENT_USER,
       );
       await this.exec(
         ['git', '-C', `${SESSION}/repository`, 'update-ref', LOCAL_SAVED_REF, 'HEAD'],
-        'node',
+        AGENT_USER,
       );
       // Preserve the original Git paths while keeping the native runner's course path stable.
-      await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
+      await this.exec(
+        ['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`],
+        AGENT_USER,
+      );
     } else {
-      log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
       // Reviews only need the branch tip, and later fetches still work from a shallow clone.
       // Full history made large course repositories take most of startup to clone.
       await this.exec(
@@ -329,12 +345,10 @@ export class CourseSandbox extends DurableObject<Env> {
           `http://repository.internal/${config.repository}.git`,
           `${SESSION}/course`,
         ],
-        'node',
+        AGENT_USER,
       );
-      log('sandbox_clone_finished');
     }
     await this.lockSession();
-    log('sandbox_files_ready', { source: config.type });
   }
 
   /**
@@ -354,11 +368,11 @@ export class CourseSandbox extends DurableObject<Env> {
   private async snapshotChanges(source: CourseSource) {
     const course = `${SESSION}/course`;
     const files = new Files(this.container);
-    const options = { cwd: course, user: NODE_UID_GID };
+    const options = { cwd: course, user: AGENT_UID_GID };
     const git = async (...args: string[]) => {
       const result = await this.exec(
         ['git', '--literal-pathspecs', '-c', 'safe.directory=*', '-C', course, ...args],
-        'node',
+        AGENT_USER,
       );
       try {
         // ignoreBOM keeps a leading U+FEFF, which is part of a file name, not a byte-order mark.
@@ -399,7 +413,7 @@ export class CourseSandbox extends DurableObject<Env> {
         }
         const blob = await this.exec(
           ['git', '-C', course, 'cat-file', 'blob', `${baseCommit}:./${path}`],
-          'node',
+          AGENT_USER,
         );
         original = Buffer.from(blob.stdout).toString('base64');
       }
@@ -470,11 +484,11 @@ export class CourseSandbox extends DurableObject<Env> {
     const git = async (...args: string[]) => {
       const result = await this.exec(
         ['env', `GIT_INDEX_FILE=${scratch}/index`, 'git', '-C', `${SESSION}/course`, ...args],
-        'node',
+        AGENT_USER,
       );
       return new TextDecoder().decode(result.stdout).trim();
     };
-    await this.exec(['mkdir', '-p', scratch], 'node');
+    await this.exec(['mkdir', '-p', scratch], AGENT_USER);
     try {
       // update-index paths are relative to the repository root, which contains the course.
       const prefix = await git('rev-parse', '--show-prefix');
@@ -490,7 +504,7 @@ export class CourseSandbox extends DurableObject<Env> {
         const blobPath = `${scratch}/${index}`;
         // The agent can create files in the scratch directory, so write as the agent's user.
         await storage.writeFile(blobPath, Buffer.from(file.contents, 'base64'), {
-          user: NODE_UID_GID,
+          user: AGENT_UID_GID,
         });
         const sha = await git('hash-object', '-w', '--no-filters', '--', blobPath);
         await git(
@@ -543,8 +557,7 @@ export class CourseSandbox extends DurableObject<Env> {
     const started = Date.now();
     this.process = await this.container.exec(
       [
-        'codex',
-        'app-server',
+        'codex-app-server',
         '--listen',
         `ws://0.0.0.0:${NATIVE_PORT}`,
         '--ws-auth',
@@ -553,7 +566,7 @@ export class CourseSandbox extends DurableObject<Env> {
         hash,
       ],
       {
-        user: 'node',
+        user: AGENT_USER,
         // Threads set their own cwd to the course. Home exists before course files are added, so
         // the runner can start while the repository is still being cloned.
         cwd: `${SESSION}/home`,
