@@ -27,6 +27,23 @@ const AGENT_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
 // Local reviews diff against this ref, which tracks the contents PrairieLearn has saved.
 const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
+// SIGKILL takes effect asynchronously, and a killed process stays listed as a zombie until its
+// parent reaps it. The runner's parent is the container runtime, which may not reap it while no
+// Durable Object awaits its exit. Zombies cannot run, so wait only for live processes to exit.
+// Killing again on each pass also catches processes forked while the previous kill ran.
+const STOP_AGENT_PROCESSES = `
+deadline=$(($(date +%s) + 10))
+while :; do
+  pkill -KILL -u 1000
+  [ "$?" -le 1 ] || exit 2
+  live=$(ps -u 1000 -o pid=,stat=,comm= | awk '$2 !~ /^Z/')
+  [ -z "$live" ] && exit 0
+  if [ "$(date +%s)" -ge "$deadline" ]; then
+    echo "Agent processes still running: $live" >&2
+    exit 1
+  fi
+  sleep 0.1
+done`;
 
 /** Changes the agent can fix itself, as opposed to sandbox faults that need reporting. */
 class UnsupportedReviewError extends Error {}
@@ -637,13 +654,12 @@ export class CourseSandbox extends DurableObject<Env> {
     }
     // A terminal Codex event does not prove detached tools stopped. Kill and verify
     // every process of the dedicated uid for explicit Stop, recovery, or backup.
-    await this.exec(['sh', '-c', 'pkill -KILL -u 1000; code=$?; [ "$code" -le 1 ]']);
+    await this.exec(['sh', '-c', STOP_AGENT_PROCESSES]);
     if (this.process) {
       await this.process.exitCode;
       this.process = null;
     }
     this.nativeToken = null;
-    await this.exec(['sh', '-c', 'pgrep -u 1000 >/dev/null; code=$?; [ "$code" -eq 1 ]']);
   }
 
   /** Create a new archive without changing the conversation's committed backup. */
