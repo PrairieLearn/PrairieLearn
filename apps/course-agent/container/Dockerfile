@@ -25,6 +25,5 @@ RUN apt-get update \
 COPY --from=codex /opt/codex /opt/codex
 RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex
 COPY --from=sandbox /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
-COPY setup.sh /usr/local/bin/course-agent-setup
 COPY codex-config.toml /etc/course-agent/codex-config.toml
 CMD ["/usr/bin/tini", "--", "sleep", "infinity"]

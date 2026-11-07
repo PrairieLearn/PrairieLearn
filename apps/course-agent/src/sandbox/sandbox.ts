@@ -18,9 +18,9 @@ import {
 
 import { logEvent, redactSecrets } from '../monitoring.js';
 
-import { CloneProgress } from './clone-progress.js';
-
 const SESSION = '/workspace/session';
+// Installed by the image from container/codex-config.toml.
+const CODEX_CONFIG = '/etc/course-agent/codex-config.toml';
 // The node user and group in the base container image both have ID 1000.
 const NODE_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
@@ -225,9 +225,6 @@ export class CourseSandbox extends DurableObject<Env> {
     checkpoint: DirectoryBackupRecord | null,
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
-    const started = Date.now();
-    const log = (event: string, fields: Record<string, unknown> = {}) =>
-      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     const instance = InstanceTypeSchema.parse(this.env.SANDBOX_INSTANCE_TYPE);
     // The default `lite` (256 MiB) is too small for Codex and course tooling, and running out of
     // memory restarts the instance, losing unsaved edits.
@@ -237,29 +234,6 @@ export class CourseSandbox extends DurableObject<Env> {
       instance,
     });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
-    // One exec runs the image's setup script. It is the container's first exec, so its round trip
-    // minus the script's own time approximates how long the container took to start.
-    const setup = async (mode: 'fresh' | 'restore' | 'configure') => {
-      const execStarted = Date.now();
-      const { stdout } = await this.exec(['/usr/local/bin/course-agent-setup', mode]);
-      const report = Object.fromEntries(
-        new TextDecoder()
-          .decode(stdout)
-          .trim()
-          .split('\n')
-          .map((line) => line.split('=')),
-      ) as Record<'memTotalKb' | 'cpus' | 'setupMs', string>;
-      return { ...report, execMs: Date.now() - execStarted };
-    };
-    const first = await setup(checkpoint ? 'restore' : 'fresh');
-    // Memory and CPU count confirm which instance type actually applied.
-    log('sandbox_started', {
-      instance,
-      memTotalKb: Number(first.memTotalKb),
-      cpus: Number(first.cpus),
-      containerStartMs: first.execMs - Number(first.setupMs),
-      setupMs: Number(first.setupMs),
-    });
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
@@ -273,25 +247,32 @@ export class CourseSandbox extends DurableObject<Env> {
       }),
     );
     if (checkpoint) {
-      log('sandbox_restore_started');
       await this.backups.restore(checkpoint);
-      log('sandbox_restore_finished');
-      // The Codex config is reapplied after restoration.
-      await setup('configure');
+      // The image's Codex config may be newer than the checkpoint's, so it is reinstalled.
+      await this.exec([
+        'install',
+        '-o',
+        'node',
+        '-g',
+        'node',
+        '-m',
+        '0644',
+        CODEX_CONFIG,
+        `${SESSION}/home/.codex/config.toml`,
+      ]);
       // addCourseFiles() locks a fresh workspace once its files are in place.
       await this.lockSession();
+    } else {
+      // Run as node so the workspace directories that -D creates belong to the agent.
+      await this.exec(
+        ['install', '-D', '-m', '0644', CODEX_CONFIG, `${SESSION}/home/.codex/config.toml`],
+        'node',
+      );
     }
     this.freshContainer = true;
-    log('sandbox_codex_config_written');
-    // Returned as well as logged: this Durable Object's logs can arrive late or not at all while
-    // its container keeps it busy, so the caller logs the timings too.
-    return {
-      instance: typeof instance === 'string' ? instance : JSON.stringify(instance),
-      cpus: Number(first.cpus),
-      memTotalKb: Number(first.memTotalKb),
-      containerStartMs: first.execMs - Number(first.setupMs),
-      setupMs: Number(first.setupMs),
-    };
+    // Returned rather than only logged: this Durable Object's logs can arrive late or not at all
+    // while its container keeps it busy, so the conversation logs startup instead.
+    return { instance };
   }
 
   /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
@@ -301,10 +282,6 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
   async addCourseFiles(config: CourseSource) {
-    const started = Date.now();
-    let clonePhases: string[] = [];
-    const log = (event: string, fields: Record<string, unknown> = {}) =>
-      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     if (config.type === 'local') {
       const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
       if (!archive) throw new Error('The local course snapshot is missing');
@@ -344,16 +321,12 @@ export class CourseSandbox extends DurableObject<Env> {
       // Preserve the original Git paths while keeping the native runner's course path stable.
       await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
     } else {
-      log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
-      const progress = new CloneProgress(Date.now());
       // Reviews only need the branch tip, and later fetches still work from a shallow clone.
       // Full history made large course repositories take most of startup to clone.
-      // Progress is read only to time each phase; it never contains course file contents.
-      const clone = await this.container.exec(
+      await this.exec(
         [
           'git',
           'clone',
-          '--progress',
           '--depth',
           '1',
           '--single-branch',
@@ -363,30 +336,10 @@ export class CourseSandbox extends DurableObject<Env> {
           `http://repository.internal/${config.repository}.git`,
           `${SESSION}/course`,
         ],
-        { user: 'node', stdout: 'ignore', stderr: 'pipe' },
+        'node',
       );
-      const [exitCode] = await Promise.all([
-        clone.exitCode,
-        (async () => {
-          for await (const chunk of clone.stderr!.pipeThrough(new TextDecoderStream())) {
-            progress.push(chunk, Date.now());
-          }
-        })(),
-      ]);
-      if (exitCode !== 0) {
-        throw new SandboxCommandError(`Sandbox command failed: ${progress.errorOutput}`, exitCode);
-      }
-      clonePhases = progress
-        .phases(Date.now())
-        .map(
-          ({ phase, durationMs, progress: line }) =>
-            `${phase}=${durationMs}ms${line ? ` (${line.replace(/^.*?:\s*/, '')})` : ''}`,
-        );
-      log('sandbox_clone_finished');
     }
     await this.lockSession();
-    log('sandbox_files_ready', { source: config.type });
-    return { totalMs: Date.now() - started, clonePhases };
   }
 
   /**

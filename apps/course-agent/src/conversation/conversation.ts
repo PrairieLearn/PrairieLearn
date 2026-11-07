@@ -472,9 +472,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         startup && !this.record.checkpoint
           ? async () => {
               log('turn_course_files_started');
-              const files = await this.sandbox.addCourseFiles(this.record.config);
-              log('turn_course_files_ready', { sandboxMs: files.totalMs });
-              for (const phase of files.clonePhases) log('turn_clone_phase', { phase });
+              await this.sandbox.addCourseFiles(this.record.config);
+              log('turn_course_files_ready');
             }
           : undefined,
       thread: {
