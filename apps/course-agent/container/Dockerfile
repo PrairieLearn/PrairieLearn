@@ -19,9 +19,9 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   && git config --system user.name "PrairieLearn" \
   && git config --system user.email "course-agent@prairielearn.com" \
-  && useradd --uid 1000 --user-group --shell /bin/bash node \
+  && useradd --uid 1000 --user-group --shell /bin/bash agent \
   && mkdir -p /workspace \
-  && chown node:node /workspace
+  && chown agent:agent /workspace
 COPY --from=codex /opt/codex /opt/codex
 RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex
 COPY --from=sandbox /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim

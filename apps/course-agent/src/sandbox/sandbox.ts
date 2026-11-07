@@ -21,8 +21,9 @@ import { logEvent, redactSecrets } from '../monitoring.js';
 const SESSION = '/workspace/session';
 // Installed by the image from container/codex-config.toml.
 const CODEX_CONFIG = '/etc/course-agent/codex-config.toml';
-// The node user and group in the base container image both have ID 1000.
-const NODE_UID_GID = '1000:1000';
+// The image's unprivileged user. Checkpoints record file ownership by ID, so the ID must not change.
+const AGENT_USER = 'agent';
+const AGENT_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
 // Local reviews diff against this ref, which tracks the contents PrairieLearn has saved.
 const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
@@ -252,9 +253,9 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.exec([
         'install',
         '-o',
-        'node',
+        '1000',
         '-g',
-        'node',
+        '1000',
         '-m',
         '0644',
         CODEX_CONFIG,
@@ -263,10 +264,10 @@ export class CourseSandbox extends DurableObject<Env> {
       // addCourseFiles() locks a fresh workspace once its files are in place.
       await this.lockSession();
     } else {
-      // Run as node so the workspace directories that -D creates belong to the agent.
+      // Run as the agent so the workspace directories that -D creates belong to it.
       await this.exec(
         ['install', '-D', '-m', '0644', CODEX_CONFIG, `${SESSION}/home/.codex/config.toml`],
-        'node',
+        AGENT_USER,
       );
     }
     this.freshContainer = true;
@@ -287,19 +288,22 @@ export class CourseSandbox extends DurableObject<Env> {
       if (!archive) throw new Error('The local course snapshot is missing');
       const files = new Files(this.container);
       await files.writeFile('/tmp/course-source.tar.gz', archive.body);
-      await this.exec(['mkdir', '-p', `${SESSION}/repository`], 'node');
+      await this.exec(['mkdir', '-p', `${SESSION}/repository`], AGENT_USER);
       await this.exec(
         ['tar', '-xzf', '/tmp/course-source.tar.gz', '-C', `${SESSION}/repository`],
-        'node',
+        AGENT_USER,
       );
       await this.exec(['rm', '/tmp/course-source.tar.gz']);
-      await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
+      await this.exec(
+        ['git', 'init', '--initial-branch=local', `${SESSION}/repository`],
+        AGENT_USER,
+      );
       // Local Git must track exact bytes for both the baseline and later reviews.
       await files.writeFile(
         `${SESSION}/repository/.git/info/attributes`,
         '* -text -filter -ident -working-tree-encoding\n',
       );
-      await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
+      await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], AGENT_USER);
       await this.exec(
         [
           'git',
@@ -312,14 +316,17 @@ export class CourseSandbox extends DurableObject<Env> {
           '-m',
           'Initial local course snapshot',
         ],
-        'node',
+        AGENT_USER,
       );
       await this.exec(
         ['git', '-C', `${SESSION}/repository`, 'update-ref', LOCAL_SAVED_REF, 'HEAD'],
-        'node',
+        AGENT_USER,
       );
       // Preserve the original Git paths while keeping the native runner's course path stable.
-      await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
+      await this.exec(
+        ['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`],
+        AGENT_USER,
+      );
     } else {
       // Reviews only need the branch tip, and later fetches still work from a shallow clone.
       // Full history made large course repositories take most of startup to clone.
@@ -336,7 +343,7 @@ export class CourseSandbox extends DurableObject<Env> {
           `http://repository.internal/${config.repository}.git`,
           `${SESSION}/course`,
         ],
-        'node',
+        AGENT_USER,
       );
     }
     await this.lockSession();
@@ -359,11 +366,11 @@ export class CourseSandbox extends DurableObject<Env> {
   private async snapshotChanges(source: CourseSource) {
     const course = `${SESSION}/course`;
     const files = new Files(this.container);
-    const options = { cwd: course, user: NODE_UID_GID };
+    const options = { cwd: course, user: AGENT_UID_GID };
     const git = async (...args: string[]) => {
       const result = await this.exec(
         ['git', '--literal-pathspecs', '-c', 'safe.directory=*', '-C', course, ...args],
-        'node',
+        AGENT_USER,
       );
       try {
         // ignoreBOM keeps a leading U+FEFF, which is part of a file name, not a byte-order mark.
@@ -404,7 +411,7 @@ export class CourseSandbox extends DurableObject<Env> {
         }
         const blob = await this.exec(
           ['git', '-C', course, 'cat-file', 'blob', `${baseCommit}:./${path}`],
-          'node',
+          AGENT_USER,
         );
         original = Buffer.from(blob.stdout).toString('base64');
       }
@@ -475,11 +482,11 @@ export class CourseSandbox extends DurableObject<Env> {
     const git = async (...args: string[]) => {
       const result = await this.exec(
         ['env', `GIT_INDEX_FILE=${scratch}/index`, 'git', '-C', `${SESSION}/course`, ...args],
-        'node',
+        AGENT_USER,
       );
       return new TextDecoder().decode(result.stdout).trim();
     };
-    await this.exec(['mkdir', '-p', scratch], 'node');
+    await this.exec(['mkdir', '-p', scratch], AGENT_USER);
     try {
       // update-index paths are relative to the repository root, which contains the course.
       const prefix = await git('rev-parse', '--show-prefix');
@@ -495,7 +502,7 @@ export class CourseSandbox extends DurableObject<Env> {
         const blobPath = `${scratch}/${index}`;
         // The agent can create files in the scratch directory, so write as the agent's user.
         await storage.writeFile(blobPath, Buffer.from(file.contents, 'base64'), {
-          user: NODE_UID_GID,
+          user: AGENT_UID_GID,
         });
         const sha = await git('hash-object', '-w', '--no-filters', '--', blobPath);
         await git(
@@ -558,7 +565,7 @@ export class CourseSandbox extends DurableObject<Env> {
         hash,
       ],
       {
-        user: 'node',
+        user: AGENT_USER,
         // Threads set their own cwd to the course. Home exists before course files are added, so
         // the runner can start while the repository is still being cloned.
         cwd: `${SESSION}/home`,
