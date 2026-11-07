@@ -249,6 +249,8 @@ export class CourseSandbox extends DurableObject<Env> {
     );
     if (checkpoint) {
       await this.backups.restore(checkpoint);
+      // The agent owns its home and may have deleted .codex.
+      await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`], AGENT_USER);
       // The image's Codex config may be newer than the checkpoint's, so it is reinstalled.
       await this.exec([
         'install',
