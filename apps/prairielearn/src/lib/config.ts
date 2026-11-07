@@ -679,12 +679,6 @@ export const ConfigSchema = z.object({
    * PL_SERVICE_TOKEN in its .dev.vars file for local development.
    */
   courseAgentServiceToken: z.string().nullable().default(null),
-  /**
-   * OpenAI credentials used to generate course agent conversation titles. When
-   * unset, titles fall back to the truncated first prompt.
-   */
-  courseAgentOpenAiApiKey: z.string().nullable().default(null),
-  courseAgentOpenAiOrganization: z.string().nullable().default(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
   /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */

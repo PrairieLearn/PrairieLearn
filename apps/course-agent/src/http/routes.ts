@@ -1,8 +1,9 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { CreateConversationInput, GenerateTitleInput } from '@prairielearn/course-agent-types';
 
+import { generateTitle } from '../conversation/title.js';
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
@@ -48,6 +49,12 @@ app.post('/conversations', async (c) => {
   const conversation = await getAgentByName(c.env.Conversation, id);
   await conversation.initialize({ type: 'github', ...input.data });
   return c.json({ id }, 201);
+});
+
+app.post('/titles', async (c) => {
+  const input = GenerateTitleInput.safeParse(await c.req.json().catch(() => null));
+  if (!input.success) return c.text('Invalid request', 400);
+  return c.json({ title: await generateTitle(c.env, input.data.prompt, c.req.raw.signal) });
 });
 
 const conversations = new Hono<{ Bindings: Env }>();

@@ -90,6 +90,7 @@ All endpoints require `Authorization: Bearer <PL_SERVICE_TOKEN>`:
 
 - `POST /conversations/local` accepts a gzip tar archive of course files and optional Git history and returns `201 { id }`. For a course nested in the archived repository, `X-PL-Course-Directory` specifies its URL-encoded relative directory. The initial archive is deleted after the first successful checkpoint.
 - `POST /conversations` accepts `{ repository: "owner/name", branch: "branch" }` and returns `201 { id }` after initialization.
+- `POST /titles` accepts `{ prompt }` and returns `200 { title }`, a short summary of a conversation's first prompt generated with `OPENAI_MODEL`.
 - `POST /conversations/{uuid}/resume` returns `200 { recovered: true }` after recovery completes, `409` when unavailable or already recovering, and `503` if recovery fails.
 - `GET /conversations/{uuid}` upgrades to the native SDK chat WebSocket.
 - `GET /conversations/{uuid}/get-messages` returns SDK history.
