@@ -1,14 +1,12 @@
 FROM docker.io/cloudflare/sandbox:1.0.2 AS sandbox
 
-# Cloudflare Containers run linux/amd64. Only Codex's native binary and helpers are needed; the
-# @openai/codex npm package is a Node launcher for them.
+# Cloudflare Containers run linux/amd64. The sandbox only runs Codex's app server, so it uses the
+# release's app-server package: the server, its code-mode host, ripgrep, and bubblewrap. Update
+# the version and checksum together; the checksum is the asset's digest on its GitHub release.
 FROM debian:bookworm-slim AS codex
-ADD --checksum=sha256:30efc97738b975940d78b59a9bea115fa34040b732807d54ec35ae6b7528de94 \
-  https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-linux-x64.tgz /tmp/codex.tgz
-# Voice support is unused and is the largest helper.
-RUN tar -xzf /tmp/codex.tgz -C /tmp \
-  && mv /tmp/package/vendor/x86_64-unknown-linux-musl /opt/codex \
-  && rm -rf /opt/codex/codex-resources/voice
+ADD --checksum=sha256:cce5802264a44d082da894ff2f2ba695a6ade722bc62a1ad0902153667063401 \
+  https://github.com/openai/codex/releases/download/rust-v0.163.0/codex-app-server-package-x86_64-unknown-linux-musl.tar.gz /tmp/codex.tgz
+RUN mkdir /opt/codex && tar -xzf /tmp/codex.tgz -C /opt/codex
 
 FROM debian:bookworm-slim
 ARG CACHEBUST=2026-09-15-14-09-16
@@ -23,7 +21,7 @@ RUN apt-get update \
   && mkdir -p /workspace \
   && chown agent:agent /workspace
 COPY --from=codex /opt/codex /opt/codex
-RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex
+RUN ln -s /opt/codex/bin/codex-app-server /usr/local/bin/codex-app-server
 COPY --from=sandbox /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
 COPY codex-config.toml /etc/course-agent/codex-config.toml
 CMD ["/usr/bin/tini", "--", "sleep", "infinity"]

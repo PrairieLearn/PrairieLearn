@@ -555,8 +555,7 @@ export class CourseSandbox extends DurableObject<Env> {
     const started = Date.now();
     this.process = await this.container.exec(
       [
-        'codex',
-        'app-server',
+        'codex-app-server',
         '--listen',
         `ws://0.0.0.0:${NATIVE_PORT}`,
         '--ws-auth',
