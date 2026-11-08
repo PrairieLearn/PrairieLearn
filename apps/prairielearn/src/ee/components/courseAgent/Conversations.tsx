@@ -207,9 +207,16 @@ function ConversationPicker({
       ) : active ? (
         <>
           <div className="flex-grow-1 p-3">
-            <p className="text-muted text-center my-4">
-              Ask the course agent about your course or about PrairieLearn.
-            </p>
+            {create.isPending ? (
+              <div className="d-flex flex-column gap-3">
+                <UserMessage text={create.variables.text} />
+                <PendingStatus label="Starting sandbox…" />
+              </div>
+            ) : (
+              <p className="text-muted text-center my-4">
+                Ask the course agent about your course or about PrairieLearn.
+              </p>
+            )}
             {create.isError && (
               <AppErrorAlert error={createError} render={{ UNKNOWN: ({ message }) => message }} />
             )}
@@ -233,6 +240,23 @@ function Loading() {
       <Spinner animation="border" size="sm" role="status">
         <span className="visually-hidden">Loading</span>
       </Spinner>
+    </div>
+  );
+}
+
+function PendingStatus({ label }: { label: string }) {
+  return (
+    <div className="text-muted small" role="status">
+      <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
+      {label}
+    </div>
+  );
+}
+
+function UserMessage({ text }: { text: string }) {
+  return (
+    <div className="align-self-end course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
+      {text}
     </div>
   );
 }
@@ -308,7 +332,11 @@ function Chat({
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive || connectionFailed || connectionError) {
+    if (
+      !(responseActive || lifecycle?.status === 'waiting_for_agent') ||
+      connectionFailed ||
+      connectionError
+    ) {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -322,6 +350,11 @@ function Chat({
       return toolCallOf(part) !== null;
     });
   });
+  // The server reports the turn's lifecycle before the SDK marks the response active.
+  const startingSandbox =
+    !connectionFailed &&
+    !connectionError &&
+    (lifecycle?.status === 'starting' || (responseActive && lifecycle?.status === 'offline'));
   const awaitingReviewId =
     !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
       ? (lifecycle.reviewId ?? null)
@@ -340,8 +373,15 @@ function Chat({
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
-          {!historyReady && !connectionError && !connectionFailed && <Loading />}
-          {historyReady && messages.length === 0 && (
+          {initialMessage ? (
+            <>
+              <UserMessage text={initialMessage} />
+              <PendingStatus label="Starting sandbox…" />
+            </>
+          ) : (
+            !historyReady && !connectionError && !connectionFailed && <Loading />
+          )}
+          {historyReady && !initialMessage && messages.length === 0 && (
             <p className="text-muted text-center my-4">
               Ask the course agent about your course or about PrairieLearn.
             </p>
@@ -367,11 +407,10 @@ function Chat({
                 canResume={awaitingReviewId === lifecycle.reviewId}
               />
             )}
-          {showThinking && (
-            <div className="text-muted small">
-              <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
-              Thinking…
-            </div>
+          {startingSandbox ? (
+            <PendingStatus label="Starting sandbox…" />
+          ) : (
+            showThinking && <PendingStatus label="Thinking…" />
           )}
           {lifecycle?.status === 'blocked' && (
             <Alert variant="warning">
@@ -516,11 +555,7 @@ function Message({
 }) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
-    return (
-      <div className="align-self-end course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
-        {text}
-      </div>
-    );
+    return <UserMessage text={text} />;
   }
   // Consecutive tool calls render together so runs of the same kind can be grouped.
   type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
