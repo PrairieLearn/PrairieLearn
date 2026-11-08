@@ -31,6 +31,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
+import { NavigationNotice, navigationOf, useAgentNavigation } from './Navigation.js';
 import { currentPageLocation } from './pageLocation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
@@ -328,6 +329,7 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  useAgentNavigation({ message: messages.at(-1), live: responseActive });
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
@@ -548,6 +550,8 @@ function Message({
         const { key, part } = segment;
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+        const found = navigationOf(part);
+        if (found) return <NavigationNotice key={key} navigation={found.navigation} />;
         if (part.type === 'data-review') {
           const { reviewId } = ReviewPartSchema.parse(part.data);
           return (

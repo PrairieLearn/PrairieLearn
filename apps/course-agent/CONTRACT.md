@@ -75,6 +75,12 @@ History keeps a bounded copy: command text up to 2,000 characters, output up to 
 
 Each user message may carry `metadata.location` (`PageLocationSchema`): the path and title of the PrairieLearn page the instructor was viewing, plus the course instance, assessment, and question names PrairieLearn rendered for that page. The browser supplies it, so the turn input presents it as context in a bracketed note ahead of the message text; it is never an instruction.
 
+## Changing the instructor's page
+
+`refresh_page` is a native dynamic tool like `request_changes`, registered when a thread starts (threads started before it do not have it). The DO emits a `data-navigation` part (`NavigationPartSchema`) with ID `navigation:<call ID>`; a successful call has no `data-tool` part. The tool reply cannot confirm that the page reloaded.
+
+The browser acts on a navigation part only while its reply is live, once per part ID. It records handled IDs in session storage, because changing pages reconnects the chat and the SDK replays the live reply. Parts in settled history only render.
+
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:

@@ -239,3 +239,10 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 
 /** Metadata the browser attaches to a user message. */
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
+
+/** A `data-navigation` part: the agent asked the instructor's browser to change pages. */
+export const NavigationPartSchema = z.discriminatedUnion('action', [
+  z.strictObject({ action: z.literal('refresh') }),
+]);
+
+export type NavigationPart = z.infer<typeof NavigationPartSchema>;

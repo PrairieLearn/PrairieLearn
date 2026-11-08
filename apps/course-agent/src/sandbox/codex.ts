@@ -2,7 +2,10 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import type { ToolCall } from '@prairielearn/course-agent-types';
+import {
+  type NavigationPart,
+  type ToolCall,
+} from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
@@ -42,19 +45,22 @@ const ItemEvent = z.object({
   turnId: z.string(),
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
-/** `request_changes` shows as a review card; only a failed call needs its own entry. */
-const ReviewToolItem = z.object({
+/**
+ * `request_changes` shows as a review card and navigation as its own part; only a failed call
+ * needs a tool entry.
+ */
+const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.literal('request_changes'),
+  tool: z.enum(['request_changes', 'refresh_page']),
   success: z.boolean().nullable(),
 });
-const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
+const DynamicCall = z.object({
   threadId: z.string(),
   turnId: z.string(),
   callId: z.string(),
   namespace: z.null(),
-  tool: z.literal('request_changes'),
-  arguments: z.strictObject({}),
+  tool: z.enum(['request_changes', 'refresh_page']),
+  arguments: z.unknown(),
 });
 const ItemsPage = z.object({
   data: z.array(z.object({ item: z.object({ type: z.string(), clientId: z.string().nullish() }) })),
@@ -145,9 +151,7 @@ export class CodexAppServerClient {
         }
       });
     rpc.onRequest('item/tool/call', async (value: unknown) => {
-      const call = this.parseReviewCall(value);
-      if (!this.onReview) throw new Error('Review handling is not configured');
-      const reply = await this.onReview(call);
+      const reply = await this.dynamicToolCall(value);
       return {
         success: reply.success,
         contentItems: [{ type: 'inputText', text: reply.text }],
@@ -198,12 +202,23 @@ export class CodexAppServerClient {
     return this.rpc;
   }
 
-  private parseReviewCall(value: unknown): DynamicToolCallParams {
-    const parsed = RequestChangesCall.safeParse(value);
+  private async dynamicToolCall(value: unknown): Promise<ToolReply> {
+    const parsed = DynamicCall.safeParse(value);
     if (!parsed.success || parsed.data.threadId !== this.threadId) {
-      throw new Error('Invalid request_changes call');
+      throw new Error('Invalid dynamic tool call');
     }
-    return parsed.data;
+    const call = parsed.data;
+    if (call.tool === 'request_changes') {
+      if (!z.strictObject({}).safeParse(call.arguments).success) {
+        throw new Error('Invalid request_changes call');
+      }
+      if (!this.onReview) throw new Error('Review handling is not configured');
+      return await this.onReview({ ...call, arguments: {} });
+    }
+    const navigation: NavigationPart = { action: 'refresh' };
+    // The browser acts on this part; the reply cannot confirm the page reloaded.
+    this.emit({ type: 'data-navigation', id: `navigation:${call.callId}`, data: navigation });
+    return { success: true, text: "The instructor's page is reloading." };
   }
 
   private fail(error: Error) {
@@ -260,7 +275,10 @@ export class CodexAppServerClient {
           'thread/start',
           {
             ...settings,
-            dynamicTools: this.onReview ? [requestChangesTool] : [],
+            dynamicTools: [
+              ...(this.onReview ? [requestChangesTool] : []),
+              refreshPageTool,
+            ],
           } satisfies ThreadStartParams,
           ThreadResult,
         );
@@ -367,8 +385,8 @@ export class CodexAppServerClient {
     if (params.threadId !== this.threadId || (this.turnId && params.turnId !== this.turnId)) {
       return;
     }
-    const review = ReviewToolItem.safeParse(params.item);
-    if (review.success && (phase === 'started' || review.data.success !== false)) return;
+    const card = CardToolItem.safeParse(params.item);
+    if (card.success && (phase === 'started' || card.data.success !== false)) return;
     const call = toolCallFromItem(phase, params.item);
     if (!call) return;
     const id = `tool:${params.item.id}`;
@@ -433,5 +451,13 @@ const requestChangesTool: DynamicToolSpec = {
   name: 'request_changes',
   description:
     'Submit the current course edits for instructor review. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+};
+
+const refreshPageTool: DynamicToolSpec = {
+  type: 'function',
+  name: 'refresh_page',
+  description:
+    'Reload the page the instructor is viewing, for example after approved changes were saved and synced so the page shows them.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 };
