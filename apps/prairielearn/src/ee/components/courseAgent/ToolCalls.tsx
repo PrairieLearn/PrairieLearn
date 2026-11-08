@@ -6,12 +6,13 @@ import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
 import { Disclosure } from '../ai/ChatParts.js';
 
-type Verb = 'read' | 'list' | 'search' | 'run' | 'edit' | 'create' | 'delete' | 'call';
+type Verb = 'read' | 'list' | 'search' | 'browse' | 'run' | 'edit' | 'create' | 'delete' | 'call';
 
 const VERBS: Record<Verb, [running: string, done: string]> = {
   read: ['Reading', 'Read'],
   list: ['Listing', 'Listed'],
   search: ['Searching for', 'Searched for'],
+  browse: ['Browsing', 'Browsed'],
   run: ['Running', 'Ran'],
   edit: ['Editing', 'Edited'],
   create: ['Creating', 'Created'],
@@ -75,9 +76,12 @@ function category(call: ToolCall): {
     case 'fileChange':
       return { key: 'edit', icon: 'bi-pencil-square', group: (n) => `Made ${n} edits` };
     case 'tool':
+      if (call.server === 'web') {
+        return { key: 'web', icon: 'bi-globe', group: (n) => `Browsed the web ${n} times` };
+      }
       return {
         key: `call:${toolName(call)}`,
-        icon: call.server === 'web' ? 'bi-globe' : 'bi-plug',
+        icon: 'bi-plug',
         group: (n) => `Called ${toolName(call)} ${n} times`,
       };
   }
@@ -133,15 +137,24 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
       return { verb, subject: <FileName path={change.path} />, meta };
     }
     case 'tool':
-      // Web search is Codex's one built-in tool here; its argument is the query or page.
-      if (call.server === 'web') {
-        return {
-          verb: call.tool === 'openPage' ? 'read' : 'search',
-          subject: <Code>{call.arguments.text.split('\n')[0] || 'the web'}</Code>,
-        };
-      }
+      if (call.server === 'web') return describeWeb(call.tool, call.arguments.text);
       return { verb: 'call', subject: <Code>{toolName(call)}</Code> };
   }
+}
+
+/**
+ * Codex's web tool. Its arguments are the page URL, if any, and then Codex's summary of the query,
+ * page, or pattern. Opening a search result by reference, and a call still starting, have neither.
+ */
+function describeWeb(action: string, text: string): { verb: Verb; subject: ReactNode } {
+  const lines = text.split('\n').filter(Boolean);
+  if (action === 'openPage' && lines.length > 0) {
+    return { verb: 'read', subject: <Code>{lines[0]}</Code> };
+  }
+  if ((action === 'search' || action === 'findInPage') && lines.length > 0) {
+    return { verb: 'search', subject: <Code>{lines.at(-1)}</Code> };
+  }
+  return { verb: 'browse', subject: 'the web' };
 }
 
 function changeMeta(calls: ToolCall[]) {

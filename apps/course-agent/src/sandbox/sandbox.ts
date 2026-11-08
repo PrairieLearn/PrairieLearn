@@ -17,6 +17,8 @@ import {
 
 import { logEvent, redactSecrets } from '../monitoring.js';
 
+import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
+
 const SESSION = '/workspace/session';
 // The node user and group in the base container image both have ID 1000.
 const NODE_UID_GID = '1000:1000';
@@ -123,28 +125,29 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
   }
 }
 
-/** Only the conversation's pinned model is available; its API key stays outside the container. */
+const OPENAI_API = 'https://api.openai.com';
+
+/**
+ * Only the conversation's pinned model and web browsing are available; the API key stays outside
+ * the container. OpenAI runs searches and reads pages, so the container never connects to other
+ * sites.
+ */
 export class CourseAgentModelOutbound extends WorkerEntrypoint<
   Env,
   { model: string; sandboxId: string }
 > {
   override async fetch(request: Request) {
     const url = new URL(request.url);
-    if (
-      url.hostname !== 'model.internal' ||
-      url.pathname !== '/v1/responses' ||
-      url.search ||
-      request.method !== 'POST'
-    ) {
+    if (url.hostname !== 'model.internal' || url.search || request.method !== 'POST') {
       return new Response('Forbidden', { status: 403 });
     }
-    const body = (await request.json()) as { model?: string; input?: { role?: string }[] };
-    if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
-    // Later requests in a turn end with tool output; only the role is read, never the content.
-    const firstOfTurn = body.input?.at(-1)?.role === 'user';
-    const started = Date.now();
-    if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    if (url.pathname === '/v1/responses') return this.responses(request);
+    if (url.pathname === '/v1/alpha/search') return this.search(request);
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  private openai(path: string, body: unknown) {
+    return fetch(`${OPENAI_API}${path}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
@@ -153,6 +156,22 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
       body: JSON.stringify(body),
       redirect: 'manual',
     });
+  }
+
+  private async responses(request: Request) {
+    const body = (await request.json()) as {
+      model?: string;
+      input?: { role?: string }[];
+      tools?: unknown;
+    };
+    if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
+    const refusal = modelRequestRefusal(body);
+    if (refusal) return new Response(refusal, { status: 403 });
+    // Later requests in a turn end with tool output; only the role is read, never the content.
+    const firstOfTurn = body.input?.at(-1)?.role === 'user';
+    const started = Date.now();
+    if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
+    const response = await this.openai('/v1/responses', body);
     if (firstOfTurn) {
       logEvent('model_response_started', {
         sandboxId: this.ctx.props.sandboxId,
@@ -160,6 +179,26 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
         elapsedMs: Date.now() - started,
       });
     }
+    return response;
+  }
+
+  private async search(request: Request) {
+    const body = (await request.json()) as Record<string, unknown>;
+    if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
+    const prepared = prepareSearchRequest(body);
+    if ('refusal' in prepared) {
+      logEvent('web_search_refused', { sandboxId: this.ctx.props.sandboxId });
+      return Response.json({ output: prepared.refusal });
+    }
+    const started = Date.now();
+    const response = await this.openai('/v1/alpha/search', prepared.forward);
+    // OpenAI bills hosted search per call; the response carries no usage to meter.
+    logEvent('web_search', {
+      sandboxId: this.ctx.props.sandboxId,
+      operations: prepared.operations,
+      status: response.status,
+      elapsedMs: Date.now() - started,
+    });
     return response;
   }
 }
@@ -252,10 +291,12 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.exec(['chown', '-R', NODE_UID_GID, SESSION]);
     }
     // Configuration contains no credentials or repository data. It is reapplied after restoration.
+    // Codex offers its `web.run` browsing tool to a custom provider only when the provider declares
+    // standalone web search; CourseAgentModelOutbound fixes its settings.
     const files = new Files(this.container);
     await files.writeFile(
       `${SESSION}/home/.codex/config.toml`,
-      'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
+      'model_provider = "prairielearn"\nweb_search = "live"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\nsupports_standalone_web_search = true\n',
     );
     await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
     // addCourseFiles() locks a fresh workspace once its files are in place.
