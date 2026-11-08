@@ -3,9 +3,11 @@ import { Hono } from 'hono';
 
 import {
   CreateConversationInput,
+  MAX_ATTACHMENT_BYTES,
   RequestChangesResultSchema,
 } from '@prairielearn/course-agent-types';
 
+import { uploadKey } from '../conversation/attachments.js';
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
@@ -78,6 +80,18 @@ conversations.post('/:id/resume', async (c) => {
     reportError(error);
     return c.json({ error: 'Could not recover the course agent' }, 503);
   }
+});
+
+// The browser uploads each attachment before sending the message that refers to it by ID.
+// R2 requires a known length, which the Content-Length check also bounds.
+conversations.post('/:id/uploads', async (c) => {
+  const size = Number(c.req.header('Content-Length'));
+  if (!c.req.raw.body || !Number.isSafeInteger(size) || size < 1 || size > MAX_ATTACHMENT_BYTES) {
+    return c.text('Expected a file of at most 20 MB', 400);
+  }
+  const id = crypto.randomUUID();
+  await c.env.CHECKPOINTS.put(uploadKey(c.req.param('id'), id), c.req.raw.body);
+  return c.json({ id }, 201);
 });
 
 conversations.get('/:id/reviews/:reviewId', async (c) => {

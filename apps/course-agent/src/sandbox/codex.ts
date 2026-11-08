@@ -68,6 +68,8 @@ const ItemsPage = z.object({
 export interface TurnInput {
   text: string;
   tag: string;
+  /** Sandbox paths of attached images, which the model sees alongside the text. */
+  images?: string[];
   once?: boolean;
   /** Text to prepend given the thread's latest tag (undefined for a thread started this turn). */
   catchUp?: (latestTag: string | null | undefined) => string | null;
@@ -288,6 +290,7 @@ export class CodexAppServerClient {
         input: [
           ...(context ? [{ type: 'text' as const, text: context, text_elements: [] }] : []),
           { type: 'text', text: input.text, text_elements: [] },
+          ...(input.images ?? []).map((path) => ({ type: 'localImage' as const, path })),
         ],
       } satisfies TurnStartParams,
       TurnResult,

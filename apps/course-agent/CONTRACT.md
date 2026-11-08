@@ -117,6 +117,15 @@ Invariants:
 
 For Git-backed courses, the agent fetches and reconciles published changes before further edits; PrairieLearn does not reset its sandbox checkout. Denial and failed saves preserve private sandbox edits. A conflict asks the agent to fetch and reconcile current repository contents, then submit a fresh review; the previous approval does not authorize the revised proposal. Settled review cards show their result and diagnostics; their diffs are not available after the agent receives the result.
 
+## Attachments
+
+A message refers to each attachment with a `file` part whose URL is `upload:<id>`. Bytes never enter chat history: the browser uploads each file first, and the Worker stores it under `uploads/<conversation>/<id>` in the checkpoint bucket.
+
+- The browser controls message parts, so persistence keeps only `file` parts with an upload URL, at most 10 per message. Keys are built from the conversation's own name, so a message can only refer to that conversation's uploads.
+- Before admitting a message, the conversation checks that its uploads exist and reads their first bytes to find images. A missing upload refuses the message, which counts as handled like any other refusal.
+- Each turn copies its message's attachments to `/workspace/uploads/<id>/<name>` as root-owned, read-only files. A turn that starts a sandbox, including a checkpoint restore, also copies every earlier attachment, skipping uploads that have expired. The directory is outside `/workspace/session`, so checkpoints don't copy attachments, and outside the course checkout, so review capture never includes them.
+- Images go to Codex as `localImage` input. The prompt lists every attachment's path, and catch-up text lists earlier ones.
+
 ## Local course sources
 
 In PrairieLearn development mode, the owner-scoped creation route archives the authorized course directory and uploads it to the service-authenticated `POST /conversations/local` endpoint. The Worker chooses the R2 key; neither the browser nor the agent supplies a host path. The source and model are pinned at creation. Local sandboxes have no repository outbound route and require no GitHub token.

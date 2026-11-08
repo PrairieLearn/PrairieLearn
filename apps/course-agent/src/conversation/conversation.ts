@@ -6,7 +6,7 @@ import {
 import { MessageType } from '@cloudflare/ai-chat/types';
 import type { DirectoryBackupRecord } from '@cloudflare/sandbox';
 import type { Connection, ConnectionContext } from 'agents';
-import { createUIMessageStreamResponse } from 'ai';
+import { type UIMessage, createUIMessageStreamResponse } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -24,6 +24,17 @@ import { CodexAppServerClient, type TurnInput } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
+import {
+  type Attachment,
+  IMAGE_SIGNATURE_BYTES,
+  attachmentPath,
+  attachmentsOf,
+  attachmentsToWrite,
+  describeAttachments,
+  isImage,
+  keepUploadReferences,
+  uploadKey,
+} from './attachments.js';
 import {
   buildCatchUp,
   describeReviewResult,
@@ -395,22 +406,28 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       ? null
       : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
     const earlier = historyBefore(this.messages, message);
+    const attachments = message ? attachmentsOf(message) : [];
     const checkedSandboxId = this.record.sandboxId;
     const lost =
       checkedSandboxId !== null &&
       !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
+    const images = await this.findImages(attachments);
     const review = this.record.review;
     const status = this.record.lifecycle.status;
     // deliverWaitingResult() claims the conversation before the SDK calls back for a continuation.
     const admitted = continuation
       ? review?.result && status === 'waiting_for_agent'
       : !review && (status === 'offline' || status === 'waiting_for_user');
-    if (!admitted || this.active || this.recovering || this.sandboxShutdown) {
+    const refuse = (reason: string) => {
       // The SDK has already saved the message. Count it as handled, or the next submit would
       // send this refused prompt in place of the user's next one.
       if (message) this.setRecord({ ...this.record, submittedMessageId: message.id });
-      throw new Error('The course agent sandbox is not ready.');
+      return new Error(reason);
+    };
+    if (!admitted || this.active || this.recovering || this.sandboxShutdown) {
+      throw refuse('The course agent sandbox is not ready.');
     }
+    if (!images) throw refuse('An attached file is no longer available. Attach it again.');
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
@@ -425,7 +442,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           }
         : {
             tag: messageTag(message!.id),
-            text: message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n'),
+            text: [
+              message!.parts
+                .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+                .join('\n'),
+              describeAttachments(attachments),
+            ]
+              .filter(Boolean)
+              .join('\n\n'),
+            images: attachments.filter(({ id }) => images.has(id)).map(attachmentPath),
           }),
       // A restored or new thread may lack turns that chat history has.
       ...((startup || this.record.threadMayBeBehind) && earlier.length > 0
@@ -466,6 +491,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           await this.sandbox.prepare(this.record.config, this.record.checkpoint);
           log('turn_sandbox_prepare_finished');
         }
+        const toWrite = attachmentsToWrite(earlier, message, startup);
+        if (toWrite.length > 0) await this.sandbox.writeAttachments(this.name, toWrite);
         if (continuation && review) await this.advanceLocalBaseline(review);
       },
       addCourseFiles:
@@ -531,6 +558,28 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       })
       .finally(() => options.abortSignal?.removeEventListener('abort', abort));
     return createUIMessageStreamResponse({ stream: execution.stream });
+  }
+
+  /** Which attachments are images, or null if any upload is missing. */
+  private async findImages(attachments: Attachment[]) {
+    const uploads = await Promise.all(
+      attachments.map(({ id }) =>
+        this.env.CHECKPOINTS.get(uploadKey(this.name, id), {
+          range: new Headers({ range: `bytes=0-${IMAGE_SIGNATURE_BYTES - 1}` }),
+        }),
+      ),
+    );
+    const images = new Set<string>();
+    for (const [index, upload] of uploads.entries()) {
+      if (!upload) return null;
+      if (isImage(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
+    }
+    return images;
+  }
+
+  /** SDK persistence hook, which also runs on messages the browser sends. */
+  protected override sanitizeMessageForPersistence(message: UIMessage) {
+    return keepUploadReferences(message);
   }
 
   /** SDK completion hook: release the SDK half of the active operation. */

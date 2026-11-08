@@ -3,10 +3,13 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
+import clsx from 'clsx';
 import {
+  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
   type SyntheticEvent,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -17,6 +20,7 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
+  MAX_ATTACHMENTS_PER_MESSAGE,
   type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
@@ -30,6 +34,13 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import {
+  type DraftAttachment,
+  DraftAttachmentList,
+  SentAttachments,
+  uploadDraftAttachments,
+  useDraftAttachments,
+} from './Attachments.js';
 import { ConversationStats } from './ConversationStats.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
@@ -127,6 +138,9 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
+  const drafts = useDraftAttachments();
+  // A new conversation's first message uploads its attachments once the conversation exists.
+  const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
   const create = useMutation({
     ...trpc.courseAgent.create.mutationOptions(),
     onSuccess: (conversation) => {
@@ -136,6 +150,7 @@ function ConversationPicker({
       ]);
       setPickedId(conversation.id);
       setDraft('');
+      drafts.handOff([]);
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
   });
@@ -143,7 +158,8 @@ function ConversationPicker({
   const submitNew = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || create.isPending) return;
+    if (!text || create.isPending || drafts.attachments.some((a) => a.problem)) return;
+    setInitialAttachments(drafts.attachments);
     create.mutate({ text });
   };
 
@@ -187,6 +203,7 @@ function ConversationPicker({
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
               setDraft('');
+              drafts.clear();
               create.reset();
             }}
           >
@@ -201,7 +218,11 @@ function ConversationPicker({
           conversationId={selectedId}
           showConversationStats={showConversationStats}
           chatCsrfToken={chatCsrfToken}
-          initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
+          initialMessage={
+            create.data?.id === selectedId && create.variables
+              ? { text: create.variables.text, attachments: initialAttachments }
+              : undefined
+          }
           onInitialMessageSent={create.reset}
         />
       ) : active ? (
@@ -218,6 +239,9 @@ function ConversationPicker({
             draft={draft}
             disabled={create.isPending}
             pending={create.isPending}
+            attachments={drafts.attachments}
+            onAttach={drafts.add}
+            onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
             onSubmit={submitNew}
           />
@@ -249,7 +273,7 @@ function Chat({
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
-  initialMessage: string | undefined;
+  initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -293,17 +317,40 @@ function Chat({
   const readyToSend =
     !pendingReview && (lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user');
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
-  const [draft, setDraft] = useState('');
+  // A new conversation's first message starts in the composer, where its uploads show progress.
+  const [draft, setDraft] = useState(initialMessage?.text ?? '');
+  const drafts = useDraftAttachments(initialMessage?.attachments);
+  const [sending, setSending] = useState(false);
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
+
+  const { update: updateAttachment, handOff: setAttachments } = drafts;
+  /** Upload the attachments, then send. A failed upload keeps the draft for another try. */
+  const send = useCallback(
+    async (text: string, attachments: DraftAttachment[]) => {
+      setSending(true);
+      const files = await uploadDraftAttachments(attachments, {
+        url: `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`,
+        csrfToken: chatCsrfToken,
+        update: updateAttachment,
+      });
+      setSending(false);
+      if (!files) return;
+      void sendMessage({ text, files });
+      setDraft('');
+      setAttachments([]);
+    },
+    [courseId, conversationId, chatCsrfToken, updateAttachment, setAttachments, sendMessage],
+  );
+
   const initialMessageSentRef = useRef(false);
   // A newly created conversation must receive history before its first prompt is handed to the SDK.
   useEffect(() => {
     if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
     initialMessageSentRef.current = true;
-    void sendMessage({ text: initialMessage });
+    void send(initialMessage.text, initialMessage.attachments);
     onInitialMessageSent();
-  }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
+  }, [connected, readyToSend, initialMessage, onInitialMessageSent, send]);
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
@@ -331,9 +378,9 @@ function Chat({
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || responseActive || !connected || !readyToSend) return;
-    void sendMessage({ text });
-    setDraft('');
+    if (!text || responseActive || !connected || !readyToSend || sending) return;
+    if (drafts.attachments.some((a) => a.problem)) return;
+    void send(text, drafts.attachments);
   };
 
   return (
@@ -417,7 +464,11 @@ function Chat({
       <Composer
         draft={draft}
         disabled={!connected || !readyToSend}
+        pending={sending}
+        attachments={drafts.attachments}
         stopDisabled={!connected || !canStop}
+        onAttach={drafts.add}
+        onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
         onSubmit={submit}
         onStop={responseActive || canStop ? () => void stop() : undefined}
@@ -434,6 +485,9 @@ function Composer({
   onSubmit,
   disabled,
   pending = false,
+  attachments,
+  onAttach,
+  onRemoveAttachment,
   stopDisabled = false,
   children,
   onStop,
@@ -442,40 +496,128 @@ function Composer({
   onDraftChange: (draft: string) => void;
   onSubmit: (event?: SyntheticEvent) => void;
   disabled: boolean;
+  /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
+  attachments: DraftAttachment[];
+  onAttach: (files: File[]) => void;
+  onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
   children?: ReactNode;
   onStop?: () => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       onSubmit(event);
     }
   };
+  const draggingFiles = (event: DragEvent) =>
+    !pending && event.dataTransfer.types.includes('Files');
 
   return (
-    <Form className="border-top p-3" onSubmit={onSubmit}>
-      <Form.Control
-        as="textarea"
-        rows={3}
-        value={draft}
-        placeholder="Ask the course agent…"
-        aria-label="Message"
-        disabled={pending}
-        onChange={(event) => onDraftChange(event.target.value)}
-        onKeyDown={onKeyDown}
-      />
-      <div className="d-flex justify-content-end gap-2 mt-2">
-        {children}
-        {onStop ? (
-          <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
-            <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-            Stop
+    <Form
+      className="border-top p-3"
+      onSubmit={onSubmit}
+      onDragOver={(event) => {
+        if (!draggingFiles(event)) return;
+        event.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(event) => {
+        setDragging(false);
+        if (!draggingFiles(event)) return;
+        event.preventDefault();
+        onAttach([...event.dataTransfer.files]);
+      }}
+    >
+      <div
+        className={clsx(
+          'course-agent-composer position-relative border rounded-3',
+          pending && 'bg-body-tertiary',
+        )}
+      >
+        <DraftAttachmentList
+          attachments={attachments}
+          sending={pending}
+          onRemove={onRemoveAttachment}
+        />
+        <Form.Control
+          as="textarea"
+          rows={3}
+          className="border-0 shadow-none bg-transparent"
+          value={draft}
+          placeholder="Ask the course agent…"
+          aria-label="Message"
+          disabled={pending}
+          onChange={(event) => onDraftChange(event.target.value)}
+          onKeyDown={onKeyDown}
+          onPaste={(event) => {
+            if (event.clipboardData.files.length === 0) return;
+            event.preventDefault();
+            onAttach([...event.clipboardData.files]);
+          }}
+        />
+        <div className="d-flex align-items-center gap-2 px-2 pb-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(event) => {
+              onAttach([...(event.target.files ?? [])]);
+              event.target.value = '';
+            }}
+          />
+          <Button
+            variant="link"
+            size="sm"
+            className="text-body-secondary"
+            aria-label="Attach files"
+            disabled={pending}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <i className="bi bi-paperclip" aria-hidden="true" />
           </Button>
-        ) : (
-          <Button type="submit" size="sm" aria-label="Send" disabled={!draft.trim() || disabled}>
-            <i className="bi bi-send" aria-hidden="true" />
-          </Button>
+          <div className="d-flex align-items-center gap-2 ms-auto">
+            {children}
+            {onStop ? (
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                disabled={stopDisabled}
+                onClick={onStop}
+              >
+                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+                Stop
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="sm"
+                aria-label="Send"
+                disabled={
+                  !draft.trim() || disabled || pending || attachments.some((a) => a.problem)
+                }
+              >
+                {pending ? (
+                  <Spinner animation="border" size="sm" aria-hidden="true" />
+                ) : (
+                  <i className="bi bi-send" aria-hidden="true" />
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+        {dragging && (
+          <div className="course-agent-drop-target position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex flex-column align-items-center justify-content-center text-primary bg-primary-subtle">
+            <i className="bi bi-upload fs-4" aria-hidden="true" />
+            <span className="fw-medium">Drop files to attach</span>
+            <span className="small">Up to {MAX_ATTACHMENTS_PER_MESSAGE} files, 20 MB each</span>
+          </div>
         )}
       </div>
     </Form>
@@ -517,8 +659,11 @@ function Message({
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     return (
-      <div className="align-self-end course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
-        {text}
+      <div className="d-flex flex-column align-items-end gap-2">
+        <SentAttachments message={message} />
+        <div className="course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
+          {text}
+        </div>
       </div>
     );
   }

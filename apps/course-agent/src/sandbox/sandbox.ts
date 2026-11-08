@@ -15,6 +15,12 @@ import {
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
 
+import {
+  type Attachment,
+  UPLOADS_DIR,
+  attachmentPath,
+  uploadKey,
+} from '../conversation/attachments.js';
 import { logEvent, redactSecrets } from '../monitoring.js';
 
 import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
@@ -376,6 +382,22 @@ export class CourseSandbox extends DurableObject<Env> {
     }
     await this.lockSession();
     log('sandbox_files_ready', { source: config.type });
+  }
+
+  /**
+   * Copy uploaded attachments into the sandbox as root-owned files the agent can read but not
+   * change. Uploads that have since expired are skipped; a new message's were checked on arrival.
+   */
+  async writeAttachments(conversationId: string, attachments: Attachment[]) {
+    const files = new Files(this.container);
+    for (const attachment of attachments) {
+      const upload = await this.env.CHECKPOINTS.get(uploadKey(conversationId, attachment.id));
+      if (!upload) continue;
+      const path = attachmentPath(attachment);
+      await files.mkdir(path.slice(0, path.lastIndexOf('/')), { recursive: true });
+      await files.writeFile(path, upload.body);
+    }
+    await this.exec(['chmod', '-R', 'a+rX,go-w', UPLOADS_DIR]);
   }
 
   /**

@@ -221,3 +221,19 @@ export const ToolCallSchema = z
   );
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
+
+// Each attachment is uploaded on its own before the message that references it is sent.
+export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
+
+export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
+
+const ATTACHMENT_URL = /^upload:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+
+/** A message's file part points at its upload with this URL rather than carrying the contents. */
+export const attachmentUrl = (uploadId: string) => `upload:${uploadId}`;
+
+/** The upload a file part's URL points at, or null for any other URL, such as a data URL. */
+export function attachmentIdOf(url: string) {
+  return ATTACHMENT_URL.exec(url)?.[1] ?? null;
+}

@@ -2,6 +2,8 @@ import type { UIMessage, UIMessageChunk } from 'ai';
 
 import { type RequestChangesResult, ToolCallSchema } from '@prairielearn/course-agent-types';
 
+import { attachmentOf, attachmentPath } from './attachments.js';
+
 /** Keep the newest turns within a bound that leaves room for the current request. */
 const MAX_CATCH_UP_CHARS = 32_000;
 const OMITTED_MARKER = '[Earlier messages omitted.]\n\n';
@@ -132,14 +134,17 @@ function splitTurns(history: UIMessage[]) {
         turns.push({ tag, entries: [`PrairieLearn: ${summary}`] });
         continue;
       }
+      const attachment = attachmentOf(part);
       const text =
         part.type === 'text'
           ? part.text.trim()
-          : part.type === 'data-review'
-            ? '[Submitted changes for instructor review.]'
-            : part.type === 'data-tool'
-              ? describeFileChange(part.data)
-              : '';
+          : attachment
+            ? `[Attached ${attachmentPath(attachment)}]`
+            : part.type === 'data-review'
+              ? '[Submitted changes for instructor review.]'
+              : part.type === 'data-tool'
+                ? describeFileChange(part.data)
+                : '';
       if (!text) continue;
       turns.at(-1)?.entries.push(`${message.role === 'user' ? 'Staff' : 'You'}: ${text}`);
     }

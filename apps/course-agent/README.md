@@ -63,6 +63,16 @@ Each review supports at most 100 changed files, with a 1 MiB limit on each origi
 
 The agent can search the web and read pages through Codex's `web.run` tool, for example to check PrairieLearn documentation or an institution's academic calendar. Codex sends these commands to the model endpoint, and the Worker forwards them to OpenAI, which performs the searches and page reads. The container itself has no internet access. The Worker forwards only the commands it recognizes, sets the search settings itself, and refuses OpenAI-hosted tools in model requests, because the agent can send requests to the model endpoint directly. Searches and page addresses leave PrairieLearn, and page content is untrusted: a page could ask the agent to put course content in a URL it opens.
 
+## Attachments
+
+Staff can attach up to 10 files of at most 20 MB each to a message. The browser uploads each one through PrairieLearn when the message is sent, and the Worker stores it in the checkpoint bucket under `uploads/<conversation>/<upload>`. The agent sees attached images and can read every attachment from `/workspace/uploads`; see [CONTRACT.md](CONTRACT.md#attachments). Attachment contents reach OpenAI when the agent reads or views them.
+
+Uploads are kept until a bucket lifecycle rule expires them. Add the rule to each deployed environment's bucket, choosing the retention period for that environment:
+
+```sh
+wrangler r2 bucket lifecycle add <bucket> expire-uploads uploads/ --expire-days <days>
+```
+
 ## Deployment environments and monitoring
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.
