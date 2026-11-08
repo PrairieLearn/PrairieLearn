@@ -224,7 +224,10 @@ export abstract class Editor {
     return serverJob;
   }
 
-  async executeWithServerJob(serverJob: ServerJobExecutor) {
+  async executeWithServerJob(
+    serverJob: ServerJobExecutor,
+    { beforeWrite }: { beforeWrite?: (job: ServerJob) => Promise<void> } = {},
+  ) {
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
     // made. We use `executeUnsafe` instead of `execute` because we want
@@ -249,6 +252,7 @@ export abstract class Editor {
 
           job.info('Write changes to disk');
           job.data.saveAttempted = true;
+          await beforeWrite?.(job);
           await this.write();
           job.data.saveSucceeded = true;
 
@@ -307,6 +311,9 @@ export abstract class Editor {
           job.data.saveAttempted = true;
 
           job.info('Write changes to disk');
+          // Validate the entire edit under the course lock, including after a push
+          // retry resets to newer remote files. No part may be written before validation.
+          await beforeWrite?.(job);
           const writeResult = await this.write();
 
           if (!writeResult) {
