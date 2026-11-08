@@ -1,8 +1,17 @@
+import { useQueryClient } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Button } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { type NavigationPart, NavigationPartSchema } from '@prairielearn/course-agent-types';
+import {
+  type NavigationPart,
+  NavigationPartSchema,
+  type NavigationTarget,
+} from '@prairielearn/course-agent-types';
+import { getAppError } from '@prairielearn/trpc/client';
+
+import { useTRPC } from '../../../trpc/course/context.js';
 
 const HANDLED_KEY = 'course-agent:navigation-handled';
 const MAX_HANDLED = 100;
@@ -43,28 +52,87 @@ export function useAgentNavigation({
   message: UIMessage | undefined;
   live: boolean;
 }) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const navigate = (id: string, navigation: NavigationPart) => {
+    if (navigation.action === 'refresh') {
+      window.location.reload();
+      return;
+    }
+    queryClient
+      .query({
+        ...trpc.courseAgent.resolveNavigation.queryOptions(navigation.target),
+        staleTime: 0,
+      })
+      .then(
+        ({ url }) => window.location.assign(url),
+        (error: unknown) => {
+          const message = getAppError(error)?.message || 'Could not open the page.';
+          setErrors((current) => ({ ...current, [id]: message }));
+        },
+      );
+  };
+
   // Changing pages is a browser side effect of a part streaming in; history never replays it.
   useEffect(() => {
     if (!live || !message) return;
     for (const part of message.parts) {
       const found = navigationOf(part);
       if (found && claim(found.id)) {
-        if (found.navigation.action === 'refresh') window.location.reload();
+        navigate(found.id, found.navigation);
         // Anything after a page change belongs to the next page load.
         return;
       }
     }
   });
+
+  return { errors, navigate };
 }
 
-export function NavigationNotice({ navigation }: { navigation: NavigationPart }) {
-  switch (navigation.action) {
-    case 'refresh':
-      return (
-        <div className="small text-muted d-flex align-items-center gap-1">
-          <i className="bi bi-arrow-clockwise" aria-hidden="true" />
-          Reloaded the page
-        </div>
-      );
-  }
+function describeTarget(target: NavigationTarget) {
+  const subject = target.assessment
+    ? `assessment ${target.assessment}`
+    : target.question
+      ? `question ${target.question}`
+      : target.courseInstance
+        ? `course instance ${target.courseInstance}`
+        : 'course';
+  return target.page ? `${subject} (${target.page.replaceAll('_', ' ')})` : subject;
+}
+
+export function NavigationNotice({
+  navigation,
+  error,
+  onOpen,
+}: {
+  navigation: NavigationPart;
+  error: string | undefined;
+  onOpen: () => void;
+}) {
+  return (
+    <div className="small text-muted d-flex align-items-center gap-1">
+      <i
+        className={
+          navigation.action === 'refresh' ? 'bi bi-arrow-clockwise' : 'bi bi-box-arrow-up-right'
+        }
+        aria-hidden="true"
+      />
+      {navigation.action === 'refresh' ? (
+        'Reloaded the page'
+      ) : error ? (
+        <span className="text-danger">
+          Could not open {describeTarget(navigation.target)}. {error}
+        </span>
+      ) : (
+        <>
+          Opened
+          <Button variant="link" size="sm" className="p-0 align-baseline" onClick={onOpen}>
+            {describeTarget(navigation.target)}
+          </Button>
+        </>
+      )}
+    </div>
+  );
 }

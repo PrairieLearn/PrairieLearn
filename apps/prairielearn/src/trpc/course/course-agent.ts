@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { CreateConversationInput, NavigationTargetSchema } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -23,6 +23,9 @@ import {
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
+import { selectOptionalAssessmentByTid } from '../../models/assessment.js';
+import { selectOptionalCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectOptionalQuestionByQid } from '../../models/question.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
 
@@ -94,6 +97,51 @@ export const courseAgentRouter = t.router({
       return resumeConversation(conversation);
     }),
 
+  /** The URL of a page the agent named the way course files do. */
+  resolveNavigation: courseAgentProcedure
+    .input(NavigationTargetSchema)
+    .output(z.strictObject({ url: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const notFound = (message: string) => new TRPCError({ code: 'NOT_FOUND', message });
+      const courseInstance = input.courseInstance
+        ? await selectOptionalCourseInstanceByShortName({
+            course: ctx.course,
+            shortName: input.courseInstance,
+          })
+        : null;
+      if (input.courseInstance && !courseInstance) {
+        throw notFound(`No course instance named "${input.courseInstance}".`);
+      }
+      const base = courseInstance
+        ? `/pl/course_instance/${courseInstance.id}/instructor`
+        : `/pl/course/${ctx.course.id}`;
+      if (input.assessment) {
+        if (!courseInstance) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'An assessment needs its course instance.',
+          });
+        }
+        const assessment = await selectOptionalAssessmentByTid({
+          course_instance_id: courseInstance.id,
+          tid: input.assessment,
+        });
+        if (!assessment) throw notFound(`No assessment named "${input.assessment}".`);
+        return { url: `${base}/assessment/${assessment.id}/${input.page ?? 'questions'}` };
+      }
+      if (input.question) {
+        const question = await selectOptionalQuestionByQid({
+          qid: input.question,
+          course_id: ctx.course.id,
+        });
+        if (!question) throw notFound(`No question named "${input.question}".`);
+        return { url: `${base}/question/${question.id}/${input.page ?? 'preview'}` };
+      }
+      const page =
+        input.page ?? (courseInstance ? 'instance_admin/assessments' : 'course_admin/questions');
+      return { url: `${base}/${page}` };
+    }),
+
   // Record only conversations whose Cloudflare startup succeeded.
   create: courseAgentProcedure
     .input(z.object({ text: z.string().trim().min(1).max(20_000) }))
@@ -139,4 +187,5 @@ export interface CourseAgentError {
   Resume: never;
   GetReview: never;
   PostReviewDecision: never;
+  ResolveNavigation: never;
 }

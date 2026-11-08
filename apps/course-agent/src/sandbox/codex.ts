@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import {
   type NavigationPart,
+  NavigationTargetSchema,
   type ToolCall,
 } from '@prairielearn/course-agent-types';
 
@@ -51,7 +52,7 @@ const ItemEvent = z.object({
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'refresh_page']),
+  tool: z.enum(['request_changes', 'navigate', 'refresh_page']),
   success: z.boolean().nullable(),
 });
 const DynamicCall = z.object({
@@ -59,7 +60,7 @@ const DynamicCall = z.object({
   turnId: z.string(),
   callId: z.string(),
   namespace: z.null(),
-  tool: z.enum(['request_changes', 'refresh_page']),
+  tool: z.enum(['request_changes', 'navigate', 'refresh_page']),
   arguments: z.unknown(),
 });
 const ItemsPage = z.object({
@@ -215,10 +216,25 @@ export class CodexAppServerClient {
       if (!this.onReview) throw new Error('Review handling is not configured');
       return await this.onReview({ ...call, arguments: {} });
     }
-    const navigation: NavigationPart = { action: 'refresh' };
-    // The browser acts on this part; the reply cannot confirm the page reloaded.
+    let navigation: NavigationPart;
+    if (call.tool === 'refresh_page') {
+      navigation = { action: 'refresh' };
+    } else {
+      const target = NavigationTargetSchema.safeParse(call.arguments);
+      if (!target.success) {
+        return { success: false, text: `Invalid navigation target: ${target.error.message}` };
+      }
+      navigation = { action: 'open', target: target.data };
+    }
+    // The browser acts on this part; the reply cannot confirm the page loaded.
     this.emit({ type: 'data-navigation', id: `navigation:${call.callId}`, data: navigation });
-    return { success: true, text: "The instructor's page is reloading." };
+    return {
+      success: true,
+      text:
+        navigation.action === 'refresh'
+          ? "The instructor's page is reloading."
+          : "The instructor's browser is opening the page. If the names do not match a course instance, assessment, or question, PrairieLearn shows the instructor an error instead.",
+    };
   }
 
   private fail(error: Error) {
@@ -277,6 +293,7 @@ export class CodexAppServerClient {
             ...settings,
             dynamicTools: [
               ...(this.onReview ? [requestChangesTool] : []),
+              navigateTool,
               refreshPageTool,
             ],
           } satisfies ThreadStartParams,
@@ -452,6 +469,39 @@ const requestChangesTool: DynamicToolSpec = {
   description:
     'Submit the current course edits for instructor review. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+};
+
+const navigateTool: DynamicToolSpec = {
+  type: 'function',
+  name: 'navigate',
+  description:
+    "Open a PrairieLearn page in the instructor's browser, replacing the page they are viewing. Name things as course files do. With no names, opens a course page. With courseInstance, opens a page of that course instance. With courseInstance and assessment, opens a page of that assessment. With question (optionally within courseInstance), opens a page of that question. `page` is the path below that base; omit it for the default page.",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      courseInstance: {
+        type: 'string',
+        description: 'Course instance directory name under courseInstances/, such as Fa25.',
+      },
+      assessment: {
+        type: 'string',
+        description:
+          'Assessment directory path under the course instance assessments/ directory (its tid), such as hw1. Requires courseInstance.',
+      },
+      question: {
+        type: 'string',
+        description:
+          'Question directory path under questions/ (its qid), such as algebra/addition.',
+      },
+      page: {
+        type: 'string',
+        description:
+          'Path below the base, lowercase segments separated by slashes, such as settings or instance_admin/gradebook.',
+      },
+    },
+    required: [],
+    additionalProperties: false,
+  },
 };
 
 const refreshPageTool: DynamicToolSpec = {

@@ -301,6 +301,57 @@ describe('course agent turns', () => {
     ]);
   });
 
+  it('opens pages named as course files name them, rejecting targets PrairieLearn cannot name', async () => {
+    const { sandbox, native, commands, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const call = async (id: string, args: unknown) => {
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: id,
+          namespace: null,
+          tool: 'navigate',
+          arguments: args,
+        },
+      });
+      return await vi.waitFor(() => {
+        const frame = commands.find((command) => String(command.id) === id);
+        if (!frame) throw new Error('No reply yet');
+        return (frame as unknown as { result: { success: boolean } }).result;
+      });
+    };
+    expect(
+      await call('open', { courseInstance: 'Fa25', assessment: 'hw1', page: 'settings' }),
+    ).toMatchObject({ success: true });
+    expect(await call('bad', { page: '../admin' })).toMatchObject({ success: false });
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type === 'data-navigation')).toEqual([
+      {
+        type: 'data-navigation',
+        id: 'navigation:open',
+        data: {
+          action: 'open',
+          target: { courseInstance: 'Fa25', assessment: 'hw1', page: 'settings' },
+        },
+      },
+    ]);
+  });
+
   it('keeps only labels for tool calls past the message budget', async () => {
     const { sandbox, native, emit } = runner();
     const accepted = Promise.withResolvers<undefined>();

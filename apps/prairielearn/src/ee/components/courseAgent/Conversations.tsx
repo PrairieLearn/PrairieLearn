@@ -17,6 +17,7 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
+  type NavigationPart,
   type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
@@ -329,7 +330,7 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
-  useAgentNavigation({ message: messages.at(-1), live: responseActive });
+  const navigation = useAgentNavigation({ message: messages.at(-1), live: responseActive });
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
@@ -356,7 +357,9 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
+              navigationErrors={navigation.errors}
               onToolCallExpand={stickToBottom.stopScroll}
+              onNavigate={navigation.navigate}
             />
           ))}
           {/* Stop can end the stream before history records the review, which would otherwise
@@ -507,6 +510,8 @@ function Message({
   conversationId,
   awaitingReviewId,
   onToolCallExpand,
+  navigationErrors,
+  onNavigate,
 }: {
   message: UIMessage;
   /** Whether this message is still streaming. */
@@ -516,6 +521,8 @@ function Message({
   awaitingReviewId: string | null;
   /** Opening a tool call must not scroll it out from under the pointer. */
   onToolCallExpand: () => void;
+  navigationErrors: Record<string, string>;
+  onNavigate: (id: string, navigation: NavigationPart) => void;
 }) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
@@ -551,7 +558,16 @@ function Message({
         if (part.type === 'text') return <TextPart key={key} part={part} />;
         if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
         const found = navigationOf(part);
-        if (found) return <NavigationNotice key={key} navigation={found.navigation} />;
+        if (found) {
+          return (
+            <NavigationNotice
+              key={key}
+              navigation={found.navigation}
+              error={navigationErrors[found.id]}
+              onOpen={() => onNavigate(found.id, found.navigation)}
+            />
+          );
+        }
         if (part.type === 'data-review') {
           const { reviewId } = ReviewPartSchema.parse(part.data);
           return (

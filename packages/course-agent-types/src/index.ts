@@ -240,8 +240,26 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 /** Metadata the browser attaches to a user message. */
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
 
+/**
+ * A page the agent opens for the instructor, named the way course files name things. PrairieLearn
+ * resolves the names to a URL; `page` is the path below the resolved base, such as `settings`.
+ */
+export const NavigationTargetSchema = z.strictObject({
+  courseInstance: z.string().min(1).max(500).optional(),
+  assessment: z.string().min(1).max(500).optional(),
+  question: z.string().min(1).max(500).optional(),
+  page: z
+    .string()
+    .max(200)
+    .regex(/^[a-z0-9_]+(\/[a-z0-9_]+)*$/)
+    .optional(),
+});
+
+export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
+
 /** A `data-navigation` part: the agent asked the instructor's browser to change pages. */
 export const NavigationPartSchema = z.discriminatedUnion('action', [
+  z.strictObject({ action: z.literal('open'), target: NavigationTargetSchema }),
   z.strictObject({ action: z.literal('refresh') }),
 ]);
 
