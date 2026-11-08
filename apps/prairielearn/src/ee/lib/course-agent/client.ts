@@ -108,21 +108,6 @@ async function createConversation(
   return CreatedConversationSchema.parse(await response.json()).id;
 }
 
-/** Asks the service to summarize a conversation's first prompt into a title. */
-export async function requestCourseAgentConversationTitle(prompt: string) {
-  const { url, headers } = buildCourseAgentServiceRequest('titles');
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!response.ok) {
-    throw new error.HttpStatusError(502, 'Could not generate the course agent conversation title');
-  }
-  return z.object({ title: z.string() }).parse(await response.json()).title;
-}
-
 /** Wait for workspace recovery; lifecycle updates keep connected browsers informed. */
 export async function resumeCourseAgentConversation(agentConversationId: string) {
   const { url, headers } = buildCourseAgentServiceRequest(

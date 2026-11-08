@@ -87,7 +87,7 @@ export const courseAgentRouter = t.router({
             return createCourseAgentConversation(binding.data);
           }
         }),
-        generateCourseAgentConversationTitle(input.text),
+        generateCourseAgentConversationTitle({ prompt: input.text, courseId: ctx.course.id }),
       ]);
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,

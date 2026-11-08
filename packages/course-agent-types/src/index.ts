@@ -31,7 +31,3 @@ export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
 });
-
-export const GenerateTitleInput = z.strictObject({
-  prompt: z.string().min(1).max(20_000),
-});
