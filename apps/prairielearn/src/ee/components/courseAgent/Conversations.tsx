@@ -31,6 +31,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
+import { currentPageLocation } from './pageLocation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 
@@ -301,7 +302,7 @@ function Chat({
   useEffect(() => {
     if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
     initialMessageSentRef.current = true;
-    void sendMessage({ text: initialMessage });
+    void sendMessage({ text: initialMessage, metadata: { location: currentPageLocation() } });
     onInitialMessageSent();
   }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
 
@@ -332,7 +333,7 @@ function Chat({
     event?.preventDefault();
     const text = draft.trim();
     if (!text || responseActive || !connected || !readyToSend) return;
-    void sendMessage({ text });
+    void sendMessage({ text, metadata: { location: currentPageLocation() } });
     setDraft('');
   };
 

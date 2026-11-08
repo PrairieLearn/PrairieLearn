@@ -221,3 +221,21 @@ export const ToolCallSchema = z
   );
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
+
+/**
+ * The PrairieLearn page an instructor was viewing when they sent a message. Names are the ones
+ * the agent sees in course files: a course instance's directory, an assessment's `tid`, and a
+ * question's `qid`.
+ */
+export const PageLocationSchema = z.strictObject({
+  path: z.string().max(2000),
+  title: z.string().max(500),
+  courseInstance: z.string().max(500).optional(),
+  assessment: z.string().max(500).optional(),
+  question: z.string().max(500).optional(),
+});
+
+export type PageLocation = z.infer<typeof PageLocationSchema>;
+
+/** Metadata the browser attaches to a user message. */
+export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
