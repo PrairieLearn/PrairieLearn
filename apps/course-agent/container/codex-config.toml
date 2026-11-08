@@ -1,5 +1,8 @@
 # Contains no credentials or repository data. Model requests go to the Worker's outbound handler.
 model_provider = "prairielearn"
+# Codex offers its `web.run` browsing tool to a custom provider only when the provider declares
+# standalone web search; CourseAgentModelOutbound fixes its settings.
+web_search = "live"
 
 [model_providers.prairielearn]
 name = "PrairieLearn"
@@ -7,6 +10,7 @@ base_url = "http://model.internal/v1"
 wire_api = "responses"
 supports_websockets = false
 requires_openai_auth = false
+supports_standalone_web_search = true
 
 # Features the course agent doesn't use, so the runner doesn't start or advertise them. These are
 # Codex 0.163.0's flag names; check `codex features list` when upgrading.
