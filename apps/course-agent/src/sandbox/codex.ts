@@ -56,6 +56,18 @@ const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
   tool: z.literal('request_changes'),
   arguments: z.strictObject({}),
 });
+const CourseDataCall = z.object({
+  threadId: z.string(),
+  tool: z.literal('get_course_data'),
+  arguments: z.strictObject({
+    table: z.string().optional(),
+    filters: z.array(z.string()).optional(),
+    select: z.array(z.string()).optional(),
+    order: z.string().optional(),
+    limit: z.number().int().nonnegative().optional(),
+  }),
+});
+export type CourseDataRequest = z.infer<typeof CourseDataCall>['arguments'];
 const ItemsPage = z.object({
   data: z.array(z.object({ item: z.object({ type: z.string(), clientId: z.string().nullish() }) })),
   nextCursor: z.string().nullable(),
@@ -96,7 +108,11 @@ export class CodexAppServerClient {
   private failure: Error | null = null;
   private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
 
-  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
+  constructor(
+    private sandbox: DurableObjectStub<CourseSandbox>,
+    /** Serves `get_course_data`; without it, threads are started without the tool. */
+    private onCourseData?: (request: CourseDataRequest) => Promise<ToolReply>,
+  ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
     if (this.controller) throw new Error('An SDK response is already open');
@@ -145,9 +161,7 @@ export class CodexAppServerClient {
         }
       });
     rpc.onRequest('item/tool/call', async (value: unknown) => {
-      const call = this.parseReviewCall(value);
-      if (!this.onReview) throw new Error('Review handling is not configured');
-      const reply = await this.onReview(call);
+      const reply = await this.callTool(value);
       return {
         success: reply.success,
         contentItems: [{ type: 'inputText', text: reply.text }],
@@ -196,6 +210,25 @@ export class CodexAppServerClient {
   private get connection() {
     if (!this.rpc) throw new Error('Native runner is not connected');
     return this.rpc;
+  }
+
+  private async callTool(value: unknown): Promise<ToolReply> {
+    const tool = z.object({ tool: z.string() }).safeParse(value);
+    if (tool.data?.tool === courseDataTool.name && this.onCourseData) {
+      const call = CourseDataCall.safeParse(value);
+      if (!call.success) {
+        return { success: false, text: `Invalid arguments: ${z.prettifyError(call.error)}` };
+      }
+      if (call.data.threadId !== this.threadId) throw new Error('Invalid get_course_data call');
+      try {
+        return await this.onCourseData(call.data.arguments);
+      } catch (error) {
+        return { success: false, text: error instanceof Error ? error.message : String(error) };
+      }
+    }
+    const call = this.parseReviewCall(value);
+    if (!this.onReview) throw new Error('Review handling is not configured');
+    return await this.onReview(call);
   }
 
   private parseReviewCall(value: unknown): DynamicToolCallParams {
@@ -260,7 +293,10 @@ export class CodexAppServerClient {
           'thread/start',
           {
             ...settings,
-            dynamicTools: this.onReview ? [requestChangesTool] : [],
+            dynamicTools: [
+              ...(this.onReview ? [requestChangesTool] : []),
+              ...(this.onCourseData ? [courseDataTool] : []),
+            ],
           } satisfies ThreadStartParams,
           ThreadResult,
         );
@@ -427,6 +463,29 @@ export class CodexAppServerClient {
     this.rpc = null;
   }
 }
+
+const courseDataTool = {
+  type: 'function',
+  name: 'get_course_data',
+  description:
+    "Fetch this course's PrairieLearn data (assessments, questions, scores, submissions). With no table, returns the tables and their columns, types, and meanings; call this first. With a table, downloads matching rows as a JSONL file and returns its path. Filter large tables, for example by course_instance_id. A filtered file holds only the matching rows: fetch again before answering a broader question.",
+  inputSchema: {
+    type: 'object',
+    properties: {
+      table: { type: 'string', description: 'Table to download. Omit to list tables.' },
+      filters: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Conditions combined with AND, written as column=operator.value. Operators: eq, neq, gt, gte, lt, lte, in, is. Examples: "course_instance_id=eq.19", "score=lt.0.5", "assessment_id=in.(4,7)", "graded_at=is.null".',
+      },
+      select: { type: 'array', items: { type: 'string' }, description: 'Columns to include.' },
+      order: { type: 'string', description: 'Sort, such as "submitted_at.desc".' },
+      limit: { type: 'integer', description: 'Maximum number of rows.' },
+    },
+    additionalProperties: false,
+  },
+} satisfies DynamicToolSpec;
 
 const requestChangesTool: DynamicToolSpec = {
   type: 'function',

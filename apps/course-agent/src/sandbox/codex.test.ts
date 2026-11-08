@@ -1,13 +1,17 @@
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CodexAppServerClient } from './codex.js';
+import { CodexAppServerClient, type ToolReply } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
 /** `history` lists thread items newest first, as thread/items/list returns them. */
-function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
-  const commands: { id: number; method: string; params: unknown }[] = [];
+function runner({
+  loseAcceptance = false,
+  history = [] as unknown[],
+  onCourseData = undefined as ((request: { table?: string }) => Promise<ToolReply>) | undefined,
+} = {}) {
+  const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
   let closed = false;
@@ -50,7 +54,7 @@ function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox);
+  const native = new CodexAppServerClient(sandbox, onCourseData);
   return { sandbox, native, commands, emit, disconnect: () => socket.close() };
 }
 
@@ -260,6 +264,51 @@ describe('course agent turns', () => {
       { id: 'tool:stuck', data: { status: 'running' } },
       { id: 'tool:stuck', data: { status: 'interrupted' } },
     ]);
+  });
+
+  it('offers get_course_data to new threads and returns its replies to the model', async () => {
+    const onCourseData = vi.fn(async ({ table }: { table?: string }) => {
+      if (table === 'missing') throw new Error('404: Unknown table "missing"');
+      return { success: true, text: `Wrote rows for ${table}` };
+    });
+    const { native, commands, emit } = runner({ onCourseData });
+    await native.connect();
+    await native.thread(thread);
+    expect(commands.find((command) => command.method === 'thread/start')?.params).toMatchObject({
+      dynamicTools: [{ name: 'get_course_data' }],
+    });
+    const call = (id: number, args: unknown) =>
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: `call-${id}`,
+          namespace: null,
+          tool: 'get_course_data',
+          arguments: args,
+        },
+      });
+    call(10, { table: 'submissions', filters: ['score=lt.0.5'] });
+    call(11, { table: 'missing' });
+    call(12, { limit: 'ten' });
+    const replies = () => commands.filter((command) => 'result' in command);
+    await vi.waitFor(() => expect(replies()).toHaveLength(3));
+    expect(onCourseData).toHaveBeenCalledWith({
+      table: 'submissions',
+      filters: ['score=lt.0.5'],
+    });
+    const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
+    expect(byId[10]).toEqual({
+      success: true,
+      contentItems: [{ type: 'inputText', text: 'Wrote rows for submissions' }],
+    });
+    expect(byId[11]).toEqual({
+      success: false,
+      contentItems: [{ type: 'inputText', text: '404: Unknown table "missing"' }],
+    });
+    expect(byId[12]).toMatchObject({ success: false });
   });
 
   it('keeps only labels for tool calls past the message budget', async () => {

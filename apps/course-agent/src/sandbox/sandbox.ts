@@ -679,8 +679,21 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.stopProcesses();
     return this.backups.backup({
       dir: SESSION,
-      exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json'],
+      // Course data is student data; the agent can fetch it again after a restore.
+      exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json', 'course-data'],
     });
+  }
+
+  /** Saves downloaded course data outside the course checkout; returns the file path. */
+  async writeCourseData(table: string, contents: string) {
+    const dir = `${SESSION}/course-data`;
+    const path = `${dir}/${table}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
+    // The session directory is root-owned (see lockSession), so create this one as root and give
+    // it to the agent, which also writes its analysis scripts here.
+    await this.exec(['mkdir', '-p', dir]);
+    await new Files(this.container).writeFile(path, contents);
+    await this.exec(['chown', '-R', NODE_UID_GID, dir]);
+    return path;
   }
 
   async deleteCheckpoint(checkpoint: DirectoryBackupRecord) {

@@ -35,6 +35,7 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
+import { getCourseData } from './course-data.js';
 import { buildInstructions } from './instructions.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
@@ -42,6 +43,8 @@ import { buildInstructions } from './instructions.js';
 const KEEPALIVE_SECONDS = 25;
 
 const CourseContextSchema = z.object({
+  // Optional while a PrairieLearn deployment that does not send it may still connect.
+  courseId: z.string().regex(/^\d+$/).optional(),
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
 });
@@ -451,7 +454,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
     });
     log('turn_started', { startup });
-    const native = (this.native ??= new CodexAppServerClient(this.sandbox));
+    const native = (this.native ??= new CodexAppServerClient(this.sandbox, (request) =>
+      getCourseData({
+        plUrl: this.env.PL_URL,
+        serviceToken: this.env.PL_SERVICE_TOKEN,
+        conversationId: this.name,
+        courseId: this.record.courseContext?.courseId,
+        sandbox: this.sandbox,
+        request,
+      }),
+    ));
     let nativeThreadId = this.record.nativeThreadId;
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.

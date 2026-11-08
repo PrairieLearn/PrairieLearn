@@ -1,0 +1,775 @@
+{
+  "version": 1,
+  "tables": {
+    "course_instances": {
+      "description": "Course instances (offerings of the course, such as a semester).",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Course instance ID."
+          },
+          "short_name": {
+            "type": "string",
+            "description": "Directory name under courseInstances/, such as Fa25."
+          },
+          "long_name": {
+            "description": "Display name, such as \"Fall 2025\".",
+            "type": ["string", "null"]
+          },
+          "display_timezone": {
+            "type": "string",
+            "description": "IANA timezone for dates in this course instance, such as America/Chicago."
+          },
+          "publishing_start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "When students can first access the instance."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publishing_end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "When student access ends."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "short_name",
+          "long_name",
+          "display_timezone",
+          "publishing_start_date",
+          "publishing_end_date"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "assessments": {
+      "description": "Assessments (homeworks, quizzes, exams) in each course instance.",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment ID."
+          },
+          "course_instance_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Course instance the assessment belongs to."
+          },
+          "tid": {
+            "description": "Directory name under the instance assessments/.",
+            "type": ["string", "null"]
+          },
+          "title": {
+            "description": "Assessment title.",
+            "type": ["string", "null"]
+          },
+          "label": {
+            "type": "string",
+            "description": "Short label shown to students, such as HW3 or Q4."
+          },
+          "set_name": {
+            "description": "Assessment set name, such as Homework or Quiz.",
+            "type": ["string", "null"]
+          },
+          "number": {
+            "type": "string",
+            "description": "Number within the assessment set."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["Homework", "Exam", "RetryExam", "Basic", "Game"],
+            "description": "Assessment type."
+          },
+          "max_points": {
+            "description": "Points needed for a score of 100%.",
+            "type": ["number", "null"]
+          },
+          "max_bonus_points": {
+            "description": "Extra points available beyond 100%.",
+            "type": ["number", "null"]
+          },
+          "multiple_instance": {
+            "type": "boolean",
+            "description": "Whether a student can start more than one attempt."
+          },
+          "team_work": {
+            "type": "boolean",
+            "description": "Whether students work in teams (groups)."
+          }
+        },
+        "required": [
+          "id",
+          "course_instance_id",
+          "tid",
+          "title",
+          "label",
+          "set_name",
+          "number",
+          "type",
+          "max_points",
+          "max_bonus_points",
+          "multiple_instance",
+          "team_work"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "questions": {
+      "description": "Questions in the course question bank.",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Question ID."
+          },
+          "qid": {
+            "description": "Directory path under questions/.",
+            "type": ["string", "null"]
+          },
+          "title": {
+            "description": "Question title.",
+            "type": ["string", "null"]
+          },
+          "topic": {
+            "description": "Topic name.",
+            "type": ["string", "null"]
+          },
+          "grading_method": {
+            "type": "string",
+            "enum": ["Internal", "External", "Manual", "AI"],
+            "description": "How submissions are graded."
+          },
+          "single_variant": {
+            "description": "Whether every student sees the same variant.",
+            "type": ["boolean", "null"]
+          },
+          "draft": {
+            "type": "boolean",
+            "description": "Whether the question is a draft."
+          }
+        },
+        "required": ["id", "qid", "title", "topic", "grading_method", "single_variant", "draft"],
+        "additionalProperties": false
+      }
+    },
+    "assessment_questions": {
+      "description": "Questions as placed on an assessment, with per-assessment points and statistics. Statistics are precomputed and can be out of date.",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment question ID."
+          },
+          "course_instance_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Course instance."
+          },
+          "assessment_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment."
+          },
+          "question_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Question."
+          },
+          "number": {
+            "description": "Position on the assessment.",
+            "type": ["number", "null"]
+          },
+          "max_points": {
+            "description": "Total points available for this question.",
+            "type": ["number", "null"]
+          },
+          "max_auto_points": {
+            "description": "Points available from automatic grading.",
+            "type": ["number", "null"]
+          },
+          "max_manual_points": {
+            "description": "Points available from manual grading.",
+            "type": ["number", "null"]
+          },
+          "mean_question_score": {
+            "description": "Precomputed mean score from 0 to 100 across students.",
+            "type": ["number", "null"]
+          },
+          "discrimination": {
+            "description": "Precomputed correlation (0 to 100) between this score and the assessment score.",
+            "type": ["number", "null"]
+          },
+          "average_number_submissions": {
+            "description": "Precomputed mean number of submissions per student.",
+            "type": ["number", "null"]
+          }
+        },
+        "required": [
+          "id",
+          "course_instance_id",
+          "assessment_id",
+          "question_id",
+          "number",
+          "max_points",
+          "max_auto_points",
+          "max_manual_points",
+          "mean_question_score",
+          "discrimination",
+          "average_number_submissions"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "assessment_instances": {
+      "description": "Students' (or teams') attempts at assessments, with totals. One row per attempt; an assessment with multiple_instance can have several per student.",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment instance ID."
+          },
+          "course_instance_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Course instance."
+          },
+          "assessment_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+$",
+                "description": "Student who owns the attempt; null for team work."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+$",
+                "description": "Team that owns the attempt; null for individual work."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "number": {
+            "type": "number",
+            "description": "Attempt number for this student and assessment, from 1."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["Public", "Exam", "SEB"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the attempt was taken."
+          },
+          "open": {
+            "type": "boolean",
+            "description": "Whether the attempt is still open."
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "When the attempt started."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "When the attempt closed."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number",
+                "description": "Time spent on the attempt. In seconds."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "points": {
+            "description": "Points earned.",
+            "type": ["number", "null"]
+          },
+          "max_points": {
+            "description": "Points needed for 100%.",
+            "type": ["number", "null"]
+          },
+          "score_perc": {
+            "description": "Score from 0 to 100 (can exceed 100 with bonus points).",
+            "type": ["number", "null"]
+          },
+          "include_in_statistics": {
+            "type": "boolean",
+            "description": "False for staff and other attempts excluded from assessment statistics."
+          }
+        },
+        "required": [
+          "id",
+          "course_instance_id",
+          "assessment_id",
+          "user_id",
+          "team_id",
+          "number",
+          "mode",
+          "open",
+          "started_at",
+          "closed_at",
+          "duration",
+          "points",
+          "max_points",
+          "score_perc",
+          "include_in_statistics"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "instance_questions": {
+      "description": "One row per question in a student's assessment attempt, with its score.",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Instance question ID."
+          },
+          "course_instance_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Course instance."
+          },
+          "assessment_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment."
+          },
+          "assessment_instance_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment attempt."
+          },
+          "assessment_question_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Question as placed on the assessment."
+          },
+          "question_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Question."
+          },
+          "number": {
+            "description": "Position in the attempt.",
+            "type": ["number", "null"]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "unanswered",
+                  "saved",
+                  "correct",
+                  "incorrect",
+                  "grading",
+                  "invalid"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current status."
+          },
+          "points": {
+            "description": "Points earned (auto plus manual).",
+            "type": ["number", "null"]
+          },
+          "auto_points": {
+            "description": "Points from automatic grading.",
+            "type": ["number", "null"]
+          },
+          "manual_points": {
+            "description": "Points from manual grading.",
+            "type": ["number", "null"]
+          },
+          "score_perc": {
+            "description": "Score from 0 to 100.",
+            "type": ["number", "null"]
+          },
+          "number_attempts": {
+            "type": "number",
+            "description": "Attempt counter kept by some grading paths; can be 0 even when submissions exist. Count rows in submissions for the number of submissions."
+          },
+          "highest_submission_score": {
+            "description": "Best submission score from 0 to 1.",
+            "type": ["number", "null"]
+          },
+          "requires_manual_grading": {
+            "type": "boolean",
+            "description": "Whether manual grading is pending."
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number",
+                "description": "Time spent on the question. In seconds."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "When the question was added to the attempt."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "course_instance_id",
+          "assessment_id",
+          "assessment_instance_id",
+          "assessment_question_id",
+          "question_id",
+          "number",
+          "status",
+          "points",
+          "auto_points",
+          "manual_points",
+          "score_perc",
+          "number_attempts",
+          "highest_submission_score",
+          "requires_manual_grading",
+          "duration",
+          "created_at"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "variants": {
+      "description": "Generated versions of a question that students saw. Instructor previews are excluded.",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Variant ID."
+          },
+          "course_instance_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Course instance."
+          },
+          "assessment_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment."
+          },
+          "instance_question_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Instance question."
+          },
+          "question_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Question."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+$",
+                "description": "Student; null for team work."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+$",
+                "description": "Team; null for individual work."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "number": {
+            "description": "Variant number within the instance question.",
+            "type": ["number", "null"]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "When the variant was generated."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open": {
+            "description": "Whether more submissions are accepted.",
+            "type": ["boolean", "null"]
+          },
+          "broken": {
+            "type": "boolean",
+            "description": "Whether the variant was marked broken."
+          }
+        },
+        "required": [
+          "id",
+          "course_instance_id",
+          "assessment_id",
+          "instance_question_id",
+          "question_id",
+          "user_id",
+          "team_id",
+          "number",
+          "created_at",
+          "open",
+          "broken"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "submissions": {
+      "description": "Student answer submissions, one row per submission, without answer contents. Instructor previews are excluded.",
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Submission ID."
+          },
+          "course_instance_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Course instance."
+          },
+          "assessment_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment."
+          },
+          "assessment_instance_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Assessment attempt."
+          },
+          "instance_question_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Instance question."
+          },
+          "question_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Question."
+          },
+          "variant_id": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Variant."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+$",
+                "description": "Student; null for team work."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d+$",
+                "description": "Team; null for individual work."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "When the student submitted."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["Public", "Exam", "SEB"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where it was submitted."
+          },
+          "gradable": {
+            "description": "False when the answer had format errors.",
+            "type": ["boolean", "null"]
+          },
+          "broken": {
+            "description": "Whether grading hit an error.",
+            "type": ["boolean", "null"]
+          },
+          "graded_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "description": "When grading finished; null if not graded."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "score": {
+            "description": "Score from 0 to 1, after any manual override; null if not graded.",
+            "type": ["number", "null"]
+          },
+          "correct": {
+            "description": "Whether the submission was fully correct.",
+            "type": ["boolean", "null"]
+          },
+          "overridden": {
+            "type": "boolean",
+            "description": "Whether staff manually overrode the score."
+          },
+          "credit": {
+            "description": "Credit percentage applied at submission time, such as 100 or 80.",
+            "type": ["number", "null"]
+          }
+        },
+        "required": [
+          "id",
+          "course_instance_id",
+          "assessment_id",
+          "assessment_instance_id",
+          "instance_question_id",
+          "question_id",
+          "variant_id",
+          "user_id",
+          "team_id",
+          "submitted_at",
+          "mode",
+          "gradable",
+          "broken",
+          "graded_at",
+          "score",
+          "correct",
+          "overridden",
+          "credit"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
