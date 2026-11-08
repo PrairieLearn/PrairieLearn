@@ -63,15 +63,9 @@ async function githubReviewBase(git: (...args: string[]) => Promise<string>, bra
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
-// https://developers.cloudflare.com/containers/platform-details/limits/
-const InstanceTypeSchema = z.enum([
-  'lite',
-  'basic',
-  'standard-1',
-  'standard-2',
-  'standard-3',
-  'standard-4',
-]);
+// The named types ctx.container.start() accepts; it rejects `basic`.
+// https://developers.cloudflare.com/containers/configuration/scheduling-policy/#choose-an-instance-size-at-runtime
+const InstanceTypeSchema = z.enum(['lite', 'standard-1', 'standard-2', 'standard-3', 'standard-4']);
 
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.

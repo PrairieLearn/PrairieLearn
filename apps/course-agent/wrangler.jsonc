@@ -10,7 +10,7 @@
     "OPENAI_MODEL": "gpt-6-luna",
     "AGENT_TURN_SECONDS": "18000",
     "USER_IDLE_SECONDS": "600",
-    // A Cloudflare instance type: lite, basic, or standard-1 through standard-4.
+    // A Cloudflare instance type: lite or standard-1 through standard-4.
     "SANDBOX_INSTANCE_TYPE": "standard-2",
     "SENTRY_ENVIRONMENT": "development",
     "DEBUG_RUNNER_OUTPUT": "false"
@@ -80,7 +80,7 @@
         "OPENAI_MODEL": "gpt-6-luna",
         "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
-        // A Cloudflare instance type: lite, basic, or standard-1 through standard-4.
+        // A Cloudflare instance type: lite or standard-1 through standard-4.
         "SANDBOX_INSTANCE_TYPE": "standard-2",
         "SENTRY_ENVIRONMENT": "staging",
         // Temporary: forwards Codex runner output to diagnose staging sandbox startup. Codex output
@@ -132,7 +132,7 @@
         "OPENAI_MODEL": "gpt-6-luna",
         "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
-        // A Cloudflare instance type: lite, basic, or standard-1 through standard-4.
+        // A Cloudflare instance type: lite or standard-1 through standard-4.
         "SANDBOX_INSTANCE_TYPE": "standard-2",
         "SENTRY_ENVIRONMENT": "production",
         "DEBUG_RUNNER_OUTPUT": "false"
