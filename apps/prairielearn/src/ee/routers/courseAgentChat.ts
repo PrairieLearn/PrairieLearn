@@ -4,7 +4,6 @@ import { type Express, type Request, type Response, Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { z } from 'zod';
 
-import { MAX_ATTACHMENT_BYTES } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { checkSignedTokenPrefix } from '@prairielearn/signed-token';
@@ -133,15 +132,12 @@ router.get(
   }),
 );
 
-// Stream one attachment to the agent service, which returns its upload ID. The browser sends raw
-// bytes as application/octet-stream, so PrairieLearn's body parsers leave the stream untouched.
+// Stream one attachment to the agent service, which enforces the size limits and returns its
+// upload ID. The browser sends raw bytes as application/octet-stream, so PrairieLearn's body
+// parsers leave the stream untouched.
 router.post(
   '/conversations/:conversation_id/uploads',
   typedAsyncHandler<'course'>(async (req, res, next) => {
-    const size = Number(req.get('Content-Length'));
-    if (!Number.isSafeInteger(size) || size < 1 || size > MAX_ATTACHMENT_BYTES) {
-      throw new HttpStatusError(413, 'Attachments can be at most 20 MB.');
-    }
     await prepareConversationProxyRequest(req, res, '/uploads');
     await proxy(req, res, next);
   }),

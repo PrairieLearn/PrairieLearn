@@ -7,6 +7,7 @@ import {
   MAX_CONVERSATION_ATTACHMENTS,
   MAX_CONVERSATION_ATTACHMENT_BYTES,
   RequestChangesResultSchema,
+  UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
 
 import { uploadKey, uploadPrefix } from '../conversation/attachments.js';
@@ -64,9 +65,7 @@ app.post('/conversations', async (c) => {
 
 const conversations = new Hono<{ Bindings: Env }>();
 conversations.use('/:id/*', async (c, next) => {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(c.req.param('id')!)) {
-    return c.notFound();
-  }
+  if (!UUID_PATTERN.test(c.req.param('id')!)) return c.notFound();
   await next();
 });
 
@@ -89,7 +88,7 @@ conversations.post('/:id/resume', async (c) => {
 conversations.post('/:id/uploads', async (c) => {
   const size = Number(c.req.header('Content-Length'));
   if (!c.req.raw.body || !Number.isSafeInteger(size) || size < 1 || size > MAX_ATTACHMENT_BYTES) {
-    return c.text('Expected a file of at most 20 MB', 400);
+    return c.text(`Expected a file of 1 to ${MAX_ATTACHMENT_BYTES} bytes`, 400);
   }
   // Uploads that were never sent count too. Concurrent uploads can overshoot the cap by a message.
   const { objects } = await c.env.CHECKPOINTS.list({ prefix: uploadPrefix(c.req.param('id')) });
