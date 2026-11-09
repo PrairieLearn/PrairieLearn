@@ -22,6 +22,50 @@ describe('Issues', { timeout: 15_000 }, function () {
 
   doTest(courseInstanceIssuesUrl, 'course');
   doTest(courseIssuesUrl, 'course instance');
+
+  test('should hide the user row for issues without a user', async () => {
+    const questionId = await sqldb.queryScalar(sql.select_question_id, IdSchema);
+    const questionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
+    let res = await fetch(questionUrl);
+    let $ = cheerio.load(await res.text());
+
+    const csrfToken = $('div[id="issueCollapse"] input[name="__csrf_token"]').first().attr('value');
+    assert(typeof csrfToken === 'string');
+    const variantId = $('div[id="issueCollapse"] input[name="__variant_id"]').first().attr('value');
+    assert(typeof variantId === 'string');
+
+    for (const description of ['issue with user', 'issue without user']) {
+      res = await fetch(questionUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'report_issue',
+          __csrf_token: csrfToken,
+          __variant_id: variantId,
+          description,
+        }),
+      });
+      assert.equal(res.status, 200);
+    }
+
+    await sqldb.execute(sql.clear_issue_user, {
+      variant_id: variantId,
+      student_message: 'issue without user',
+    });
+
+    res = await fetch(`${questionUrl}?variant_id=${variantId}`);
+    assert.equal(res.status, 200);
+    $ = cheerio.load(await res.text());
+
+    const issueTables = $('table[aria-label="Issue information"]');
+    assert.lengthOf(issueTables, 2);
+    const hasUserRow = issueTables.toArray().map(
+      (table) =>
+        $(table)
+          .find('th')
+          .filter((_, th) => $(th).text() === 'User:').length > 0,
+    );
+    assert.deepEqual(hasUserRow, [true, false]);
+  });
 });
 
 function doTest(issuesUrl: string, label: string) {
@@ -29,8 +73,7 @@ function doTest(issuesUrl: string, label: string) {
     `Report issue with question and close all issues in ${label}`,
     { concurrent: false },
     () => {
-      let questionUrl: string;
-      let reportedVariantId: string;
+      let questionUrl;
 
       test('should report issues to a question', async () => {
         const questionId = await sqldb.queryScalar(sql.select_question_id, IdSchema);
@@ -47,7 +90,6 @@ function doTest(issuesUrl: string, label: string) {
           .first()
           .attr('value');
         assert(typeof variantId === 'string');
-        reportedVariantId = variantId;
 
         // We'll report three issues total so that we have a variety to close.
         // We give them distinct descriptions to test that "close matching" works.
@@ -87,22 +129,6 @@ function doTest(issuesUrl: string, label: string) {
 
         const rowCount = await sqldb.execute(sql.select_open_issues);
         assert.equal(rowCount, 3, 'Expected three open issues');
-      });
-
-      test('should hide the user row for issues without a user', async () => {
-        await sqldb.execute(sql.clear_issue_user, {
-          variant_id: reportedVariantId,
-          student_message: 'velvet sunset glow',
-        });
-
-        const res = await fetch(`${questionUrl}?variant_id=${reportedVariantId}`);
-        assert.equal(res.status, 200);
-        const $ = cheerio.load(await res.text());
-
-        const issueTables = $('table[aria-label="Issue information"]');
-        assert.lengthOf(issueTables, 3);
-        const userRows = issueTables.find('th').filter((_, th) => $(th).text() === 'User:');
-        assert.lengthOf(userRows, 2);
       });
 
       test('should close issues matching a query', async () => {
