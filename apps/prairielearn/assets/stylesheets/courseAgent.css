@@ -50,11 +50,19 @@
 }
 
 .btn.course-agent-icon-button {
+  --course-agent-icon-button-hover-bg: color-mix(
+    in srgb,
+    var(--bs-body-color) 10%,
+    var(--bs-secondary-bg)
+  );
   --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-bg: var(--bs-secondary-bg);
   --bs-btn-hover-color: var(--bs-body-color);
-  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-hover-bg: var(--course-agent-icon-button-hover-bg);
   --bs-btn-active-color: var(--bs-body-color);
-  --bs-btn-active-bg: var(--bs-secondary-bg);
+  --bs-btn-active-bg: var(--course-agent-icon-button-hover-bg);
+  --bs-btn-active-border-color: transparent;
+  --bs-btn-disabled-bg: var(--bs-secondary-bg);
   text-decoration: none;
 }
 
