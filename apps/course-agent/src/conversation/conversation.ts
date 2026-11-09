@@ -31,7 +31,7 @@ import {
   attachmentsOf,
   attachmentsToWrite,
   describeAttachments,
-  isImage,
+  imageType,
   keepUploadReferences,
   uploadKey,
 } from './attachments.js';
@@ -572,7 +572,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const images = new Set<string>();
     for (const [index, upload] of uploads.entries()) {
       if (!upload) return null;
-      if (isImage(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
+      if (imageType(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
     }
     return images;
   }

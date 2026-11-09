@@ -6,6 +6,7 @@ import { Button, Spinner } from 'react-bootstrap';
 import {
   MAX_ATTACHMENTS_PER_MESSAGE,
   MAX_ATTACHMENT_BYTES,
+  THUMBNAIL_PIXELS,
   UploadedAttachmentSchema,
   attachmentIdOf,
   attachmentUrl,
@@ -100,6 +101,36 @@ function uploadFile(url: string, csrfToken: string, file: File, onProgress: (p: 
 }
 
 /**
+ * A small WebP of an image for its preview in chat history, or null if the browser can't decode
+ * it (HEIC in most browsers, or a corrupt file). Browsers without WebP encoding produce a PNG.
+ */
+async function makeThumbnail(file: File) {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return null;
+  }
+  const scale = Math.min(1, THUMBNAIL_PIXELS / Math.max(bitmap.width, bitmap.height));
+  const canvas = new OffscreenCanvas(
+    Math.max(1, Math.round(bitmap.width * scale)),
+    Math.max(1, Math.round(bitmap.height * scale)),
+  );
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return await canvas.convertToBlob({ type: 'image/webp', quality: 0.8 });
+}
+
+/** A preview is optional, so a failed one leaves the card's file icon in its place. */
+async function uploadThumbnail(url: string, csrfToken: string, thumbnail: Blob) {
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/octet-stream' },
+    body: thumbnail,
+  }).catch(() => null);
+}
+
+/**
  * Upload every attachment not uploaded yet, then return the message's file parts, or null if any
  * upload failed. Earlier successes keep their upload IDs, so sending again retries only failures.
  */
@@ -119,10 +150,13 @@ export async function uploadDraftAttachments(
     attachments.map(async ({ key, file, uploadId }) => {
       if (uploadId) return uploadId;
       update(key, { progress: 0, uploadFailed: false });
+      const thumbnail = file.type.startsWith('image/') ? makeThumbnail(file) : null;
       const result = await uploadFile(url, csrfToken, file, (progress) =>
         update(key, { progress }),
       );
       if ('id' in result) {
+        const made = await thumbnail;
+        if (made) await uploadThumbnail(`${url}/${result.id}/thumbnail`, csrfToken, made);
         update(key, { uploadId: result.id, progress: null });
         return result.id;
       }
@@ -172,6 +206,7 @@ function AttachmentCard({
   mediaType,
   detail,
   previewUrl = null,
+  downloadUrl = null,
   danger = false,
   busy = false,
   onRemove,
@@ -180,47 +215,72 @@ function AttachmentCard({
   mediaType: string;
   detail: string;
   previewUrl?: string | null;
+  downloadUrl?: string | null;
   danger?: boolean;
   busy?: boolean;
   onRemove?: () => void;
 }) {
-  return (
-    <li
-      className={clsx(
-        'course-agent-attachment position-relative d-flex align-items-center gap-2 rounded-2 border bg-body-tertiary',
-        danger && 'border-danger',
-      )}
-    >
-      {previewUrl ? (
-        <img
-          src={previewUrl}
-          alt=""
-          className="course-agent-attachment-icon rounded-1 object-fit-cover"
-        />
-      ) : (
-        <span
-          className={clsx(
-            'course-agent-attachment-icon rounded-1 d-flex align-items-center justify-content-center',
-            danger ? 'bg-danger-subtle text-danger' : 'bg-body-secondary text-body-secondary',
-          )}
-          aria-hidden="true"
-        >
-          {busy ? (
-            <Spinner animation="border" size="sm" />
-          ) : (
-            <i
-              className={clsx(
-                'bi',
-                danger ? 'bi-exclamation-triangle' : fileIcon(mediaType, filename),
-              )}
-            />
-          )}
-        </span>
-      )}
+  // Uploads from before previews existed, and images the browser couldn't decode, have none.
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const content = (
+    <>
+      <span
+        className={clsx(
+          'course-agent-attachment-icon position-relative overflow-hidden rounded-1 d-flex align-items-center justify-content-center',
+          danger ? 'bg-danger-subtle text-danger' : 'bg-body-secondary text-body-secondary',
+        )}
+        aria-hidden="true"
+      >
+        {busy ? (
+          <Spinner animation="border" size="sm" />
+        ) : previewUrl && !previewFailed ? (
+          <img
+            src={previewUrl}
+            alt=""
+            className="w-100 h-100 object-fit-cover"
+            onError={() => setPreviewFailed(true)}
+          />
+        ) : (
+          <i
+            className={clsx(
+              'bi',
+              danger ? 'bi-exclamation-triangle' : fileIcon(mediaType, filename),
+            )}
+          />
+        )}
+        {downloadUrl && (
+          <span className="course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+            <i className="bi bi-download" />
+          </span>
+        )}
+      </span>
       <span className="d-flex flex-column overflow-hidden small lh-sm">
         <span className="text-truncate">{filename}</span>
         <span className={danger ? 'text-danger' : 'text-body-secondary'}>{detail}</span>
       </span>
+    </>
+  );
+  return (
+    <li
+      className={clsx(
+        'course-agent-attachment position-relative d-flex rounded-2 border bg-body-tertiary',
+        danger && 'border-danger',
+      )}
+    >
+      {downloadUrl ? (
+        <a
+          href={downloadUrl}
+          download={filename}
+          className="course-agent-attachment-body d-flex align-items-center gap-2 text-reset text-decoration-none"
+          aria-label={`Download ${filename}`}
+        >
+          {content}
+        </a>
+      ) : (
+        <span className="course-agent-attachment-body d-flex align-items-center gap-2">
+          {content}
+        </span>
+      )}
       {onRemove && (
         <Button
           variant="light"
@@ -274,23 +334,33 @@ export function DraftAttachmentList({
   );
 }
 
-/** A sent message's attachments, shown above its text. */
-export function SentAttachments({ message }: { message: UIMessage }) {
-  const files = message.parts.filter(
-    (part): part is FileUIPart => part.type === 'file' && attachmentIdOf(part.url) !== null,
-  );
+/** A sent message's attachments, shown above its text. Each one downloads when clicked. */
+export function SentAttachments({
+  message,
+  uploadsUrl,
+}: {
+  message: UIMessage;
+  uploadsUrl: string;
+}) {
+  const files = message.parts.flatMap((part) => {
+    if (part.type !== 'file') return [];
+    const id = attachmentIdOf(part.url);
+    return id ? [{ part, url: `${uploadsUrl}/${id}` }] : [];
+  });
   if (files.length === 0) return null;
   return (
     <ul
       className="list-unstyled d-flex flex-wrap justify-content-end gap-2 m-0"
       aria-label="Attachments"
     >
-      {files.map((part) => (
+      {files.map(({ part, url }) => (
         <AttachmentCard
           key={part.url}
           filename={part.filename ?? 'File'}
           mediaType={part.mediaType}
           detail={typeLabel(part.mediaType, part.filename ?? '')}
+          previewUrl={part.mediaType.startsWith('image/') ? `${url}/thumbnail` : null}
+          downloadUrl={url}
         />
       ))}
     </ul>

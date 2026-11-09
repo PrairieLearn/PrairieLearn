@@ -6,10 +6,11 @@ import {
   MAX_ATTACHMENT_BYTES,
   MAX_CONVERSATION_ATTACHMENTS,
   MAX_CONVERSATION_ATTACHMENT_BYTES,
+  MAX_THUMBNAIL_BYTES,
   RequestChangesResultSchema,
 } from '@prairielearn/course-agent-types';
 
-import { uploadKey, uploadPrefix } from '../conversation/attachments.js';
+import { imageType, thumbnailKey, uploadKey, uploadPrefix } from '../conversation/attachments.js';
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
@@ -62,13 +63,27 @@ app.post('/conversations', async (c) => {
   return c.json({ id }, 201);
 });
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 const conversations = new Hono<{ Bindings: Env }>();
 conversations.use('/:id/*', async (c, next) => {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(c.req.param('id')!)) {
-    return c.notFound();
-  }
+  if (!UUID.test(c.req.param('id')!)) return c.notFound();
   await next();
 });
+conversations.use('/:id/uploads/:uploadId/*', async (c, next) => {
+  if (!UUID.test(c.req.param('uploadId')!)) return c.notFound();
+  await next();
+});
+
+/**
+ * PrairieLearn serves uploads from its own origin, so nothing an instructor uploads may render as
+ * a page there: files always download, and only a recognized image is served as one.
+ */
+const UPLOAD_HEADERS = {
+  'Cache-Control': 'private, max-age=86400',
+  'Content-Security-Policy': "default-src 'none'; sandbox",
+  'X-Content-Type-Options': 'nosniff',
+};
 
 conversations.post('/:id/resume', async (c) => {
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
@@ -92,7 +107,10 @@ conversations.post('/:id/uploads', async (c) => {
     return c.text('Expected a file of at most 20 MB', 400);
   }
   // Uploads that were never sent count too. Concurrent uploads can overshoot the cap by a message.
-  const { objects } = await c.env.CHECKPOINTS.list({ prefix: uploadPrefix(c.req.param('id')) });
+  const { objects } = await c.env.CHECKPOINTS.list({
+    prefix: uploadPrefix(c.req.param('id')),
+    delimiter: '/',
+  });
   const total = objects.reduce((sum, object) => sum + object.size, 0);
   if (
     objects.length >= MAX_CONVERSATION_ATTACHMENTS ||
@@ -103,6 +121,43 @@ conversations.post('/:id/uploads', async (c) => {
   const id = crypto.randomUUID();
   await c.env.CHECKPOINTS.put(uploadKey(c.req.param('id'), id), c.req.raw.body);
   return c.json({ id }, 201);
+});
+
+conversations.get('/:id/uploads/:uploadId', async (c) => {
+  const upload = await c.env.CHECKPOINTS.get(uploadKey(c.req.param('id'), c.req.param('uploadId')));
+  if (!upload) return c.notFound();
+  return new Response(upload.body, {
+    headers: {
+      ...UPLOAD_HEADERS,
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(upload.size),
+      'Content-Disposition': 'attachment',
+    },
+  });
+});
+
+// The browser makes an image's preview, since Workers can't resize images without a paid service.
+// Only an existing upload gets one, so thumbnails can't fill the bucket past the upload cap.
+conversations.post('/:id/uploads/:uploadId/thumbnail', async (c) => {
+  const size = Number(c.req.header('Content-Length'));
+  if (!c.req.raw.body || !Number.isSafeInteger(size) || size < 1 || size > MAX_THUMBNAIL_BYTES) {
+    return c.text('Expected a thumbnail of at most 512 KB', 400);
+  }
+  const { id, uploadId } = c.req.param();
+  if (!(await c.env.CHECKPOINTS.head(uploadKey(id, uploadId)))) return c.notFound();
+  await c.env.CHECKPOINTS.put(thumbnailKey(id, uploadId), c.req.raw.body);
+  return c.body(null, 204);
+});
+
+conversations.get('/:id/uploads/:uploadId/thumbnail', async (c) => {
+  const thumbnail = await c.env.CHECKPOINTS.get(
+    thumbnailKey(c.req.param('id'), c.req.param('uploadId')),
+  );
+  if (!thumbnail) return c.notFound();
+  const bytes = new Uint8Array(await thumbnail.arrayBuffer());
+  const type = imageType(bytes);
+  if (!type) return c.notFound();
+  return new Response(bytes, { headers: { ...UPLOAD_HEADERS, 'Content-Type': type } });
 });
 
 conversations.get('/:id/reviews/:reviewId', async (c) => {

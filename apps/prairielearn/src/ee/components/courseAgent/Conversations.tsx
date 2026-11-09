@@ -325,13 +325,14 @@ function Chat({
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
 
+  const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
   const { update: updateAttachment, handOff: setAttachments } = drafts;
   /** Upload the attachments, then send. A failed upload keeps the draft for another try. */
   const send = useCallback(
     async (text: string, attachments: DraftAttachment[]) => {
       setSending(true);
       const files = await uploadDraftAttachments(attachments, {
-        url: `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`,
+        url: uploadsUrl,
         csrfToken: chatCsrfToken,
         update: updateAttachment,
       });
@@ -341,7 +342,7 @@ function Chat({
       setDraft('');
       setAttachments([]);
     },
-    [courseId, conversationId, chatCsrfToken, updateAttachment, setAttachments, sendMessage],
+    [uploadsUrl, chatCsrfToken, updateAttachment, setAttachments, sendMessage],
   );
 
   const initialMessageSentRef = useRef(false);
@@ -400,6 +401,7 @@ function Chat({
               message={message}
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
+              uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
               onToolCallExpand={stickToBottom.stopScroll}
             />
@@ -655,6 +657,7 @@ function Message({
   message,
   live,
   conversationId,
+  uploadsUrl,
   awaitingReviewId,
   onToolCallExpand,
 }: {
@@ -662,6 +665,7 @@ function Message({
   /** Whether this message is still streaming. */
   live: boolean;
   conversationId: string;
+  uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
   /** Opening a tool call must not scroll it out from under the pointer. */
@@ -671,7 +675,7 @@ function Message({
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     return (
       <div className="d-flex flex-column align-items-end gap-2">
-        <SentAttachments message={message} />
+        <SentAttachments message={message} uploadsUrl={uploadsUrl} />
         <div className="course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
           {text}
         </div>

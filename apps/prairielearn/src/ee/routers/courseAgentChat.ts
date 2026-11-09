@@ -4,7 +4,7 @@ import { type Express, type Request, type Response, Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { z } from 'zod';
 
-import { MAX_ATTACHMENT_BYTES } from '@prairielearn/course-agent-types';
+import { MAX_ATTACHMENT_BYTES, MAX_THUMBNAIL_BYTES } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { checkSignedTokenPrefix } from '@prairielearn/signed-token';
@@ -24,6 +24,7 @@ const CHAT_UPGRADE_PATH = /^\/pl\/course\/\d+\/course_agent\/conversations\/\d+(
 const router = Router({ mergeParams: true });
 const ParamsSchema = z.object({ course_id: IdSchema, conversation_id: IdSchema });
 const ChatQuerySchema = z.object({ csrfToken: z.string().optional() });
+const UploadParamsSchema = z.object({ upload_id: z.uuid() });
 
 /**
  * Saves any bytes Node already received after an upgrade request until the proxy takes over.
@@ -145,6 +146,34 @@ router.post(
     await prepareConversationProxyRequest(req, res, '/uploads');
     await proxy(req, res, next);
   }),
+);
+
+/** Forward a request about one upload, after checking its ID so it can't change the path. */
+function proxyUpload(servicePathSuffix: '' | '/thumbnail') {
+  return typedAsyncHandler<'course'>(async (req, res, next) => {
+    const { upload_id } = parseRequestParams(req, UploadParamsSchema);
+    await prepareConversationProxyRequest(req, res, `/uploads/${upload_id}${servicePathSuffix}`);
+    await proxy(req, res, next);
+  });
+}
+
+// The agent service serves files as downloads and thumbnails only as images, so nothing uploaded
+// can render as a page on PrairieLearn's origin.
+router.get('/conversations/:conversation_id/uploads/:upload_id', proxyUpload(''));
+router.get(
+  '/conversations/:conversation_id/uploads/:upload_id/thumbnail',
+  proxyUpload('/thumbnail'),
+);
+router.post(
+  '/conversations/:conversation_id/uploads/:upload_id/thumbnail',
+  (req, _res, next) => {
+    const size = Number(req.get('Content-Length'));
+    if (!Number.isSafeInteger(size) || size < 1 || size > MAX_THUMBNAIL_BYTES) {
+      throw new HttpStatusError(413, 'Thumbnails can be at most 512 KB.');
+    }
+    next();
+  },
+  proxyUpload('/thumbnail'),
 );
 
 // Return saved message history as JSON.

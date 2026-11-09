@@ -69,7 +69,8 @@ describe('Course agent access and conversation privacy', () => {
     serviceRequests.push({
       path: request.url!,
       body:
-        request.headers['content-type'] === 'application/gzip'
+        request.headers['content-type'] === 'application/gzip' ||
+        request.headers['content-type'] === 'application/octet-stream'
           ? bytes
           : body
             ? JSON.parse(body)
@@ -187,6 +188,41 @@ describe('Course agent access and conversation privacy', () => {
     });
     expect(serviceRequests.map((request) => request.path)).toEqual([
       `/conversations/${own.agent_conversation_id}/resume`,
+    ]);
+  });
+
+  test('proxies attachment downloads and thumbnails only for the conversation owner', async () => {
+    const own = await createConversation(owner);
+    const other = await createConversation(otherOwner);
+    const uploadId = crypto.randomUUID();
+    const uploadsUrl = (conversationId: string) =>
+      `${siteUrl}/pl/course/1/course_agent/conversations/${conversationId}/uploads`;
+    const thumbnail = Buffer.from('thumbnail');
+    await withUser(owner, async () => {
+      const csrfToken = generatePrefixCsrfToken(
+        { url: '/pl/course/1/course_agent', authn_user_id: owner.id },
+        config.secretKey,
+      );
+      expect((await fetch(`${uploadsUrl(own.id)}/${uploadId}`)).status).toBe(200);
+      expect((await fetch(`${uploadsUrl(own.id)}/${uploadId}/thumbnail`)).status).toBe(200);
+      const upload = (headers: Record<string, string>) =>
+        fetch(`${uploadsUrl(own.id)}/${uploadId}/thumbnail`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream', ...headers },
+          body: thumbnail,
+        });
+      expect((await upload({})).status).toBe(403);
+      expect((await upload({ 'X-CSRF-Token': csrfToken })).status).toBe(200);
+      expect((await fetch(`${uploadsUrl(other.id)}/${uploadId}`)).status).toBe(404);
+      expect((await fetch(`${uploadsUrl(own.id)}/not-a-uuid`)).status).toBe(400);
+    });
+    const thumbnailPath = `/conversations/${own.agent_conversation_id}/uploads/${uploadId}/thumbnail`;
+    expect(serviceRequests).toEqual([
+      expect.objectContaining({
+        path: `/conversations/${own.agent_conversation_id}/uploads/${uploadId}`,
+      }),
+      expect.objectContaining({ path: thumbnailPath }),
+      { path: thumbnailPath, body: thumbnail, authorization: 'Bearer test-token' },
     ]);
   });
 

@@ -73,7 +73,7 @@ The agent can search the web and read pages through Codex's `web.run` tool, for 
 
 ## Attachments
 
-Staff can attach up to 10 files of at most 20 MB each to a message, and up to 100 files totaling 200 MB to a conversation. The browser uploads each one through PrairieLearn when the message is sent, and the Worker stores it in the checkpoint bucket under `uploads/<conversation>/<upload>`. The agent sees attached images and can read every attachment from `/workspace/uploads`; see [CONTRACT.md](CONTRACT.md#attachments). Attachment contents reach OpenAI when the agent reads or views them.
+Staff can attach up to 10 files of at most 20 MB each to a message, and up to 100 files totaling 200 MB to a conversation. The browser uploads each one through PrairieLearn when the message is sent, and the Worker stores it in the checkpoint bucket under `uploads/<conversation>/<upload>`. The agent sees attached images and can read every attachment from `/workspace/uploads`; see [CONTRACT.md](CONTRACT.md#attachments). Attachment contents reach OpenAI when the agent reads or views them. Staff can download sent attachments, and images show a small preview that the browser makes when uploading.
 
 Uploads are kept until a bucket lifecycle rule expires them. Add the rule to each deployed environment's bucket, choosing the retention period for that environment:
 
