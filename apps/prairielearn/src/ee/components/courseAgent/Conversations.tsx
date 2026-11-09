@@ -11,6 +11,7 @@ import {
   type SyntheticEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
@@ -506,7 +507,16 @@ function Composer({
   onStop?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [dragging, setDragging] = useState(false);
+  // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
+  // the height, and a hidden panel has no height to measure.
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    if (textarea.scrollHeight) textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [draft]);
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       onSubmit(event);
@@ -546,9 +556,10 @@ function Composer({
           onRemove={onRemoveAttachment}
         />
         <Form.Control
+          ref={textareaRef}
           as="textarea"
-          rows={3}
-          className="border-0 shadow-none bg-transparent"
+          rows={2}
+          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
           value={draft}
           placeholder="Ask the course agent…"
           aria-label="Message"
@@ -575,7 +586,7 @@ function Composer({
           <Button
             variant="link"
             size="sm"
-            className="text-body-secondary"
+            className="course-agent-icon-button"
             aria-label="Attach files"
             disabled={pending}
             onClick={() => fileInputRef.current?.click()}
@@ -613,7 +624,7 @@ function Composer({
           </div>
         </div>
         {dragging && (
-          <div className="course-agent-drop-target position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex flex-column align-items-center justify-content-center text-primary bg-primary-subtle">
+          <div className="course-agent-drop-target position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex flex-column align-items-center justify-content-center text-primary">
             <i className="bi bi-upload fs-4" aria-hidden="true" />
             <span className="fw-medium">Drop files to attach</span>
             <span className="small">Up to {MAX_ATTACHMENTS_PER_MESSAGE} files, 20 MB each</span>

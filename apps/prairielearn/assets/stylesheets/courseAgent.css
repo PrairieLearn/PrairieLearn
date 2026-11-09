@@ -43,6 +43,21 @@
   border-color: var(--bs-primary) !important;
 }
 
+.course-agent-composer-input {
+  max-height: 12rem;
+  overflow-y: auto;
+  resize: none;
+}
+
+.btn.course-agent-icon-button {
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-active-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-secondary-bg);
+  text-decoration: none;
+}
+
 .course-agent-attachment {
   height: 3.5rem;
   max-width: 13rem;
@@ -63,8 +78,16 @@
   height: 1.25rem;
 }
 
+/* Touch screens have no hover, so they always show the remove button. */
+@media (hover: hover) {
+  .course-agent-attachment:not(:hover, :focus-within) .course-agent-attachment-remove {
+    opacity: 0;
+  }
+}
+
 .course-agent-drop-target {
-  border: 2px dashed var(--bs-primary);
+  background-color: color-mix(in srgb, var(--bs-primary) 6%, var(--bs-body-bg));
+  border: 2px dashed color-mix(in srgb, var(--bs-primary) 45%, var(--bs-body-bg));
   pointer-events: none;
 }
 
