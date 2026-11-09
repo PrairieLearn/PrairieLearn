@@ -4,7 +4,7 @@ site_url: https://docs.prairielearn.com/
 repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme:
   name: material
-  logo: assets/flower-square-nobg.svg
+  logo: assets/prairielearn-logo.png
   custom_dir: docs/overrides
   favicon: assets/flower-square-256.png
   icon:

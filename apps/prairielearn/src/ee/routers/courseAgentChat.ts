@@ -1,4 +1,4 @@
-import { type IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingMessage } from 'node:http';
 
 import { type Express, type Request, type Response, Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -11,6 +11,7 @@ import { IdSchema, parseRequestParams, parseRequestQuery } from '@prairielearn/z
 
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
+import { createUpgradeResponse } from '../../lib/http-upgrade.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseAgentEnabled } from '../lib/course-agent/access.js';
 import { buildCourseAgentServiceRequest } from '../lib/course-agent/client.js';
@@ -50,14 +51,9 @@ const proxy = createProxyMiddleware<Request, Response>({
 /** Send upgrades through the same session/authentication/RBAC chain as HTTP. */
 export function handleCourseAgentUpgrade(app: Express, req: IncomingMessage, head: Buffer) {
   if (!CHAT_UPGRADE_PATH.test(req.url ?? '')) return false;
+  const res = createUpgradeResponse(req);
+  if (!res) return true;
   upgradeHeads.set(req, head);
-  const res = new ServerResponse(req);
-  res.assignSocket(req.socket);
-  // Node hands upgrade sockets to us without managing their HTTP response lifecycle.
-  // If Express rejects the upgrade, close the socket after its response is written.
-  // Successful upgrades detach this response and transfer the socket to the proxy below.
-  res.shouldKeepAlive = false;
-  res.once('finish', () => req.socket.end());
   app(req, res);
   return true;
 }

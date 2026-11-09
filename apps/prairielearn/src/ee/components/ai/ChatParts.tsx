@@ -1,8 +1,46 @@
 import type { ReasoningUIPart, TextUIPart } from 'ai';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 
 import { MemoizedMarkdown } from './MemoizedMarkdown.js';
+
+/** A chevron and summary that show or hide the details beneath them. */
+export function Disclosure({
+  summary,
+  expanded,
+  onToggle,
+  className,
+  children,
+}: {
+  summary: ReactNode;
+  expanded: boolean;
+  onToggle: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  const detailsId = useId();
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        className="d-flex align-items-center gap-2 w-100 btn btn-link p-0 text-decoration-none text-start text-body-secondary"
+        aria-expanded={expanded}
+        aria-controls={detailsId}
+        onClick={onToggle}
+      >
+        <i
+          className={clsx(
+            'bi small flex-shrink-0',
+            expanded ? 'bi-chevron-down' : 'bi-chevron-right',
+          )}
+          aria-hidden="true"
+        />
+        {summary}
+      </button>
+      {expanded && <div id={detailsId}>{children}</div>}
+    </div>
+  );
+}
 
 export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
   // Track whether the user has explicitly interacted with the expand/collapse
@@ -16,35 +54,20 @@ export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
 
   if (!part.text) return null;
 
-  const toggleExpanded = () => {
-    setUserControlled(true);
-    setUserExpanded(!isExpanded);
-  };
-
   return (
-    <div className="d-flex flex-column gap-1 border rounded p-1 small">
-      <button
-        type="button"
-        className="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
-        aria-expanded={isExpanded}
-        onClick={toggleExpanded}
-      >
-        <i
-          className={clsx('bi small text-muted', {
-            'bi-chevron-right': !isExpanded,
-            'bi-chevron-down': isExpanded,
-          })}
-          aria-hidden="true"
-        />
-        <span className="small text-muted">{isStreaming ? 'Thinking...' : 'Thinking'}</span>
-      </button>
-
-      {isExpanded && (
-        <div className="markdown-body reasoning-body p-1 pt-0">
-          <MemoizedMarkdown content={part.text} />
-        </div>
-      )}
-    </div>
+    <Disclosure
+      className="d-flex flex-column gap-1 border rounded p-1 small"
+      summary={<span className="small">{isStreaming ? 'Thinking...' : 'Thinking'}</span>}
+      expanded={isExpanded}
+      onToggle={() => {
+        setUserControlled(true);
+        setUserExpanded(!isExpanded);
+      }}
+    >
+      <div className="markdown-body reasoning-body p-1 pt-0">
+        <MemoizedMarkdown content={part.text} />
+      </div>
+    </Disclosure>
   );
 }
 
