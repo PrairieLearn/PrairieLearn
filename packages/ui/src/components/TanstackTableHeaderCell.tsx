@@ -122,7 +122,7 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
     minWidth: 0,
     maxWidth: headerSize,
     flexShrink: 0,
-    paddingInlineEnd: header.column.getCanResize() ? '16px' : undefined,
+    paddingInlineEnd: header.column.getCanResize() ? 0 : undefined,
     position: isPinned === 'start' ? 'sticky' : 'relative',
     top: 0,
     zIndex: isPinned === 'start' ? 2 : 1,
@@ -149,6 +149,8 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
         )}
         style={{
           minWidth: 0,
+          // Keep resize spacing inside the content so narrow headers retain their configured width.
+          paddingInlineEnd: header.column.getCanResize() ? '16px' : undefined,
         }}
       >
         <div
@@ -175,7 +177,11 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
         </div>
 
         {(canSort || canFilter) && (
-          <div className="d-flex align-items-center" style={{ flexShrink: 0 }}>
+          <div
+            className="d-flex align-items-center"
+            // Controls take precedence over the drag target when a column is too narrow for both.
+            style={{ flexShrink: 0, position: 'relative', zIndex: 1 }}
+          >
             {canSort && (
               <button
                 type="button"
