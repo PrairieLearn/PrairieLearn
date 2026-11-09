@@ -685,9 +685,9 @@ export class CourseSandbox extends DurableObject<Env> {
   }
 
   /** Saves downloaded course data outside the course checkout; returns the file path. */
-  async writeCourseData(table: string, contents: string) {
+  async writeCourseData(dataset: string, contents: string) {
     const dir = `${SESSION}/course-data`;
-    const path = `${dir}/${table}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
+    const path = `${dir}/${dataset}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
     // The session directory is root-owned (see lockSession), so create this one as root and give
     // it to the agent, which also writes its analysis scripts here.
     await this.exec(['mkdir', '-p', dir]);

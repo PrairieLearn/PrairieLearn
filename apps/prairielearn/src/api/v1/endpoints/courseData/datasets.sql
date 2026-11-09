@@ -1,4 +1,4 @@
--- Each block returns exactly the columns of its table's schema in tables.ts, limited to the course
+-- Each block returns exactly the columns of its dataset's schema in datasets.ts, limited to the course
 -- in $course_id. The router wraps a block as a subquery to apply filters, so joins should follow
 -- indexed paths down from course_instances.
 -- BLOCK course_instances

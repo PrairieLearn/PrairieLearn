@@ -9,7 +9,7 @@ import { SandboxTurn } from './turn.js';
 function runner({
   loseAcceptance = false,
   history = [] as unknown[],
-  onCourseData = undefined as ((request: { table?: string }) => Promise<ToolReply>) | undefined,
+  onCourseData = undefined as ((request: { dataset?: string }) => Promise<ToolReply>) | undefined,
 } = {}) {
   const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>
@@ -267,9 +267,9 @@ describe('course agent turns', () => {
   });
 
   it('offers get_course_data to new threads and returns its replies to the model', async () => {
-    const onCourseData = vi.fn(async ({ table }: { table?: string }) => {
-      if (table === 'missing') throw new Error('404: Unknown table "missing"');
-      return { success: true, text: `Wrote rows for ${table}` };
+    const onCourseData = vi.fn(async ({ dataset }: { dataset?: string }) => {
+      if (dataset === 'missing') throw new Error('404: Unknown dataset "missing"');
+      return { success: true, text: `Wrote rows for ${dataset}` };
     });
     const { native, commands, emit } = runner({ onCourseData });
     await native.connect();
@@ -290,13 +290,13 @@ describe('course agent turns', () => {
           arguments: args,
         },
       });
-    call(10, { table: 'submissions', filters: ['score=lt.0.5'] });
-    call(11, { table: 'missing' });
+    call(10, { dataset: 'submissions', filters: ['score=lt.0.5'] });
+    call(11, { dataset: 'missing' });
     call(12, { limit: 'ten' });
     const replies = () => commands.filter((command) => 'result' in command);
     await vi.waitFor(() => expect(replies()).toHaveLength(3));
     expect(onCourseData).toHaveBeenCalledWith({
-      table: 'submissions',
+      dataset: 'submissions',
       filters: ['score=lt.0.5'],
     });
     const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
@@ -306,7 +306,7 @@ describe('course agent turns', () => {
     });
     expect(byId[11]).toEqual({
       success: false,
-      contentItems: [{ type: 'inputText', text: '404: Unknown table "missing"' }],
+      contentItems: [{ type: 'inputText', text: '404: Unknown dataset "missing"' }],
     });
     expect(byId[12]).toMatchObject({ success: false });
   });

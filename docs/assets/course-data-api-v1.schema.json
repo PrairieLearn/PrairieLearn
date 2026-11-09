@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "tables": {
+  "datasets": {
     "course_instances": {
       "description": "Course instances (offerings of the course, such as a semester).",
       "schema": {

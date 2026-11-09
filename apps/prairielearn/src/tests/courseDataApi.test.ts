@@ -1,6 +1,6 @@
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
-import { COURSE_DATA_TABLES, courseDataSchema } from '../api/v1/endpoints/courseData/tables.js';
+import { COURSE_DATA_DATASETS, courseDataSchema } from '../api/v1/endpoints/courseData/datasets.js';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
@@ -51,7 +51,7 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
 
   helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
-  describe('grade a submission so every table has rows', function () {
+  describe('grade a submission so every dataset has rows', function () {
     it('sets up the submission', function () {
       locals.shouldHaveButtons = ['grade', 'save'];
       locals.postAction = 'grade';
@@ -71,15 +71,15 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
     helperQuestion.checkQuestionScore(locals);
   });
 
-  test('every table returns rows that match its schema exactly', async function () {
+  test('every dataset returns rows that match its schema exactly', async function () {
     apiUrl = `${locals.baseUrl}/api/v1/course/1/data`;
     token = await generateApiToken(locals.siteUrl);
-    for (const [name, table] of Object.entries(COURSE_DATA_TABLES)) {
+    for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${apiUrl}/${name}`, { 'Private-Token': token });
       assert.isNotEmpty(rows, name);
       for (const row of rows) {
-        assert.sameMembers(Object.keys(row), Object.keys(table.schema.shape), name);
-        table.schema.parse(row);
+        assert.sameMembers(Object.keys(row), Object.keys(dataset.schema.shape), name);
+        dataset.schema.parse(row);
       }
     }
   });
@@ -92,7 +92,7 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
 
   test('filters, select, order, and limit narrow the rows', async function () {
     const [submission] = await getRows(`${apiUrl}/submissions`, { 'Private-Token': token });
-    const id = COURSE_DATA_TABLES.submissions.schema.shape.id.parse(submission.id);
+    const id = COURSE_DATA_DATASETS.submissions.schema.shape.id.parse(submission.id);
     const rows = await getRows(
       `${apiUrl}/submissions?select=id,score&score=gte.1&id=in.(${id},0)&correct=is.true&order=id.desc&limit=5`,
       { 'Private-Token': token },
@@ -105,7 +105,7 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
 
   test('invalid requests explain what is allowed', async function () {
     const cases = [
-      ['/missing', 404, 'Unknown table "missing"'],
+      ['/missing', 404, 'Unknown dataset "missing"'],
       ['/submissions?nope=eq.1', 400, 'Unknown column "nope"'],
       ['/submissions?score=like.1', 400, 'Unknown operator'],
       ['/submissions?score=lt.abc', 400, 'invalid input syntax'],

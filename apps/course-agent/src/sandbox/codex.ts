@@ -60,7 +60,7 @@ const CourseDataCall = z.object({
   threadId: z.string(),
   tool: z.literal('get_course_data'),
   arguments: z.strictObject({
-    table: z.string().optional(),
+    dataset: z.string().optional(),
     filters: z.array(z.string()).optional(),
     select: z.array(z.string()).optional(),
     order: z.string().optional(),
@@ -468,11 +468,11 @@ const courseDataTool = {
   type: 'function',
   name: 'get_course_data',
   description:
-    "Fetch this course's PrairieLearn data (assessments, questions, scores, submissions). With no table, returns the tables and their columns, types, and meanings; call this first. With a table, downloads matching rows as a JSONL file and returns its path. Filter large tables, for example by course_instance_id. A filtered file holds only the matching rows: fetch again before answering a broader question.",
+    "Fetch this course's PrairieLearn data (assessments, questions, scores, submissions). With no dataset, returns the datasets and their columns, types, and meanings; call this first. With a dataset, downloads matching rows as a JSONL file and returns its path. Filter large datasets, for example by course_instance_id. A filtered file holds only the matching rows: fetch again before answering a broader question.",
   inputSchema: {
     type: 'object',
     properties: {
-      table: { type: 'string', description: 'Table to download. Omit to list tables.' },
+      dataset: { type: 'string', description: 'Dataset to download. Omit to list datasets.' },
       filters: {
         type: 'array',
         items: { type: 'string' },

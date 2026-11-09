@@ -15,7 +15,7 @@ const JsonSchemaProperty = z.looseObject({
 });
 const SchemaResponse = z.object({
   version: z.number(),
-  tables: z.record(
+  datasets: z.record(
     z.string(),
     z.object({
       description: z.string(),
@@ -32,7 +32,7 @@ const SchemaResponse = z.object({
 /** One line per column, such as `submitted_at (date-time, nullable): When the student submitted.` */
 function describeColumn(
   name: string,
-  property: z.infer<typeof SchemaResponse>['tables'][string]['schema']['properties'][string],
+  property: z.infer<typeof SchemaResponse>['datasets'][string]['schema']['properties'][string],
 ) {
   const variants = property.anyOf ?? [property];
   const types = variants.flatMap((variant) =>
@@ -52,11 +52,11 @@ function describeColumn(
 
 function describeSchema(schema: z.infer<typeof SchemaResponse>) {
   return [
-    `Course data tables (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC.`,
-    ...Object.entries(schema.tables).flatMap(([name, table]) => [
+    `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC.`,
+    ...Object.entries(schema.datasets).flatMap(([name, dataset]) => [
       '',
-      `${name}: ${table.description}`,
-      ...Object.entries(table.schema.properties).map(([column, property]) =>
+      `${name}: ${dataset.description}`,
+      ...Object.entries(dataset.schema.properties).map(([column, property]) =>
         describeColumn(column, property),
       ),
     ]),
@@ -110,7 +110,7 @@ export async function getCourseData({
     return { success: false, text: 'Course data is unavailable. Reload the PrairieLearn page.' };
   }
   const url = new URL(`/pl/api/v1/course/${courseId}/data`, plUrl);
-  if (request.table) url.pathname += `/${encodeURIComponent(request.table)}`;
+  if (request.dataset) url.pathname += `/${encodeURIComponent(request.dataset)}`;
   for (const filter of request.filters ?? []) {
     const equals = filter.indexOf('=');
     if (equals <= 0) {
@@ -133,7 +133,7 @@ export async function getCourseData({
   if (!response.ok) {
     return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
   }
-  if (!request.table) {
+  if (!request.dataset) {
     return { success: true, text: describeSchema(SchemaResponse.parse(await response.json())) };
   }
 
@@ -145,10 +145,10 @@ export async function getCourseData({
     };
   }
   const rows = body.text.split('\n').filter(Boolean);
-  const path = await sandbox.writeCourseData(request.table, body.text);
+  const path = await sandbox.writeCourseData(request.dataset, body.text);
   logEvent('course_data_fetched', {
     conversationId,
-    table: request.table,
+    dataset: request.dataset,
     filters: request.filters ?? [],
     rows: rows.length,
     bytes: body.bytes,

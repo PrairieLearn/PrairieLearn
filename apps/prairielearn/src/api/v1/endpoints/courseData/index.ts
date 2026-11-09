@@ -9,8 +9,8 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { COURSE_DATA_DATASETS, courseDataSchema, isCourseDataset } from './datasets.js';
 import { buildCourseDataQuery } from './query.js';
-import { COURSE_DATA_TABLES, courseDataSchema, isCourseDataTable } from './tables.js';
 
 const router = Router({ mergeParams: true });
 
@@ -24,19 +24,19 @@ router.get(
 );
 
 router.get(
-  '/:table',
+  '/:dataset',
   asyncHandler(async (req, res) => {
-    const name = req.params.table;
-    if (!isCourseDataTable(name)) {
+    const name = req.params.dataset;
+    if (!isCourseDataset(name)) {
       throw new HttpStatusError(
         404,
-        `Unknown table "${name}". Tables: ${Object.keys(COURSE_DATA_TABLES).join(', ')}.`,
+        `Unknown dataset "${name}". Datasets: ${Object.keys(COURSE_DATA_DATASETS).join(', ')}.`,
       );
     }
-    const table = COURSE_DATA_TABLES[name];
+    const dataset = COURSE_DATA_DATASETS[name];
     const { sql, params } = buildCourseDataQuery({
-      block: table.query,
-      columns: Object.keys(table.schema.shape),
+      block: dataset.query,
+      columns: Object.keys(dataset.schema.shape),
       search: new URL(req.originalUrl, 'http://localhost').searchParams,
     });
     const cursor = await sqldb.queryCursor(

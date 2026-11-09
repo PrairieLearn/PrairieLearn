@@ -11,12 +11,12 @@ const timestamp = (description: string) => z.iso.datetime().describe(description
 const seconds = (description: string) => z.number().describe(`${description} In seconds.`);
 
 /**
- * The course data API's tables: the single source of truth for what the API exposes. The router,
+ * The course data API's datasets: the single source of truth for what the API exposes. The router,
  * the schema endpoint, and the committed JSON Schema are derived from this registry, and a test
- * checks that each query returns exactly its schema's columns. Within v1, only add tables and
+ * checks that each query returns exactly its schema's columns. Within v1, only add datasets and
  * columns; a removal, rename, or change in meaning needs a new version.
  */
-export const COURSE_DATA_TABLES = {
+export const COURSE_DATA_DATASETS = {
   course_instances: {
     description: 'Course instances (offerings of the course, such as a semester).',
     query: sql.course_instances,
@@ -207,10 +207,10 @@ export const COURSE_DATA_TABLES = {
   },
 };
 
-export type CourseDataTableName = keyof typeof COURSE_DATA_TABLES;
+export type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;
 
-export function isCourseDataTable(name: string): name is CourseDataTableName {
-  return Object.hasOwn(COURSE_DATA_TABLES, name);
+export function isCourseDataset(name: string): name is CourseDatasetName {
+  return Object.hasOwn(COURSE_DATA_DATASETS, name);
 }
 
 export const COURSE_DATA_VERSION = 1;
@@ -219,10 +219,10 @@ export const COURSE_DATA_VERSION = 1;
 export function courseDataSchema() {
   return {
     version: COURSE_DATA_VERSION,
-    tables: Object.fromEntries(
-      Object.entries(COURSE_DATA_TABLES).map(([name, table]) => [
+    datasets: Object.fromEntries(
+      Object.entries(COURSE_DATA_DATASETS).map(([name, dataset]) => [
         name,
-        { description: table.description, schema: z.toJSONSchema(table.schema) },
+        { description: dataset.description, schema: z.toJSONSchema(dataset.schema) },
       ]),
     ),
   };

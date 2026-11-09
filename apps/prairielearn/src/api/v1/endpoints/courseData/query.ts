@@ -13,9 +13,9 @@ const OPERATORS = {
 const RESERVED = new Set(['select', 'order', 'limit']);
 
 /**
- * Builds a query over one table's block from PostgREST-style query parameters, such as
+ * Builds a query over one dataset's block from PostgREST-style query parameters, such as
  * `select=id,score&score=lt.0.5&order=submitted_at.desc&limit=10`. Column names are checked
- * against the table's columns before they are quoted into SQL; values are always parameters,
+ * against the dataset's columns before they are quoted into SQL; values are always parameters,
  * which Postgres converts to each column's type.
  */
 export function buildCourseDataQuery({

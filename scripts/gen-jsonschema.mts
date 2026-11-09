@@ -9,7 +9,7 @@ import path from 'path';
 import { z } from 'zod';
 
 import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
-import { courseDataSchema } from '../apps/prairielearn/src/api/v1/endpoints/courseData/tables.js';
+import { courseDataSchema } from '../apps/prairielearn/src/api/v1/endpoints/courseData/datasets.js';
 import {
   ConfigSchema as EnvSpecificPrairieLearnConfigSchema,
   STANDARD_COURSE_DIRS,
