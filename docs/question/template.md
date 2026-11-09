@@ -249,7 +249,7 @@ adding the `mathjax_ignore` class to an HTML element.
 
 ### Using Mustache values inside LaTeX braces
 
-LaTeX uses curly braces for grouping (e.g., `\frac{a}{b}`), which can conflict with Mustache's `{{ }}` syntax. When a Mustache tag is placed directly inside a LaTeX brace, the sequence `{{{` is interpreted as a triple-brace (unescaped) Mustache tag, and the question will fail to render correctly or produce unexpected output.
+LaTeX uses curly braces for grouping (e.g., `\frac{a}{b}`), which can conflict with [Mustache's `{{ }}` syntax](#mustache-templates). When a Mustache tag is placed directly inside a LaTeX brace, the sequence `{{{` is interpreted as a [triple-brace (unescaped) Mustache tag](#advanced-rendering), and the question will fail to render correctly or produce unexpected output.
 
 ```html { title="question.html" .no-copy }
 <!-- Bad: `{{{` is parsed as a triple-brace Mustache tag. -->
@@ -266,7 +266,7 @@ There are three ways to avoid this:
 
    This is not suitable where whitespace is significant, such as inside `\text{...}`.
 
-2. **Change the Mustache delimiters.** Mustache lets you [change the delimiters](https://mustache.github.io/mustache.5.html#Set-Delimiter) with a set delimiter tag, `{{=<% %>=}}`. After it, Mustache tags are written as `<% params.a %>` and `{{`/`}}` are treated as plain text. Switch back with `<%={{ }}=%>`.
+2. **Change the Mustache delimiters.** Mustache lets you [change the delimiters](https://mustache.github.io/mustache.5.html#Set-Delimiter) with a set delimiter tag, e.g., `{{=<% %>=}}`. After it, Mustache tags are written as `<% params.a %>`, with `{{` and `}}` treated as regular characters. You may switch back to the default delimiters with `<%={{ }}=%>`.
 
    ```html title="question.html"
    {{=<% %>=}}
@@ -274,7 +274,7 @@ There are three ways to avoid this:
    <%={{ }}=%>
    ```
 
-   Any Mustache tags after the delimiter tag is changed must use the new delimiters. You are encouraged to switch back to the default delimiters after the LaTeX expression, so that other Mustache tags in the question can use the default delimiters.
+   Any Mustache tags after the delimiter tag is changed must use the new delimiters. You are encouraged, though not required, to switch back to the default delimiters after the LaTeX expression, as it makes the formatting more recognizable to other question authors.
 
 3. **Build the formula in `server.py`.** Construct the full LaTeX string in Python and store it in `data["params"]`, so that `question.html` only needs a single Mustache tag:
 
@@ -282,11 +282,11 @@ There are three ways to avoid this:
    def generate(data):
        a = 3
        b = 4
-       data["params"]["formula"] = rf"$\frac{{{a}}}{{{b}}}$"
+       data["params"]["formula"] = rf"\frac{{{a}}}{{{b}}}"
    ```
 
    ```html title="question.html"
-   <p>{{params.formula}}</p>
+   <p>${{params.formula}}$</p>
    ```
 
-   Note that, if you're using `f` strings, you will need to double the braces in the string to escape them, e.g., `rf"$\frac{{{a}}}{{{b}}}$"`. You may also benefit from using a raw string (the `r` prefix) to avoid having to escape backslashes in LaTeX commands.
+   Note that, if you're using `f` strings, you will need to double the braces in the string to escape them, as in the example above. You may also benefit from using a raw string (the `r` prefix) to avoid having to escape backslashes in LaTeX commands.
