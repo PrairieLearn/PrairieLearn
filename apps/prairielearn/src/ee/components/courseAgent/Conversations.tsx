@@ -138,9 +138,9 @@ function ConversationPicker({
         ...(current ?? []),
       ]);
       setPickedId(conversation.id);
-      setDraft('');
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
+    onError: (_error, { text }) => setDraft(text),
   });
 
   const submitNew = (event?: SyntheticEvent) => {
@@ -148,6 +148,7 @@ function ConversationPicker({
     const text = draft.trim();
     if (!text || create.isPending) return;
     create.mutate({ text });
+    setDraft('');
   };
 
   const createError = getAppError<CourseAgentError['Create']>(create.error);
@@ -210,9 +211,16 @@ function ConversationPicker({
       ) : active ? (
         <>
           <div className="flex-grow-1 p-3">
-            <p className="text-muted text-center my-4">
-              Ask the course agent about your course or about PrairieLearn.
-            </p>
+            {create.isPending ? (
+              <div className="d-flex flex-column gap-3">
+                <UserMessage text={create.variables.text} />
+                <PendingStatus label="Starting sandbox…" />
+              </div>
+            ) : (
+              <p className="text-muted text-center my-4">
+                Ask the course agent about your course or about PrairieLearn.
+              </p>
+            )}
             {create.isError && (
               <AppErrorAlert error={createError} render={{ UNKNOWN: ({ message }) => message }} />
             )}
@@ -240,6 +248,23 @@ function Loading() {
   );
 }
 
+function PendingStatus({ label }: { label: string }) {
+  return (
+    <div className="text-muted small" role="status">
+      <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
+      {label}
+    </div>
+  );
+}
+
+function UserMessage({ text }: { text: string }) {
+  return (
+    <div className="align-self-end course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
+      {text}
+    </div>
+  );
+}
+
 function Chat({
   courseId,
   conversationId,
@@ -259,17 +284,26 @@ function Chat({
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
   const [connectionFailed, setConnectionFailed] = useState(false);
+  // Chat remounts per conversation, so this is the message that created it.
+  const [initialText] = useState(initialMessage);
+  // Bridges sending to an offline sandbox and the server reporting that it is starting.
+  const [awaitingStart, setAwaitingStart] = useState(initialMessage !== undefined);
   const agent = useAgent<ConversationState>({
     agent: 'Conversation',
     basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
     query: { csrfToken: chatCsrfToken },
-    onStateUpdate: setLifecycle,
+    onStateUpdate: (state) => {
+      setLifecycle(state);
+      if (state.status !== 'offline') setAwaitingStart(false);
+    },
     onOpen: () => setConnectionFailed(false),
     onError: () => setConnectionFailed(true),
     onClose: () => {
       setHistoryReady(false);
       setLifecycle(null);
       setConnectionFailed(true);
+      // A send may have been lost with the socket, so let the reconnect's lifecycle decide.
+      setAwaitingStart(false);
     },
     onMessage: (event) => {
       const message = JSON.parse(event.data) as OutgoingMessage;
@@ -311,7 +345,11 @@ function Chat({
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive || connectionFailed || connectionError) {
+    if (
+      !(responseActive || lifecycle?.status === 'waiting_for_agent') ||
+      connectionFailed ||
+      connectionError
+    ) {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -325,6 +363,16 @@ function Chat({
       return toolCallOf(part) !== null;
     });
   });
+  // The server reports the turn's lifecycle before the SDK marks the response active.
+  const startingSandbox =
+    !connectionFailed &&
+    !connectionError &&
+    (lifecycle?.status === 'starting' ||
+      ((lifecycle === null || lifecycle.status === 'offline') &&
+        (awaitingStart || responseActive)));
+  const pendingLabel = startingSandbox ? 'Starting sandbox…' : showThinking ? 'Thinking…' : null;
+  const showInitialText =
+    initialText !== undefined && !messages.some((message) => message.role === 'user');
   const awaitingReviewId =
     !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
       ? (lifecycle.reviewId ?? null)
@@ -337,6 +385,7 @@ function Chat({
     event?.preventDefault();
     const text = draft.trim();
     if (!text || responseActive || !connected || !readyToSend) return;
+    if (lifecycle.status === 'offline') setAwaitingStart(true);
     void sendMessage({ text });
     setDraft('');
   };
@@ -345,8 +394,10 @@ function Chat({
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
-          {!historyReady && !connectionError && !connectionFailed && <Loading />}
-          {historyReady && messages.length === 0 && (
+          {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
+            <Loading />
+          )}
+          {historyReady && !showInitialText && messages.length === 0 && (
             <p className="text-muted text-center my-4">
               Ask the course agent about your course or about PrairieLearn.
             </p>
@@ -362,6 +413,7 @@ function Chat({
               onToolCallExpand={stickToBottom.stopScroll}
             />
           ))}
+          {showInitialText && <UserMessage text={initialText} />}
           {/* Stop can end the stream before history records the review, which would otherwise
               leave the conversation waiting on a review with no card to decide it. */}
           {historyReady &&
@@ -373,12 +425,7 @@ function Chat({
                 canResume={awaitingReviewId === lifecycle.reviewId}
               />
             )}
-          {showThinking && (
-            <div className="text-muted small">
-              <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
-              Thinking…
-            </div>
-          )}
+          {pendingLabel && <PendingStatus label={pendingLabel} />}
           {lifecycle?.status === 'blocked' && (
             <Alert variant="warning">
               <p>{BLOCKED_MESSAGES[lifecycle.reason]}</p>
@@ -524,11 +571,7 @@ function Message({
 }) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
-    return (
-      <div className="align-self-end course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
-        {text}
-      </div>
-    );
+    return <UserMessage text={text} />;
   }
   // Consecutive tool calls render together so runs of the same kind can be grouped.
   type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
@@ -539,37 +582,39 @@ function Message({
     if (call && last && 'calls' in last) last.calls.push(call);
     else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
   });
-  return (
-    <div className="d-flex flex-column gap-2">
-      {segments.map((segment) => {
-        if ('calls' in segment) {
-          return (
-            <ToolCalls
-              key={segment.key}
-              calls={segment.calls}
-              live={live}
-              onExpand={onToolCallExpand}
-            />
-          );
-        }
-        const { key, part } = segment;
-        if (part.type === 'text') {
-          return <TextPart key={key} part={part} urlTransform={linkTransform} />;
-        }
-        if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-        if (part.type === 'data-review') {
-          const { reviewId } = ReviewPartSchema.parse(part.data);
-          return (
-            <RequestChangesCard
-              key={key}
-              conversationId={conversationId}
-              reviewId={reviewId}
-              canResume={awaitingReviewId === reviewId}
-            />
-          );
-        }
-        return null;
-      })}
-    </div>
-  );
+  const rendered = segments
+    .map((segment) => {
+      if ('calls' in segment) {
+        return (
+          <ToolCalls
+            key={segment.key}
+            calls={segment.calls}
+            live={live}
+            onExpand={onToolCallExpand}
+          />
+        );
+      }
+      const { key, part } = segment;
+      if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) return null;
+      if (part.type === 'text') {
+        return <TextPart key={key} part={part} urlTransform={linkTransform} />;
+      }
+      if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+      if (part.type === 'data-review') {
+        const { reviewId } = ReviewPartSchema.parse(part.data);
+        return (
+          <RequestChangesCard
+            key={key}
+            conversationId={conversationId}
+            reviewId={reviewId}
+            canResume={awaitingReviewId === reviewId}
+          />
+        );
+      }
+      return null;
+    })
+    .filter((node) => node !== null);
+  // A just-started reply has no visible parts yet and would otherwise add an empty gap.
+  if (rendered.length === 0) return null;
+  return <div className="d-flex flex-column gap-2">{rendered}</div>;
 }
