@@ -5,8 +5,9 @@ import { MAX_ATTACHMENTS_PER_MESSAGE, attachmentIdOf } from '@prairielearn/cours
 /** Outside the checkpointed session and the course checkout, so neither copies attachments. */
 export const UPLOADS_DIR = '/workspace/uploads';
 
+export const uploadPrefix = (conversationId: string) => `uploads/${conversationId}/`;
 export const uploadKey = (conversationId: string, uploadId: string) =>
-  `uploads/${conversationId}/${uploadId}`;
+  `${uploadPrefix(conversationId)}${uploadId}`;
 
 export interface Attachment {
   id: string;

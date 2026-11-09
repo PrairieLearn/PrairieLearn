@@ -4,10 +4,12 @@ import { Hono } from 'hono';
 import {
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
+  MAX_CONVERSATION_ATTACHMENTS,
+  MAX_CONVERSATION_ATTACHMENT_BYTES,
   RequestChangesResultSchema,
 } from '@prairielearn/course-agent-types';
 
-import { uploadKey } from '../conversation/attachments.js';
+import { uploadKey, uploadPrefix } from '../conversation/attachments.js';
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
@@ -88,6 +90,15 @@ conversations.post('/:id/uploads', async (c) => {
   const size = Number(c.req.header('Content-Length'));
   if (!c.req.raw.body || !Number.isSafeInteger(size) || size < 1 || size > MAX_ATTACHMENT_BYTES) {
     return c.text('Expected a file of at most 20 MB', 400);
+  }
+  // Uploads that were never sent count too. Concurrent uploads can overshoot the cap by a message.
+  const { objects } = await c.env.CHECKPOINTS.list({ prefix: uploadPrefix(c.req.param('id')) });
+  const total = objects.reduce((sum, object) => sum + object.size, 0);
+  if (
+    objects.length >= MAX_CONVERSATION_ATTACHMENTS ||
+    total + size > MAX_CONVERSATION_ATTACHMENT_BYTES
+  ) {
+    return c.text('This conversation has reached its attachment limit', 413);
   }
   const id = crypto.randomUUID();
   await c.env.CHECKPOINTS.put(uploadKey(c.req.param('id'), id), c.req.raw.body);

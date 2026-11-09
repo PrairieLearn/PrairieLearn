@@ -74,8 +74,9 @@ export function useDraftAttachments(initial: DraftAttachment[] = []) {
   };
 }
 
+/** The upload's ID, or the HTTP status it failed with (0 for a network error). */
 function uploadFile(url: string, csrfToken: string, file: File, onProgress: (p: number) => void) {
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<{ id: string } | { status: number }>((resolve) => {
     // XHR reports upload progress, which fetch doesn't.
     const request = new XMLHttpRequest();
     request.open('POST', url);
@@ -87,10 +88,13 @@ function uploadFile(url: string, csrfToken: string, file: File, onProgress: (p: 
     });
     request.addEventListener('load', () => {
       const uploaded = UploadedAttachmentSchema.safeParse(request.response);
-      if (request.status === 201 && uploaded.success) resolve(uploaded.data.id);
-      else reject(new Error(`Upload failed with status ${request.status}`));
+      resolve(
+        request.status === 201 && uploaded.success
+          ? { id: uploaded.data.id }
+          : { status: request.status },
+      );
     });
-    request.addEventListener('error', () => reject(new Error('Upload failed')));
+    request.addEventListener('error', () => resolve({ status: 0 }));
     request.send(file);
   });
 }
@@ -115,14 +119,21 @@ export async function uploadDraftAttachments(
     attachments.map(async ({ key, file, uploadId }) => {
       if (uploadId) return uploadId;
       update(key, { progress: 0, uploadFailed: false });
-      try {
-        const id = await uploadFile(url, csrfToken, file, (progress) => update(key, { progress }));
-        update(key, { uploadId: id, progress: null });
-        return id;
-      } catch {
-        update(key, { progress: null, uploadFailed: true });
-        return null;
+      const result = await uploadFile(url, csrfToken, file, (progress) =>
+        update(key, { progress }),
+      );
+      if ('id' in result) {
+        update(key, { uploadId: result.id, progress: null });
+        return result.id;
       }
+      // A full conversation stays full, so retrying can't help.
+      update(
+        key,
+        result.status === 413
+          ? { progress: null, problem: 'Conversation file limit reached. Remove it.' }
+          : { progress: null, uploadFailed: true },
+      );
+      return null;
     }),
   );
   if (ids.includes(null)) return null;
