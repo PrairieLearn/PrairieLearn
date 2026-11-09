@@ -299,6 +299,8 @@ function Chat({
       setHistoryReady(false);
       setLifecycle(null);
       setConnectionFailed(true);
+      // A send may have been lost with the socket, so let the reconnect's lifecycle decide.
+      setAwaitingStart(false);
     },
     onMessage: (event) => {
       const message = JSON.parse(event.data) as OutgoingMessage;
@@ -359,13 +361,12 @@ function Chat({
     });
   });
   // The server reports the turn's lifecycle before the SDK marks the response active.
-  // A send lost to a dropped socket errors without the server ever leaving offline.
   const startingSandbox =
     !connectionFailed &&
     !connectionError &&
     (lifecycle?.status === 'starting' ||
       ((lifecycle === null || lifecycle.status === 'offline') &&
-        ((awaitingStart && status !== 'error') || responseActive)));
+        (awaitingStart || responseActive)));
   const pendingLabel = startingSandbox ? 'Starting sandbox…' : showThinking ? 'Thinking…' : null;
   const showInitialText =
     initialText !== undefined && !messages.some((message) => message.role === 'user');
