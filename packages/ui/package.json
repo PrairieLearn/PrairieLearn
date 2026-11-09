@@ -9,7 +9,8 @@
   "type": "module",
   "exports": {
     ".": "./dist/index.js",
-    "./*.css": "./dist/*.css"
+    "./*.css": "./dist/*.css",
+    "./overlay-trigger": "./dist/components/OverlayTrigger.js"
   },
   "scripts": {
     "build": "tsc && tscp",
