@@ -593,7 +593,7 @@ function Composer({
             disabled={pending}
             onClick={() => fileInputRef.current?.click()}
           >
-            <i className="bi bi-paperclip" aria-hidden="true" />
+            <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
           <div className="d-flex align-items-center gap-2 ms-auto">
             {children}
