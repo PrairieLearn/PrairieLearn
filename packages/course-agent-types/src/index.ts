@@ -231,7 +231,10 @@ export const MAX_CONVERSATION_ATTACHMENTS = 100;
 
 export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
 
-const ATTACHMENT_URL = /^upload:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+// Conversation and upload IDs are lowercase UUIDs that the Worker generates.
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+export const UUID_PATTERN = new RegExp(`^${UUID}$`);
+const ATTACHMENT_URL = new RegExp(`^upload:(${UUID})$`);
 
 /** A message's file part points at its upload with this URL rather than carrying the contents. */
 export const attachmentUrl = (uploadId: string) => `upload:${uploadId}`;

@@ -121,6 +121,15 @@ function describeFileChange(data: unknown) {
   return `[Changed files: ${paths.join(', ')}.]`;
 }
 
+/** The text catch-up shows for a part of a message, or an empty string to leave it out. */
+function describePart(part: UIMessage['parts'][number]) {
+  if (part.type === 'text') return part.text.trim();
+  if (part.type === 'data-review') return '[Submitted changes for instructor review.]';
+  if (part.type === 'data-tool') return describeFileChange(part.data);
+  const attachment = attachmentOf(part);
+  return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';
+}
+
 /** Split chat history into the turns Codex received, each with its tag and visible text. */
 function splitTurns(history: UIMessage[]) {
   const turns: Turn[] = [];
@@ -134,17 +143,7 @@ function splitTurns(history: UIMessage[]) {
         turns.push({ tag, entries: [`PrairieLearn: ${summary}`] });
         continue;
       }
-      const attachment = attachmentOf(part);
-      const text =
-        part.type === 'text'
-          ? part.text.trim()
-          : attachment
-            ? `[Attached ${attachmentPath(attachment)}]`
-            : part.type === 'data-review'
-              ? '[Submitted changes for instructor review.]'
-              : part.type === 'data-tool'
-                ? describeFileChange(part.data)
-                : '';
+      const text = describePart(part);
       if (!text) continue;
       turns.at(-1)?.entries.push(`${message.role === 'user' ? 'Staff' : 'You'}: ${text}`);
     }
