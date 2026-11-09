@@ -275,7 +275,7 @@ There are three ways to avoid this:
    <%={{ }}=%>
    ```
 
-   Any Mustache tags after the set delimiter tag is changed must use the new delimiters. You are encouraged to switch back to the default delimiters after the LaTeX expression, so that other Mustache tags in the question can use the default delimiters.
+   Any Mustache tags after the delimiter tag is changed must use the new delimiters. You are encouraged to switch back to the default delimiters after the LaTeX expression, so that other Mustache tags in the question can use the default delimiters.
 
 3. **Build the formula in `server.py`.** Construct the full LaTeX string in Python and store it in `data["params"]`, so that `question.html` only needs a single Mustache tag:
 
