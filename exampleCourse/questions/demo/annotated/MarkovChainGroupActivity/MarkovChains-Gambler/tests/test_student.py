@@ -8,8 +8,7 @@ from pytest_prairielearn_grader.utils import GradingOutputLevel
 autograder_config = ConfigObject(
     student_code_pattern="Markov-Chains-2.ipynb",
     notebook_cell_tag="#grade",
-    # leading_code.py uses staticmethod, which the sandbox doesn't allow by default.
-    builtin_whitelist=["staticmethod"],
+    helper_modules=["helper_function"],
     # Importing numpy in student code can take longer than the default timeout.
     sandbox_timeout=15,
 )
