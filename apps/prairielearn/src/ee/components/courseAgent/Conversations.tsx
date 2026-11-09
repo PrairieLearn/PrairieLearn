@@ -596,8 +596,9 @@ function Message({
       part.type === 'data-turn' ? [TurnPartSchema.parse(part.data).tag] : [],
     ),
   );
-  const reviewEnd = (reviewId: string, key: string) => (
-    <Fragment key={key}>
+  // One key per review, in one list, so the card keeps its state when the marker arrives.
+  const reviewEnd = (reviewId: string) => (
+    <Fragment key={`review-${reviewId}`}>
       <RequestChangesCard
         conversationId={conversationId}
         reviewId={reviewId}
@@ -608,30 +609,32 @@ function Message({
   );
   return (
     <div className="d-flex flex-column gap-2">
-      {segments.map((segment) => {
-        if ('calls' in segment) {
-          return (
-            <ToolCalls
-              key={segment.key}
-              calls={segment.calls}
-              live={live}
-              onExpand={onToolCallExpand}
-            />
-          );
-        }
-        const { key, part } = segment;
-        if (part.type === 'text') return <TextPart key={key} part={part} />;
-        if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-        if (part.type === 'data-turn') {
-          const { tag } = TurnPartSchema.parse(part.data);
-          const reviewId = reviewIds.find((id) => reviewTag(id) === tag);
-          if (reviewId) return reviewEnd(reviewId, key);
-        }
-        return null;
-      })}
-      {reviewIds
-        .filter((reviewId) => !markerTags.has(reviewTag(reviewId)))
-        .map((reviewId) => reviewEnd(reviewId, reviewId))}
+      {[
+        ...segments.map((segment) => {
+          if ('calls' in segment) {
+            return (
+              <ToolCalls
+                key={segment.key}
+                calls={segment.calls}
+                live={live}
+                onExpand={onToolCallExpand}
+              />
+            );
+          }
+          const { key, part } = segment;
+          if (part.type === 'text') return <TextPart key={key} part={part} />;
+          if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+          if (part.type === 'data-turn') {
+            const { tag } = TurnPartSchema.parse(part.data);
+            const reviewId = reviewIds.find((id) => reviewTag(id) === tag);
+            if (reviewId) return reviewEnd(reviewId);
+          }
+          return null;
+        }),
+        ...reviewIds
+          .filter((reviewId) => !markerTags.has(reviewTag(reviewId)))
+          .map((reviewId) => reviewEnd(reviewId)),
+      ]}
     </div>
   );
 }

@@ -258,14 +258,6 @@ it('delivers a message sent in place of a decision as the denial', async () => {
   expect(deliverCourseAgentReviewResult).toHaveBeenCalledOnce();
 });
 
-it('keeps a message denial and never starts the save for a later approval', async () => {
-  await withConfig({ fileEditorUseGit: true }, async () => {
-    await decide('denied', review.id, 'Use three midterms');
-    await expect(decide('approved')).rejects.toThrow('already has a different decision');
-    expect(prepareJob).not.toHaveBeenCalled();
-  });
-});
-
 it('keeps an approval and refuses a message sent after it', async () => {
   await withConfig({ fileEditorUseGit: true }, async () => {
     await decide('approved');

@@ -68,7 +68,7 @@ export function describeReviewResult(result: RequestChangesResult, source: 'gith
     parts.push('Nothing was saved; your edits remain private to this conversation.');
     if (result.feedback) {
       parts.push(
-        'Respond to their message. If it asks for changes, make them and submit the revised changes for review. If it only asks a question, answer it, then submit the same changes for review again.',
+        'Respond to their message. If it asks for changes, make them and submit the revised changes for review. If it only asks a question, answer it, then submit the same changes for review again. If it says to drop the changes, do not resubmit.',
       );
     } else {
       parts.push(

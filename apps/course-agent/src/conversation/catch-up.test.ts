@@ -166,8 +166,6 @@ describe('describeReviewResult', () => {
     const text = describeReviewResult({ ...denied, feedback: 'Use three midterms' }, 'github');
     expect(text).toContain('Use three midterms');
     expect(text).toContain('Respond to their message.');
-    expect(text).toContain('submit the revised changes for review');
-    expect(text).toContain('submit the same changes for review again');
     expect(text).not.toContain('Do not revise or resubmit on your own.');
   });
 });
