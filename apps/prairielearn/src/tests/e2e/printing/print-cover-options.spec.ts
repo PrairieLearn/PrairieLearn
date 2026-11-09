@@ -73,7 +73,7 @@ test('fills the cover grading table down columns using only included questions',
   await expect(cover).toHaveCount(1);
 });
 
-test('uses the configured honor code for printed pledges even when it is disabled online', async ({
+test('uses the configured honor code for printed pledges when requireHonorCode is false', async ({
   page,
   courseInstance,
   testCoursePath,
