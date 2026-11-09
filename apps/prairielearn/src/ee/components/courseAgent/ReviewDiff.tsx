@@ -31,9 +31,10 @@ const CHANGES = {
   },
 } as const;
 
-const CHANGED_WORD_CSS = `
-[data-line-type='change-deletion'] [data-diff-span] { text-decoration: line-through; }
-[data-line-type='change-addition'] [data-diff-span] { text-decoration: underline; }
+// Pierre puts +/− flush against the line numbers; leave room on both sides, as GitHub does.
+const INDICATOR_CSS = `
+[data-indicators='classic'] :is([data-line], [data-no-newline]) { padding-inline-start: 3ch; }
+[data-indicators='classic'] :is([data-line], [data-no-newline])::before { left: 1ch; }
 `;
 
 interface ParsedFile {
@@ -211,9 +212,9 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
                       themeType: bootstrapThemeType(),
                       overflow: 'wrap',
                       lineDiffType: 'word',
-                      // Mark changes with +/− and text decoration, not just color.
+                      // Mark changed lines with +/−, not just color.
                       diffIndicators: 'classic',
-                      unsafeCSS: CHANGED_WORD_CSS,
+                      unsafeCSS: INDICATOR_CSS,
                     }}
                   />
                 ) : (
