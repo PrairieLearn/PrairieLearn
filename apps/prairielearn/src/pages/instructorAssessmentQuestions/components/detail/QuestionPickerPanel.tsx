@@ -303,6 +303,8 @@ export function QuestionPickerPanel({
               const isCurrentChange = currentChangeQid === qid;
               const isDisabled = (disabledQids.has(qid) && !isCurrentChange) || !!isPickingQuestion;
               return (
+                // oxlint doesn't recognize the conditional `role` as making this element interactive.
+                // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
                 <div
                   role={isDisabled ? undefined : 'button'}
                   tabIndex={isDisabled ? undefined : 0}
@@ -409,6 +411,8 @@ export function QuestionPickerPanel({
                 question.assessments?.filter((a) => a.assessment_id !== currentAssessmentId) ?? [];
 
               return (
+                // oxlint doesn't recognize the conditional `role` as making this element interactive.
+                // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
                 <div
                   key={virtualRow.key}
                   ref={rowVirtualizer.measureElement}

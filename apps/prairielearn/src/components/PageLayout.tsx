@@ -295,7 +295,9 @@ export function PageLayout({
 
   // Rendered by the course agent panel middleware (EE) when the user has access.
   const courseAgentPanel =
-    sideNavEnabled && resolvedOptions.showCourseAgentPanel ? resLocals.course_agent_panel : null;
+    sideNavEnabled && resolvedOptions.enableNavbar && resolvedOptions.showCourseAgentPanel
+      ? resLocals.course_agent_panel
+      : null;
 
   let showContextNavigation = [
     'instructor',
@@ -389,11 +391,11 @@ export function PageLayout({
                   ${Navbar({
                     resLocals,
                     navPage: navContext.page,
-                    navSubPage: navContext.subPage,
                     navbarType: navContext.type,
                     sideNavEnabled,
                     hideSessionControls: resolvedOptions.hideNavbarSessionControls,
                     showInstructorSupport: resolvedOptions.showInstructorSupport,
+                    courseAgentPanel,
                   })}
                 </div>`
               : ''
@@ -505,7 +507,6 @@ export function PageLayout({
               ${postContentString}
             </div>
           </div>
-          ${courseAgentPanel ?? ''}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

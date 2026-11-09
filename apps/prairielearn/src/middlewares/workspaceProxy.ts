@@ -1,7 +1,7 @@
 import type http from 'node:http';
 import type { Socket } from 'node:net';
 
-import { type Request, type Response } from 'express';
+import { type Express, type NextFunction, type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import z from 'zod';
 
@@ -12,6 +12,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { WorkspaceSchema } from '../lib/db-types.js';
+import { createUpgradeResponse } from '../lib/http-upgrade.js';
 import { LocalCache } from '../lib/local-cache.js';
 import {
   WORKSPACE_SANDBOX_COOKIE_NAME,
@@ -20,7 +21,23 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
-class WorkspaceWebSocketAuthorizationError extends Error {}
+const WORKSPACE_UPGRADE_PATH = /^\/pl\/workspace\/\d+\/container\//;
+
+/** Saves the bytes Node received after each upgrade request until the proxy takes over. */
+const upgradeHeads = new WeakMap<http.IncomingMessage, Buffer>();
+
+/**
+ * Sends workspace WebSocket upgrades through the same Express authn/authz chain
+ * as HTTP requests. The proxy middleware completes authorized upgrades.
+ */
+export function handleWorkspaceUpgrade(app: Express, req: http.IncomingMessage, head: Buffer) {
+  if (!WORKSPACE_UPGRADE_PATH.test(req.url ?? '')) return false;
+  const res = createUpgradeResponse(req);
+  if (!res) return true;
+  upgradeHeads.set(req, head);
+  app(req, res);
+  return true;
+}
 
 /**
  * Removes "sensitive" cookies from the request to avoid exposing them to
@@ -118,34 +135,43 @@ function getStatusCode(err: any): number {
 }
 
 function getRequestPath(req: Request): string {
-  // `req.originalUrl` won't be defined for websocket requests, but for
-  // non-websocket requests, `req.url` won't contain the full path. So we
-  // need to handle both.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return req.originalUrl ?? req.url;
+  // `req.url` won't contain the full path because the proxy is mounted on a
+  // sub-path, so we use `req.originalUrl` instead.
+  return req.originalUrl;
+}
+
+interface WorkspaceProxyOptions {
+  responseHeaders?: Record<string, string>;
+  removeResponseHeaders?: string[];
+  cookieDomainRewrite?: string;
+  rewriteContainerCookiesForCrossOrigin?: boolean;
 }
 
 export function makeWorkspaceProxyMiddleware(
   containerPathRegex: RegExp,
-  options: {
-    matchesRequestHost: (
-      req: Pick<http.IncomingMessage, 'headers'>,
-      workspaceId: string,
-    ) => boolean;
-    authorizeWebSocketRequest?: (
-      req: http.IncomingMessage,
-      workspaceId: string,
-    ) => boolean | Promise<boolean>;
-    responseHeaders?: Record<string, string>;
-    removeResponseHeaders?: string[];
-    cookieDomainRewrite?: string;
-    rewriteContainerCookiesForCrossOrigin?: boolean;
-  },
+  options: WorkspaceProxyOptions = {},
 ) {
+  const proxy = makeProxy(containerPathRegex, options);
+  return (req: Request, res: Response, next: NextFunction) => {
+    const head = upgradeHeads.get(req);
+    if (!head) return proxy(req, res, next);
+
+    // Transfer ownership of the socket from Express to the proxy.
+    res.detachSocket(req.socket);
+    // Status code 101 means Switching Protocols.
+    res.statusCode = 101;
+    res.emit('close');
+    proxy.upgrade(req, req.socket, head);
+  };
+}
+
+function makeProxy(containerPathRegex: RegExp, options: WorkspaceProxyOptions) {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   return createProxyMiddleware<Request, Response>({
     target: 'invalid',
-    ws: true,
+    // Upgrades are forwarded explicitly by `makeWorkspaceProxyMiddleware`
+    // after the Express authorization chain.
+    ws: false,
     ...(options.cookieDomainRewrite == null
       ? {}
       : { cookieDomainRewrite: options.cookieDomainRewrite }),
@@ -154,17 +180,7 @@ export function makeWorkspaceProxyMiddleware(
       // the `/pl/workspace/<workspace_id>/container/` prefix, so we need to
       // reconstruct it from the request.
       const path = getRequestPath(req);
-      const match = path.match(containerPathRegex);
-      if (!match) return false;
-
-      const workspaceId = IdSchema.safeParse(match[1]);
-      if (!workspaceId.success) return false;
-
-      // Each proxy installs a server-level WebSocket upgrade listener, so the
-      // host must be checked before one proxy can reject another proxy's request.
-      if (!options.matchesRequestHost(req, workspaceId.data)) return false;
-
-      return true;
+      return containerPathRegex.test(path);
     },
     pathRewrite: async (_path, req) => {
       // The path provided to this function doesn't include the full path with
@@ -202,15 +218,6 @@ export function makeWorkspaceProxyMiddleware(
       if (!match) throw new Error(`Could not match path: ${path}`);
 
       const workspace_id = IdSchema.parse(match[1]);
-      if (
-        req.headers.upgrade?.toLowerCase() === 'websocket' &&
-        options.authorizeWebSocketRequest != null
-      ) {
-        if (!(await options.authorizeWebSocketRequest(req, workspace_id))) {
-          throw new WorkspaceWebSocketAuthorizationError();
-        }
-      }
-
       const hostname = await queryOptionalScalar(
         sql.select_hostname_from_workspace_id,
         { workspace_id },
@@ -253,13 +260,11 @@ export function makeWorkspaceProxyMiddleware(
         }
       },
       error: (err, req, res) => {
-        if (!(err instanceof WorkspaceWebSocketAuthorizationError)) {
-          logger.error('Error proxying workspace request', {
-            err,
-            url: req.url,
-            originalUrl: req.originalUrl,
-          });
-        }
+        logger.error('Error proxying workspace request', {
+          err,
+          url: req.url,
+          originalUrl: req.originalUrl,
+        });
 
         if (isResponseLike(res)) {
           // Check to make sure we weren't already in the middle of sending a

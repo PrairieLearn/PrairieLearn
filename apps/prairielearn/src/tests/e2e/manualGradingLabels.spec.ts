@@ -1,7 +1,10 @@
 import * as sqldb from '@prairielearn/postgres';
 
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
-import { makeAssessmentInstance } from '../../lib/assessment.js';
+import {
+  deleteAllAssessmentInstancesForAssessment,
+  makeAssessmentInstance,
+} from '../../lib/assessment.js';
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { createGroup } from '../../lib/groups.js';
 import { selectAssessmentQuestionById } from '../../models/assessment-question.js';
@@ -31,6 +34,9 @@ test('manual grading label visibility, filtering, and assignment', async ({
     course_instance_id: courseInstance.id,
     tid: 'hw10-aiGrading',
   });
+  // Other specs that share this worker's database may have created instances
+  // of this assessment, but this test asserts on exact submission counts.
+  await deleteAllAssessmentInstancesForAssessment(assessment.id, '1');
   const assessmentQuestionId = (
     await selectAssessmentQuestions({ assessment_id: assessment.id })
   )[0].assessment_question.id;

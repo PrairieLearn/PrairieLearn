@@ -1,15 +1,13 @@
 {
   "name": "@prairielearn/trpc",
   "version": "1.1.0",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/trpc"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
+  "sideEffects": false,
   "exports": {
     "./client": "./dist/client.js",
     "./express": "./dist/express.js",
@@ -20,13 +18,6 @@
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
-  },
-  "peerDependencies": {
-    "@tanstack/react-query": "^5.101.4",
-    "@trpc/client": "^11.18.0",
-    "@trpc/server": "^11.18.0",
-    "react": "^19.2.8",
-    "react-bootstrap": "3.0.0-beta.5"
   },
   "dependencies": {
     "@types/react": "^19.3.0"
@@ -41,5 +32,14 @@
     "react-dom": "^19.3.0",
     "vitest": "^5.0.2"
   },
-  "sideEffects": false
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.101.4",
+    "@trpc/client": "^11.18.0",
+    "@trpc/server": "^11.18.0",
+    "react": "^19.2.8",
+    "react-bootstrap": "3.0.0-beta.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
 }

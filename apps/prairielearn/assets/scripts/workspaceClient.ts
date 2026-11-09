@@ -103,7 +103,14 @@ onDocumentReady(function () {
     showLoadingFrame();
 
     if (workspaceHostMode !== 'cross-origin') {
-      const workspaceFrameSrc = window.location.href + '/container/';
+      // The container is served from the same URL for both the public and
+      // non-public workspace pages, since its base URL is fixed at launch.
+      // Avoid unnecessarily reassigning the src attribute, which causes the
+      // iframe to reload.
+      const workspaceFrameSrc = new URL(
+        `/pl/workspace/${workspaceId}/container/`,
+        window.location.href,
+      ).href;
       if (workspaceFrame.src !== workspaceFrameSrc) {
         workspaceFrame.src = workspaceFrameSrc;
       }

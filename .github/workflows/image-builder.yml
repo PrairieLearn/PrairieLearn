@@ -14,6 +14,11 @@ on:
         required: false
         type: string
         default: ''
+      runners:
+        description: 'JSON array of runners to build on, one per platform'
+        required: false
+        type: string
+        default: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
 
 env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -28,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm]
+        os: ${{ fromJSON(inputs.runners) }}
 
     runs-on: ${{ matrix.os }}
 

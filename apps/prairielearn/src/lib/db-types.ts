@@ -1,6 +1,4 @@
-/* eslint perfectionist/sort-objects: error */
-/* eslint perfectionist/sort-sets: error */
-
+// `oxlint.config.mts` keeps the objects and sets in this file sorted; update it if this file moves.
 import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
@@ -52,6 +50,9 @@ export const EnumChunkTypeSchema = z.enum([
   'question',
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
+
+export const EnumCourseAgentReviewDecisionSchema = z.enum(['approved', 'denied']);
+export type EnumCourseAgentReviewDecision = z.infer<typeof EnumCourseAgentReviewDecisionSchema>;
 
 export const EnumCourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
 export type EnumCourseRole = z.infer<typeof EnumCourseRoleSchema>;
@@ -691,12 +692,18 @@ export const BatchedMigrationSchema = null;
 
 export const ChunkSchema = z.object({
   assessment_id: IdSchema.nullable(),
+  commit_hash: z.string().nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
+  created_at: DateFromISOString.nullable(),
+  deleted: z.boolean(),
   id: IdSchema,
   question_id: IdSchema.nullable(),
+  size_compressed: z.coerce.number().nullable(),
+  size_uncompressed: z.coerce.number().nullable(),
+  superseded_at: DateFromISOString.nullable(),
   type: EnumChunkTypeSchema,
-  uuid: z.string(), // TODO: should this be a UUID?
+  uuid: z.string(),
 });
 export type Chunk = z.infer<typeof ChunkSchema>;
 
@@ -720,6 +727,20 @@ export const CourseAgentConversationSchema = z.object({
   user_id: IdSchema,
 });
 export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
+
+export const CourseAgentReviewSchema = z.object({
+  agent_review_id: z.string(),
+  course_agent_conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  decision: EnumCourseAgentReviewDecisionSchema,
+  delivery_expired_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  result: z.unknown(),
+  result_delivered_at: DateFromISOString.nullable(),
+  stuck_delivery_reported_at: DateFromISOString.nullable(),
+});
+export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
 
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
@@ -1011,7 +1032,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
-/* eslint-disable @typescript-eslint/no-deprecated */
+/* oxlint-disable typescript/no-deprecated */
 /** @deprecated */
 export const TeamSchema = z.object({
   course_instance_id: IdSchema,
@@ -1097,7 +1118,7 @@ export type GroupUser = TeamUser;
 export const GroupUserRoleSchema = TeamUserRoleSchema;
 export type GroupUserRole = TeamUserRole;
 export const GroupLogSchema = TeamLogSchema;
-/* eslint-enable @typescript-eslint/no-deprecated */
+/* oxlint-enable typescript/no-deprecated */
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
@@ -1825,6 +1846,7 @@ export const TableNames = [
   'chunks',
   'client_fingerprints',
   'course_agent_conversations',
+  'course_agent_reviews',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',

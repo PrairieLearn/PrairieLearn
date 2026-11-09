@@ -40,3 +40,41 @@ FROM
   chunks
 WHERE
   course_id = $course_id;
+
+-- BLOCK drop_unique_chunk_index
+DROP INDEX chunks_unique_values_key;
+
+-- BLOCK append_chunk_revisions
+WITH
+  superseded AS (
+    UPDATE chunks
+    SET
+      superseded_at = now()
+    WHERE
+      course_id = $course_id
+      AND type = ANY ($types::enum_chunk_type[])
+    RETURNING
+      *
+  )
+INSERT INTO
+  chunks (
+    type,
+    course_id,
+    question_id,
+    course_instance_id,
+    assessment_id,
+    uuid,
+    created_at
+  )
+SELECT
+  type,
+  course_id,
+  question_id,
+  course_instance_id,
+  assessment_id,
+  gen_random_uuid(),
+  now()
+FROM
+  superseded
+WHERE
+  type = 'serverFilesCourse';

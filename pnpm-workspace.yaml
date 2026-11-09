@@ -34,7 +34,12 @@ overrides:
   'jsdoc-type-pratt-parser>@types/node': ^24
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
+  # markdownlint-cli2 pins markdown-it exactly; require the patched release.
+  'markdownlint-cli2>markdown-it': ^15.0.3
   'notebookjs>jsdom': '*'
+
+  # Preserve S3rver's legacy Busboy API while removing the unpatched Dicer parser.
+  's3rver>busboy': npm:@fastify/busboy@^3.2.4
 
   # jsdom pins Undici exactly; require a patched release.
   'jsdom>undici': '^8.12.3'
@@ -68,9 +73,14 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
+  # Fixes Stop for server-started chat continuations (cloudflare/agents#2803).
+  - agents@0.33.0
+  # Includes the November 2026 node-forge security fixes.
+  - node-forge@1.4.3
   # Includes the October 2026 Undici security fixes.
   - 'undici@8.12.3'
-  - '@prairielearn/sketchresponse@0.2.1'
+  # Includes the KaTeX security fix in the sketchresponse browser bundle.
+  - '@prairielearn/sketchresponse@0.3.1'
   - 'typescript-cp@0.1.11'
   - express@4.22.3
   - prettier@3.9.7

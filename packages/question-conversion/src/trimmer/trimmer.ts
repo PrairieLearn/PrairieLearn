@@ -65,7 +65,8 @@ interface ManifestObject {
   };
   organizations?: {
     organization?:
-      { item?: ManifestItem | ManifestItem[] }[] | { item?: ManifestItem | ManifestItem[] };
+      | { item?: ManifestItem | ManifestItem[] }[]
+      | { item?: ManifestItem | ManifestItem[] };
   };
 }
 
@@ -100,7 +101,10 @@ interface LocalAssets {
 }
 
 type QtiContainerKind =
-  'assessment' | 'objectbank-title-attr' | 'objectbank-bank-title' | 'unknown';
+  | 'assessment'
+  | 'objectbank-title-attr'
+  | 'objectbank-bank-title'
+  | 'unknown';
 
 interface QtiContainer extends QtiArchiveEntry {
   kind: QtiContainerKind;
@@ -209,12 +213,10 @@ export async function analyzeQtiArchive(
     manifestPath: manifest?.path,
     manifestObject: manifest?.manifest,
     manifestKeepIds: manifest?.keepIds ?? new Set(),
-    warnings: [
-      ...localAssets.missing.map((ref) => ({
-        type: 'missing-local-asset' as const,
-        message: `Referenced local asset was not present in the archive: ${ref}`,
-      })),
-    ],
+    warnings: localAssets.missing.map((ref) => ({
+      type: 'missing-local-asset' as const,
+      message: `Referenced local asset was not present in the archive: ${ref}`,
+    })),
   };
 }
 

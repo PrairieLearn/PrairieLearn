@@ -1,15 +1,12 @@
 {
   "name": "@prairielearn/config",
   "version": "5.1.3",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/config"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -33,5 +30,8 @@
     "@vitest/coverage-v8": "^5.0.2",
     "tmp-promise": "^3.0.3",
     "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

@@ -1,8 +1,6 @@
-import { type IncomingMessage, ServerResponse } from 'node:http';
-
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
-import express, {
+import {
   type ErrorRequestHandler,
   type NextFunction,
   type Request,
@@ -127,7 +125,10 @@ function setWorkspaceSessionCookie(
 }
 
 function checkWorkspaceAuthorizationCookie(req: Request, res: Response, next: NextFunction) {
-  const access = validateWorkspaceSandboxAccess(req, req.params.workspace_id);
+  const access =
+    req.headers.upgrade?.toLowerCase() === 'websocket'
+      ? validateWorkspaceSandboxWebSocketAccess(req, req.params.workspace_id)
+      : validateWorkspaceSandboxAccess(req, req.params.workspace_id);
   if (!access.authorized && access.reason !== 'unauthorized') {
     res.status(404).send('Not Found');
     return;
@@ -213,41 +214,6 @@ export function makeWorkspaceSandboxMiddleware({
     next();
   });
 
-  // WebSocket upgrades bypass the main Express middleware stack, so run the shared
-  // session authorization router against the handshake before proxying it.
-  const websocketAuthorizationApp = express();
-  websocketAuthorizationApp.set('trust proxy', config.trustProxy);
-  websocketAuthorizationApp.use(cookieParser());
-  websocketAuthorizationApp.use(
-    '/pl/workspace/:workspace_id(\\d+)/container',
-    workspaceSessionAuthorizationRouter,
-  );
-  const runWebSocketAuthorization: (
-    req: IncomingMessage,
-    res: ServerResponse,
-    next: (err?: unknown) => void,
-  ) => void = websocketAuthorizationApp;
-
-  async function authorizeWebSocketWithSandboxSession(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<boolean> {
-    return await new Promise<boolean>((resolve, reject) => {
-      const handleFinish = () => resolve(false);
-      res.once('finish', handleFinish);
-      runWebSocketAuthorization(req, res, (err) => {
-        res.off('finish', handleFinish);
-        if (err == null) {
-          resolve(true);
-        } else if (isClientError(err)) {
-          resolve(false);
-        } else {
-          reject(err);
-        }
-      });
-    });
-  }
-
   router.use((req, res, next) => {
     const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
     if (workspaceHost.type === 'not-sandbox') return next('router');
@@ -299,25 +265,6 @@ export function makeWorkspaceSandboxMiddleware({
       next();
     },
     makeWorkspaceProxyMiddleware(CONTAINER_PATH_REGEX, {
-      matchesRequestHost: (req, workspaceId) => {
-        const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
-        return (
-          workspaceHost.type === 'workspace' && idsEqual(workspaceHost.workspaceId, workspaceId)
-        );
-      },
-      authorizeWebSocketRequest: async (req, workspaceId) => {
-        const access = validateWorkspaceSandboxWebSocketAccess(req, workspaceId);
-        if (access.authorized) return true;
-        if (access.reason !== 'unauthorized') return false;
-
-        const res = new ServerResponse(req);
-        res.assignSocket(req.socket);
-        try {
-          return await authorizeWebSocketWithSandboxSession(req, res);
-        } finally {
-          if (!res.writableEnded) res.detachSocket(req.socket);
-        }
-      },
       cookieDomainRewrite: '',
       rewriteContainerCookiesForCrossOrigin: true,
       removeResponseHeaders: ['X-Frame-Options'],

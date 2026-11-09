@@ -6,6 +6,8 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
+!.oxfmtrc.json
+!oxlint.config.mts
 !.prettierignore
 !.prettierrc.json
 !pnpm-lock.yaml
@@ -13,8 +15,8 @@
 !pyproject.toml
 !tsconfig.json
 !turbo.jsonc
-!vitest.config.ts
-!vitest.shared.ts
+!vitest.config.mts
+!vitest.shared.mts
 !pyproject.toml
 !apps/
 !contrib/
