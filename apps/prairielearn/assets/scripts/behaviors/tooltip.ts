@@ -5,7 +5,6 @@ import { observe } from 'selector-observer';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 const openTooltips = new Set<Tooltip>();
-const titleObservers = new WeakMap<HTMLElement, MutationObserver>();
 
 function closeOpenTooltips() {
   openTooltips.forEach((tooltip) => tooltip.hide());
@@ -17,16 +16,6 @@ onDocumentReady(() => {
     constructor: HTMLElement,
     add(el) {
       new window.bootstrap.Tooltip(el);
-
-      // Bootstrap reads `data-bs-title` only once, so pick up changes made
-      // later, e.g. by a hydrated component whose label depends on its state.
-      const titleObserver = new MutationObserver(() => {
-        window.bootstrap.Tooltip.getInstance(el)?.setContent({
-          '.tooltip-inner': el.dataset.bsTitle ?? '',
-        });
-      });
-      titleObserver.observe(el, { attributes: true, attributeFilter: ['data-bs-title'] });
-      titleObservers.set(el, titleObserver);
 
       // Bootstrap doesn't support a single element triggering multiple things.
       // There are cases where we want this behavior, e.g. to have a tooltip
@@ -70,8 +59,6 @@ onDocumentReady(() => {
       }
     },
     remove(el) {
-      titleObservers.get(el)?.disconnect();
-      titleObservers.delete(el);
       window.bootstrap.Tooltip.getInstance(el)?.dispose();
     },
   });

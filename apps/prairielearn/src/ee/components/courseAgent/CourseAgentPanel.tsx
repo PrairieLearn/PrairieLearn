@@ -13,6 +13,9 @@ import {
 import { Alert, Button, Offcanvas, Spinner } from 'react-bootstrap';
 import { createPortal } from 'react-dom';
 
+// The package root would pull all of `@prairielearn/ui` into this eagerly loaded bundle.
+import { OverlayTrigger } from '@prairielearn/ui/overlay-trigger';
+
 const MOBILE_QUERY = '(max-width: 767.98px)';
 
 function loadChat() {
@@ -94,7 +97,6 @@ export function CourseAgentPanel({
     startTransition(() => setHydrated(true));
   }, []);
   const [open, setOpen] = useState(initialOpen);
-  const launcherLabel = open ? 'Hide course agent' : 'Show course agent';
   // Keep the picker and its draft mounted after the first open.
   const [hasEverOpened, setHasEverOpened] = useState(initialOpen);
   // Animate only after the user toggles, so a panel restored open on page load doesn't slide in.
@@ -102,6 +104,7 @@ export function CourseAgentPanel({
   // The panel is a modal only on narrow screens; the server renders desktop markup.
   const mobile = useSyncExternalStore(subscribeMobile, mobileSnapshot, () => false);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const [launcherTooltipShown, setLauncherTooltipShown] = useState(false);
   const mobileModalRef = useRef<ComponentRef<typeof Offcanvas>>(null);
 
   // Keeps the desktop panel below the navbar, whose height can change as it wraps.
@@ -194,6 +197,7 @@ export function CourseAgentPanel({
 
   const launcherButtonProps = {
     ref: toggleRef,
+    'aria-label': 'Course agent',
     'aria-expanded': open,
     'aria-controls': 'course-agent-panel',
     onPointerEnter: preloadChat,
@@ -203,26 +207,36 @@ export function CourseAgentPanel({
   const launcher = mobile ? (
     <button type="button" className="course-agent-launcher navbar-toggler" {...launcherButtonProps}>
       <i className="bi bi-stars" aria-hidden="true" />
-      <span className="visually-hidden">{launcherLabel}</span>
     </button>
   ) : (
-    // Use the global Bootstrap tooltip; importing `@prairielearn/ui` here would add its shared
-    // chunk to this eagerly loaded bundle. Hover-only avoids showing it when focus returns.
-    <Button
-      className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
-      variant="outline-light"
-      active={open}
-      size="sm"
-      data-bs-toggle="tooltip"
-      data-bs-trigger="hover"
-      data-bs-placement="bottom"
-      data-bs-title={launcherLabel}
-      {...launcherButtonProps}
+    <OverlayTrigger
+      trigger={['hover', 'focus']}
+      placement="bottom"
+      show={launcherTooltipShown}
+      tooltip={{ body: 'Course agent', props: { id: 'course-agent-launcher-tooltip' } }}
+      // Skip focus that isn't `:focus-visible`, such as focus returning after a mouse user closes the panel.
+      onToggle={(nextShow) => {
+        const launcherElement = toggleRef.current;
+        setLauncherTooltipShown(
+          nextShow &&
+            launcherElement !== null &&
+            (launcherElement.matches(':hover') || launcherElement.matches(':focus-visible')),
+        );
+      }}
     >
-      <i className="bi bi-stars" aria-hidden="true" />
-      {/* Visible-to-AT text, not `aria-label`, so the global tooltip doesn't repeat the name. */}
-      <span className="visually-hidden">{launcherLabel}</span>
-    </Button>
+      <Button
+        className="course-agent-launcher d-inline-flex align-items-center justify-content-center"
+        variant="outline-light"
+        active={open}
+        size="sm"
+        {...launcherButtonProps}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') setLauncherTooltipShown(false);
+        }}
+      >
+        <i className="bi bi-stars" aria-hidden="true" />
+      </Button>
+    </OverlayTrigger>
   );
 
   return (
