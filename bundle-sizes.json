@@ -210,9 +210,9 @@
     "brotli": 286588
   },
   "../src/ee/components/courseAgent/CourseAgentChat.tsx": {
-    "raw": 1765476,
-    "gzip": 496005,
-    "brotli": 426490
+    "raw": 1766281,
+    "gzip": 496214,
+    "brotli": 426662
   },
   "../../../node_modules/.pnpm/@zip.js+zip.js@2.18.2/node_modules/@zip.js/zip.js/lib/core/zip-reader.js": {
     "raw": 64596,
