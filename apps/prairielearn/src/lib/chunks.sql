@@ -123,25 +123,25 @@ FOR NO KEY UPDATE;
 
 -- BLOCK supersede_chunks
 WITH
-  publication AS (
+  chunk_publication AS (
     SELECT
       clock_timestamp() AS created_at
   ),
   superseded AS (
     UPDATE chunks
     SET
-      superseded_at = publication.created_at
+      superseded_at = chunk_publication.created_at
     FROM
-      publication
+      chunk_publication
     WHERE
       course_id = $course_id
       AND id = ANY ($chunk_ids::bigint[])
       AND superseded_at IS NULL
   )
 SELECT
-  created_at
+  created_at::text
 FROM
-  publication;
+  chunk_publication;
 
 -- BLOCK insert_chunks
 INSERT INTO

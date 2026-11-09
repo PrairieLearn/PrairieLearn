@@ -16,7 +16,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getCourseCommitHash, getLockNameForCoursePath } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
@@ -930,11 +930,11 @@ export async function updateChunksForCourse({
   // Uploads finish before the transaction, so it only holds row locks briefly.
   await sqldb.runInTransactionAsync(async () => {
     await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
-    // Use the same time for ending old revisions and starting their replacements.
+    // Preserve database precision so old and new revisions meet at the same instant.
     const publishedAt = await sqldb.queryScalar(
       sql.supersede_chunks,
       { course_id: courseId, chunk_ids: replacedChunkIds },
-      DateFromISOString,
+      z.string(),
     );
     await sqldb.execute(sql.insert_chunks, {
       course_id: courseId,
