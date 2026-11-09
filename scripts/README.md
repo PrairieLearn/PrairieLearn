@@ -4,4 +4,10 @@ This directory contains various scripts that are used internally to develop Prai
 
 ## Question authors rollout
 
-The `questions.authors` column is populated from course files on each course's next sync; the migration does not backfill from the legacy tables. Deploy the UID writer and sync all courses before relying on UID queries across courses. Sync no longer writes to the old `authors` and `question_authors` tables. They remain during this transition and will be removed in a follow-up migration after all servers use the new writer.
+Question authors are stored in `questions.authors` from UID or ORCID URL strings in course files. Legacy structured author objects are no longer accepted, and the old `authors` and `question_authors` tables have been removed.
+
+Before deploying this cleanup:
+
+- Confirm all servers have deployed the new authorship writer (#16170).
+- Verify current course files have been migrated from legacy objects, preserving the agreed UIDs and ORCID URLs.
+- Resync courses with the new writer and confirm `questions.authors` is populated before dropping the legacy tables. The cleanup migration does not backfill data or rewrite course files.
