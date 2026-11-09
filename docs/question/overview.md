@@ -124,19 +124,21 @@ Any question that is marked with `"shareSourcePublicly": true` will be considere
 
 ### Question Authorship
 
-List the UIDs of the people who contributed to this question in `authors`:
+List the UIDs or ORCID URLs of the people who contributed to this question in `authors`:
 
 ```json
 {
-  "authors": ["mwest@illinois.edu", "nathan@prairielearn.com"]
+  "authors": ["mwest@illinois.edu", "https://orcid.org/0000-0002-1825-0097"]
 }
 ```
 
 UIDs are identifiers, not display names or necessarily email addresses. Any UID may be credited, even if the person has no PrairieLearn account or is no longer on course staff. UIDs are stored as declared and are not automatically changed when an account's UID changes. Update the question's `info.json` if an author's UID changes.
 
-Authors can also be added and removed on the question's **Settings** page, including using **Add myself**. Names are shown only for current course staff; other authors are displayed by UID. Saving settings writes the UID array to `info.json` through the normal course file editor.
+Use the full ORCID URL in the form `https://orcid.org/0000-0002-1825-0097`. It is displayed as a link without verifying ownership or connecting it to a PrairieLearn account. A UID and an ORCID for the same person remain separate entries.
 
-The old object format (`name`, `email`, `orcid`, and `originCourse`) is deprecated but remains accepted during the transition. Legacy `email` values are treated as UIDs; replace each object with that UID string. Entries without a usable email produce a sync warning and must be assigned a UID manually. Sync does not modify the source file or delete the legacy database records. Saving from the settings page replaces legacy entries with the displayed UID array, so review any warnings first.
+Authors can also be added and removed on the question's **Settings** page, including using **Add myself**. Names are shown only for current course staff; other authors are displayed by UID. Editing authors and saving settings writes the identifier array to `info.json` through the normal course file editor.
+
+The old object format (`name`, `email`, `orcid`, and `originCourse`) is deprecated but remains accepted during the transition. Legacy `email` values are treated as UIDs, and `orcid` values become full ORCID URLs. Both are kept when present. Entries without either identifier produce a sync warning and must be updated manually. Sync does not modify the source file or delete the legacy database records. Editing authors and saving replaces legacy entries with the displayed identifier array, so review any warnings first.
 
 ### Question Dependencies
 

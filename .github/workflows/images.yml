@@ -50,12 +50,24 @@ jobs:
       cache_images: prairielearn/prairielearn
     secrets: inherit
 
+  build-course-agent-images:
+    name: Course agent
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      group: course-agent
+      images: prairielearn/course-agent-sandbox
+      # Cloudflare Containers only run linux/amd64, and cloudflare/sandbox is
+      # published only for linux/amd64.
+      runners: '["ubuntu-24.04"]'
+    secrets: inherit
+
   report-image-sizes:
     runs-on: ubuntu-latest
     needs:
       - build-workspace-images
       - build-grader-images
       - build-core-images
+      - build-course-agent-images
     if: ${{ !cancelled() }}
 
     steps:
