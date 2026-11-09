@@ -359,12 +359,13 @@ function Chat({
     });
   });
   // The server reports the turn's lifecycle before the SDK marks the response active.
+  // A send lost to a dropped socket errors without the server ever leaving offline.
   const startingSandbox =
     !connectionFailed &&
     !connectionError &&
     (lifecycle?.status === 'starting' ||
       ((lifecycle === null || lifecycle.status === 'offline') &&
-        (awaitingStart || responseActive)));
+        ((awaitingStart && status !== 'error') || responseActive)));
   const pendingLabel = startingSandbox ? 'Starting sandbox…' : showThinking ? 'Thinking…' : null;
   const showInitialText =
     initialText !== undefined && !messages.some((message) => message.role === 'user');
