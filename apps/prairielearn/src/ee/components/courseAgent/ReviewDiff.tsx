@@ -15,17 +15,32 @@ function subscribeWide(onChange: () => void) {
   return () => query.removeEventListener('change', onChange);
 }
 
+// Pierre's blue/orange palette, which stays distinguishable with red-green color blindness.
+const THEME = {
+  light: 'pierre-light-protanopia-deuteranopia',
+  dark: 'pierre-dark-protanopia-deuteranopia',
+} as const;
+
+// The themes' added/deleted colors, for line counts and icons outside Pierre's shadow root.
+const LINE_COLORS = {
+  light: { added: '#216cab', deleted: '#ac6023' },
+  dark: { added: '#97c4ff', deleted: '#fe8c2c' },
+} as const;
+
+const ADDED_COLOR = 'var(--review-diff-added)';
+const DELETED_COLOR = 'var(--review-diff-deleted)';
+
 const CHANGES = {
-  added: { icon: 'bi-file-earmark-plus', className: 'text-success', label: 'Added', type: 'new' },
+  added: { icon: 'bi-file-earmark-plus', color: ADDED_COLOR, label: 'Added', type: 'new' },
   modified: {
     icon: 'bi-file-earmark-diff',
-    className: 'text-warning',
+    color: 'var(--bs-warning)',
     label: 'Modified',
     type: 'change',
   },
   deleted: {
     icon: 'bi-file-earmark-minus',
-    className: 'text-danger',
+    color: DELETED_COLOR,
     label: 'Deleted',
     type: 'deleted',
   },
@@ -67,17 +82,17 @@ function dirname(path: string) {
 function LineCounts({ additions, deletions }: { additions: number; deletions: number }) {
   return (
     <span className="font-monospace small text-nowrap">
-      <span className="text-danger">−{deletions}</span>{' '}
-      <span className="text-success">+{additions}</span>
+      <span style={{ color: DELETED_COLOR }}>−{deletions}</span>{' '}
+      <span style={{ color: ADDED_COLOR }}>+{additions}</span>
     </span>
   );
 }
 
 function ChangeIcon({ change }: { change: ReviewDiffFile['change'] }) {
-  const { icon, className, label } = CHANGES[change];
+  const { icon, color, label } = CHANGES[change];
   return (
     <>
-      <i className={clsx('bi', icon, className)} aria-hidden="true" />
+      <i className={clsx('bi', icon)} style={{ color }} aria-hidden="true" />
       <span className="visually-hidden">{label}:</span>
     </>
   );
@@ -99,6 +114,7 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
   );
   const sectionsRef = useRef(new Map<string, HTMLElement>());
   const split = wide && preferSplit;
+  const themeType = bootstrapThemeType();
   const additions = parsed.reduce((sum, file) => sum + file.additions, 0);
   const deletions = parsed.reduce((sum, file) => sum + file.deletions, 0);
 
@@ -109,7 +125,16 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
   };
 
   return (
-    <div className="d-flex flex-column flex-grow-1" style={{ minHeight: 0 }}>
+    <div
+      className="d-flex flex-column flex-grow-1"
+      style={
+        {
+          minHeight: 0,
+          '--review-diff-added': LINE_COLORS[themeType].added,
+          '--review-diff-deleted': LINE_COLORS[themeType].deleted,
+        } as CSSProperties
+      }
+    >
       <div className="d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom">
         <span>{files.length === 1 ? '1 file changed' : `${files.length} files changed`}</span>
         <LineCounts additions={additions} deletions={deletions} />
@@ -209,7 +234,8 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
                     options={{
                       // One side of an added or deleted file is empty, so split adds nothing.
                       diffStyle: split && file.change === 'modified' ? 'split' : 'unified',
-                      themeType: bootstrapThemeType(),
+                      theme: THEME,
+                      themeType,
                       overflow: 'wrap',
                       lineDiffType: 'word',
                       // Mark changed lines with +/−, not just color.
