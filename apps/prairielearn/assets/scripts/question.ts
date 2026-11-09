@@ -14,6 +14,7 @@ import type {
   QuestionContentPanels,
 } from '../../src/lib/client/question-browser-services.types.js';
 import { updateQuestionPagePanels } from '../../src/lib/client/question-page-panels.js';
+import { createQuestionSubmissions } from '../../src/lib/client/question-submissions.js';
 import type {
   StatusMessage,
   StatusMessageSubmission,
@@ -59,6 +60,8 @@ onDocumentReady(() => {
       void mathjaxTypeset([container]);
       setupDisableOnSubmit(container);
 
+      const variantId = container.dataset.variantId!;
+      const isCurrent = () => container.isConnected && container.dataset.variantId === variantId;
       const localServices =
         container.dataset.questionHostingUpdate === 'true'
           ? createLocalQuestionBrowserServices({
@@ -67,10 +70,14 @@ onDocumentReady(() => {
               dialogData: decodeData<QuestionDialogData>(
                 `question-dialog-data-${container.dataset.variantId}`,
               ),
-              isCurrent: () => container.isConnected,
+              isCurrent,
             })
           : undefined;
       if (localServices) browserServices.set(container, localServices.services);
+      const submissions =
+        localServices && container.querySelector('.js-submission-body[data-dynamic-render-url]')
+          ? initializeQuestionSubmissions(container, localServices.services, isCurrent)
+          : undefined;
 
       container.addEventListener('click', async (event) => {
         const button = (event.target as Element).closest<HTMLButtonElement>(
@@ -98,11 +105,12 @@ onDocumentReady(() => {
       });
 
       const externalGrading =
-        container.dataset.gradingMethod === 'External'
+        !submissions && container.dataset.gradingMethod === 'External'
           ? initializeExternalGrading({ container })
           : undefined;
       return {
         remove: () => {
+          submissions?.dispose();
           externalGrading?.close();
           localServices?.dispose();
           browserServices.delete(container);
@@ -122,6 +130,7 @@ onDocumentReady(() => {
     constructor: HTMLDivElement,
     initialize(panel) {
       const container = panel.closest<HTMLElement>('.question-container')!;
+      if (browserServices.has(container)) return;
       const abortController = new AbortController();
 
       panel.addEventListener('show.bs.collapse', () => {
@@ -201,6 +210,62 @@ onDocumentReady(() => {
   });
 });
 
+function initializeQuestionSubmissions(
+  container: HTMLElement,
+  services: QuestionBrowserServices,
+  isCurrent: () => boolean,
+) {
+  const listeners = new AbortController();
+  const submissions = createQuestionSubmissions({
+    services,
+    externalGrading: container.dataset.gradingMethod === 'External',
+    isCurrent,
+    submissions: Array.from(
+      container.querySelectorAll<HTMLElement>('.js-submission-body[data-dynamic-render-url]'),
+      (body) => {
+        const id = body.dataset.submissionId!;
+        const panel = container.querySelector<HTMLElement>(`#submission-${id}`)!;
+        return {
+          id,
+          grading_job_id: panel.dataset.gradingJobId,
+          grading_job_status: panel.dataset.gradingJobStatus as GradingJobStatus,
+        };
+      },
+    ),
+    onStatus: (status) => updateStatus(container, status),
+    onRender: (submissionId, msg) => updateDynamicPanels({ container, msg, submissionId }),
+    onError: (submissionId) => {
+      const body = container.querySelector<HTMLElement>(`#submission-${submissionId}-body`);
+      if (!body) return;
+      body.innerHTML = '<div class="card-body submission-body">Error retrieving submission. </div>';
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'btn btn-link p-0';
+      retry.textContent = 'Retry';
+      retry.addEventListener('click', () => submissions.loadHistory(submissionId), {
+        signal: listeners.signal,
+      });
+      body.firstElementChild!.append(retry);
+    },
+  });
+  container.addEventListener(
+    'show.bs.collapse',
+    (event) => {
+      const body = event.target as HTMLElement;
+      if (body.matches('.js-submission-body.render-pending')) {
+        submissions.loadHistory(body.dataset.submissionId!);
+      }
+    },
+    { signal: listeners.signal },
+  );
+  return {
+    dispose() {
+      listeners.abort();
+      submissions.dispose();
+    },
+  };
+}
+
 function initializeExternalGrading({ container }: { container: HTMLElement }) {
   const abortController = new AbortController();
   const { variantId, variantToken } = container.dataset;
@@ -222,24 +287,6 @@ function initializeExternalGrading({ container }: { container: HTMLElement }) {
 
   // If everything has been graded or was canceled, don't even open a socket
   if (!gradingPending) return;
-
-  const services = browserServices.get(container);
-  if (services) {
-    const unsubscribe = services.subscribeToGradingStatus((submissions) =>
-      handleStatusChange({
-        container,
-        close: unsubscribe,
-        submissions,
-        signal: abortController.signal,
-      }),
-    );
-    return {
-      close: () => {
-        unsubscribe();
-        abortController.abort();
-      },
-    };
-  }
 
   const socket = io('/external-grading');
   socket.on('connect', () => {
@@ -452,7 +499,22 @@ function updateDynamicPanels({
     // that must be executed. Typical vanilla JS alternatives don't support
     // this kind of script.
     if (submissionPanelElement) {
-      $(submissionPanelElement).replaceWith(msg.submissionPanel);
+      if (browserServices.has(container)) {
+        const bodyId = `submission-${submissionId}-body`;
+        const toggleSelector = `[aria-controls="${bodyId}"]`;
+        const expanded =
+          submissionPanelElement.querySelector(toggleSelector)?.getAttribute('aria-expanded') ===
+          'true';
+        const replacement = $(msg.submissionPanel);
+        replacement.find(`#${bodyId}`).toggleClass('show', expanded);
+        replacement
+          .find(toggleSelector)
+          .toggleClass('collapsed', !expanded)
+          .attr('aria-expanded', String(expanded));
+        $(submissionPanelElement).replaceWith(replacement);
+      } else {
+        $(submissionPanelElement).replaceWith(msg.submissionPanel);
+      }
       const updatedSubmissionPanelElement = container.querySelector(submissionPanelSelector);
       if (updatedSubmissionPanelElement) {
         void mathjaxTypeset([updatedSubmissionPanelElement]);
@@ -514,25 +576,6 @@ function loadPendingSubmissionPanel({
 }): void {
   const { submissionId, dynamicRenderUrl } = panel.dataset;
   if (submissionId == null || dynamicRenderUrl == null) return;
-
-  const services = browserServices.get(container);
-  if (services) {
-    services
-      .renderSubmission(
-        {
-          submissionId,
-          purpose: includeScorePanels ? 'grading-result' : 'history',
-        },
-        { signal },
-      )
-      .then((msg) => updateDynamicPanels({ container, msg, submissionId }))
-      .catch((err) => {
-        if (err.name === 'AbortError') return;
-        panel.innerHTML =
-          '<div class="card-body submission-body">Error retrieving submission</div>';
-      });
-    return;
-  }
 
   const url = new URL(dynamicRenderUrl, window.location.origin);
 
