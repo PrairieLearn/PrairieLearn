@@ -202,14 +202,7 @@ export class PrintRenderer {
             {
               ...options,
               timeoutMs: remainingTimeoutMs,
-              ...(access
-                ? {
-                    assetAccess: {
-                      token: access.token,
-                      scope: access.scope,
-                    },
-                  }
-                : {}),
+              ...(access ? { assetAccess: access } : {}),
             },
             output,
           );
@@ -407,7 +400,7 @@ export class PrintRenderer {
             await route.abort('blockedbyclient');
             return;
           }
-          // Public app assets need no session, so Cloudflare can fetch them directly.
+          // Public app assets need no credential, so Cloudflare can fetch them directly.
           const isAppAsset = requestUrl.pathname.startsWith(`${config.assetsPrefix}/`);
           if (this.cloudflare && !config.devMode && isAppAsset) {
             await route.continue();

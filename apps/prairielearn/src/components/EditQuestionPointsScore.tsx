@@ -395,7 +395,7 @@ export function EditQuestionPointsScoreButton({
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
     };
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [show]);
 
   return (

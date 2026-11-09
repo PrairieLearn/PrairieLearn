@@ -1,12 +1,14 @@
+import '../../src/lib/client/mathjax.js';
+
 import {
   waitForExcalidrawCanvases,
   waitForPrintImages,
-} from '../../src/lib/client/print-image-layout.js';
+} from '../../src/lib/client/printing/print-image-layout.js';
+import { waitForPrintableElements } from '../../src/lib/client/printing/print-render-readiness.js';
 import {
   replaceCanvasesWithImages,
   waitForQuestionRendering,
 } from '../../src/lib/client/question-rendering.js';
-import '../../src/lib/client/mathjax.js';
 
 // Preserve authored math in the text prompt while allowing drawing labels to render.
 window.MathJax.startup.typeset = false;
@@ -22,6 +24,7 @@ async function prepareCanvases(): Promise<void> {
   const source = document.getElementById('ai-grading-source')!;
   await window.MathJax.startup.promise;
   await waitForQuestionRendering();
+  await waitForPrintableElements(source);
   await waitForExcalidrawCanvases(source);
   await document.fonts.ready;
   await waitForPrintImages(source);

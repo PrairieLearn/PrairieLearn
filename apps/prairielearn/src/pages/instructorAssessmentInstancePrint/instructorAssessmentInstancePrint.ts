@@ -335,7 +335,10 @@ router.get(
         req.originalUrl,
         `${config.serverType}://localhost:${config.serverPort}`,
       );
-      const { html, source } = await getPrintRenderer().render(
+      const { html, source } = await getPrintRenderer().render<{
+        html: string;
+        source: DocxSource;
+      }>(
         {
           url: localPreviewUrl.href,
           browserOrigin: config.serverCanonicalHost ?? undefined,

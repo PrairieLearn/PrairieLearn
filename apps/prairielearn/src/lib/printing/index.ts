@@ -408,7 +408,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
 
   signal.throwIfAborted();
   return {
-    questionHtmls: namespaceQuestionHtmls(renderedQuestions),
+    questionHtmls: await namespaceQuestionHtmls(renderedQuestions),
     questionListDigest: digestPrintableQuestions(includedQuestions),
     questionResults,
     extraHeadersHtml: combineQuestionHeaders(extraHeaderHtmls),

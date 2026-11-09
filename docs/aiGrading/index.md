@@ -116,7 +116,7 @@ Before you can use AI grading, you'll need:
 
 4. **Select a model.** Use PrairieLearn's recommended model for your question type.
 
-5. **Grade submissions.** Test on a small batch (5 submissions), review the output, and refine your rubric before running on the full set.
+5. **Grade submissions.** Start with your existing rubric, grade a small batch (5 submissions), and review the output before running on the full set.
 
 ## Best practices
 
@@ -128,6 +128,12 @@ Before you can use AI grading, you'll need:
 - **Keep PDFs concise.** Providers process every PDF page, so long documents cost more and may exceed model context or page limits.
 - **Test with a small batch first.** Running on 5–10 submissions surfaces rubric problems early, before you spend credits and time on the full set.
 - **Iterate.** If you see systematic errors in the first batch, refine the rubric rather than overriding grades one by one.
+
+## Bias and fairness
+
+AI models can exhibit biases, such as favoring polished English or familiar solution methods when those features are unrelated to the rubric. Differences in handwriting recognition can also affect grading. When reviewing grades, look for deductions that are unsupported by the rubric.
+
+Frontier models often work well with the same grading criteria you would give a human grader, so start with your existing rubric and guidelines. If you find a pattern of unfair deductions, correct affected grades and consider a targeted clarification or a different model.
 
 ## Reviewing AI grading
 

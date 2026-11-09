@@ -430,7 +430,6 @@ export async function aiGrade({
   const instance_questions = all_instance_questions.filter((instance_question) => {
     switch (mode) {
       case 'human_graded':
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         return instanceQuestionGradingResults[instance_question.id]?.some(
           (result) => result.latest_update.grading_job.grading_method === 'Manual',
         );
@@ -584,7 +583,6 @@ export async function aiGrade({
         return false;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingResults[instance_question.id]?.some(
         (result) => result.latest_update.grading_job.grading_method === 'Manual',
       );
@@ -1327,7 +1325,7 @@ export async function aiGrade({
             item_statuses,
             job_failure_message: getJobFailureMessage(),
             job_failure_detail: firstFailureMessage,
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            // oxlint-disable-next-line typescript/no-unnecessary-condition
             stop_state: stopRequested ? 'stopping' : undefined,
             ...(trackRateLimitAndCost ? { total_cost_milli_dollars, num_items_incurred_cost } : {}),
           });

@@ -1,3 +1,4 @@
+/* oxlint-disable react/iframe-missing-sandbox -- The print preview needs scripts and same-origin DOM access. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Spinner } from 'react-bootstrap';
 

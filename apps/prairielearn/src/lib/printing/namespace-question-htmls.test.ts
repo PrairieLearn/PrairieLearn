@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers/promises';
 import { runInNewContext } from 'node:vm';
 
 import { load } from 'cheerio';
@@ -6,8 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { namespaceQuestionHtmls } from './namespace-question-htmls.js';
 
 describe('namespaceQuestionHtmls', () => {
-  it('namespaces duplicate IDs and their references while preserving unique IDs', () => {
-    const [first, second] = namespaceQuestionHtmls([
+  it('namespaces duplicate IDs and their references while preserving unique IDs', async () => {
+    const [first, second] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: `
@@ -79,8 +80,8 @@ describe('namespaceQuestionHtmls', () => {
     expect($second('#unique-2')).toHaveLength(1);
   });
 
-  it('does not rewrite unrelated script string literals that match duplicate IDs', () => {
-    const [first] = namespaceQuestionHtmls([
+  it('does not rewrite unrelated script string literals that match duplicate IDs', async () => {
+    const [first] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: '<div id="answer"></div><script>const mode = "answer";</script>',
@@ -96,8 +97,8 @@ describe('namespaceQuestionHtmls', () => {
     expect($first('script').html()).toContain('const mode = "answer"');
   });
 
-  it('rewrites script selectors with quotes inside the argument', () => {
-    const [first] = namespaceQuestionHtmls([
+  it('rewrites script selectors with quotes inside the argument', async () => {
+    const [first] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: `
@@ -119,9 +120,9 @@ describe('namespaceQuestionHtmls', () => {
     expect(script).toContain(String.raw`$("[name=\"ans\"] #question-1-details")`);
   });
 
-  it('decodes JavaScript escapes before rewriting selectors', () => {
+  it('decodes JavaScript escapes before rewriting selectors', async () => {
     const script = String.raw`document.querySelector('#answer\\:part #details');`;
-    const [first] = namespaceQuestionHtmls([
+    const [first] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: `<div id="answer:part"><span id="details"></span></div><script>${script}</script>`,
@@ -139,9 +140,9 @@ describe('namespaceQuestionHtmls', () => {
     expect(selectors).toEqual([String.raw`#answer\:part #question-1-details`]);
   });
 
-  it('does not rewrite call-like text inside script strings', () => {
+  it('does not rewrite call-like text inside script strings', async () => {
     const script = String.raw`const source = "document.querySelector('#details')"; document.querySelector('#details');`;
-    const [first] = namespaceQuestionHtmls([
+    const [first] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: `<div id="details"></div><script>${script}</script>`,
@@ -157,10 +158,10 @@ describe('namespaceQuestionHtmls', () => {
     expect(rewrittenScript).toContain("document.querySelector('#question-1-details');");
   });
 
-  it('preserves template selectors in scripts', () => {
+  it('preserves template selectors in scripts', async () => {
     const interpolationPrefix = '$';
     const script = `document.querySelector(\`#${interpolationPrefix}{id}\`);`;
-    const [first] = namespaceQuestionHtmls([
+    const [first] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: `<div id="details"></div><script>${script}</script>`,
@@ -176,8 +177,8 @@ describe('namespaceQuestionHtmls', () => {
     expect($first('script').html()).toBe(script);
   });
 
-  it('preserves CSS with parse errors', () => {
-    const [first] = namespaceQuestionHtmls([
+  it('preserves CSS with parse errors', async () => {
+    const [first] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: `
@@ -198,8 +199,8 @@ describe('namespaceQuestionHtmls', () => {
     expect($first('script').html()).toBe("document.querySelector('#details #?');");
   });
 
-  it('allocates generated IDs without colliding with existing IDs', () => {
-    const [first, second] = namespaceQuestionHtmls([
+  it('allocates generated IDs without colliding with existing IDs', async () => {
+    const [first, second] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: '<label for="answer">First</label><input id="answer" />',
@@ -219,8 +220,8 @@ describe('namespaceQuestionHtmls', () => {
     expect($combined('[id="question-2-answer"]')).toHaveLength(1);
   });
 
-  it('keeps answer names stable when IDs collide across questions', () => {
-    const [first, second] = namespaceQuestionHtmls([
+  it('keeps answer names stable when IDs collide across questions', async () => {
+    const [first, second] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
         html: '<input name="ans" id="answer" />',
@@ -239,7 +240,7 @@ describe('namespaceQuestionHtmls', () => {
     expect($second('input').attr('name')).toBe('ans');
   });
 
-  it('namespaces each Graphviz SVG and its internal references independently', () => {
+  it('namespaces repeated IDs inside Graphviz SVGs and their internal references', async () => {
     const graph = `
       <div class="pl-graph">
         <svg>
@@ -250,10 +251,10 @@ describe('namespaceQuestionHtmls', () => {
         </svg>
       </div>
     `;
-    const [html] = namespaceQuestionHtmls([
+    const [html] = await namespaceQuestionHtmls([
       {
         namespace: 'question-1',
-        html: `<div id="question-1-graph-1-graph0"></div>${graph}${graph}`,
+        html: `<div id="question-1-svg-1-graph0"></div>${graph}${graph}`,
       },
     ]);
     const $ = load(html, undefined, false);
@@ -263,36 +264,74 @@ describe('namespaceQuestionHtmls', () => {
 
     expect(new Set(ids).size).toBe(ids.length);
     expect($('.pl-graph > svg')).toHaveLength(2);
-    expect($('[id="question-1-graph-1-graph0"]')).toHaveLength(1);
+    expect($('[id="question-1-svg-1-graph0"]')).toHaveLength(1);
     $('.pl-graph > svg').each((index, element) => {
       const graphId = $(element).find('g').first().attr('id');
       const clipId = $(element).find('[id$="-clip"]').attr('id');
-      expect(graphId).toMatch(new RegExp(`^question-1-graph-${index + 1}-graph0`));
+      expect(graphId).toMatch(new RegExp(`^question-1-svg-${index + 1}-graph0`));
       expect($(element).find('g[id$="node1"]').attr('clip-path')).toBe(`url(#${clipId})`);
       expect($(element).find('use').attr('href')).toBe(`#${graphId}`);
     });
   });
 
-  it('rejects duplicate or invalid namespaces', () => {
-    expect(() =>
+  it('namespaces repeated IDs inside ordinary SVGs with nested SVG content', async () => {
+    const svg = `
+      <svg>
+        <defs><clipPath id="clip"><rect /></clipPath></defs>
+        <svg><g id="shape" clip-path="url(#clip)"><use href="#clip" /></g></svg>
+      </svg>
+    `;
+    const [html] = await namespaceQuestionHtmls([{ namespace: 'question-1', html: svg + svg }]);
+    const $ = load(html, undefined, false);
+    const outerSvgs = $('svg').filter((_index, element) => $(element).parents('svg').length === 0);
+
+    expect(outerSvgs).toHaveLength(2);
+    outerSvgs.each((index, element) => {
+      const clipId = $(element).find('[id$="-clip"]').attr('id');
+      expect(clipId).toBe(`question-1-svg-${index + 1}-clip`);
+      expect($(element).find('g').attr('id')).toBe(`question-1-svg-${index + 1}-shape`);
+      expect($(element).find('g').attr('clip-path')).toBe(`url(#${clipId})`);
+      expect($(element).find('use').attr('href')).toBe(`#${clipId}`);
+    });
+  });
+
+  it('allows other event-loop work before completing a large batch', async () => {
+    const questions = Array.from({ length: 100 }, (_, index) => ({
+      namespace: `question-${index}`,
+      html: '<div id="shared"></div>',
+    }));
+    let completed = false;
+    const result = namespaceQuestionHtmls(questions).then((html) => {
+      completed = true;
+      return html;
+    });
+
+    await setImmediate();
+    await setImmediate();
+    expect(completed).toBe(false);
+    expect(await result).toHaveLength(100);
+  });
+
+  it('rejects duplicate or invalid namespaces', async () => {
+    await expect(
       namespaceQuestionHtmls([
         { namespace: 'question', html: '' },
         { namespace: 'question', html: '' },
       ]),
-    ).toThrow('Question HTML namespaces must be unique');
-    expect(() => namespaceQuestionHtmls([{ namespace: '1 invalid', html: '' }])).toThrow(
+    ).rejects.toThrow('Question HTML namespaces must be unique');
+    await expect(namespaceQuestionHtmls([{ namespace: '1 invalid', html: '' }])).rejects.toThrow(
       'Invalid question HTML namespace: 1 invalid',
     );
   });
 
-  it('rejects duplicate IDs within one question fragment', () => {
-    expect(() =>
+  it('rejects duplicate IDs within one question fragment', async () => {
+    await expect(
       namespaceQuestionHtmls([
         {
           namespace: 'question-1',
           html: '<div id="answer"></div><span id="answer"></span>',
         },
       ]),
-    ).toThrow('Question HTML for namespace "question-1" contains duplicate IDs: answer');
+    ).rejects.toThrow('Question HTML for namespace "question-1" contains duplicate IDs: answer');
   });
 });

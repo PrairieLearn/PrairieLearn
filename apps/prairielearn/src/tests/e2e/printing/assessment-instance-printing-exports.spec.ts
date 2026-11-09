@@ -201,7 +201,7 @@ test('prints representative controls, editable Word content, and an ordered answ
   ]) {
     expect(documentXml).toContain(text);
   }
-  expect(documentXml.match(/<w:shd w:fill="F7F7F7"\/>/g)).toHaveLength(2);
+  expect(documentXml.match(/<w:shd\b[^>]*\bw:fill="F7F7F7"[^>]*\/>/g)).toHaveLength(2);
 
   await page.goto(`${printUrl}/preview?${search}&document=answer_key`);
   await waitForPrintablePage(page);

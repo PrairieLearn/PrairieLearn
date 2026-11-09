@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
+/* oxlint-disable typescript/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
 import * as cheerio from 'cheerio';
 
 type HtmlNode = ReturnType<ReturnType<typeof cheerio.load>>['0'];

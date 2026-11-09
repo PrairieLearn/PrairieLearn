@@ -1,7 +1,6 @@
 import { useChat } from '@ai-sdk/react';
 import {
   DefaultChatTransport,
-  type ReasoningUIPart,
   type TextUIPart,
   type ToolUIPart,
   type UIMessage,
@@ -16,12 +15,12 @@ import { run } from '@prairielearn/run';
 import { useResizeHandle } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
+import { ReasoningBlock, TextPart } from '../../../components/ai/ChatParts.js';
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
 } from '../../../lib/ai-question-generation/agent.js';
 
-import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
 
 function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
@@ -204,58 +203,6 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   return <ToolCallStatus state={part.state} statusText={statusText} />;
 }
 
-function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
-  // Track whether the user has explicitly interacted with the expand/collapse
-  const [userControlled, setUserControlled] = useState(false);
-  const [userExpanded, setUserExpanded] = useState(false);
-
-  const isStreaming = part.state === 'streaming';
-
-  // If user has taken control, use their preference. Otherwise, expand while streaming, collapse when done.
-  const isExpanded = userControlled ? userExpanded : isStreaming;
-
-  if (!part.text) return null;
-
-  const toggleExpanded = () => {
-    setUserControlled(true);
-    setUserExpanded(!isExpanded);
-  };
-
-  return (
-    <div className="d-flex flex-column gap-1 border rounded p-1 small">
-      <button
-        type="button"
-        className="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
-        aria-expanded={isExpanded}
-        onClick={toggleExpanded}
-      >
-        <i
-          className={clsx('bi small text-muted', {
-            'bi-chevron-right': !isExpanded,
-            'bi-chevron-down': isExpanded,
-          })}
-          aria-hidden="true"
-        />
-        <span className="small text-muted">{isStreaming ? 'Thinking...' : 'Thinking'}</span>
-      </button>
-
-      {isExpanded && (
-        <div className="markdown-body reasoning-body p-1 pt-0">
-          <MemoizedMarkdown content={part.text} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TextPart({ part }: { part: TextUIPart }) {
-  return (
-    <div className="markdown-body">
-      <MemoizedMarkdown content={part.text} />
-    </div>
-  );
-}
-
 function MessageParts({ parts }: { parts: QuestionGenerationUIMessage['parts'] }) {
   return parts.map((part, index) => {
     const key = `part-${index}`;
@@ -414,7 +361,7 @@ function Message({
       )}
       {isLastMessage && showSpinner && <ProgressStatus state="streaming" statusText="Working..." />}
       {jobLogsUrl && (
-        <a className="small" href={jobLogsUrl} target="_blank">
+        <a className="small" href={jobLogsUrl} target="_blank" rel="noreferrer">
           View job logs (link only visible to administrators)
         </a>
       )}
@@ -513,7 +460,7 @@ function useShowSpinner({
 
   // The effect manages the timeout: it resets and starts a new timer when dependencies change.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/set-state-in-effect
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react/set-state-in-effect
     setTimerElapsed(false);
 
     if (!isActive) return;
@@ -649,7 +596,7 @@ export function AiQuestionGenerationChat({
 
     if (prevIsGeneratingRef.current !== isGenerating) {
       prevIsGeneratingRef.current = isGenerating;
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+      // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       onGeneratingChange?.(isGenerating);
 
       // If generation just finished, call the completion callback
@@ -670,14 +617,12 @@ export function AiQuestionGenerationChat({
     // Don't announce anything for the state we mount in (e.g. idle on page load).
     if (isInitialRender && !isGenerating) return;
     if (isGenerating) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect
+      // oxlint-disable-next-line react/set-state-in-effect
       setAnnouncement('Generating response…');
     } else if (status === 'error') {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect
       setAnnouncement('Generation failed.');
     } else {
       const wasCanceled = messages.at(-1)?.metadata?.status === 'canceled';
-      // eslint-disable-next-line @eslint-react/set-state-in-effect
       setAnnouncement(wasCanceled ? 'Generation stopped.' : 'Response ready.');
     }
   }, [isGenerating, messages, status]);

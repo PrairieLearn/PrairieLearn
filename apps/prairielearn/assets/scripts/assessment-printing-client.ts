@@ -2,13 +2,14 @@ import {
   fitPrintChoiceImages,
   waitForExcalidrawCanvases,
   waitForPrintImages,
-} from '../../src/lib/client/print-image-layout.js';
-import { planPrintQuestionPages } from '../../src/lib/client/print-question-layout.js';
+} from '../../src/lib/client/printing/print-image-layout.js';
+import { planPrintQuestionPages } from '../../src/lib/client/printing/print-question-layout.js';
+import { waitForPrintableElements } from '../../src/lib/client/printing/print-render-readiness.js';
 import {
   normalizeAnswerPresentation,
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
-} from '../../src/lib/client/print-response-controls.js';
+} from '../../src/lib/client/printing/print-response-controls.js';
 import {
   replaceCanvasesWithImages,
   waitForQuestionRendering,
@@ -31,9 +32,6 @@ declare global {
         stylesheets?: string[],
         renderTo?: HTMLElement,
       ) => Promise<PagedFlow>;
-    };
-    PrairieLearnAssessmentPrinting: {
-      waitUntil: (promise: Promise<unknown>) => void;
     };
     __PL_PRINT_READINESS_PROMISES__?: Promise<unknown>[];
     __PL_PRINT_READY__: Promise<{ totalPages: number }>;
@@ -204,6 +202,7 @@ function replaceStudentResponsesWithAnswerKeys(source: HTMLElement, pageHeight: 
   }
 }
 
+/** Convert details to regular blocks so closed content prints and long content can span pages. */
 function materializePrintableDetails(source: HTMLElement): void {
   const detailsBlocks = [
     ...source.querySelectorAll<HTMLDetailsElement>('.printing-question details'),
@@ -252,7 +251,17 @@ function measurePrintablePage(source: HTMLElement): { width: number; height: num
 
 function keepPrintableGroupsTogether(source: HTMLElement, pageHeight: number): void {
   for (const group of source.querySelectorAll<HTMLElement>(
-    '.question-body .card, .printing-details, .printing-order-blocks, .printing-order-choice-group, .sketchresponse, .pl-drawing-container, .printing-subsection, .pl-order-blocks-answer-container, .printing-excalidraw',
+    [
+      '.question-body .card',
+      '.printing-details',
+      '.printing-order-blocks',
+      '.printing-order-choice-group',
+      '.sketchresponse',
+      '.pl-drawing-container',
+      '.printing-subsection',
+      '.pl-order-blocks-answer-container',
+      '.printing-excalidraw',
+    ].join(', '),
   )) {
     if (group.getBoundingClientRect().height < pageHeight - 48) {
       group.classList.add('printing-keep-together');
@@ -466,8 +475,11 @@ async function paginateAssessment(): Promise<{ totalPages: number }> {
   if (!source || !output) throw new Error('Printable assessment containers are missing');
 
   await waitForQuestionRendering();
+  await waitForPrintableElements(source);
   await waitForExcalidrawCanvases(source);
   materializePrintableDetails(source);
+  // One animation frame may run before the app is painted, so wait for a second
+  // before copying styles from shadow roots.
   await waitForAnimationFrame();
   await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);

@@ -1,4 +1,5 @@
 columns
+    authors: text[]
     client_files: text[] default ARRAY[]::text[]
     copied_from: text
     copied_from_question_id: bigint

@@ -96,7 +96,7 @@ function useBeforeUnload(enabled: boolean): () => void {
       event.preventDefault();
       // MDN recommends setting returnValue for legacy browser support:
       // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
-      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      // oxlint-disable-next-line typescript/no-deprecated
       event.returnValue = 'prompt';
     };
     window.addEventListener('beforeunload', handler);
@@ -296,7 +296,6 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -647,7 +646,7 @@ function AssessmentEditorInner({
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPos || !toPos) return;
       if (fromPos.alternativeIndex == null || toPos.alternativeIndex == null) return;
 
@@ -687,7 +686,7 @@ function AssessmentEditorInner({
     // Question block reorder within same zone
     const fromPosition = positionByStableId[activeIdStr];
     const rawToPosition = positionByStableId[overIdStr];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    // oxlint-disable-next-line typescript/no-unnecessary-condition
     if (!fromPosition || !rawToPosition) return;
 
     // If "over" resolved to an alternative inside an alt pool, use the alt pool's position
@@ -728,7 +727,7 @@ function AssessmentEditorInner({
 
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPos) return;
       // After extraction, the item becomes a question block (no alternativeIndex).
       // dnd-kit's active.data.current.type stays frozen as 'alternative', so guard here.
@@ -749,7 +748,7 @@ function AssessmentEditorInner({
       }
 
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!toPos) return;
 
       if (overType === 'alternative' && toPos.alternativeIndex != null) {
@@ -785,7 +784,7 @@ function AssessmentEditorInner({
 
     if (activeType === 'question') {
       const fromPosition = positionByStableId[activeIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPosition) return;
       const fromZone = zones[fromPosition.zoneIndex];
 
@@ -802,7 +801,7 @@ function AssessmentEditorInner({
       }
 
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!toPos) return;
 
       // Cross-zone question reorder
@@ -921,7 +920,7 @@ function AssessmentEditorInner({
     // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
     // correctly captures all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
     [zones, selectedItem],
   );
 
@@ -987,7 +986,7 @@ function AssessmentEditorInner({
     // (used by handleQuestionPicked to build metadata), so these deps
     // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
     [zones, selectedItem, courseQuestions, handleDismissBanner],
   );
 
