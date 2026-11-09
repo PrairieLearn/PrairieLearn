@@ -463,8 +463,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         await this.scheduleDeadline('turn');
         if (startup) {
           log('turn_sandbox_prepare_requested');
-          await this.sandbox.prepare(this.record.config, this.record.checkpoint);
-          log('turn_sandbox_prepare_finished');
+          const started = await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+          log('turn_sandbox_prepare_finished', started);
         }
         if (continuation && review) await this.advanceLocalBaseline(review);
       },
