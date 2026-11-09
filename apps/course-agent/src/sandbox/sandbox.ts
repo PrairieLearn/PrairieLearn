@@ -7,6 +7,7 @@ import {
   SandboxFileError,
 } from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
+import { z } from 'zod';
 
 import {
   MAX_REVIEW_BYTES,
@@ -17,12 +18,34 @@ import {
 
 import { logEvent, redactSecrets } from '../monitoring.js';
 
+import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
+
 const SESSION = '/workspace/session';
-// The node user and group in the base container image both have ID 1000.
-const NODE_UID_GID = '1000:1000';
+// Installed by the image from container/codex-config.toml.
+const CODEX_CONFIG = '/etc/course-agent/codex-config.toml';
+// The image's unprivileged user. Checkpoints record file ownership by ID, so the ID must not change.
+const AGENT_USER = 'agent';
+const AGENT_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
 // Local reviews diff against this ref, which tracks the contents PrairieLearn has saved.
 const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
+// SIGKILL takes effect asynchronously, and a killed process stays listed as a zombie until its
+// parent reaps it. The runner's parent is the container runtime, which may not reap it while no
+// Durable Object awaits its exit. Zombies cannot run, so wait only for live processes to exit.
+// Killing again on each pass also catches processes forked while the previous kill ran.
+const STOP_AGENT_PROCESSES = `
+deadline=$(($(date +%s) + 10))
+while :; do
+  pkill -KILL -u 1000
+  [ "$?" -le 1 ] || exit 2
+  live=$(ps -u 1000 -o pid=,stat=,comm= | awk '$2 !~ /^Z/')
+  [ -z "$live" ] && exit 0
+  if [ "$(date +%s)" -ge "$deadline" ]; then
+    echo "Agent processes still running: $live" >&2
+    exit 1
+  fi
+  sleep 0.1
+done`;
 
 /** Changes the agent can fix itself, as opposed to sandbox faults that need reporting. */
 class UnsupportedReviewError extends Error {}
@@ -57,6 +80,10 @@ async function githubReviewBase(git: (...args: string[]) => Promise<string>, bra
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
+// The named types ctx.container.start() accepts; it rejects `basic`.
+// https://developers.cloudflare.com/containers/configuration/scheduling-policy/#choose-an-instance-size-at-runtime
+const InstanceTypeSchema = z.enum(['lite', 'standard-1', 'standard-2', 'standard-3', 'standard-4']);
+
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
@@ -123,28 +150,29 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
   }
 }
 
-/** Only the conversation's pinned model is available; its API key stays outside the container. */
+const OPENAI_API = 'https://api.openai.com';
+
+/**
+ * Only the conversation's pinned model and web browsing are available; the API key stays outside
+ * the container. OpenAI runs searches and reads pages, so the container never connects to other
+ * sites.
+ */
 export class CourseAgentModelOutbound extends WorkerEntrypoint<
   Env,
   { model: string; sandboxId: string }
 > {
   override async fetch(request: Request) {
     const url = new URL(request.url);
-    if (
-      url.hostname !== 'model.internal' ||
-      url.pathname !== '/v1/responses' ||
-      url.search ||
-      request.method !== 'POST'
-    ) {
+    if (url.hostname !== 'model.internal' || url.search || request.method !== 'POST') {
       return new Response('Forbidden', { status: 403 });
     }
-    const body = (await request.json()) as { model?: string; input?: { role?: string }[] };
-    if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
-    // Later requests in a turn end with tool output; only the role is read, never the content.
-    const firstOfTurn = body.input?.at(-1)?.role === 'user';
-    const started = Date.now();
-    if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    if (url.pathname === '/v1/responses') return this.responses(request);
+    if (url.pathname === '/v1/alpha/search') return this.search(request);
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  private openai(path: string, body: unknown) {
+    return fetch(`${OPENAI_API}${path}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
@@ -153,6 +181,22 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
       body: JSON.stringify(body),
       redirect: 'manual',
     });
+  }
+
+  private async responses(request: Request) {
+    const body = (await request.json()) as {
+      model?: string;
+      input?: { role?: string }[];
+      tools?: unknown;
+    };
+    if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
+    const refusal = modelRequestRefusal(body);
+    if (refusal) return new Response(refusal, { status: 403 });
+    // Later requests in a turn end with tool output; only the role is read, never the content.
+    const firstOfTurn = body.input?.at(-1)?.role === 'user';
+    const started = Date.now();
+    if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
+    const response = await this.openai('/v1/responses', body);
     if (firstOfTurn) {
       logEvent('model_response_started', {
         sandboxId: this.ctx.props.sandboxId,
@@ -160,6 +204,26 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
         elapsedMs: Date.now() - started,
       });
     }
+    return response;
+  }
+
+  private async search(request: Request) {
+    const body = (await request.json()) as Record<string, unknown>;
+    if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
+    const prepared = prepareSearchRequest(body);
+    if ('refusal' in prepared) {
+      logEvent('web_search_refused', { sandboxId: this.ctx.props.sandboxId });
+      return Response.json({ output: prepared.refusal });
+    }
+    const started = Date.now();
+    const response = await this.openai('/v1/alpha/search', prepared.forward);
+    // OpenAI bills hosted search per call; the response carries no usage to meter.
+    logEvent('web_search', {
+      sandboxId: this.ctx.props.sandboxId,
+      operations: prepared.operations,
+      status: response.status,
+      elapsedMs: Date.now() - started,
+    });
     return response;
   }
 }
@@ -212,24 +276,15 @@ export class CourseSandbox extends DurableObject<Env> {
     checkpoint: DirectoryBackupRecord | null,
   ) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
-    const started = Date.now();
-    const log = (event: string, fields: Record<string, unknown> = {}) =>
-      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
+    const instance = InstanceTypeSchema.parse(this.env.SANDBOX_INSTANCE_TYPE);
+    // The default `lite` (256 MiB) is too small for Codex and course tooling, and running out of
+    // memory restarts the instance, losing unsaved edits.
     this.container.start({
       image: this.container.images.courseAgent,
       enableInternet: false,
-      // `basic` is 1/4 vCPU, 1 GiB memory, and 4 GB disk. The default `lite` (256 MiB) is too
-      // small for Codex and course tooling, and running out of memory restarts the instance,
-      // losing unsaved edits. https://developers.cloudflare.com/containers/platform-details/limits/
-      instance: 'basic',
+      instance,
     });
     await this.container.setInactivityTimeout(MAX_CONTAINER_INACTIVITY_SECONDS * 1000);
-    // Confirms the instance type actually applied: basic has 1 GiB, lite 256 MiB.
-    const [memTotal, cpus] = new TextDecoder()
-      .decode((await this.exec(['sh', '-c', 'grep MemTotal /proc/meminfo; nproc'])).stdout)
-      .trim()
-      .split('\n');
-    log('sandbox_started', { memTotal, cpus });
     if (config.type !== 'local') {
       await this.container.interceptOutboundHttp(
         'repository.internal:80',
@@ -242,26 +297,35 @@ export class CourseSandbox extends DurableObject<Env> {
         props: { model: config.model, sandboxId: this.ctx.id.name },
       }),
     );
-    await this.exec(['mkdir', '-p', '/workspace']);
     if (checkpoint) {
-      log('sandbox_restore_started');
       await this.backups.restore(checkpoint);
-      log('sandbox_restore_finished');
+      // The agent owns its home and may have deleted .codex.
+      await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`], AGENT_USER);
+      // The image's Codex config may be newer than the checkpoint's, so it is reinstalled.
+      await this.exec([
+        'install',
+        '-o',
+        '1000',
+        '-g',
+        '1000',
+        '-m',
+        '0644',
+        CODEX_CONFIG,
+        `${SESSION}/home/.codex/config.toml`,
+      ]);
+      // addCourseFiles() locks a fresh workspace once its files are in place.
+      await this.lockSession();
     } else {
-      await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`]);
-      await this.exec(['chown', '-R', NODE_UID_GID, SESSION]);
+      // Run as the agent so the workspace directories that -D creates belong to it.
+      await this.exec(
+        ['install', '-D', '-m', '0644', CODEX_CONFIG, `${SESSION}/home/.codex/config.toml`],
+        AGENT_USER,
+      );
     }
-    // Configuration contains no credentials or repository data. It is reapplied after restoration.
-    const files = new Files(this.container);
-    await files.writeFile(
-      `${SESSION}/home/.codex/config.toml`,
-      'model_provider = "prairielearn"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\n',
-    );
-    await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
-    // addCourseFiles() locks a fresh workspace once its files are in place.
-    if (checkpoint) await this.lockSession();
     this.freshContainer = true;
-    log('sandbox_codex_config_written');
+    // Returned rather than only logged: this Durable Object's logs can arrive late or not at all
+    // while its container keeps it busy, so the conversation logs startup instead.
+    return { instance };
   }
 
   /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
@@ -271,27 +335,27 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
   async addCourseFiles(config: CourseSource) {
-    const started = Date.now();
-    const log = (event: string, fields: Record<string, unknown> = {}) =>
-      logEvent(event, { sandboxId: this.ctx.id.name, elapsedMs: Date.now() - started, ...fields });
     if (config.type === 'local') {
       const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
       if (!archive) throw new Error('The local course snapshot is missing');
       const files = new Files(this.container);
       await files.writeFile('/tmp/course-source.tar.gz', archive.body);
-      await this.exec(['mkdir', '-p', `${SESSION}/repository`], 'node');
+      await this.exec(['mkdir', '-p', `${SESSION}/repository`], AGENT_USER);
       await this.exec(
         ['tar', '-xzf', '/tmp/course-source.tar.gz', '-C', `${SESSION}/repository`],
-        'node',
+        AGENT_USER,
       );
       await this.exec(['rm', '/tmp/course-source.tar.gz']);
-      await this.exec(['git', 'init', '--initial-branch=local', `${SESSION}/repository`], 'node');
+      await this.exec(
+        ['git', 'init', '--initial-branch=local', `${SESSION}/repository`],
+        AGENT_USER,
+      );
       // Local Git must track exact bytes for both the baseline and later reviews.
       await files.writeFile(
         `${SESSION}/repository/.git/info/attributes`,
         '* -text -filter -ident -working-tree-encoding\n',
       );
-      await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], 'node');
+      await this.exec(['git', '-C', `${SESSION}/repository`, 'add', '--all'], AGENT_USER);
       await this.exec(
         [
           'git',
@@ -304,16 +368,18 @@ export class CourseSandbox extends DurableObject<Env> {
           '-m',
           'Initial local course snapshot',
         ],
-        'node',
+        AGENT_USER,
       );
       await this.exec(
         ['git', '-C', `${SESSION}/repository`, 'update-ref', LOCAL_SAVED_REF, 'HEAD'],
-        'node',
+        AGENT_USER,
       );
       // Preserve the original Git paths while keeping the native runner's course path stable.
-      await this.exec(['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`], 'node');
+      await this.exec(
+        ['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`],
+        AGENT_USER,
+      );
     } else {
-      log('sandbox_clone_started', { repository: config.repository, branch: config.branch });
       // Reviews only need the branch tip, and later fetches still work from a shallow clone.
       // Full history made large course repositories take most of startup to clone.
       await this.exec(
@@ -329,12 +395,10 @@ export class CourseSandbox extends DurableObject<Env> {
           `http://repository.internal/${config.repository}.git`,
           `${SESSION}/course`,
         ],
-        'node',
+        AGENT_USER,
       );
-      log('sandbox_clone_finished');
     }
     await this.lockSession();
-    log('sandbox_files_ready', { source: config.type });
   }
 
   /**
@@ -354,11 +418,11 @@ export class CourseSandbox extends DurableObject<Env> {
   private async snapshotChanges(source: CourseSource) {
     const course = `${SESSION}/course`;
     const files = new Files(this.container);
-    const options = { cwd: course, user: NODE_UID_GID };
+    const options = { cwd: course, user: AGENT_UID_GID };
     const git = async (...args: string[]) => {
       const result = await this.exec(
         ['git', '--literal-pathspecs', '-c', 'safe.directory=*', '-C', course, ...args],
-        'node',
+        AGENT_USER,
       );
       try {
         // ignoreBOM keeps a leading U+FEFF, which is part of a file name, not a byte-order mark.
@@ -399,7 +463,7 @@ export class CourseSandbox extends DurableObject<Env> {
         }
         const blob = await this.exec(
           ['git', '-C', course, 'cat-file', 'blob', `${baseCommit}:./${path}`],
-          'node',
+          AGENT_USER,
         );
         original = Buffer.from(blob.stdout).toString('base64');
       }
@@ -470,11 +534,11 @@ export class CourseSandbox extends DurableObject<Env> {
     const git = async (...args: string[]) => {
       const result = await this.exec(
         ['env', `GIT_INDEX_FILE=${scratch}/index`, 'git', '-C', `${SESSION}/course`, ...args],
-        'node',
+        AGENT_USER,
       );
       return new TextDecoder().decode(result.stdout).trim();
     };
-    await this.exec(['mkdir', '-p', scratch], 'node');
+    await this.exec(['mkdir', '-p', scratch], AGENT_USER);
     try {
       // update-index paths are relative to the repository root, which contains the course.
       const prefix = await git('rev-parse', '--show-prefix');
@@ -490,7 +554,7 @@ export class CourseSandbox extends DurableObject<Env> {
         const blobPath = `${scratch}/${index}`;
         // The agent can create files in the scratch directory, so write as the agent's user.
         await storage.writeFile(blobPath, Buffer.from(file.contents, 'base64'), {
-          user: NODE_UID_GID,
+          user: AGENT_UID_GID,
         });
         const sha = await git('hash-object', '-w', '--no-filters', '--', blobPath);
         await git(
@@ -543,8 +607,7 @@ export class CourseSandbox extends DurableObject<Env> {
     const started = Date.now();
     this.process = await this.container.exec(
       [
-        'codex',
-        'app-server',
+        'codex-app-server',
         '--listen',
         `ws://0.0.0.0:${NATIVE_PORT}`,
         '--ws-auth',
@@ -553,7 +616,7 @@ export class CourseSandbox extends DurableObject<Env> {
         hash,
       ],
       {
-        user: 'node',
+        user: AGENT_USER,
         // Threads set their own cwd to the course. Home exists before course files are added, so
         // the runner can start while the repository is still being cloned.
         cwd: `${SESSION}/home`,
@@ -624,13 +687,12 @@ export class CourseSandbox extends DurableObject<Env> {
     }
     // A terminal Codex event does not prove detached tools stopped. Kill and verify
     // every process of the dedicated uid for explicit Stop, recovery, or backup.
-    await this.exec(['sh', '-c', 'pkill -KILL -u 1000; code=$?; [ "$code" -le 1 ]']);
+    await this.exec(['sh', '-c', STOP_AGENT_PROCESSES]);
     if (this.process) {
       await this.process.exitCode;
       this.process = null;
     }
     this.nativeToken = null;
-    await this.exec(['sh', '-c', 'pgrep -u 1000 >/dev/null; code=$?; [ "$code" -eq 1 ]']);
   }
 
   /** Create a new archive without changing the conversation's committed backup. */
