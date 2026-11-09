@@ -45,4 +45,16 @@ describe('issueMailtoLink', () => {
 
     expect(link).toContain(encodeURIComponent('The answer was marked wrong'));
   });
+
+  it('greets the user by name when one is set', () => {
+    const link = issueMailtoLink({ ...issue, user_email: 'anjali@example.com' });
+
+    expect(link).toContain(`&body=${encodeURIComponent('Hello Anjali,\n\n')}`);
+  });
+
+  it('omits the name from the greeting when the user has none', () => {
+    const link = issueMailtoLink({ ...issue, user_email: 'anjali@example.com', user_name: null });
+
+    expect(link).toContain(`&body=${encodeURIComponent('Hello,\n\n')}`);
+  });
 });
