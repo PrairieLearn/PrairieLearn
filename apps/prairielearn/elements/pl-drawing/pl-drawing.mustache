@@ -90,8 +90,7 @@
              }
          });
      });
-     const rendering = window.PrairieLearnRendering ?? window.PrairieLearnAssessmentPrinting;
-     if (rendering) rendering.waitUntil(ready);
+     if (window.PrairieLearnAssessmentPrinting) window.PrairieLearnAssessmentPrinting.waitUntil(ready);
      else ready.catch((error) => { throw error; });
  })();
 </script>

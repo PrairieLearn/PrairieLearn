@@ -1054,8 +1054,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
 
     if (text && text.trim()) {
       const ready = this.gen_text(this.label, options);
-      const rendering = window.PrairieLearnRendering ?? window.PrairieLearnAssessmentPrinting;
-      if (rendering) rendering.waitUntil(ready);
+      window.PrairieLearnAssessmentPrinting?.waitUntil(ready);
     }
 
     if (options.selectable) {

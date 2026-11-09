@@ -58,13 +58,13 @@ test('captures inline and dynamically created canvases after registered asynchro
       <script>
         document.getElementById('first').getContext('2d').fillStyle = 'red';
         document.getElementById('first').getContext('2d').fillRect(0, 0, 20, 10);
-        PrairieLearnRendering.waitUntil(new Promise((resolve) => setTimeout(() => {
+        PrairieLearnAssessmentPrinting.waitUntil(new Promise((resolve) => setTimeout(() => {
           const canvas = document.createElement('canvas');
           canvas.width = 10;
           canvas.height = 20;
           canvas.setAttribute('aria-label', 'Blue diagram');
           document.getElementById('ai-grading-source').append(canvas);
-          PrairieLearnRendering.waitUntil(new Promise((nestedResolve) => setTimeout(() => {
+          PrairieLearnAssessmentPrinting.waitUntil(new Promise((nestedResolve) => setTimeout(() => {
             const context = canvas.getContext('2d');
             context.fillStyle = 'blue';
             context.fillRect(0, 0, 10, 20);
@@ -163,7 +163,7 @@ test('rejects readiness failures and oversized canvases before grading', async (
     prepareCanvasHtmlForAiGrading({
       ...context,
       panelHtml:
-        '<script>PrairieLearnRendering.waitUntil(Promise.reject(new Error("Drawing failed")))</script>',
+        '<script>PrairieLearnAssessmentPrinting.waitUntil(Promise.reject(new Error("Drawing failed")))</script>',
     }),
   ).rejects.toThrow('Drawing failed');
   await expect(

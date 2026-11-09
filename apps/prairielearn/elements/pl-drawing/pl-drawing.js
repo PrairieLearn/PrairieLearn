@@ -269,7 +269,7 @@ window.PLDrawingApi = {
       submittedAnswer._set(existing_answer_submission);
       window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
     }
-    canvas.renderAll();
+    if (window.PrairieLearnAssessmentPrinting) canvas.renderAll();
   },
 };
 

@@ -1,13 +1,13 @@
 declare global {
   interface Window {
-    PrairieLearnRendering?: { waitUntil: (promise: Promise<unknown>) => void };
+    PrairieLearnAssessmentPrinting?: { waitUntil: (promise: Promise<unknown>) => void };
   }
 }
 
 /** Runs before question scripts, including when embedded in a server-rendered page. */
 export function initializeQuestionRendering(reportErrors = false): void {
   const promises: Promise<unknown>[] = [];
-  window.PrairieLearnRendering = {
+  window.PrairieLearnAssessmentPrinting = {
     waitUntil(promise) {
       // Keep failures observable until the renderer consumes the registered work.
       void promise.catch(() => undefined);
@@ -15,7 +15,6 @@ export function initializeQuestionRendering(reportErrors = false): void {
     },
   };
   Reflect.set(window, '__PL_PRINT_READINESS_PROMISES__', promises);
-  Reflect.set(window, 'PrairieLearnAssessmentPrinting', window.PrairieLearnRendering);
   if (reportErrors) {
     window.addEventListener(
       'error',

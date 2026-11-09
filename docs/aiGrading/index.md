@@ -54,7 +54,7 @@ For asynchronous drawing code, register a promise before initialization finishes
 <canvas id="diagram" width="400" height="200" aria-label="Force diagram"></canvas>
 <script>
   const ready = drawDiagram(document.getElementById('diagram'));
-  window.PrairieLearnRendering?.waitUntil(ready);
+  window.PrairieLearnAssessmentPrinting?.waitUntil(ready);
 </script>
 ```
 

@@ -6,7 +6,7 @@ Note that this element does not support freehand drawings of lines/curves. For m
 
 A `pl-drawing` canvas can be used in two modes. In a display-only canvas (`gradable="false"`, the default), it renders drawing objects authored in the question. In a gradable canvas (`gradable="true"`), students place objects on the canvas and PrairieLearn grades them against objects in `pl-drawing-answer`; objects in `pl-drawing-initial` are shown but not graded.
 
-For [AI grading](../aiGrading/index.md#images-in-questions-and-reference-answers), canvases in the question and instructor reference answer are captured as PNG images after initialization and mathematical labels finish rendering. No additional readiness code is required for built-in drawing objects. Custom extensions that draw asynchronously can register their work with `window.PrairieLearnRendering?.waitUntil(promise)` before initialization completes.
+For [AI grading](../aiGrading/index.md#images-in-questions-and-reference-answers), canvases in the question and instructor reference answer are captured as PNG images after initialization and mathematical labels finish rendering. No additional readiness code is required for built-in drawing objects. Custom extensions that draw asynchronously can register their work with `window.PrairieLearnAssessmentPrinting?.waitUntil(promise)` before initialization completes.
 
 ## Elements for display-only canvases
 
