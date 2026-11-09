@@ -1,1 +1,1 @@
-This question uses `<pl-figure>` to present images as multiple-choice options. One correct answer and three distractors are randomly selected from a list of seven images. The images are served from `clientFilesQuestion` in the question directory.
+This question uses `<pl-figure>` to present images as multiple-choice options. One correct answer and three distractors are randomly selected from thirteen images in `clientFilesQuestion`. Each image has alt text describing the bird's appearance.

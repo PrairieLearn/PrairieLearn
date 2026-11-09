@@ -394,6 +394,7 @@ router.get(
 
         const aiGradingExplanation = aiGradingInfo
           ? AIGradingExplanation({
+              model: aiGradingInfo.model,
               explanation: aiGradingInfo.explanation,
               hasImage: aiGradingInfo.hasImage,
               rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,

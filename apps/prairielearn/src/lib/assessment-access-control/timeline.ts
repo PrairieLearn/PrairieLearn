@@ -36,7 +36,7 @@ export const AccessTimelineEntrySchema = z.object({
   endDate: z.date().nullable(),
   /** True iff `date` falls within this segment — at most one entry per timeline. */
   current: z.boolean(),
-  /** True iff a student can submit during this segment. Used by the student popover to hide rows that would otherwise read as "submit for 0 credit". */
+  /** True iff a student can submit during this segment. Used by the student schedule to hide rows that would otherwise read as "submit for 0 credit". */
   submittable: z.boolean(),
 });
 export type AccessTimelineEntry = z.infer<typeof AccessTimelineEntrySchema>;

@@ -52,6 +52,18 @@ SELECT
     'feedback',
     gj.feedback
   ) AS grading_job,
+  (
+    SELECT
+      agj.model
+    FROM
+      ai_grading_jobs AS agj
+    WHERE
+      agj.grading_job_id = gj.id
+    ORDER BY
+      agj.id DESC
+    LIMIT
+      1
+  ) AS ai_grading_model,
   ls.instance_question_id,
   jsonb_build_object(
     'id',

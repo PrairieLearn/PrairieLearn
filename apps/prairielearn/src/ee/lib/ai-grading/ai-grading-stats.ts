@@ -276,10 +276,14 @@ export async function selectGradingResults<T extends { id: string }>(
     {} as Record<string, typeof grading_jobs>,
   );
 
-  const source = (job: (typeof grading_jobs)[number]) => {
-    const { grading_job, grader, rubric_items, rubric_grading, rubric_grading_items } = job;
-    return { grading_job, grader, rubric_items, rubric_grading, rubric_grading_items };
-  };
+  const source = (job: (typeof grading_jobs)[number]) => ({
+    ai_grading_model: job.ai_grading_model,
+    grading_job: job.grading_job,
+    grader: job.grader,
+    rubric_items: job.rubric_items,
+    rubric_grading: job.rubric_grading,
+    rubric_grading_items: job.rubric_grading_items,
+  });
 
   return Object.fromEntries(
     Object.entries(historyByInstanceQuestion).map(([id, history]) => [

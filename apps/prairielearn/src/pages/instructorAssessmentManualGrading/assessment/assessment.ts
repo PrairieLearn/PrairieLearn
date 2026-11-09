@@ -1,3 +1,5 @@
+import { pipeline } from 'node:stream/promises';
+
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -182,21 +184,24 @@ router.post(
 
       const stats = await generateAssessmentAiGradingStats(res.locals.assessment);
       res.attachment('assessment_statistics.csv');
-      stringify([...stats.perQuestion, stats.total], {
-        header: true,
-        columns: [
-          'assessmentQuestionId',
-          'questionNumber',
-          'truePositives',
-          'trueNegatives',
-          'falsePositives',
-          'falseNegatives',
-          'accuracy',
-          'precision',
-          'recall',
-          'f1score',
-        ],
-      }).pipe(res);
+      await pipeline(
+        stringify([...stats.perQuestion, stats.total], {
+          header: true,
+          columns: [
+            'assessmentQuestionId',
+            'questionNumber',
+            'truePositives',
+            'trueNegatives',
+            'falsePositives',
+            'falseNegatives',
+            'accuracy',
+            'precision',
+            'recall',
+            'f1score',
+          ],
+        }),
+        res,
+      );
     } else if (req.body.__action === 'delete_ai_grading_data') {
       if (!res.locals.is_administrator) {
         throw new HttpStatusError(403, 'Access denied');

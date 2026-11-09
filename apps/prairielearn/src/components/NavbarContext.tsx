@@ -49,12 +49,14 @@ function NavbarTab({
   tabInfo: TabInfo;
 }) {
   const { urlPrefix } = resLocals;
-  const { activeSubPage, iconClasses, tabLabel, htmlSuffix, renderCondition } = tabInfo;
+  const { activeSubPage, iconClasses, htmlSuffix, renderCondition } = tabInfo;
 
   if (renderCondition != null && !renderCondition(resLocals)) return '';
 
   const urlSuffix =
     typeof tabInfo.urlSuffix === 'function' ? tabInfo.urlSuffix(resLocals) : tabInfo.urlSuffix;
+  const tabLabel =
+    typeof tabInfo.tabLabel === 'function' ? tabInfo.tabLabel(resLocals) : tabInfo.tabLabel;
 
   const active =
     navSubPage === activeSubPage ||

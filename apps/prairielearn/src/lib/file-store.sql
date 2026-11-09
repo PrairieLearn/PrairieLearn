@@ -13,7 +13,8 @@ SET
   deleted_by = $authn_user_id,
   deleted_at = current_timestamp
 WHERE
-  id = $file_id;
+  id = $file_id
+  AND deleted_at IS NULL;
 
 -- BLOCK insert_file
 INSERT INTO

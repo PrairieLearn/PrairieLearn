@@ -1,15 +1,12 @@
 {
   "name": "@prairielearn/bind-mount",
   "version": "2.1.0",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/bind-mount"
   },
-  "engines": {
-    "node": ">=24.15.0"
-  },
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -26,5 +23,8 @@
     "@types/bindings": "^1.5.5",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2"
+  },
+  "engines": {
+    "node": ">=24.15.0"
   }
 }

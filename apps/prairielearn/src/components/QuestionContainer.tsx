@@ -134,6 +134,7 @@ export function QuestionContainer({
                 ${
                   aiGradingInfo
                     ? AIGradingExplanation({
+                        model: aiGradingInfo.model,
                         explanation: aiGradingInfo.explanation,
                         hasImage: aiGradingInfo.hasImage,
                         rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
@@ -228,10 +229,12 @@ export function AIGradingPrompt({ prompt }: { prompt: string }) {
 }
 
 export function AIGradingExplanation({
+  model,
   explanation,
   hasImage,
   rotationCorrectionDegrees,
 }: {
+  model: InstanceQuestionAIGradingInfo['model'];
   explanation: string | null;
   hasImage: boolean;
   rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
@@ -251,7 +254,7 @@ export function AIGradingExplanation({
         <h2>AI grading explanation</h2>
         <button
           type="button"
-          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto"
+          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto flex-shrink-0"
           data-bs-toggle="collapse"
           data-bs-target="#ai-grading-explanation-body"
           aria-expanded="true"
@@ -303,6 +306,13 @@ ${explanation}
 </pre>
                 `
               : ''
+          }
+        </div>
+        <div class="card-footer small text-body-secondary">
+          ${
+            model
+              ? html`Graded with <span class="font-monospace text-break">${model}</span>`
+              : 'Model not recorded'
           }
         </div>
       </div>

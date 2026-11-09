@@ -58,8 +58,9 @@ export async function handleInput(
     }
 
     return {
-      data: 'success',
-      needsFullRestart: !!restartErr || !success,
+      data: restartErr || !success ? 'restart-required' : 'success',
+      // Failed restarts require container disposal, so don't start a replacement interpreter.
+      needsFullRestart: false,
     };
   }
 

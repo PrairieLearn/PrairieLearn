@@ -133,6 +133,8 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      // The dev proxy routes all shared and dynamically imported chunks by this prefix.
+      chunkNames: 'chunk-[hash]',
       define: {
         'process.env.NODE_ENV': '"development"',
       },
@@ -365,20 +367,20 @@ function makeManifest(
   Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
     if (!meta.entryPoint) return;
 
-    // Compute all the necessary preloads for each entrypoint. This includes
-    // any code-split chunks, as well as any files that are dynamically imported.
+    // Preload the static dependency graph without crossing dynamic import
+    // boundaries, so that lazy code isn't fetched before it's needed.
     const preloads = new Set<string>();
 
     // Recursively walk the `imports` dependency tree
     const visit = (entry: (typeof meta)['imports'][number]) => {
-      if (!['import-statement', 'dynamic-import'].includes(entry.kind)) return;
+      if (entry.kind !== 'import-statement') return;
       // External imports aren't emitted to disk,
       // so they shouldn't be added to preloads.
       if (entry.external) return;
       const preloadPath = path.relative(buildDirectory, entry.path);
       if (preloads.has(preloadPath)) return;
       preloads.add(preloadPath);
-      for (const imp of metafile.inputs[entry.path]?.imports ?? []) {
+      for (const imp of metafile.outputs[entry.path]?.imports ?? []) {
         visit(imp);
       }
     };

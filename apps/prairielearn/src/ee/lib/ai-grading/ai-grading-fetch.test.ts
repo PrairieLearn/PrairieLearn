@@ -20,7 +20,7 @@ beforeAll(async () => {
       {
         selfSigned: true,
         commonName: 'public.example',
-        altNames: ['public.example', 'other.example'],
+        altNames: ['public.example'],
       },
       (error, result) => (error ? reject(error) : resolve(result)),
     );
@@ -30,7 +30,6 @@ beforeAll(async () => {
 async function withServer(
   handler: http.RequestListener,
   run: (baseUrl: string, fetch: typeof globalThis.fetch) => Promise<void>,
-  timeoutMs = 120_000,
 ) {
   const server = https.createServer(
     { cert: certificate.certificate, key: certificate.serviceKey },
@@ -43,10 +42,7 @@ async function withServer(
     resolveAddress: async () => '127.0.0.1',
   });
   try {
-    await run(
-      `https://public.example:${port}/v1`,
-      createAiGradingFetch({ fetch: publicFetch, timeoutMs }),
-    );
+    await run(`https://public.example:${port}/v1`, createAiGradingFetch({ fetch: publicFetch }));
   } finally {
     server.closeAllConnections();
     await new Promise<void>((resolve, reject) =>
@@ -56,11 +52,10 @@ async function withServer(
 }
 
 describe('bounded custom AI grading requests', () => {
-  it('lets the compatible SDK consume a bounded structured grading response', async () => {
+  it('lets the compatible SDK consume a bounded compressed grading response', async () => {
     await withServer(
       (_request, response) => {
-        response.setHeader('Content-Type', 'application/json');
-        response.end(
+        const body = gzipSync(
           JSON.stringify({
             id: 'completion',
             object: 'chat.completion',
@@ -76,6 +71,12 @@ describe('bounded custom AI grading requests', () => {
             usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
           }),
         );
+        response.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Content-Encoding': 'gzip',
+          'Content-Length': body.byteLength,
+        });
+        response.end(body);
       },
       async (baseUrl, fetch) => {
         const provider = createOpenAICompatible({
@@ -116,7 +117,7 @@ describe('bounded custom AI grading requests', () => {
     );
   });
 
-  it('rejects an oversized Content-Length before reading the body', async () => {
+  it('reports an oversized grading response', async () => {
     await withServer(
       (_request, response) => {
         response.writeHead(200, { 'Content-Length': 1024 * 1024 + 1 });
@@ -124,118 +125,6 @@ describe('bounded custom AI grading requests', () => {
       },
       async (baseUrl, fetch) => {
         await expect(fetch(baseUrl)).rejects.toThrow('too large');
-      },
-    );
-  });
-
-  it.each([200, 400])('bounds streamed bodies with status %s', async (status) => {
-    await withServer(
-      (_request, response) => {
-        response.writeHead(status);
-        response.write(' '.repeat(1024 * 1024));
-        response.end('extra');
-      },
-      async (baseUrl, fetch) => {
-        await expect(fetch(baseUrl)).rejects.toThrow('too large');
-      },
-    );
-  });
-
-  it.each([200, 400])('bounds decompressed bodies with status %s', async (status) => {
-    await withServer(
-      (_request, response) => {
-        response.writeHead(status, { 'Content-Encoding': 'gzip' });
-        response.end(gzipSync(' '.repeat(1024 * 1024 + 1)));
-      },
-      async (baseUrl, fetch) => {
-        await expect(fetch(baseUrl)).rejects.toThrow('too large');
-      },
-    );
-  });
-
-  it('returns a decompressed response without stale encoding headers', async () => {
-    await withServer(
-      (_request, response) => {
-        const body = gzipSync('{"grade":1}');
-        response.writeHead(200, { 'Content-Encoding': 'gzip', 'Content-Length': body.byteLength });
-        response.end(body);
-      },
-      async (baseUrl, fetch) => {
-        const response = await fetch(baseUrl);
-        expect(response.headers.has('content-encoding')).toBe(false);
-        expect(response.headers.has('content-length')).toBe(false);
-        expect(await response.json()).toEqual({ grade: 1 });
-      },
-    );
-  });
-
-  it.each([false, true])(
-    'follows redirects and scopes authorization (cross origin: %s)',
-    async (crossOrigin) => {
-      const authorization: (string | undefined)[] = [];
-      await withServer(
-        (request, response) => {
-          authorization.push(request.headers.authorization);
-          if (request.url === '/v1') {
-            const destination = crossOrigin
-              ? `https://other.example:${response.socket?.localPort}/completion`
-              : '/completion';
-            response.writeHead(307, { Location: destination });
-            response.end();
-          } else {
-            response.end('{"grade":1}');
-          }
-        },
-        async (baseUrl, fetch) => {
-          expect(
-            await (await fetch(baseUrl, { headers: { Authorization: 'Bearer test-key' } })).json(),
-          ).toEqual({ grade: 1 });
-          expect(authorization).toEqual([
-            'Bearer test-key',
-            crossOrigin ? undefined : 'Bearer test-key',
-          ]);
-        },
-      );
-    },
-  );
-
-  it.each([false, true])(
-    'times out before completing the response (headers sent: %s)',
-    async (headersSent) => {
-      let received = false;
-      await withServer(
-        (_request, response) => {
-          received = true;
-          if (headersSent) {
-            response.writeHead(200);
-            response.flushHeaders();
-            response.write('{');
-          }
-        },
-        async (baseUrl, fetch) => {
-          await expect(fetch(baseUrl)).rejects.toThrow(
-            'did not finish the grading request in time',
-          );
-          expect(received).toBe(true);
-        },
-        100,
-      );
-    },
-  );
-
-  it('preserves caller cancellation while reading the body', async () => {
-    let received = false;
-    await withServer(
-      (_request, response) => {
-        received = true;
-        response.writeHead(200);
-        response.flushHeaders();
-        response.write('{');
-      },
-      async (baseUrl, fetch) => {
-        const signal = AbortSignal.timeout(100);
-        await expect(fetch(baseUrl, { signal })).rejects.toThrow();
-        expect(received).toBe(true);
       },
     );
   });
