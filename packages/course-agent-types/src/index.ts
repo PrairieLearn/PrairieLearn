@@ -221,3 +221,16 @@ export const ToolCallSchema = z
   );
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
+
+/**
+ * Sent by the PrairieLearn chat panel with each user message: the page staff were viewing, so the
+ * agent knows what "this quiz" means. It comes from the browser, so it only guides the agent;
+ * data access is still checked against the user's permissions.
+ */
+export const MessageMetadataSchema = z.object({
+  page: z.object({
+    path: z.string().startsWith('/pl/').max(500),
+    title: z.string().max(300),
+  }),
+});
+export type MessageMetadata = z.infer<typeof MessageMetadataSchema>;

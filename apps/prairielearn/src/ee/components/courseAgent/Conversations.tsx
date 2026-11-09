@@ -17,6 +17,7 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
+  type MessageMetadata,
   type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
@@ -48,6 +49,10 @@ const BLOCKED_MESSAGES = {
 } satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
 
 const NEW_CONVERSATION = 'new';
+
+function currentPage(): MessageMetadata {
+  return { page: { path: window.location.pathname, title: document.title } };
+}
 
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
@@ -301,7 +306,7 @@ function Chat({
   useEffect(() => {
     if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
     initialMessageSentRef.current = true;
-    void sendMessage({ text: initialMessage });
+    void sendMessage({ text: initialMessage, metadata: currentPage() });
     onInitialMessageSent();
   }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
 
@@ -332,7 +337,7 @@ function Chat({
     event?.preventDefault();
     const text = draft.trim();
     if (!text || responseActive || !connected || !readyToSend) return;
-    void sendMessage({ text });
+    void sendMessage({ text, metadata: currentPage() });
     setDraft('');
   };
 
