@@ -1,3 +1,8 @@
+.course-agent-launcher {
+  --bs-btn-color: var(--bs-navbar-color);
+  --bs-btn-border-color: var(--bs-navbar-color);
+}
+
 .course-agent-panel {
   position: fixed;
   top: 0;
@@ -16,21 +21,6 @@
 .course-agent-panel[data-open='true'] {
   transform: translateX(0);
   visibility: visible;
-}
-
-.course-agent-toggle {
-  position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.4rem;
-  box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 20%);
-  z-index: 1040;
 }
 
 .course-agent-user-message {
@@ -115,8 +105,7 @@ body:has(.course-agent-panel) .app-main {
   }
 
   /* Keep navbar dropdowns above the desktop chat panel. */
-  body:has(.course-agent-panel) .app-top-nav {
-    position: relative;
+  body:has(.course-agent-panel) .app-top-nav .dropdown-menu {
     z-index: 1031;
   }
 
@@ -130,7 +119,12 @@ body:has(.course-agent-panel) .app-main {
 .course-agent-panel-animate {
   transition:
     transform 300ms,
-    visibility 300ms;
+    visibility 0s 300ms;
+}
+
+/* Become visible immediately when opening so focus can move into the panel. */
+.course-agent-panel-animate[data-open='true'] {
+  transition-delay: 0s;
 }
 
 body:has(.course-agent-panel-animate) .app-main {
@@ -139,6 +133,21 @@ body:has(.course-agent-panel-animate) .app-main {
 
 /* On narrow screens the panel is a full-screen modal. */
 @media (max-width: 767.98px) {
+  /* The controls on either side have different widths. */
+  .app-top-nav .navbar-brand {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-right: 0;
+    max-width: calc(100% - 14rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .course-agent-launcher {
+    height: 2.5rem;
+  }
+
   .course-agent-panel,
   .course-agent-panel[data-open='true'] {
     width: 100vw;
@@ -154,7 +163,7 @@ body:has(.course-agent-panel-animate) .app-main {
   .course-agent-panel-animate {
     transition:
       opacity 300ms,
-      visibility 300ms;
+      visibility 0s 300ms;
   }
 }
 
