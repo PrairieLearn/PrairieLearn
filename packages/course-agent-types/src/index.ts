@@ -225,6 +225,9 @@ export type ToolCall = z.infer<typeof ToolCallSchema>;
 // Each attachment is uploaded on its own before the message that references it is sent.
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
+// A sandbox copies in every earlier attachment when it starts, so a conversation's total is capped.
+export const MAX_CONVERSATION_ATTACHMENT_BYTES = 200 * 1024 * 1024;
+export const MAX_CONVERSATION_ATTACHMENTS = 100;
 
 export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
 

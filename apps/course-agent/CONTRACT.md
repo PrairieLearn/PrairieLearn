@@ -121,6 +121,7 @@ For Git-backed courses, the agent fetches and reconciles published changes befor
 
 A message refers to each attachment with a `file` part whose URL is `upload:<id>`. Bytes never enter chat history: the browser uploads each file first, and the Worker stores it under `uploads/<conversation>/<id>` in the checkpoint bucket.
 
+- A conversation holds at most 100 uploads totaling 200 MB, counting uploads that were never sent, because a starting sandbox copies in every earlier attachment. The upload route checks the total before storing, so concurrent uploads can overshoot it by a message.
 - The browser controls message parts, so persistence keeps only `file` parts with an upload URL, at most 10 per message. Keys are built from the conversation's own name, so a message can only refer to that conversation's uploads.
 - Before admitting a message, the conversation checks that its uploads exist and reads their first bytes to find images. A missing upload refuses the message, which counts as handled like any other refusal.
 - Each turn copies its message's attachments to `/workspace/uploads/<id>/<name>` as root-owned, read-only files. A turn that starts a sandbox, including a checkpoint restore, also copies every earlier attachment, skipping uploads that have expired. The directory is outside `/workspace/session`, so checkpoints don't copy attachments, and outside the course checkout, so review capture never includes them.
