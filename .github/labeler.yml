@@ -46,4 +46,5 @@ schema:
           - 'apps/prairielearn/src/ee/pages/courseAgentPanelSettings/**'
           # Course-agent-only files that live alongside shared code.
           - 'apps/prairielearn/**/*{courseAgent,CourseAgent,course-agent,course_agent}*'
+          - 'apps/prairielearn/**/*{courseAgent,CourseAgent,course-agent,course_agent}*/**'
           - 'database/**/*course_agent*'
