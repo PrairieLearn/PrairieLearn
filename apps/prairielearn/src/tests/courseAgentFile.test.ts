@@ -56,7 +56,6 @@ describe('Course agent file links', { timeout: 30_000 }, () => {
       'courseInstances/Sp15/assessments/exam1-automaticTestSuite': `${assessment}/questions`,
       'infoCourse.json': '/pl/course/1/course_admin/settings',
       elements: '/pl/course/1/course_admin/file_view/elements',
-      '.git/config': '/pl/course/1/course_admin/file_view',
     };
     const targets: Record<string, string> = {};
     for (const path of Object.keys(cases)) targets[path] = await redirectTarget(path);

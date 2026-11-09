@@ -46,7 +46,7 @@ export async function courseFileUrl(
     return { url: await urlForPath(course, ''), found: false };
   }
   const relPath = normalized === '.' ? '' : normalized;
-  const existing = course.path ? await nearestExisting(course.path, relPath) : '';
+  const existing = await nearestExisting(course.path, relPath);
   return { url: await urlForPath(course, existing), found: existing === relPath };
 }
 
