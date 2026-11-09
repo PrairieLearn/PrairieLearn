@@ -4,7 +4,7 @@ This directory contains various scripts that are used internally to develop Prai
 
 ## Question authors rollout
 
-Question authors are stored in `questions.authors` from UID or ORCID URL strings in course files. Legacy structured author objects are no longer accepted, and the old `authors` and `question_authors` tables have been removed.
+Question authors are stored in `questions.authors` from UID or ORCID URL strings in course files.
 
 Before deploying this cleanup:
 
