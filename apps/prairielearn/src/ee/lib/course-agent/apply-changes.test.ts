@@ -154,7 +154,7 @@ afterEach(async () => {
   });
 });
 
-function decide(decision: 'approved' | 'denied', reviewId = review.id) {
+function decide(decision: 'approved' | 'denied', reviewId = review.id, feedback?: string) {
   return postReviewDecision({
     course,
     conversation,
@@ -162,6 +162,7 @@ function decide(decision: 'approved' | 'denied', reviewId = review.id) {
     authzData: { has_course_permission_edit: true, authn_user: { id: user.id } },
     reviewId,
     decision,
+    feedback,
   });
 }
 
@@ -229,6 +230,50 @@ it('denies an unreadable review without starting a save job', async () => {
     },
   );
   expect(prepareJob).not.toHaveBeenCalled();
+});
+
+it('delivers a message sent in place of a decision as the denial', async () => {
+  await expect(decide('denied', review.id, 'Use three midterms')).resolves.toEqual({
+    decision: 'denied',
+  });
+  const result = {
+    decision: 'denied',
+    publication: { status: 'not_attempted' },
+    sync: { status: 'not_attempted' },
+    feedback: 'Use three midterms',
+  };
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledExactlyOnceWith(
+    conversation.agent_conversation_id,
+    review.id,
+    result,
+  );
+  expect(await getReview(course, conversation, review.id)).toEqual({ status: 'decided', result });
+  await expect(decide('denied', review.id, 'Use three midterms')).resolves.toEqual({
+    decision: 'denied',
+  });
+  // A different later message must not be dropped silently into the recorded denial.
+  await expect(decide('denied', review.id, 'Also fix the dates')).rejects.toThrow(
+    'already denied, so your message was not sent',
+  );
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledOnce();
+});
+
+it('keeps a message denial and never starts the save for a later approval', async () => {
+  await withConfig({ fileEditorUseGit: true }, async () => {
+    await decide('denied', review.id, 'Use three midterms');
+    await expect(decide('approved')).rejects.toThrow('already has a different decision');
+    expect(prepareJob).not.toHaveBeenCalled();
+  });
+});
+
+it('keeps an approval and refuses a message sent after it', async () => {
+  await withConfig({ fileEditorUseGit: true }, async () => {
+    await decide('approved');
+    await expect(decide('denied', review.id, 'Wait, use three midterms')).rejects.toThrow(
+      'already approved, so your message was not sent',
+    );
+    expect(prepareJob).toHaveBeenCalledOnce();
+  });
 });
 
 it('keeps the first decision and refuses a different one', async () => {
