@@ -251,8 +251,7 @@ adding the `mathjax_ignore` class to an HTML element.
 
 LaTeX uses curly braces for grouping (e.g., `\frac{a}{b}`), which can conflict with Mustache's `{{ }}` syntax. When a Mustache tag is placed directly inside a LaTeX brace, the sequence `{{{` is interpreted as a triple-brace (unescaped) Mustache tag, and the question will fail to render correctly or produce unexpected output.
 
-<!-- prettier-ignore -->
-```html title="question.html"
+```html { title="question.html" .no-copy }
 <!-- Bad: `{{{` is parsed as a triple-brace Mustache tag. -->
 <p>$\frac{{{params.a}}}{{{params.b}}}$</p>
 ```
