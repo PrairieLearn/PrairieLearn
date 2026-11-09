@@ -215,6 +215,7 @@ export const ConfigSchema = z.object({
   cronIntervalWorkspaceHostLoadsSec: z.number().default(10),
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
+  cronIntervalCourseAgentReviewResultsSec: z.number().default(60),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
   cronIntervalFetchNewsItemsSec: z.number().default(5 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
@@ -536,6 +537,11 @@ export const ConfigSchema = z.object({
    */
   serverJobsAbandonedTimeoutSec: z.number().default(30),
   devMode: z.boolean().default(DEV_MODE),
+  /**
+   * Whether to compile assets on the fly with esbuild instead of serving them
+   * from the prebuilt `public/build` directory. Defaults to the value of `devMode`.
+   */
+  compiledAssetsDevMode: z.boolean().nullable().default(null),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */
