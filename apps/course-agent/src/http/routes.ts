@@ -8,6 +8,7 @@ import {
   MAX_CONVERSATION_ATTACHMENT_BYTES,
   MAX_THUMBNAIL_BYTES,
   RequestChangesResultSchema,
+  UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
 
 import { imageType, thumbnailKey, uploadKey, uploadPrefix } from '../conversation/attachments.js';
@@ -63,27 +64,24 @@ app.post('/conversations', async (c) => {
   return c.json({ id }, 201);
 });
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-
 const conversations = new Hono<{ Bindings: Env }>();
 conversations.use('/:id/*', async (c, next) => {
-  if (!UUID.test(c.req.param('id')!)) return c.notFound();
+  if (!UUID_PATTERN.test(c.req.param('id')!)) return c.notFound();
   await next();
 });
 conversations.use('/:id/uploads/:uploadId/*', async (c, next) => {
-  if (!UUID.test(c.req.param('uploadId')!)) return c.notFound();
+  if (!UUID_PATTERN.test(c.req.param('uploadId')!)) return c.notFound();
   await next();
 });
 
-/**
- * PrairieLearn serves uploads from its own origin, so nothing an instructor uploads may render as
- * a page there: files always download, and only a recognized image is served as one.
- */
-const UPLOAD_HEADERS = {
-  'Cache-Control': 'private, max-age=86400',
-  'Content-Security-Policy': "default-src 'none'; sandbox",
-  'X-Content-Type-Options': 'nosniff',
-};
+/** A request body's declared size, if it is 1 to `max` bytes. R2 requires a known length. */
+function bodySize(request: Request, max: number) {
+  const size = Number(request.headers.get('Content-Length'));
+  return request.body && Number.isSafeInteger(size) && size >= 1 && size <= max ? size : null;
+}
+
+// Uploads and thumbnails never change. PrairieLearn decides how they may display.
+const CACHE_CONTROL = 'private, max-age=86400';
 
 conversations.post('/:id/resume', async (c) => {
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
@@ -100,12 +98,9 @@ conversations.post('/:id/resume', async (c) => {
 });
 
 // The browser uploads each attachment before sending the message that refers to it by ID.
-// R2 requires a known length, which the Content-Length check also bounds.
 conversations.post('/:id/uploads', async (c) => {
-  const size = Number(c.req.header('Content-Length'));
-  if (!c.req.raw.body || !Number.isSafeInteger(size) || size < 1 || size > MAX_ATTACHMENT_BYTES) {
-    return c.text('Expected a file of at most 20 MB', 400);
-  }
+  const size = bodySize(c.req.raw, MAX_ATTACHMENT_BYTES);
+  if (size === null) return c.text(`Expected a file of 1 to ${MAX_ATTACHMENT_BYTES} bytes`, 400);
   // Uploads that were never sent count too. Concurrent uploads can overshoot the cap by a message.
   const { objects } = await c.env.CHECKPOINTS.list({
     prefix: uploadPrefix(c.req.param('id')),
@@ -128,10 +123,9 @@ conversations.get('/:id/uploads/:uploadId', async (c) => {
   if (!upload) return c.notFound();
   return new Response(upload.body, {
     headers: {
-      ...UPLOAD_HEADERS,
       'Content-Type': 'application/octet-stream',
       'Content-Length': String(upload.size),
-      'Content-Disposition': 'attachment',
+      'Cache-Control': CACHE_CONTROL,
     },
   });
 });
@@ -139,13 +133,15 @@ conversations.get('/:id/uploads/:uploadId', async (c) => {
 // The browser makes an image's preview, since Workers can't resize images without a paid service.
 // Only an existing upload gets one, so thumbnails can't fill the bucket past the upload cap.
 conversations.post('/:id/uploads/:uploadId/thumbnail', async (c) => {
-  const size = Number(c.req.header('Content-Length'));
-  if (!c.req.raw.body || !Number.isSafeInteger(size) || size < 1 || size > MAX_THUMBNAIL_BYTES) {
-    return c.text('Expected a thumbnail of at most 512 KB', 400);
+  if (bodySize(c.req.raw, MAX_THUMBNAIL_BYTES) === null) {
+    return c.text(`Expected a thumbnail of 1 to ${MAX_THUMBNAIL_BYTES} bytes`, 400);
   }
   const { id, uploadId } = c.req.param();
   if (!(await c.env.CHECKPOINTS.head(uploadKey(id, uploadId)))) return c.notFound();
-  await c.env.CHECKPOINTS.put(thumbnailKey(id, uploadId), c.req.raw.body);
+  const bytes = new Uint8Array(await c.req.arrayBuffer());
+  const contentType = imageType(bytes);
+  if (!contentType) return c.text('Expected a PNG, JPEG, GIF, or WebP thumbnail', 415);
+  await c.env.CHECKPOINTS.put(thumbnailKey(id, uploadId), bytes, { httpMetadata: { contentType } });
   return c.body(null, 204);
 });
 
@@ -154,10 +150,12 @@ conversations.get('/:id/uploads/:uploadId/thumbnail', async (c) => {
     thumbnailKey(c.req.param('id'), c.req.param('uploadId')),
   );
   if (!thumbnail) return c.notFound();
-  const bytes = new Uint8Array(await thumbnail.arrayBuffer());
-  const type = imageType(bytes);
-  if (!type) return c.notFound();
-  return new Response(bytes, { headers: { ...UPLOAD_HEADERS, 'Content-Type': type } });
+  return new Response(thumbnail.body, {
+    headers: {
+      'Content-Type': thumbnail.httpMetadata!.contentType!,
+      'Cache-Control': CACHE_CONTROL,
+    },
+  });
 });
 
 conversations.get('/:id/reviews/:reviewId', async (c) => {

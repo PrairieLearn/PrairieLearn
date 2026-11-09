@@ -412,14 +412,16 @@ export class CourseSandbox extends DurableObject<Env> {
    * change. Uploads that have since expired are skipped; a new message's were checked on arrival.
    */
   async writeAttachments(conversationId: string, attachments: Attachment[]) {
+    const paths = attachments.map(attachmentPath);
+    await this.exec(['mkdir', '-p', ...paths.map((path) => path.slice(0, path.lastIndexOf('/')))]);
+    // A restored sandbox copies every earlier attachment, so the copies run concurrently.
     const files = new Files(this.container);
-    for (const attachment of attachments) {
-      const upload = await this.env.CHECKPOINTS.get(uploadKey(conversationId, attachment.id));
-      if (!upload) continue;
-      const path = attachmentPath(attachment);
-      await files.mkdir(path.slice(0, path.lastIndexOf('/')), { recursive: true });
-      await files.writeFile(path, upload.body);
-    }
+    await Promise.all(
+      attachments.map(async (attachment, index) => {
+        const upload = await this.env.CHECKPOINTS.get(uploadKey(conversationId, attachment.id));
+        if (upload) await files.writeFile(paths[index], upload.body);
+      }),
+    );
     await this.exec(['chmod', '-R', 'a+rX,go-w', UPLOADS_DIR]);
   }
 

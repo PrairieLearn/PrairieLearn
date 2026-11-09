@@ -203,8 +203,14 @@ describe('Course agent access and conversation privacy', () => {
         { url: '/pl/course/1/course_agent', authn_user_id: owner.id },
         config.secretKey,
       );
-      expect((await fetch(`${uploadsUrl(own.id)}/${uploadId}`)).status).toBe(200);
-      expect((await fetch(`${uploadsUrl(own.id)}/${uploadId}/thumbnail`)).status).toBe(200);
+      // The fake service answers with JSON, which PrairieLearn must not serve as itself.
+      for (const path of [uploadId, `${uploadId}/thumbnail`]) {
+        const response = await fetch(`${uploadsUrl(own.id)}/${path}`);
+        expect(response.status).toBe(200);
+        expect(response.headers.get('Content-Type')).toBe('application/octet-stream');
+        expect(response.headers.get('Content-Disposition')).toBe('attachment');
+        expect(response.headers.get('Content-Security-Policy')).toContain('sandbox');
+      }
       const upload = (headers: Record<string, string>) =>
         fetch(`${uploadsUrl(own.id)}/${uploadId}/thumbnail`, {
           method: 'POST',

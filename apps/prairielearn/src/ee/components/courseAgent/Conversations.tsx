@@ -38,7 +38,9 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 import {
   type DraftAttachment,
   DraftAttachmentList,
+  MAX_ATTACHMENT_SIZE,
   SentAttachments,
+  revokePreviews,
   uploadDraftAttachments,
   useDraftAttachments,
 } from './Attachments.js';
@@ -151,7 +153,8 @@ function ConversationPicker({
       ]);
       setPickedId(conversation.id);
       setDraft('');
-      drafts.handOff([]);
+      // The new conversation's chat now owns the attachments and their previews.
+      drafts.setAttachments([]);
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
   });
@@ -159,7 +162,7 @@ function ConversationPicker({
   const submitNew = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || create.isPending || drafts.attachments.some((a) => a.problem)) return;
+    if (!text || create.isPending) return;
     setInitialAttachments(drafts.attachments);
     create.mutate({ text });
   };
@@ -326,7 +329,7 @@ function Chat({
   const connected = agent.readyState === 1 && historyReady;
 
   const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
-  const { update: updateAttachment, handOff: setAttachments } = drafts;
+  const { setStatus, setAttachments } = drafts;
   /** Upload the attachments, then send. A failed upload keeps the draft for another try. */
   const send = useCallback(
     async (text: string, attachments: DraftAttachment[]) => {
@@ -334,15 +337,16 @@ function Chat({
       const files = await uploadDraftAttachments(attachments, {
         url: uploadsUrl,
         csrfToken: chatCsrfToken,
-        update: updateAttachment,
+        setStatus,
       });
       setSending(false);
       if (!files) return;
       void sendMessage({ text, files });
       setDraft('');
+      revokePreviews(attachments);
       setAttachments([]);
     },
-    [uploadsUrl, chatCsrfToken, updateAttachment, setAttachments, sendMessage],
+    [uploadsUrl, chatCsrfToken, setStatus, setAttachments, sendMessage],
   );
 
   const initialMessageSentRef = useRef(false);
@@ -381,7 +385,6 @@ function Chat({
     event?.preventDefault();
     const text = draft.trim();
     if (!text || responseActive || !connected || !readyToSend || sending) return;
-    if (drafts.attachments.some((a) => a.problem)) return;
     void send(text, drafts.attachments);
   };
 
@@ -519,9 +522,14 @@ function Composer({
     textarea.style.height = 'auto';
     if (textarea.scrollHeight) textarea.style.height = `${textarea.scrollHeight}px`;
   }, [draft]);
+  const hasInvalidAttachment = attachments.some((a) => a.status.kind === 'invalid');
+  const submit = (event: SyntheticEvent) => {
+    event.preventDefault();
+    if (!hasInvalidAttachment) onSubmit(event);
+  };
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-      onSubmit(event);
+      submit(event);
     }
   };
   const draggingFiles = (event: DragEvent) =>
@@ -530,7 +538,7 @@ function Composer({
   return (
     <Form
       className="border-top p-3"
-      onSubmit={onSubmit}
+      onSubmit={submit}
       onDragOver={(event) => {
         if (!draggingFiles(event)) return;
         event.preventDefault();
@@ -612,9 +620,7 @@ function Composer({
                 type="submit"
                 size="sm"
                 aria-label="Send"
-                disabled={
-                  !draft.trim() || disabled || pending || attachments.some((a) => a.problem)
-                }
+                disabled={!draft.trim() || disabled || pending || hasInvalidAttachment}
               >
                 {pending ? (
                   <Spinner animation="border" size="sm" aria-hidden="true" />
@@ -629,7 +635,9 @@ function Composer({
           <div className="course-agent-drop-target position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex flex-column align-items-center justify-content-center text-primary">
             <i className="bi bi-upload fs-4" aria-hidden="true" />
             <span className="fw-medium">Drop files to attach</span>
-            <span className="small">Up to {MAX_ATTACHMENTS_PER_MESSAGE} files, 20 MB each</span>
+            <span className="small">
+              Up to {MAX_ATTACHMENTS_PER_MESSAGE} files, {MAX_ATTACHMENT_SIZE} each
+            </span>
           </div>
         )}
       </div>

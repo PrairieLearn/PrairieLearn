@@ -1,5 +1,6 @@
 import { type FileUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
+import { filesize } from 'filesize';
 import { useCallback, useState } from 'react';
 import { Button, Spinner } from 'react-bootstrap';
 
@@ -12,40 +13,47 @@ import {
   attachmentUrl,
 } from '@prairielearn/course-agent-types';
 
+const formatBytes = (bytes: number) => filesize(bytes, { round: 1, standard: 'jedec' });
+export const MAX_ATTACHMENT_SIZE = formatBytes(MAX_ATTACHMENT_BYTES);
+
+export type AttachmentStatus =
+  | { kind: 'ready' }
+  /** It can't be sent and has to be removed. */
+  | { kind: 'invalid'; problem: string }
+  | { kind: 'uploading'; percent: number }
+  | { kind: 'uploaded'; id: string }
+  | { kind: 'failed' };
+
 /** A file attached to a message that hasn't been sent yet. */
 export interface DraftAttachment {
   key: string;
   file: File;
   /** An object URL for an image's thumbnail. */
   previewUrl: string | null;
-  /** Why the file can't be sent; it has to be removed. */
-  problem: string | null;
-  uploadId: string | null;
-  /** From 0 to 1 while uploading. */
-  progress: number | null;
-  uploadFailed: boolean;
+  status: AttachmentStatus;
 }
 
-function problemWith(file: File, position: number) {
+function statusOf(file: File, position: number): AttachmentStatus {
+  const invalid = (problem: string) => ({ kind: 'invalid', problem }) as const;
   if (position >= MAX_ATTACHMENTS_PER_MESSAGE) {
-    return `Only ${MAX_ATTACHMENTS_PER_MESSAGE} files per message. Remove it.`;
+    return invalid(`Only ${MAX_ATTACHMENTS_PER_MESSAGE} files per message. Remove it.`);
   }
-  if (file.size > MAX_ATTACHMENT_BYTES) return 'Over 20 MB. Remove it.';
-  if (file.size === 0) return 'Empty file. Remove it.';
-  return null;
+  if (file.size > MAX_ATTACHMENT_BYTES) return invalid(`Over ${MAX_ATTACHMENT_SIZE}. Remove it.`);
+  if (file.size === 0) return invalid('Empty file. Remove it.');
+  return { kind: 'ready' };
 }
 
-function revokePreviews(attachments: DraftAttachment[]) {
+export function revokePreviews(attachments: DraftAttachment[]) {
   for (const { previewUrl } of attachments) if (previewUrl) URL.revokeObjectURL(previewUrl);
 }
 
-/** Draft attachments for one composer. `handOff` passes them on without revoking previews. */
+/** Draft attachments for one composer. */
 export function useDraftAttachments(initial: DraftAttachment[] = []) {
   const [attachments, setAttachments] = useState(initial);
   // Stable, so the upload flow that reports progress through it can be memoized.
-  const update = useCallback(
-    (key: string, patch: Partial<DraftAttachment>) =>
-      setAttachments((current) => current.map((a) => (a.key === key ? { ...a, ...patch } : a))),
+  const setStatus = useCallback(
+    (key: string, status: AttachmentStatus) =>
+      setAttachments((current) => current.map((a) => (a.key === key ? { ...a, status } : a))),
     [],
   );
   return {
@@ -55,10 +63,7 @@ export function useDraftAttachments(initial: DraftAttachment[] = []) {
         key: crypto.randomUUID(),
         file,
         previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
-        problem: problemWith(file, attachments.length + index),
-        uploadId: null,
-        progress: null,
-        uploadFailed: false,
+        status: statusOf(file, attachments.length + index),
       }));
       setAttachments((current) => [...current, ...added]);
     },
@@ -70,8 +75,9 @@ export function useDraftAttachments(initial: DraftAttachment[] = []) {
       revokePreviews(attachments);
       setAttachments([]);
     },
-    handOff: setAttachments,
-    update,
+    /** Replaces the attachments without revoking previews, for passing them to another owner. */
+    setAttachments,
+    setStatus,
   };
 }
 
@@ -84,8 +90,13 @@ function uploadFile(url: string, csrfToken: string, file: File, onProgress: (p: 
     request.responseType = 'json';
     request.setRequestHeader('X-CSRF-Token', csrfToken);
     request.setRequestHeader('Content-Type', 'application/octet-stream');
+    // Each report re-renders the chat, so report only whole-percent changes.
+    let reported = 0;
     request.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable) onProgress(event.loaded / event.total);
+      const percent = Math.floor((event.loaded / event.total) * 100);
+      if (!event.lengthComputable || percent === reported) return;
+      reported = percent;
+      onProgress(percent);
     });
     request.addEventListener('load', () => {
       const uploaded = UploadedAttachmentSchema.safeParse(request.response);
@@ -139,33 +150,33 @@ export async function uploadDraftAttachments(
   {
     url,
     csrfToken,
-    update,
+    setStatus,
   }: {
     url: string;
     csrfToken: string;
-    update: (key: string, patch: Partial<DraftAttachment>) => void;
+    setStatus: (key: string, status: AttachmentStatus) => void;
   },
 ): Promise<FileUIPart[] | null> {
   const ids = await Promise.all(
-    attachments.map(async ({ key, file, uploadId }) => {
-      if (uploadId) return uploadId;
-      update(key, { progress: 0, uploadFailed: false });
+    attachments.map(async ({ key, file, status }) => {
+      if (status.kind === 'uploaded') return status.id;
+      setStatus(key, { kind: 'uploading', percent: 0 });
       const thumbnail = file.type.startsWith('image/') ? makeThumbnail(file) : null;
-      const result = await uploadFile(url, csrfToken, file, (progress) =>
-        update(key, { progress }),
+      const result = await uploadFile(url, csrfToken, file, (percent) =>
+        setStatus(key, { kind: 'uploading', percent }),
       );
       if ('id' in result) {
         const made = await thumbnail;
         if (made) await uploadThumbnail(`${url}/${result.id}/thumbnail`, csrfToken, made);
-        update(key, { uploadId: result.id, progress: null });
+        setStatus(key, { kind: 'uploaded', id: result.id });
         return result.id;
       }
       // A full conversation stays full, so retrying can't help.
-      update(
+      setStatus(
         key,
         result.status === 413
-          ? { progress: null, problem: 'Conversation file limit reached. Remove it.' }
-          : { progress: null, uploadFailed: true },
+          ? { kind: 'invalid', problem: 'Conversation file limit reached. Remove it.' }
+          : { kind: 'failed' },
       );
       return null;
     }),
@@ -179,8 +190,12 @@ export async function uploadDraftAttachments(
   }));
 }
 
+function extensionOf(filename: string) {
+  return filename.includes('.') ? filename.split('.').at(-1)!.toLowerCase() : '';
+}
+
 function fileIcon(mediaType: string, filename: string) {
-  const extension = filename.split('.').at(-1)?.toLowerCase() ?? '';
+  const extension = extensionOf(filename);
   if (mediaType.startsWith('image/')) return 'bi-file-earmark-image';
   if (mediaType === 'application/pdf' || extension === 'pdf') return 'bi-file-earmark-pdf';
   if (['csv', 'tsv', 'xlsx', 'xls'].includes(extension)) return 'bi-file-earmark-spreadsheet';
@@ -191,14 +206,8 @@ function fileIcon(mediaType: string, filename: string) {
   return 'bi-file-earmark';
 }
 
-function formatSize(bytes: number) {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function typeLabel(mediaType: string, filename: string) {
-  const extension = filename.includes('.') ? filename.split('.').at(-1)!.toUpperCase() : '';
-  return extension || mediaType.split('/').at(-1)?.toUpperCase() || 'File';
+  return (extensionOf(filename) || mediaType.split('/').at(-1) || 'File').toUpperCase();
 }
 
 function AttachmentCard({
@@ -296,6 +305,19 @@ function AttachmentCard({
   );
 }
 
+function draftDetail({ file, status }: DraftAttachment) {
+  switch (status.kind) {
+    case 'invalid':
+      return status.problem;
+    case 'uploading':
+      return `Uploading… ${status.percent}%`;
+    case 'failed':
+      return "Couldn't upload. Send to retry.";
+    default:
+      return `${typeLabel(file.type, file.name)} · ${formatBytes(file.size)}`;
+  }
+}
+
 export function DraftAttachmentList({
   attachments,
   sending,
@@ -308,28 +330,18 @@ export function DraftAttachmentList({
   if (attachments.length === 0) return null;
   return (
     <ul className="list-unstyled d-flex flex-wrap gap-2 m-0 px-2 pt-2" aria-label="Attachments">
-      {attachments.map((attachment) => {
-        const { file, problem, progress, uploadFailed } = attachment;
-        const detail = problem
-          ? problem
-          : progress !== null
-            ? `Uploading… ${Math.round(progress * 100)}%`
-            : uploadFailed
-              ? "Couldn't upload. Send to retry."
-              : `${typeLabel(file.type, file.name)} · ${formatSize(file.size)}`;
-        return (
-          <AttachmentCard
-            key={attachment.key}
-            filename={file.name}
-            mediaType={file.type}
-            detail={detail}
-            previewUrl={progress === null ? attachment.previewUrl : null}
-            danger={problem !== null || uploadFailed}
-            busy={progress !== null}
-            onRemove={sending ? undefined : () => onRemove(attachment.key)}
-          />
-        );
-      })}
+      {attachments.map((attachment) => (
+        <AttachmentCard
+          key={attachment.key}
+          filename={attachment.file.name}
+          mediaType={attachment.file.type}
+          detail={draftDetail(attachment)}
+          previewUrl={attachment.previewUrl}
+          danger={attachment.status.kind === 'invalid' || attachment.status.kind === 'failed'}
+          busy={attachment.status.kind === 'uploading'}
+          onRemove={sending ? undefined : () => onRemove(attachment.key)}
+        />
+      ))}
     </ul>
   );
 }

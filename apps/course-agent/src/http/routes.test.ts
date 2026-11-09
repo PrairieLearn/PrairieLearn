@@ -60,28 +60,38 @@ describe('private course agent service', () => {
   });
 });
 
-describe('attachment downloads', () => {
+describe('attachment thumbnails', () => {
   const conversationId = crypto.randomUUID();
   const uploadId = crypto.randomUUID();
   const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
   const svg = new TextEncoder().encode('<svg onload="alert(1)"/>');
 
-  function request(path: string, objects: Record<string, Uint8Array>, init: RequestInit = {}) {
+  interface Stored {
+    bytes: Uint8Array;
+    contentType?: string;
+  }
+
+  function request(path: string, objects: Record<string, Stored>, init: RequestInit = {}) {
     const stored = (key: string) => {
-      const bytes = objects[key];
-      if (!bytes) return null;
+      const object = objects[key];
+      if (!object) return null;
       return {
-        body: new Blob([bytes]).stream(),
-        size: bytes.length,
-        arrayBuffer: async () => bytes,
+        body: new Blob([object.bytes]).stream(),
+        httpMetadata: { contentType: object.contentType },
       };
     };
     const CHECKPOINTS = {
       get: vi.fn(async (key: string) => stored(key)),
       head: vi.fn(async (key: string) => stored(key)),
-      put: vi.fn(async (key: string, body: ReadableStream) => {
-        objects[key] = new Uint8Array(await new Response(body).arrayBuffer());
-      }),
+      put: vi.fn(
+        async (
+          key: string,
+          bytes: Uint8Array,
+          options: { httpMetadata: { contentType: string } },
+        ) => {
+          objects[key] = { bytes, contentType: options.httpMetadata.contentType };
+        },
+      ),
     };
     const response = app.request(
       `/conversations/${conversationId}/uploads/${path}`,
@@ -91,37 +101,28 @@ describe('attachment downloads', () => {
     return { response, CHECKPOINTS };
   }
 
-  it('always downloads an upload, even an image', async () => {
-    const response = await request(uploadId, {
-      [`uploads/${conversationId}/${uploadId}`]: png,
-    }).response;
-    expect(response.status).toBe(200);
-    expect(response.headers.get('Content-Type')).toBe('application/octet-stream');
-    expect(response.headers.get('Content-Disposition')).toBe('attachment');
-    expect(response.headers.get('Content-Security-Policy')).toContain('sandbox');
-    expect(new Uint8Array(await response.arrayBuffer())).toEqual(png);
-  });
-
-  it('stores a thumbnail only for an existing upload, and serves only images', async () => {
-    const objects: Record<string, Uint8Array> = {};
-    const put = (body: Uint8Array) =>
+  it('stores only an image thumbnail of an existing upload, with its type', async () => {
+    const objects: Record<string, Stored> = {};
+    const post = (body: Uint8Array) =>
       request(`${uploadId}/thumbnail`, objects, {
         method: 'POST',
         headers: { 'Content-Length': String(body.length) },
         body,
       });
 
-    const missing = put(png);
+    const missing = post(png);
     expect((await missing.response).status).toBe(404);
     expect(missing.CHECKPOINTS.put).not.toHaveBeenCalled();
 
-    objects[`uploads/${conversationId}/${uploadId}`] = png;
-    expect((await put(png).response).status).toBe(204);
+    objects[`uploads/${conversationId}/${uploadId}`] = { bytes: png };
+    const script = post(svg);
+    expect((await script.response).status).toBe(415);
+    expect(script.CHECKPOINTS.put).not.toHaveBeenCalled();
+
+    expect((await post(png).response).status).toBe(204);
     const thumbnail = await request(`${uploadId}/thumbnail`, objects).response;
     expect(thumbnail.headers.get('Content-Type')).toBe('image/png');
-
-    expect((await put(svg).response).status).toBe(204);
-    expect((await request(`${uploadId}/thumbnail`, objects).response).status).toBe(404);
+    expect(new Uint8Array(await thumbnail.arrayBuffer())).toEqual(png);
   });
 
   it('rejects an upload ID that is not a UUID before reading the bucket', async () => {
