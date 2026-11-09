@@ -207,13 +207,13 @@ export const COURSE_DATA_DATASETS = {
   },
 };
 
-export type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;
+type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;
 
 export function isCourseDataset(name: string): name is CourseDatasetName {
   return Object.hasOwn(COURSE_DATA_DATASETS, name);
 }
 
-export const COURSE_DATA_VERSION = 1;
+const COURSE_DATA_VERSION = 1;
 
 /** The schema endpoint's response, also committed as JSON Schema for review. */
 export function courseDataSchema() {

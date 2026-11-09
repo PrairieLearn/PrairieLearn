@@ -20,6 +20,8 @@ import { logEvent, redactSecrets } from '../monitoring.js';
 import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
 const SESSION = '/workspace/session';
+// Downloaded course data and the agent's analysis scripts. Excluded from checkpoints.
+const COURSE_DATA = `${SESSION}/course-data`;
 // The node user and group in the base container image both have ID 1000.
 const NODE_UID_GID = '1000:1000';
 const NATIVE_PORT = 4500;
@@ -298,7 +300,10 @@ export class CourseSandbox extends DurableObject<Env> {
       `${SESSION}/home/.codex/config.toml`,
       'model_provider = "prairielearn"\nweb_search = "live"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\nsupports_standalone_web_search = true\n',
     );
-    await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`]);
+    // Checkpoints exclude course data, so create its directory on every start, before the session
+    // directory is locked.
+    await this.exec(['mkdir', '-p', COURSE_DATA]);
+    await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`, COURSE_DATA]);
     // addCourseFiles() locks a fresh workspace once its files are in place.
     if (checkpoint) await this.lockSession();
     this.freshContainer = true;
@@ -686,13 +691,8 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /** Saves downloaded course data outside the course checkout; returns the file path. */
   async writeCourseData(dataset: string, contents: string) {
-    const dir = `${SESSION}/course-data`;
-    const path = `${dir}/${dataset}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
-    // The session directory is root-owned (see lockSession), so create this one as root and give
-    // it to the agent, which also writes its analysis scripts here.
-    await this.exec(['mkdir', '-p', dir]);
-    await new Files(this.container).writeFile(path, contents);
-    await this.exec(['chown', '-R', NODE_UID_GID, dir]);
+    const path = `${COURSE_DATA}/${dataset}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
+    await new Files(this.container).writeFile(path, contents, { user: NODE_UID_GID });
     return path;
   }
 

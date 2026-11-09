@@ -10,6 +10,8 @@ const OPERATORS = {
   lte: '<=',
 } as const;
 
+const IS_TESTS = { null: 'IS NULL', true: 'IS TRUE', false: 'IS FALSE' } as const;
+
 const RESERVED = new Set(['select', 'order', 'limit']);
 
 /**
@@ -54,11 +56,10 @@ export function buildCourseDataQuery({
       params[param] = value.slice(1, -1).split(',');
       conditions.push(`${quoted} = ANY ($${param})`);
     } else if (operator === 'is') {
-      const tests = { null: 'IS NULL', true: 'IS TRUE', false: 'IS FALSE' } as const;
-      if (!Object.hasOwn(tests, value)) {
+      if (!Object.hasOwn(IS_TESTS, value)) {
         throw new HttpStatusError(400, `Expected ${name}=is.null, is.true, or is.false.`);
       }
-      conditions.push(`${quoted} ${tests[value as keyof typeof tests]}`);
+      conditions.push(`${quoted} ${IS_TESTS[value as keyof typeof IS_TESTS]}`);
     } else if (Object.hasOwn(OPERATORS, operator)) {
       params[param] = value;
       conditions.push(`${quoted} ${OPERATORS[operator as keyof typeof OPERATORS]} $${param}`);

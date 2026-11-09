@@ -35,12 +35,13 @@ export async function authenticateCourseAgentRequest({
   if (authorization === undefined || conversationId === undefined) return null;
   if (!isServiceToken(authorization)) return null;
   const parsedId = z.uuid().safeParse(conversationId);
-  if (!parsedId.success) return { error: 'Invalid course agent conversation' };
-  const conversation = await selectOptionalCourseAgentConversationByAgentConversationId(
-    parsedId.data,
-  );
+  const conversation = parsedId.success
+    ? await selectOptionalCourseAgentConversationByAgentConversationId(parsedId.data)
+    : null;
   if (!conversation) return { error: 'Invalid course agent conversation' };
-  if (!new RegExp(`^/course/${conversation.course_id}/data(/|$)`).test(path)) {
+  // Must match where api/v1/index.ts mounts the course data router.
+  const dataPath = `/course/${conversation.course_id}/data`;
+  if (path !== dataPath && !path.startsWith(`${dataPath}/`)) {
     return { error: 'The course agent may only read its own course data' };
   }
   return { user: await selectUserById(conversation.user_id) };

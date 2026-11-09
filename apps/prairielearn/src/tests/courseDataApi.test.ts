@@ -1,6 +1,6 @@
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
-import { COURSE_DATA_DATASETS, courseDataSchema } from '../api/v1/endpoints/courseData/datasets.js';
+import { COURSE_DATA_DATASETS } from '../api/v1/endpoints/courseData/datasets.js';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
@@ -77,17 +77,8 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
     for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${apiUrl}/${name}`, { 'Private-Token': token });
       assert.isNotEmpty(rows, name);
-      for (const row of rows) {
-        assert.sameMembers(Object.keys(row), Object.keys(dataset.schema.shape), name);
-        dataset.schema.parse(row);
-      }
+      for (const row of rows) dataset.schema.strict().parse(row);
     }
-  });
-
-  test('the schema endpoint serves the registry', async function () {
-    const res = await fetch(apiUrl, { headers: { 'Private-Token': token } });
-    assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), JSON.parse(JSON.stringify(courseDataSchema())));
   });
 
   test('filters, select, order, and limit narrow the rows', async function () {

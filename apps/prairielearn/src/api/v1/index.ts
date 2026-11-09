@@ -101,6 +101,7 @@ router.use(
   '/course_instances/:course_instance_id(\\d+)/course_instance_access_rules',
   (await import('./endpoints/courseInstanceAccessRules/index.js')).default,
 );
+// The course agent's credentials are limited to this path (see ee/lib/course-agent/authn.ts).
 router.use(
   '/course/:course_id(\\d+)/data',
   authzHasCourseOwner,

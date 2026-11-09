@@ -9,7 +9,10 @@ import { SandboxTurn } from './turn.js';
 function runner({
   loseAcceptance = false,
   history = [] as unknown[],
-  onCourseData = undefined as ((request: { dataset?: string }) => Promise<ToolReply>) | undefined,
+  onCourseData = async (_request: { dataset?: string }): Promise<ToolReply> => ({
+    success: false,
+    text: 'Not used in this test',
+  }),
 } = {}) {
   const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>

@@ -13,27 +13,22 @@ const JsonSchemaProperty = z.looseObject({
   enum: z.array(z.unknown()).optional(),
   description: z.string().optional(),
 });
+const ColumnSchema = JsonSchemaProperty.extend({
+  anyOf: z.array(JsonSchemaProperty).optional(),
+});
 const SchemaResponse = z.object({
   version: z.number(),
   datasets: z.record(
     z.string(),
     z.object({
       description: z.string(),
-      schema: z.object({
-        properties: z.record(
-          z.string(),
-          JsonSchemaProperty.extend({ anyOf: z.array(JsonSchemaProperty).optional() }),
-        ),
-      }),
+      schema: z.object({ properties: z.record(z.string(), ColumnSchema) }),
     }),
   ),
 });
 
 /** One line per column, such as `submitted_at (date-time, nullable): When the student submitted.` */
-function describeColumn(
-  name: string,
-  property: z.infer<typeof SchemaResponse>['datasets'][string]['schema']['properties'][string],
-) {
+function describeColumn(name: string, property: z.infer<typeof ColumnSchema>) {
   const variants = property.anyOf ?? [property];
   const types = variants.flatMap((variant) =>
     Array.isArray(variant.type) ? variant.type : variant.type ? [variant.type] : [],
@@ -83,8 +78,14 @@ async function readCapped(response: Response) {
 
 async function errorMessage(response: Response) {
   const body = await response.text();
-  const parsed = z.object({ message: z.string() }).safeParse(JSON.parse(body || 'null'));
-  return parsed.success ? parsed.data.message : body || response.statusText;
+  let json: unknown = null;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    // A proxy or load balancer error page, not an API response.
+  }
+  const parsed = z.object({ message: z.string() }).safeParse(json);
+  return parsed.success ? parsed.data.message : response.statusText;
 }
 
 /**
@@ -144,22 +145,25 @@ export async function getCourseData({
       text: `The result is larger than ${MAX_BYTES / 1024 / 1024} MB. Add filters (such as course_instance_id or assessment_id) or select fewer columns.`,
     };
   }
-  const rows = body.text.split('\n').filter(Boolean);
+  // Each row ends with a newline, so count them rather than splitting a copy of the whole body.
+  let rows = 0;
+  for (let i = body.text.indexOf('\n'); i !== -1; i = body.text.indexOf('\n', i + 1)) rows++;
   const path = await sandbox.writeCourseData(request.dataset, body.text);
   logEvent('course_data_fetched', {
     conversationId,
     dataset: request.dataset,
     filters: request.filters ?? [],
-    rows: rows.length,
+    rows,
     bytes: body.bytes,
     elapsedMs: Date.now() - started,
   });
-  const columns = rows.length > 0 ? Object.keys(JSON.parse(rows[0])).join(', ') : 'none';
+  const firstRow = body.text.slice(0, body.text.indexOf('\n'));
+  const columns = rows > 0 ? Object.keys(JSON.parse(firstRow)).join(', ') : 'none';
   const scope = request.filters?.length
     ? `Filters: ${request.filters.join(' AND ')}.`
     : 'No filters: every row in this course.';
   return {
     success: true,
-    text: `Wrote ${rows.length} rows (${(body.bytes / 1024 / 1024).toFixed(1)} MB) to ${path}. ${scope} Columns: ${columns}.`,
+    text: `Wrote ${rows} rows (${(body.bytes / 1024 / 1024).toFixed(1)} MB) to ${path}. ${scope} Columns: ${columns}.`,
   };
 }

@@ -110,8 +110,7 @@ export class CodexAppServerClient {
 
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
-    /** Serves `get_course_data`; without it, threads are started without the tool. */
-    private onCourseData?: (request: CourseDataRequest) => Promise<ToolReply>,
+    private onCourseData: (request: CourseDataRequest) => Promise<ToolReply>,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -214,7 +213,7 @@ export class CodexAppServerClient {
 
   private async callTool(value: unknown): Promise<ToolReply> {
     const tool = z.object({ tool: z.string() }).safeParse(value);
-    if (tool.data?.tool === courseDataTool.name && this.onCourseData) {
+    if (tool.data?.tool === courseDataTool.name) {
       const call = CourseDataCall.safeParse(value);
       if (!call.success) {
         return { success: false, text: `Invalid arguments: ${z.prettifyError(call.error)}` };
@@ -293,10 +292,7 @@ export class CodexAppServerClient {
           'thread/start',
           {
             ...settings,
-            dynamicTools: [
-              ...(this.onReview ? [requestChangesTool] : []),
-              ...(this.onCourseData ? [courseDataTool] : []),
-            ],
+            dynamicTools: [...(this.onReview ? [requestChangesTool] : []), courseDataTool],
           } satisfies ThreadStartParams,
           ThreadResult,
         );
