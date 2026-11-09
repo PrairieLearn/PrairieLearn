@@ -459,8 +459,8 @@ export function identifyChunksFromChangedFiles(
  */
 async function getAllChunksForCourse(courseId: string) {
   const result = await sqldb.queryRows(
-    sql.select_course_chunks,
-    { course_id: courseId, at_date: null },
+    sql.select_current_course_chunks,
+    { course_id: courseId },
     RawCourseChunkSchema,
   );
   return result;
@@ -472,8 +472,15 @@ async function getAllChunksForCourse(courseId: string) {
  * until replaced, so cutoffs must not predate activation.
  */
 export async function selectChunksForCourse(courseId: string, atDate: Date | null = null) {
+  if (atDate == null) {
+    return await sqldb.queryRows(
+      sql.select_current_course_chunks,
+      { course_id: courseId },
+      ChunkSchema,
+    );
+  }
   return await sqldb.queryRows(
-    sql.select_course_chunks,
+    sql.select_course_chunks_at_date,
     { course_id: courseId, at_date: atDate },
     ChunkSchema,
   );

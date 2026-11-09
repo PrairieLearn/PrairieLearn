@@ -45,6 +45,17 @@ WHERE
 DROP INDEX chunks_unique_values_key;
 
 -- BLOCK append_chunk_revisions
+WITH
+  superseded AS (
+    UPDATE chunks
+    SET
+      superseded_at = now()
+    WHERE
+      course_id = $course_id
+      AND type = ANY ($types::enum_chunk_type[])
+    RETURNING
+      *
+  )
 INSERT INTO
   chunks (
     type,
@@ -64,7 +75,6 @@ SELECT
   gen_random_uuid(),
   now()
 FROM
-  chunks
+  superseded
 WHERE
-  course_id = $course_id
-  AND type = ANY ($types::enum_chunk_type[]);
+  type = 'serverFilesCourse';

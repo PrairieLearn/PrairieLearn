@@ -698,8 +698,9 @@ export const ChunkSchema = z.object({
   question_id: IdSchema.nullable(),
   size_compressed: z.coerce.number().nullable(),
   size_uncompressed: z.coerce.number().nullable(),
+  superseded_at: DateFromISOString.nullable(),
   type: EnumChunkTypeSchema,
-  uuid: z.string(), // TODO: should this be a UUID?
+  uuid: z.string(),
 });
 export type Chunk = z.infer<typeof ChunkSchema>;
 

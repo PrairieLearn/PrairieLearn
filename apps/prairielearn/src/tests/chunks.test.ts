@@ -330,7 +330,7 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = originalChunksConsumerDirectory;
     });
 
-    it('replaces every revision of a chunk once the one-row index is gone', async () => {
+    it('handles superseded chunks during the history writer rollout', async () => {
       const courseDir = tempTestCourseDir.path;
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
@@ -338,13 +338,21 @@ describe('chunks', () => {
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
       });
 
-      // Simulate a host still running this writer after activation has
-      // appended newer revisions.
+      await chunksLib.ensureChunksForCourseAsync(course.id, [{ type: 'elements' }]);
+
+      // Simulate the history writer deleting elements and replacing server files.
       await sqldb.execute(sql.drop_unique_chunk_index);
       await sqldb.execute(sql.append_chunk_revisions, {
         course_id: course.id,
         types: ['elements', 'serverFilesCourse'],
       });
+
+      const current = await chunksLib.selectChunksForCourse(course.id);
+      assert.isUndefined(current.find((chunk) => chunk.type === 'elements'));
+      await chunksLib.ensureChunksForCourseAsync(course.id, [{ type: 'elements' }]);
+      assert.isFalse(
+        await fs.pathExists(path.join(chunksLib.getRuntimeDirectoryForCourse(course), 'elements')),
+      );
 
       await fs.remove(path.join(courseDir, 'elements'));
       await fs.writeFile(path.join(courseDir, 'serverFilesCourse', 'changed.py'), '');
@@ -361,7 +369,6 @@ describe('chunks', () => {
         { course_id: course.id },
         ChunkSchema,
       );
-      assert.isEmpty(rows.filter((chunk) => chunk.type === 'elements'));
       const serverFilesRows = rows.filter((chunk) => chunk.type === 'serverFilesCourse');
       assert.lengthOf(serverFilesRows, 1);
       assert.isNotNull(serverFilesRows[0].created_at);
