@@ -9,6 +9,10 @@ import {
   normalizeResponseControls,
   removeResponseControlsForAnswerKey,
 } from '../../src/lib/client/print-response-controls.js';
+import {
+  replaceCanvasesWithImages,
+  waitForQuestionRendering,
+} from '../../src/lib/client/question-rendering.js';
 import { annotateDocxMath, captureDocxSource } from '../../src/lib/printing/docx-browser.js';
 import { parseQuestionBlockSize } from '../../src/lib/printing/question-block-size.js';
 
@@ -197,42 +201,6 @@ function replaceStudentResponsesWithAnswerKeys(source: HTMLElement, pageHeight: 
     heightReservation.style.blockSize = `${reservationHeight}px`;
     question.append(heightReservation);
     question.dataset.printStudentHeight = formatMeasurement(transformedHeight + reservationHeight);
-  }
-}
-
-function replaceCanvasesWithImages(source: HTMLElement): void {
-  for (const canvas of source.querySelectorAll('canvas')) {
-    if (canvas.width === 0 || canvas.height === 0) continue;
-    const image = document.createElement('img');
-    image.className = `${canvas.className} printing-canvas-image`;
-    image.id = canvas.id;
-    image.style.cssText = canvas.style.cssText;
-    for (const attribute of [
-      'aria-label',
-      'aria-labelledby',
-      'aria-describedby',
-      'aria-description',
-      'aria-hidden',
-      'role',
-    ]) {
-      const value = canvas.getAttribute(attribute);
-      if (value !== null) image.setAttribute(attribute, value);
-    }
-    const labelledBy = canvas.getAttribute('aria-labelledby');
-    const description =
-      labelledBy
-        ?.split(/\s+/)
-        .map((id) => document.getElementById(id)?.textContent ?? '')
-        .join(' ')
-        .trim() ||
-      canvas.getAttribute('aria-label')?.trim() ||
-      canvas.textContent.trim();
-    if (description) image.alt = description;
-    image.src = canvas.toDataURL('image/png');
-    const bounds = canvas.getBoundingClientRect();
-    image.width = bounds.width || canvas.width;
-    image.height = bounds.height || canvas.height;
-    canvas.replaceWith(image);
   }
 }
 
@@ -497,7 +465,7 @@ async function paginateAssessment(): Promise<{ totalPages: number }> {
   const output = document.querySelector<HTMLElement>('#assessment-print-pages');
   if (!source || !output) throw new Error('Printable assessment containers are missing');
 
-  await Promise.all(extraReadinessPromises);
+  await waitForQuestionRendering();
   await waitForExcalidrawCanvases(source);
   materializePrintableDetails(source);
   await waitForAnimationFrame();

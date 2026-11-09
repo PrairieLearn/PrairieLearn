@@ -1015,25 +1015,32 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
 
     const base64svg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgSource)));
 
-    fabric.Image.fromURL(
-      base64svg,
-      (img) => {
-        this.width = Math.ceil(width);
-        this.height = Math.ceil(height);
-        img.width = this.width;
-        img.height = this.height;
+    await new Promise((resolve, reject) => {
+      fabric.Image.fromURL(
+        base64svg,
+        (img, isError) => {
+          if (isError) {
+            reject(new Error('Could not render drawing text'));
+            return;
+          }
+          this.width = Math.ceil(width);
+          this.height = Math.ceil(height);
+          img.width = this.width;
+          img.height = this.height;
 
-        this.setCoords(false, false);
-        this.image = img;
-        this.dirty = true;
+          this.setCoords(false, false);
+          this.image = img;
+          this.dirty = true;
 
-        // Force re-rendering the canvas otherwise the text will not show up
-        if ('canvas' in this) {
-          this['canvas'].renderAll();
-        }
-      },
-      options,
-    );
+          // Force re-rendering the canvas otherwise the text will not show up
+          if ('canvas' in this) {
+            this['canvas'].renderAll();
+          }
+          resolve();
+        },
+        options,
+      );
+    });
   },
   initialize(text, options) {
     options = options || {};
@@ -1046,7 +1053,9 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.label = text;
 
     if (text && text.trim()) {
-      this.gen_text(this.label, options);
+      const ready = this.gen_text(this.label, options);
+      const rendering = window.PrairieLearnRendering ?? window.PrairieLearnAssessmentPrinting;
+      if (rendering) rendering.waitUntil(ready);
     }
 
     if (options.selectable) {

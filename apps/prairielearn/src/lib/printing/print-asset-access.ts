@@ -20,6 +20,7 @@ const PrintAssetScopeSchema = z.strictObject({
   instanceQuestionIds: z.array(IdSchema),
   authnUserId: IdSchema,
   userId: IdSchema,
+  purpose: z.enum(['printing', 'ai_grading']).optional(),
 });
 
 export const PrintAssetScopeDataSchema = PrintAssetScopeSchema.omit({ jobId: true });

@@ -92,4 +92,13 @@ describe('print asset access', () => {
       expect(classifyPrintAssetPath(path, scope, '/assets')).toBeNull();
     }
   });
+
+  it('binds the rendering purpose to the signed credential', () => {
+    const aiScope: PrintAssetScope = { ...scope, purpose: 'ai_grading' };
+    const { token } = beginPrintAssetAccess(aiScope, secretKey);
+    expect(checkPrintAssetAccess(token, secretKey)).toEqual(aiScope);
+    expect(checkPrintAssetAccess(beginPrintAssetAccess(scope, secretKey).token, secretKey)).toEqual(
+      scope,
+    );
+  });
 });

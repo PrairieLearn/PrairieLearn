@@ -27,6 +27,8 @@ export type QuestionRenderRequiredLocals = Pick<
 > & {
   urlPrefix: string;
   questionRenderContext?: QuestionRenderContext;
+  /** Preserve scripts and canvases until browser preparation has completed. */
+  deferAiGradingHtmlProcessing?: boolean;
 };
 
 export interface RenderSelection {

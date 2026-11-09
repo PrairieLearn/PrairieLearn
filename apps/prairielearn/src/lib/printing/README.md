@@ -36,7 +36,7 @@ Set both `printingCloudflareAccountId` and `printingCloudflareApiToken` on every
 
 Cloudflare renders require an explicit `browserOrigin`; a missing or empty value fails before connecting to the browser. In production, pass the application's public origin from `config.serverCanonicalHost`. The Cloudflare browser loads public files under `config.assetsPrefix` directly from that origin. Protected assets are fetched from the application server's local listener and fulfilled through Playwright.
 
-Cloudflare development also requires `config.serverCanonicalHost` to be configured. The renderer fulfills navigation with the supplied HTML and proxies all assets to the application server, so Cloudflare does not need to reach the local server. Local Chromium ignores `browserOrigin` and uses `url` directly.
+Cloudflare development also requires `config.serverCanonicalHost` to be configured. Use a public HTTPS origin such as `https://example.com`, as in the Cloudflare browser test, rather than `localhost` or a loopback address: the remote browser can reject local navigation with `net::ERR_BLOCKED_BY_ADMINISTRATOR`. The renderer fulfills navigation with the supplied HTML and proxies all assets to the application server, so this origin does not need to host your development server and no public tunnel is required. Keep the local application listening on its usual port. Local Chromium ignores `browserOrigin` and uses `url` directly.
 
 Set `runScripts: true` when preparing a fresh preview from server-generated question HTML. PDF exports use the completed, script-free page snapshot with scripts disabled. Keep scripts enabled when collecting Word content from a fresh preview so the page can save it before pagination.
 

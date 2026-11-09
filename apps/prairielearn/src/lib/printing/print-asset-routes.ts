@@ -19,6 +19,7 @@ import { config } from '../config.js';
 import { InstanceQuestionSchema, QuestionSchema, VariantSchema } from '../db-types.js';
 import { features } from '../features/index.js';
 import { idsEqual } from '../id.js';
+import { isEnterprise } from '../license.js';
 import { getDynamicFile } from '../question-variant.js';
 
 import {
@@ -60,12 +61,14 @@ export function applyPrintAssetRoutes(app: Express): void {
       }
       const course = await selectCourseById(courseInstance.course_id);
       if (
-        !(await features.enabled('printable-assessments', {
-          institution_id: course.institution_id,
-          course_id: course.id,
-          course_instance_id: courseInstance.id,
-          user_id: scope.authnUserId,
-        }))
+        scope.purpose === 'ai_grading'
+          ? !isEnterprise()
+          : !(await features.enabled('printable-assessments', {
+              institution_id: course.institution_id,
+              course_id: course.id,
+              course_instance_id: courseInstance.id,
+              user_id: scope.authnUserId,
+            }))
       ) {
         throw new HttpStatusError(403, 'Print asset access denied');
       }
