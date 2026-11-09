@@ -20,6 +20,7 @@ export function issueMailtoLink(issue: {
   );
   if (address == null) return null;
 
-  const body = `Hello ${issue.user_name}\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`;
+  const greeting = issue.user_name ? `Hello ${issue.user_name}` : 'Hello';
+  const body = `${greeting}\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`;
   return `mailto:${address}?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(body)}`;
 }
