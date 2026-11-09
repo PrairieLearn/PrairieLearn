@@ -33,6 +33,12 @@ export type ConversationState = ConversationLifecycle & {
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
 
+/**
+ * The agent's working directory, a checkout of the course. The agent links to course files by
+ * their absolute paths under it.
+ */
+export const COURSE_DIR = '/workspace/session/course';
+
 export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
