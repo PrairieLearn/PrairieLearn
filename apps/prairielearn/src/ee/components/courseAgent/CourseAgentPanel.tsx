@@ -105,6 +105,8 @@ export function CourseAgentPanel({
   const mobile = useSyncExternalStore(subscribeMobile, mobileSnapshot, () => false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const [launcherTooltipShown, setLauncherTooltipShown] = useState(false);
+  // The desktop launcher unmounts on mobile without a blur or mouseleave, which would leave the tooltip stuck open when it returns.
+  if (mobile && launcherTooltipShown) setLauncherTooltipShown(false);
   const mobileModalRef = useRef<ComponentRef<typeof Offcanvas>>(null);
 
   // Keeps the desktop panel below the navbar, whose height can change as it wraps.
