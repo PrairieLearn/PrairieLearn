@@ -246,3 +246,48 @@ adding the `mathjax_ignore` class to an HTML element.
 
 <div>$x = 1$ and I have <span class="mathjax_ignore">$</span>5 dollars.</div>
 ```
+
+### Using Mustache values inside LaTeX braces
+
+LaTeX uses curly braces for grouping (e.g., `\frac{a}{b}`), which can conflict with Mustache's `{{ }}` syntax. When a Mustache tag is placed directly inside a LaTeX brace, the sequence `{{{` is interpreted as a triple-brace (unescaped) Mustache tag, and the question will fail to render correctly or produce unexpected output.
+
+<!-- prettier-ignore -->
+```html title="question.html"
+<!-- Bad: `{{{` is parsed as a triple-brace Mustache tag. -->
+<p>$\frac{{{params.a}}}{{{params.b}}}$</p>
+```
+
+There are three ways to avoid this:
+
+1. **Add a space before the Mustache tag.** Where LaTeX ignores whitespace (which is most places in math mode), add a space between the LaTeX brace and the Mustache tag so that the braces are no longer adjacent:
+
+   ```html title="question.html"
+   <p>$\frac{ {{params.a}} }{ {{params.b}} }$</p>
+   ```
+
+   This is not suitable where whitespace is significant, such as inside `\text{...}`.
+
+2. **Change the Mustache delimiters.** Mustache lets you [change the delimiters](https://mustache.github.io/mustache.5.html#Set-Delimiter) with a set delimiter tag, `{{=<% %>=}}`. After it, Mustache tags are written as `<% params.a %>` and `{{`/`}}` are treated as plain text. Switch back with `<%={{ }}=%>`.
+
+   ```html title="question.html"
+   {{=<% %>=}}
+   <p>$\frac{<% params.a %>}{<% params.b %>}$</p>
+   <%={{ }}=%>
+   ```
+
+   Any Mustache tags after the set delimiter tag is changed must use the new delimiters. You are encouraged to switch back to the default delimiters after the LaTeX expression, so that other Mustache tags in the question can use the default delimiters.
+
+3. **Build the formula in `server.py`.** Construct the full LaTeX string in Python and store it in `data["params"]`, so that `question.html` only needs a single Mustache tag:
+
+   ```python title="server.py"
+   def generate(data):
+       a = 3
+       b = 4
+       data["params"]["formula"] = rf"$\frac{{{a}}}{{{b}}}$"
+   ```
+
+   ```html title="question.html"
+   <p>{{params.formula}}</p>
+   ```
+
+   Note that, if you're using `f` strings, you will need to double the braces in the string to escape them, e.g., `rf"$\frac{{{a}}}{{{b}}}$"`. You may also benefit from using a raw string (the `r` prefix) to avoid having to escape backslashes in LaTeX commands.
