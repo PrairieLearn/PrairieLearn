@@ -653,8 +653,6 @@ export async function aiGrade({
         'question',
       );
       const answerPromptParts = await prepareQuestionPrompt(questionAnswer, imageContext, 'answer');
-      console.log(questionPromptParts);
-      console.log(answerPromptParts);
 
       const render_submission_results = await questionModule.render({
         renderSelection: { question: false, submissions: true, answer: false },

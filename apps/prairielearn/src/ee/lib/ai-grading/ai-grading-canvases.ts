@@ -45,7 +45,7 @@ export async function prepareCanvasHtmlForAiGrading({
         ${compiledScriptTag('ai-grading-canvas-client.ts')} ${unsafeHtml(extraHeadersHtml)}
       </head>
       <body>
-        <div id="ai-grading-source">${unsafeHtml(panelHtml)}</div>
+        ${unsafeHtml(panelHtml)}
       </body>
     </html>
   `.toString();
@@ -62,8 +62,7 @@ export async function prepareCanvasHtmlForAiGrading({
     },
     {
       label: 'AI grading canvases',
-      produce: async (page) =>
-        await page.locator('#ai-grading-source').evaluate(serializePrintDocument),
+      produce: async (page) => await page.locator('body').evaluate(serializePrintDocument),
     },
   );
   // The serializer preserves clonable shadow roots; expose their contents to the HTML prompt parser.
@@ -71,5 +70,5 @@ export async function prepareCanvasHtmlForAiGrading({
   $('template[shadowrootmode]').each((_, template) => {
     $(template).replaceWith($(template).html() ?? '');
   });
-  return await stripHtmlForAiGrading($('#ai-grading-source').html() ?? '');
+  return await stripHtmlForAiGrading($('body').html() ?? '');
 }

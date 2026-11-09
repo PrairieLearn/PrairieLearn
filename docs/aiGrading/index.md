@@ -48,6 +48,8 @@ For example, an SVG file can be included with:
 
 Canvas drawings in the question and instructor reference answer, including `pl-drawing`, are rendered in a browser and included as PNG images. Question scripts and their declared dependencies run before the canvases are captured. Each panel is rendered separately, so its scripts should initialize drawings within that panel.
 
+Scripts may create canvases dynamically, including by appending them to `document.body`. Mathematical expressions explicitly typeset by question elements are restored to TeX before preparing the grading prompt. External `<img>` sources continue through the existing image loader; they do not need to load in the rendering browser. Images used by scripts to draw onto a canvas must still be served through PrairieLearn.
+
 For asynchronous drawing code, register a promise before initialization finishes:
 
 ```html

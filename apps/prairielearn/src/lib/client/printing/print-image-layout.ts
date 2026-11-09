@@ -31,7 +31,10 @@ export async function waitForExcalidrawCanvases(source: HTMLElement): Promise<vo
   );
 }
 
-export async function waitForPrintImages(source: HTMLElement): Promise<void> {
+export async function waitForPrintImages(
+  source: HTMLElement,
+  { sameOriginOnly = false }: { sameOriginOnly?: boolean } = {},
+): Promise<void> {
   const images: HTMLImageElement[] = [];
   const collectImages = (root: ParentNode) => {
     images.push(...root.querySelectorAll<HTMLImageElement>('img'));
@@ -46,6 +49,15 @@ export async function waitForPrintImages(source: HTMLElement): Promise<void> {
       // Image capture placeholders have no source until a student acts. Images selected through
       // srcset or a picture source still need to finish loading before pagination.
       if (!image.currentSrc && !image.getAttribute('src') && !image.getAttribute('srcset')) return;
+      if (sameOriginOnly) {
+        const url = new URL(image.currentSrc || image.src, image.baseURI);
+        if (
+          (url.protocol === 'http:' || url.protocol === 'https:') &&
+          url.origin !== window.location.origin
+        ) {
+          return;
+        }
+      }
       if (image.loading === 'lazy') image.loading = 'eager';
       if (!image.complete) {
         await new Promise<void>((resolve, reject) => {

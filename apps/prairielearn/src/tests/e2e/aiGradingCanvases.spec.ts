@@ -63,7 +63,7 @@ test('captures inline and dynamically created canvases after registered asynchro
           canvas.width = 10;
           canvas.height = 20;
           canvas.setAttribute('aria-label', 'Blue diagram');
-          document.getElementById('ai-grading-source').append(canvas);
+          document.body.append(canvas);
           PrairieLearnAssessmentPrinting.waitUntil(new Promise((nestedResolve) => setTimeout(() => {
             const context = canvas.getContext('2d');
             context.fillStyle = 'blue';
@@ -151,6 +151,61 @@ test('captures pl-drawing shapes and waits for asynchronous MathJax labels', asy
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   expect([info.width, info.height]).toEqual([200, 100]);
   expect(data.some((value, index) => index % 4 === 3 && value > 0)).toBe(true);
+});
+
+test('preserves explicitly typeset equations, including math inside pl-xss-safe', async ({
+  baseURL,
+}) => {
+  const template = await readFile(
+    new URL('../../../elements/pl-xss-safe/pl-xss-safe.mustache', import.meta.url),
+    'utf8',
+  );
+  const safeHtml = Mustache.render(template, {
+    uuid: 'equation',
+    language: 'html',
+    contents: '<p>\\(x^2+1\\)</p>',
+  });
+  const result = await prepareCanvasHtmlForAiGrading({
+    urlPrefix: `${baseURL}/pl/course_instance/1/instructor`,
+    assetScope: scope,
+    extraHeadersHtml: `<script src="${nodeModulesAssetPath('dompurify/dist/purify.min.js')}"></script>`,
+    panelHtml: `${safeHtml}<p id="display-math">\\[y=mx+b\\]</p>
+      <script>
+        PrairieLearnAssessmentPrinting.waitUntil(MathJax.startup.promise.then(() =>
+          MathJax.typesetPromise([document.getElementById('display-math')])
+        ));
+      </script>`,
+  });
+  const $ = cheerio.load(result);
+  expect(
+    $('p')
+      .map((_, paragraph) => $(paragraph).text())
+      .get(),
+  ).toEqual(['\\(x^2+1\\)', '\\[y=mx+b\\]']);
+});
+
+test('preserves external image sources when unrelated scripts execute', async ({ baseURL }) => {
+  const src = 'https://example.com/diagram.png';
+  const result = await prepareCanvasHtmlForAiGrading({
+    urlPrefix: `${baseURL}/pl/course_instance/1/instructor`,
+    assetScope: scope,
+    extraHeadersHtml: '',
+    panelHtml: `<p>Diagram</p><img src="${src}" alt="External diagram"><script>window.example = true;</script>`,
+  });
+  const $ = cheerio.load(result);
+  expect($('img').attr('src')).toBe(src);
+  expect($('img').attr('alt')).toBe('External diagram');
+});
+
+test('rejects external script dependencies', async ({ baseURL }) => {
+  await expect(
+    prepareCanvasHtmlForAiGrading({
+      urlPrefix: `${baseURL}/pl/course_instance/1/instructor`,
+      assetScope: scope,
+      extraHeadersHtml: '',
+      panelHtml: '<canvas></canvas><script src="https://example.com/drawing.js"></script>',
+    }),
+  ).rejects.toThrow('Could not load a question script');
 });
 
 test('rejects readiness failures and oversized canvases before grading', async ({ baseURL }) => {

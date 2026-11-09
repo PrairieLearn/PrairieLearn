@@ -21,13 +21,14 @@ async function prepareCanvases(): Promise<void> {
   }
   // jQuery schedules ready callbacks in a separate task, including pl-drawing initialization.
   await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
-  const source = document.getElementById('ai-grading-source')!;
+  const source = document.body;
   await window.MathJax.startup.promise;
   await waitForQuestionRendering();
   await waitForPrintableElements(source);
   await waitForExcalidrawCanvases(source);
   await document.fonts.ready;
-  await waitForPrintImages(source);
+  // External images are blocked in the browser and loaded by the existing grading image loader.
+  await waitForPrintImages(source, { sameOriginOnly: true });
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
@@ -40,6 +41,19 @@ async function prepareCanvases(): Promise<void> {
     maxTotalBytes: 10 * 1024 * 1024,
     maxCanvases: 32,
   });
+  // Question elements can explicitly typeset math even with startup typesetting disabled.
+  // Restore their TeX before HTML cleanup removes MathJax's SVG output.
+  for (const item of window.MathJax.startup.document.math as Iterable<{
+    typesetRoot?: Element;
+    math: string;
+    display: boolean;
+  }>) {
+    if (item.typesetRoot?.isConnected) {
+      item.typesetRoot.replaceWith(
+        document.createTextNode(item.display ? `\\[${item.math}\\]` : `\\(${item.math}\\)`),
+      );
+    }
+  }
   document.documentElement.dataset.printStatus = 'ready';
 }
 

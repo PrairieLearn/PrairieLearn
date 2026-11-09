@@ -18,11 +18,14 @@ export function initializeQuestionRendering(reportErrors = false): void {
   if (reportErrors) {
     window.addEventListener(
       'error',
-      (event) => {
-        document.documentElement.dataset.printError =
-          event.target instanceof HTMLScriptElement
-            ? 'Could not load a question script'
-            : event.message;
+      (event: Event) => {
+        if (event instanceof ErrorEvent) {
+          document.documentElement.dataset.printError = event.message;
+        } else if (event.target instanceof HTMLScriptElement) {
+          document.documentElement.dataset.printError = 'Could not load a question script';
+        } else {
+          return;
+        }
         document.documentElement.dataset.printStatus = 'error';
       },
       { capture: true },
