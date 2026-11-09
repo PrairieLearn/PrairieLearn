@@ -1011,7 +1011,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
 }
 
 function s3KeyForChunk(courseId: string, chunkUuid: string) {
-  return `${courseId}/${chunkUuid}.tar.gz`;
+  return `course-${courseId}/${chunkUuid}.tar.gz`;
 }
 
 const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
