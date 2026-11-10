@@ -347,7 +347,6 @@ function Chat({
   const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
-  const queryClient = useQueryClient();
   const reviewInput = lifecycle?.reviewId
     ? { conversationId, reviewId: lifecycle.reviewId }
     : skipToken;
