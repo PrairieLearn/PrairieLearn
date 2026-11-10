@@ -1,17 +1,21 @@
 import type { Page } from '@playwright/test';
 import axe from 'axe-core';
+import { z } from 'zod';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import type { CourseInstance } from '../../../lib/db-types.js';
-import { selectVariantsByInstanceQuestion } from '../../../models/variant.js';
+import { VariantSchema } from '../../../lib/db-types.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { createPrintableAssessmentInstance, waitForPrintablePage } from './utils.js';
-
-const sql = loadSqlEquiv(import.meta.url);
+import { createPrintableForm, waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
+const sql = loadSqlEquiv(import.meta.url);
+const RecordCountsSchema = z.object({
+  assessment_instances: z.number(),
+  instance_questions: z.number(),
+  variants: z.number(),
+});
 
 // Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
 test.describe.configure({ timeout: 180_000 });
@@ -26,10 +30,6 @@ interface AnswerKeyQuestionPresentation {
   gradingBlockCount: number;
   questionNumber: string | undefined;
   visibleStudentResponseCount: number;
-}
-
-function printUrl(courseInstance: CourseInstance, assessmentInstanceId: string): string {
-  return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print/preview?paper_size=Letter`;
 }
 
 async function readPaginatedQuestionLayout(page: Page): Promise<PaginatedQuestionLayout> {
@@ -81,23 +81,22 @@ async function expectAccessiblePreview(page: Page) {
   expect(violations).toEqual([]);
 }
 
-test('reuses closed homework variants for student copies and answer keys', async ({
+test('reuses saved closed variants for student copies and answer keys', async ({
   page,
   courseInstance,
 }) => {
-  const assessmentInstanceId = await createPrintableAssessmentInstance(
-    courseInstance.id,
+  const { printUrl, printForm } = await createPrintableForm(
+    courseInstance,
     'hw20-afterCompleteVisibility',
   );
-  const url = printUrl(courseInstance, assessmentInstanceId);
-  await page.goto(url);
-  await readPaginatedQuestionLayout(page);
-  await expect(page.locator(':root')).toHaveAttribute('data-print-warnings', '[]');
-  const variants = await selectVariantsByInstanceQuestion({
-    assessment_instance_id: assessmentInstanceId,
-  });
+  const url = `${printUrl}/preview?paper_size=Letter`;
+  const variants = await queryRows(
+    sql.select_form_variants,
+    { print_form_id: printForm.id },
+    VariantSchema.pick({ id: true, open: true }),
+  );
   expect(variants).toHaveLength(1);
-  await execute(sql.close_variants, { assessment_instance_id: assessmentInstanceId });
+  await execute(sql.close_variants, { print_form_id: printForm.id });
 
   for (const document of ['assessment', 'answer_key']) {
     await page.goto(`${url}&document=${document}`);
@@ -106,7 +105,11 @@ test('reuses closed homework variants for student copies and answer keys', async
     await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
     await expect(page.locator(':root')).toHaveAttribute('data-print-omitted-question-count', '0');
     expect(
-      await selectVariantsByInstanceQuestion({ assessment_instance_id: assessmentInstanceId }),
+      await queryRows(
+        sql.select_form_variants,
+        { print_form_id: printForm.id },
+        VariantSchema.pick({ id: true, open: true }),
+      ),
     ).toEqual(variants.map((variant) => ({ ...variant, open: false })));
   }
 });
@@ -116,11 +119,9 @@ test('renders accessible previews and readable answer keys for every student que
   courseInstance,
 }) => {
   await page.context().addInitScript({ content: axe.source });
-  const assessmentInstanceId = await createPrintableAssessmentInstance(
-    courseInstance.id,
-    'exam20-assessmentTools',
-  );
-  const endpoint = `${printUrl(courseInstance, assessmentInstanceId)}&identity_field=Section&identity_field=Student%20ID`;
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const initialRecords = await queryRow(sql.select_record_counts, {}, RecordCountsSchema);
+  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
 
   const assessmentResponse = await page.goto(endpoint);
   const assessmentLayout = await readPaginatedQuestionLayout(page);
@@ -166,4 +167,5 @@ test('renders accessible previews and readable answer keys for every student que
     });
     expect(presentation.questionNumber).toBeTruthy();
   }
+  expect(await queryRow(sql.select_record_counts, {}, RecordCountsSchema)).toEqual(initialRecords);
 });

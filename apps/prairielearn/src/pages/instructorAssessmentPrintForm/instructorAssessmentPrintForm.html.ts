@@ -24,7 +24,7 @@ const PAPER_DIMENSIONS = {
   A4: { width: '210mm', height: '297mm' },
 } satisfies Record<PaperSize, { width: string; height: string }>;
 
-export function InstructorAssessmentInstancePrint({
+export function InstructorAssessmentPrintForm({
   resLocals,
   document,
   formLabel,
@@ -41,7 +41,7 @@ export function InstructorAssessmentInstancePrint({
   honorCodeHtml,
   includeHonorCode,
 }: {
-  resLocals: ResLocalsForPage<'assessment-instance'>;
+  resLocals: ResLocalsForPage<'print-form'>;
   document: 'assessment' | 'answer_key';
   formLabel?: string;
   paperSize: PaperSize;
@@ -61,7 +61,7 @@ export function InstructorAssessmentInstancePrint({
   const documentLabel = isAnswerKey ? 'Answer key' : resLocals.assessment.type;
   const footerLabel = getPrintFooterLabel({
     document,
-    formId: resLocals.assessment_instance.id,
+    formId: resLocals.print_form.id,
     formLabel,
   });
   const { width: paperWidth, height: paperHeight } = PAPER_DIMENSIONS[paperSize];
@@ -69,6 +69,7 @@ export function InstructorAssessmentInstancePrint({
   return html`<!doctype html>
     <html
       lang="en"
+      data-print-form-id="${resLocals.print_form.id}"
       data-print-document="${document}"
       data-print-form-label="${formLabel ?? ''}"
       data-print-paper-size="${paperSize}"
@@ -197,7 +198,7 @@ export function InstructorAssessmentInstancePrint({
                       </div>
                       <div>
                         <dt>${formLabel ? 'Form' : 'Form ID'}</dt>
-                        <dd>${formLabel ?? resLocals.assessment_instance.id}</dd>
+                        <dd>${formLabel ?? resLocals.print_form.id}</dd>
                       </div>
                     </dl>
 
@@ -210,9 +211,7 @@ export function InstructorAssessmentInstancePrint({
                       </h2>
                       ${
                         isAnswerKey
-                          ? html`<p>
-                              ${answerKeyDescription(resLocals.assessment_instance.id, formLabel)}
-                            </p>`
+                          ? html`<p>${answerKeyDescription(resLocals.print_form.id, formLabel)}</p>`
                           : html`<ol>
                               ${DEFAULT_ASSESSMENT_INSTRUCTIONS.map((instruction) => html`<li>${instruction}</li>`)}
                             </ol>`
@@ -269,7 +268,7 @@ export function InstructorAssessmentInstancePrint({
                       <span
                         >${getPrintFooterLabel({
                           document: 'assessment',
-                          formId: resLocals.assessment_instance.id,
+                          formId: resLocals.print_form.id,
                           formLabel,
                         })}</span
                       >

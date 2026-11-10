@@ -59,12 +59,14 @@ export async function renderPrintExport(
         label: work.document === 'booklet' ? 'booklet PDF' : 'PDF',
         produce: async (page) => {
           const identity = await page.evaluate(() => ({
+            printFormId: document.documentElement.dataset.printFormId,
             document: document.documentElement.dataset.printDocument,
             formLabel: document.documentElement.dataset.printFormLabel,
             paperSize: document.documentElement.dataset.printPaperSize,
           }));
           shutdownSignal?.throwIfAborted();
           if (
+            identity.printFormId !== snapshot.assetScope.printFormId ||
             identity.document !== snapshot.printDocument ||
             identity.formLabel !== snapshot.formLabel ||
             identity.paperSize !== snapshot.paperSize

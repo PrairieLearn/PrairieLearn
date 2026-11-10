@@ -12,8 +12,8 @@ import { assessmentQuestionsRouter } from './assessment-questions.js';
 import { assessmentSettingsRouter } from './assessment-settings.js';
 import { assessmentUploadsRouter } from './assessment-uploads.js';
 import { createContext, t } from './init.js';
+import { printFormsRouter } from './print-forms.js';
 import { printableAssessmentExportRouter } from './printable-assessment-export.js';
-import { printableAssessmentsRouter } from './printable-assessments.js';
 
 const assessmentRouter = t.router({
   accessControl: accessControlRouter,
@@ -22,7 +22,7 @@ const assessmentRouter = t.router({
   assessmentGroups: assessmentGroupsRouter,
   assessmentInstances: assessmentInstancesRouter,
   assessmentUploads: assessmentUploadsRouter,
-  printableAssessments: printableAssessmentsRouter,
+  printForms: printFormsRouter,
   printableAssessmentExport: printableAssessmentExportRouter,
 });
 

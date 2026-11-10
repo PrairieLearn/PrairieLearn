@@ -2,20 +2,14 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 
 import { chromium } from 'playwright';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
-import * as sqldb from '@prairielearn/postgres';
 
 import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { selectPrintFormQuestions } from '../../models/print-form-question.js';
+import { getPrintFormUrl } from '../client/url.js';
 import { config } from '../config.js';
-import {
-  AssessmentQuestionSchema,
-  InstanceQuestionSchema,
-  QuestionSchema,
-  SprocQuestionOrderSchema,
-} from '../db-types.js';
 import { FatalQuestionRenderError, getAndRenderVariant } from '../question-render.js';
 import type { ResLocalsForPage } from '../res-locals.js';
 
@@ -27,17 +21,7 @@ import type { PrintablePageOutput } from './printable-page-output.js';
 import type { QuestionBlockSize } from './question-block-size.js';
 import { RenderQueue } from './render-queue.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const PrintableQuestionSchema = z.object({
-  instance_question: InstanceQuestionSchema,
-  assessment_question: AssessmentQuestionSchema,
-  question: QuestionSchema,
-  question_number: SprocQuestionOrderSchema.shape.question_number,
-  question_access_mode: SprocQuestionOrderSchema.shape.question_access_mode,
-});
-
-type PrintableQuestion = z.infer<typeof PrintableQuestionSchema>;
+type PrintableQuestion = Awaited<ReturnType<typeof selectPrintFormQuestions>>[number];
 
 const BROKEN_QUESTION_FAILURE_CODE = 'broken_variant';
 const BROKEN_QUESTION_FAILURE_STAGE = 'variant_creation';
@@ -159,7 +143,7 @@ interface PrintingQuestionResultBase {
   questionId: string;
   qid: string | null;
   assessmentQuestionId: string;
-  instanceQuestionId: string;
+  printFormQuestionId: string;
 }
 
 export type PrintingQuestionResult =
@@ -182,19 +166,13 @@ export type PrintingQuestionResult =
       variantId: string;
     });
 
-async function selectPrintableQuestions(assessmentInstanceId: string) {
-  return await sqldb.queryRows(
-    sql.select_questions_for_printing,
-    { assessment_instance_id: assessmentInstanceId },
-    PrintableQuestionSchema,
-  );
-}
-
 function assertQuestionBlockSizeOverridesExist(
   questions: PrintableQuestion[],
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,
 ) {
-  const questionNumbers = new Set(questions.map((question) => question.question_number));
+  const questionNumbers = new Set(
+    questions.map((question) => question.print_form_question.question_number),
+  );
   const unknownQuestionNumbers = [...questionBlockSizeOverrides.keys()].filter(
     (questionNumber) => !questionNumbers.has(questionNumber),
   );
@@ -214,7 +192,9 @@ function selectIncludedQuestions(
 ) {
   if (excludedQuestionNumbers.size === 0) return questions;
 
-  const questionNumbers = new Set(questions.map((question) => question.question_number));
+  const questionNumbers = new Set(
+    questions.map((question) => question.print_form_question.question_number),
+  );
   const unknownQuestionNumbers = [...excludedQuestionNumbers].filter(
     (questionNumber) => !questionNumbers.has(questionNumber),
   );
@@ -225,7 +205,7 @@ function selectIncludedQuestions(
     );
   }
   const includedQuestions = questions.filter(
-    (question) => !excludedQuestionNumbers.has(question.question_number),
+    (question) => !excludedQuestionNumbers.has(question.print_form_question.question_number),
   );
   if (includedQuestions.length === 0) {
     throw new HttpStatusError(400, 'Include at least one question in the printable assessment');
@@ -234,46 +214,49 @@ function selectIncludedQuestions(
 }
 
 function digestPrintableQuestions(questions: PrintableQuestion[]): string {
-  const identities = questions.map((question) => [
-    question.instance_question.id,
-    question.assessment_question.id,
-    question.question.id,
-    question.question_number,
+  const identities = questions.map(({ print_form_question, question }) => [
+    print_form_question.id,
+    print_form_question.assessment_question_id,
+    print_form_question.variant_id,
+    print_form_question.position,
+    print_form_question.question_number,
+    print_form_question.max_points,
+    question.id,
   ]);
   return createHash('sha256').update(JSON.stringify(identities)).digest('hex');
 }
 
 export async function getPrintableQuestionListDigest(
-  assessmentInstanceId: string,
+  printFormId: string,
   excludedQuestionNumbers: ReadonlySet<string>,
 ): Promise<string> {
-  const questions = await selectPrintableQuestions(assessmentInstanceId);
+  const questions = await selectPrintFormQuestions(printFormId);
   return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
 }
 
-export async function getPrintableInstanceQuestionIds(
-  assessmentInstanceId: string,
+export async function getPrintableFormQuestionIds(
+  printFormId: string,
   excludedQuestionNumbers: ReadonlySet<string>,
 ): Promise<string[]> {
-  const questions = await selectPrintableQuestions(assessmentInstanceId);
+  const questions = await selectPrintFormQuestions(printFormId);
   return selectIncludedQuestions(questions, excludedQuestionNumbers).map(
-    ({ instance_question }) => instance_question.id,
+    ({ print_form_question }) => print_form_question.id,
   );
 }
 
 export async function validateQuestionsForPrinting(
-  assessmentInstanceId: string,
+  printFormId: string,
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,
   excludedQuestionNumbers: ReadonlySet<string>,
 ): Promise<void> {
   if (questionBlockSizeOverrides.size === 0 && excludedQuestionNumbers.size === 0) return;
 
-  const questions = await selectPrintableQuestions(assessmentInstanceId);
+  const questions = await selectPrintFormQuestions(printFormId);
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
   selectIncludedQuestions(questions, excludedQuestionNumbers);
 }
 
-export interface RenderAssessmentInstanceQuestionsForPrintingOptions {
+export interface RenderPrintFormQuestionsOptions {
   /** Shared request cancellation for queueing and preparing questions. */
   signal: AbortSignal;
   defaultQuestionBlockSize?: QuestionBlockSize;
@@ -282,15 +265,15 @@ export interface RenderAssessmentInstanceQuestionsForPrintingOptions {
   document?: PrintDocument;
 }
 
-async function renderAssessmentInstanceQuestionsUnbounded(
-  resLocals: ResLocalsForPage<'assessment-instance'>,
+async function renderPrintFormQuestionsUnbounded(
+  resLocals: ResLocalsForPage<'print-form'>,
   {
     signal,
     defaultQuestionBlockSize = 'auto',
     questionBlockSizeOverrides = new Map(),
     excludedQuestionNumbers = new Set(),
     document = 'assessment',
-  }: RenderAssessmentInstanceQuestionsForPrintingOptions,
+  }: RenderPrintFormQuestionsOptions,
 ): Promise<{
   questionHtmls: string[];
   questionListDigest: string;
@@ -299,7 +282,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   maxPoints: number;
 }> {
   signal.throwIfAborted();
-  const questions = await selectPrintableQuestions(resLocals.assessment_instance.id);
+  const questions = await selectPrintFormQuestions(resLocals.print_form.id);
   signal.throwIfAborted();
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
   const includedQuestions = selectIncludedQuestions(questions, excludedQuestionNumbers);
@@ -311,11 +294,11 @@ async function renderAssessmentInstanceQuestionsUnbounded(
   for (const printableQuestion of includedQuestions) {
     signal.throwIfAborted();
     const base: PrintingQuestionResultBase = {
-      questionNumber: printableQuestion.question_number,
+      questionNumber: printableQuestion.print_form_question.question_number,
       questionId: printableQuestion.question.id,
       qid: printableQuestion.question.qid,
       assessmentQuestionId: printableQuestion.assessment_question.id,
-      instanceQuestionId: printableQuestion.instance_question.id,
+      printFormQuestionId: printableQuestion.print_form_question.id,
     };
     const renderLocals = {
       urlPrefix: resLocals.urlPrefix,
@@ -324,27 +307,40 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       course: resLocals.course,
       course_instance: resLocals.course_instance,
       assessment: resLocals.assessment,
-      assessment_instance: resLocals.assessment_instance,
       assessment_question: printableQuestion.assessment_question,
-      instance_question: printableQuestion.instance_question,
-      instance_question_info: {
-        question_number: printableQuestion.question_number,
-        question_access_mode: printableQuestion.question_access_mode,
-      },
       question: printableQuestion.question,
       user: resLocals.user,
       authz_data: resLocals.authz_data,
       authz_result: resLocals.authz_result,
     };
+    const questionUrl = `${getPrintFormUrl({
+      courseInstanceId: resLocals.course_instance.id,
+      assessmentId: resLocals.assessment.id,
+      printFormId: resLocals.print_form.id,
+    })}/question/${printableQuestion.print_form_question.id}`;
+    const urlOverrides = {
+      questionUrl: `${questionUrl}/`,
+      clientFilesQuestionUrl: `${questionUrl}/clientFilesQuestion`,
+      clientFilesCourseUrl: `${questionUrl}/clientFilesCourse`,
+      calculationQuestionFileUrl: `${questionUrl}/file`,
+      calculationQuestionGeneratedFileUrl: `${questionUrl}/generatedFilesQuestion/variant/${printableQuestion.print_form_question.variant_id}`,
+      clientFilesQuestionGeneratedFileUrl: `${questionUrl}/generatedFilesQuestion/variant/${printableQuestion.print_form_question.variant_id}`,
+    };
     try {
-      const renderState = await getAndRenderVariant(null, null, renderLocals, {
-        includeSubmissions: false,
-        showCorrectAnswer: document === 'answer_key',
-        // Printed copies and answer keys must reuse saved variants, including closed homework variants.
-        requireOpenVariant: false,
-        throwOnFatalError: true,
-        issuesLoadExtraData: false,
-      });
+      const renderState = await getAndRenderVariant(
+        printableQuestion.print_form_question.variant_id,
+        null,
+        renderLocals,
+        {
+          urlOverrides,
+          includeSubmissions: false,
+          showCorrectAnswer: document === 'answer_key',
+          // Every output reuses the variants saved when this form was created.
+          requireOpenVariant: false,
+          throwOnFatalError: true,
+          issuesLoadExtraData: false,
+        },
+      );
       signal.throwIfAborted();
 
       if (renderState.variant.broken_at != null) {
@@ -373,6 +369,7 @@ async function renderAssessmentInstanceQuestionsUnbounded(
           null,
           renderLocals,
           {
+            urlOverrides,
             includeSubmissions: false,
             showCorrectAnswer: true,
             requireOpenVariant: false,
@@ -401,26 +398,27 @@ async function renderAssessmentInstanceQuestionsUnbounded(
           issues: [],
         },
         questionContext: 'student_exam',
+        questionNumber: printableQuestion.print_form_question.question_number,
         showFooter: false,
       }).toString();
 
       renderedQuestions.push({
-        namespace: `printing-iq-${printableQuestion.instance_question.id}`,
+        namespace: `printing-pfq-${printableQuestion.print_form_question.id}`,
         html: html`
           <section
             class="printing-question printing-question-freeform"
-            data-print-block-size="${questionBlockSizeOverrides.get(printableQuestion.question_number) ?? defaultQuestionBlockSize}"
-            data-question-number="${printableQuestion.question_number}"
+            data-print-block-size="${questionBlockSizeOverrides.get(printableQuestion.print_form_question.question_number) ?? defaultQuestionBlockSize}"
+            data-question-number="${printableQuestion.print_form_question.question_number}"
             data-question-id="${printableQuestion.question.id}"
-            data-instance-question-id="${printableQuestion.instance_question.id}"
-            aria-label="Question ${printableQuestion.question_number}"
+            data-print-form-question-id="${printableQuestion.print_form_question.id}"
+            aria-label="Question ${printableQuestion.print_form_question.question_number}"
           >
             ${unsafeHtml(questionHtml)}
           </section>
         `.toString(),
       });
       questionResults.push({ ...base, status: 'rendered' });
-      maxPoints += printableQuestion.assessment_question.max_points ?? 0;
+      maxPoints += printableQuestion.print_form_question.max_points;
     } catch (error) {
       signal.throwIfAborted();
       if (!(error instanceof FatalQuestionRenderError)) throw error;
@@ -446,12 +444,12 @@ async function renderAssessmentInstanceQuestionsUnbounded(
 }
 
 /** Limit question preparation as well as browser pagination during a preview burst. */
-export async function renderAssessmentInstanceQuestionsForPrinting(
-  resLocals: ResLocalsForPage<'assessment-instance'>,
-  options: RenderAssessmentInstanceQuestionsForPrintingOptions,
+export async function renderPrintFormQuestions(
+  resLocals: ResLocalsForPage<'print-form'>,
+  options: RenderPrintFormQuestionsOptions,
 ) {
   return await questionPreparationQueue.run(
-    async () => await renderAssessmentInstanceQuestionsUnbounded(resLocals, options),
+    async () => await renderPrintFormQuestionsUnbounded(resLocals, options),
     // The request signal bounds both queueing and execution with the same deadline.
     0,
     'print preview',

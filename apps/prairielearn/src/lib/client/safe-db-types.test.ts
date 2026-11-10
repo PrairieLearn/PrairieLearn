@@ -19,6 +19,7 @@ import {
   StaffInstitutionSchema,
   StaffJobSchema,
   StaffJobSequenceSchema,
+  StaffPrintFormSchema,
   StaffQuestionSchema,
   StaffTagSchema,
   StaffTopicSchema,
@@ -232,7 +233,6 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   date: null,
   date_limit: null,
   duration: null,
-  for_printing: false,
   grading_needed: false,
   id: '3',
   include_in_statistics: false,
@@ -271,6 +271,12 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   score_perc_pending: 0,
   team_id: null,
   user_id: null,
+};
+
+const minimalStaffPrintForm: z.input<typeof StaffPrintFormSchema> = {
+  assessment_id: '2',
+  created_at: new Date(),
+  id: '10',
 };
 
 const minimalStudentAssessmentInstanceAuthzResult: z.input<
@@ -735,6 +741,15 @@ describe('safe-db-types schemas', () => {
     });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStudentAssessmentInstance);
+  });
+
+  it('parses valid StaffPrintForm and drops owner and actor IDs', () => {
+    const parsed = StaffPrintFormSchema.parse({
+      ...minimalStaffPrintForm,
+      authn_user_id: '4',
+      user_id: '5',
+    });
+    expect(parsed).toEqual(minimalStaffPrintForm);
   });
 
   it('parses valid StudentAssessmentInstanceAuthzResult and strips password', () => {

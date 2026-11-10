@@ -7,16 +7,7 @@ import * as unzipper from 'unzipper';
 import { syncCourse } from '../../helperCourse.js';
 import { createTest, expect } from '../fixtures.js';
 
-import {
-  createPrintableAssessmentInstance,
-  downloadPrintableWord,
-  waitForPrintablePage,
-} from './utils.js';
-
-async function printBase(courseInstanceId: string, tid: string) {
-  const instanceId = await createPrintableAssessmentInstance(courseInstanceId, tid);
-  return `/pl/course_instance/${courseInstanceId}/instructor/assessment_instance/${instanceId}/print`;
-}
+import { createPrintableForm, downloadPrintableWord, waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
@@ -25,7 +16,7 @@ test('fills the cover grading table down columns using only included questions',
   courseInstance,
 }) => {
   test.setTimeout(180_000);
-  const base = await printBase(courseInstance.id, 'exam23-printing');
+  const { printUrl: base } = await createPrintableForm(courseInstance, 'exam23-printing');
   await page.goto(`${base}/preview?paper_size=Letter&grading_table=true&exclude_question=2`);
   await waitForPrintablePage(page);
   const cover = page.getByRole('article', { name: 'Exam cover page' });
@@ -92,7 +83,7 @@ test('uses the configured honor code for printed pledges when requireHonorCode i
       }),
     );
     await syncCourse(testCoursePath);
-    const base = await printBase(courseInstance.id, tid);
+    const { printUrl: base } = await createPrintableForm(courseInstance, tid);
     await page.goto(`${base}/preview?paper_size=Letter&include_honor_code=true`);
     await waitForPrintablePage(page);
     const pledge = page.getByRole('region', { name: 'Academic integrity pledge' });

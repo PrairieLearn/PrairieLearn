@@ -1,25 +1,43 @@
 import type { Page } from '@playwright/test';
 
-import { makeAssessmentInstance } from '../../../lib/assessment.js';
 import { serializePrintDocument } from '../../../lib/client/print-document.js';
+import { getPrintFormUrl } from '../../../lib/client/url.js';
+import * as codeCaller from '../../../lib/code-caller/index.js';
+import type { CourseInstance } from '../../../lib/db-types.js';
+import { createPrintForm } from '../../../lib/print-forms.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
+import { selectCourseById } from '../../../models/course.js';
+import * as freeformServer from '../../../question-servers/freeform.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { expect } from '../fixtures.js';
 
-export async function createPrintableAssessmentInstance(courseInstanceId: string, tid: string) {
+export async function createPrintableForm(courseInstance: CourseInstance, tid: string) {
   const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({ course_instance_id: courseInstanceId, tid });
-  return await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-    forPrinting: true,
-  });
+  const assessment = await selectAssessmentByTid({ course_instance_id: courseInstance.id, tid });
+  const course = await selectCourseById(courseInstance.course_id);
+  await freeformServer.init();
+  await codeCaller.init({ lazyWorkers: true });
+  let printForm;
+  try {
+    printForm = await createPrintForm({
+      assessment,
+      course,
+      courseInstance,
+      userId: user.id,
+      authnUserId: user.id,
+    });
+  } finally {
+    await codeCaller.finish();
+  }
+  return {
+    printForm,
+    printUrl: getPrintFormUrl({
+      courseInstanceId: courseInstance.id,
+      assessmentId: assessment.id,
+      printFormId: printForm.id,
+    }),
+  };
 }
 
 export async function waitForPrintablePage(page: Page): Promise<void> {

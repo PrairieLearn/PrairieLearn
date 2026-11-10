@@ -21,6 +21,7 @@ export async function init() {
       'jsonb_array_to_double_precision_array.sql',
       'check_assessment_access_rule.sql',
       'check_assessment_access.sql',
+      'assessment_questions_select.sql',
       'question_order.sql',
       'authz_assessment.sql',
       'authz_assessment_instance.sql',
