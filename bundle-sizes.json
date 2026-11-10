@@ -199,264 +199,2274 @@
     "gzip": 345,
     "brotli": 256
   },
-  "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
-    "raw": 1591572,
-    "gzip": 441949,
-    "brotli": 357021
+  "../../../node_modules/.pnpm/shiki@4.6.0/node_modules/shiki/dist/wasm.mjs": {
+    "raw": 212970,
+    "gzip": 159482,
+    "brotli": 158555
   },
-  "scripts/esm-bundles/hydrated-components/UserSettingsPage.ts": {
-    "raw": 1080563,
-    "gzip": 333565,
-    "brotli": 287119
+  "../../../node_modules/.pnpm/shiki@4.6.0/node_modules/shiki/dist/engine-javascript.mjs": {
+    "raw": 59876,
+    "gzip": 21361,
+    "brotli": 19384
+  },
+  "../../../node_modules/.pnpm/@pierre+diffs@1.6.4_@shikijs+themes@4.6.0_react-dom@19.3.0_react@19.3.0__react@19.3.0/node_modules/@pierre/diffs/dist/highlighter/backends/shiki.js": {
+    "raw": 156937,
+    "gzip": 52680,
+    "brotli": 47287
+  },
+  "../src/ee/components/courseAgent/ReviewDiff.tsx": {
+    "raw": 481277,
+    "gzip": 144753,
+    "brotli": 126552
   },
   "../src/ee/components/courseAgent/CourseAgentChat.tsx": {
-    "raw": 1768491,
-    "gzip": 497193,
-    "brotli": 427606
+    "raw": 1770601,
+    "gzip": 499090,
+    "brotli": 429725
   },
   "../../../node_modules/.pnpm/@zip.js+zip.js@2.18.2/node_modules/@zip.js/zip.js/lib/core/zip-reader.js": {
     "raw": 64596,
     "gzip": 24211,
     "brotli": 21171
   },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/wenyan.mjs": {
+    "raw": 3925,
+    "gzip": 1735,
+    "brotli": 1465
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/wgsl.mjs": {
+    "raw": 6149,
+    "gzip": 2001,
+    "brotli": 1750
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/wikitext.mjs": {
+    "raw": 56894,
+    "gzip": 5371,
+    "brotli": 4493
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/wit.mjs": {
+    "raw": 22471,
+    "gzip": 3501,
+    "brotli": 3104
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/wolfram.mjs": {
+    "raw": 263399,
+    "gzip": 77749,
+    "brotli": 38687
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/zenscript.mjs": {
+    "raw": 4922,
+    "gzip": 1895,
+    "brotli": 1646
+  },
+  "../../../node_modules/.pnpm/shiki@4.6.0/node_modules/shiki/dist/langs.mjs": {
+    "raw": 20278,
+    "gzip": 6201,
+    "brotli": 5235
+  },
+  "../../../node_modules/.pnpm/shiki@4.6.0/node_modules/shiki/dist/engine-oniguruma.mjs": {
+    "raw": 7774,
+    "gzip": 3247,
+    "brotli": 2929
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/vala.mjs": {
+    "raw": 4375,
+    "gzip": 1798,
+    "brotli": 1545
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/vhdl.mjs": {
+    "raw": 25269,
+    "gzip": 4487,
+    "brotli": 3966
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/viml.mjs": {
+    "raw": 21370,
+    "gzip": 7340,
+    "brotli": 6492
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/vue.mjs": {
+    "raw": 496798,
+    "gzip": 61721,
+    "brotli": 49450
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/vue-html.mjs": {
+    "raw": 184343,
+    "gzip": 18830,
+    "brotli": 13966
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/vue-vine.mjs": {
+    "raw": 582798,
+    "gzip": 76590,
+    "brotli": 61577
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/vyper.mjs": {
+    "raw": 75654,
+    "gzip": 11345,
+    "brotli": 9242
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/wasm.mjs": {
+    "raw": 13012,
+    "gzip": 2805,
+    "brotli": 2514
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/toml.mjs": {
+    "raw": 7431,
+    "gzip": 1891,
+    "brotli": 1666
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ts-tags.mjs": {
+    "raw": 616899,
+    "gzip": 84490,
+    "brotli": 69004
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/tsv.mjs": {
+    "raw": 1743,
+    "gzip": 956,
+    "brotli": 795
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/twig.mjs": {
+    "raw": 2126800,
+    "gzip": 239344,
+    "brotli": 171865
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/typespec.mjs": {
+    "raw": 28006,
+    "gzip": 3375,
+    "brotli": 2979
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/verilog.mjs": {
+    "raw": 7509,
+    "gzip": 2642,
+    "brotli": 2333
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/typst.mjs": {
+    "raw": 3277332,
+    "gzip": 409603,
+    "brotli": 318110
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/v.mjs": {
+    "raw": 14332,
+    "gzip": 3374,
+    "brotli": 2970
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/swift.mjs": {
+    "raw": 89728,
+    "gzip": 15508,
+    "brotli": 13302
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/system-verilog.mjs": {
+    "raw": 27665,
+    "gzip": 5604,
+    "brotli": 4919
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/systemd.mjs": {
+    "raw": 8881,
+    "gzip": 3152,
+    "brotli": 2767
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/talonscript.mjs": {
+    "raw": 7769,
+    "gzip": 2106,
+    "brotli": 1845
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/tasl.mjs": {
+    "raw": 4293,
+    "gzip": 1454,
+    "brotli": 1249
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/tcl.mjs": {
+    "raw": 5433,
+    "gzip": 2123,
+    "brotli": 1859
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/templ.mjs": {
+    "raw": 300200,
+    "gzip": 40239,
+    "brotli": 32841
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/terraform.mjs": {
+    "raw": 12399,
+    "gzip": 3121,
+    "brotli": 2769
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/turtle.mjs": {
+    "raw": 4801,
+    "gzip": 1690,
+    "brotli": 1459
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/sparql.mjs": {
+    "raw": 6226,
+    "gzip": 2427,
+    "brotli": 2092
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/splunk.mjs": {
+    "raw": 4443,
+    "gzip": 2137,
+    "brotli": 1869
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ssh-config.mjs": {
+    "raw": 4628,
+    "gzip": 2210,
+    "brotli": 1977
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/stata.mjs": {
+    "raw": 81709,
+    "gzip": 20499,
+    "brotli": 18099
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/stylus.mjs": {
+    "raw": 32175,
+    "gzip": 8705,
+    "brotli": 7803
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/surrealql.mjs": {
+    "raw": 187991,
+    "gzip": 20434,
+    "brotli": 15339
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/svelte.mjs": {
+    "raw": 435096,
+    "gzip": 50791,
+    "brotli": 39651
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/sass.mjs": {
+    "raw": 10294,
+    "gzip": 3103,
+    "brotli": 2763
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/scheme.mjs": {
+    "raw": 8176,
+    "gzip": 2666,
+    "brotli": 2356
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/shaderlab.mjs": {
+    "raw": 14232,
+    "gzip": 4903,
+    "brotli": 4294
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/shellsession.mjs": {
+    "raw": 43243,
+    "gzip": 7157,
+    "brotli": 6270
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/smalltalk.mjs": {
+    "raw": 15136,
+    "gzip": 2768,
+    "brotli": 2406
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/smithy.mjs": {
+    "raw": 10141,
+    "gzip": 2140,
+    "brotli": 1875
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/solidity.mjs": {
+    "raw": 17416,
+    "gzip": 3765,
+    "brotli": 3274
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/soy.mjs": {
+    "raw": 293945,
+    "gzip": 42954,
+    "brotli": 35623
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/rbs.mjs": {
+    "raw": 4315,
+    "gzip": 1338,
+    "brotli": 1143
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/reg.mjs": {
+    "raw": 3349,
+    "gzip": 1303,
+    "brotli": 1114
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/rel.mjs": {
+    "raw": 4401,
+    "gzip": 1699,
+    "brotli": 1480
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/riscv.mjs": {
+    "raw": 7920,
+    "gzip": 2590,
+    "brotli": 2351
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ron.mjs": {
+    "raw": 4918,
+    "gzip": 1590,
+    "brotli": 1373
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/rosmsg.mjs": {
+    "raw": 5530,
+    "gzip": 1667,
+    "brotli": 1444
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/rst.mjs": {
+    "raw": 1979334,
+    "gzip": 207514,
+    "brotli": 144185
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/sas.mjs": {
+    "raw": 33784,
+    "gzip": 11932,
+    "brotli": 10711
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/pug.mjs": {
+    "raw": 300994,
+    "gzip": 44027,
+    "brotli": 36625
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/puppet.mjs": {
+    "raw": 12448,
+    "gzip": 2725,
+    "brotli": 2378
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/purescript.mjs": {
+    "raw": 25775,
+    "gzip": 3844,
+    "brotli": 3407
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/qml.mjs": {
+    "raw": 181202,
+    "gzip": 18534,
+    "brotli": 13692
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/qmldir.mjs": {
+    "raw": 2009,
+    "gzip": 1060,
+    "brotli": 894
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/qss.mjs": {
+    "raw": 8476,
+    "gzip": 3184,
+    "brotli": 2728
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/racket.mjs": {
+    "raw": 93426,
+    "gzip": 15634,
+    "brotli": 13695
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/razor.mjs": {
+    "raw": 405957,
+    "gzip": 55748,
+    "brotli": 46423
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/plsql.mjs": {
+    "raw": 9518,
+    "gzip": 3615,
+    "brotli": 3217
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/po.mjs": {
+    "raw": 4242,
+    "gzip": 1522,
+    "brotli": 1335
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/polar.mjs": {
+    "raw": 5677,
+    "gzip": 1738,
+    "brotli": 1538
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/powerquery.mjs": {
+    "raw": 6914,
+    "gzip": 2128,
+    "brotli": 1867
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/powershell.mjs": {
+    "raw": 21340,
+    "gzip": 4776,
+    "brotli": 4115
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/prisma.mjs": {
+    "raw": 8751,
+    "gzip": 2093,
+    "brotli": 1823
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/prolog.mjs": {
+    "raw": 12363,
+    "gzip": 4451,
+    "brotli": 3956
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/proto.mjs": {
+    "raw": 7554,
+    "gzip": 2025,
+    "brotli": 1761
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/raku.mjs": {
+    "raw": 11590,
+    "gzip": 3648,
+    "brotli": 3230
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/rust.mjs": {
+    "raw": 16267,
+    "gzip": 3445,
+    "brotli": 3036
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/scala.mjs": {
+    "raw": 29989,
+    "gzip": 4654,
+    "brotli": 4072
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/zig.mjs": {
+    "raw": 6438,
+    "gzip": 2269,
+    "brotli": 1996
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/xsl.mjs": {
+    "raw": 35183,
+    "gzip": 6776,
+    "brotli": 5965
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/org.mjs": {
+    "raw": 2957759,
+    "gzip": 362892,
+    "brotli": 278508
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/pascal.mjs": {
+    "raw": 5157,
+    "gzip": 2284,
+    "brotli": 1955
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/pkl.mjs": {
+    "raw": 11376,
+    "gzip": 1993,
+    "brotli": 1731
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/nushell.mjs": {
+    "raw": 22777,
+    "gzip": 6057,
+    "brotli": 5532
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/objective-c.mjs": {
+    "raw": 106519,
+    "gzip": 24045,
+    "brotli": 21177
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/objective-cpp.mjs": {
+    "raw": 172986,
+    "gzip": 31240,
+    "brotli": 24277
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ocaml.mjs": {
+    "raw": 63549,
+    "gzip": 5734,
+    "brotli": 4957
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/odin.mjs": {
+    "raw": 17518,
+    "gzip": 3547,
+    "brotli": 3149
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/openscad.mjs": {
+    "raw": 3833,
+    "gzip": 1622,
+    "brotli": 1419
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/php.mjs": {
+    "raw": 459614,
+    "gzip": 84073,
+    "brotli": 71479
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/vb.mjs": {
+    "raw": 7167,
+    "gzip": 3032,
+    "brotli": 2629
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/move.mjs": {
+    "raw": 18662,
+    "gzip": 3673,
+    "brotli": 3224
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/narrat.mjs": {
+    "raw": 4679,
+    "gzip": 1721,
+    "brotli": 1480
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/nextflow-groovy.mjs": {
+    "raw": 11639,
+    "gzip": 2890,
+    "brotli": 2539
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/nextflow.mjs": {
+    "raw": 16077,
+    "gzip": 3971,
+    "brotli": 3529
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/nginx.mjs": {
+    "raw": 124118,
+    "gzip": 18775,
+    "brotli": 15930
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/nim.mjs": {
+    "raw": 477604,
+    "gzip": 67820,
+    "brotli": 56593
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/nix.mjs": {
+    "raw": 16519,
+    "gzip": 3096,
+    "brotli": 2754
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/nsis.mjs": {
+    "raw": 14131,
+    "gzip": 4674,
+    "brotli": 4062
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/marko.mjs": {
+    "raw": 387148,
+    "gzip": 51821,
+    "brotli": 42484
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/matlab.mjs": {
+    "raw": 17093,
+    "gzip": 3675,
+    "brotli": 3250
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/mdc.mjs": {
+    "raw": 377930,
+    "gzip": 56579,
+    "brotli": 47548
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/mdx.mjs": {
+    "raw": 137118,
+    "gzip": 23964,
+    "brotli": 21598
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/mermaid.mjs": {
+    "raw": 55822,
+    "gzip": 5424,
+    "brotli": 4573
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/mipsasm.mjs": {
+    "raw": 4267,
+    "gzip": 1788,
+    "brotli": 1590
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/mojo.mjs": {
+    "raw": 70522,
+    "gzip": 9877,
+    "brotli": 8241
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/moonbit.mjs": {
+    "raw": 7086,
+    "gzip": 2318,
+    "brotli": 2065
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/lean.mjs": {
+    "raw": 6818,
+    "gzip": 2519,
+    "brotli": 2230
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/less.mjs": {
+    "raw": 99712,
+    "gzip": 15450,
+    "brotli": 12908
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/liquid.mjs": {
+    "raw": 307931,
+    "gzip": 45278,
+    "brotli": 37608
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/llvm.mjs": {
+    "raw": 6045,
+    "gzip": 2622,
+    "brotli": 2334
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/log.mjs": {
+    "raw": 3950,
+    "gzip": 1610,
+    "brotli": 1410
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/logo.mjs": {
+    "raw": 4132,
+    "gzip": 2089,
+    "brotli": 1847
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/luau.mjs": {
+    "raw": 17307,
+    "gzip": 4187,
+    "brotli": 3713
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/make.mjs": {
+    "raw": 10055,
+    "gzip": 2469,
+    "brotli": 2126
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/julia.mjs": {
+    "raw": 1185863,
+    "gzip": 106924,
+    "brotli": 62886
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/perl.mjs": {
+    "raw": 386754,
+    "gzip": 59188,
+    "brotli": 50015
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/just.mjs": {
+    "raw": 2012315,
+    "gzip": 208682,
+    "brotli": 145267
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/kdl.mjs": {
+    "raw": 4633,
+    "gzip": 1656,
+    "brotli": 1453
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/kotlin.mjs": {
+    "raw": 9792,
+    "gzip": 2741,
+    "brotli": 2389
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/kusto.mjs": {
+    "raw": 16179,
+    "gzip": 4532,
+    "brotli": 4090
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/tex.mjs": {
+    "raw": 17574,
+    "gzip": 5656,
+    "brotli": 5158
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/latex.mjs": {
+    "raw": 90887,
+    "gzip": 12513,
+    "brotli": 10883
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/jinja.mjs": {
+    "raw": 292655,
+    "gzip": 42693,
+    "brotli": 35398
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/jison.mjs": {
+    "raw": 185577,
+    "gzip": 19011,
+    "brotli": 14145
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/json5.mjs": {
+    "raw": 4260,
+    "gzip": 1447,
+    "brotli": 1240
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/jsonc.mjs": {
+    "raw": 4209,
+    "gzip": 1509,
+    "brotli": 1287
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/jsonl.mjs": {
+    "raw": 4017,
+    "gzip": 1401,
+    "brotli": 1192
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/jsonnet.mjs": {
+    "raw": 4626,
+    "gzip": 1652,
+    "brotli": 1443
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/jssm.mjs": {
+    "raw": 3243,
+    "gzip": 1232,
+    "brotli": 1038
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/r.mjs": {
+    "raw": 7831,
+    "gzip": 2548,
+    "brotli": 2236
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/hjson.mjs": {
+    "raw": 13059,
+    "gzip": 2251,
+    "brotli": 1956
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/hlsl.mjs": {
+    "raw": 8363,
+    "gzip": 2900,
+    "brotli": 2535
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/http.mjs": {
+    "raw": 810022,
+    "gzip": 82551,
+    "brotli": 62134
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/hurl.mjs": {
+    "raw": 765937,
+    "gzip": 76054,
+    "brotli": 56394
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/hxml.mjs": {
+    "raw": 38893,
+    "gzip": 7549,
+    "brotli": 6711
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/hy.mjs": {
+    "raw": 3667,
+    "gzip": 1791,
+    "brotli": 1558
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/imba.mjs": {
+    "raw": 50935,
+    "gzip": 10069,
+    "brotli": 8869
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ini.mjs": {
+    "raw": 2623,
+    "gzip": 1209,
+    "brotli": 1062
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/gnuplot.mjs": {
+    "raw": 15791,
+    "gzip": 3879,
+    "brotli": 3461
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/go.mjs": {
+    "raw": 47915,
+    "gzip": 5892,
+    "brotli": 5048
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/groovy.mjs": {
+    "raw": 20280,
+    "gzip": 4317,
+    "brotli": 3783
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/hack.mjs": {
+    "raw": 391866,
+    "gzip": 75186,
+    "brotli": 63977
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/handlebars.mjs": {
+    "raw": 310205,
+    "gzip": 46187,
+    "brotli": 38508
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/haskell.mjs": {
+    "raw": 42590,
+    "gzip": 7043,
+    "brotli": 6167
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/haxe.mjs": {
+    "raw": 37052,
+    "gzip": 6723,
+    "brotli": 5975
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/hcl.mjs": {
+    "raw": 11057,
+    "gzip": 2545,
+    "brotli": 2236
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/genie.mjs": {
+    "raw": 4362,
+    "gzip": 1818,
+    "brotli": 1563
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/gherkin.mjs": {
+    "raw": 19752,
+    "gzip": 5825,
+    "brotli": 5060
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/git-commit.mjs": {
+    "raw": 4973,
+    "gzip": 1985,
+    "brotli": 1683
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/git-rebase.mjs": {
+    "raw": 43629,
+    "gzip": 7298,
+    "brotli": 6387
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/gleam.mjs": {
+    "raw": 3583,
+    "gzip": 1431,
+    "brotli": 1237
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/glimmer-js.mjs": {
+    "raw": 488162,
+    "gzip": 60321,
+    "brotli": 48286
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/glimmer-ts.mjs": {
+    "raw": 488162,
+    "gzip": 60315,
+    "brotli": 48291
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/gn.mjs": {
+    "raw": 5022,
+    "gzip": 2110,
+    "brotli": 1807
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/fish.mjs": {
+    "raw": 14043,
+    "gzip": 2342,
+    "brotli": 2017
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/fluent.mjs": {
+    "raw": 4617,
+    "gzip": 1514,
+    "brotli": 1307
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/fortran-free-form.mjs": {
+    "raw": 90081,
+    "gzip": 11993,
+    "brotli": 9977
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/fortran-fixed-form.mjs": {
+    "raw": 91681,
+    "gzip": 12596,
+    "brotli": 10514
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/fsharp.mjs": {
+    "raw": 85806,
+    "gzip": 10540,
+    "brotli": 8929
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/gdshader.mjs": {
+    "raw": 7424,
+    "gzip": 2443,
+    "brotli": 2142
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/gdscript.mjs": {
+    "raw": 20191,
+    "gzip": 4486,
+    "brotli": 3967
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/gdresource.mjs": {
+    "raw": 31779,
+    "gzip": 7503,
+    "brotli": 6647
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/graphql.mjs": {
+    "raw": 728600,
+    "gzip": 69086,
+    "brotli": 50296
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/lua.mjs": {
+    "raw": 88818,
+    "gzip": 14432,
+    "brotli": 12095
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/yaml.mjs": {
+    "raw": 11605,
+    "gzip": 2983,
+    "brotli": 2600
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ruby.mjs": {
+    "raw": 1888437,
+    "gzip": 192318,
+    "brotli": 131339
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/erb.mjs": {
+    "raw": 1890495,
+    "gzip": 192866,
+    "brotli": 131808
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/markdown.mjs": {
+    "raw": 60438,
+    "gzip": 6359,
+    "brotli": 5259
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/erlang.mjs": {
+    "raw": 97981,
+    "gzip": 10812,
+    "brotli": 9014
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/fennel.mjs": {
+    "raw": 5779,
+    "gzip": 2150,
+    "brotli": 1906
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/dotenv.mjs": {
+    "raw": 2757,
+    "gzip": 1223,
+    "brotli": 1061
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/dream-maker.mjs": {
+    "raw": 11481,
+    "gzip": 2861,
+    "brotli": 2545
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/edge.mjs": {
+    "raw": 471320,
+    "gzip": 58563,
+    "brotli": 46691
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/elixir.mjs": {
+    "raw": 303410,
+    "gzip": 44212,
+    "brotli": 36747
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/elm.mjs": {
+    "raw": 87803,
+    "gzip": 14699,
+    "brotli": 12293
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/emacs-lisp.mjs": {
+    "raw": 791030,
+    "gzip": 199454,
+    "brotli": 170147
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/haml.mjs": {
+    "raw": 237687,
+    "gzip": 31572,
+    "brotli": 25313
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/jsx.mjs": {
+    "raw": 178890,
+    "gzip": 17320,
+    "brotli": 12585
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/cue.mjs": {
+    "raw": 17208,
+    "gzip": 2667,
+    "brotli": 2314
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/cypher.mjs": {
+    "raw": 6963,
+    "gzip": 2330,
+    "brotli": 1991
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/d.mjs": {
+    "raw": 44797,
+    "gzip": 9079,
+    "brotli": 7888
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/dart.mjs": {
+    "raw": 9714,
+    "gzip": 2717,
+    "brotli": 2376
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/dax.mjs": {
+    "raw": 6369,
+    "gzip": 2834,
+    "brotli": 2417
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/desktop.mjs": {
+    "raw": 2841,
+    "gzip": 1372,
+    "brotli": 1151
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/diff.mjs": {
+    "raw": 3668,
+    "gzip": 1409,
+    "brotli": 1203
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/docker.mjs": {
+    "raw": 2842,
+    "gzip": 1312,
+    "brotli": 1099
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/coq.mjs": {
+    "raw": 7084,
+    "gzip": 2551,
+    "brotli": 2251
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/regexp.mjs": {
+    "raw": 9089,
+    "gzip": 2133,
+    "brotli": 1893
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/glsl.mjs": {
+    "raw": 76913,
+    "gzip": 12672,
+    "brotli": 10507
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/cpp.mjs": {
+    "raw": 870506,
+    "gzip": 67368,
+    "brotli": 31303
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/shellscript.mjs": {
+    "raw": 42585,
+    "gzip": 6815,
+    "brotli": 5975
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/crystal.mjs": {
+    "raw": 453743,
+    "gzip": 69932,
+    "brotli": 58851
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/csharp.mjs": {
+    "raw": 92543,
+    "gzip": 11564,
+    "brotli": 9683
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/csv.mjs": {
+    "raw": 2241,
+    "gzip": 1083,
+    "brotli": 904
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/clarity.mjs": {
+    "raw": 15370,
+    "gzip": 3124,
+    "brotli": 2771
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/clojure.mjs": {
+    "raw": 7515,
+    "gzip": 2135,
+    "brotli": 1878
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/cmake.mjs": {
+    "raw": 10955,
+    "gzip": 4086,
+    "brotli": 3466
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/cobol.mjs": {
+    "raw": 353350,
+    "gzip": 56462,
+    "brotli": 47765
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/codeowners.mjs": {
+    "raw": 1558,
+    "gzip": 926,
+    "brotli": 777
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/codeql.mjs": {
+    "raw": 27890,
+    "gzip": 4407,
+    "brotli": 3801
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/coffee.mjs": {
+    "raw": 203408,
+    "gzip": 23627,
+    "brotli": 18172
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/common-lisp.mjs": {
+    "raw": 23593,
+    "gzip": 6676,
+    "brotli": 5970
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/sdbl.mjs": {
+    "raw": 9301,
+    "gzip": 2799,
+    "brotli": 2431
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/bsl.mjs": {
+    "raw": 80171,
+    "gzip": 12247,
+    "brotli": 10208
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/c.mjs": {
+    "raw": 73209,
+    "gzip": 11217,
+    "brotli": 9234
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/c3.mjs": {
+    "raw": 27389,
+    "gzip": 4596,
+    "brotli": 4055
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/cadence.mjs": {
+    "raw": 24677,
+    "gzip": 4273,
+    "brotli": 3744
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/python.mjs": {
+    "raw": 71053,
+    "gzip": 9850,
+    "brotli": 8212
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/cairo.mjs": {
+    "raw": 73933,
+    "gzip": 10577,
+    "brotli": 8864
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/chapel.mjs": {
+    "raw": 79787,
+    "gzip": 13001,
+    "brotli": 10800
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/beancount.mjs": {
+    "raw": 13865,
+    "gzip": 2823,
+    "brotli": 2463
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/berry.mjs": {
+    "raw": 4011,
+    "gzip": 1428,
+    "brotli": 1225
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/bibtex.mjs": {
+    "raw": 5896,
+    "gzip": 1551,
+    "brotli": 1334
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/bicep.mjs": {
+    "raw": 6388,
+    "gzip": 1766,
+    "brotli": 1533
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/bird2.mjs": {
+    "raw": 39687,
+    "gzip": 9108,
+    "brotli": 7912
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/html-derivative.mjs": {
+    "raw": 287998,
+    "gzip": 41920,
+    "brotli": 34682
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/sql.mjs": {
+    "raw": 24768,
+    "gzip": 8199,
+    "brotli": 7319
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/blade.mjs": {
+    "raw": 452353,
+    "gzip": 83857,
+    "brotli": 71525
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/asm.mjs": {
+    "raw": 41721,
+    "gzip": 8821,
+    "brotli": 8058
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/typescript.mjs": {
+    "raw": 182185,
+    "gzip": 16761,
+    "brotli": 12102
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/postcss.mjs": {
+    "raw": 7519,
+    "gzip": 2633,
+    "brotli": 2332
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/tsx.mjs": {
+    "raw": 176634,
+    "gzip": 17222,
+    "brotli": 12545
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/astro.mjs": {
+    "raw": 619291,
+    "gzip": 72543,
+    "brotli": 56453
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/awk.mjs": {
+    "raw": 6465,
+    "gzip": 1992,
+    "brotli": 1717
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ballerina.mjs": {
+    "raw": 59703,
+    "gzip": 8764,
+    "brotli": 7635
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/bat.mjs": {
+    "raw": 13992,
+    "gzip": 3943,
+    "brotli": 3519
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/apex.mjs": {
+    "raw": 48895,
+    "gzip": 7505,
+    "brotli": 6531
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/java.mjs": {
+    "raw": 28313,
+    "gzip": 4977,
+    "brotli": 4399
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/xml.mjs": {
+    "raw": 33760,
+    "gzip": 6232,
+    "brotli": 5503
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/json.mjs": {
+    "raw": 3923,
+    "gzip": 1491,
+    "brotli": 1261
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/apl.mjs": {
+    "raw": 348846,
+    "gzip": 51862,
+    "brotli": 43375
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/applescript.mjs": {
+    "raw": 30634,
+    "gzip": 6533,
+    "brotli": 5761
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ara.mjs": {
+    "raw": 7366,
+    "gzip": 2425,
+    "brotli": 2125
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/asciidoc.mjs": {
+    "raw": 137063,
+    "gzip": 10111,
+    "brotli": 8130
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ahk2.mjs": {
+    "raw": 46070,
+    "gzip": 10487,
+    "brotli": 9282
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/javascript.mjs": {
+    "raw": 175932,
+    "gzip": 17234,
+    "brotli": 12546
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/css.mjs": {
+    "raw": 54463,
+    "gzip": 13150,
+    "brotli": 11691
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/html.mjs": {
+    "raw": 287077,
+    "gzip": 41404,
+    "brotli": 34251
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/angular-html.mjs": {
+    "raw": 311358,
+    "gzip": 45421,
+    "brotli": 37766
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/scss.mjs": {
+    "raw": 81738,
+    "gzip": 17404,
+    "brotli": 15484
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/angular-ts.mjs": {
+    "raw": 522279,
+    "gzip": 66167,
+    "brotli": 53380
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/apache.mjs": {
+    "raw": 13463,
+    "gzip": 4330,
+    "brotli": 3798
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/vitesse-dark.mjs": {
+    "raw": 14772,
+    "gzip": 3673,
+    "brotli": 3174
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/vitesse-light.mjs": {
+    "raw": 14630,
+    "gzip": 3646,
+    "brotli": 3153
+  },
+  "../../../node_modules/.pnpm/@pierre+theming@1.0.2_@pierre+theme@2.0.0_@shikijs+themes@4.6.0_react-dom@19.3.0_react@19.3.0__react@19.3.0_shiki@4.6.0/node_modules/@pierre/theming/dist/themes.js": {
+    "raw": 9887,
+    "gzip": 3494,
+    "brotli": 3034
+  },
+  "../../../node_modules/.pnpm/@pierre+diffs@1.6.4_@shikijs+themes@4.6.0_react-dom@19.3.0_react@19.3.0__react@19.3.0/node_modules/@pierre/diffs/dist/highlighter/backends/highlights.js": {
+    "raw": 538753,
+    "gzip": 222436,
+    "brotli": 184687
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/abap.mjs": {
+    "raw": 16857,
+    "gzip": 6512,
+    "brotli": 5668
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/actionscript-3.mjs": {
+    "raw": 16556,
+    "gzip": 3315,
+    "brotli": 2899
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ada.mjs": {
+    "raw": 49086,
+    "gzip": 6654,
+    "brotli": 5841
+  },
+  "../../../node_modules/.pnpm/@shikijs+langs@4.6.0/node_modules/@shikijs/langs/dist/ahk.mjs": {
+    "raw": 32453,
+    "gzip": 8421,
+    "brotli": 7410
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/slack-ochin.mjs": {
+    "raw": 10443,
+    "gzip": 2706,
+    "brotli": 2299
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/snazzy-light.mjs": {
+    "raw": 21786,
+    "gzip": 4443,
+    "brotli": 3829
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/solarized-dark.mjs": {
+    "raw": 8409,
+    "gzip": 2521,
+    "brotli": 2126
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/solarized-light.mjs": {
+    "raw": 7954,
+    "gzip": 2425,
+    "brotli": 2039
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/synthwave-84.mjs": {
+    "raw": 15049,
+    "gzip": 3478,
+    "brotli": 2995
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/tokyo-night.mjs": {
+    "raw": 36677,
+    "gzip": 6846,
+    "brotli": 5992
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/vesper.mjs": {
+    "raw": 13740,
+    "gzip": 2597,
+    "brotli": 2240
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/vitesse-black.mjs": {
+    "raw": 14691,
+    "gzip": 3671,
+    "brotli": 3168
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/one-light.mjs": {
+    "raw": 26310,
+    "gzip": 4282,
+    "brotli": 3654
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/plastic.mjs": {
+    "raw": 10303,
+    "gzip": 2588,
+    "brotli": 2203
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/poimandres.mjs": {
+    "raw": 34505,
+    "gzip": 6109,
+    "brotli": 5377
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/red.mjs": {
+    "raw": 7743,
+    "gzip": 2314,
+    "brotli": 1967
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/rose-pine.mjs": {
+    "raw": 22753,
+    "gzip": 4494,
+    "brotli": 3929
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/rose-pine-dawn.mjs": {
+    "raw": 22769,
+    "gzip": 4508,
+    "brotli": 3921
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/rose-pine-moon.mjs": {
+    "raw": 22768,
+    "gzip": 4513,
+    "brotli": 3934
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/slack-dark.mjs": {
+    "raw": 10128,
+    "gzip": 2580,
+    "brotli": 2199
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/material-theme-palenight.mjs": {
+    "raw": 19660,
+    "gzip": 3739,
+    "brotli": 3187
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/min-dark.mjs": {
+    "raw": 7300,
+    "gzip": 2323,
+    "brotli": 1975
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/min-light.mjs": {
+    "raw": 7979,
+    "gzip": 2500,
+    "brotli": 2134
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/monokai.mjs": {
+    "raw": 9260,
+    "gzip": 2590,
+    "brotli": 2206
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/night-owl.mjs": {
+    "raw": 29923,
+    "gzip": 5768,
+    "brotli": 4991
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/night-owl-light.mjs": {
+    "raw": 26918,
+    "gzip": 4869,
+    "brotli": 4208
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/nord.mjs": {
+    "raw": 27728,
+    "gzip": 5008,
+    "brotli": 4360
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/one-dark-pro.mjs": {
+    "raw": 38069,
+    "gzip": 6728,
+    "brotli": 5892
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/kanagawa-lotus.mjs": {
+    "raw": 18137,
+    "gzip": 3545,
+    "brotli": 3010
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/kanagawa-wave.mjs": {
+    "raw": 18133,
+    "gzip": 3542,
+    "brotli": 3005
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/laserwave.mjs": {
+    "raw": 12509,
+    "gzip": 3188,
+    "brotli": 2773
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/light-plus.mjs": {
+    "raw": 10952,
+    "gzip": 2886,
+    "brotli": 2476
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/material-theme.mjs": {
+    "raw": 19630,
+    "gzip": 3725,
+    "brotli": 3173
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/material-theme-darker.mjs": {
+    "raw": 19651,
+    "gzip": 3724,
+    "brotli": 3177
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/material-theme-lighter.mjs": {
+    "raw": 19657,
+    "gzip": 3725,
+    "brotli": 3167
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/material-theme-ocean.mjs": {
+    "raw": 19650,
+    "gzip": 3746,
+    "brotli": 3186
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/gruvbox-dark-soft.mjs": {
+    "raw": 23651,
+    "gzip": 4786,
+    "brotli": 4140
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/gruvbox-light-hard.mjs": {
+    "raw": 23655,
+    "gzip": 4797,
+    "brotli": 4146
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/gruvbox-light-medium.mjs": {
+    "raw": 23661,
+    "gzip": 4797,
+    "brotli": 4146
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/gruvbox-light-soft.mjs": {
+    "raw": 23655,
+    "gzip": 4795,
+    "brotli": 4139
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/horizon.mjs": {
+    "raw": 9788,
+    "gzip": 2568,
+    "brotli": 2164
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/horizon-bright.mjs": {
+    "raw": 9802,
+    "gzip": 2575,
+    "brotli": 2176
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/houston.mjs": {
+    "raw": 36430,
+    "gzip": 6396,
+    "brotli": 5618
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/kanagawa-dragon.mjs": {
+    "raw": 18139,
+    "gzip": 3560,
+    "brotli": 3017
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/github-dark-default.mjs": {
+    "raw": 15455,
+    "gzip": 3742,
+    "brotli": 3198
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/github-dark-dimmed.mjs": {
+    "raw": 15452,
+    "gzip": 3736,
+    "brotli": 3191
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/github-dark-high-contrast.mjs": {
+    "raw": 15621,
+    "gzip": 3699,
+    "brotli": 3168
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/github-light.mjs": {
+    "raw": 12197,
+    "gzip": 3118,
+    "brotli": 2681
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/github-light-default.mjs": {
+    "raw": 15177,
+    "gzip": 3651,
+    "brotli": 3129
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/github-light-high-contrast.mjs": {
+    "raw": 15302,
+    "gzip": 3633,
+    "brotli": 3108
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/gruvbox-dark-hard.mjs": {
+    "raw": 23651,
+    "gzip": 4791,
+    "brotli": 4137
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/gruvbox-dark-medium.mjs": {
+    "raw": 23657,
+    "gzip": 4789,
+    "brotli": 4140
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/catppuccin-macchiato.mjs": {
+    "raw": 51879,
+    "gzip": 9114,
+    "brotli": 8044
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/catppuccin-mocha.mjs": {
+    "raw": 51867,
+    "gzip": 9106,
+    "brotli": 8037
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/dark-plus.mjs": {
+    "raw": 10107,
+    "gzip": 2712,
+    "brotli": 2311
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/dracula.mjs": {
+    "raw": 22074,
+    "gzip": 4614,
+    "brotli": 3988
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/dracula-soft.mjs": {
+    "raw": 22089,
+    "gzip": 4649,
+    "brotli": 4044
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/everforest-dark.mjs": {
+    "raw": 54761,
+    "gzip": 9038,
+    "brotli": 7938
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/everforest-light.mjs": {
+    "raw": 54765,
+    "gzip": 9040,
+    "brotli": 7932
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/github-dark.mjs": {
+    "raw": 12417,
+    "gzip": 3160,
+    "brotli": 2712
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-light-tritanopia.mjs": {
+    "raw": 31598,
+    "gzip": 5320,
+    "brotli": 4644
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/andromeeda.mjs": {
+    "raw": 10026,
+    "gzip": 2972,
+    "brotli": 2532
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/aurora-x.mjs": {
+    "raw": 14668,
+    "gzip": 2894,
+    "brotli": 2482
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/ayu-dark.mjs": {
+    "raw": 21090,
+    "gzip": 4557,
+    "brotli": 3935
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/ayu-light.mjs": {
+    "raw": 21162,
+    "gzip": 4540,
+    "brotli": 3918
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/ayu-mirage.mjs": {
+    "raw": 21096,
+    "gzip": 4549,
+    "brotli": 3927
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/catppuccin-frappe.mjs": {
+    "raw": 51873,
+    "gzip": 9119,
+    "brotli": 8021
+  },
+  "../../../node_modules/.pnpm/@shikijs+themes@4.6.0/node_modules/@shikijs/themes/dist/catppuccin-latte.mjs": {
+    "raw": 51868,
+    "gzip": 9108,
+    "brotli": 8032
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-dark-soft.mjs": {
+    "raw": 31576,
+    "gzip": 5407,
+    "brotli": 4685
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-dark-vibrant.mjs": {
+    "raw": 45781,
+    "gzip": 5950,
+    "brotli": 5068
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-dark-protanopia-deuteranopia.mjs": {
+    "raw": 31635,
+    "gzip": 5398,
+    "brotli": 4682
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-dark-tritanopia.mjs": {
+    "raw": 31594,
+    "gzip": 5313,
+    "brotli": 4623
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-light.mjs": {
+    "raw": 31565,
+    "gzip": 5366,
+    "brotli": 4662
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-light-soft.mjs": {
+    "raw": 31580,
+    "gzip": 5374,
+    "brotli": 4671
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-light-vibrant.mjs": {
+    "raw": 45785,
+    "gzip": 5932,
+    "brotli": 5040
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-light-protanopia-deuteranopia.mjs": {
+    "raw": 31639,
+    "gzip": 5346,
+    "brotli": 4654
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/tokyo-night.js": {
+    "raw": 5440,
+    "gzip": 1858,
+    "brotli": 1588
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/vesper.js": {
+    "raw": 3475,
+    "gzip": 1424,
+    "brotli": 1235
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/vitesse-black.js": {
+    "raw": 6095,
+    "gzip": 1899,
+    "brotli": 1631
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/vitesse-dark.js": {
+    "raw": 6093,
+    "gzip": 1898,
+    "brotli": 1631
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/vitesse-light.js": {
+    "raw": 6040,
+    "gzip": 1890,
+    "brotli": 1628
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/loader.js": {
+    "raw": 5562,
+    "gzip": 1938,
+    "brotli": 1705
+  },
+  "../../../node_modules/.pnpm/shiki@4.6.0/node_modules/shiki/dist/core.mjs": {
+    "raw": 117873,
+    "gzip": 37791,
+    "brotli": 33783
+  },
+  "../../../node_modules/.pnpm/@pierre+theme@2.0.0/node_modules/@pierre/theme/dist/pierre-dark.mjs": {
+    "raw": 31561,
+    "gzip": 5377,
+    "brotli": 4677
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/rose-pine-dawn.js": {
+    "raw": 3810,
+    "gzip": 1467,
+    "brotli": 1272
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/rose-pine-moon.js": {
+    "raw": 3809,
+    "gzip": 1469,
+    "brotli": 1269
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/slack-dark.js": {
+    "raw": 3203,
+    "gzip": 1399,
+    "brotli": 1210
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/slack-ochin.js": {
+    "raw": 3359,
+    "gzip": 1423,
+    "brotli": 1221
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/snazzy-light.js": {
+    "raw": 3390,
+    "gzip": 1440,
+    "brotli": 1237
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/solarized-dark.js": {
+    "raw": 4734,
+    "gzip": 1743,
+    "brotli": 1488
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/solarized-light.js": {
+    "raw": 4737,
+    "gzip": 1722,
+    "brotli": 1460
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/synthwave-84.js": {
+    "raw": 11803,
+    "gzip": 2774,
+    "brotli": 2374
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-light-protanopia-deuteranopia.js": {
+    "raw": 5661,
+    "gzip": 1890,
+    "brotli": 1628
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-light-soft.js": {
+    "raw": 5621,
+    "gzip": 1873,
+    "brotli": 1611
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-light-tritanopia.js": {
+    "raw": 5633,
+    "gzip": 1865,
+    "brotli": 1610
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-light-vibrant.js": {
+    "raw": 10603,
+    "gzip": 2249,
+    "brotli": 1840
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/plastic.js": {
+    "raw": 4024,
+    "gzip": 1511,
+    "brotli": 1275
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/poimandres.js": {
+    "raw": 3712,
+    "gzip": 1463,
+    "brotli": 1263
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/red.js": {
+    "raw": 4577,
+    "gzip": 1725,
+    "brotli": 1464
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/rose-pine.js": {
+    "raw": 3799,
+    "gzip": 1467,
+    "brotli": 1268
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/one-dark-pro.js": {
+    "raw": 3764,
+    "gzip": 1583,
+    "brotli": 1350
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/one-light.js": {
+    "raw": 4274,
+    "gzip": 1601,
+    "brotli": 1358
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-dark.js": {
+    "raw": 5608,
+    "gzip": 1878,
+    "brotli": 1613
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-dark-protanopia-deuteranopia.js": {
+    "raw": 5658,
+    "gzip": 1905,
+    "brotli": 1640
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-dark-soft.js": {
+    "raw": 5618,
+    "gzip": 1895,
+    "brotli": 1624
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-dark-tritanopia.js": {
+    "raw": 5630,
+    "gzip": 1869,
+    "brotli": 1612
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-dark-vibrant.js": {
+    "raw": 10600,
+    "gzip": 2268,
+    "brotli": 1844
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/pierre-light.js": {
+    "raw": 5611,
+    "gzip": 1871,
+    "brotli": 1598
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/material-theme-ocean.js": {
+    "raw": 3461,
+    "gzip": 1424,
+    "brotli": 1206
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/material-theme-palenight.js": {
+    "raw": 3469,
+    "gzip": 1426,
+    "brotli": 1216
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/min-dark.js": {
+    "raw": 3457,
+    "gzip": 1396,
+    "brotli": 1193
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/min-light.js": {
+    "raw": 3401,
+    "gzip": 1384,
+    "brotli": 1179
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/monokai.js": {
+    "raw": 4588,
+    "gzip": 1681,
+    "brotli": 1450
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/night-owl.js": {
+    "raw": 4405,
+    "gzip": 1668,
+    "brotli": 1430
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/night-owl-light.js": {
+    "raw": 4397,
+    "gzip": 1601,
+    "brotli": 1364
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/nord.js": {
+    "raw": 3758,
+    "gzip": 1501,
+    "brotli": 1298
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/kanagawa-dragon.js": {
+    "raw": 4159,
+    "gzip": 1612,
+    "brotli": 1397
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/kanagawa-lotus.js": {
+    "raw": 4158,
+    "gzip": 1603,
+    "brotli": 1381
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/kanagawa-wave.js": {
+    "raw": 4155,
+    "gzip": 1605,
+    "brotli": 1370
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/laserwave.js": {
+    "raw": 3269,
+    "gzip": 1390,
+    "brotli": 1210
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/light-plus.js": {
+    "raw": 4605,
+    "gzip": 1714,
+    "brotli": 1462
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/material-theme.js": {
+    "raw": 3449,
+    "gzip": 1412,
+    "brotli": 1190
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/material-theme-darker.js": {
+    "raw": 3463,
+    "gzip": 1417,
+    "brotli": 1201
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/material-theme-lighter.js": {
+    "raw": 3466,
+    "gzip": 1412,
+    "brotli": 1201
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/gruvbox-dark-medium.js": {
+    "raw": 4150,
+    "gzip": 1604,
+    "brotli": 1371
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/gruvbox-dark-soft.js": {
+    "raw": 4146,
+    "gzip": 1608,
+    "brotli": 1375
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/gruvbox-light-hard.js": {
+    "raw": 4149,
+    "gzip": 1617,
+    "brotli": 1379
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/gruvbox-light-medium.js": {
+    "raw": 4153,
+    "gzip": 1617,
+    "brotli": 1372
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/gruvbox-light-soft.js": {
+    "raw": 4149,
+    "gzip": 1618,
+    "brotli": 1384
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/horizon.js": {
+    "raw": 3401,
+    "gzip": 1438,
+    "brotli": 1227
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/horizon-bright.js": {
+    "raw": 3354,
+    "gzip": 1451,
+    "brotli": 1240
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/houston.js": {
+    "raw": 5887,
+    "gzip": 1889,
+    "brotli": 1608
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/github-dark.js": {
+    "raw": 4231,
+    "gzip": 1653,
+    "brotli": 1420
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/github-dark-default.js": {
+    "raw": 3369,
+    "gzip": 1450,
+    "brotli": 1250
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/github-dark-dimmed.js": {
+    "raw": 4282,
+    "gzip": 1649,
+    "brotli": 1422
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/github-dark-high-contrast.js": {
+    "raw": 4296,
+    "gzip": 1647,
+    "brotli": 1414
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/github-light.js": {
+    "raw": 4232,
+    "gzip": 1653,
+    "brotli": 1405
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/github-light-default.js": {
+    "raw": 4287,
+    "gzip": 1633,
+    "brotli": 1392
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/github-light-high-contrast.js": {
+    "raw": 4299,
+    "gzip": 1651,
+    "brotli": 1412
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/gruvbox-dark-hard.js": {
+    "raw": 4146,
+    "gzip": 1608,
+    "brotli": 1383
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/catppuccin-latte.js": {
+    "raw": 6495,
+    "gzip": 2004,
+    "brotli": 1720
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/catppuccin-macchiato.js": {
+    "raw": 6502,
+    "gzip": 2012,
+    "brotli": 1727
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/catppuccin-mocha.js": {
+    "raw": 6494,
+    "gzip": 2005,
+    "brotli": 1724
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/dark-plus.js": {
+    "raw": 4562,
+    "gzip": 1722,
+    "brotli": 1474
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/dracula.js": {
+    "raw": 4374,
+    "gzip": 1638,
+    "brotli": 1403
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/dracula-soft.js": {
+    "raw": 3383,
+    "gzip": 1416,
+    "brotli": 1221
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/everforest-dark.js": {
+    "raw": 3589,
+    "gzip": 1466,
+    "brotli": 1258
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/everforest-light.js": {
+    "raw": 3592,
+    "gzip": 1465,
+    "brotli": 1256
+  },
+  "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
+    "raw": 1592824,
+    "gzip": 443340,
+    "brotli": 358567
+  },
+  "scripts/esm-bundles/hydrated-components/UserSettingsPage.ts": {
+    "raw": 1081820,
+    "gzip": 334955,
+    "brotli": 288623
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/andromeeda.js": {
+    "raw": 4862,
+    "gzip": 1778,
+    "brotli": 1506
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/aurora-x.js": {
+    "raw": 4337,
+    "gzip": 1571,
+    "brotli": 1343
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/ayu-dark.js": {
+    "raw": 4032,
+    "gzip": 1578,
+    "brotli": 1356
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/ayu-light.js": {
+    "raw": 4035,
+    "gzip": 1567,
+    "brotli": 1345
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/ayu-mirage.js": {
+    "raw": 4036,
+    "gzip": 1576,
+    "brotli": 1360
+  },
+  "../../../node_modules/.pnpm/@pierre+highlights@0.4.0/node_modules/@pierre/highlights/dist/themes/catppuccin-frappe.js": {
+    "raw": 6499,
+    "gzip": 2005,
+    "brotli": 1726
+  },
   "scripts/esm-bundles/hydrated-components/InstructorStudentsLabels.ts": {
-    "raw": 1496407,
-    "gzip": 416966,
-    "brotli": 356209
+    "raw": 1497659,
+    "gzip": 418352,
+    "brotli": 357656
   },
   "scripts/esm-bundles/hydrated-components/JobSequenceResults.ts": {
-    "raw": 512917,
-    "gzip": 158289,
-    "brotli": 137388
+    "raw": 512940,
+    "gzip": 159235,
+    "brotli": 138625
   },
   "scripts/esm-bundles/hydrated-components/PublicQuestionsTable.ts": {
-    "raw": 1123303,
-    "gzip": 348802,
-    "brotli": 281004
+    "raw": 1124555,
+    "gzip": 350189,
+    "brotli": 282540
   },
   "scripts/esm-bundles/hydrated-components/QtiImportForm.ts": {
-    "raw": 1255320,
-    "gzip": 418337,
-    "brotli": 360651
+    "raw": 1256669,
+    "gzip": 420219,
+    "brotli": 362346
   },
   "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
-    "raw": 1586842,
-    "gzip": 492778,
-    "brotli": 421668
+    "raw": 1588094,
+    "gzip": 494167,
+    "brotli": 423212
   },
   "scripts/esm-bundles/hydrated-components/RubricSettings.ts": {
-    "raw": 869006,
-    "gzip": 229896,
-    "brotli": 196425
+    "raw": 870225,
+    "gzip": 231282,
+    "brotli": 198041
   },
   "scripts/esm-bundles/hydrated-components/SampleQuestions.ts": {
-    "raw": 324040,
-    "gzip": 104218,
-    "brotli": 90308
+    "raw": 324068,
+    "gzip": 105150,
+    "brotli": 91541
   },
   "scripts/esm-bundles/hydrated-components/StaffTable.ts": {
-    "raw": 957453,
-    "gzip": 299687,
-    "brotli": 258575
+    "raw": 958705,
+    "gzip": 301084,
+    "brotli": 260036
   },
   "scripts/esm-bundles/hydrated-components/InstructorGradebookTable.ts": {
-    "raw": 1513148,
-    "gzip": 418202,
-    "brotli": 357266
+    "raw": 1514405,
+    "gzip": 419597,
+    "brotli": 358751
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminAiGrading.ts": {
-    "raw": 2558670,
-    "gzip": 780975,
-    "brotli": 651206
+    "raw": 2559927,
+    "gzip": 782377,
+    "brotli": 652735
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminBillingForm.ts": {
-    "raw": 287675,
-    "gzip": 90592,
-    "brotli": 78222
+    "raw": 287698,
+    "gzip": 91540,
+    "brotli": 79476
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminSettings.ts": {
-    "raw": 1187185,
-    "gzip": 370017,
-    "brotli": 319387
+    "raw": 1188437,
+    "gzip": 371409,
+    "brotli": 320933
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionSettingsForm.ts": {
-    "raw": 1741074,
-    "gzip": 490247,
-    "brotli": 400177
+    "raw": 1742326,
+    "gzip": 491633,
+    "brotli": 401722
   },
   "scripts/esm-bundles/hydrated-components/InstructorQuestionsTable.ts": {
-    "raw": 1707592,
-    "gzip": 479694,
-    "brotli": 390765
+    "raw": 1708844,
+    "gzip": 481078,
+    "brotli": 392308
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
-    "raw": 1806817,
-    "gzip": 507194,
-    "brotli": 413650
+    "raw": 1808069,
+    "gzip": 508583,
+    "brotli": 415246
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
-    "raw": 1706912,
-    "gzip": 480249,
-    "brotli": 411197
+    "raw": 1708164,
+    "gzip": 481633,
+    "brotli": 412676
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionGradingPanel.ts": {
-    "raw": 895860,
-    "gzip": 278342,
-    "brotli": 239170
+    "raw": 897112,
+    "gzip": 279731,
+    "brotli": 240671
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentDownloads.ts": {
-    "raw": 391962,
-    "gzip": 122394,
-    "brotli": 106676
+    "raw": 391988,
+    "gzip": 123307,
+    "brotli": 107863
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentGroups.ts": {
-    "raw": 1533732,
-    "gzip": 425237,
-    "brotli": 363462
+    "raw": 1534989,
+    "gzip": 426627,
+    "brotli": 364894
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentInstanceActions.ts": {
-    "raw": 1088041,
-    "gzip": 335752,
-    "brotli": 289111
+    "raw": 1089298,
+    "gzip": 337147,
+    "brotli": 290595
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentInstances.ts": {
-    "raw": 1318564,
-    "gzip": 406669,
-    "brotli": 331075
+    "raw": 1319821,
+    "gzip": 408068,
+    "brotli": 332654
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentSettings.ts": {
-    "raw": 1484179,
-    "gzip": 417505,
-    "brotli": 356597
+    "raw": 1485436,
+    "gzip": 418897,
+    "brotli": 358043
   },
   "scripts/esm-bundles/hydrated-components/InstructorCourseAdminInstances.ts": {
-    "raw": 1354324,
-    "gzip": 418488,
-    "brotli": 341820
+    "raw": 1355576,
+    "gzip": 419875,
+    "brotli": 343365
   },
   "scripts/esm-bundles/hydrated-components/InstructorCourseAdminSharing.ts": {
-    "raw": 1407369,
-    "gzip": 393100,
-    "brotli": 335735
+    "raw": 1408621,
+    "gzip": 394484,
+    "brotli": 337188
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
-    "raw": 425890,
-    "gzip": 132444,
-    "brotli": 115343
+    "raw": 426007,
+    "gzip": 133625,
+    "brotli": 116937
   },
   "scripts/esm-bundles/hydrated-components/DeleteCourseInstanceModal.ts": {
-    "raw": 286296,
-    "gzip": 89997,
-    "brotli": 77714
+    "raw": 286319,
+    "gzip": 90946,
+    "brotli": 78955
   },
   "scripts/esm-bundles/hydrated-components/EnrollmentCodeRequired.ts": {
-    "raw": 874018,
-    "gzip": 273599,
-    "brotli": 235054
+    "raw": 875270,
+    "gzip": 274988,
+    "brotli": 236510
   },
   "scripts/esm-bundles/hydrated-components/FileEditor.ts": {
-    "raw": 1718589,
-    "gzip": 505413,
-    "brotli": 424871
+    "raw": 1719775,
+    "gzip": 506796,
+    "brotli": 426566
   },
   "scripts/esm-bundles/hydrated-components/GithubRepositoryAccess.ts": {
-    "raw": 933973,
-    "gzip": 293332,
-    "brotli": 252966
+    "raw": 935225,
+    "gzip": 294724,
+    "brotli": 254426
   },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
-    "raw": 881706,
-    "gzip": 275457,
-    "brotli": 236673
+    "raw": 882958,
+    "gzip": 276846,
+    "brotli": 238130
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionAiGrade.ts": {
-    "raw": 1419664,
-    "gzip": 397758,
-    "brotli": 339742
+    "raw": 1420954,
+    "gzip": 399152,
+    "brotli": 341239
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionGradingConflictModal.ts": {
-    "raw": 897354,
-    "gzip": 278948,
-    "brotli": 239697
+    "raw": 898606,
+    "gzip": 280339,
+    "brotli": 241191
   },
   "scripts/esm-bundles/hydrated-components/AssessmentModulesPage.ts": {
-    "raw": 1458886,
-    "gzip": 412803,
-    "brotli": 353608
+    "raw": 1460138,
+    "gzip": 414187,
+    "brotli": 355026
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1797394,
-    "gzip": 505165,
-    "brotli": 413536
+    "raw": 1798712,
+    "gzip": 506570,
+    "brotli": 415102
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1889443,
-    "gzip": 531988,
-    "brotli": 436547
+    "raw": 1890700,
+    "gzip": 533367,
+    "brotli": 438002
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
-    "raw": 1432105,
-    "gzip": 400495,
-    "brotli": 341722
+    "raw": 1433357,
+    "gzip": 401887,
+    "brotli": 343150
   },
   "scripts/esm-bundles/hydrated-components/AuthzAccessMismatch.ts": {
-    "raw": 287985,
-    "gzip": 90841,
-    "brotli": 78443
+    "raw": 288008,
+    "gzip": 91787,
+    "brotli": 79691
   },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
-    "raw": 1178432,
-    "gzip": 319718,
-    "brotli": 274599
+    "raw": 1179618,
+    "gzip": 321086,
+    "brotli": 276213
   },
   "scripts/esm-bundles/hydrated-components/CourseAgentPanel.ts": {
-    "raw": 388592,
-    "gzip": 128083,
-    "brotli": 111792
+    "raw": 389811,
+    "gzip": 129470,
+    "brotli": 113428
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
-    "raw": 1683024,
-    "gzip": 470246,
-    "brotli": 402286
+    "raw": 1684276,
+    "gzip": 471629,
+    "brotli": 403768
   },
   "scripts/esm-bundles/hydrated-components/AdminCreditPoolSection.ts": {
-    "raw": 2493017,
-    "gzip": 758797,
-    "brotli": 631184
+    "raw": 2494274,
+    "gzip": 760194,
+    "brotli": 632736
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourseRequests.ts": {
-    "raw": 1791668,
-    "gzip": 503855,
-    "brotli": 432228
+    "raw": 1793014,
+    "gzip": 505466,
+    "brotli": 433980
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourses.ts": {
-    "raw": 1227481,
-    "gzip": 380540,
-    "brotli": 329168
+    "raw": 1228827,
+    "gzip": 382160,
+    "brotli": 330933
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionSsoForm.ts": {
-    "raw": 285356,
-    "gzip": 89842,
-    "brotli": 77555
+    "raw": 285379,
+    "gzip": 90792,
+    "brotli": 78807
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionsTable.ts": {
-    "raw": 1677089,
-    "gzip": 474744,
-    "brotli": 407091
+    "raw": 1678435,
+    "gzip": 476362,
+    "brotli": 408862
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
-    "raw": 2858656,
-    "gzip": 821597,
-    "brotli": 700756
+    "raw": 2860007,
+    "gzip": 823223,
+    "brotli": 702764
   },
   "scripts/esm-bundles/hydrated-components/AssessmentAccessControl.ts": {
-    "raw": 1759734,
-    "gzip": 497639,
-    "brotli": 426833
+    "raw": 1760991,
+    "gzip": 499030,
+    "brotli": 428312
   },
   "scripts/esm-bundles/hydrated-components/AssessmentLogsTable.ts": {
-    "raw": 1568780,
-    "gzip": 433107,
-    "brotli": 368807
+    "raw": 1570032,
+    "gzip": 434491,
+    "brotli": 370289
   }
 }
