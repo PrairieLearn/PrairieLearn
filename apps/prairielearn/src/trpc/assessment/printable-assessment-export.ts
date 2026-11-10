@@ -2,23 +2,12 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import {
-  ValueType,
-  getCounter,
-  getHistogram,
-  instrumentedWithMetrics,
-  metrics,
-} from '@prairielearn/opentelemetry';
+import { ValueType, getHistogram, metrics } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  MAX_INLINE_PRINT_PACKET_BYTES,
-  MAX_INLINE_PRINT_PACKET_INPUT_BYTES,
-  MAX_INLINE_PRINT_PACKET_PAGES,
-  MAX_PACKET_PAGES,
-} from '../../lib/client/print-packet.js';
+import { MAX_PACKET_PAGES } from '../../lib/client/print-packet.js';
 import { printLayoutSearch } from '../../lib/client/print-preparation.js';
 import {
   MAX_PRINT_PACKET_SNAPSHOT_BYTES,
@@ -27,20 +16,14 @@ import {
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import {
-  queuePrintExport,
-  selectPrintExportJob,
-  storeCompletedPrintExport,
-} from '../../lib/print-export-jobs.js';
-import { type PrintExportWork, renderPrintExport } from '../../lib/print-export-render.js';
+import { queuePrintExport, selectPrintExportJob } from '../../lib/print-export-jobs.js';
+import type { PrintExportWork } from '../../lib/print-export-render.js';
 import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
 import { PrintPacketError, readPrintCoverPages } from '../../lib/print-packet.js';
 import {
   type PrintDocument,
-  getPrintRenderer,
   getPrintableInstanceQuestionIds,
   getPrintableQuestionListDigest,
-  isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
@@ -270,15 +253,8 @@ export const printableAssessmentExportRouter = t.router({
         const inputBytes =
           pages.data.reduce((sum, page) => sum + page.size, 0) +
           files.data.reduce((sum, file) => sum + file.size, 0);
-        if (!isBrowserRenderingAvailable()) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: 'PDF rendering is not configured on this server.',
-          });
-        }
         const meter = metrics.getMeter('prairielearn');
         const attributes = { document: metadata.document };
-        const pathCounter = getCounter(meter, 'print.export.path', { valueType: ValueType.INT });
         getHistogram(meter, 'print.export.pages', { valueType: ValueType.INT }).record(
           estimatedPages,
           attributes,
@@ -287,19 +263,6 @@ export const printableAssessmentExportRouter = t.router({
           unit: 'bytes',
           valueType: ValueType.INT,
         }).record(inputBytes, attributes);
-        const renderPacketUnmeasured = async () => await renderPrintExport(work, covers);
-        const renderPacket = async () =>
-          await instrumentedWithMetrics(
-            meter,
-            'print.export.packet',
-            renderPacketUnmeasured,
-            () => {
-              getHistogram(meter, 'print.export.rss', {
-                unit: 'bytes',
-                valueType: ValueType.INT,
-              }).record(process.memoryUsage().rss, attributes);
-            },
-          );
         const owner = {
           assessmentId: ctx.assessment.id,
           authnUserId: ctx.authn_user.id,
@@ -307,43 +270,7 @@ export const printableAssessmentExportRouter = t.router({
           courseInstanceId: ctx.course_instance.id,
           userId: ctx.locals.user.id,
         };
-        const queue = async () => ({
-          type: 'background' as const,
-          jobSequenceId: await queuePrintExport({ owner, work }),
-        });
-        const backgroundReason =
-          estimatedPages >= MAX_INLINE_PRINT_PACKET_PAGES
-            ? 'page_count'
-            : inputBytes >= MAX_INLINE_PRINT_PACKET_INPUT_BYTES
-              ? 'input_bytes'
-              : null;
-        if (backgroundReason) {
-          pathCounter.add(1, { ...attributes, path: 'background', reason: backgroundReason });
-          return await queue();
-        }
-        // Admission is best effort; the render queue still bounds requests that race this check.
-        if (!getPrintRenderer().getLoad().canStartImmediately) {
-          pathCounter.add(1, { ...attributes, path: 'background', reason: 'capacity' });
-          return await queue();
-        }
-        const packet = await renderPacket();
-        getHistogram(meter, 'print.export.output_bytes', {
-          unit: 'bytes',
-          valueType: ValueType.INT,
-        }).record(packet.length, attributes);
-        if (packet.length > MAX_INLINE_PRINT_PACKET_BYTES) {
-          pathCounter.add(1, { ...attributes, path: 'background', reason: 'output_size' });
-          return {
-            type: 'background' as const,
-            jobSequenceId: await storeCompletedPrintExport({
-              owner,
-              packet,
-              work,
-            }),
-          };
-        }
-        pathCounter.add(1, { ...attributes, path: 'inline', reason: 'small' });
-        return { type: 'inline' as const, base64: packet.toString('base64'), filename };
+        return { jobSequenceId: await queuePrintExport({ owner, work }) };
       } catch (error) {
         if (error instanceof HttpStatusError && error.status === 503) {
           throw new TRPCError({

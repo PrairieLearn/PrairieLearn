@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import * as tmp from 'tmp-promise';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -22,11 +22,12 @@ import {
   processQueuedPrintExports,
   queuePrintExport,
   selectPrintExportJob,
-  storeCompletedPrintExport,
+  waitForPrintExportWorkers,
 } from '../lib/print-export-jobs.js';
+import * as printExportRender from '../lib/print-export-render.js';
 import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
 import { assessmentHasPrintRandomization } from '../lib/print-preparation.js';
-import { getPrintableQuestionListDigest } from '../lib/printing/index.js';
+import * as printing from '../lib/printing/index.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
@@ -354,55 +355,51 @@ describe('print preparation', { timeout: 60_000 }, () => {
     );
   });
 
-  test('stores a background PDF and streams it only to the owner', async () => {
+  test('queues a small PDF and streams the completed export only to its owner', async () => {
     const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const instance = await api.printableAssessments.create.mutate();
+    const data = packetInput(instance.assessmentInstanceId);
+    const html = '<!doctype html><html data-print-status="ready"></html>';
+    const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
+    search.set('form_label', 'A');
+    search.set('document', 'assessment');
+    data.append('pages', new File([html], 'form-a.html'));
+    data.append(
+      'snapshotIds',
+      createPrintSnapshotId(
+        {
+          assessmentInstanceId: instance.assessmentInstanceId,
+          authnUserId: '1',
+          search,
+          questionListDigest: await printing.getPrintableQuestionListDigest(
+            instance.assessmentInstanceId,
+            new Set(),
+          ),
+          html,
+          source: { html: '', figures: [] },
+        },
+        config.secretKey,
+      ),
+    );
     const pdf = Buffer.from('%PDF-1.4\nbackground export\n');
-    const courseInstance = await selectCourseInstanceById('1');
-    const jobSequenceId = await storeCompletedPrintExport({
-      owner: {
-        assessmentId: assessment.id,
-        authnUserId: '1',
-        courseId: courseInstance.course_id,
-        courseInstanceId: '1',
-        userId: '1',
-      },
-      packet: pdf,
-      work: {
-        document: 'assessment',
-        copies: 1,
-        filename: 'test-export.pdf',
-        snapshots: [
-          {
-            formLabel: 'A',
-            paperSize: 'Letter',
-            printDocument: 'assessment',
-            localPreviewUrl: 'http://localhost/',
-            html: '',
-            assetScope: {
-              courseInstanceId: '1',
-              assessmentId: assessment.id,
-              assessmentInstanceId: '1',
-              instanceQuestionIds: [],
-              authnUserId: '1',
-              userId: '1',
-            },
-          },
-        ],
-        covers: [],
-      },
-    });
-    await expect
-      .poll(
-        async () =>
-          (
-            await selectPrintExportJob({
-              jobSequenceId,
-              assessmentId: assessment.id,
-              authnUserId: '1',
-            })
-          )?.status,
-      )
-      .toBe('Success');
+    const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(pdf);
+    let jobSequenceId: string;
+    try {
+      const result = await api.printableAssessmentExport.pdf.mutate(data);
+      expect(result).toEqual({ jobSequenceId: expect.any(String) });
+      jobSequenceId = result.jobSequenceId;
+      expect(render).not.toHaveBeenCalled();
+      expect(await api.printableAssessmentExport.status.query({ jobSequenceId })).toMatchObject({
+        status: 'Running',
+        ready: false,
+      });
+      await processQueuedPrintExports();
+      await waitForPrintExportWorkers();
+      expect(render).toHaveBeenCalledOnce();
+    } finally {
+      render.mockRestore();
+    }
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
     ).toEqual({
@@ -416,8 +413,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${jobSequenceId}.pdf`;
     const response = await fetch(url);
     expect(response.status).toBe(200);
+    const job = (await selectPrintExportJob({
+      jobSequenceId,
+      assessmentId: assessment.id,
+      authnUserId: '1',
+    }))!;
     expect(response.headers.get('content-disposition')).toBe(
-      'attachment; filename="test-export.pdf"',
+      `attachment; filename="${job.result!.filename}"`,
     );
     expect(Buffer.from(await response.arrayBuffer())).toEqual(pdf);
     const studentResponse = await fetch(url, { headers: { cookie: 'pl_test_user=test_student' } });
@@ -507,6 +509,41 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
   });
 
+  test('reports missing browser configuration from the queued worker', async () => {
+    const assessment = await printAssessment();
+    const courseInstance = await selectCourseInstanceById('1');
+    const available = vi.spyOn(printing, 'isBrowserRenderingAvailable').mockReturnValue(false);
+    try {
+      const jobSequenceId = await queuePrintExport({
+        owner: {
+          assessmentId: assessment.id,
+          authnUserId: '1',
+          courseId: courseInstance.course_id,
+          courseInstanceId: '1',
+          userId: '1',
+        },
+        work: {
+          document: 'assessment',
+          copies: 1,
+          filename: 'unavailable-export.pdf',
+          snapshots: [],
+          covers: [],
+        },
+      });
+      await processQueuedPrintExports();
+      await waitForPrintExportWorkers();
+      expect(
+        await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
+      ).toMatchObject({
+        status: 'Error',
+        ready: false,
+        failureMessage: 'PDF rendering is not configured on this server.',
+      });
+    } finally {
+      available.mockRestore();
+    }
+  });
+
   test('stops retrying after three expired worker leases', async () => {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
@@ -557,7 +594,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
           assessmentInstanceId: instance.assessmentInstanceId,
           authnUserId: '1',
           search,
-          questionListDigest: await getPrintableQuestionListDigest(
+          questionListDigest: await printing.getPrintableQuestionListDigest(
             instance.assessmentInstanceId,
             new Set(),
           ),

@@ -1,10 +1,13 @@
-import type { PDFDocument } from 'pdf-lib';
-
 import { HttpStatusError } from '@prairielearn/error';
 
 import { config } from './config.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
-import { type PrintDocument, getPrintRenderer, validatePrintDocument } from './printing/index.js';
+import {
+  type PrintDocument,
+  getPrintRenderer,
+  isBrowserRenderingAvailable,
+  validatePrintDocument,
+} from './printing/index.js';
 import { type PaperSize, createPdfOutput } from './printing/pdf-output.js';
 import type { PrintAssetScope } from './printing/print-asset-access.js';
 
@@ -25,19 +28,19 @@ export interface PrintExportWork {
 
 export async function renderPrintExport(
   work: PrintExportWork,
-  parsedCovers?: PDFDocument[],
   shutdownSignal?: AbortSignal,
 ): Promise<Buffer> {
-  const covers =
-    parsedCovers ??
-    (await readPrintCoverPages(
-      work.covers.map(
-        ({ name, base64 }) =>
-          new File([Buffer.from(base64, 'base64')], name, { type: 'application/pdf' }),
-      ),
-      shutdownSignal,
-    ));
+  const covers = await readPrintCoverPages(
+    work.covers.map(
+      ({ name, base64 }) =>
+        new File([Buffer.from(base64, 'base64')], name, { type: 'application/pdf' }),
+    ),
+    shutdownSignal,
+  );
   if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
+  if (!isBrowserRenderingAvailable()) {
+    throw new HttpStatusError(503, 'PDF rendering is not configured on this server.');
+  }
   const renderer = getPrintRenderer();
   const forms: { pdf: Buffer; coverPageCount: number }[] = [];
   const answerKeys: Buffer[] = [];

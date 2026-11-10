@@ -111,12 +111,10 @@ interface PrintExportOwner {
 async function insertPrintExportJob({
   owner,
   filename,
-  status,
   data,
 }: {
   owner: PrintExportOwner;
   filename: string;
-  status: 'Running' | 'Success';
   data: Record<string, unknown>;
 }) {
   return await runInTransactionAsync(async () => {
@@ -130,7 +128,6 @@ async function insertPrintExportJob({
         user_id: owner.userId,
         authn_user_id: owner.authnUserId,
         description: `Generate ${filename}`,
-        status,
         data: JSON.stringify(data),
       },
       z.object({ job_sequence_id: IdSchema }),
@@ -153,42 +150,10 @@ export async function queuePrintExport({
     return await insertPrintExportJob({
       owner,
       filename: work.filename,
-      status: 'Running',
       data: { inputKey, filename: work.filename, document: work.document },
     });
   } catch (error) {
     await deleteFromS3(bucket, inputKey);
-    throw error;
-  }
-}
-
-export async function storeCompletedPrintExport({
-  owner,
-  packet,
-  work,
-}: {
-  owner: PrintExportOwner;
-  packet: Buffer;
-  work: PrintExportWork;
-}) {
-  const bucket = getFileStoreS3Bucket();
-  const key = `${KEY_PREFIX}${randomUUID()}.pdf`;
-  await uploadToS3(bucket, key, null, false, packet);
-  try {
-    return await insertPrintExportJob({
-      owner,
-      filename: work.filename,
-      status: 'Success',
-      data: {
-        key,
-        filename: work.filename,
-        document: work.document,
-        exportLabel: getPrintExportLabel(work),
-        sizeBytes: packet.length,
-      },
-    });
-  } catch (error) {
-    await deleteFromS3(bucket, key);
     throw error;
   }
 }
@@ -254,7 +219,7 @@ async function runClaimedPrintExport({
       persisted = PersistedWorkSchema.parse(
         JSON.parse((await getFromS3(bucket, inputKey, true)).toString('utf8')),
       );
-      packet = await renderPrintExport(persisted, undefined, shutdownSignal);
+      packet = await renderPrintExport(persisted, shutdownSignal);
     } catch (error) {
       if (isAborted(shutdownSignal)) return;
       getCounter(meter, 'print.export.background.failures', { valueType: ValueType.INT }).add(

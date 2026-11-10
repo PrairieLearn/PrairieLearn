@@ -31,7 +31,6 @@ export class RenderQueue {
       active: this.active,
       waiting: this.waiters.length,
       waitingPreviews: this.waiters.filter((waiter) => waiter.priority === 'preview').length,
-      canStartImmediately: !this.permits.isLocked() && this.waiters.length === 0,
     };
   }
 

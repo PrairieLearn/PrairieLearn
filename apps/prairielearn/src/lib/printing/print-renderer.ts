@@ -157,10 +157,6 @@ export class PrintRenderer {
     );
   }
 
-  getLoad() {
-    return this.worker.getLoad();
-  }
-
   renderPdf(options: RenderPdfOptions): Promise<Buffer> {
     return this.render(options, createPdfOutput());
   }
