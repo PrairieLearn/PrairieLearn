@@ -52,9 +52,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
-        if raw_submitted_answer is None:
-            raw_submitted_answer = pl.get_string_attrib(
+        raw_answer_or_initial_value = data["raw_submitted_answers"].get(name, None)
+        if raw_answer_or_initial_value is None:
+            raw_answer_or_initial_value = pl.get_string_attrib(
                 element, "initial-value", INITIAL_VALUE_DEFAULT
             )
 
@@ -127,8 +127,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = raw_submitted_answer
+        if raw_answer_or_initial_value is not None:
+            html_params["raw_submitted_answer"] = raw_answer_or_initial_value
         with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 

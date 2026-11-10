@@ -194,9 +194,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_help_text = pl.get_boolean_attrib(
         element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
     )
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(
+    raw_answer_or_initial_value = data["raw_submitted_answers"].get(name)
+    if raw_answer_or_initial_value is None:
+        raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         )
     partial_score = data["partial_scores"].get(name, {"score": None})
@@ -220,7 +220,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_score": show_score,
             "parse_error": parse_error,
             display.value: True,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
         }
 
         if score is not None:

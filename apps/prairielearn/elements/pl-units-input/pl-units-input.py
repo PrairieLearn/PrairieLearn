@@ -190,9 +190,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(
+    raw_answer_or_initial_value = data["raw_submitted_answers"].get(name)
+    if raw_answer_or_initial_value is None:
+        raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         )
     partial_scores = data["partial_scores"].get(name, {})
@@ -256,7 +256,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "parse_error": parse_error,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
         }
 
         if show_score and score is not None:

@@ -220,9 +220,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ).strip()
 
     # Next, get some attributes we will use in multiple places
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(
+    raw_answer_or_initial_value = data["raw_submitted_answers"].get(name)
+    if raw_answer_or_initial_value is None:
+        raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         )
     score = data["partial_scores"].get(name, {}).get("score")
@@ -241,7 +241,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "aria_label": aria_label,
             "placeholder": placeholder,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
             "type": bigo_type,
             "parse_error": parse_error,
         }
