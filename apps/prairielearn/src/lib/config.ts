@@ -172,6 +172,8 @@ export const ConfigSchema = z.object({
   /** Cloudflare Browser Run account and API token for printable assessments. */
   printingCloudflareAccountId: z.string().nullable().default(null),
   printingCloudflareApiToken: z.string().nullable().default(null),
+  /** Override the database-derived Redis namespace when hosts use different aliases for the same database. */
+  printExportQueuePrefix: z.string().nullable().default(null),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**
@@ -218,6 +220,7 @@ export const ConfigSchema = z.object({
   cronIntervalWorkspaceHostLoadsSec: z.number().default(10),
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
+  cronIntervalCourseAgentReviewResultsSec: z.number().default(60),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
   cronIntervalFetchNewsItemsSec: z.number().default(5 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
@@ -539,6 +542,11 @@ export const ConfigSchema = z.object({
    */
   serverJobsAbandonedTimeoutSec: z.number().default(30),
   devMode: z.boolean().default(DEV_MODE),
+  /**
+   * Whether to compile assets on the fly with esbuild instead of serving them
+   * from the prebuilt `public/build` directory. Defaults to the value of `devMode`.
+   */
+  compiledAssetsDevMode: z.boolean().nullable().default(null),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */
@@ -678,10 +686,12 @@ export const ConfigSchema = z.object({
   courseAgentServiceUrl: z.string().nullable().default(null),
   /**
    * Bearer token that authenticates PrairieLearn to the course agent service.
-   * Must exactly match the Cloudflare Worker's PL_SERVICE_TOKEN secret, or
-   * PL_SERVICE_TOKEN in its .dev.vars file for local development.
+   * Must match the Cloudflare Worker's PL_SERVICE_TOKEN secret, or
+   * PL_SERVICE_TOKEN in its .dev.vars file for local development. Multiple
+   * tokens are supported to allow for rotation; the first token is sent to
+   * the service.
    */
-  courseAgentServiceToken: z.string().nullable().default(null),
+  courseAgentServiceToken: KeyRingSchema.nullable().prefault(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
   /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */

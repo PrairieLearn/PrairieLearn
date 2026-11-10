@@ -160,9 +160,9 @@ const config: KnipConfig = {
   treatTagHintsAsErrors: true,
   workspaces: {
     '.': {
-      // `vitest.shared.ts` is imported by `vitest.config.ts` (which knip
+      // `vitest.shared.mts` is imported by `vitest.config.mts` (which knip
       // auto-detects), but it isn't a recognized config filename.
-      entry: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}', 'vitest.shared.ts'],
+      entry: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}', 'vitest.shared.mts'],
       project: ['scripts/*.{mts,mjs}', 'contrib/*.{mts,mjs}'],
       ignoreDependencies: ['@prairielearn/tsconfig', ...CLI_ONLY_DEPS],
     },

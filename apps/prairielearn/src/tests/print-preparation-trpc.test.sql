@@ -19,15 +19,17 @@ SET
 WHERE
   id = $job_sequence_id;
 
--- BLOCK expire_print_export_lease
+-- BLOCK exhaust_print_export_attempts
 UPDATE jobs
 SET
-  data = data || jsonb_build_object(
-    'attempts',
-    3,
-    'leaseUntil',
-    (CURRENT_TIMESTAMP - INTERVAL '1 minute')::text
-  )
+  data = data || jsonb_build_object('attempts', 3)
+WHERE
+  job_sequence_id = $job_sequence_id;
+
+-- BLOCK replace_print_export_owner
+UPDATE jobs
+SET
+  data = data || jsonb_build_object('runOwner', 'replacement-owner')
 WHERE
   job_sequence_id = $job_sequence_id;
 

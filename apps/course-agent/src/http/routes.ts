@@ -1,18 +1,26 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import {
+  CreateConversationInput,
+  RequestChangesResultSchema,
+} from '@prairielearn/course-agent-types';
 
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
 
-const app = new Hono<{ Bindings: Env }>();
+// Set only while rotating PL_SERVICE_TOKEN, so it isn't a required secret in wrangler.jsonc.
+const app = new Hono<{ Bindings: Env & { PL_SERVICE_TOKEN_PREVIOUS?: string } }>();
 
 // PL's catalog is the existence/ownership authority for every conversation route.
 // Only its authenticated server may create conversations or forward SDK traffic here.
 app.use('*', async (c, next) => {
-  if (!isAuthorized(c.req.header('Authorization') ?? null, c.env.PL_SERVICE_TOKEN)) {
+  const header = c.req.header('Authorization') ?? null;
+  if (
+    !isAuthorized(header, c.env.PL_SERVICE_TOKEN) &&
+    !isAuthorized(header, c.env.PL_SERVICE_TOKEN_PREVIOUS)
+  ) {
     return c.text('Unauthorized', 401);
   }
   await next();
@@ -68,8 +76,24 @@ conversations.post('/:id/resume', async (c) => {
   } catch (error) {
     // This handled RPC failure would otherwise be returned as a successful HTTP handler.
     reportError(error);
-    return c.json({ error: 'Could not recover workspace' }, 503);
+    return c.json({ error: 'Could not recover the course agent' }, 503);
   }
+});
+
+conversations.get('/:id/reviews/:reviewId', async (c) => {
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  return c.json(await conversation.getReview(c.req.param('reviewId')));
+});
+
+// PrairieLearn may send a result more than once; the review ID makes repeats harmless.
+conversations.post('/:id/reviews/:reviewId/outcome', async (c) => {
+  const result = RequestChangesResultSchema.safeParse(await c.req.json().catch(() => null));
+  if (!result.success) return c.text('Invalid result', 400);
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  if (!(await conversation.recordReviewResult(c.req.param('reviewId'), result.data))) {
+    return c.text('This review already has a different result', 409);
+  }
+  return c.json({ outcomeRecorded: true });
 });
 
 conversations.on('GET', ['/:id', '/:id/get-messages'], async (c) => {

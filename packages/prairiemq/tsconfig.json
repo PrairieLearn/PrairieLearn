@@ -1,0 +1,3 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.package-node.json"
+}

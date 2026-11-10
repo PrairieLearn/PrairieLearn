@@ -8,16 +8,7 @@ import { createPrintableForm, waitForPrintablePage } from './utils.js';
 const cloudflareAccountId = process.env.CF_ACCOUNT_ID;
 const cloudflareApiToken = process.env.CF_API_TOKEN;
 const browserOrigin = 'https://example.com';
-const test = createTest(
-  cloudflareAccountId && cloudflareApiToken
-    ? {
-        features: { 'printable-assessments': true },
-        printingCloudflareAccountId: cloudflareAccountId,
-        printingCloudflareApiToken: cloudflareApiToken,
-        serverCanonicalHost: browserOrigin,
-      }
-    : { features: { 'printable-assessments': true } },
-);
+const test = createTest({ features: { 'printable-assessments': true } });
 
 test('loads course assets in the rendering browser', async ({ page, courseInstance }) => {
   const user = await getConfiguredUser();
