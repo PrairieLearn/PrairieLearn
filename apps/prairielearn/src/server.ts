@@ -157,6 +157,14 @@ export async function initExpress(): Promise<Express> {
     res.send('.');
   });
 
+  if (process.env.DANGEROUSLY_ENABLE_TEST_ROUTES && process.env.NODE_ENV === 'test') {
+    app.post(
+      '/__test__/config',
+      express.json(),
+      (await import('./middlewares/testConfigOverrides.js')).default,
+    );
+  }
+
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
   // any point.
@@ -333,11 +341,9 @@ export async function initExpress(): Promise<Express> {
   async function makeWorkspaceContainerRoutes({
     url,
     containerPathRegex,
-    publicQuestionEndpoint,
   }: {
     url: string;
     containerPathRegex: RegExp;
-    publicQuestionEndpoint: boolean;
   }) {
     const workspaceAuthRouter = Router();
     workspaceAuthRouter.use([
@@ -353,7 +359,7 @@ export async function initExpress(): Promise<Express> {
       (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
       (await import('./middlewares/date.js')).default,
       (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
-      (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint }), // jumps to error handler if authz fails
+      (await import('./middlewares/authzWorkspace.js')).authzWorkspaceContainer(), // jumps to error handler if authz fails
       (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
     ]);
     app.use(url, [
@@ -371,15 +377,11 @@ export async function initExpress(): Promise<Express> {
       makeWorkspaceProxyMiddleware(containerPathRegex),
     ]);
   }
+  // Containers are served from this URL for both the public and non-public
+  // workspace pages; see `authzWorkspaceContainer` for details.
   await makeWorkspaceContainerRoutes({
     url: '/pl/workspace/:workspace_id(\\d+)/container',
     containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
-    publicQuestionEndpoint: false,
-  });
-  await makeWorkspaceContainerRoutes({
-    url: '/pl/public/workspace/:workspace_id(\\d+)/container',
-    containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
-    publicQuestionEndpoint: true,
   });
 
   app.use((req, res, next) => {
@@ -773,8 +775,12 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
 
   if (isEnterprise()) {
-    // The course agent chat proxy, and the panel that PageLayout renders on
-    // instructor pages. Both run after the instructor chains above.
+    // The course agent's file links, its chat proxy, and the panel that PageLayout
+    // renders on instructor pages. All run after the instructor chains above.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent/file',
+      (await import('./ee/routers/courseAgentFile.js')).default,
+    );
     app.use(
       '/pl/course/:course_id(\\d+)/course_agent',
       (await import('./ee/routers/courseAgentChat.js')).default,

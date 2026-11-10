@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 import { selectQuestionByQid } from '../../models/question.js';
 
@@ -328,6 +328,26 @@ async function uploadCropTestImage(page: Page) {
   await expect(page.getByAltText('Captured image preview').first()).toBeVisible();
 }
 
+/**
+ * Crop and rotate changes are saved to the hidden input with a debounce, and a
+ * single rotation can trigger more than one save. Waits until the value stops
+ * changing so that assertions compare against the final saved crop.
+ */
+async function waitForSettledValue(locator: Locator): Promise<string> {
+  let value: string | null = null;
+  await expect
+    .poll(
+      async () => {
+        const previous = value;
+        value = await locator.inputValue();
+        return value === previous;
+      },
+      { intervals: [1000] },
+    )
+    .toBe(true);
+  return value!;
+}
+
 for (const action of ['cancel before failure', 'cancel after failure', 'save crop'] as const) {
   test(`failed replacement preserves the answer: ${action}`, async ({ page }) => {
     await uploadCropTestImage(page);
@@ -358,7 +378,7 @@ for (const action of ['cancel before failure', 'cancel after failure', 'save cro
     await page.getByRole('button', { name: 'Crop/rotate' }).first().click();
     await page.getByRole('button', { name: 'Rotate clockwise', exact: true }).click();
     await expect(hiddenInput).toHaveValue(/^data:image\/jpeg;/);
-    const croppedValue = await hiddenInput.inputValue();
+    const croppedValue = await waitForSettledValue(hiddenInput);
     if (action === 'cancel before failure') {
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
       await expect(hiddenInput).toHaveValue(previousValue);
