@@ -105,13 +105,20 @@ export function createQuestionSubmissions({
         for (const status of updates) {
           const state = states.get(status.id);
           if (!state) continue;
-          if (state.status.grading_job_id !== status.grading_job_id) {
+          // Empty DOM attributes and omitted socket fields both mean no grading job.
+          const previousJobId = state.status.grading_job_id || undefined;
+          const jobId = status.grading_job_id || undefined;
+          // Concurrent server lookups can deliver an older job after its replacement.
+          if (previousJobId && (!jobId || BigInt(jobId) < BigInt(previousJobId))) continue;
+          let restartHistory = false;
+          if (previousJobId !== jobId) {
+            restartHistory = state.request?.purpose === 'history';
             state.request?.controller.abort();
             state.request = undefined;
           }
           state.status = status;
           onStatus(status);
-          if (needsResult(state)) load(status.id);
+          if (needsResult(state) || restartHistory) load(status.id);
         }
         closeIfComplete();
       });
