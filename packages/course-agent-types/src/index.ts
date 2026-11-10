@@ -63,6 +63,11 @@ const ReviewPathSchema = z
 
 const ReviewContentsSchema = z.base64().max(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3));
 
+/** Tags the chat-history marker where the agent's turn that received a review result begins. */
+export const reviewTag = (reviewId: string) => `review:${reviewId}`;
+
+export const ReviewFeedbackSchema = z.string().trim().min(1).max(20_000);
+
 /**
  * The save and sync outcomes are separate: files may be saved even if syncing fails. Both are
  * `unknown` when PrairieLearn lost the save job before it recorded how far it got, so the files
@@ -88,6 +93,8 @@ export const RequestChangesResultSchema = z
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
       z.strictObject({ status: z.literal('unknown') }),
     ]),
+    /** A denial's message from the instructor, sent in place of a chat message. */
+    feedback: ReviewFeedbackSchema.optional(),
   })
   .refine((result) => {
     if (result.decision === 'denied') {
@@ -95,6 +102,7 @@ export const RequestChangesResultSchema = z
         result.publication.status === 'not_attempted' && result.sync.status === 'not_attempted'
       );
     }
+    if (result.feedback !== undefined) return false;
     switch (result.publication.status) {
       case 'published':
       case 'saved_locally':

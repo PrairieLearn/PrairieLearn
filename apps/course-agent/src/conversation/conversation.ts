@@ -17,6 +17,7 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  reviewTag,
 } from '@prairielearn/course-agent-types';
 
 import { logEvent, reportError } from '../monitoring.js';
@@ -42,7 +43,6 @@ import {
   messageTag,
   missedTurns,
   nextUserMessage,
-  reviewTag,
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
