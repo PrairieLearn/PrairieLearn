@@ -287,6 +287,10 @@ function Chat({
         current?.map((conversation) => (conversation.id === updated.id ? updated : conversation)),
       );
     },
+    // The next state update retries the save.
+    onError: () => {
+      savingTitleRef.current = null;
+    },
   });
   // State updates repeat while a save is in flight, so save each generated title once.
   const savingTitleRef = useRef<string | null>(null);

@@ -154,7 +154,7 @@ export const courseAgentRouter = t.router({
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
       const updated = await updateCourseAgentConversationTitle({
         conversation,
-        title: formatCourseAgentConversationTitle(input.title),
+        title: input.title,
       });
       return StaffCourseAgentConversationSchema.parse(updated);
     }),
