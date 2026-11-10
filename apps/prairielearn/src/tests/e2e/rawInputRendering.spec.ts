@@ -23,6 +23,7 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
   await page.getByRole('textbox', { name: 'String value' }).fill('café\u200b<img src=x>');
   await page.getByRole('textbox', { name: 'Big O value' }).fill('n');
   await page.getByRole('textbox', { name: 'Integer value' }).fill('1');
+  await page.getByRole('textbox', { name: 'Number value' }).fill('1');
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
     timeout: 15_000,
@@ -30,20 +31,16 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
 
   await expect(page.getByRole('textbox', { name: 'Matrix value' })).toHaveValue('[1,\u200b 2]');
 
-  for (const label of [
-    'String value',
-    'Big O value',
-    'Number value',
-    'Units value',
-    'Matrix value',
-  ]) {
+  for (const label of ['String value', 'Big O value', 'Units value', 'Matrix value']) {
     await expect(
       page.getByRole('button', { name: `Answer as entered for ${label}` }),
     ).toBeVisible();
   }
-  await expect(
-    page.getByRole('button', { name: 'Answer as entered for Integer value' }),
-  ).toHaveCount(0);
+  for (const label of ['Integer value', 'Number value']) {
+    await expect(page.getByRole('button', { name: `Answer as entered for ${label}` })).toHaveCount(
+      0,
+    );
+  }
 
   const stringButton = page.getByRole('button', { name: 'Answer as entered for String value' });
   await stringButton.click();
