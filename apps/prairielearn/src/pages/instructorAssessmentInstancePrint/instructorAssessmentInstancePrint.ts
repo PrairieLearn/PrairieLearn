@@ -86,14 +86,24 @@ const LayoutQuerySchema = z.object({
     .regex(/^[A-Z]$/)
     .optional(),
   identity_field: IdentityFieldsSchema,
-  block_size: z.union([QuestionBlockSizeSchema, QuestionBlockSizeSchema.array()]).optional(),
+  block_size: QuestionBlockSizeSchema.optional(),
   question_block_size: z
     .union([QuestionBlockSizeOverrideSchema, QuestionBlockSizeOverrideSchema.array()])
-    .optional(),
+    .transform((overrides) => (Array.isArray(overrides) ? overrides : [overrides]))
+    .default([])
+    .refine(
+      (overrides) =>
+        new Set(overrides.map(({ questionNumber }) => questionNumber)).size === overrides.length,
+      'question_block_size may only be specified once for each question',
+    ),
   exclude_question: z
     .union([QuestionNumberSchema, QuestionNumberSchema.array()])
     .transform((numbers) => (Array.isArray(numbers) ? numbers : [numbers]))
-    .default([]),
+    .default([])
+    .refine(
+      (numbers) => new Set(numbers).size === numbers.length,
+      'exclude_question may only be specified once for each question',
+    ),
 });
 const DocumentQuerySchema = LayoutQuerySchema.extend({
   document: z.enum(PRINT_DOCUMENTS).default('assessment'),
@@ -135,31 +145,6 @@ interface PrintLayout {
 }
 
 function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout {
-  if (Array.isArray(query.block_size)) {
-    throw new HttpStatusError(400, 'block_size may only be specified once');
-  }
-
-  const excludedQuestionNumbers = new Set(query.exclude_question);
-  if (excludedQuestionNumbers.size !== query.exclude_question.length) {
-    throw new HttpStatusError(400, 'exclude_question may only be specified once for each question');
-  }
-
-  const questionBlockSizeOverrides = new Map<string, QuestionBlockSize>();
-  const overrides = Array.isArray(query.question_block_size)
-    ? query.question_block_size
-    : query.question_block_size
-      ? [query.question_block_size]
-      : [];
-  for (const override of overrides) {
-    if (questionBlockSizeOverrides.has(override.questionNumber)) {
-      throw new HttpStatusError(
-        400,
-        `question_block_size may only be specified once for question ${override.questionNumber}`,
-      );
-    }
-    questionBlockSizeOverrides.set(override.questionNumber, override.blockSize);
-  }
-
   return {
     paperSize: query.paper_size,
     includeCoverPage: query.include_cover,
@@ -168,8 +153,10 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
     formLabel: query.form_label,
     identityFields: query.identity_field,
     blockSize: query.block_size,
-    questionBlockSizeOverrides,
-    excludedQuestionNumbers,
+    questionBlockSizeOverrides: new Map(
+      query.question_block_size.map(({ questionNumber, blockSize }) => [questionNumber, blockSize]),
+    ),
+    excludedQuestionNumbers: new Set(query.exclude_question),
   };
 }
 
