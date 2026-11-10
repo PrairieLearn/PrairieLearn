@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/prairiemq",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Redis-backed job queue with fair scheduling and per-group concurrency limits.",
   "repository": {
     "type": "git",
