@@ -287,18 +287,18 @@ router.get(
         {
           label: 'preview',
           produce: async (page) => {
-            const source = await page.evaluate(
-              () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
+            const capturedSource = await page.evaluate(() =>
+              Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__'),
             );
-            if (!source) {
+            if (!capturedSource) {
               throw new Error('The preview did not capture editable question content.');
             }
+            const source = PrintSnapshotSchema.shape.source.parse(capturedSource);
             return { html: await page.locator(':root').evaluate(serializePrintDocument), source };
           },
         },
       );
       throwIfAborted();
-      PrintSnapshotSchema.shape.source.parse(source);
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader(
         'Content-Security-Policy',
