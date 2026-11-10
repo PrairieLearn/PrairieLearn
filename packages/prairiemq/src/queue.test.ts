@@ -257,6 +257,30 @@ describe('Queue', () => {
     assert.equal(await client.zscore(`${queueBase}:schedulers`, 'heartbeat'), firstNextRun);
   });
 
+  it('applies default options to schedulers except the default delay', async () => {
+    const defaultQueue = new Queue(`defaults-${randomUUID()}`, {
+      redisUrl,
+      defaultJobOptions: { attempts: 3, delay: 60_000 },
+    });
+
+    try {
+      await defaultQueue.upsertJobScheduler(
+        'heartbeat',
+        { every: 60_000 },
+        { name: 'heartbeat', data: null },
+      );
+
+      const client = Reflect.get(defaultQueue, 'client') as PrairieMQRedis;
+      const defaultQueueBase = (Reflect.get(defaultQueue, 'keys') as { base: string }).base;
+      const options = await client.hget(`${defaultQueueBase}:scheduler:heartbeat`, 'opts');
+      assert.isNotNull(options);
+      assert.deepEqual(JSON.parse(options), { attempts: 3 });
+    } finally {
+      await defaultQueue.obliterate();
+      await defaultQueue.close();
+    }
+  });
+
   it('uses Redis time when scheduling the first run', async () => {
     await queue.waitUntilReady();
     const client = Reflect.get(queue, 'client') as PrairieMQRedis;
@@ -575,6 +599,17 @@ describe('Queue', () => {
           defaultJobOptions: jobOptions,
         }),
     ).toThrow('defaultJobOptions must not include jobId');
+
+    expect(
+      () =>
+        new Queue(`invalid-${randomUUID()}`, {
+          redisUrl,
+          defaultJobOptions: {
+            // @ts-expect-error -- A shared deduplication id would collapse every added job.
+            deduplication: { id: 'shared-default' },
+          },
+        }),
+    ).toThrow('defaultJobOptions must not include deduplication');
   });
 
   it('rejects invalid queue options before connecting to Redis', () => {

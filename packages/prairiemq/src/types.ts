@@ -63,9 +63,11 @@ export type ScheduledJobOptions = Omit<JobOptions, 'jobId' | 'delay' | 'deduplic
 };
 
 /** Job options that may be applied to every job added to a queue. */
-export type DefaultJobOptions = Omit<JobOptions, 'jobId'> & {
+export type DefaultJobOptions = Omit<JobOptions, 'jobId' | 'deduplication'> & {
   /** Custom job ids must be supplied for each individual job. */
   jobId?: undefined;
+  /** A shared deduplication id would collapse every added job into one. */
+  deduplication?: undefined;
 };
 
 export type JobState = 'waiting' | 'active' | 'delayed' | 'completed' | 'failed' | 'unknown';

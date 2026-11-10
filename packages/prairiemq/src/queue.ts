@@ -139,6 +139,11 @@ function validateDefaultJobOptions(opts: JobOptions): void {
       'defaultJobOptions must not include jobId; set jobId on each added job instead',
     );
   }
+  if (opts.deduplication !== undefined) {
+    throw new Error(
+      'defaultJobOptions must not include deduplication; set deduplication on each added job instead',
+    );
+  }
 }
 
 function validateQueueOptions(options: QueueOptions): string {
@@ -196,11 +201,16 @@ export class Queue<Data = unknown, Result = unknown> extends EventEmitter<QueueE
     this.client.on('error', (err) => this.emit('error', err));
   }
 
-  private prepareJob(name: string, data: Data, options: JobOptions): PreparedJob<Data> {
+  private prepareJob(
+    name: string,
+    data: Data,
+    options: JobOptions,
+    defaults: DefaultJobOptions = this.defaultJobOptions,
+  ): PreparedJob<Data> {
     if (typeof name !== 'string' || name === '') {
       throw new Error('Job name must be a non-empty string');
     }
-    const opts = mergeJobOptions(this.defaultJobOptions, options);
+    const opts = mergeJobOptions(defaults, options);
     validateJobOptions(opts);
 
     const groupId = opts.group?.id ?? '';
@@ -472,14 +482,23 @@ export class Queue<Data = unknown, Result = unknown> extends EventEmitter<QueueE
       throw new Error('Scheduler template data is required');
     }
 
-    const prepared = this.prepareJob(template.name, template.data, template.options ?? {});
+    const templateOptions: JobOptions = template.options ?? {};
     if (
-      prepared.opts.jobId !== undefined ||
-      prepared.opts.delay !== undefined ||
-      prepared.opts.deduplication !== undefined
+      templateOptions.jobId !== undefined ||
+      templateOptions.delay !== undefined ||
+      templateOptions.deduplication !== undefined
     ) {
       throw new Error('Scheduled jobs cannot use jobId, delay, or deduplication');
     }
+    // The scheduler's interval determines when each occurrence runs, so a
+    // queue-wide default delay does not apply.
+    const { delay: _delay, ...schedulerDefaults } = this.defaultJobOptions;
+    const prepared = this.prepareJob(
+      template.name,
+      template.data,
+      templateOptions,
+      schedulerDefaults,
+    );
 
     await this.waitUntilReady();
     await this.client.pmqUpsertJobScheduler(

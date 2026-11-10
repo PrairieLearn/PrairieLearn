@@ -88,7 +88,7 @@ await queue.add('name', data, {
 });
 ```
 
-`defaultJobOptions` sets queue-wide defaults, which per-job options can override. Custom `jobId` values must be supplied to each `add()` call or `addBulk()` entry and cannot be configured as a default. `attempts` includes the first execution, so `3` allows two retries.
+`defaultJobOptions` sets queue-wide defaults, which per-job options can override. Custom `jobId` and `deduplication` values must be supplied to each `add()` call or `addBulk()` entry and cannot be configured as defaults. `attempts` includes the first execution, so `3` allows two retries.
 
 Custom job IDs prevent duplicates while the existing job is retained. Adding an existing ID returns the original job and ignores the new values. Use stable IDs if an application might retry an `add()` call after a Redis error. When a custom-ID job is later added with a deduplication ID, it atomically adopts that ID without rewriting its original data or options. A job that already owns a different deduplication ID raises `JobIdDeduplicationConflictError`; if the requested deduplication ID already maps to another live job, that mapped job is returned instead.
 
@@ -137,7 +137,7 @@ await queue.upsertJobScheduler(
 );
 ```
 
-Registering an unchanged scheduler again preserves its next run, so every application host may safely call `upsertJobScheduler()` during startup. A running worker atomically promotes due schedules. Missed intervals are coalesced into one job instead of producing a catch-up burst. Scheduled templates inherit `defaultJobOptions`, but cannot specify `jobId`, `delay`, or `deduplication`.
+Registering an unchanged scheduler again preserves its next run, so every application host may safely call `upsertJobScheduler()` during startup. A running worker atomically promotes due schedules. Missed intervals are coalesced into one job instead of producing a catch-up burst. Scheduled templates inherit `defaultJobOptions` other than `delay`, and cannot specify `jobId`, `delay`, or `deduplication`.
 
 Scheduler template `data` is required. Use `getJobSchedulerIds()` to reconcile the configured scheduler set and `removeJobScheduler(id)` to atomically remove a scheduler. Each occurrence receives an auto-generated job ID, so an application-created custom ID cannot suppress it. Recurring jobs run indefinitely; give their templates bounded `removeOnComplete` and `removeOnFail` settings to avoid accumulating history.
 
