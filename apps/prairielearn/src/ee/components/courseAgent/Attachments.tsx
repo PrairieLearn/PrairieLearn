@@ -1,7 +1,7 @@
 import { type FileUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
-import { useCallback, useState } from 'react';
+import { type DragEvent, type ReactNode, useCallback, useState } from 'react';
 import { Button } from 'react-bootstrap';
 
 import {
@@ -13,7 +13,7 @@ import {
   attachmentUrl,
 } from '@prairielearn/course-agent-types';
 
-export const MAX_ATTACHMENT_SIZE = filesize(MAX_ATTACHMENT_BYTES, { round: 1, standard: 'jedec' });
+const MAX_ATTACHMENT_SIZE = filesize(MAX_ATTACHMENT_BYTES, { round: 1, standard: 'jedec' });
 
 export type AttachmentStatus =
   | { kind: 'ready' }
@@ -357,5 +357,50 @@ export function SentAttachments({
         />
       ))}
     </ul>
+  );
+}
+
+/** An area that attaches files dropped anywhere on it, with an overlay while they're dragged in. */
+export function FileDropArea({
+  enabled,
+  onDrop,
+  children,
+}: {
+  /** Whether files can be added now. */
+  enabled: boolean;
+  onDrop: (files: File[]) => void;
+  children: ReactNode;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const draggingFiles = (event: DragEvent) => enabled && event.dataTransfer.types.includes('Files');
+  return (
+    <div
+      className="position-relative d-flex flex-column flex-grow-1 overflow-hidden"
+      onDragOver={(event) => {
+        if (!draggingFiles(event)) return;
+        event.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(event) => {
+        setDragging(false);
+        if (!draggingFiles(event)) return;
+        event.preventDefault();
+        onDrop([...event.dataTransfer.files]);
+      }}
+    >
+      {children}
+      {dragging && (
+        <div className="course-agent-drop-target position-absolute d-flex flex-column align-items-center justify-content-center text-primary">
+          <i className="bi bi-upload fs-4" aria-hidden="true" />
+          <span className="fw-medium">Drop files to attach</span>
+          <span className="small">
+            Up to {MAX_ATTACHMENTS_PER_MESSAGE} files, {MAX_ATTACHMENT_SIZE} each
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
