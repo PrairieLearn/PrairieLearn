@@ -59,4 +59,4 @@ WHERE
   AND a.team_work = TRUE
   AND g.deleted_at IS NULL
 ORDER BY
-  g.id;
+  u.id;

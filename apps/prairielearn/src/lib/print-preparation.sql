@@ -62,15 +62,13 @@ WHERE
 SELECT
   to_jsonb(q.*) AS question,
   to_jsonb(c.*) AS course,
-  to_jsonb(aq.*) AS assessment_question,
-  qo.question_number
+  to_jsonb(pfq.*) AS print_form_question
 FROM
-  instance_questions AS iq
-  JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
+  print_form_questions AS pfq
+  JOIN assessment_questions AS aq ON aq.id = pfq.assessment_question_id
   JOIN questions AS q ON q.id = aq.question_id
   JOIN courses AS c ON c.id = q.course_id
-  JOIN question_order ($assessment_instance_id) AS qo ON qo.instance_question_id = iq.id
 WHERE
-  iq.assessment_instance_id = $assessment_instance_id
+  pfq.print_form_id = $print_form_id
 ORDER BY
-  qo.row_order;
+  pfq.position;

@@ -175,19 +175,19 @@ describe('print packets', () => {
 });
 
 describe('print packet settings', () => {
-  const instance = { assessmentInstanceId: '1', formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS };
-  const metadata = { instances: [instance], copies: 45, document: 'assessment' };
+  const form = { printFormId: '1', formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS };
+  const metadata = { forms: [form], copies: 45, document: 'assessment' };
 
-  test('rejects duplicate instance IDs or labels, unknown settings, and invalid layout values', () => {
-    for (const instances of [
-      [instance, { ...instance, formLabel: 'B' }],
-      [instance, { ...instance, assessmentInstanceId: '2' }],
-      [{ ...instance, settings: { ...instance.settings, paperSize: 'Legal' } }],
-      [{ ...instance, settings: { ...instance.settings, extra: true } }],
-      [{ ...instance, settings: { ...instance.settings, excludedQuestions: ['1', '1'] } }],
-      [{ ...instance, settings: { ...instance.settings, identityFields: 'a'.repeat(41) } }],
+  test('rejects duplicate form IDs or labels, unknown settings, and invalid layout values', () => {
+    for (const forms of [
+      [form, { ...form, formLabel: 'B' }],
+      [form, { ...form, printFormId: '2' }],
+      [{ ...form, settings: { ...form.settings, paperSize: 'Legal' } }],
+      [{ ...form, settings: { ...form.settings, extra: true } }],
+      [{ ...form, settings: { ...form.settings, excludedQuestions: ['1', '1'] } }],
+      [{ ...form, settings: { ...form.settings, identityFields: 'a'.repeat(41) } }],
     ]) {
-      expect(PrintPacketMetadataSchema.safeParse({ ...metadata, instances }).success).toBe(false);
+      expect(PrintPacketMetadataSchema.safeParse({ ...metadata, forms }).success).toBe(false);
     }
   });
 });

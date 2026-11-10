@@ -498,7 +498,6 @@ export const AssessmentInstanceSchema = z.object({
   date: DateFromISOString.nullable(),
   date_limit: DateFromISOString.nullable(),
   duration: IntervalSchema.nullable(),
-  for_printing: z.boolean(),
   grading_needed: z.boolean(),
   id: IdSchema,
   include_in_statistics: z.boolean(),
@@ -1401,6 +1400,26 @@ export const PlanGrantSchema = z.object({
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
 
+export const PrintFormSchema = z.object({
+  assessment_id: IdSchema,
+  authn_user_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  user_id: IdSchema,
+});
+export type PrintForm = z.infer<typeof PrintFormSchema>;
+
+export const PrintFormQuestionSchema = z.object({
+  assessment_question_id: IdSchema,
+  id: IdSchema,
+  max_points: z.number(),
+  position: z.number(),
+  print_form_id: IdSchema,
+  question_number: z.string(),
+  variant_id: IdSchema,
+});
+export type PrintFormQuestion = z.infer<typeof PrintFormQuestionSchema>;
+
 export const QueryRunSchema = z.object({
   authn_user_id: IdSchema,
   date: DateFromISOString,
@@ -1874,6 +1893,8 @@ export const TableNames = [
   'page_view_logs',
   'courses',
   'plan_grants',
+  'print_form_questions',
+  'print_forms',
   'query_runs',
   'question_authors',
   'question_generation_context_embeddings',

@@ -10,12 +10,7 @@ import { loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 
 import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from './chunks.js';
 import type { PrintPreparationQuestion } from './client/print-preparation.js';
-import {
-  AssessmentQuestionSchema,
-  CourseSchema,
-  QuestionSchema,
-  SprocQuestionOrderSchema,
-} from './db-types.js';
+import { CourseSchema, PrintFormQuestionSchema, QuestionSchema } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -67,16 +62,15 @@ export function findPaperConcerns(html: string): string[] {
 }
 
 export async function inspectPrintPreparationQuestions(
-  assessmentInstanceId: string,
+  printFormId: string,
 ): Promise<PrintPreparationQuestion[]> {
   const rows = await queryRows(
     sql.select_questions,
-    { assessment_instance_id: assessmentInstanceId },
+    { print_form_id: printFormId },
     z.object({
       question: QuestionSchema,
       course: CourseSchema,
-      assessment_question: AssessmentQuestionSchema,
-      question_number: SprocQuestionOrderSchema.shape.question_number,
+      print_form_question: PrintFormQuestionSchema,
     }),
   );
   const uniqueQuestions = new Map(rows.map((row) => [row.question.id, row]));
@@ -129,11 +123,11 @@ export async function inspectPrintPreparationQuestions(
     },
   );
   const concernsByQuestion = new Map(inspected);
-  return rows.map(({ question, assessment_question, question_number }) => ({
-    number: question_number,
-    title: question.title ?? question.qid ?? `Question ${question_number}`,
+  return rows.map(({ question, print_form_question }) => ({
+    number: print_form_question.question_number,
+    title: question.title ?? question.qid ?? `Question ${print_form_question.question_number}`,
     questionId: question.id,
-    points: assessment_question.max_points ?? 0,
+    points: print_form_question.max_points,
     concerns: concernsByQuestion.get(question.id)!,
   }));
 }

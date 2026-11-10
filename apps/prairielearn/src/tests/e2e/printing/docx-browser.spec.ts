@@ -120,7 +120,7 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   expect(source).toBeDefined();
   const html = await page.locator(':root').evaluate(serializePrintDocument);
   const snapshot = {
-    assessmentInstanceId: '123',
+    printFormId: '123',
     authnUserId: '45',
     search: new URLSearchParams('paper_size=Letter&form_label=A&document=assessment'),
     questionListDigest: 'question-list-1',

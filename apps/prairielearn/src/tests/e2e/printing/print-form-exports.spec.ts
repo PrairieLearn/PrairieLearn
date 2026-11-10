@@ -4,15 +4,10 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
-import type { CourseInstance } from '../../../lib/db-types.js';
 import { syncCourse } from '../../helperCourse.js';
 import { createTest, expect } from '../fixtures.js';
 
-import {
-  createPrintableAssessmentInstance,
-  downloadPrintableWord,
-  waitForPrintablePage,
-} from './utils.js';
+import { createPrintableForm, downloadPrintableWord, waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
@@ -33,17 +28,11 @@ async function readWarnings(page: Page) {
   );
 }
 
-async function createPrintableAssessment(courseInstance: CourseInstance, tid: string) {
-  const assessmentInstanceId = await createPrintableAssessmentInstance(courseInstance.id, tid);
-  const printUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print`;
-  return { printUrl, assessmentInstanceId };
-}
-
 test('reports omitted questions and exports the selected Word content', async ({
   page,
   courseInstance,
 }) => {
-  const { printUrl, assessmentInstanceId } = await createPrintableAssessment(
+  const { printUrl, printForm } = await createPrintableForm(
     courseInstance,
     'exam24-printingOmittedQuestion',
   );
@@ -73,11 +62,11 @@ test('reports omitted questions and exports the selected Word content', async ({
   expect(incomplete.status()).toBe(400);
   expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
 
-  const noPrintableQuestionsQuery = new URLSearchParams(query);
+  const brokenOnlyQuery = new URLSearchParams(query);
   for (const number of new Set(printedQuestionNumbers)) {
-    noPrintableQuestionsQuery.append('exclude_question', number!);
+    brokenOnlyQuery.append('exclude_question', number!);
   }
-  const emptyPreview = await page.request.get(`${printUrl}/preview?${noPrintableQuestionsQuery}`);
+  const emptyPreview = await page.request.get(`${printUrl}/preview?${brokenOnlyQuery}`);
   expect(emptyPreview.status()).toBe(422);
   expect(await emptyPreview.text()).toContain('No questions could be rendered');
 
@@ -116,13 +105,7 @@ test('reports omitted questions and exports the selected Word content', async ({
   expect(documentXml).toContain('<m:oMath>');
   expect(documentXml).toContain('Consider two numbers');
   expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
-  for (const label of [
-    'Name',
-    'Section',
-    'Student ID',
-    'Date',
-    `Form ID ${assessmentInstanceId}`,
-  ]) {
+  for (const label of ['Name', 'Section', 'Student ID', 'Date', `Form ID ${printForm.id}`]) {
     expect(documentXml).toContain(label);
   }
 });
@@ -131,7 +114,7 @@ test('prints representative controls, editable Word content, and an ordered answ
   page,
   courseInstance,
 }) => {
-  const { printUrl } = await createPrintableAssessment(courseInstance, 'exam23-printing');
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam23-printing');
   await page.goto(`${printUrl}/preview?paper_size=Letter`);
   await waitForPrintablePage(page);
   const search = new URLSearchParams({ paper_size: 'Letter' });
@@ -226,7 +209,7 @@ test('preserves literal dollar patterns in Word exports', async ({
   try {
     await fs.writeFile(questionPath, `${original}\n<pre>${text}</pre>\n`);
     await syncCourse(testCoursePath);
-    const { printUrl } = await createPrintableAssessment(courseInstance, 'exam20-assessmentTools');
+    const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
     const query = 'paper_size=Letter';
     await page.goto(`${printUrl}/preview?${query}`);
     await waitForPrintablePage(page);
@@ -241,12 +224,12 @@ test('preserves literal dollar patterns in Word exports', async ({
   }
 });
 
-test('refuses incomplete question and answer-key renders and recovers after a correction', async ({
+test('omits failed question and answer-key renders and recovers after a correction', async ({
   page,
   courseInstance,
   testCoursePath,
 }) => {
-  const { printUrl } = await createPrintableAssessment(courseInstance, 'exam20-assessmentTools');
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
   const serverPath = path.join(testCoursePath, 'questions/addNumbers/server.py');
   const original = await fs.readFile(serverPath, 'utf8');
   try {
@@ -256,13 +239,33 @@ test('refuses incomplete question and answer-key renders and recovers after a co
         `${original}\n\ndef render(data, html):\n    if data["panel"] == "${panel}":\n        raise Exception("Deliberately broken printable render")\n    return html\n`,
       );
       await syncCourse(testCoursePath);
-      const assessment = await page.request.get(`${printUrl}/preview?paper_size=Letter`);
-      expect(assessment.status()).toBe(panel === 'question' ? 500 : 200);
-      const answerKey = await page.request.get(
-        `${printUrl}/preview?paper_size=Letter&document=answer_key`,
+      const assessment = await page.goto(`${printUrl}/preview?paper_size=Letter`);
+      expect(assessment!.status()).toBe(200);
+      await waitForPrintablePage(page);
+      expect((await readWarnings(page)).map((warning) => warning.code)).toEqual(
+        panel === 'question' ? ['render_error'] : [],
       );
-      expect(answerKey.status()).toBe(500);
-      expect(await answerKey.text()).toContain('could not be rendered.');
+
+      const query = 'paper_size=Letter&document=answer_key';
+      const answerKey = await page.goto(`${printUrl}/preview?${query}`);
+      expect(answerKey!.status()).toBe(200);
+      await waitForPrintablePage(page);
+      const warnings = await readWarnings(page);
+      expect(warnings).toEqual([
+        expect.objectContaining({ code: 'render_error', qid: 'addNumbers' }),
+      ]);
+      await expect(page.getByText('Consider two numbers')).toHaveCount(0);
+
+      const incomplete = await downloadPrintableWord(page, printUrl, query);
+      expect(incomplete.status()).toBe(400);
+      expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
+
+      const selectedQuery = `${query}&exclude_question=${warnings[0].question_number}`;
+      await page.goto(`${printUrl}/preview?${selectedQuery}`);
+      await waitForPrintablePage(page);
+      expect(await readWarnings(page)).toEqual([]);
+      const selectedDocument = await downloadPrintableWord(page, printUrl, selectedQuery);
+      expect(selectedDocument.status()).toBe(200);
     }
   } finally {
     await fs.writeFile(serverPath, original);
@@ -270,5 +273,12 @@ test('refuses incomplete question and answer-key renders and recovers after a co
   }
   await page.goto(`${printUrl}/preview?paper_size=Letter&document=answer_key`);
   await waitForPrintablePage(page);
+  expect(await readWarnings(page)).toEqual([]);
   await expect(page.getByText('Consider two numbers')).toBeVisible();
+  const recovered = await downloadPrintableWord(
+    page,
+    printUrl,
+    'paper_size=Letter&document=answer_key',
+  );
+  expect(recovered.status()).toBe(200);
 });

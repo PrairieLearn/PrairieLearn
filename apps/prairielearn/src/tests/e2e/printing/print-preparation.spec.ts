@@ -10,6 +10,7 @@ import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
+import { selectPrintFormQuestions } from '../../../models/print-form-question.js';
 import { syncCourse } from '../../helperCourse.js';
 import { getOrCreateUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
@@ -373,7 +374,7 @@ test('combines assessment copies with custom covers and appends every form’s a
     timeout: 120_000,
   });
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
-  const originalForm = await selectPrintFormById(originalFormId);
+  const originalQuestions = await selectPrintFormQuestions(originalFormId);
   await page.getByRole('button', { name: 'Regenerate Form A', exact: true }).click();
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(originalFormId);
   await expect(downloadMenu(page)).toBeEnabled({
@@ -383,7 +384,7 @@ test('combines assessment copies with custom covers and appends every form’s a
     'aria-pressed',
     'true',
   );
-  expect(await selectPrintFormById(originalFormId)).toEqual(originalForm);
+  expect(await selectPrintFormQuestions(originalFormId)).toEqual(originalQuestions);
 
   const formIds = [new URL(page.url()).searchParams.get('form')!];
   await page.getByRole('button', { name: 'Add form', exact: true }).click();

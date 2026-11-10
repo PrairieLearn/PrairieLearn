@@ -39,6 +39,8 @@ import type { PrintDocument } from '../../lib/printing/index.js';
 import type { QuestionBlockSize } from '../../lib/printing/question-block-size.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
+import type { PrintFormsError } from '../../trpc/assessment/print-forms.js';
+import type { PrintableAssessmentExportError } from '../../trpc/assessment/printable-assessment-export.js';
 
 import { BookletDownloadModal } from './BookletDownloadModal.js';
 import { type PreviewState, PrintPreview } from './PrintPreview.js';
@@ -532,21 +534,21 @@ function PrintPreparation({
       </a>
       <h1 className="h4 mb-3">Print assessment</h1>
       <AppErrorAlert
-        error={getAppError<never>(create.error)}
+        error={getAppError<PrintFormsError['create']>(create.error)}
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => create.reset()}
       />
       <AppErrorAlert
-        error={getAppError<never>(forms.error)}
+        error={getAppError<PrintFormsError['list']>(forms.error)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
       <AppErrorAlert
-        error={getAppError<never>(regenerate.error)}
+        error={getAppError<PrintFormsError['regenerate']>(regenerate.error)}
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => regenerate.reset()}
       />
       <AppErrorAlert
-        error={getAppError<never>(
+        error={getAppError<PrintableAssessmentExportError['pdf']>(
           pdfPreparationError?.target === 'packet' ? pdfPreparationError.error : packet.error,
         )}
         render={{ UNKNOWN: ({ message }) => message }}
@@ -968,7 +970,7 @@ function PrintPreparation({
                     )}
                   </Card.Header>
                   <AppErrorAlert
-                    error={getAppError<never>(questions.error)}
+                    error={getAppError<PrintFormsError['questions']>(questions.error)}
                     render={{ UNKNOWN: ({ message }) => message }}
                   />
                   {questions.isPending && (

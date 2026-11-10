@@ -68,7 +68,6 @@ WITH
         type,
         description,
         status,
-        finish_date,
         legacy
       )
     SELECT
@@ -80,11 +79,7 @@ WITH
       $authn_user_id,
       'print_export',
       $description,
-      $status::enum_job_status,
-      CASE
-        WHEN $status = 'Success' THEN CURRENT_TIMESTAMP
-        ELSE NULL
-      END,
+      'Running'::enum_job_status,
       FALSE
     FROM
       job_sequences AS js
@@ -107,7 +102,6 @@ WITH
         type,
         description,
         status,
-        finish_date,
         data
       )
     SELECT
@@ -121,11 +115,7 @@ WITH
       $authn_user_id,
       'print_export',
       $description,
-      $status::enum_job_status,
-      CASE
-        WHEN $status = 'Success' THEN CURRENT_TIMESTAMP
-        ELSE NULL
-      END,
+      'Running'::enum_job_status,
       $data::jsonb
     FROM
       new_job_sequence

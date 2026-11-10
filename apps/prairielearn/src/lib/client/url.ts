@@ -139,6 +139,18 @@ export function getPublicAssessmentUrl(courseInstanceId: string, assessmentId: s
   return `/pl/public/course_instance/${courseInstanceId}/assessment/${assessmentId}`;
 }
 
+export function getPrintFormUrl({
+  courseInstanceId,
+  assessmentId,
+  printFormId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+  printFormId: string;
+}): string {
+  return `${getAssessmentUrl({ courseInstanceId, assessmentId })}/print_form/${printFormId}`;
+}
+
 export function getAssessmentInstanceUrl({
   courseInstanceId,
   assessmentInstanceId,

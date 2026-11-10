@@ -54,7 +54,7 @@ export function getPrintFooterLabel({
 
 /**
  * Builds the cover content used by non-HTML outputs. The HTML cover in
- * `instructorAssessmentInstancePrint.html.ts` renders the same labels, instructions, and pledge
+ * `instructorAssessmentPrintForm.html.ts` renders the same labels, instructions, and pledge
  * through the helpers above; author-provided HTML is converted to formatted text blocks here.
  */
 export function buildPrintableCover({
@@ -69,7 +69,7 @@ export function buildPrintableCover({
   includeHonorCode,
   gradingTable,
 }: {
-  resLocals: ResLocalsForPage<'assessment-instance'>;
+  resLocals: ResLocalsForPage<'print-form'>;
   document: PrintDocument;
   formLabel?: string;
   identityFields: readonly string[];
@@ -81,7 +81,7 @@ export function buildPrintableCover({
   gradingTable?: PrintableCover['gradingTable'];
 }): PrintableCover {
   const isAnswerKey = document === 'answer_key';
-  const formId = resLocals.assessment_instance.id;
+  const formId = resLocals.print_form.id;
   const teamWork = resLocals.assessment.team_work;
 
   const instructionBlocks: PrintableTextBlock[] = [

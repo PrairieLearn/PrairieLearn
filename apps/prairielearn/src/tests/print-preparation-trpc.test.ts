@@ -3,12 +3,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import * as tmp from 'tmp-promise';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import { makeAssessmentInstance } from '../lib/assessment.js';
 import { getFromS3, uploadToS3 } from '../lib/aws.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
@@ -22,13 +21,14 @@ import {
   processQueuedPrintExports,
   queuePrintExport,
   selectPrintExportJob,
-  storeCompletedPrintExport,
+  waitForPrintExportWorkers,
 } from '../lib/print-export-jobs.js';
+import * as printExportRender from '../lib/print-export-render.js';
+import { createPrintForm } from '../lib/print-forms.js';
 import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
 import { assessmentHasPrintRandomization } from '../lib/print-preparation.js';
-import { getPrintableQuestionListDigest } from '../lib/printing/index.js';
+import * as printing from '../lib/printing/index.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
-import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -36,6 +36,8 @@ import {
   upsertCourseInstancePermissionsRole,
 } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
+import { selectPrintFormQuestions } from '../models/print-form-question.js';
+import { selectOptionalPrintForm } from '../models/print-form.js';
 import { selectQuestionById } from '../models/question.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
@@ -59,7 +61,7 @@ function client(assessmentId: string) {
 }
 
 function packetInput(
-  assessmentInstanceId: string,
+  printFormId: string,
   copies = 1,
   document: 'assessment' | 'answer_key' | 'booklet' = 'assessment',
 ) {
@@ -67,7 +69,7 @@ function packetInput(
   data.set(
     'metadata',
     JSON.stringify({
-      instances: [{ assessmentInstanceId, formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS }],
+      forms: [{ printFormId, formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS }],
       copies,
       document,
     }),
@@ -101,10 +103,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const api = client(assessment.id);
     await features.disable('printable-assessments');
     try {
-      await expect(api.printableAssessments.list.query()).rejects.toMatchObject({
+      await expect(api.printForms.list.query()).rejects.toMatchObject({
         data: { code: 'NOT_FOUND' },
       });
-      await expect(api.printableAssessments.create.mutate()).rejects.toMatchObject({
+      await expect(api.printForms.create.mutate()).rejects.toMatchObject({
         data: { code: 'NOT_FOUND' },
       });
       await expect(
@@ -121,26 +123,26 @@ describe('print preparation', { timeout: 60_000 }, () => {
   });
 
   test.each(['exam20-assessmentTools', 'hw7-bonusPoints'])(
-    'creates independent instructor instances even when students only get one attempt (%s)',
+    'creates independent saved forms even when students only get one attempt (%s)',
     async (tid) => {
-      const assessment = await selectAssessmentByTid({
-        course_instance_id: '1',
-        tid,
-      });
+      const assessment = await selectAssessmentByTid({ course_instance_id: '1', tid });
       const api = client(assessment.id);
       expect(assessment.multiple_instance).toBe(false);
-      const first = await api.printableAssessments.create.mutate();
-      const second = await api.printableAssessments.create.mutate();
-      expect(second.assessmentInstanceId).not.toBe(first.assessmentInstanceId);
-      const instance = await selectAssessmentInstanceById(first.assessmentInstanceId);
-      const secondInstance = await selectAssessmentInstanceById(second.assessmentInstanceId);
-      expect(instance.user_id).toBe('1');
-      expect(instance.include_in_statistics).toBe(false);
-      expect(instance.auto_close).toBe(false);
-      expect(secondInstance.number).toBe(instance.number + 1);
-      expect(secondInstance.include_in_statistics).toBe(false);
+      const first = await api.printForms.create.mutate();
+      const second = await api.printForms.create.mutate();
+      expect(second.printFormId).not.toBe(first.printFormId);
+      expect(
+        await selectOptionalPrintForm({
+          printFormId: first.printFormId,
+          assessmentId: assessment.id,
+          userId: '1',
+        }),
+      ).toMatchObject({ user_id: '1', authn_user_id: '1' });
       expect((await selectAssessmentById(assessment.id)).multiple_instance).toBe(false);
-      const questions = await api.printableAssessments.questions.query(first);
+      const forms = await api.printForms.list.query();
+      expect(forms.map((form) => form.id)).toEqual([second.printFormId, first.printFormId]);
+      expect(Object.keys(forms[0]).sort()).toEqual(['assessment_id', 'created_at', 'id']);
+      const questions = await api.printForms.questions.query(first);
       expect(questions.length).toBeGreaterThan(0);
       expect(questions[0].number).toBe(
         assessment.type === 'Homework' ? `HW${assessment.number}.1` : '1',
@@ -151,25 +153,22 @@ describe('print preparation', { timeout: 60_000 }, () => {
     },
   );
 
-  test('regeneration creates a replacement and preserves the original instance', async () => {
+  test('regeneration creates a replacement and preserves the saved original form', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const first = await api.printableAssessments.create.mutate();
-    const original = await selectAssessmentInstanceById(first.assessmentInstanceId);
-    const originalQuestions = await api.printableAssessments.questions.query(first);
-    const regenerated = await api.printableAssessments.regenerate.mutate(first);
-    expect(regenerated.assessmentInstanceId).not.toBe(first.assessmentInstanceId);
-    expect(await selectAssessmentInstanceById(first.assessmentInstanceId)).toEqual(original);
-    expect(await api.printableAssessments.questions.query(first)).toEqual(originalQuestions);
-    expect(await api.printableAssessments.questions.query(regenerated)).toHaveLength(
+    const first = await api.printForms.create.mutate();
+    const original = await selectPrintFormQuestions(first.printFormId);
+    const originalQuestions = await api.printForms.questions.query(first);
+    const regenerated = await api.printForms.regenerate.mutate(first);
+    expect(regenerated.printFormId).not.toBe(first.printFormId);
+    expect(await selectPrintFormQuestions(first.printFormId)).toEqual(original);
+    expect(await api.printForms.questions.query(first)).toEqual(originalQuestions);
+    expect(await api.printForms.questions.query(regenerated)).toHaveLength(
       originalQuestions.length,
     );
-    expect(
-      (await selectAssessmentInstanceById(regenerated.assessmentInstanceId)).include_in_statistics,
-    ).toBe(false);
   });
 
-  test('does not expose or regenerate another user’s instance or another assessment’s instance', async () => {
+  test('does not expose or regenerate another user’s form or another assessment’s form', async () => {
     const assessment = await printAssessment();
     const otherAssessment = await selectAssessmentByTid({
       course_instance_id: '1',
@@ -181,106 +180,82 @@ describe('print preparation', { timeout: 60_000 }, () => {
       uin: '555555555',
       email: 'print-student@example.com',
     });
-    const studentInstanceId = await makeAssessmentInstance({
+    const courseInstance = await selectCourseInstanceById('1');
+    const otherUserForm = await createPrintForm({
       assessment,
-      user_id: otherUser.id,
-      authn_user_id: '1',
-      mode: 'Public',
-      time_limit_min: null,
-      date: new Date(),
-      client_fingerprint_id: null,
+      course: await selectCourseById(courseInstance.course_id),
+      courseInstance,
+      userId: otherUser.id,
+      authnUserId: '1',
     });
     const api = client(assessment.id);
-    expect(
-      (await api.printableAssessments.list.query()).some(
-        (instance) => instance.id === studentInstanceId,
-      ),
-    ).toBe(false);
-    await expect(
-      api.printableAssessments.questions.query({ assessmentInstanceId: studentInstanceId }),
-    ).rejects.toThrow('This assessment instance is not available.');
-    await expect(
-      api.printableAssessments.regenerate.mutate({ assessmentInstanceId: studentInstanceId }),
-    ).rejects.toThrow('This assessment instance is not available.');
-    await expect(
-      api.printableAssessmentExport.pdf.mutate(packetInput(studentInstanceId)),
-    ).rejects.toThrow('An assessment instance is not available.');
-    const otherForm = await client(otherAssessment.id).printableAssessments.create.mutate();
-    await expect(api.printableAssessments.questions.query(otherForm)).rejects.toThrow(
-      'This assessment instance is not available.',
+    expect((await api.printForms.list.query()).some((form) => form.id === otherUserForm.id)).toBe(
+      false,
     );
-    await expect(api.printableAssessments.regenerate.mutate(otherForm)).rejects.toThrow(
-      'This assessment instance is not available.',
+    await expect(api.printForms.questions.query({ printFormId: otherUserForm.id })).rejects.toThrow(
+      'This print form is not available.',
     );
     await expect(
-      api.printableAssessmentExport.pdf.mutate(packetInput(otherForm.assessmentInstanceId)),
-    ).rejects.toThrow('An assessment instance is not available.');
+      api.printForms.regenerate.mutate({ printFormId: otherUserForm.id }),
+    ).rejects.toThrow('This print form is not available.');
+    await expect(
+      api.printableAssessmentExport.pdf.mutate(packetInput(otherUserForm.id)),
+    ).rejects.toThrow('A print form is not available.');
+    const otherForm = await client(otherAssessment.id).printForms.create.mutate();
+    await expect(api.printForms.questions.query(otherForm)).rejects.toThrow(
+      'This print form is not available.',
+    );
+    await expect(api.printForms.regenerate.mutate(otherForm)).rejects.toThrow(
+      'This print form is not available.',
+    );
+    await expect(
+      api.printableAssessmentExport.pdf.mutate(packetInput(otherForm.printFormId)),
+    ).rejects.toThrow('A print form is not available.');
   });
 
-  test('ordinary and printable requests share a number sequence under concurrent creation', async () => {
+  test('question inspection keeps saved labels and points after the source assessment changes', async () => {
     const assessment = await printAssessment();
-    await execute(sql.set_multiple_instance, {
-      assessment_id: assessment.id,
-      multiple_instance: true,
-    });
+    const api = client(assessment.id);
+    const form = await api.printForms.create.mutate();
+    const original = await api.printForms.questions.query(form);
+    const [{ assessment_question: source }] = await selectPrintFormQuestions(form.printFormId);
+    await execute(sql.change_source_question, { assessment_question_id: source.id });
     try {
-      const api = client(assessment.id);
-      const ids = await Promise.all(
-        Array.from({ length: 6 }, async (_, index) => {
-          if (index % 2 === 0) {
-            return (await api.printableAssessments.create.mutate()).assessmentInstanceId;
-          }
-          return await makeAssessmentInstance({
-            assessment,
-            user_id: '1',
-            authn_user_id: '1',
-            mode: 'Public',
-            time_limit_min: null,
-            date: new Date(),
-            client_fingerprint_id: null,
-          });
-        }),
-      );
-      const instances = await Promise.all(ids.map(selectAssessmentInstanceById));
-      const numbers = instances.map((instance) => instance.number).sort((a, b) => a - b);
-      expect(numbers).toEqual(Array.from({ length: 6 }, (_, index) => numbers[0] + index));
+      expect(await api.printForms.questions.query(form)).toEqual(original);
     } finally {
-      await execute(sql.set_multiple_instance, {
-        assessment_id: assessment.id,
-        multiple_instance: assessment.multiple_instance,
+      await execute(sql.restore_source_question, {
+        assessment_question_id: source.id,
+        deleted_at: source.deleted_at,
+        max_points: source.max_points,
       });
     }
   });
 
-  test('concurrent student requests still reuse a single allowed attempt', async () => {
+  test('rejects creating and regenerating forms for group assessments', async () => {
     const assessment = await printAssessment();
-    const user = await getOrCreateUser({
-      uid: 'single-attempt@example.com',
-      name: 'Single attempt',
-      uin: '555555556',
-    });
-    const ids = await Promise.all(
-      Array.from({ length: 3 }, () =>
-        makeAssessmentInstance({
-          assessment,
-          user_id: user.id,
-          authn_user_id: user.id,
-          mode: 'Public',
-          time_limit_min: null,
-          date: new Date(),
-          client_fingerprint_id: null,
-        }),
-      ),
-    );
-    expect(new Set(ids).size).toBe(1);
-    expect((await selectAssessmentInstanceById(ids[0])).number).toBe(1);
+    const api = client(assessment.id);
+    const form = await api.printForms.create.mutate();
+    await execute(sql.set_team_work, { assessment_id: assessment.id, team_work: true });
+    try {
+      await expect(api.printForms.create.mutate()).rejects.toThrow(
+        'Creating print forms for group assessments is not supported yet.',
+      );
+      await expect(api.printForms.regenerate.mutate(form)).rejects.toThrow(
+        'Creating print forms for group assessments is not supported yet.',
+      );
+    } finally {
+      await execute(sql.set_team_work, {
+        assessment_id: assessment.id,
+        team_work: assessment.team_work,
+      });
+    }
   });
 
   test('warns about missing question files', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const instance = await api.printableAssessments.create.mutate();
-    const questions = await api.printableAssessments.questions.query(instance);
+    const form = await api.printForms.create.mutate();
+    const questions = await api.printForms.questions.query(form);
     const question = await selectQuestionById(questions[0].questionId);
     const course = await selectCourseById(question.course_id);
     const filename = path.join(
@@ -292,7 +267,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const original = await fs.readFile(filename);
     await fs.unlink(filename);
     try {
-      const inspected = await api.printableAssessments.questions.query(instance);
+      const inspected = await api.printForms.questions.query(form);
       expect(inspected[0].concerns).toContain(
         'Could not inspect this question’s source. Review its preview before printing.',
       );
@@ -306,7 +281,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const assessment = await printAssessment();
     const input = packetInput('1');
     const metadata = PrintPacketMetadataSchema.parse(JSON.parse(input.get('metadata')!.toString()));
-    metadata.instances[0].settings.identityFields = 'Name';
+    metadata.forms[0].settings.identityFields = 'Name';
     input.set('metadata', JSON.stringify(metadata));
     await expect(client(assessment.id).printableAssessmentExport.pdf.mutate(input)).rejects.toThrow(
       'Name and Date',
@@ -323,8 +298,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('validates custom cover PDFs on individual form exports before rendering', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const instance = await api.printableAssessments.create.mutate();
-    const data = packetInput(instance.assessmentInstanceId);
+    const form = await api.printForms.create.mutate();
+    const data = packetInput(form.printFormId);
     data.append('coverPages', new File(['invalid PDF'], 'bad.pdf', { type: 'application/pdf' }));
     await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
       'valid PDF without password protection',
@@ -334,8 +309,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('rejects cover PDFs on answer key exports', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const instance = await api.printableAssessments.create.mutate();
-    const data = packetInput(instance.assessmentInstanceId, 1, 'answer_key');
+    const form = await api.printForms.create.mutate();
+    const data = packetInput(form.printFormId, 1, 'answer_key');
     data.append('coverPages', new File(['unused'], 'cover.pdf', { type: 'application/pdf' }));
     await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
       'Answer key exports do not use uploaded cover pages.',
@@ -345,8 +320,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('rejects a predictable page limit before rendering', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const instance = await api.printableAssessments.create.mutate();
-    const data = packetInput(instance.assessmentInstanceId, 500);
+    const form = await api.printForms.create.mutate();
+    const data = packetInput(form.printFormId, 500);
     data.append('pages', new File(['<div class="pagedjs_page"></div>'.repeat(21)], 'large.html'));
     data.append('snapshotIds', 'placeholder');
     await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
@@ -354,54 +329,51 @@ describe('print preparation', { timeout: 60_000 }, () => {
     );
   });
 
-  test('stores a background PDF and streams it only to the owner', async () => {
+  test('queues a small PDF and streams the completed export only to its owner', async () => {
     const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const form = await api.printForms.create.mutate();
+    const data = packetInput(form.printFormId);
+    const html = '<!doctype html><html data-print-status="ready"></html>';
+    const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
+    search.set('form_label', 'A');
+    search.set('document', 'assessment');
+    data.append('pages', new File([html], 'form-a.html'));
+    data.append(
+      'snapshotIds',
+      createPrintSnapshotId(
+        {
+          printFormId: form.printFormId,
+          authnUserId: '1',
+          search,
+          questionListDigest: await printing.getPrintableQuestionListDigest(
+            form.printFormId,
+            new Set(),
+          ),
+          html,
+          source: { html: '', figures: [] },
+        },
+        config.secretKey,
+      ),
+    );
     const pdf = Buffer.from('%PDF-1.4\nbackground export\n');
-    const courseInstance = await selectCourseInstanceById('1');
-    const jobSequenceId = await storeCompletedPrintExport({
-      owner: {
-        assessmentId: assessment.id,
-        authnUserId: '1',
-        courseId: courseInstance.course_id,
-        courseInstanceId: '1',
-        userId: '1',
-      },
-      packet: pdf,
-      work: {
-        document: 'assessment',
-        copies: 1,
-        filename: 'test-export.pdf',
-        snapshots: [
-          {
-            formLabel: 'A',
-            printDocument: 'assessment',
-            localPreviewUrl: 'http://localhost/',
-            html: '',
-            assetScope: {
-              courseInstanceId: '1',
-              assessmentId: assessment.id,
-              assessmentInstanceId: '1',
-              instanceQuestionIds: [],
-              authnUserId: '1',
-              userId: '1',
-            },
-          },
-        ],
-        covers: [],
-      },
-    });
-    await expect
-      .poll(
-        async () =>
-          (
-            await selectPrintExportJob({
-              jobSequenceId,
-              assessmentId: assessment.id,
-              authnUserId: '1',
-            })
-          )?.status,
-      )
-      .toBe('Success');
+    const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(pdf);
+    let jobSequenceId: string;
+    try {
+      const result = await api.printableAssessmentExport.pdf.mutate(data);
+      expect(result).toEqual({ jobSequenceId: expect.any(String) });
+      jobSequenceId = result.jobSequenceId;
+      expect(render).not.toHaveBeenCalled();
+      expect(await api.printableAssessmentExport.status.query({ jobSequenceId })).toMatchObject({
+        status: 'Running',
+        ready: false,
+      });
+      await processQueuedPrintExports();
+      await waitForPrintExportWorkers();
+      expect(render).toHaveBeenCalledOnce();
+    } finally {
+      render.mockRestore();
+    }
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
     ).toEqual({
@@ -415,8 +387,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${jobSequenceId}.pdf`;
     const response = await fetch(url);
     expect(response.status).toBe(200);
+    const job = (await selectPrintExportJob({
+      jobSequenceId,
+      assessmentId: assessment.id,
+      authnUserId: '1',
+    }))!;
     expect(response.headers.get('content-disposition')).toBe(
-      'attachment; filename="test-export.pdf"',
+      `attachment; filename="${job.result!.filename}"`,
     );
     expect(Buffer.from(await response.arrayBuffer())).toEqual(pdf);
     const studentResponse = await fetch(url, { headers: { cookie: 'pl_test_user=test_student' } });
@@ -506,6 +483,41 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
   });
 
+  test('reports missing browser configuration from the queued worker', async () => {
+    const assessment = await printAssessment();
+    const courseInstance = await selectCourseInstanceById('1');
+    const available = vi.spyOn(printing, 'isBrowserRenderingAvailable').mockReturnValue(false);
+    try {
+      const jobSequenceId = await queuePrintExport({
+        owner: {
+          assessmentId: assessment.id,
+          authnUserId: '1',
+          courseId: courseInstance.course_id,
+          courseInstanceId: '1',
+          userId: '1',
+        },
+        work: {
+          document: 'assessment',
+          copies: 1,
+          filename: 'unavailable-export.pdf',
+          snapshots: [],
+          covers: [],
+        },
+      });
+      await processQueuedPrintExports();
+      await waitForPrintExportWorkers();
+      expect(
+        await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
+      ).toMatchObject({
+        status: 'Error',
+        ready: false,
+        failureMessage: 'PDF rendering is not configured on this server.',
+      });
+    } finally {
+      available.mockRestore();
+    }
+  });
+
   test('stops retrying after three expired worker leases', async () => {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
@@ -543,8 +555,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('rejects a changed PDF snapshot before rendering', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const instance = await api.printableAssessments.create.mutate();
-    const data = packetInput(instance.assessmentInstanceId);
+    const form = await api.printForms.create.mutate();
+    const data = packetInput(form.printFormId);
     const html = '<!doctype html><html data-print-status="ready"></html>';
     const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
     search.set('form_label', 'A');
@@ -553,11 +565,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
       'snapshotIds',
       createPrintSnapshotId(
         {
-          assessmentInstanceId: instance.assessmentInstanceId,
+          printFormId: form.printFormId,
           authnUserId: '1',
           search,
-          questionListDigest: await getPrintableQuestionListDigest(
-            instance.assessmentInstanceId,
+          questionListDigest: await printing.getPrintableQuestionListDigest(
+            form.printFormId,
             new Set(),
           ),
           html,
@@ -612,8 +624,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
       });
       try {
         const api = client(assessment.id);
-        const instance = await api.printableAssessments.create.mutate();
-        const questions = await api.printableAssessments.questions.query(instance);
+        const form = await api.printForms.create.mutate();
+        const questions = await api.printForms.questions.query(form);
         expect(questions).toHaveLength(2);
         expect(questions[0].number).toMatch(shuffle ? /^#\d+$/ : /^HW15\.1$/);
       } finally {
@@ -628,7 +640,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('requires course preview permission', async () => {
     const assessment = await printAssessment();
     const response = await fetch(
-      `${siteUrl}${getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: assessment.id })}/printableAssessments.list`,
+      `${siteUrl}${getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: assessment.id })}/printForms.list`,
       {
         headers: { 'X-TRPC': 'true', cookie: 'pl_test_user=test_student' },
       },
@@ -676,15 +688,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
       course_instance_role: 'Student Data Editor',
       authn_user_id: '1',
     });
-    const instanceId = await makeAssessmentInstance({
+    const form = await createPrintForm({
       assessment,
-      user_id: instructor.id,
-      authn_user_id: instructor.id,
-      mode: 'Public',
-      time_limit_min: null,
-      date: new Date(),
-      client_fingerprint_id: null,
-      forPrinting: true,
+      course: await selectCourseById(courseInstance.course_id),
+      courseInstance,
+      userId: instructor.id,
+      authnUserId: instructor.id,
     });
     const trpcUrl = getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: assessment.id });
     const headers = {
@@ -701,7 +710,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       const response = await fetch(`${siteUrl}${trpcUrl}/printableAssessmentExport.pdf`, {
         method: 'POST',
         headers,
-        body: packetInput(instanceId, 1, document),
+        body: packetInput(form.id, 1, document),
       });
       expect(response.status).toBe(400);
       expect(await response.text()).toContain('The printable pages are incomplete.');
