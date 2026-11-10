@@ -2,7 +2,7 @@ import { type FileUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { useCallback, useState } from 'react';
-import { Button, Spinner } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 
 import {
   MAX_ATTACHMENTS_PER_MESSAGE,
@@ -13,8 +13,7 @@ import {
   attachmentUrl,
 } from '@prairielearn/course-agent-types';
 
-const formatBytes = (bytes: number) => filesize(bytes, { round: 1, standard: 'jedec' });
-export const MAX_ATTACHMENT_SIZE = formatBytes(MAX_ATTACHMENT_BYTES);
+export const MAX_ATTACHMENT_SIZE = filesize(MAX_ATTACHMENT_BYTES, { round: 1, standard: 'jedec' });
 
 export type AttachmentStatus =
   | { kind: 'ready' }
@@ -28,7 +27,7 @@ export type AttachmentStatus =
 export interface DraftAttachment {
   key: string;
   file: File;
-  /** An object URL for an image's thumbnail. */
+  /** An object URL for an image's preview. */
   previewUrl: string | null;
   status: AttachmentStatus;
 }
@@ -36,10 +35,10 @@ export interface DraftAttachment {
 function statusOf(file: File, position: number): AttachmentStatus {
   const invalid = (problem: string) => ({ kind: 'invalid', problem }) as const;
   if (position >= MAX_ATTACHMENTS_PER_MESSAGE) {
-    return invalid(`Only ${MAX_ATTACHMENTS_PER_MESSAGE} files per message. Remove it.`);
+    return invalid(`Over ${MAX_ATTACHMENTS_PER_MESSAGE} files`);
   }
-  if (file.size > MAX_ATTACHMENT_BYTES) return invalid(`Over ${MAX_ATTACHMENT_SIZE}. Remove it.`);
-  if (file.size === 0) return invalid('Empty file. Remove it.');
+  if (file.size > MAX_ATTACHMENT_BYTES) return invalid(`Over ${MAX_ATTACHMENT_SIZE}`);
+  if (file.size === 0) return invalid('Empty file');
   return { kind: 'ready' };
 }
 
@@ -112,8 +111,8 @@ function uploadFile(url: string, csrfToken: string, file: File, onProgress: (p: 
 }
 
 /**
- * A reduced WebP of an image for its preview in chat history, or null if the browser can't decode
- * it (HEIC in most browsers, or a corrupt file). Browsers without WebP encoding produce a PNG.
+ * A small WebP of an image for its tile in chat history, or null if the browser can't decode it
+ * (HEIC in most browsers, or a corrupt file). Browsers without WebP encoding produce a PNG.
  */
 async function makeThumbnail(file: File) {
   let bitmap: ImageBitmap;
@@ -132,7 +131,7 @@ async function makeThumbnail(file: File) {
   return await canvas.convertToBlob({ type: 'image/webp', quality: 0.8 });
 }
 
-/** A preview is optional, so a failed one leaves the card's file icon in its place. */
+/** A preview is optional, so a failed one leaves a file tile in its place. */
 async function uploadThumbnail(url: string, csrfToken: string, thumbnail: Blob) {
   await fetch(url, {
     method: 'POST',
@@ -175,7 +174,7 @@ export async function uploadDraftAttachments(
       setStatus(
         key,
         result.status === 413
-          ? { kind: 'invalid', problem: 'Conversation file limit reached. Remove it.' }
+          ? { kind: 'invalid', problem: 'Conversation is full' }
           : { kind: 'failed' },
       );
       return null;
@@ -194,101 +193,92 @@ function extensionOf(filename: string) {
   return filename.includes('.') ? filename.split('.').at(-1)!.toLowerCase() : '';
 }
 
-function fileIcon(mediaType: string, filename: string) {
-  const extension = extensionOf(filename);
-  if (mediaType.startsWith('image/')) return 'bi-file-earmark-image';
-  if (mediaType === 'application/pdf' || extension === 'pdf') return 'bi-file-earmark-pdf';
-  if (['csv', 'tsv', 'xlsx', 'xls'].includes(extension)) return 'bi-file-earmark-spreadsheet';
-  if (['zip', 'gz', 'tar'].includes(extension)) return 'bi-file-earmark-zip';
-  if (mediaType.startsWith('text/') || ['md', 'json', 'py', 'tex'].includes(extension)) {
-    return 'bi-file-earmark-text';
-  }
-  return 'bi-file-earmark';
-}
-
 function typeLabel(mediaType: string, filename: string) {
   return (extensionOf(filename) || mediaType.split('/').at(-1) || 'File').toUpperCase();
 }
 
-function AttachmentCard({
+/**
+ * A square tile for an attachment: an image's preview, or its name and either its type or a
+ * problem.
+ */
+function AttachmentTile({
   filename,
-  mediaType,
-  detail,
+  label,
+  problem = null,
+  percent = null,
   previewUrl = null,
   downloadUrl = null,
-  danger = false,
-  busy = false,
   onRemove,
 }: {
   filename: string;
-  mediaType: string;
-  detail: string;
+  label: string;
+  problem?: string | null;
+  /** Upload progress, shown over the tile while uploading. */
+  percent?: number | null;
   previewUrl?: string | null;
   downloadUrl?: string | null;
-  danger?: boolean;
-  busy?: boolean;
   onRemove?: () => void;
 }) {
   // Uploads from before previews existed, and images the browser couldn't decode, have none.
   const [previewFailed, setPreviewFailed] = useState(false);
   const content = (
-    <>
-      <span
-        className={clsx(
-          'course-agent-attachment-icon position-relative overflow-hidden rounded-1 d-flex align-items-center justify-content-center',
-          danger ? 'bg-danger-subtle text-danger' : 'bg-body-secondary text-body-secondary',
-        )}
-        aria-hidden="true"
-      >
-        {busy ? (
-          <Spinner animation="border" size="sm" />
-        ) : previewUrl && !previewFailed ? (
-          <img
-            src={previewUrl}
-            alt=""
-            className="w-100 h-100 object-fit-cover"
-            onError={() => setPreviewFailed(true)}
-          />
-        ) : (
-          <i
-            className={clsx(
-              'bi',
-              danger ? 'bi-exclamation-triangle' : fileIcon(mediaType, filename),
-            )}
-          />
-        )}
-        {downloadUrl && (
-          <span className="course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
-            <i className="bi bi-download" />
+    <div className="position-relative h-100 overflow-hidden rounded-3">
+      {previewUrl && !problem && !previewFailed ? (
+        <img
+          src={previewUrl}
+          alt=""
+          loading="lazy"
+          className="w-100 h-100 object-fit-cover"
+          onError={() => setPreviewFailed(true)}
+        />
+      ) : (
+        <div className="d-flex flex-column justify-content-between h-100 p-2">
+          <span className={clsx('course-agent-attachment-name', problem && 'text-danger')}>
+            {filename}
           </span>
-        )}
-      </span>
-      <span className="d-flex flex-column overflow-hidden small lh-sm">
-        <span className="text-truncate">{filename}</span>
-        <span className={danger ? 'text-danger' : 'text-body-secondary'}>{detail}</span>
-      </span>
-    </>
+          {problem ? (
+            <span className="course-agent-attachment-problem text-danger">
+              <i className="bi bi-exclamation-triangle me-1" aria-hidden="true" />
+              {problem}
+            </span>
+          ) : (
+            <span className="badge rounded-pill border text-body-secondary fw-normal align-self-start mw-100 text-truncate">
+              {label}
+            </span>
+          )}
+        </div>
+      )}
+      {percent !== null && (
+        <div className="course-agent-attachment-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fw-medium">
+          {percent}%
+        </div>
+      )}
+      {downloadUrl && (
+        <div className="course-agent-attachment-overlay course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fs-5">
+          <i className="bi bi-download" aria-hidden="true" />
+        </div>
+      )}
+    </div>
   );
   return (
     <li
       className={clsx(
-        'course-agent-attachment position-relative d-flex rounded-2 border bg-body-tertiary',
-        danger && 'border-danger',
+        'course-agent-attachment position-relative flex-shrink-0 rounded-3 border',
+        problem ? 'border-danger bg-danger-subtle' : 'bg-body-tertiary',
       )}
+      title={filename}
     >
       {downloadUrl ? (
         <a
           href={downloadUrl}
           download={filename}
-          className="course-agent-attachment-body d-flex align-items-center gap-2 text-reset text-decoration-none"
+          className="d-block h-100 text-reset text-decoration-none"
           aria-label={`Download ${filename}`}
         >
           {content}
         </a>
       ) : (
-        <span className="course-agent-attachment-body d-flex align-items-center gap-2">
-          {content}
-        </span>
+        content
       )}
       {onRemove && (
         <Button
@@ -305,17 +295,10 @@ function AttachmentCard({
   );
 }
 
-function draftDetail({ file, status }: DraftAttachment) {
-  switch (status.kind) {
-    case 'invalid':
-      return status.problem;
-    case 'uploading':
-      return `Uploading… ${status.percent}%`;
-    case 'failed':
-      return "Couldn't upload. Send to retry.";
-    default:
-      return `${typeLabel(file.type, file.name)} · ${formatBytes(file.size)}`;
-  }
+function draftProblem({ status }: DraftAttachment) {
+  if (status.kind === 'invalid') return status.problem;
+  if (status.kind === 'failed') return 'Upload failed';
+  return null;
 }
 
 export function DraftAttachmentList({
@@ -331,59 +314,17 @@ export function DraftAttachmentList({
   return (
     <ul className="list-unstyled d-flex flex-wrap gap-2 m-0 px-2 pt-2" aria-label="Attachments">
       {attachments.map((attachment) => (
-        <AttachmentCard
+        <AttachmentTile
           key={attachment.key}
           filename={attachment.file.name}
-          mediaType={attachment.file.type}
-          detail={draftDetail(attachment)}
+          label={typeLabel(attachment.file.type, attachment.file.name)}
+          problem={draftProblem(attachment)}
+          percent={attachment.status.kind === 'uploading' ? attachment.status.percent : null}
           previewUrl={attachment.previewUrl}
-          danger={attachment.status.kind === 'invalid' || attachment.status.kind === 'failed'}
-          busy={attachment.status.kind === 'uploading'}
           onRemove={sending ? undefined : () => onRemove(attachment.key)}
         />
       ))}
     </ul>
-  );
-}
-
-/** A sent image shown whole, or as a file card if it has no preview. */
-function SentImage({
-  filename,
-  mediaType,
-  previewUrl,
-  downloadUrl,
-}: {
-  filename: string;
-  mediaType: string;
-  previewUrl: string;
-  downloadUrl: string;
-}) {
-  // Uploads from before previews existed, and images the browser couldn't decode, have none.
-  const [previewFailed, setPreviewFailed] = useState(false);
-  if (previewFailed) {
-    return (
-      <AttachmentCard
-        filename={filename}
-        mediaType={mediaType}
-        detail={typeLabel(mediaType, filename)}
-        downloadUrl={downloadUrl}
-      />
-    );
-  }
-  return (
-    <li className="course-agent-sent-image position-relative">
-      <a href={downloadUrl} download={filename} aria-label={`Download ${filename}`}>
-        <img
-          src={previewUrl}
-          alt=""
-          className="d-block rounded-3 border"
-          onError={() => setPreviewFailed(true)}
-        />
-        <span className="course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex align-items-center justify-content-center fs-4">
-          <i className="bi bi-download" aria-hidden="true" />
-        </span>
-      </a>
-    </li>
   );
 }
 
@@ -406,25 +347,15 @@ export function SentAttachments({
       className="list-unstyled d-flex flex-wrap justify-content-end gap-2 m-0"
       aria-label="Attachments"
     >
-      {files.map(({ part, url }) =>
-        part.mediaType.startsWith('image/') ? (
-          <SentImage
-            key={part.url}
-            filename={part.filename ?? 'Image'}
-            mediaType={part.mediaType}
-            previewUrl={`${url}/thumbnail`}
-            downloadUrl={url}
-          />
-        ) : (
-          <AttachmentCard
-            key={part.url}
-            filename={part.filename ?? 'File'}
-            mediaType={part.mediaType}
-            detail={typeLabel(part.mediaType, part.filename ?? '')}
-            downloadUrl={url}
-          />
-        ),
-      )}
+      {files.map(({ part, url }) => (
+        <AttachmentTile
+          key={part.url}
+          filename={part.filename ?? 'File'}
+          label={typeLabel(part.mediaType, part.filename ?? '')}
+          previewUrl={part.mediaType.startsWith('image/') ? `${url}/thumbnail` : null}
+          downloadUrl={url}
+        />
+      ))}
     </ul>
   );
 }
