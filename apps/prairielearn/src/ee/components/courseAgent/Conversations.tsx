@@ -9,10 +9,12 @@ import {
   type ReactNode,
   type SyntheticEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
+import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 import { z } from 'zod';
 
@@ -36,6 +38,7 @@ import { ConversationStats } from './ConversationStats.js';
 import { RequestChangesCard, ReviewFeedback } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
+import { courseFileLinkTransform } from './courseFileLinks.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -396,6 +399,8 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  // A stable transform lets memoized Markdown blocks skip re-rendering.
+  const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
@@ -437,6 +442,7 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
+              linkTransform={linkTransform}
               onToolCallExpand={stickToBottom.stopScroll}
             />
           ))}
@@ -600,6 +606,7 @@ function Message({
   live,
   conversationId,
   awaitingReviewId,
+  linkTransform,
   onToolCallExpand,
 }: {
   message: UIMessage;
@@ -608,6 +615,7 @@ function Message({
   conversationId: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
+  linkTransform: UrlTransform;
   /** Opening a tool call must not scroll it out from under the pointer. */
   onToolCallExpand: () => void;
 }) {
@@ -660,7 +668,9 @@ function Message({
       }
       const { key, part } = segment;
       if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) return null;
-      if (part.type === 'text') return <TextPart key={key} part={part} />;
+      if (part.type === 'text') {
+        return <TextPart key={key} part={part} urlTransform={linkTransform} />;
+      }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
       if (part.type === 'data-turn') {
         const { tag } = TurnPartSchema.parse(part.data);
