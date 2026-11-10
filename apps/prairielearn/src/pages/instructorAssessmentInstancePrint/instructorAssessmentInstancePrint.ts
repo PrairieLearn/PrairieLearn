@@ -408,7 +408,6 @@ router.post(
           browserOrigin: config.serverCanonicalHost ?? undefined,
           html: snapshot.html,
           assetScope: printAssetScope(res.locals, instanceQuestionIds),
-          runScripts: true,
           signal,
           timeoutMs: remainingTimeoutMs(),
         },
