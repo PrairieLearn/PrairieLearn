@@ -4,7 +4,7 @@ import re
 from enum import Enum
 from functools import lru_cache
 from sys import get_int_max_str_digits
-from typing import assert_never
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
@@ -1187,13 +1187,15 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 class _TestSubmissionPrinter(StrPrinter):
     def __init__(self, imaginary_unit: str) -> None:
         super().__init__()
-        self.imaginary_unit = imaginary_unit
+        self._constant_names = {
+            sympy.E: "e",
+            sympy.I: imaginary_unit,
+        }
 
-    def _print_Exp1(self, expr: sympy.Expr) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return "e"
-
-    def _print_ImaginaryUnit(self, expr: sympy.Expr) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return self.imaginary_unit
+    def _print(self, expr: Any, **kwargs: Any) -> str:
+        if isinstance(expr, sympy.Basic) and expr in self._constant_names:
+            return self._constant_names[expr]
+        return super()._print(expr, **kwargs)
 
     def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
         return "{}"
