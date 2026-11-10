@@ -11,8 +11,8 @@ const secretKey = 'print-asset-test-key';
 const scope: PrintAssetScope = {
   courseInstanceId: '10',
   assessmentId: '20',
-  assessmentInstanceId: '30',
-  instanceQuestionIds: ['40'],
+  printFormId: '30',
+  printFormQuestionIds: ['40'],
   authnUserId: '50',
   userId: '50',
 };
@@ -50,21 +50,23 @@ describe('print asset access', () => {
     ).toEqual({ type: 'assessment', kind: 'clientFilesAssessment' });
     expect(
       classifyPrintAssetPath(
-        `${base}/instance_question/40/clientFilesQuestion/image.png`,
+        `${base}/assessment/20/print_form/30/question/40/clientFilesQuestion/image.png`,
         scope,
         '/assets',
       ),
-    ).toEqual({ type: 'question', kind: 'clientFilesQuestion', instanceQuestionId: '40' });
+    ).toEqual({ type: 'question', kind: 'clientFilesQuestion', printFormQuestionId: '40' });
     expect(
       classifyPrintAssetPath(
-        `${base}/instance_question/40/generatedFilesQuestion/variant/60/plot.png`,
+        `${base}/assessment/20/print_form/30/question/40/generatedFilesQuestion/variant/60/plot.png`,
         scope,
         '/assets',
       ),
-    ).toEqual({ type: 'question', kind: 'generatedFilesQuestion', instanceQuestionId: '40' });
+    ).toEqual({ type: 'question', kind: 'generatedFilesQuestion', printFormQuestionId: '40' });
     for (const path of [
       `${base}/assessment/21/clientFilesAssessment/diagram.png`,
-      `${base}/instance_question/41/clientFilesQuestion/image.png`,
+      `${base}/assessment/20/print_form/30/question/41/clientFilesQuestion/image.png`,
+      `${base}/assessment/20/print_form/31/question/40/clientFilesQuestion/image.png`,
+      `${base}/instance_question/40/clientFilesQuestion/image.png`,
       `${base}/assessment/20/questions`,
     ]) {
       expect(classifyPrintAssetPath(path, scope, '/assets')).toBeNull();
