@@ -254,6 +254,13 @@ router.get(
       const layout = parsePrintLayout(query);
       const { document } = query;
 
+      if (!isBrowserRenderingAvailable()) {
+        throw new HttpStatusError(
+          404,
+          'Printable document rendering is not configured on this server',
+        );
+      }
+
       res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
@@ -292,12 +299,6 @@ router.get(
         assessmentTextHtml,
         honorCodeHtml,
       }).toString();
-      if (!isBrowserRenderingAvailable()) {
-        throw new HttpStatusError(
-          404,
-          'Printable document rendering is not configured on this server',
-        );
-      }
       const localPreviewUrl = new URL(
         req.originalUrl,
         `${config.serverType}://localhost:${config.serverPort}`,
@@ -361,6 +362,13 @@ router.post(
       const layout = parsePrintLayout(query);
       const { document } = query;
 
+      if (!isBrowserRenderingAvailable()) {
+        throw new HttpStatusError(
+          404,
+          'Printable document rendering is not configured on this server',
+        );
+      }
+
       await validateQuestionsForPrinting(
         res.locals.assessment_instance.id,
         layout.questionBlockSizeOverrides,
@@ -392,12 +400,6 @@ router.post(
           gradingTable,
         });
 
-      if (!isBrowserRenderingAvailable()) {
-        throw new HttpStatusError(
-          404,
-          'Printable document rendering is not configured on this server',
-        );
-      }
       const $ = load(snapshot.html);
       const hasExecutableAttributes =
         $('*').filter((_index, node) =>

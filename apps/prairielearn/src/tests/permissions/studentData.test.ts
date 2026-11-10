@@ -251,18 +251,15 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
     const printUrl = context.examAssessmentInstanceUrl
       .replace('/assessment_instance/', '/instructor/assessment_instance/')
       .replace(/\/$/, '');
-    // An invalid question selection verifies authorization without starting the renderer.
-    const url = `${printUrl}/print/preview?paper_size=Letter&document=answer_key&exclude_question=nonexistent`;
+    // An invalid paper size verifies authorization without starting the renderer.
+    const url = `${printUrl}/print/preview?paper_size=invalid&document=answer_key`;
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student%20Data%20Viewer',
     };
     const previewResponse = await helperClient.fetchCheerio(url, { headers });
     assert.equal(previewResponse.status, 400);
-    assert.include(
-      await previewResponse.text(),
-      'Question exclusion references nonexistent question numbers: nonexistent',
-    );
+    assert.include(await previewResponse.text(), 'Invalid query parameters');
 
     const docxUrl = new URL(url.replace('/preview?', '/docx?'));
     const docxRequest = {
@@ -279,10 +276,7 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
     };
     const docxResponse = await helperClient.fetchCheerio(docxUrl, docxRequest);
     assert.equal(docxResponse.status, 400);
-    assert.include(
-      await docxResponse.text(),
-      'Question exclusion references nonexistent question numbers: nonexistent',
-    );
+    assert.include(await docxResponse.text(), 'Invalid query parameters');
 
     await features.disable('printable-assessments');
     assert.equal((await helperClient.fetchCheerio(url, { headers })).status, 404);
