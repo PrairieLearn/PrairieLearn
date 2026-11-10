@@ -673,31 +673,109 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     assert data["partial_scores"]["test"]["score"] == 1
 
 
-@pytest.mark.parametrize("formula_editor", [False, True])
-def test_generated_set_submission_can_be_parsed_and_graded(
-    *, formula_editor: bool
+@pytest.mark.parametrize(
+    ("value", "imaginary_unit", "expected"),
+    [
+        (sympy.E, "i", "e"),
+        (sympy.I, "j", "j"),
+        (sympy.EmptySet, "i", "{}"),
+        (sympy.Interval.Lopen(0, sympy.E), "i", "(0, e]"),
+    ],
+)
+def test_test_submission_printer(
+    value: sympy.Basic, imaginary_unit: str, expected: str
 ) -> None:
-    correct_answer = sympy.Union(
-        sympy.Interval.open(-sympy.oo, 0),
-        sympy.Interval(1, sympy.oo),
+    assert (
+        symbolic_input._TestSubmissionPrinter(imaginary_unit).doprint(value) == expected
     )
+
+
+@pytest.mark.parametrize("formula_editor", [False, True])
+@pytest.mark.parametrize(
+    ("correct_answer", "attributes"),
+    [
+        pytest.param("sin(x) + e", ['variables="x"'], id="string-expression"),
+        pytest.param(psu.sympy_to_json(sympy.E), [], id="constant"),
+        pytest.param(
+            psu.sympy_to_json(
+                sympy.Function("test")(
+                    sympy.sqrt(sympy.E ** sympy.Symbol("x") / sympy.Symbol("x") ** 2)
+                )
+            ),
+            ['variables="x"', 'custom-functions="test"'],
+            id="custom-function",
+        ),
+        pytest.param(
+            psu.sympy_to_json(2 + 3 * sympy.I),
+            ['allow-complex="true"'],
+            id="complex-i",
+        ),
+        pytest.param(
+            psu.sympy_to_json(2 + 3 * sympy.I),
+            ['allow-complex="true"', 'imaginary-unit-for-display="j"'],
+            id="complex-j",
+        ),
+        pytest.param(
+            psu.sympy_to_json(sympy.EmptySet, allow_sets=True),
+            ['allow-sets="true"'],
+            id="empty-set",
+        ),
+        pytest.param(
+            psu.sympy_to_json(sympy.FiniteSet(sympy.E, sympy.pi), allow_sets=True),
+            ['allow-sets="true"'],
+            id="finite-set",
+        ),
+        pytest.param(
+            psu.sympy_to_json(
+                sympy.Union(
+                    sympy.Interval.open(-sympy.oo, 0),
+                    sympy.Interval(sympy.E, sympy.oo),
+                ),
+                allow_sets=True,
+            ),
+            ['allow-sets="true"'],
+            id="interval-union",
+        ),
+        pytest.param(
+            "Intersection([0, x], [y, 3])",
+            ['allow-sets="true"', 'variables="x,y"'],
+            id="intersection",
+        ),
+        pytest.param(
+            "Complement([0, x], [y, z])",
+            ['allow-sets="true"', 'variables="x,y,z"'],
+            id="complement",
+        ),
+        pytest.param(
+            "",
+            ['allow-blank="true"', 'blank-value=""'],
+            id="blank",
+        ),
+    ],
+)
+def test_generated_submission_can_be_parsed_and_graded(
+    correct_answer: Any, attributes: list[str], *, formula_editor: bool
+) -> None:
     element_html = build_element_html(
-        'allow-sets="true"',
+        *attributes,
         f'formula-editor="{str(formula_editor).lower()}"',
     )
-    data = make_question_data(
-        correct_answers={
-            "test": psu.sympy_to_json(correct_answer, allow_sets=True),
-        }
-    )
+    data = make_question_data(correct_answers={"test": correct_answer})
     data["test_type"] = "correct"
 
     symbolic_input.prepare(element_html, data)
     symbolic_input.test(element_html, data)
+
+    raw_answer = data["raw_submitted_answers"]["test"]
+    assert isinstance(raw_answer, str)
+    assert "_Exp1" not in raw_answer
+    assert "_ImaginaryUnit" not in raw_answer
+
     data["submitted_answers"] = data["raw_submitted_answers"].copy()
     symbolic_input.parse(element_html, data)
     symbolic_input.grade(element_html, data)
 
+    assert data["format_errors"] == {}
     assert data["partial_scores"]["test"]["score"] == 1
 
 

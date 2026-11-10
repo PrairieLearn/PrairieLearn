@@ -4,13 +4,14 @@ import re
 from enum import Enum
 from functools import lru_cache
 from sys import get_int_max_str_digits
-from typing import assert_never, cast
+from typing import assert_never
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from sympy.printing.str import StrPrinter
 
 
 class DisplayType(Enum):
@@ -1183,6 +1184,28 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             raise
 
 
+class _TestSubmissionPrinter(StrPrinter):
+    def __init__(self, imaginary_unit: str) -> None:
+        super().__init__()
+        self.imaginary_unit = imaginary_unit
+
+    def _print_Exp1(self, expr: sympy.Expr) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
+        return "e"
+
+    def _print_ImaginaryUnit(self, expr: sympy.Expr) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
+        return self.imaginary_unit
+
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
+        return "{}"
+
+    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff:ignore[invalid-function-name]
+        start = self._print(i.start)
+        end = self._print(i.end)
+        left = "(" if i.left_open else "["
+        right = ")" if i.right_open else "]"
+        return f"{left}{start}, {end}{right}"
+
+
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
@@ -1234,13 +1257,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     allow_trig_functions=allow_trig,
                 )
 
-            a_tru_display = _replace_imaginary_for_display(a_tru_sympy, imaginary_unit)
-            a_tru_str = psu.sympy_to_json(
-                cast(sympy.Expr | sympy.Set, a_tru_display),
-                allow_complex=allow_complex,
-                allow_sets=allow_sets,
-                allow_trig_functions=allow_trig,
-            )["_value"]
+            a_tru_str = _TestSubmissionPrinter(imaginary_unit).doprint(a_tru_sympy)
 
     if result == "correct":
         if a_tru_str == "":
