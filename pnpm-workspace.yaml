@@ -2,13 +2,28 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+# These tools need TypeScript 6's JS compiler API. Replace their TypeScript
+# peers with direct dependencies so they cannot resolve to TypeScript 7.
+packageExtensions:
+  typescript-cp:
+    dependencies:
+      typescript: npm:@typescript/typescript6@^6.0.2
+  cosmiconfig:
+    dependencies:
+      typescript: npm:@typescript/typescript6@^6.0.2
+
 overrides:
-  # These tools need the JS compiler API, which TypeScript 7 does not provide.
-  'typescript-cp>typescript': npm:@typescript/typescript6@^6.0.2
-  'cosmiconfig>typescript': npm:@typescript/typescript6@^6.0.2
+  # TypeScript 6 is installed via packageExtensions above.
+  'typescript-cp>typescript:peer': '-'
+  'cosmiconfig>typescript:peer': '-'
+
   # We use Sentry's runtime SDK, not its bundler-plugin entry points. Omit the
   # plugins and their CLI/parser dependencies to reduce install size.
   '@sentry/node>@sentry/bundler-plugins': '-'
+
+  # Azure's Bunyan logger only uses stdout/stderr, not rotating log files.
+  'bunyan>mv': '-'
+
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
@@ -19,7 +34,13 @@ overrides:
   'jsdoc-type-pratt-parser>@types/node': ^24
   'linkinator>marked': ^18
   'markdownlint-cli2>smol-toml': ^1
+  # markdownlint-cli2 pins markdown-it exactly; require the patched release.
+  'markdownlint-cli2>markdown-it': ^15.0.3
   'notebookjs>jsdom': '*'
+
+  # Preserve S3rver's legacy Busboy API while removing the unpatched Dicer parser.
+  's3rver>busboy': npm:@fastify/busboy@^3.2.4
+
   # jsdom pins Undici exactly; require a patched release.
   'jsdom>undici': '^8.12.3'
 
@@ -32,6 +53,7 @@ allowBuilds:
   '@prairielearn/bind-mount': true
   '@prairielearn/tree-sitter-htmlmustache': false
   core-js: false
+  core-js-pure: false
   cpu-features: false
   dtrace-provider: false
   esbuild: false
@@ -39,6 +61,7 @@ allowBuilds:
   sharp: false
   ssh2: false
   unrs-resolver: false
+  workerd: true
 
 supportedArchitectures:
   # @postgres-language-server/cli currently tags its glibc Linux binaries with
@@ -50,9 +73,16 @@ supportedArchitectures:
     - gnu
 
 minimumReleaseAgeExclude:
+  # Fixes Stop for server-started chat continuations (cloudflare/agents#2803).
+  - agents@0.33.0
+  # Includes the November 2026 node-forge security fixes.
+  - node-forge@1.4.3
   # Includes the October 2026 Undici security fixes.
   - 'undici@8.12.3'
-  - '@prairielearn/sketchresponse@0.2.1'
+  # Includes the KaTeX security fix in the sketchresponse browser bundle.
+  - '@prairielearn/sketchresponse@0.3.1'
   - 'typescript-cp@0.1.11'
   - express@4.22.3
   - prettier@3.9.7
+  # Pull in glob 14 and its minimatch security fixes through rimraf.
+  - 'rimraf@6.1.4'

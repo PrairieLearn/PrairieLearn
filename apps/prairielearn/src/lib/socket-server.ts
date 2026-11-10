@@ -49,7 +49,8 @@ let sub: Redis | undefined;
 
 export async function init(server: http.Server) {
   debug('init(): creating socket server');
-  io = new Server(server);
+  // PL rejects unknown upgrades; Socket.IO must leave other handlers' sockets alone.
+  io = new Server(server, { destroyUpgrade: false });
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers.
     //
@@ -101,7 +102,7 @@ export async function close() {
   // Close the adapters. This will remove the pub/sub subscriptions to ensure we
   // don't receive any more messages from Redis.
   // The type signature of `close()` is `Promise<void> | void`, so we need to disable the rule about the unneeded `Promise.all`.
-  // eslint-disable-next-line @typescript-eslint/await-thenable
+  // oxlint-disable-next-line typescript/await-thenable
   await Promise.all(adapters.map((adapter) => adapter.close()));
 
   // Shut down the Redis clients. If this fails, ignore it and proceed.

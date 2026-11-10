@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
-// dependencies like `pg` and `express`.
+// dependencies like `pg` and `express`. The comment below keeps import sorting
+// (`partitionByComment` in `.oxfmtrc.json`) from moving these imports.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
-/* eslint-enable import-x/order */
+// End of instrumentation imports.
 
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -86,7 +86,10 @@ import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
-import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import {
+  handleWorkspaceUpgrade,
+  makeWorkspaceProxyMiddleware,
+} from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -114,7 +117,7 @@ if ('h' in argv || 'help' in argv) {
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -150,6 +153,14 @@ export async function initExpress(): Promise<Express> {
   app.get('/pl/webhooks/ping', function (req, res) {
     res.send('.');
   });
+
+  if (process.env.DANGEROUSLY_ENABLE_TEST_ROUTES && process.env.NODE_ENV === 'test') {
+    app.post(
+      '/__test__/config',
+      express.json(),
+      (await import('./middlewares/testConfigOverrides.js')).default,
+    );
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -324,11 +335,9 @@ export async function initExpress(): Promise<Express> {
   async function makeWorkspaceContainerRoutes({
     url,
     containerPathRegex,
-    publicQuestionEndpoint,
   }: {
     url: string;
     containerPathRegex: RegExp;
-    publicQuestionEndpoint: boolean;
   }) {
     const workspaceAuthRouter = Router();
     workspaceAuthRouter.use([
@@ -344,7 +353,7 @@ export async function initExpress(): Promise<Express> {
       (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
       (await import('./middlewares/date.js')).default,
       (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
-      (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint }), // jumps to error handler if authz fails
+      (await import('./middlewares/authzWorkspace.js')).authzWorkspaceContainer(), // jumps to error handler if authz fails
       (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
     ]);
     app.use(url, [
@@ -362,15 +371,11 @@ export async function initExpress(): Promise<Express> {
       makeWorkspaceProxyMiddleware(containerPathRegex),
     ]);
   }
+  // Containers are served from this URL for both the public and non-public
+  // workspace pages; see `authzWorkspaceContainer` for details.
   await makeWorkspaceContainerRoutes({
     url: '/pl/workspace/:workspace_id(\\d+)/container',
     containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
-    publicQuestionEndpoint: false,
-  });
-  await makeWorkspaceContainerRoutes({
-    url: '/pl/public/workspace/:workspace_id(\\d+)/container',
-    containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
-    publicQuestionEndpoint: true,
   });
 
   app.use((req, res, next) => {
@@ -607,6 +612,14 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/sideNavSettings/sideNavSettings.js')).default,
   );
 
+  if (isEnterprise()) {
+    // Handles updates to the course agent panel's open state.
+    app.use(
+      '/pl/course_agent/panel_settings',
+      (await import('./ee/pages/courseAgentPanelSettings/courseAgentPanelSettings.js')).default,
+    );
+  }
+
   app.use('/pl/workspace/:workspace_id(\\d+)', [
     (req: Request, res: Response, next: NextFunction) => {
       res.locals.workspace_id = req.params.workspace_id;
@@ -755,6 +768,20 @@ export async function initExpress(): Promise<Express> {
 
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
 
+  if (isEnterprise()) {
+    // The course agent chat proxy, and the panel that PageLayout renders on
+    // instructor pages. Both run after the instructor chains above.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent',
+      (await import('./ee/routers/courseAgentChat.js')).default,
+    );
+    const courseAgentPanel = (await import('./ee/middlewares/courseAgentPanel.js')).default;
+    app.use(
+      ['/pl/course/:course_id(\\d+)', '/pl/course_instance/:course_instance_id(\\d+)/instructor'],
+      courseAgentPanel,
+    );
+  }
+
   // Serve element statics. As with core PrairieLearn assets and files served
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
@@ -862,6 +889,9 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
       res.locals.lti11_enabled = await features.enabledFromLocals('lti11', res.locals);
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -1292,9 +1322,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -2141,6 +2168,16 @@ export async function startServer(app: express.Express) {
     }
   }
 
+  const handleCourseAgentUpgrade = isEnterprise()
+    ? (await import('./ee/routers/courseAgentChat.js')).handleCourseAgentUpgrade
+    : null;
+  server.on('upgrade', (req, socket, head) => {
+    if (req.url?.startsWith('/socket.io/')) return;
+    if (handleWorkspaceUpgrade(app, req, head)) return;
+    if (handleCourseAgentUpgrade?.(app, req, head)) return;
+    socket.destroy();
+  });
+
   // Capture metrics about the server, including the number of active connections
   // and the total number of connections that have been started.
   const meter = opentelemetry.metrics.getMeter('prairielearn');
@@ -2150,23 +2187,18 @@ export async function startServer(app: express.Express) {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
-  // https://github.com/oven-sh/bun/issues/4459
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (server.getConnections) {
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'http.connections.active',
-      {
-        valueType: opentelemetry.ValueType.INT,
-        interval: 1000,
-      },
-      // @ts-expect-error TODO: type correctly
-      () => {
-        return util.promisify(server!.getConnections.bind(server))();
-      },
-    );
-  }
+  opentelemetry.createObservableValueGauges(
+    meter,
+    'http.connections.active',
+    {
+      valueType: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    // @ts-expect-error TODO: type correctly
+    () => {
+      return util.promisify(server!.getConnections.bind(server))();
+    },
+  );
 
   const serverSocketActivity = new SocketActivityMetrics(meter, 'http');
   server.on('connection', (socket) => serverSocketActivity.addSocket(socket));

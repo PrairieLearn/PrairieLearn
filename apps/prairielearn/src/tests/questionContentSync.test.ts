@@ -130,6 +130,11 @@ describe('content-only question save', () => {
     assert.equal(await fs.readFile(filePath, 'utf8'), '<p>Updated</p>');
     expect(load).not.toHaveBeenCalled();
     expect(targeted).toHaveBeenCalledExactlyOnceWith({ coursePath: courseDir, courseId, qid });
+    expect(await targeted.mock.results[0].value).toEqual({
+      updatedChunks: [{ type: 'question', questionName: qid }],
+      deletedChunks: [],
+      replacedChunkIds: [before.find((chunk) => chunk.question_id === question.id)!.id],
+    });
     expect(full).not.toHaveBeenCalled();
     assert.deepEqual(await util.dumpTableWithSchema('questions', QuestionSchema), metadataBefore);
     assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
@@ -140,6 +145,10 @@ describe('content-only question save', () => {
 
     const after = await util.dumpTableWithSchema('chunks', ChunkSchema);
     assert.lengthOf(after, 2);
+    const updated = after.find((chunk) => chunk.question_id === question.id)!;
+    assert.equal(updated.commit_hash, await getCourseCommitHash(courseDir));
+    assert.isAbove(updated.size_compressed!, 0);
+    assert.isAbove(updated.size_uncompressed!, 0);
     assert.notEqual(
       after.find((chunk) => chunk.question_id === question.id)!.uuid,
       before.find((chunk) => chunk.question_id === question.id)!.uuid,

@@ -321,7 +321,7 @@ export async function deleteCourse({
     if (deletedCourse == null) {
       throw new Error('Course to delete not found');
     }
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    // oxlint-disable-next-line typescript/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
@@ -363,7 +363,7 @@ export async function insertCourse({
       },
       CourseSchema,
     );
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    // oxlint-disable-next-line typescript/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'insert',
@@ -412,7 +412,7 @@ export async function updateCourseColumn({
       { course_id: courseId, value },
       CourseSchema,
     );
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    // oxlint-disable-next-line typescript/no-deprecated
     await insertAuditLog({
       authn_user_id: authnUserId,
       action: 'update',

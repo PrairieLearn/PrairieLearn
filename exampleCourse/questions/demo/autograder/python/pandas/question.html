@@ -1,7 +1,7 @@
 <pl-question-panel>
     <p>
         <i>
-            This question uses the built-in method, <code>Feedback.check_dataframe()</code> in <code>code_feedback.py</code> to check Pandas dataframes for correctness <i>(special thanks to Wade Fagen-Ulmschneider!)</i>.  By default, rows can be in any order as long as the correct data is present.  There is also an option to display the student input in the feedback tab (using the <code>display_input</code> keyword argument, default false).
+            This question uses <code>pandas.testing.assert_frame_equal()</code> with <code>check_like=True</code> to check Pandas dataframes for correctness, following the original <code>Feedback.check_dataframe()</code> method <i>(special thanks to Wade Fagen-Ulmschneider!)</i>.  Rows and columns can be in any order as long as the correct data is present.  If the answer is incorrect, the test displays the student's dataframe in the feedback tab.
         </i>
     </p>
     <p>
@@ -13,7 +13,7 @@
         <pl-variable name="df" type="Pandas DataFrame"></pl-variable>
     </pl-external-grader-variables>
     <pl-file-editor
-        file-name="user_code.py"
+        file-name="student_code.py"
         ace-mode="ace/mode/python"
         source-file-name="tests/initial_code.py"></pl-file-editor>
 </pl-question-panel>
