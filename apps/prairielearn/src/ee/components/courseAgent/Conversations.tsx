@@ -3,7 +3,6 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
-import clsx from 'clsx';
 import {
   type DragEvent,
   Fragment,
@@ -41,7 +40,6 @@ import {
   DraftAttachmentList,
   MAX_ATTACHMENT_SIZE,
   SentAttachments,
-  revokePreviews,
   uploadDraftAttachments,
   useDraftAttachments,
 } from './Attachments.js';
@@ -155,7 +153,7 @@ function ConversationPicker({
         ...(current ?? []),
       ]);
       setPickedId(conversation.id);
-      // The new conversation's chat now owns the attachments and their previews.
+      // The new conversation's chat now owns the attachments.
       drafts.setAttachments([]);
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
@@ -211,7 +209,7 @@ function ConversationPicker({
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
               setDraft('');
-              drafts.clear();
+              drafts.setAttachments([]);
               create.reset();
             }}
           >
@@ -398,7 +396,6 @@ function Chat({
       if (offline) setAwaitingStart(true);
       void sendMessage({ text, files });
       setDraft('');
-      revokePreviews(attachments);
       setAttachments([]);
       return true;
     },
@@ -638,7 +635,7 @@ function Composer({
 
   return (
     <Form
-      className="border-top p-3"
+      className="position-relative border-top p-3"
       onSubmit={submit}
       onDragOver={(event) => {
         if (!draggingFiles(event)) return;
@@ -655,92 +652,79 @@ function Composer({
         onAttach([...event.dataTransfer.files]);
       }}
     >
-      <div
-        className={clsx(
-          'course-agent-composer position-relative border rounded-3',
-          pending && 'bg-body-tertiary',
-        )}
-      >
-        <DraftAttachmentList
-          attachments={attachments}
-          sending={pending}
-          onRemove={onRemoveAttachment}
-        />
-        <Form.Control
-          as="textarea"
-          rows={3}
-          className="border-0 shadow-none bg-transparent"
-          value={draft}
-          placeholder={placeholder}
-          aria-label="Message"
-          disabled={pending}
-          onChange={(event) => onDraftChange(event.target.value)}
-          onKeyDown={onKeyDown}
-          onPaste={(event) => {
-            if (!attachable || event.clipboardData.files.length === 0) return;
-            event.preventDefault();
-            onAttach([...event.clipboardData.files]);
+      <DraftAttachmentList
+        attachments={attachments}
+        sending={pending}
+        onRemove={onRemoveAttachment}
+      />
+      <Form.Control
+        as="textarea"
+        rows={3}
+        value={draft}
+        placeholder={placeholder}
+        aria-label="Message"
+        disabled={pending}
+        onChange={(event) => onDraftChange(event.target.value)}
+        onKeyDown={onKeyDown}
+        onPaste={(event) => {
+          if (!attachable || event.clipboardData.files.length === 0) return;
+          event.preventDefault();
+          onAttach([...event.clipboardData.files]);
+        }}
+      />
+      <div className="d-flex align-items-center gap-2 mt-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          hidden
+          onChange={(event) => {
+            onAttach([...(event.target.files ?? [])]);
+            event.target.value = '';
           }}
         />
-        <div className="d-flex align-items-center gap-2 px-2 pb-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            hidden
-            onChange={(event) => {
-              onAttach([...(event.target.files ?? [])]);
-              event.target.value = '';
-            }}
-          />
-          <Button
-            variant="link"
-            size="sm"
-            className="text-body-secondary"
-            aria-label="Attach files"
-            disabled={!attachable}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <i className="bi bi-paperclip" aria-hidden="true" />
-          </Button>
-          <div className="d-flex align-items-center gap-2 ms-auto">
-            {children}
-            {onStop ? (
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                disabled={stopDisabled}
-                onClick={onStop}
-              >
-                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-                Stop
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                size="sm"
-                aria-label={sendLabel}
-                disabled={!draft.trim() || disabled || pending || hasInvalidAttachment}
-              >
-                {pending ? (
-                  <Spinner animation="border" size="sm" aria-hidden="true" />
-                ) : (
-                  <i className="bi bi-send" aria-hidden="true" />
-                )}
-              </Button>
-            )}
-          </div>
+        <Button
+          variant="link"
+          size="sm"
+          className="course-agent-icon-button"
+          aria-label="Attach files"
+          disabled={!attachable}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <i className="bi bi-plus-lg" aria-hidden="true" />
+        </Button>
+        <div className="d-flex align-items-center gap-2 ms-auto">
+          {children}
+          {onStop ? (
+            <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
+              <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+              Stop
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="sm"
+              aria-label={sendLabel}
+              disabled={!draft.trim() || disabled || pending || hasInvalidAttachment}
+            >
+              {pending ? (
+                <Spinner animation="border" size="sm" aria-hidden="true" />
+              ) : (
+                <i className="bi bi-send" aria-hidden="true" />
+              )}
+            </Button>
+          )}
         </div>
-        {dragging && (
-          <div className="course-agent-drop-target position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex flex-column align-items-center justify-content-center text-primary bg-primary-subtle">
-            <i className="bi bi-upload fs-4" aria-hidden="true" />
-            <span className="fw-medium">Drop files to attach</span>
-            <span className="small">
-              Up to {MAX_ATTACHMENTS_PER_MESSAGE} files, {MAX_ATTACHMENT_SIZE} each
-            </span>
-          </div>
-        )}
       </div>
+      {dragging && (
+        <div className="course-agent-drop-target position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-primary">
+          <i className="bi bi-upload fs-4" aria-hidden="true" />
+          <span className="fw-medium">Drop files to attach</span>
+          <span className="small">
+            Up to {MAX_ATTACHMENTS_PER_MESSAGE} files, {MAX_ATTACHMENT_SIZE} each
+          </span>
+        </div>
+      )}
     </Form>
   );
 }

@@ -27,8 +27,6 @@ export type AttachmentStatus =
 export interface DraftAttachment {
   key: string;
   file: File;
-  /** An object URL for an image's thumbnail. */
-  previewUrl: string | null;
   status: AttachmentStatus;
 }
 
@@ -40,10 +38,6 @@ function statusOf(file: File, position: number): AttachmentStatus {
   if (file.size > MAX_ATTACHMENT_BYTES) return invalid(`Over ${MAX_ATTACHMENT_SIZE}. Remove it.`);
   if (file.size === 0) return invalid('Empty file. Remove it.');
   return { kind: 'ready' };
-}
-
-export function revokePreviews(attachments: DraftAttachment[]) {
-  for (const { previewUrl } of attachments) if (previewUrl) URL.revokeObjectURL(previewUrl);
 }
 
 /** Draft attachments for one composer. */
@@ -61,20 +55,11 @@ export function useDraftAttachments(initial: DraftAttachment[] = []) {
       const added = files.map((file, index) => ({
         key: crypto.randomUUID(),
         file,
-        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
         status: statusOf(file, attachments.length + index),
       }));
       setAttachments((current) => [...current, ...added]);
     },
-    remove: (key: string) => {
-      revokePreviews(attachments.filter((a) => a.key === key));
-      setAttachments((current) => current.filter((a) => a.key !== key));
-    },
-    clear: () => {
-      revokePreviews(attachments);
-      setAttachments([]);
-    },
-    /** Replaces the attachments without revoking previews, for passing them to another owner. */
+    remove: (key: string) => setAttachments((current) => current.filter((a) => a.key !== key)),
     setAttachments,
     setStatus,
   };
@@ -180,7 +165,6 @@ function AttachmentCard({
   filename,
   mediaType,
   detail,
-  previewUrl = null,
   danger = false,
   busy = false,
   onRemove,
@@ -188,7 +172,6 @@ function AttachmentCard({
   filename: string;
   mediaType: string;
   detail: string;
-  previewUrl?: string | null;
   danger?: boolean;
   busy?: boolean;
   onRemove?: () => void;
@@ -200,32 +183,24 @@ function AttachmentCard({
         danger && 'border-danger',
       )}
     >
-      {previewUrl && !busy ? (
-        <img
-          src={previewUrl}
-          alt=""
-          className="course-agent-attachment-icon rounded-1 object-fit-cover"
-        />
-      ) : (
-        <span
-          className={clsx(
-            'course-agent-attachment-icon rounded-1 d-flex align-items-center justify-content-center',
-            danger ? 'bg-danger-subtle text-danger' : 'bg-body-secondary text-body-secondary',
-          )}
-          aria-hidden="true"
-        >
-          {busy ? (
-            <Spinner animation="border" size="sm" />
-          ) : (
-            <i
-              className={clsx(
-                'bi',
-                danger ? 'bi-exclamation-triangle' : fileIcon(mediaType, filename),
-              )}
-            />
-          )}
-        </span>
-      )}
+      <span
+        className={clsx(
+          'course-agent-attachment-icon rounded-1 d-flex align-items-center justify-content-center',
+          danger ? 'bg-danger-subtle text-danger' : 'bg-body-secondary text-body-secondary',
+        )}
+        aria-hidden="true"
+      >
+        {busy ? (
+          <Spinner animation="border" size="sm" />
+        ) : (
+          <i
+            className={clsx(
+              'bi',
+              danger ? 'bi-exclamation-triangle' : fileIcon(mediaType, filename),
+            )}
+          />
+        )}
+      </span>
       <span className="d-flex flex-column overflow-hidden small lh-sm">
         <span className="text-truncate">{filename}</span>
         <span className={danger ? 'text-danger' : 'text-body-secondary'}>{detail}</span>
@@ -269,14 +244,13 @@ export function DraftAttachmentList({
 }) {
   if (attachments.length === 0) return null;
   return (
-    <ul className="list-unstyled d-flex flex-wrap gap-2 m-0 px-2 pt-2" aria-label="Attachments">
+    <ul className="list-unstyled d-flex flex-wrap gap-2 m-0 mb-2" aria-label="Attachments">
       {attachments.map((attachment) => (
         <AttachmentCard
           key={attachment.key}
           filename={attachment.file.name}
           mediaType={attachment.file.type}
           detail={draftDetail(attachment)}
-          previewUrl={attachment.previewUrl}
           danger={attachment.status.kind === 'invalid' || attachment.status.kind === 'failed'}
           busy={attachment.status.kind === 'uploading'}
           onRemove={sending ? undefined : () => onRemove(attachment.key)}

@@ -29,8 +29,14 @@
   overflow-wrap: anywhere;
 }
 
-.course-agent-composer:focus-within {
-  border-color: var(--bs-primary) !important;
+.btn.course-agent-icon-button {
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-active-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-secondary-bg);
+  --bs-btn-active-border-color: transparent;
+  text-decoration: none;
 }
 
 .course-agent-attachment {
@@ -54,7 +60,8 @@
 }
 
 .course-agent-drop-target {
-  border: 2px dashed var(--bs-primary);
+  background-color: color-mix(in srgb, var(--bs-primary) 6%, var(--bs-body-bg));
+  border: 2px dashed color-mix(in srgb, var(--bs-primary) 45%, var(--bs-body-bg));
   pointer-events: none;
 }
 
