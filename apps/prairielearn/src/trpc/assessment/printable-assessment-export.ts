@@ -33,6 +33,7 @@ import { selectPrintFormsForUser } from '../../models/print-form.js';
 import { requireCoursePermissionPreview, t } from './init.js';
 import { requirePrintableAssessments } from './print-forms.js';
 
+/** @knipignore Consumed by the preparation UI in the following PR. */
 export interface PrintableAssessmentExportError {
   pdf: never;
   status: never;

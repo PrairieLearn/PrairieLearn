@@ -12,6 +12,7 @@ import { selectOptionalPrintForm, selectPrintFormsForUser } from '../../models/p
 
 import { requireCoursePermissionPreview, t } from './init.js';
 
+/** @knipignore Consumed by the preparation UI in the following PR. */
 export interface PrintFormsError {
   questions: never;
   list: never;
