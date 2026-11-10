@@ -7,16 +7,23 @@ import * as cheerio from 'cheerio';
 import { type Element } from 'domhandler';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
+import type { ReviewSnapshot } from '@prairielearn/course-agent-types';
 import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
+import { getReviewJobResult } from '../ee/lib/course-agent/apply-changes.js';
+import { checkReviewConflicts } from '../ee/lib/course-agent/review-conflicts.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
+import { FileUploadEditor } from '../lib/editors.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { getJobSequence } from '../lib/server-jobs.js';
 import { encodePath } from '../lib/uri-util.js';
+import { selectCourseById } from '../models/course.js';
+import { selectUserById } from '../models/user.js';
 
 import {
   type CourseRepoFixture,
@@ -24,6 +31,7 @@ import {
   updateCourseRepository,
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -244,6 +252,145 @@ describe('test file editor', { timeout: 20_000 }, function () {
       await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
     });
     afterAll(helperServer.after);
+
+    it('preserves concurrent edits and the other proposed files in a Git review', async () => {
+      const course = await selectCourseById('1');
+      const user = await selectUserById('1');
+      const original = await fs.readFile(path.join(course.path, questionHtmlPath));
+      const proposed = Buffer.concat([original, Buffer.from('\nAgent change\n')]);
+      const concurrent = Buffer.concat([original, Buffer.from('\nInstructor change\n')]);
+      const addition = 'clientFilesCourse/review-addition.txt';
+      const { stdout: baseCommit } = await execa('git', ['rev-parse', 'HEAD'], {
+        cwd: course.path,
+      });
+      const snapshot: Extract<ReviewSnapshot, { type: 'github' }> = {
+        type: 'github',
+        repository: 'PrairieLearn/course',
+        branch: 'master',
+        baseCommit,
+        additions: [
+          { path: addition, contents: Buffer.from('New file').toString('base64') },
+          { path: questionHtmlPath, contents: proposed.toString('base64') },
+        ],
+        deletions: [],
+      };
+      // Leave PL's checkout stale so the conflict is discovered on push retry.
+      await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), concurrent);
+      await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
+      await execa('git', ['commit', '-m', 'Concurrent instructor edit'], {
+        cwd: courseRepo.courseOriginDir,
+      });
+      try {
+        await withConfig({ fileEditorUseGit: true }, async () => {
+          const editor = new FileUploadEditor({
+            locals: {
+              course,
+              user,
+              authz_data: { has_course_permission_edit: true, authn_user: user },
+            },
+            container: {
+              rootPath: course.path,
+              invalidRootPaths: [path.join(course.path, '.git')],
+            },
+            files: Object.fromEntries(
+              snapshot.additions.map((file) => [
+                path.join(course.path, file.path),
+                Buffer.from(file.contents, 'base64'),
+              ]),
+            ),
+          });
+          const job = await editor.prepareServerJob();
+          await expect(
+            withoutLogging(() =>
+              editor.executeWithServerJob(job, {
+                beforeWrite: (job) => checkReviewConflicts(course, snapshot, job),
+              }),
+            ),
+          ).rejects.toThrow('Course files changed since this proposal');
+          assert.deepEqual(await fs.readFile(path.join(course.path, questionHtmlPath)), concurrent);
+          assert.isFalse(await fs.pathExists(path.join(course.path, addition)));
+          const sequence = await getJobSequence(job.jobSequenceId, course.id);
+          assert.deepEqual(getReviewJobResult(sequence, 'github').publication, {
+            status: 'conflict',
+            paths: [questionHtmlPath],
+          });
+          assert.deepEqual(
+            await fs.readFile(path.join(courseRepo.courseOriginDir, questionHtmlPath)),
+            concurrent,
+          );
+        });
+      } finally {
+        await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), original);
+        await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
+        await execa('git', ['commit', '-m', 'Restore fixture'], {
+          cwd: courseRepo.courseOriginDir,
+        });
+        await execa('git', ['fetch'], { cwd: course.path });
+        await execa('git', ['reset', '--hard', 'origin/master'], { cwd: course.path });
+      }
+    });
+
+    it('saves a Git review whose base is newer than the PL checkout', async () => {
+      const course = await selectCourseById('1');
+      const user = await selectUserById('1');
+      const original = await fs.readFile(path.join(course.path, questionHtmlPath));
+      const upstream = Buffer.concat([original, Buffer.from('\nInstructor change\n')]);
+      const proposed = Buffer.concat([upstream, Buffer.from('\nAgent change\n')]);
+      // The agent starts from a GitHub commit that PL has not fetched yet.
+      await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), upstream);
+      await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
+      await execa('git', ['commit', '-m', 'Instructor edit on GitHub'], {
+        cwd: courseRepo.courseOriginDir,
+      });
+      const { stdout: baseCommit } = await execa('git', ['rev-parse', 'HEAD'], {
+        cwd: courseRepo.courseOriginDir,
+      });
+      const snapshot: Extract<ReviewSnapshot, { type: 'github' }> = {
+        type: 'github',
+        repository: 'PrairieLearn/course',
+        branch: 'master',
+        baseCommit,
+        additions: [{ path: questionHtmlPath, contents: proposed.toString('base64') }],
+        deletions: [],
+      };
+      try {
+        await withConfig({ fileEditorUseGit: true }, async () => {
+          const editor = new FileUploadEditor({
+            locals: {
+              course,
+              user,
+              authz_data: { has_course_permission_edit: true, authn_user: user },
+            },
+            container: {
+              rootPath: course.path,
+              invalidRootPaths: [path.join(course.path, '.git')],
+            },
+            files: { [path.join(course.path, questionHtmlPath)]: proposed },
+          });
+          const job = await editor.prepareServerJob();
+          await editor.executeWithServerJob(job, {
+            beforeWrite: (job) => checkReviewConflicts(course, snapshot, job),
+          });
+          const sequence = await getJobSequence(job.jobSequenceId, course.id);
+          assert.deepEqual(getReviewJobResult(sequence, 'github').publication, {
+            status: 'published',
+          });
+          const { stdout } = await execa('git', ['show', `HEAD:${questionHtmlPath}`], {
+            cwd: courseRepo.courseOriginDir,
+            stripFinalNewline: false,
+          });
+          assert.equal(stdout, proposed.toString());
+        });
+      } finally {
+        await fs.writeFile(path.join(courseRepo.courseOriginDir, questionHtmlPath), original);
+        await execa('git', ['add', questionHtmlPath], { cwd: courseRepo.courseOriginDir });
+        await execa('git', ['commit', '-m', 'Restore fixture'], {
+          cwd: courseRepo.courseOriginDir,
+        });
+        await execa('git', ['fetch'], { cwd: course.path });
+        await execa('git', ['reset', '--hard', 'origin/master'], { cwd: course.path });
+      }
+    });
 
     describe('the locals object', function () {
       it('should be cleared', function () {
