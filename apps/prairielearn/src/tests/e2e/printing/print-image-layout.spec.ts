@@ -1,53 +1,26 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { makeAssessmentInstance } from '../../../lib/assessment.js';
-import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { syncCourse } from '../../helperCourse.js';
-import { getConfiguredUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { waitForPrintablePage } from './utils.js';
+import { createPrintableForm, waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } }).extend<{
   imageQuestion: (html: string) => Promise<string>;
 }>({
-  imageQuestion: async ({ testCoursePath, courseInstance }, use) => {
+  imageQuestion: async ({ testCoursePath, courseInstance }, provide) => {
     const questionPath = path.join(testCoursePath, 'questions/addNumbers/question.html');
     const original = await fs.readFile(questionPath, 'utf8');
-    const assessmentPath = path.join(
-      testCoursePath,
-      'courseInstances/Sp15/assessments/exam20-assessmentTools/infoAssessment.json',
-    );
-    const originalAssessment = await fs.readFile(assessmentPath, 'utf8');
     try {
-      // Each template needs fresh variants, even when these tests share a worker.
-      await fs.writeFile(
-        assessmentPath,
-        JSON.stringify({ ...JSON.parse(originalAssessment), multipleInstance: true }),
-      );
-      await use(async (html) => {
+      await provide(async (html) => {
         await fs.writeFile(questionPath, html);
         await syncCourse(testCoursePath);
-        const user = await getConfiguredUser();
-        const assessment = await selectAssessmentByTid({
-          course_instance_id: courseInstance.id,
-          tid: 'exam20-assessmentTools',
-        });
-        const instanceId = await makeAssessmentInstance({
-          assessment,
-          user_id: user.id,
-          authn_user_id: user.id,
-          mode: 'Public',
-          time_limit_min: null,
-          date: new Date(),
-          client_fingerprint_id: null,
-        });
-        return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${instanceId}/print/preview`;
+        const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+        return `${printUrl}/preview`;
       });
     } finally {
       await fs.writeFile(questionPath, original);
-      await fs.writeFile(assessmentPath, originalAssessment);
       await syncCourse(testCoursePath);
     }
   },

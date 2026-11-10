@@ -28,7 +28,7 @@ const pdf = await renderer.renderPdf({
 await renderer.close(); // during shutdown
 ```
 
-Build `assetScope` from the already authorized course instance, assessment, assessment instance, selected instance question IDs, and user IDs. The renderer uses it to mint a credential for that render.
+Build `assetScope` from the already authorized course instance, assessment, saved print form, selected print-form question IDs, and user IDs. The renderer uses it to mint a credential for that render.
 
 The renderer connects to one Cloudflare browser on first use and runs up to four independent contexts concurrently. Another 64 requests may wait. HTTP print requests share a 45-second deadline across question preparation, queueing, and rendering. Local development uses one Chromium render at a time and a queue of 16. Set `maxConcurrentRenders` or `maxQueuedRenders` to override those limits. Each render has its own short-lived context. A browser that disconnects is reconnected on the next render, and `close()` rejects queued renders and closes the browser.
 
@@ -40,7 +40,7 @@ Cloudflare development also requires `config.serverCanonicalHost` to be configur
 
 Set `runScripts: true` when preparing a fresh preview from server-generated question HTML. PDF exports use the completed, script-free page snapshot with scripts disabled. Keep scripts enabled when collecting Word content from a fresh preview so the page can save it before pagination.
 
-For each render with `assetScope`, the renderer issues a five-minute, job-specific asset credential. It permits only public assets and protected asset paths for that assessment instance and its selected instance questions. It sends the credential to the local asset routes, never to the rendering browser. Other same-origin routes, proxied redirects, mutating requests, cross-origin requests, service workers, WebSockets, and socket.io polling are blocked. Direct public asset requests may follow redirects using the browser's normal behavior, without a credential. Cross-origin question assets must be served through PrairieLearn to appear in the output.
+For each render with `assetScope`, the renderer issues a five-minute, job-specific asset credential. It permits only public assets and protected asset paths for that print form and its selected print-form questions. It sends the credential to the local asset routes, never to the rendering browser. Other same-origin routes, proxied redirects, mutating requests, cross-origin requests, service workers, WebSockets, and socket.io polling are blocked. Direct public asset requests may follow redirects using the browser's normal behavior, without a credential. Cross-origin question assets must be served through PrairieLearn to appear in the output.
 
 The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative for the physical paper size.
 
@@ -62,11 +62,15 @@ Omit the `cover` option to start with questions on the first page.
 
 ### PrairieLearn endpoint parameters
 
+Forms are created explicitly and store their selected questions, order, point values, and floating variants. Reading a preview reuses those saved variants; it does not create student assessment instances or change a student's work.
+
+The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` exports a submitted page snapshot. Access requires course preview permission and ownership by the effective user.
+
 `document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
-`form_label=A` through `form_label=Z` gives an assessment instance a short label on its cover and footers. Omitting it preserves the assessment instance's existing numeric Form ID label.
+`form_label=A` through `form_label=Z` gives a saved print form a short label on its cover and footers. Omitting it preserves the print form's numeric Form ID label.
 
 `include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
 

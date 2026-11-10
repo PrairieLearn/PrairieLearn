@@ -4,14 +4,10 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
-import { makeAssessmentInstance } from '../../../lib/assessment.js';
-import type { CourseInstance } from '../../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { syncCourse } from '../../helperCourse.js';
-import { getConfiguredUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { downloadPrintableWord, waitForPrintablePage } from './utils.js';
+import { createPrintableForm, downloadPrintableWord, waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
@@ -32,30 +28,11 @@ async function readWarnings(page: Page) {
   );
 }
 
-async function createPrintableAssessment(courseInstance: CourseInstance, tid: string) {
-  const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid,
-  });
-  const assessmentInstanceId = await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
-  const printUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print`;
-  return { printUrl, assessmentInstanceId };
-}
-
 test('reports omitted questions and exports the selected Word content', async ({
   page,
   courseInstance,
 }) => {
-  const { printUrl, assessmentInstanceId } = await createPrintableAssessment(
+  const { printUrl, printForm } = await createPrintableForm(
     courseInstance,
     'exam24-printingOmittedQuestion',
   );
@@ -128,13 +105,7 @@ test('reports omitted questions and exports the selected Word content', async ({
   expect(documentXml).toContain('<m:oMath>');
   expect(documentXml).toContain('Consider two numbers');
   expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
-  for (const label of [
-    'Name',
-    'Section',
-    'Student ID',
-    'Date',
-    `Form ID ${assessmentInstanceId}`,
-  ]) {
+  for (const label of ['Name', 'Section', 'Student ID', 'Date', `Form ID ${printForm.id}`]) {
     expect(documentXml).toContain(label);
   }
 });
@@ -143,7 +114,7 @@ test('prints representative controls, editable Word content, and an ordered answ
   page,
   courseInstance,
 }) => {
-  const { printUrl } = await createPrintableAssessment(courseInstance, 'exam23-printing');
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam23-printing');
   await page.goto(`${printUrl}/preview?paper_size=Letter`);
   await waitForPrintablePage(page);
   const search = new URLSearchParams({ paper_size: 'Letter' });
@@ -232,7 +203,7 @@ test('omits failed question and answer-key renders and recovers after a correcti
   courseInstance,
   testCoursePath,
 }) => {
-  const { printUrl } = await createPrintableAssessment(courseInstance, 'exam20-assessmentTools');
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
   const serverPath = path.join(testCoursePath, 'questions/addNumbers/server.py');
   const original = await fs.readFile(serverPath, 'utf8');
   try {

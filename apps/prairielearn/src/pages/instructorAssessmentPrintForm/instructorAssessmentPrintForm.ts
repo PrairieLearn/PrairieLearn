@@ -6,7 +6,13 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { escapeRegExp } from '@prairielearn/sanitize';
-import { JsonFromStringSchema, parseRequest, parseRequestQuery } from '@prairielearn/zod';
+import {
+  IdSchema,
+  JsonFromStringSchema,
+  parseRequest,
+  parseRequestParams,
+  parseRequestQuery,
+} from '@prairielearn/zod';
 
 import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import {
@@ -22,14 +28,15 @@ import {
   PRINT_DOCUMENTS,
   describeOmittedQuestions,
   getPrintRenderer,
-  getPrintableInstanceQuestionIds,
+  getPrintableFormQuestionIds,
   isBrowserRenderingAvailable,
-  renderAssessmentInstanceQuestionsForPrinting,
+  renderPrintFormQuestions,
   validatePrintDocument,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
+import { createPrintFormQuestionAssetRouter } from '../../lib/printing/print-asset-routes.js';
 import {
   BLANK_NAME_PLACEHOLDER,
   HONOR_CODE_HEADING,
@@ -43,11 +50,13 @@ import {
 } from '../../lib/printing/question-block-size.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
-import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import authzHasCoursePreview from '../../middlewares/authzHasCoursePreview.js';
 import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
-import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
+import { selectOptionalPrintForm } from '../../models/print-form.js';
 
-import { InstructorAssessmentInstancePrint } from './instructorAssessmentInstancePrint.html.js';
+import { InstructorAssessmentPrintForm } from './instructorAssessmentPrintForm.html.js';
+
+const PrintFormParamsSchema = z.object({ print_form_id: IdSchema });
 
 const QuestionBlockSizeSchema = z.enum(QUESTION_BLOCK_SIZES);
 const QuestionNumberSchema = z.string().min(1);
@@ -131,7 +140,7 @@ const DocxPostRequestSchemas = {
     .pipe(PrintSnapshotSchema),
 };
 
-/** The layout choices shared by every printable output of one assessment instance. */
+/** The layout choices shared by every printable output of one printable form. */
 interface PrintLayout {
   paperSize: PaperSize;
   includeCoverPage: boolean;
@@ -160,7 +169,7 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
   };
 }
 
-function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
+function getCoverHtml(resLocals: ResLocalsForPage<'print-form'>) {
   return {
     assessmentTextHtml: renderAssessmentText(resLocals.assessment, resLocals.urlPrefix),
     honorCodeHtml: resLocals.assessment.honor_code
@@ -175,14 +184,14 @@ function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
 }
 
 function printAssetScope(
-  resLocals: ResLocalsForPage<'assessment-instance'>,
-  instanceQuestionIds: string[],
+  resLocals: ResLocalsForPage<'print-form'>,
+  printFormQuestionIds: string[],
 ): PrintAssetScope {
   return {
     courseInstanceId: resLocals.course_instance.id,
     assessmentId: resLocals.assessment.id,
-    assessmentInstanceId: resLocals.assessment_instance.id,
-    instanceQuestionIds,
+    printFormId: resLocals.print_form.id,
+    printFormQuestionIds,
     authnUserId: resLocals.authn_user.id,
     userId: resLocals.user.id,
   };
@@ -200,17 +209,25 @@ const router = Router({ mergeParams: true });
 
 router.use(requirePrintableAssessments);
 
+router.use(authzHasCoursePreview);
 router.use(
-  createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_preview', 'has_course_instance_permission_view'],
-    unauthorizedUsers: 'block',
+  typedAsyncHandler<'assessment'>(async (req, res, next) => {
+    const { print_form_id: printFormId } = parseRequestParams(req, PrintFormParamsSchema);
+    const printForm = await selectOptionalPrintForm({
+      printFormId,
+      assessmentId: res.locals.assessment.id,
+      userId: res.locals.user.id,
+    });
+    if (!printForm) throw new HttpStatusError(404, 'Printable form not found');
+    Object.assign(res.locals, { print_form: printForm });
+    next();
   }),
 );
+router.use('/question/:print_form_question_id(\\d+)', createPrintFormQuestionAssetRouter());
 
 router.get(
   '/preview',
-  selectAndAuthzAssessmentInstance,
-  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+  typedAsyncHandler<'print-form'>(async (req, res) => {
     await withPrintRequest(res, async ({ signal, remainingTimeoutMs, throwIfAborted }) => {
       const query = parseRequestQuery(req, DocumentQuerySchema);
       const layout = parsePrintLayout(query);
@@ -226,7 +243,7 @@ router.get(
       res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
-      const printingResult = await renderAssessmentInstanceQuestionsForPrinting(res.locals, {
+      const printingResult = await renderPrintFormQuestions(res.locals, {
         signal,
         defaultQuestionBlockSize: layout.blockSize ?? 'auto',
         questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
@@ -243,7 +260,7 @@ router.get(
       const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
       const warnings = describeOmittedQuestions(printingResult.questionResults);
 
-      const rawHtml = InstructorAssessmentInstancePrint({
+      const rawHtml = InstructorAssessmentPrintForm({
         resLocals: res.locals,
         paperSize: layout.paperSize,
         includeCoverPage: layout.includeCoverPage,
@@ -278,7 +295,7 @@ router.get(
             res.locals,
             printingResult.questionResults
               .filter((result) => result.status === 'rendered')
-              .map(({ instanceQuestionId }) => instanceQuestionId),
+              .map(({ printFormQuestionId }) => printFormQuestionId),
           ),
           runScripts: true,
           signal,
@@ -317,9 +334,8 @@ router.get(
 
 router.post(
   '/docx',
-  selectAndAuthzAssessmentInstance,
   parseDocxBody,
-  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+  typedAsyncHandler<'print-form'>(async (req, res) => {
     await withPrintRequest(res, async ({ signal, remainingTimeoutMs, throwIfAborted }) => {
       const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
       const layout = parsePrintLayout(query);
@@ -333,7 +349,7 @@ router.post(
       }
 
       await validateQuestionsForPrinting(
-        res.locals.assessment_instance.id,
+        res.locals.print_form.id,
         layout.questionBlockSizeOverrides,
         layout.excludedQuestionNumbers,
       );
@@ -341,7 +357,7 @@ router.post(
       const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
       const footerLabel = getPrintFooterLabel({
         document,
-        formId: res.locals.assessment_instance.id,
+        formId: res.locals.print_form.id,
         formLabel: layout.formLabel,
       });
       const makeCover = (
@@ -397,8 +413,8 @@ router.post(
           : undefined,
         footerLabel,
       });
-      const instanceQuestionIds = await getPrintableInstanceQuestionIds(
-        res.locals.assessment_instance.id,
+      const printFormQuestionIds = await getPrintableFormQuestionIds(
+        res.locals.print_form.id,
         layout.excludedQuestionNumbers,
       );
       throwIfAborted();
@@ -407,7 +423,7 @@ router.post(
           url: localPreviewUrl.href,
           browserOrigin: config.serverCanonicalHost ?? undefined,
           html: snapshot.html,
-          assetScope: printAssetScope(res.locals, instanceQuestionIds),
+          assetScope: printAssetScope(res.locals, printFormQuestionIds),
           signal,
           timeoutMs: remainingTimeoutMs(),
         },
@@ -415,19 +431,21 @@ router.post(
           ...output,
           produce: async (page) => {
             const identity = await page.evaluate(() => ({
+              formId: globalThis.document.documentElement.dataset.printFormId,
               document: globalThis.document.documentElement.dataset.printDocument,
               formLabel: globalThis.document.documentElement.dataset.printFormLabel,
               paperSize: globalThis.document.documentElement.dataset.printPaperSize,
             }));
             throwIfAborted();
             if (
+              identity.formId !== res.locals.print_form.id ||
               identity.document !== document ||
               identity.formLabel !== (layout.formLabel ?? '') ||
               identity.paperSize !== layout.paperSize
             ) {
               throw new HttpStatusError(
                 400,
-                'The preview does not match the requested document type, form label, or paper size. Generate a new preview before exporting.',
+                'The preview does not match the requested form, document type, form label, or paper size. Generate a new preview before exporting.',
               );
             }
             await validatePrintDocument(page);
@@ -446,7 +464,7 @@ router.post(
           res.locals.course,
         ) +
         sanitizeString(
-          `instance_${res.locals.assessment_instance.id}_${layout.paperSize.toLowerCase()}${
+          `form_${res.locals.print_form.id}_${layout.paperSize.toLowerCase()}${
             document === 'answer_key' ? '_answer_key' : ''
           }`,
         ) +

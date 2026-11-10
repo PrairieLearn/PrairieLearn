@@ -263,8 +263,8 @@ describe('PrintRenderer', () => {
       assetScope: {
         courseInstanceId: '10',
         assessmentId: '20',
-        assessmentInstanceId: '30',
-        instanceQuestionIds: ['40'],
+        printFormId: '30',
+        printFormQuestionIds: ['40'],
         authnUserId: '50',
         userId: '50',
       },
@@ -288,7 +288,7 @@ describe('PrintRenderer', () => {
     expect(fetch).toHaveBeenLastCalledWith({ maxRedirects: 0 });
 
     for (const pathname of [
-      '/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
+      '/pl/course_instance/10/instructor/assessment/20/print_form/30/question/40/clientFilesQuestion/image.png',
       '/pl/static/elements/pl-drawing/pl-drawing.css',
     ]) {
       await routeHandler!({
@@ -311,7 +311,7 @@ describe('PrintRenderer', () => {
       },
       {
         method: 'GET',
-        url: 'http://localhost:3000/pl/course_instance/10/instructor/instance_question/41/clientFilesQuestion/image.png',
+        url: 'http://localhost:3000/pl/course_instance/10/instructor/assessment/20/print_form/30/question/41/clientFilesQuestion/image.png',
       },
       // socket.io polling would otherwise hold HTTP connections open for the whole render.
       { method: 'GET', url: 'http://localhost:3000/socket.io/?EIO=4&transport=polling' },
@@ -432,8 +432,8 @@ describe('PrintRenderer', () => {
       assetScope: {
         courseInstanceId: '10',
         assessmentId: '20',
-        assessmentInstanceId: '30',
-        instanceQuestionIds: ['40'],
+        printFormId: '30',
+        printFormQuestionIds: ['40'],
         authnUserId: '50',
         userId: '50',
       },
@@ -459,7 +459,7 @@ describe('PrintRenderer', () => {
       request: () => ({
         method: () => 'GET',
         url: () =>
-          'https://us.prairielearn.com/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/figure.svg',
+          'https://us.prairielearn.com/pl/course_instance/10/instructor/assessment/20/print_form/30/question/40/clientFilesQuestion/figure.svg',
       }),
       continue: continueRequest,
       fulfill,
@@ -468,7 +468,7 @@ describe('PrintRenderer', () => {
     expect(continueRequest).toHaveBeenCalledOnce();
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch.mock.calls[0][0].toString()).toBe(
-      'http://localhost:3000/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/figure.svg',
+      'http://localhost:3000/pl/course_instance/10/instructor/assessment/20/print_form/30/question/40/clientFilesQuestion/figure.svg',
     );
     expect(fetch.mock.calls[0][1]).toMatchObject({
       headers: { 'X-PL-Print-Asset-Token': expect.any(String) },

@@ -1,15 +1,20 @@
 import type { Page } from '@playwright/test';
 import axe from 'axe-core';
+import { z } from 'zod';
 
-import { makeAssessmentInstance } from '../../../lib/assessment.js';
-import type { CourseInstance } from '../../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../../models/assessment.js';
-import { getConfiguredUser } from '../../utils/auth.js';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+
 import { createTest, expect } from '../fixtures.js';
 
-import { waitForPrintablePage } from './utils.js';
+import { createPrintableForm, waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
+const sql = loadSqlEquiv(import.meta.url);
+const RecordCountsSchema = z.object({
+  assessment_instances: z.number(),
+  instance_questions: z.number(),
+  variants: z.number(),
+});
 
 // Rendering a preview and an export can exceed Playwright's default 30-second test timeout.
 test.describe.configure({ timeout: 180_000 });
@@ -24,30 +29,6 @@ interface AnswerKeyQuestionPresentation {
   gradingBlockCount: number;
   questionNumber: string | undefined;
   visibleStudentResponseCount: number;
-}
-
-async function makePrintableAssessmentInstance(
-  courseInstance: CourseInstance,
-  tid: string,
-): Promise<string> {
-  const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid,
-  });
-  return await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
-}
-
-function printUrl(courseInstance: CourseInstance, assessmentInstanceId: string): string {
-  return `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print/preview?paper_size=Letter`;
 }
 
 async function readPaginatedQuestionLayout(page: Page): Promise<PaginatedQuestionLayout> {
@@ -104,11 +85,9 @@ test('renders accessible previews and readable answer keys for every student que
   courseInstance,
 }) => {
   await page.context().addInitScript({ content: axe.source });
-  const assessmentInstanceId = await makePrintableAssessmentInstance(
-    courseInstance,
-    'exam20-assessmentTools',
-  );
-  const endpoint = `${printUrl(courseInstance, assessmentInstanceId)}&identity_field=Section&identity_field=Student%20ID`;
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const initialRecords = await queryRow(sql.select_record_counts, {}, RecordCountsSchema);
+  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
 
   const assessmentResponse = await page.goto(endpoint);
   const assessmentLayout = await readPaginatedQuestionLayout(page);
@@ -154,4 +133,5 @@ test('renders accessible previews and readable answer keys for every student que
     });
     expect(presentation.questionNumber).toBeTruthy();
   }
+  expect(await queryRow(sql.select_record_counts, {}, RecordCountsSchema)).toEqual(initialRecords);
 });
