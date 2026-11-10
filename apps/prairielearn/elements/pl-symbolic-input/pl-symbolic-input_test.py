@@ -673,6 +673,50 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
     assert data["partial_scores"]["test"]["score"] == 1
 
 
+@pytest.mark.parametrize("formula_editor", [False, True])
+def test_generated_set_submission_can_be_parsed_and_graded(
+    *, formula_editor: bool
+) -> None:
+    correct_answer = sympy.Union(
+        sympy.Interval.open(-sympy.oo, 0),
+        sympy.Interval(1, sympy.oo),
+    )
+    element_html = build_element_html(
+        'allow-sets="true"',
+        f'formula-editor="{str(formula_editor).lower()}"',
+    )
+    data = make_question_data(
+        correct_answers={
+            "test": psu.sympy_to_json(correct_answer, allow_sets=True),
+        }
+    )
+    data["test_type"] = "correct"
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.test(element_html, data)
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_grade_preserves_parse_error_for_invalid_submission() -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": "x +* 1"},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(1))},
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    format_error = data["format_errors"]["test"]
+
+    symbolic_input.grade(element_html, data)
+
+    assert data["format_errors"]["test"] == format_error
+
+
 def test_interval_correct_answer_renders(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

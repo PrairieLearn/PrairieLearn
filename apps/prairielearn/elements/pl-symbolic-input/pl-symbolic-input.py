@@ -4,7 +4,7 @@ import re
 from enum import Enum
 from functools import lru_cache
 from sys import get_int_max_str_digits
-from typing import assert_never
+from typing import assert_never, cast
 
 import chevron
 import lxml.html
@@ -1092,7 +1092,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    def grade_function(a_sub: str | psu.SympyJson) -> tuple[bool, None]:
+    def grade_function(a_sub: str | psu.SympyJson | None) -> tuple[bool, None]:
+        if a_sub is None:
+            return False, None
+
         # Special case: submitted answer or correct answer is the empty string
         if isinstance(a_tru, str) and a_tru == "":
             if isinstance(a_sub, str) and a_sub == "":
@@ -1211,13 +1214,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             # This element cannot test itself. Defer the generation of test inputs to server.py
             return
 
-        # Get raw correct answer
         a_tru = data["correct_answers"][name]
-
-        # Parse correct answer based on type
-        if isinstance(a_tru, str):
-            if a_tru != "":
-                a_tru = psu.convert_string_to_sympy(
+        if a_tru != "":
+            if isinstance(a_tru, str):
+                a_tru_sympy = psu.convert_string_to_sympy(
                     a_tru,
                     variables,
                     allow_complex=allow_complex,
@@ -1226,17 +1226,21 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
                 )
-        else:
-            a_tru = psu.json_to_sympy(
-                a_tru,
+            else:
+                a_tru_sympy = psu.json_to_sympy(
+                    a_tru,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    allow_trig_functions=allow_trig,
+                )
+
+            a_tru_display = _replace_imaginary_for_display(a_tru_sympy, imaginary_unit)
+            a_tru_str = psu.sympy_to_json(
+                cast(sympy.Expr | sympy.Set, a_tru_display),
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
                 allow_trig_functions=allow_trig,
-            )
-
-        if a_tru != "":
-            # Substitute in imaginary unit symbol
-            a_tru_str = str(_replace_imaginary_for_display(a_tru, imaginary_unit))
+            )["_value"]
 
     if result == "correct":
         if a_tru_str == "":
