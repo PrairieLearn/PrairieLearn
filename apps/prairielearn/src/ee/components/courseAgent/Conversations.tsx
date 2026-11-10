@@ -5,7 +5,6 @@ import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
 import clsx from 'clsx';
 import {
-  type DragEvent,
   Fragment,
   type KeyboardEvent,
   type ReactNode,
@@ -22,7 +21,6 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
-  MAX_ATTACHMENTS_PER_MESSAGE,
   type ToolCall,
   ToolCallSchema,
   reviewTag,
@@ -40,7 +38,7 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 import {
   type DraftAttachment,
   DraftAttachmentList,
-  MAX_ATTACHMENT_SIZE,
+  FileDropArea,
   SentAttachments,
   uploadDraftAttachments,
   useDraftAttachments,
@@ -234,7 +232,7 @@ function ConversationPicker({
           onInitialMessageSent={create.reset}
         />
       ) : active ? (
-        <>
+        <FileDropArea enabled={!create.isPending} onDrop={drafts.add}>
           <div className="flex-grow-1 p-3">
             {create.isPending ? (
               <div className="d-flex flex-column gap-3">
@@ -260,7 +258,7 @@ function ConversationPicker({
             onDraftChange={setDraft}
             onSubmit={submitNew}
           />
-        </>
+        </FileDropArea>
       ) : null}
     </div>
   );
@@ -479,7 +477,7 @@ function Chat({
   };
 
   return (
-    <div className="d-flex flex-column flex-grow-1 overflow-hidden">
+    <FileDropArea enabled={!replyDenies && !sending} onDrop={drafts.add}>
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
@@ -582,7 +580,7 @@ function Chat({
       >
         {showConversationStats && <ConversationStats state={lifecycle} />}
       </Composer>
-    </div>
+    </FileDropArea>
   );
 }
 
@@ -621,7 +619,6 @@ function Composer({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [dragging, setDragging] = useState(false);
   // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
   // the height, and a hidden panel has no height to measure.
   useLayoutEffect(() => {
@@ -641,33 +638,11 @@ function Composer({
     }
   };
   const attachable = canAttach && !pending;
-  const draggingFiles = (event: DragEvent) =>
-    attachable && event.dataTransfer.types.includes('Files');
 
   return (
-    <Form
-      className="border-top p-3"
-      onSubmit={submit}
-      onDragOver={(event) => {
-        if (!draggingFiles(event)) return;
-        event.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
-      }}
-      onDrop={(event) => {
-        setDragging(false);
-        if (!draggingFiles(event)) return;
-        event.preventDefault();
-        onAttach([...event.dataTransfer.files]);
-      }}
-    >
+    <Form className="border-top p-3" onSubmit={submit}>
       <div
-        className={clsx(
-          'course-agent-composer position-relative border rounded-3',
-          pending && 'bg-body-tertiary',
-        )}
+        className={clsx('course-agent-composer border rounded-3', pending && 'bg-body-tertiary')}
       >
         <DraftAttachmentList
           attachments={attachments}
@@ -740,15 +715,6 @@ function Composer({
             )}
           </div>
         </div>
-        {dragging && (
-          <div className="course-agent-drop-target position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex flex-column align-items-center justify-content-center text-primary">
-            <i className="bi bi-upload fs-4" aria-hidden="true" />
-            <span className="fw-medium">Drop files to attach</span>
-            <span className="small">
-              Up to {MAX_ATTACHMENTS_PER_MESSAGE} files, {MAX_ATTACHMENT_SIZE} each
-            </span>
-          </div>
-        )}
       </div>
     </Form>
   );

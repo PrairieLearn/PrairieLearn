@@ -89,6 +89,9 @@
 }
 
 .course-agent-drop-target {
+  inset: 0.5rem;
+  z-index: 1;
+  border-radius: var(--bs-border-radius-lg);
   background-color: color-mix(in srgb, var(--bs-primary) 6%, var(--bs-body-bg));
   border: 2px dashed color-mix(in srgb, var(--bs-primary) 45%, var(--bs-body-bg));
   pointer-events: none;
