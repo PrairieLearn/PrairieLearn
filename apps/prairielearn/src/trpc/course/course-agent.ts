@@ -15,11 +15,12 @@ import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
-import { generateCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
+import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
+  updateCourseAgentConversationTitle,
 } from '../../ee/models/course-agent-conversation.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
@@ -95,45 +96,59 @@ export const courseAgentRouter = t.router({
       return resumeConversation(conversation);
     }),
 
-  // Record only conversations whose Cloudflare startup succeeded. The title is
-  // generated concurrently so it adds no latency beyond the startup itself.
+  // Record only conversations whose Cloudflare startup succeeded.
   create: courseAgentProcedure
     .input(z.object({ text: z.string().trim().min(1).max(20_000) }))
     .mutation(async ({ ctx, input }) => {
-      const [agentConversationId, title] = await Promise.all([
-        run(async () => {
-          if (config.devMode && !config.fileEditorUseGit) {
-            return createLocalCourseAgentConversation(ctx.course.path);
-          } else {
-            const repository = parseGithubRepository(ctx.course.repository ?? '');
-            if (!repository || !ctx.course.branch) {
-              throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Configure a GitHub repository and branch before starting a conversation.',
-              });
-            }
-            const binding = CreateConversationInput.safeParse({
-              repository: `${repository.owner}/${repository.repo}`,
-              branch: ctx.course.branch,
+      const agentConversationId = await run(async () => {
+        if (config.devMode && !config.fileEditorUseGit) {
+          return createLocalCourseAgentConversation(ctx.course.path);
+        } else {
+          const repository = parseGithubRepository(ctx.course.repository ?? '');
+          if (!repository || !ctx.course.branch) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Configure a GitHub repository and branch before starting a conversation.',
             });
-            if (!binding.success) {
-              throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'The course repository or branch is invalid.',
-              });
-            }
-            return createCourseAgentConversation(binding.data);
           }
-        }),
-        generateCourseAgentConversationTitle({ prompt: input.text, courseId: ctx.course.id }),
-      ]);
+          const binding = CreateConversationInput.safeParse({
+            repository: `${repository.owner}/${repository.repo}`,
+            branch: ctx.course.branch,
+          });
+          if (!binding.success) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'The course repository or branch is invalid.',
+            });
+          }
+          return createCourseAgentConversation(binding.data);
+        }
+      });
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,
         user_id: ctx.locals.authn_user.id,
         agent_conversation_id: agentConversationId,
-        title,
+        title: formatCourseAgentConversationTitle(input.text),
       });
       return StaffCourseAgentConversationSchema.parse(conversation);
+    }),
+
+  // The agent service generates a title from the first message and publishes it to the
+  // conversation's owner, whose browser saves it here.
+  setTitle: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, title: z.string().trim().min(1).max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      const updated = await updateCourseAgentConversationTitle({
+        conversation,
+        title: formatCourseAgentConversationTitle(input.title),
+      });
+      return StaffCourseAgentConversationSchema.parse(updated);
     }),
 });
 
@@ -143,4 +158,5 @@ export interface CourseAgentError {
   Resume: never;
   GetReview: never;
   PostReviewDecision: never;
+  SetTitle: never;
 }

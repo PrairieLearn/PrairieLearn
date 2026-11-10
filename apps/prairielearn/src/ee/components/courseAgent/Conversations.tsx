@@ -278,6 +278,19 @@ function Chat({
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const setTitle = useMutation({
+    ...trpc.courseAgent.setTitle.mutationOptions(),
+    onSuccess: async (updated) => {
+      // A list fetch that started before the save would otherwise restore the old title.
+      await queryClient.cancelQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+      queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) =>
+        current?.map((conversation) => (conversation.id === updated.id ? updated : conversation)),
+      );
+    },
+  });
+  // State updates repeat while a save is in flight, so save each generated title once.
+  const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
   const [connectionFailed, setConnectionFailed] = useState(false);
@@ -292,6 +305,14 @@ function Chat({
     onStateUpdate: (state) => {
       setLifecycle(state);
       if (state.status !== 'offline') setAwaitingStart(false);
+      // The agent service generates the title; the owner's browser saves it to the list.
+      const savedTitle = queryClient
+        .getQueryData(trpc.courseAgent.list.queryKey())
+        ?.find((conversation) => conversation.id === conversationId)?.title;
+      if (state.title && state.title !== savedTitle && state.title !== savingTitleRef.current) {
+        savingTitleRef.current = state.title;
+        setTitle.mutate({ conversationId, title: state.title });
+      }
     },
     onOpen: () => setConnectionFailed(false),
     onError: () => setConnectionFailed(true),

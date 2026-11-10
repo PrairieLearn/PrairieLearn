@@ -1363,14 +1363,6 @@
         }
       ]
     },
-    "courseAgentOpenAiApiKey": {
-      "default": null,
-      "type": ["string", "null"]
-    },
-    "courseAgentOpenAiOrganization": {
-      "default": null,
-      "type": ["string", "null"]
-    },
     "newsFeedUrl": {
       "default": null,
       "type": ["string", "null"]
