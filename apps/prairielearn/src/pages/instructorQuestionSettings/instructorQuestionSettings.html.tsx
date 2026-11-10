@@ -604,7 +604,7 @@ export const InstructorQuestionSettingsForm = ({
                     inputValue={pendingAuthor}
                     items={authorItems}
                     value={selectedAuthors}
-                    placeholder="Add an author by UID or ORCID URL"
+                    placeholder="UID or ORCID URL"
                     disabled={initialAuthors === null}
                     tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
                     renderTagContent={({ uid, name }) => <AuthorLabel uid={uid} name={name} />}
