@@ -42,7 +42,6 @@ import {
   DraftAttachmentList,
   MAX_ATTACHMENT_SIZE,
   SentAttachments,
-  revokePreviews,
   uploadDraftAttachments,
   useDraftAttachments,
 } from './Attachments.js';
@@ -156,7 +155,7 @@ function ConversationPicker({
         ...(current ?? []),
       ]);
       setPickedId(conversation.id);
-      // The new conversation's chat now owns the attachments and their previews.
+      // The new conversation's chat now owns the attachments.
       drafts.setAttachments([]);
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
@@ -212,7 +211,7 @@ function ConversationPicker({
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
               setDraft('');
-              drafts.clear();
+              drafts.setAttachments([]);
               create.reset();
             }}
           >
@@ -399,7 +398,6 @@ function Chat({
       if (offline) setAwaitingStart(true);
       void sendMessage({ text, files });
       setDraft('');
-      revokePreviews(attachments);
       setAttachments([]);
       return true;
     },
