@@ -1,9 +1,10 @@
 import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
 import {
+  Fragment,
   type KeyboardEvent,
   type ReactNode,
   type SyntheticEvent,
@@ -21,6 +22,7 @@ import {
   type ConversationState,
   type ToolCall,
   ToolCallSchema,
+  reviewTag,
 } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
@@ -33,12 +35,14 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
-import { RequestChangesCard } from './RequestChangesCard.js';
+import { RequestChangesCard, ReviewFeedback } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
+import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
+const TurnPartSchema = z.object({ tag: z.string() });
 
 const BLOCKED_MESSAGES = {
   startup_failed:
@@ -257,14 +261,6 @@ function PendingStatus({ label }: { label: string }) {
   );
 }
 
-function UserMessage({ text }: { text: string }) {
-  return (
-    <div className="align-self-end course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
-      {text}
-    </div>
-  );
-}
-
 function Chat({
   courseId,
   conversationId,
@@ -327,10 +323,35 @@ function Chat({
   const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
   const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
   const pendingReview = lifecycle?.reviewId != null;
-  const readyToSend =
-    !pendingReview && (lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user');
-  const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
+  const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
+  const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
+  const queryClient = useQueryClient();
+  const reviewInput = lifecycle?.reviewId
+    ? { conversationId, reviewId: lifecycle.reviewId }
+    : skipToken;
+  const review = useQuery({
+    ...trpc.courseAgent.getReview.queryOptions(reviewInput),
+    retry: false,
+  });
+  // A message sent while a review awaits a decision denies it, and the agent receives the message.
+  const replyDenies = pendingReview && agentIdle && review.data?.status === 'pending';
+  const deny = useMutation({
+    ...trpc.courseAgent.postReviewDecision.mutationOptions(),
+    retry: false,
+    // Keep anything typed while the denial was in flight.
+    onSuccess: (_, variables) => {
+      const sent = variables.decision === 'denied' ? variables.feedback : undefined;
+      setDraft((current) => (current.trim() === sent ? '' : current));
+    },
+    // On a conflict the draft stays, and the review shows the decision that won.
+    onSettled: (_, __, { conversationId, reviewId }) =>
+      queryClient.invalidateQueries({
+        queryKey: trpc.courseAgent.getReview.queryKey({ conversationId, reviewId }),
+      }),
+  });
+  const denyError = getAppError<CourseAgentError['PostReviewDecision']>(deny.error);
+  const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
   const initialMessageSentRef = useRef(false);
@@ -384,8 +405,20 @@ function Chat({
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || responseActive || !connected || !readyToSend) return;
+    if (!text || responseActive || !connected || deny.isPending) return;
+    if (replyDenies) {
+      deny.mutate({
+        conversationId,
+        reviewId: lifecycle.reviewId!,
+        decision: 'denied',
+        feedback: text,
+      });
+      return;
+    }
+    if (!readyToSend) return;
     if (lifecycle.status === 'offline') setAwaitingStart(true);
+    // A refused denial's error no longer applies once the message goes out normally.
+    deny.reset();
     void sendMessage({ text });
     setDraft('');
   };
@@ -419,11 +452,14 @@ function Chat({
           {historyReady &&
             lifecycle?.reviewId &&
             !reviewInHistory(messages, lifecycle.reviewId) && (
-              <RequestChangesCard
-                conversationId={conversationId}
-                reviewId={lifecycle.reviewId}
-                canResume={awaitingReviewId === lifecycle.reviewId}
-              />
+              <>
+                <RequestChangesCard
+                  conversationId={conversationId}
+                  reviewId={lifecycle.reviewId}
+                  canResume={awaitingReviewId === lifecycle.reviewId}
+                />
+                <ReviewFeedback conversationId={conversationId} reviewId={lifecycle.reviewId} />
+              </>
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
           {lifecycle?.status === 'blocked' && (
@@ -455,6 +491,9 @@ function Chat({
           {resume.isError && (
             <AppErrorAlert error={resumeError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
+          {deny.isError && (
+            <AppErrorAlert error={denyError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
           {(connectionError || connectionFailed) && (
             <Alert variant="danger">
               Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
@@ -469,7 +508,9 @@ function Chat({
       </div>
       <Composer
         draft={draft}
-        disabled={!connected || !readyToSend}
+        disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
+        placeholder={replyDenies ? 'Explain what to change…' : undefined}
+        sendLabel={replyDenies ? 'Deny and send' : undefined}
         stopDisabled={!connected || !canStop}
         onDraftChange={setDraft}
         onSubmit={submit}
@@ -486,6 +527,8 @@ function Composer({
   onDraftChange,
   onSubmit,
   disabled,
+  placeholder = 'Ask the course agent…',
+  sendLabel = 'Send',
   pending = false,
   stopDisabled = false,
   children,
@@ -495,6 +538,8 @@ function Composer({
   onDraftChange: (draft: string) => void;
   onSubmit: (event?: SyntheticEvent) => void;
   disabled: boolean;
+  placeholder?: string;
+  sendLabel?: string;
   pending?: boolean;
   stopDisabled?: boolean;
   children?: ReactNode;
@@ -512,7 +557,7 @@ function Composer({
         as="textarea"
         rows={3}
         value={draft}
-        placeholder="Ask the course agent…"
+        placeholder={placeholder}
         aria-label="Message"
         disabled={pending}
         onChange={(event) => onDraftChange(event.target.value)}
@@ -526,7 +571,12 @@ function Composer({
             Stop
           </Button>
         ) : (
-          <Button type="submit" size="sm" aria-label="Send" disabled={!draft.trim() || disabled}>
+          <Button
+            type="submit"
+            size="sm"
+            aria-label={sendLabel}
+            disabled={!draft.trim() || disabled}
+          >
             <i className="bi bi-send" aria-hidden="true" />
           </Button>
         )}
@@ -582,8 +632,30 @@ function Message({
     if (call && last && 'calls' in last) last.calls.push(call);
     else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
   });
-  const rendered = segments
-    .map((segment) => {
+  // A review ends the agent's turn even though the agent usually writes more after submitting it,
+  // so its card goes at the end of that turn: where the agent's turn that receives the result
+  // begins, or the end of the message until then. A message that denied the review follows it.
+  const reviewIds = message.parts.flatMap((part) =>
+    part.type === 'data-review' ? [ReviewPartSchema.parse(part.data).reviewId] : [],
+  );
+  const markerTags = new Set(
+    message.parts.flatMap((part) =>
+      part.type === 'data-turn' ? [TurnPartSchema.parse(part.data).tag] : [],
+    ),
+  );
+  // One key per review, in one list, so the card keeps its state when the marker arrives.
+  const reviewEnd = (reviewId: string) => (
+    <Fragment key={`review-${reviewId}`}>
+      <RequestChangesCard
+        conversationId={conversationId}
+        reviewId={reviewId}
+        canResume={awaitingReviewId === reviewId}
+      />
+      <ReviewFeedback conversationId={conversationId} reviewId={reviewId} />
+    </Fragment>
+  );
+  const rendered = [
+    ...segments.map((segment) => {
       if ('calls' in segment) {
         return (
           <ToolCalls
@@ -600,20 +672,17 @@ function Message({
         return <TextPart key={key} part={part} urlTransform={linkTransform} />;
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-      if (part.type === 'data-review') {
-        const { reviewId } = ReviewPartSchema.parse(part.data);
-        return (
-          <RequestChangesCard
-            key={key}
-            conversationId={conversationId}
-            reviewId={reviewId}
-            canResume={awaitingReviewId === reviewId}
-          />
-        );
+      if (part.type === 'data-turn') {
+        const { tag } = TurnPartSchema.parse(part.data);
+        const reviewId = reviewIds.find((id) => reviewTag(id) === tag);
+        if (reviewId) return reviewEnd(reviewId);
       }
       return null;
-    })
-    .filter((node) => node !== null);
+    }),
+    ...reviewIds
+      .filter((reviewId) => !markerTags.has(reviewTag(reviewId)))
+      .map((reviewId) => reviewEnd(reviewId)),
+  ].filter((node) => node !== null);
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;
   return <div className="d-flex flex-column gap-2">{rendered}</div>;
