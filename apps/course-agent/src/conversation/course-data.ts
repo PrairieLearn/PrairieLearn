@@ -27,7 +27,7 @@ const SchemaResponse = z.object({
   ),
 });
 
-/** One line per column, such as `submitted_at (date-time, nullable): When the student submitted.` */
+/** One line per column, such as `graded_at (date-time, nullable): Null if not graded.` */
 function describeColumn(name: string, property: z.infer<typeof ColumnSchema>) {
   const variants = property.anyOf ?? [property];
   const types = variants.flatMap((variant) =>
@@ -42,12 +42,12 @@ function describeColumn(name: string, property: z.infer<typeof ColumnSchema>) {
         types.filter((t) => t !== 'null').join(' or '));
   const description =
     property.description ?? variants.find((variant) => variant.description)?.description ?? '';
-  return `  ${name} (${type}${nullable ? ', nullable' : ''}): ${description}`;
+  return `  ${name} (${type}${nullable ? ', nullable' : ''})${description ? `: ${description}` : ''}`;
 }
 
 function describeSchema(schema: z.infer<typeof SchemaResponse>) {
   return [
-    `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC.`,
+    `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC. Any column can be filtered (eq, lt, lte, gt, gte), selected, or sorted on.`,
     ...Object.entries(schema.datasets).flatMap(([name, dataset]) => [
       '',
       `${name}: ${dataset.description}`,
@@ -110,31 +110,25 @@ export async function getCourseData({
   if (!courseId) {
     return { success: false, text: 'Course data is unavailable. Reload the PrairieLearn page.' };
   }
+  const { dataset, ...query } = request;
   const url = new URL(`/pl/api/v1/course/${courseId}/data`, plUrl);
-  if (request.dataset) url.pathname += `/${encodeURIComponent(request.dataset)}`;
-  for (const filter of request.filters ?? []) {
-    const equals = filter.indexOf('=');
-    if (equals <= 0) {
-      return { success: false, text: `Expected a filter like column=eq.value, not "${filter}".` };
-    }
-    url.searchParams.append(filter.slice(0, equals).trim(), filter.slice(equals + 1).trim());
-  }
-  if (request.select) url.searchParams.set('select', request.select.join(','));
-  if (request.order) url.searchParams.set('order', request.order);
-  if (request.limit !== undefined) url.searchParams.set('limit', String(request.limit));
-
+  const headers = {
+    Authorization: `Bearer ${serviceToken}`,
+    'X-Course-Agent-Conversation': conversationId,
+  };
   const started = Date.now();
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${serviceToken}`,
-      'X-Course-Agent-Conversation': conversationId,
-    },
-    signal: AbortSignal.timeout(120_000),
-  });
+  const response = dataset
+    ? await fetch(`${url}/${encodeURIComponent(dataset)}`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(query),
+        signal: AbortSignal.timeout(120_000),
+      })
+    : await fetch(url, { headers, signal: AbortSignal.timeout(120_000) });
   if (!response.ok) {
     return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
   }
-  if (!request.dataset) {
+  if (!dataset) {
     return { success: true, text: describeSchema(SchemaResponse.parse(await response.json())) };
   }
 
@@ -148,20 +142,24 @@ export async function getCourseData({
   // Each row ends with a newline, so count them rather than splitting a copy of the whole body.
   let rows = 0;
   for (let i = body.text.indexOf('\n'); i !== -1; i = body.text.indexOf('\n', i + 1)) rows++;
-  const path = await sandbox.writeCourseData(request.dataset, body.text);
+  const filters = (query.filters ?? []).map(
+    (filter) => `${filter.column} ${filter.op} ${JSON.stringify(filter.value)}`,
+  );
+  const path = await sandbox.writeCourseData(dataset, body.text);
   logEvent('course_data_fetched', {
     conversationId,
-    dataset: request.dataset,
-    filters: request.filters ?? [],
+    dataset,
+    filters,
     rows,
     bytes: body.bytes,
     elapsedMs: Date.now() - started,
   });
   const firstRow = body.text.slice(0, body.text.indexOf('\n'));
   const columns = rows > 0 ? Object.keys(JSON.parse(firstRow)).join(', ') : 'none';
-  const scope = request.filters?.length
-    ? `Filters: ${request.filters.join(' AND ')}.`
-    : 'No filters: every row in this course.';
+  const scope =
+    filters.length > 0
+      ? `Filters: ${filters.join(' AND ')}. The file holds only matching rows.`
+      : 'No filters: every row in this course.';
   return {
     success: true,
     text: `Wrote ${rows} rows (${(body.bytes / 1024 / 1024).toFixed(1)} MB) to ${path}. ${scope} Columns: ${columns}.`,

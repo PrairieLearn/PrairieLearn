@@ -458,6 +458,13 @@ describe('@prairielearn/postgres', function () {
       assert.equal(allRows[0].id, '1');
       assert.isNotNull(allRows[0].created_at);
     });
+    it('cancels a statement that exceeds the timeout', async () => {
+      const cursor = await queryCursor('SELECT pg_sleep(1);', {}, z.unknown(), {
+        statementTimeoutMs: 50,
+      });
+      await expect(cursor.iterate(10).next()).rejects.toThrow('statement timeout');
+    });
+
     it('returns zero rows', async () => {
       const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 10000;', z.unknown());
       const rowBatches = [];

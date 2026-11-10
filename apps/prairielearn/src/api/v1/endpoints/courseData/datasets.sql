@@ -1,7 +1,7 @@
 -- Each block returns exactly the columns of its dataset's schema in datasets.ts, limited to the course
--- in $course_id. The router wraps a block as a subquery to apply filters, so joins should follow
--- indexed paths down from course_instances.
--- BLOCK course_instances
+-- in $course_id. The API wraps a block as a subquery to filter, sort, and limit its rows, so joins
+-- should follow indexed paths down from course_instances.
+-- BLOCK select_course_instances_by_course_id
 SELECT
   ci.id,
   ci.short_name,
@@ -15,7 +15,7 @@ WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
 
--- BLOCK assessments
+-- BLOCK select_assessments_by_course_id
 SELECT
   a.id,
   a.course_instance_id,
@@ -38,7 +38,7 @@ WHERE
   AND ci.deleted_at IS NULL
   AND a.deleted_at IS NULL;
 
--- BLOCK questions
+-- BLOCK select_questions_by_course_id
 SELECT
   q.id,
   q.qid,
@@ -54,7 +54,7 @@ WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL;
 
--- BLOCK assessment_questions
+-- BLOCK select_assessment_questions_by_course_id
 SELECT
   aq.id,
   a.course_instance_id,
@@ -77,7 +77,7 @@ WHERE
   AND a.deleted_at IS NULL
   AND aq.deleted_at IS NULL;
 
--- BLOCK assessment_instances
+-- BLOCK select_assessment_instances_by_course_id
 SELECT
   ai.id,
   a.course_instance_id,
@@ -107,7 +107,7 @@ WHERE
   AND ci.deleted_at IS NULL
   AND a.deleted_at IS NULL;
 
--- BLOCK instance_questions
+-- BLOCK select_instance_questions_by_course_id
 SELECT
   iq.id,
   a.course_instance_id,
@@ -141,7 +141,7 @@ WHERE
   AND ci.deleted_at IS NULL
   AND a.deleted_at IS NULL;
 
--- BLOCK variants
+-- BLOCK select_variants_by_course_id
 SELECT
   v.id,
   a.course_instance_id,
@@ -165,7 +165,7 @@ WHERE
   AND ci.deleted_at IS NULL
   AND a.deleted_at IS NULL;
 
--- BLOCK submissions
+-- BLOCK select_submissions_by_course_id
 SELECT
   s.id,
   a.course_instance_id,

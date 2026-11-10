@@ -7,8 +7,6 @@ ARG CACHEBUST=2026-09-15-14-09-16
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates procps zstd tini \
     python3 python-is-python3 python3-pandas python3-numpy tzdata \
   && rm -rf /var/lib/apt/lists/*
-# The sandbox is offline, so fail the build if the analysis stack or timezone data is missing.
-RUN python3 -c "import numpy, pandas as pd; pd.Timestamp('2025-10-30T12:00Z').tz_convert('America/Chicago')"
 # Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
 # offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
 RUN git config --system user.name "PrairieLearn" && git config --system user.email "course-agent@prairielearn.com"

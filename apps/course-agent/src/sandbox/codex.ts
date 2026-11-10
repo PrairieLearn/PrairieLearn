@@ -2,9 +2,10 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import type { ToolCall } from '@prairielearn/course-agent-types';
+import { CourseDataQuerySchema, type ToolCall } from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { JsonValue } from '../../generated/types/serde_json/JsonValue.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
 import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
 import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
@@ -48,26 +49,23 @@ const ReviewToolItem = z.object({
   tool: z.literal('request_changes'),
   success: z.boolean().nullable(),
 });
-const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
+/** A dynamic tool call from Codex; each tool validates its own arguments. */
+const DynamicToolCall = z.object({
   threadId: z.string(),
   turnId: z.string(),
   callId: z.string(),
   namespace: z.null(),
-  tool: z.literal('request_changes'),
-  arguments: z.strictObject({}),
+  tool: z.string(),
+  arguments: z.unknown(),
 });
-const CourseDataCall = z.object({
-  threadId: z.string(),
-  tool: z.literal('get_course_data'),
-  arguments: z.strictObject({
-    dataset: z.string().optional(),
-    filters: z.array(z.string()).optional(),
-    select: z.array(z.string()).optional(),
-    order: z.string().optional(),
-    limit: z.number().int().nonnegative().optional(),
-  }),
+const RequestChangesArguments = z.strictObject({});
+const CourseDataArguments = CourseDataQuerySchema.extend({
+  dataset: z
+    .string()
+    .optional()
+    .describe('Dataset to download. Omit to list the datasets and their columns.'),
 });
-export type CourseDataRequest = z.infer<typeof CourseDataCall>['arguments'];
+export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
 const ItemsPage = z.object({
   data: z.array(z.object({ item: z.object({ type: z.string(), clientId: z.string().nullish() }) })),
   nextCursor: z.string().nullable(),
@@ -212,30 +210,32 @@ export class CodexAppServerClient {
   }
 
   private async callTool(value: unknown): Promise<ToolReply> {
-    const tool = z.object({ tool: z.string() }).safeParse(value);
-    if (tool.data?.tool === courseDataTool.name) {
-      const call = CourseDataCall.safeParse(value);
-      if (!call.success) {
-        return { success: false, text: `Invalid arguments: ${z.prettifyError(call.error)}` };
-      }
-      if (call.data.threadId !== this.threadId) throw new Error('Invalid get_course_data call');
-      try {
-        return await this.onCourseData(call.data.arguments);
-      } catch (error) {
-        return { success: false, text: error instanceof Error ? error.message : String(error) };
-      }
+    const call = DynamicToolCall.safeParse(value);
+    if (!call.success || call.data.threadId !== this.threadId) {
+      throw new Error('Invalid dynamic tool call');
     }
-    const call = this.parseReviewCall(value);
-    if (!this.onReview) throw new Error('Review handling is not configured');
-    return await this.onReview(call);
-  }
-
-  private parseReviewCall(value: unknown): DynamicToolCallParams {
-    const parsed = RequestChangesCall.safeParse(value);
-    if (!parsed.success || parsed.data.threadId !== this.threadId) {
-      throw new Error('Invalid request_changes call');
+    switch (call.data.tool) {
+      case courseDataTool.name: {
+        // Invalid arguments are the model's mistake, so it gets the reason and can retry.
+        const request = CourseDataArguments.safeParse(call.data.arguments);
+        if (!request.success) {
+          return { success: false, text: `Invalid arguments: ${z.prettifyError(request.error)}` };
+        }
+        try {
+          return await this.onCourseData(request.data);
+        } catch (error) {
+          return { success: false, text: error instanceof Error ? error.message : String(error) };
+        }
+      }
+      case requestChangesTool.name: {
+        if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
+          throw new Error('Invalid request_changes call');
+        }
+        return await this.onReview({ ...call.data, arguments: {} });
+      }
+      default:
+        throw new Error(`Unknown tool: ${call.data.tool}`);
     }
-    return parsed.data;
   }
 
   private fail(error: Error) {
@@ -460,33 +460,21 @@ export class CodexAppServerClient {
   }
 }
 
+// Zod types its output with a non-enumerable `~standard` property that serialization drops.
+const { $schema: _schema, ...courseDataInputSchema } = z.toJSONSchema(CourseDataArguments);
+
 const courseDataTool = {
   type: 'function',
   name: 'get_course_data',
   description:
-    "Fetch this course's PrairieLearn data (assessments, questions, scores, submissions). With no dataset, returns the datasets and their columns, types, and meanings; call this first. With a dataset, downloads matching rows as a JSONL file and returns its path. Filter large datasets, for example by course_instance_id. A filtered file holds only the matching rows: fetch again before answering a broader question.",
-  inputSchema: {
-    type: 'object',
-    properties: {
-      dataset: { type: 'string', description: 'Dataset to download. Omit to list datasets.' },
-      filters: {
-        type: 'array',
-        items: { type: 'string' },
-        description:
-          'Conditions combined with AND, written as column=operator.value. Operators: eq, neq, gt, gte, lt, lte, in, is. Examples: "course_instance_id=eq.19", "score=lt.0.5", "assessment_id=in.(4,7)", "graded_at=is.null".',
-      },
-      select: { type: 'array', items: { type: 'string' }, description: 'Columns to include.' },
-      order: { type: 'string', description: 'Sort, such as "submitted_at.desc".' },
-      limit: { type: 'integer', description: 'Maximum number of rows.' },
-    },
-    additionalProperties: false,
-  },
+    "Download this course's PrairieLearn data, such as assessments, scores, and submissions, as a JSONL file in the sandbox. Call it without a dataset first to list the datasets and their columns.",
+  inputSchema: courseDataInputSchema as JsonValue,
 } satisfies DynamicToolSpec;
 
-const requestChangesTool: DynamicToolSpec = {
+const requestChangesTool = {
   type: 'function',
   name: 'request_changes',
   description:
     'Submit the current course edits for instructor review. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
-};
+} satisfies DynamicToolSpec;

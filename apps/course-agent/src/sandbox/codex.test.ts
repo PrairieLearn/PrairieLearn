@@ -293,14 +293,14 @@ describe('course agent turns', () => {
           arguments: args,
         },
       });
-    call(10, { dataset: 'submissions', filters: ['score=lt.0.5'] });
+    call(10, { dataset: 'submissions', filters: [{ column: 'score', op: 'lt', value: 0.5 }] });
     call(11, { dataset: 'missing' });
     call(12, { limit: 'ten' });
     const replies = () => commands.filter((command) => 'result' in command);
     await vi.waitFor(() => expect(replies()).toHaveLength(3));
     expect(onCourseData).toHaveBeenCalledWith({
       dataset: 'submissions',
-      filters: ['score=lt.0.5'],
+      filters: [{ column: 'score', op: 'lt', value: 0.5 }],
     });
     const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
     expect(byId[10]).toEqual({

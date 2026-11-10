@@ -30,8 +30,16 @@ const locals = {} as {
 
 const SERVICE_TOKEN = 'course-agent-service-token-for-tests-0123456789';
 
-async function getRows(url: string, headers: Record<string, string>) {
-  const res = await fetch(url, { headers });
+function post(url: string, headers: Record<string, string>, body: unknown = {}) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+async function getRows(url: string, headers: Record<string, string>, body?: unknown) {
+  const res = await post(url, headers, body);
   assert.equal(res.status, 200, await res.clone().text());
   assert.equal(res.headers.get('content-type'), 'application/x-ndjson');
   const text = await res.text();
@@ -83,27 +91,45 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
 
   test('filters, select, order, and limit narrow the rows', async function () {
     const [submission] = await getRows(`${apiUrl}/submissions`, { 'Private-Token': token });
-    const id = COURSE_DATA_DATASETS.submissions.schema.shape.id.parse(submission.id);
     const rows = await getRows(
-      `${apiUrl}/submissions?select=id,score&score=gte.1&id=in.(${id},0)&correct=is.true&order=id.desc&limit=5`,
+      `${apiUrl}/submissions`,
       { 'Private-Token': token },
+      {
+        filters: [
+          { column: 'id', op: 'eq', value: submission.id },
+          { column: 'score', op: 'gte', value: 1 },
+          { column: 'correct', op: 'eq', value: true },
+        ],
+        select: ['id', 'score'],
+        order: [{ column: 'id', direction: 'desc' }],
+        limit: 5,
+      },
     );
-    assert.deepEqual(rows, [{ id, score: 1 }]);
+    assert.deepEqual(rows, [{ id: submission.id, score: 1 }]);
 
-    const none = await getRows(`${apiUrl}/submissions?score=lt.0`, { 'Private-Token': token });
+    const none = await getRows(
+      `${apiUrl}/submissions`,
+      { 'Private-Token': token },
+      { filters: [{ column: 'score', op: 'lt', value: 0 }] },
+    );
     assert.isEmpty(none);
   });
 
   test('invalid requests explain what is allowed', async function () {
     const cases = [
-      ['/missing', 404, 'Unknown dataset "missing"'],
-      ['/submissions?nope=eq.1', 400, 'Unknown column "nope"'],
-      ['/submissions?score=like.1', 400, 'Unknown operator'],
-      ['/submissions?score=lt.abc', 400, 'invalid input syntax'],
-      ['/submissions?order=score.sideways', 400, 'order=score.asc'],
+      ['/missing', {}, 404, 'Unknown dataset "missing"'],
+      ['/submissions', { filters: [{ column: 'nope', op: 'eq', value: 1 }] }, 400, '"score"'],
+      ['/submissions', { filters: [{ column: 'score', op: 'like', value: 1 }] }, 400, '"gte"'],
+      ['/submissions', { order: [{ column: 'score; DROP', direction: 'asc' }] }, 400, '"score"'],
+      [
+        '/submissions',
+        { filters: [{ column: 'score', op: 'lt', value: 'abc' }] },
+        400,
+        'invalid input syntax',
+      ],
     ] as const;
-    for (const [path, status, message] of cases) {
-      const res = await fetch(apiUrl + path, { headers: { 'Private-Token': token } });
+    for (const [path, body, status, message] of cases) {
+      const res = await post(apiUrl + path, { 'Private-Token': token }, body);
       assert.equal(res.status, status, path);
       assert.include((await res.json()).message, message);
     }
@@ -132,7 +158,7 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
       const owner = await conversation('owner@example.com', 'Owner');
       const editor = await conversation('editor@example.com', 'Editor');
       const statuses = async (headers: Record<string, string>, ...urls: string[]) =>
-        Promise.all(urls.map(async (url) => (await fetch(url, { headers })).status));
+        Promise.all(urls.map(async (url) => (await post(url, headers)).status));
 
       assert.isNotEmpty(await getRows(`${apiUrl}/questions`, owner));
       assert.deepEqual(

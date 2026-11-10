@@ -9,6 +9,14 @@ import { z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];
 
+export interface QueryCursorOptions {
+  /**
+   * Cancels the query if any single statement on its connection runs longer than this, such as
+   * the initial sort or scan of a large result. Applies only while the cursor is open.
+   */
+  statementTimeoutMs?: number;
+}
+
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
   stream: (batchSize: number) => Readable;
@@ -974,6 +982,7 @@ export class PostgresPool {
     sql: string,
     params: QueryParams,
     model: Model,
+    options?: QueryCursorOptions,
   ): Promise<CursorIterator<z.infer<Model>>>;
 
   /**
@@ -985,18 +994,28 @@ export class PostgresPool {
     sql: string,
     paramsOrSchema: Model | QueryParams,
     maybeModel?: Model,
+    options: QueryCursorOptions = {},
   ): Promise<CursorIterator<z.infer<Model>>> {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
-    return this.queryCursorInternal(sql, params, model);
+    return this.queryCursorInternal(sql, params, model, options);
   }
 
   private async queryCursorInternal<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
-    model?: Model,
+    model: Model | undefined,
+    { statementTimeoutMs }: QueryCursorOptions,
   ): Promise<CursorIterator<z.infer<Model>>> {
     const client = await this.getClientAsync();
+    if (statementTimeoutMs !== undefined) {
+      try {
+        await client.query(`SET statement_timeout = ${Math.trunc(statementTimeoutMs)}`);
+      } catch (err) {
+        client.release(err as Error);
+        throw err;
+      }
+    }
     const cursor = await this.queryCursorWithClient(client, sql, params);
 
     let iterateCalled = false;
@@ -1027,6 +1046,8 @@ export class PostgresPool {
         } finally {
           try {
             await cursor.close();
+            // The connection returns to the pool, so it must not keep this cursor's timeout.
+            if (statementTimeoutMs !== undefined) await client.query('RESET statement_timeout');
           } finally {
             client.release();
           }

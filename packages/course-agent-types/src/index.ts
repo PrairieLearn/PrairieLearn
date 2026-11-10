@@ -239,3 +239,34 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 
 /** Metadata the browser attaches to a user message. */
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
+
+export const COURSE_DATA_OPERATORS = ['eq', 'lt', 'lte', 'gt', 'gte'] as const;
+
+/**
+ * A request for rows of one course dataset. PrairieLearn validates it with `column` limited to the
+ * dataset's columns; the course agent uses it with any column name as its tool's arguments.
+ */
+export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: Column) {
+  return z.strictObject({
+    filters: z
+      .array(
+        z.strictObject({
+          column,
+          op: z.enum(COURSE_DATA_OPERATORS),
+          value: z.union([z.string(), z.number(), z.boolean()]),
+        }),
+      )
+      .optional()
+      .describe('Conditions that every row must meet, such as assessment_id eq "12".'),
+    select: z.array(column).optional().describe('Columns to include. Omit for all columns.'),
+    order: z
+      .array(z.strictObject({ column, direction: z.enum(['asc', 'desc']) }))
+      .optional()
+      .describe('Sort order, most significant first.'),
+    limit: z.number().int().positive().optional().describe('Maximum number of rows.'),
+  });
+}
+
+export const CourseDataQuerySchema = courseDataQuerySchema(z.string());
+
+export type CourseDataQuery = z.infer<typeof CourseDataQuerySchema>;
