@@ -1,6 +1,11 @@
 import type { UIMessage } from 'ai';
 
-import { MAX_ATTACHMENTS_PER_MESSAGE, attachmentIdOf } from '@prairielearn/course-agent-types';
+import {
+  MAX_ATTACHMENTS_PER_MESSAGE,
+  MAX_CONVERSATION_ATTACHMENTS,
+  MAX_CONVERSATION_ATTACHMENT_BYTES,
+  attachmentIdOf,
+} from '@prairielearn/course-agent-types';
 
 /** Outside the checkpointed session and the course checkout, so neither copies attachments. */
 export const UPLOADS_DIR = '/workspace/uploads';
@@ -11,6 +16,47 @@ export const uploadKey = (conversationId: string, uploadId: string) =>
 /** One level below the uploads, so a delimited listing of the uploads leaves thumbnails out. */
 export const thumbnailKey = (conversationId: string, uploadId: string) =>
   `${uploadPrefix(conversationId)}thumbnails/${uploadId}`;
+
+interface UploadTotals {
+  count: number;
+  bytes: number;
+}
+
+/**
+ * A conversation's upload totals, counted from R2 once and then kept by its Durable Object, the
+ * single writer that serializes reservations. Uploads that were never sent count too.
+ */
+export class UploadQuota {
+  private totals: Promise<UploadTotals> | null = null;
+
+  constructor(private readonly countUploads: () => Promise<UploadTotals>) {}
+
+  /** Whether an upload of this size fits under the cap; if so, it counts until released. */
+  async reserve(size: number) {
+    this.totals ??= this.countUploads().catch((error: unknown) => {
+      this.totals = null;
+      throw error;
+    });
+    const totals = await this.totals;
+    // Nothing awaits between the check and the update, so concurrent reservations see each other.
+    if (
+      totals.count >= MAX_CONVERSATION_ATTACHMENTS ||
+      totals.bytes + size > MAX_CONVERSATION_ATTACHMENT_BYTES
+    ) {
+      return false;
+    }
+    totals.count += 1;
+    totals.bytes += size;
+    return true;
+  }
+
+  /** Return a reservation whose upload was not stored. */
+  async release(size: number) {
+    const totals = await this.totals!;
+    totals.count -= 1;
+    totals.bytes -= size;
+  }
+}
 
 export interface Attachment {
   id: string;

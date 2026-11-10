@@ -28,6 +28,7 @@ import { SandboxTurn } from '../sandbox/turn.js';
 import {
   type Attachment,
   IMAGE_SIGNATURE_BYTES,
+  UploadQuota,
   attachmentPath,
   attachmentsOf,
   attachmentsToWrite,
@@ -35,6 +36,7 @@ import {
   imageType,
   keepUploadReferences,
   uploadKey,
+  uploadPrefix,
 } from './attachments.js';
 import {
   buildCatchUp,
@@ -147,6 +149,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private recovering = false;
   /** Shared by every shutdown caller; delivery waits for it to finish. */
   private sandboxShutdown: Promise<void> | null = null;
+  private readonly uploadQuota = new UploadQuota(async () => {
+    // The delimiter leaves out thumbnails, which are one level down and don't count.
+    const { objects } = await this.env.CHECKPOINTS.list({
+      prefix: uploadPrefix(this.name),
+      delimiter: '/',
+    });
+    return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
+  });
 
   private reportError(error: unknown) {
     reportError(error, {
@@ -625,6 +635,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_user' } });
       await this.scheduleDeadline('idle');
     }
+  }
+
+  /** RPC: reserve room for an upload under this conversation's cap, or refuse it. */
+  async reserveUpload(size: number) {
+    return await this.uploadQuota.reserve(size);
+  }
+
+  /** RPC: return the room reserved for an upload that was not stored. */
+  async releaseUpload(size: number) {
+    await this.uploadQuota.release(size);
   }
 
   /**
