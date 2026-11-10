@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { CreateConversationInput, ReviewFeedbackSchema } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -52,11 +52,19 @@ export const courseAgentRouter = t.router({
     }),
   postReviewDecision: courseAgentProcedure
     .input(
-      z.object({
-        conversationId: IdSchema,
-        reviewId: z.uuid(),
-        decision: z.enum(['approved', 'denied']),
-      }),
+      z.discriminatedUnion('decision', [
+        z.object({
+          conversationId: IdSchema,
+          reviewId: z.uuid(),
+          decision: z.literal('approved'),
+        }),
+        z.object({
+          conversationId: IdSchema,
+          reviewId: z.uuid(),
+          decision: z.literal('denied'),
+          feedback: ReviewFeedbackSchema.optional(),
+        }),
+      ]),
     )
     .mutation(async ({ ctx, input }) => {
       const conversation = await selectOptionalCourseAgentConversation({
