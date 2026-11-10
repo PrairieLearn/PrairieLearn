@@ -100,6 +100,8 @@ function assertPrintDocumentReady(state: {
   }
 }
 
+// Snapshot metadata is client-editable. These checks detect incomplete exports;
+// authorization and asset access are enforced separately by the print routes.
 export const validatePrintDocument: PrintablePageOutput<{
   coverPageCount: number;
 }>['produce'] = async (page) => {
