@@ -97,11 +97,14 @@ describe('content-only question save', () => {
     await establishBaseline();
   });
 
-  async function establishBaseline(version = CURRENT_SYNC_VERSION) {
+  async function establishBaseline(
+    version = CURRENT_SYNC_VERSION,
+    chunksGenerated = config.chunksGenerator,
+  ) {
     await recordSuccessfulCourseSync(courseId, {
       commitHash: await getCourseCommitHash(courseDir),
       version,
-      chunksGenerated: config.chunksGenerator,
+      chunksGenerated,
     });
   }
 
@@ -220,13 +223,7 @@ describe('content-only question save', () => {
         await updateCourseCommitHash({ id: courseId, path: courseDir });
         await establishBaseline();
       }
-      if (reason === 'chunk mode changed') {
-        await recordSuccessfulCourseSync(courseId, {
-          commitHash: await getCourseCommitHash(courseDir),
-          version: CURRENT_SYNC_VERSION,
-          chunksGenerated: true,
-        });
-      }
+      if (reason === 'chunk mode changed') await establishBaseline(CURRENT_SYNC_VERSION, true);
       const load = vi.spyOn(courseDB, 'loadFullCourse');
       const operation = await save();
       if (reason === 'unexpected change') {

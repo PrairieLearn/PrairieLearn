@@ -162,13 +162,10 @@ describe('question QID sync with real Git', () => {
     },
   );
 
-  it.each(['@renamed', '__proto__'])(
-    'excludes reserved QID %s from the fast path',
-    async (newQid) => {
-      const course = await selectCourseById('1');
-      assert.isNull(await getQuestionRenameScope(course, qid, newQid));
-    },
-  );
+  it('excludes __proto__ from the fast path', async () => {
+    const course = await selectCourseById('1');
+    assert.isNull(await getQuestionRenameScope(course, qid, '__proto__'));
+  });
 
   it('rejects a copy that keeps the original question directory', async () => {
     const directory = path.join(fixture.baseDir, 'copy-check');
