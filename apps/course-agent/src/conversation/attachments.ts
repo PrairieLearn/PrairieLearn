@@ -52,7 +52,10 @@ export class UploadQuota {
 
   /** Return a reservation whose upload was not stored. */
   async release(size: number) {
-    const totals = await this.totals!;
+    // A Durable Object that restarted since the reservation counts from R2 again, which already
+    // leaves this upload out.
+    if (!this.totals) return;
+    const totals = await this.totals;
     totals.count -= 1;
     totals.bytes -= size;
   }
