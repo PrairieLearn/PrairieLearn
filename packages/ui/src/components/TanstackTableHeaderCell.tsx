@@ -180,7 +180,7 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
           <div
             className="d-flex align-items-center"
             // Controls take precedence over the drag target when a column is too narrow for both.
-            style={{ flexShrink: 0, position: 'relative', zIndex: 1 }}
+            style={{ flexShrink: 0, zIndex: 1 }}
           >
             {canSort && (
               <button
