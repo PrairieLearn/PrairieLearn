@@ -56,6 +56,23 @@ const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
   tool: z.literal('request_changes'),
   arguments: z.strictObject({}),
 });
+/**
+ * `request_user_input_async` completes an agent message whose text Codex never streams, so its
+ * questions are shown only through this item.
+ */
+const QuestionItem = z.object({
+  type: z.literal('agentMessage'),
+  id: z.string(),
+  delivery: z.literal('async'),
+  questions: z
+    .array(z.object({ title: z.string(), options: z.array(z.string()).nullable() }))
+    .min(1),
+});
+const UnstreamedAsyncMessage = z.object({
+  type: z.literal('agentMessage'),
+  delivery: z.literal('async'),
+  text: z.string().min(1),
+});
 const ItemsPage = z.object({
   data: z.array(z.object({ item: z.object({ type: z.string(), clientId: z.string().nullish() }) })),
   nextCursor: z.string().nullable(),
@@ -163,6 +180,24 @@ export class CodexAppServerClient {
       this.toolCall('completed', params);
       const { threadId, item } = params;
       if (threadId !== this.threadId) return;
+      const question = QuestionItem.safeParse(item);
+      if (question.success) {
+        this.emit({
+          type: 'data-question',
+          id: `question:${item.id}`,
+          data: { v: 1, itemId: item.id, questions: question.data.questions },
+        });
+        return;
+      }
+      // Codex never streams an async message, so one whose questions changed shape would vanish.
+      const unparsed = UnstreamedAsyncMessage.safeParse(item);
+      if (unparsed.success) {
+        const id = `text:${item.id}`;
+        this.emit({ type: 'text-start', id });
+        this.emit({ type: 'text-delta', id, delta: unparsed.data.text });
+        this.emit({ type: 'text-end', id });
+        return;
+      }
       const type =
         item.type === 'agentMessage' ? 'text' : item.type === 'reasoning' ? 'reasoning' : null;
       if (!type) return;

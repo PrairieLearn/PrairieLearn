@@ -221,3 +221,22 @@ export const ToolCallSchema = z
   );
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
+
+/**
+ * Questions the agent asked with Codex's `request_user_input_async`, in a `data-question` part
+ * keyed by the Codex item ID. The tool returns at once; staff's next message is the answer, so the
+ * part holds no answer and is never rewritten.
+ */
+export const QuestionPartSchema = z.object({
+  v: z.literal(1),
+  itemId: z.string(),
+  questions: z.array(
+    z.object({
+      title: z.string(),
+      /** Suggested answers, recommended first. The instructor can always write their own. */
+      options: z.array(z.string()).nullable(),
+    }),
+  ),
+});
+
+export type QuestionPart = z.infer<typeof QuestionPartSchema>;

@@ -1,6 +1,10 @@
 import type { UIMessage, UIMessageChunk } from 'ai';
 
-import { type RequestChangesResult, ToolCallSchema } from '@prairielearn/course-agent-types';
+import {
+  QuestionPartSchema,
+  type RequestChangesResult,
+  ToolCallSchema,
+} from '@prairielearn/course-agent-types';
 
 /** Keep the newest turns within a bound that leaves room for the current request. */
 const MAX_CATCH_UP_CHARS = 32_000;
@@ -119,6 +123,17 @@ function describeFileChange(data: unknown) {
   return `[Changed files: ${paths.join(', ')}.]`;
 }
 
+/** A restored thread may have lost the questions that staff's next message answers. */
+function describeQuestions(data: unknown) {
+  const part = QuestionPartSchema.safeParse(data);
+  if (!part.success) return '';
+  return part.data.questions
+    .map(({ title, options }) =>
+      options ? `[Asked: ${title} Options: ${options.join('; ')}]` : `[Asked: ${title}]`,
+    )
+    .join('\n');
+}
+
 /** Split chat history into the turns Codex received, each with its tag and visible text. */
 function splitTurns(history: UIMessage[]) {
   const turns: Turn[] = [];
@@ -137,9 +152,11 @@ function splitTurns(history: UIMessage[]) {
           ? part.text.trim()
           : part.type === 'data-review'
             ? '[Submitted changes for instructor review.]'
-            : part.type === 'data-tool'
-              ? describeFileChange(part.data)
-              : '';
+            : part.type === 'data-question'
+              ? describeQuestions(part.data)
+              : part.type === 'data-tool'
+                ? describeFileChange(part.data)
+                : '';
       if (!text) continue;
       turns.at(-1)?.entries.push(`${message.role === 'user' ? 'Staff' : 'You'}: ${text}`);
     }

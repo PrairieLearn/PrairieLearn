@@ -17,6 +17,7 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
+  QuestionPartSchema,
   type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
@@ -31,6 +32,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
+import { QuestionCard } from './QuestionCard.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 
@@ -374,15 +376,22 @@ function Chat({
     !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
       ? (lifecycle.reviewId ?? null)
       : null;
+  // Questions are open until staff send their next message, which answers them however it is sent.
+  const latest = messages.at(-1);
+  const questionOpen =
+    latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-question');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+
+  const send = (text: string) => {
+    if (!text || responseActive || !connected || !readyToSend) return false;
+    if (lifecycle.status === 'offline') setAwaitingStart(true);
+    void sendMessage({ text });
+    return true;
+  };
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
-    const text = draft.trim();
-    if (!text || responseActive || !connected || !readyToSend) return;
-    if (lifecycle.status === 'offline') setAwaitingStart(true);
-    void sendMessage({ text });
-    setDraft('');
+    if (send(draft.trim())) setDraft('');
   };
 
   return (
@@ -404,7 +413,10 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
+              answered={messages.slice(index + 1).some((later) => later.role === 'user')}
+              canAnswer={connected && readyToSend && !responseActive}
               onToolCallExpand={stickToBottom.stopScroll}
+              onAnswer={send}
             />
           ))}
           {showInitialText && <UserMessage text={initialText} />}
@@ -463,6 +475,7 @@ function Chat({
       </div>
       <Composer
         draft={draft}
+        placeholder={questionOpen ? 'Answer the question, or ask something else…' : undefined}
         disabled={!connected || !readyToSend}
         stopDisabled={!connected || !canStop}
         onDraftChange={setDraft}
@@ -480,6 +493,7 @@ function Composer({
   onDraftChange,
   onSubmit,
   disabled,
+  placeholder = 'Ask the course agent…',
   pending = false,
   stopDisabled = false,
   children,
@@ -489,6 +503,7 @@ function Composer({
   onDraftChange: (draft: string) => void;
   onSubmit: (event?: SyntheticEvent) => void;
   disabled: boolean;
+  placeholder?: string;
   pending?: boolean;
   stopDisabled?: boolean;
   children?: ReactNode;
@@ -506,7 +521,7 @@ function Composer({
         as="textarea"
         rows={3}
         value={draft}
-        placeholder="Ask the course agent…"
+        placeholder={placeholder}
         aria-label="Message"
         disabled={pending}
         onChange={(event) => onDraftChange(event.target.value)}
@@ -551,8 +566,15 @@ function Message({
   conversationId,
   awaitingReviewId,
   onToolCallExpand,
+  answered,
+  canAnswer,
+  onAnswer,
 }: {
   message: UIMessage;
+  /** Staff have sent a message since this one, which answers any questions it asks. */
+  answered: boolean;
+  canAnswer: boolean;
+  onAnswer: (text: string) => void;
   /** Whether this message is still streaming. */
   live: boolean;
   conversationId: string;
@@ -590,6 +612,19 @@ function Message({
       if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) return null;
       if (part.type === 'text') return <TextPart key={key} part={part} />;
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+      if (part.type === 'data-question') {
+        const question = QuestionPartSchema.safeParse(part.data).data;
+        if (!question) return null;
+        return (
+          <QuestionCard
+            key={key}
+            part={question}
+            answered={answered}
+            canAnswer={canAnswer}
+            onAnswer={onAnswer}
+          />
+        );
+      }
       if (part.type === 'data-review') {
         const { reviewId } = ReviewPartSchema.parse(part.data);
         return (
