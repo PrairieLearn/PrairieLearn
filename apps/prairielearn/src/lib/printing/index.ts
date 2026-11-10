@@ -72,7 +72,7 @@ export function isBrowserRenderingAvailable(): boolean {
 }
 
 /** Previews may omit broken questions for review; downloads must include every selected question. */
-function assertPrintDocumentReady(state: {
+export function assertPrintDocumentReady(state: {
   questionCount: number;
   omittedCount: number;
   coverPageCount: number;

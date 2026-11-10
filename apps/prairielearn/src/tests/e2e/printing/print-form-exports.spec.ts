@@ -198,6 +198,23 @@ test('prints representative controls, editable Word content, and an ordered answ
   expect(distractorBounds!.y).toBeGreaterThanOrEqual(correctBounds!.y + correctBounds!.height);
 });
 
+test('rejects changed Word source before queuing an export', async ({ page, courseInstance }) => {
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const query = 'paper_size=Letter';
+  await page.goto(`${printUrl}/preview?${query}`);
+  await waitForPrintablePage(page);
+  await page.evaluate(() => {
+    const element = document.getElementById('pl-print-docx-source')!;
+    const source = JSON.parse(element.textContent);
+    source.html += '<p>Changed after the preview was signed</p>';
+    element.textContent = JSON.stringify(source);
+  });
+
+  const response = await downloadPrintableWord(page, printUrl, query);
+  expect(response.status()).toBe(400);
+  expect((await response.json()).error).toContain('This print preview has expired or changed');
+});
+
 test('preserves literal dollar patterns in Word exports', async ({
   page,
   courseInstance,

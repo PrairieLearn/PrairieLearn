@@ -4,14 +4,16 @@ import path from 'node:path';
 
 import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
+import { z } from 'zod';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getFromS3, uploadToS3 } from '../lib/aws.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
-import { getAssessmentTrpcUrl } from '../lib/client/url.js';
+import { getAssessmentTrpcUrl, getPrintFormUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { getFileStoreS3Bucket } from '../lib/file-store.js';
@@ -29,6 +31,7 @@ import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
 import { assessmentHasPrintRandomization } from '../lib/print-preparation.js';
 import * as printing from '../lib/printing/index.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -366,7 +369,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
       expect(render).not.toHaveBeenCalled();
       expect(await api.printableAssessmentExport.status.query({ jobSequenceId })).toMatchObject({
         status: 'Running',
+        format: 'pdf',
         ready: false,
+        downloadUrl: null,
       });
       await processQueuedPrintExports();
       await waitForPrintExportWorkers();
@@ -378,7 +383,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
     ).toEqual({
       status: 'Success',
+      format: 'pdf',
       ready: true,
+      downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${jobSequenceId}.pdf`,
       sizeBytes: pdf.length,
       exportLabel: 'Form A PDF',
       failureMessage: null,
@@ -396,6 +403,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       `attachment; filename="${job.result!.filename}"`,
     );
     expect(Buffer.from(await response.arrayBuffer())).toEqual(pdf);
+    expect((await fetch(url.replace('.pdf', '.docx'))).status).toBe(404);
     const studentResponse = await fetch(url, { headers: { cookie: 'pl_test_user=test_student' } });
     expect(studentResponse.status).toBe(403);
     const otherAssessment = await selectAssessmentByTid({
@@ -426,7 +434,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
     ).toEqual({
       status: 'Success',
+      format: 'pdf',
       ready: false,
+      downloadUrl: null,
       sizeBytes: null,
       exportLabel: null,
       failureMessage: null,
@@ -434,6 +444,164 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
     expect((await fetch(url)).status).toBe(404);
     await expect(getFromS3(bucket, inputKey, true)).rejects.toThrow();
+  });
+
+  test('queues a Word export with its signed source and streams it only to its owner', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const form = await api.printForms.create.mutate();
+    const printUrl = getPrintFormUrl({
+      courseInstanceId: '1',
+      assessmentId: assessment.id,
+      printFormId: form.printFormId,
+    });
+    const search = new URLSearchParams({
+      paper_size: 'Letter',
+      form_label: 'A',
+      grading_table: 'true',
+    });
+    const source = {
+      html: '<p><strong>Queued editable question</strong></p><img data-docx-figure="1">',
+      figures: [{ id: '1', width: 120, height: 60, alt: 'Queued diagram' }],
+    };
+    const html = `<!doctype html><html data-print-form-id="${form.printFormId}" data-print-document="assessment" data-print-form-label="A" data-print-paper-size="Letter" data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0" data-print-max-points="6" data-print-grading-table='{"questionNumbers":["1"],"rowsPerColumn":1}'><head></head><body><div class="pagedjs_page"></div><div class="pagedjs_page"><section class="printing-question">Queued editable question</section></div></body></html>`;
+    const snapshot = {
+      html,
+      source,
+      id: createPrintSnapshotId(
+        {
+          printFormId: form.printFormId,
+          authnUserId: '1',
+          search,
+          questionListDigest: await printing.getPrintableQuestionListDigest(
+            form.printFormId,
+            new Set(),
+          ),
+          html,
+          source,
+        },
+        config.secretKey,
+      ),
+    };
+    const docx = Buffer.from('PK queued Word document');
+    const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(docx);
+    let jobSequenceId: string;
+    try {
+      const response = await fetch(`${siteUrl}${printUrl}/docx?${search}`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/octet-stream',
+          'X-CSRF-Token': generateCsrfToken({ url: `${printUrl}/docx`, authnUserId: '1' }),
+        },
+        body: JSON.stringify(snapshot),
+      });
+      expect(response.status).toBe(200);
+      ({ jobSequenceId } = z.object({ jobSequenceId: IdSchema }).parse(await response.json()));
+      expect(render).not.toHaveBeenCalled();
+      expect(await api.printableAssessmentExport.status.query({ jobSequenceId })).toMatchObject({
+        status: 'Running',
+        ready: false,
+        format: 'docx',
+        downloadUrl: null,
+      });
+      await processQueuedPrintExports();
+      await waitForPrintExportWorkers();
+      expect(render).toHaveBeenCalledWith(
+        expect.objectContaining({
+          format: 'docx',
+          source,
+          cover: expect.objectContaining({
+            summary: [
+              { term: 'Questions', value: '1' },
+              { term: 'Points', value: '6' },
+              { term: 'Form', value: 'A' },
+            ],
+            gradingTable: { questionNumbers: ['1'], rowsPerColumn: 1 },
+            sections: expect.arrayContaining([
+              expect.objectContaining({
+                heading: 'Instructions',
+                blocks: expect.arrayContaining([
+                  expect.objectContaining({
+                    type: 'list',
+                    ordered: true,
+                    items: expect.any(Array),
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+          footerLabel: 'Form A',
+          snapshot: expect.objectContaining({
+            html,
+            assetScope: expect.objectContaining({ printFormId: form.printFormId }),
+          }),
+        }),
+        expect.any(AbortSignal),
+      );
+    } finally {
+      render.mockRestore();
+    }
+    const status = await api.printableAssessmentExport.status.query({ jobSequenceId });
+    const downloadUrl = `/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${jobSequenceId}.docx`;
+    expect(status).toEqual({
+      status: 'Success',
+      format: 'docx',
+      ready: true,
+      downloadUrl,
+      sizeBytes: docx.length,
+      exportLabel: 'Form A Word document',
+      failureMessage: null,
+      canViewJobLogs: true,
+    });
+    const job = (await selectPrintExportJob({
+      jobSequenceId,
+      assessmentId: assessment.id,
+      authnUserId: '1',
+    }))!;
+    expect(job.result!.key).toMatch(/\.docx$/);
+    const download = await fetch(`${siteUrl}${downloadUrl}`);
+    expect(download.status).toBe(200);
+    expect(download.headers.get('content-type')).toBe(
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    expect(download.headers.get('content-disposition')).toBe(
+      `attachment; filename="${job.result!.filename}"`,
+    );
+    expect(Buffer.from(await download.arrayBuffer())).toEqual(docx);
+    expect((await fetch(`${siteUrl}${downloadUrl.replace('.docx', '.pdf')}`)).status).toBe(404);
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Instructor User',
+      uin: '100000000',
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid: instructor.uid,
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    expect(
+      (
+        await fetch(`${siteUrl}${downloadUrl}`, {
+          headers: {
+            cookie:
+              'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=Previewer; pl2_requested_course_instance_role=None',
+          },
+        })
+      ).status,
+    ).toBe(404);
+    await execute(sql.age_print_export_job, { job_sequence_id: jobSequenceId });
+    await execute(sql.age_print_export_sequence, { job_sequence_id: jobSequenceId });
+    await cleanExpiredPrintExports();
+    expect(await api.printableAssessmentExport.status.query({ jobSequenceId })).toMatchObject({
+      status: 'Success',
+      format: 'docx',
+      ready: false,
+      downloadUrl: null,
+    });
+    expect((await fetch(`${siteUrl}${downloadUrl}`)).status).toBe(404);
   });
 
   test('shows a safe reason when a background PDF fails', async () => {
@@ -448,6 +616,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         userId: '1',
       },
       work: {
+        format: 'pdf',
         document: 'booklet',
         copies: 1,
         filename: 'failed-export.pdf',
@@ -474,7 +643,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
     ).toEqual({
       status: 'Error',
+      format: 'pdf',
       ready: false,
+      downloadUrl: null,
       sizeBytes: null,
       exportLabel: null,
       failureMessage:
@@ -483,40 +654,71 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
   });
 
-  test('reports missing browser configuration from the queued worker', async () => {
-    const assessment = await printAssessment();
-    const courseInstance = await selectCourseInstanceById('1');
-    const available = vi.spyOn(printing, 'isBrowserRenderingAvailable').mockReturnValue(false);
-    try {
-      const jobSequenceId = await queuePrintExport({
-        owner: {
-          assessmentId: assessment.id,
-          authnUserId: '1',
-          courseId: courseInstance.course_id,
-          courseInstanceId: '1',
-          userId: '1',
-        },
-        work: {
-          document: 'assessment',
-          copies: 1,
-          filename: 'unavailable-export.pdf',
-          snapshots: [],
-          covers: [],
-        },
-      });
-      await processQueuedPrintExports();
-      await waitForPrintExportWorkers();
-      expect(
-        await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
-      ).toMatchObject({
-        status: 'Error',
-        ready: false,
-        failureMessage: 'PDF rendering is not configured on this server.',
-      });
-    } finally {
-      available.mockRestore();
-    }
-  });
+  test.each(['pdf', 'docx'] as const)(
+    'reports missing browser configuration from the queued %s worker',
+    async (format) => {
+      const assessment = await printAssessment();
+      const courseInstance = await selectCourseInstanceById('1');
+      const available = vi.spyOn(printing, 'isBrowserRenderingAvailable').mockReturnValue(false);
+      const work: printExportRender.PrintExportWork =
+        format === 'pdf'
+          ? {
+              format,
+              document: 'assessment',
+              copies: 1,
+              filename: 'unavailable-export.pdf',
+              snapshots: [],
+              covers: [],
+            }
+          : {
+              format,
+              document: 'assessment',
+              filename: 'unavailable-export.docx',
+              snapshot: {
+                formLabel: 'A',
+                paperSize: 'Letter',
+                printDocument: 'assessment',
+                localPreviewUrl: 'http://localhost/',
+                html: '',
+                assetScope: {
+                  courseInstanceId: '1',
+                  assessmentId: assessment.id,
+                  printFormId: '1',
+                  printFormQuestionIds: [],
+                  authnUserId: '1',
+                  userId: '1',
+                },
+              },
+              source: { html: '', figures: [] },
+              footerLabel: 'Form A',
+            };
+      try {
+        const jobSequenceId = await queuePrintExport({
+          owner: {
+            assessmentId: assessment.id,
+            authnUserId: '1',
+            courseId: courseInstance.course_id,
+            courseInstanceId: '1',
+            userId: '1',
+          },
+          work,
+        });
+        await processQueuedPrintExports();
+        await waitForPrintExportWorkers();
+        expect(
+          await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
+        ).toMatchObject({
+          status: 'Error',
+          format,
+          ready: false,
+          downloadUrl: null,
+          failureMessage: `${format === 'docx' ? 'Word' : 'PDF'} rendering is not configured on this server.`,
+        });
+      } finally {
+        available.mockRestore();
+      }
+    },
+  );
 
   test('stops retrying after three expired worker leases', async () => {
     const assessment = await printAssessment();
@@ -530,6 +732,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         userId: '1',
       },
       work: {
+        format: 'pdf',
         document: 'assessment',
         copies: 1,
         filename: 'retry-export.pdf',
@@ -543,7 +746,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
     ).toEqual({
       status: 'Error',
+      format: 'pdf',
       ready: false,
+      downloadUrl: null,
       sizeBytes: null,
       exportLabel: null,
       failureMessage:

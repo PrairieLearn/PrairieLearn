@@ -139,8 +139,15 @@ WITH
       data = jsonb_build_object(
         'inputKey',
         j.data ->> 'inputKey',
+        'format',
+        j.data ->> 'format',
+        'document',
+        j.data ->> 'document',
         'failureMessage',
-        'The export stopped repeatedly while rendering. Try fewer forms or contact support.'
+        CASE
+          WHEN j.data ->> 'format' = 'docx' THEN 'The Word document stopped repeatedly while rendering. Try again or contact support.'
+          ELSE 'The export stopped repeatedly while rendering. Try fewer forms or contact support.'
+        END
       ),
       output = 'Print export worker lease expired three times'
     WHERE
@@ -232,7 +239,8 @@ RETURNING
   j.job_sequence_id,
   j.start_date AS queued_at,
   j.data ->> 'inputKey' AS input_key,
-  j.data ->> 'document' AS document;
+  j.data ->> 'document' AS document,
+  j.data ->> 'format' AS format;
 
 -- BLOCK renew_print_export_lease
 UPDATE jobs
