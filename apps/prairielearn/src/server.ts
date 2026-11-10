@@ -76,7 +76,11 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
-import { beginPrintExportShutdown, waitForPrintExportWorkers } from './lib/print-export-jobs.js';
+import {
+  beginPrintExportShutdown,
+  initPrintExportQueue,
+  waitForPrintExportWorkers,
+} from './lib/print-export-jobs.js';
 import { stopPrinting } from './lib/printing/index.js';
 import { initPrintRequests } from './lib/printing/print-request.js';
 import * as serverJobs from './lib/server-jobs.js';
@@ -2727,6 +2731,7 @@ if (esMain(import.meta)) {
     // requests, as they may actually end up executing course code.
     await externalGraderResults.init();
     await externalGraderDeadLetters.init();
+    await initPrintExportQueue();
 
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();

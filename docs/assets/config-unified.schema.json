@@ -436,6 +436,10 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "printExportQueuePrefix": {
+      "default": null,
+      "type": ["string", "null"]
+    },
     "runMigrations": {
       "default": true,
       "type": "boolean"

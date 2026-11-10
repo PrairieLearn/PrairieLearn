@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -14,10 +14,12 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { Queue, Worker } from '@prairielearn/prairiemq';
 import * as Sentry from '@prairielearn/sentry';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
+import { config } from './config.js';
 import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
@@ -28,9 +30,11 @@ import { PrintableCoverSchema } from './printing/printable-cover.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
-const WORKER_LIMIT = 2;
 const PRINT_EXPORT_EXPIRY_MS = 24 * 60 * 60 * 1000;
-const activePrintExports = new Set<Promise<void>>();
+const QUEUE_NAME = 'print-exports';
+let queue: Queue<{ jobId: string }, void> | null = null;
+let worker: Worker<{ jobId: string }, void> | null = null;
+let workerClosing: Promise<void> | null = null;
 let printExportShutdownController = new AbortController();
 
 function isAborted(signal: AbortSignal): boolean {
@@ -38,14 +42,83 @@ function isAborted(signal: AbortSignal): boolean {
   return signal.aborted;
 }
 
+function reportQueueError(error: unknown) {
+  logger.error('Print export queue error', error);
+  Sentry.captureException(error);
+}
+
+export async function initPrintExportQueue(): Promise<void> {
+  if (queue || !config.nonVolatileRedisUrl) return;
+  const connection = {
+    redisUrl: config.nonVolatileRedisUrl,
+    prefix:
+      config.printExportQueuePrefix ??
+      `prairielearn-print-exports-${createHash('sha256')
+        .update(JSON.stringify([config.postgresqlHost, config.postgresqlDatabase]))
+        .digest('hex')}`,
+  };
+  queue = new Queue(QUEUE_NAME, {
+    ...connection,
+    defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
+  });
+  queue.on('error', reportQueueError);
+  const currentWorker = new Worker<{ jobId: string }, void>(
+    QUEUE_NAME,
+    async (job) => await processPrintExportJob(IdSchema.parse(job.data.jobId)),
+    {
+      ...connection,
+      concurrency: 2,
+      groupConcurrency: 2,
+      maxStalledCount: 2,
+      lockDuration: 300_000,
+      autorun: false,
+    },
+  );
+  worker = currentWorker;
+  currentWorker.on('error', reportQueueError);
+  currentWorker.on('failed', (_job, error) => reportQueueError(error));
+  try {
+    await queue.waitUntilReady();
+    await currentWorker.preflight();
+    currentWorker.run();
+    await currentWorker.waitUntilReady();
+    currentWorker.on('error', () => {
+      // A fatal PrairieMQ error closes the worker; stop accepting exports until restart.
+      void currentWorker.waitUntilReady().catch(() => {
+        beginPrintExportShutdown();
+        void waitForPrintExportWorkers().catch(reportQueueError);
+      });
+    });
+    await processQueuedPrintExports();
+  } catch (error) {
+    beginPrintExportShutdown();
+    await waitForPrintExportWorkers();
+    throw error;
+  }
+}
+
 export function beginPrintExportShutdown() {
   printExportShutdownController.abort();
+  workerClosing ??= worker?.close().catch(reportQueueError) ?? Promise.resolve();
 }
 
 export async function waitForPrintExportWorkers() {
-  await Promise.allSettled(activePrintExports);
-  // Vite can restart the server without restarting this process.
-  printExportShutdownController = new AbortController();
+  try {
+    await (workerClosing ?? worker?.close());
+  } finally {
+    await queue?.close();
+    queue = null;
+    worker = null;
+    workerClosing = null;
+    // Vite can restart the server without restarting this process.
+    printExportShutdownController = new AbortController();
+  }
+}
+
+async function publishPrintExport(jobId: string) {
+  if (queue && !isAborted(printExportShutdownController.signal)) {
+    await queue.add('render', { jobId }, { jobId: `print-export-${jobId}` });
+  }
 }
 
 const PrintExportFormatSchema = z.enum(['pdf', 'docx']);
@@ -155,9 +228,9 @@ async function insertPrintExportJob({
         description: `Generate ${filename}`,
         data: JSON.stringify(data),
       },
-      z.object({ job_sequence_id: IdSchema }),
+      z.object({ job_id: IdSchema, job_sequence_id: IdSchema }),
     );
-    return row.job_sequence_id;
+    return row;
   });
 }
 
@@ -168,11 +241,15 @@ export async function queuePrintExport({
   owner: PrintExportOwner;
   work: PrintExportWork;
 }) {
+  if (!queue || isAborted(printExportShutdownController.signal)) {
+    throw new HttpStatusError(503, 'Print export queuing is not available on this server.');
+  }
   const bucket = getFileStoreS3Bucket();
   const inputKey = `${KEY_PREFIX}input/${randomUUID()}.json`;
   await uploadToS3(bucket, inputKey, null, false, Buffer.from(JSON.stringify(work)));
+  let job: { job_id: string; job_sequence_id: string };
   try {
-    return await insertPrintExportJob({
+    job = await insertPrintExportJob({
       owner,
       filename: work.filename,
       data: { inputKey, filename: work.filename, document: work.document, format: work.format },
@@ -181,6 +258,9 @@ export async function queuePrintExport({
     await deleteFromS3(bucket, inputKey);
     throw error;
   }
+  // The accepted PostgreSQL job survives a lost or failed Redis publication.
+  await publishPrintExport(job.job_id).catch(reportQueueError);
+  return job.job_sequence_id;
 }
 
 async function finishPrintExport({
@@ -212,37 +292,48 @@ async function finishPrintExport({
   });
 }
 
-async function runClaimedPrintExport({
-  id,
-  jobSequenceId,
-  inputKey,
-  document,
-  format,
-  owner,
-}: {
-  id: string;
-  jobSequenceId: string;
-  inputKey: string;
-  document: PrintExportWork['document'];
-  format: PrintExportWork['format'];
-  owner: string;
-}) {
+async function processPrintExportJob(jobId: string, terminalFailure?: string) {
+  const shutdownSignal = printExportShutdownController.signal;
+  if (isAborted(shutdownSignal)) return;
+  const owner = randomUUID();
+  const job = await queryOptionalRow(
+    sql.claim_print_export_job,
+    { job_id: jobId, owner },
+    z.object({
+      id: IdSchema,
+      job_sequence_id: IdSchema,
+      queued_at: DateFromISOString,
+      input_key: z.string(),
+      document: z.enum(['assessment', 'answer_key', 'booklet']),
+      format: PrintExportFormatSchema,
+      attempts: z.number().int(),
+    }),
+  );
+  if (!job || isAborted(shutdownSignal)) return;
+  const {
+    id,
+    job_sequence_id: jobSequenceId,
+    input_key: inputKey,
+    document,
+    format,
+    attempts,
+  } = job;
   const bucket = getFileStoreS3Bucket();
   const meter = metrics.getMeter('prairielearn');
   const attributes = { document, format };
   const startedAt = performance.now();
-  const shutdownSignal = printExportShutdownController.signal;
-  const heartbeat = setInterval(() => {
-    if (isAborted(shutdownSignal)) return;
-    void execute(sql.renew_print_export_lease, { job_id: id, owner }).catch((error: unknown) => {
-      logger.error('Could not renew print export lease', error);
-    });
-  }, 60_000);
+  getHistogram(metrics.getMeter('prairielearn'), 'print.export.background.queue_wait', {
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  }).record(Date.now() - job.queued_at.getTime(), { document: job.document, format: job.format });
   let inputCanBeDeleted = false;
   try {
     let persisted: z.infer<typeof PersistedWorkSchema>;
     let packet: Buffer;
     try {
+      if (terminalFailure || attempts > 3) {
+        throw new HttpStatusError(400, terminalFailure ?? exhaustedFailureMessage(format));
+      }
       persisted = PersistedWorkSchema.parse(
         JSON.parse((await getFromS3(bucket, inputKey, true)).toString('utf8')),
       );
@@ -311,7 +402,6 @@ async function runClaimedPrintExport({
       valueType: ValueType.INT,
     }).record(packet.length, attributes);
   } finally {
-    clearInterval(heartbeat);
     if (inputCanBeDeleted) {
       try {
         await deleteFromS3(bucket, inputKey);
@@ -331,70 +421,36 @@ async function runClaimedPrintExport({
   }
 }
 
-/** Claims a shared pool of queued exports; expired leases are claimed again after a restart. */
+function exhaustedFailureMessage(format: PrintExportWork['format']) {
+  return format === 'docx'
+    ? 'The Word document stopped repeatedly while rendering. Try again or contact support.'
+    : 'The export stopped repeatedly while rendering. Try fewer forms or contact support.';
+}
+
+/** Repairs accepted PostgreSQL jobs whose Redis publication was lost or failed. */
 export async function processQueuedPrintExports(): Promise<void> {
-  if (isAborted(printExportShutdownController.signal)) return;
-  const owner = randomUUID();
-  const { claimed, exhausted } = await runInTransactionAsync(async () => {
-    await execute(sql.lock_print_export_queue, {});
-    const exhausted = await queryRows(
-      sql.fail_exhausted_print_exports,
-      {},
-      z.object({ id: IdSchema, input_key: z.string() }),
+  const currentQueue = queue;
+  const signal = printExportShutdownController.signal;
+  if (!currentQueue || isAborted(signal)) return;
+  let afterId = '0';
+  while (!isAborted(signal)) {
+    const pending = await queryRows(
+      sql.select_pending_print_exports,
+      { after_id: afterId },
+      z.object({ id: IdSchema, format: PrintExportFormatSchema }),
     );
-    const claimed = await queryRows(
-      sql.claim_print_exports,
-      { owner, limit: WORKER_LIMIT },
-      z.object({
-        id: IdSchema,
-        job_sequence_id: IdSchema,
-        queued_at: DateFromISOString,
-        input_key: z.string(),
-        document: z.enum(['assessment', 'answer_key', 'booklet']),
-        format: PrintExportFormatSchema,
-      }),
-    );
-    return { claimed, exhausted };
-  });
-  for (const job of exhausted) {
-    try {
-      await deleteFromS3(getFileStoreS3Bucket(), job.input_key);
-      await execute(sql.clear_print_export_input_key, {
-        job_id: job.id,
-        input_key: job.input_key,
-      });
-    } catch (error) {
-      logger.error('Could not remove failed print export input', error);
+    for (const job of pending) {
+      if (isAborted(signal)) return;
+      const { state } = await currentQueue.getJobStatus(`print-export-${job.id}`);
+      if (isAborted(signal)) return;
+      if (state === 'unknown') {
+        await publishPrintExport(job.id);
+      } else if (state === 'failed') {
+        await processPrintExportJob(job.id, exhaustedFailureMessage(job.format));
+      }
     }
-  }
-  for (const job of claimed) {
-    if (isAborted(printExportShutdownController.signal)) return;
-    getHistogram(metrics.getMeter('prairielearn'), 'print.export.background.queue_wait', {
-      unit: 'milliseconds',
-      valueType: ValueType.DOUBLE,
-    }).record(Date.now() - job.queued_at.getTime(), { document: job.document, format: job.format });
-    const worker = runClaimedPrintExport({
-      id: job.id,
-      jobSequenceId: job.job_sequence_id,
-      inputKey: job.input_key,
-      document: job.document,
-      format: job.format,
-      owner,
-    })
-      .catch((error: unknown) => {
-        logger.error('Print export worker failed', error);
-        Sentry.captureException(error, {
-          tags: {
-            'job_sequence.id': job.job_sequence_id,
-            'job_sequence.type': 'print_export',
-          },
-          extra: { document: job.document },
-        });
-      })
-      .finally(() => {
-        activePrintExports.delete(worker);
-      });
-    activePrintExports.add(worker);
+    if (pending.length < 100) return;
+    afterId = pending.at(-1)!.id;
   }
 }
 

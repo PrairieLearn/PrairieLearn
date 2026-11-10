@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 import * as tmp from 'tmp-promise';
-import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import * as PrairieMQ from '@prairielearn/prairiemq';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { withResolvers } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { getFromS3, uploadToS3 } from '../lib/aws.js';
@@ -19,7 +22,9 @@ import { features } from '../lib/features/index.js';
 import { getFileStoreS3Bucket } from '../lib/file-store.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
+  beginPrintExportShutdown,
   cleanExpiredPrintExports,
+  initPrintExportQueue,
   processQueuedPrintExports,
   queuePrintExport,
   selectPrintExportJob,
@@ -31,6 +36,7 @@ import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
 import { assessmentHasPrintRandomization } from '../lib/print-preparation.js';
 import * as printing from '../lib/printing/index.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
+import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -47,6 +53,7 @@ import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 import { runInTransactionAndRollback } from './helperDb.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser } from './utils/auth.js';
+import { withConfig } from './utils/config.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const sql = loadSqlEquiv(import.meta.url);
@@ -89,16 +96,84 @@ async function printAssessment() {
 
 describe('print preparation', { timeout: 60_000 }, () => {
   let courseDirectory: tmp.DirectoryResult;
+  let printQueue: PrairieMQ.Queue;
+  const originalQueuePrefix = config.printExportQueuePrefix;
+  const testQueuePrefix = `test-print-exports-${randomUUID()}`;
+
+  async function completePrintExport(
+    assessmentId: string,
+    jobSequenceId: string,
+    status: 'Success' | 'Error' = 'Success',
+  ) {
+    await processQueuedPrintExports();
+    await printQueue.resume();
+    await expect
+      .poll(
+        async () =>
+          (
+            await selectPrintExportJob({
+              jobSequenceId,
+              assessmentId,
+              authnUserId: '1',
+            })
+          )?.status,
+        { timeout: 10_000 },
+      )
+      .toBe(status);
+  }
+
+  async function queueTestPdf(filename: string) {
+    const assessment = await printAssessment();
+    const courseInstance = await selectCourseInstanceById('1');
+    const jobSequenceId = await queuePrintExport({
+      owner: {
+        assessmentId: assessment.id,
+        authnUserId: '1',
+        courseId: courseInstance.course_id,
+        courseInstanceId: '1',
+        userId: '1',
+      },
+      work: {
+        format: 'pdf',
+        document: 'assessment',
+        copies: 1,
+        filename,
+        snapshots: [],
+        covers: [],
+      },
+    });
+    return { assessment, jobSequenceId };
+  }
+
   beforeAll(async () => {
+    config.printExportQueuePrefix = testQueuePrefix;
+    printQueue = new PrairieMQ.Queue('print-exports', {
+      redisUrl: config.nonVolatileRedisUrl!,
+      prefix: testQueuePrefix,
+    });
+    await printQueue.pause();
     // File-error tests must not modify the course used by other test workers.
     courseDirectory = await tmp.dir({ unsafeCleanup: true });
     await fs.cp(TEST_COURSE_PATH, courseDirectory.path, { recursive: true });
     await helperServer.before(courseDirectory.path)();
+    await initPrintExportQueue();
     await features.enable('printable-assessments');
   });
+  beforeEach(async () => {
+    await printQueue.pause();
+    await vi.waitUntil(async () => (await printQueue.getJobCounts()).active === 0, {
+      timeout: 10_000,
+    });
+  });
   afterAll(async () => {
-    await helperServer.after();
-    await courseDirectory.cleanup();
+    try {
+      await helperServer.after();
+    } finally {
+      await printQueue.obliterate();
+      await printQueue.close();
+      config.printExportQueuePrefix = originalQueuePrefix;
+      await courseDirectory.cleanup();
+    }
   });
 
   test('rejects printable assessment procedures while the feature is disabled', async () => {
@@ -373,8 +448,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         ready: false,
         downloadUrl: null,
       });
-      await processQueuedPrintExports();
-      await waitForPrintExportWorkers();
+      await completePrintExport(assessment.id, jobSequenceId);
       expect(render).toHaveBeenCalledOnce();
     } finally {
       render.mockRestore();
@@ -505,8 +579,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         format: 'docx',
         downloadUrl: null,
       });
-      await processQueuedPrintExports();
-      await waitForPrintExportWorkers();
+      await completePrintExport(assessment.id, jobSequenceId);
       expect(render).toHaveBeenCalledWith(
         expect.objectContaining({
           format: 'docx',
@@ -626,19 +699,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         ],
       },
     });
-    await processQueuedPrintExports();
-    await expect
-      .poll(
-        async () =>
-          (
-            await selectPrintExportJob({
-              jobSequenceId,
-              assessmentId: assessment.id,
-              authnUserId: '1',
-            })
-          )?.status,
-      )
-      .toBe('Error');
+    await completePrintExport(assessment.id, jobSequenceId, 'Error');
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
     ).toEqual({
@@ -703,8 +764,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
           },
           work,
         });
-        await processQueuedPrintExports();
-        await waitForPrintExportWorkers();
+        await completePrintExport(assessment.id, jobSequenceId, 'Error');
         expect(
           await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
         ).toMatchObject({
@@ -720,7 +780,176 @@ describe('print preparation', { timeout: 60_000 }, () => {
     },
   );
 
-  test('stops retrying after three expired worker leases', async () => {
+  test('separates default queue namespaces for different PostgreSQL deployments', async () => {
+    const createQueue = vi.spyOn(PrairieMQ, 'Queue');
+    const prefixes = new Set<string>();
+    const host = `test-print-host-${randomUUID()}`;
+    const explicitPrefix = `test-print-override-${randomUUID()}`;
+
+    async function deploymentPrefix(
+      database: string,
+      hostname = host,
+      prefix: string | null = null,
+    ) {
+      beginPrintExportShutdown();
+      await waitForPrintExportWorkers();
+      return await withConfig(
+        {
+          postgresqlHost: hostname,
+          postgresqlDatabase: database,
+          printExportQueuePrefix: prefix,
+        },
+        async () => {
+          await initPrintExportQueue();
+          const [, options] = createQueue.mock.calls.at(-1)!;
+          const resolvedPrefix = options.prefix!;
+          prefixes.add(resolvedPrefix);
+          beginPrintExportShutdown();
+          await waitForPrintExportWorkers();
+          return resolvedPrefix;
+        },
+      );
+    }
+
+    try {
+      const firstPrefix = await deploymentPrefix('first');
+      const secondPrefix = await deploymentPrefix('second');
+      const otherHostPrefix = await deploymentPrefix('first', `${host}-other`);
+      expect(new Set([firstPrefix, secondPrefix, otherHostPrefix]).size).toBe(3);
+      expect(await deploymentPrefix('first', host, explicitPrefix)).toBe(explicitPrefix);
+
+      for (const [prefix, deployment] of [
+        [firstPrefix, 'first'],
+        [secondPrefix, 'second'],
+      ]) {
+        const producer = new PrairieMQ.Queue('print-exports', {
+          redisUrl: config.nonVolatileRedisUrl!,
+          prefix,
+        });
+        try {
+          await producer.pause();
+          await producer.add('render', { jobId: '1', deployment }, { jobId: 'print-export-1' });
+          expect(await producer.getJobStatus('print-export-1')).toMatchObject({
+            state: 'waiting',
+            job: { data: { jobId: '1', deployment } },
+          });
+        } finally {
+          await producer.close();
+        }
+      }
+    } finally {
+      beginPrintExportShutdown();
+      await waitForPrintExportWorkers();
+      createQueue.mockRestore();
+      for (const prefix of prefixes) {
+        const cleanupQueue = new PrairieMQ.Queue('print-exports', {
+          redisUrl: config.nonVolatileRedisUrl!,
+          prefix,
+        });
+        try {
+          await cleanupQueue.obliterate();
+        } finally {
+          await cleanupQueue.close();
+        }
+      }
+      await initPrintExportQueue();
+    }
+  });
+
+  test('recovers a lost queue publication without rendering a durable job twice', async () => {
+    const render = vi
+      .spyOn(printExportRender, 'renderPrintExport')
+      .mockResolvedValue(Buffer.from('%PDF-1.4 recovered export'));
+    const publish = vi
+      .spyOn(PrairieMQ.Queue.prototype, 'add')
+      .mockRejectedValueOnce(new Error('Redis publication unavailable'));
+    try {
+      const { assessment, jobSequenceId } = await queueTestPdf('recovered-export.pdf');
+      expect(publish).toHaveBeenCalledOnce();
+      publish.mockRestore();
+      expect(
+        await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
+      ).toMatchObject({ status: 'Running', ready: false });
+      expect(render).not.toHaveBeenCalled();
+
+      await processQueuedPrintExports();
+      await processQueuedPrintExports();
+      expect(await printQueue.getJobCounts()).toMatchObject({ waiting: 1, active: 0 });
+      await completePrintExport(assessment.id, jobSequenceId);
+      expect(render).toHaveBeenCalledOnce();
+    } finally {
+      publish.mockRestore();
+      render.mockRestore();
+    }
+  });
+
+  test('fences an old rendering attempt from completing a replacement attempt', async () => {
+    const oldRender = withResolvers<Buffer>();
+    const render = vi
+      .spyOn(printExportRender, 'renderPrintExport')
+      .mockReturnValueOnce(oldRender.promise)
+      .mockResolvedValue(Buffer.from('%PDF-1.4 replacement export'));
+    try {
+      const { assessment, jobSequenceId } = await queueTestPdf('replacement-export.pdf');
+      await printQueue.resume();
+      await vi.waitFor(() => expect(render).toHaveBeenCalledOnce(), { timeout: 10_000 });
+      await execute(sql.replace_print_export_owner, { job_sequence_id: jobSequenceId });
+      await printQueue.pause();
+      oldRender.resolve(Buffer.from('%PDF-1.4 obsolete export'));
+      await expect
+        .poll(async () => (await printQueue.getJobCounts()).active, { timeout: 10_000 })
+        .toBe(0);
+      expect(await selectJobsByJobSequenceId(jobSequenceId)).toMatchObject([
+        { status: 'Running', data: { runOwner: 'replacement-owner' } },
+      ]);
+      expect(
+        await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
+      ).toMatchObject({ status: 'Running', ready: false, downloadUrl: null });
+
+      await completePrintExport(assessment.id, jobSequenceId);
+      expect(render).toHaveBeenCalledTimes(2);
+    } finally {
+      oldRender.resolve(Buffer.from('%PDF-1.4 obsolete export'));
+      render.mockRestore();
+    }
+  });
+
+  test('keeps the two-export limit shared with another queue worker', async () => {
+    const gate = withResolvers<Buffer>();
+    const render = vi.spyOn(printExportRender, 'renderPrintExport').mockReturnValue(gate.promise);
+    const otherProcessor = vi.fn(async () => undefined);
+    let otherWorker: PrairieMQ.Worker | undefined;
+    try {
+      const queued = await Promise.all(
+        Array.from({ length: 3 }, (_, index) => queueTestPdf(`concurrent-export-${index}.pdf`)),
+      );
+      await printQueue.resume();
+      await vi.waitFor(() => expect(render).toHaveBeenCalledTimes(2), { timeout: 10_000 });
+      otherWorker = new PrairieMQ.Worker('print-exports', otherProcessor, {
+        redisUrl: config.nonVolatileRedisUrl!,
+        prefix: testQueuePrefix,
+        concurrency: 2,
+        groupConcurrency: 2,
+      });
+      await otherWorker.waitUntilReady();
+      await sleep(200);
+      expect(otherProcessor).not.toHaveBeenCalled();
+      expect(await printQueue.getGroups()).toEqual([{ id: null, waiting: 1, active: 2 }]);
+      await otherWorker.close();
+      otherWorker = undefined;
+      gate.resolve(Buffer.from('%PDF-1.4 concurrent export'));
+      for (const { assessment, jobSequenceId } of queued) {
+        await completePrintExport(assessment.id, jobSequenceId);
+      }
+      expect(render).toHaveBeenCalledTimes(3);
+    } finally {
+      await otherWorker?.close(true);
+      gate.resolve(Buffer.from('%PDF-1.4 concurrent export'));
+      render.mockRestore();
+    }
+  });
+
+  test('stops retrying after three interrupted rendering attempts', async () => {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const jobSequenceId = await queuePrintExport({
@@ -740,8 +969,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
         covers: [],
       },
     });
-    await execute(sql.expire_print_export_lease, { job_sequence_id: jobSequenceId });
-    await processQueuedPrintExports();
+    await execute(sql.exhaust_print_export_attempts, { job_sequence_id: jobSequenceId });
+    await completePrintExport(assessment.id, jobSequenceId, 'Error');
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ jobSequenceId }),
     ).toEqual({
