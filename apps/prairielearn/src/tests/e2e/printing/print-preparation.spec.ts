@@ -30,17 +30,31 @@ async function chooseDownload(page: Page, item: string) {
   await page.getByRole('button', { name: item, exact: true }).click();
 }
 
-async function downloadPreparedPdf(page: Page, submit: () => Promise<void>) {
-  const submitted = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableAssessmentExport.pdf'),
-  );
+async function downloadPreparedFile(
+  page: Page,
+  submit: () => Promise<void>,
+  format: 'pdf' | 'docx' = 'pdf',
+) {
+  const submitted = page.waitForResponse((response) => {
+    const path = new URL(response.url()).pathname;
+    return (
+      response.request().method() === 'POST' &&
+      (format === 'pdf'
+        ? path.endsWith('/printableAssessmentExport.pdf')
+        : /\/print_form\/\d+\/docx$/.test(path))
+    );
+  });
   await submit();
   const response = await submitted;
   expect(response.status()).toBe(200);
-  const { result } = await response.json();
-  const jobSequenceId = result.data.json.jobSequenceId;
+  const body = await response.json();
+  const { jobSequenceId } = format === 'pdf' ? body.result.data.json : body;
+  if (format === 'docx') {
+    await expect.poll(() => new URL(page.url()).searchParams.get('export')).toBe(jobSequenceId);
+    await page.reload();
+  }
   const link = page.getByRole('link', { name: /^Download / });
-  await expect(link).toHaveAttribute('href', new RegExp(`/exports/${jobSequenceId}\\.pdf$`), {
+  await expect(link).toHaveAttribute('href', new RegExp(`/exports/${jobSequenceId}\\.${format}$`), {
     timeout: 120_000,
   });
   const downloaded = page.waitForEvent('download', { timeout: 120_000 });
@@ -262,7 +276,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
   await page.addScriptTag({ content: axe.source });
   const { violations } = await page.evaluate(async () => await axe.run());
   expect(violations).toEqual([]);
-  const file = await downloadPreparedPdf(page, async () => {
+  const file = await downloadPreparedFile(page, async () => {
     await chooseDownload(page, 'Download Form A answer key (PDF)');
   });
   expect(await file.failure()).toBeNull();
@@ -332,9 +346,14 @@ test('prepares homework with matching student copies, answer keys, and Word expo
   await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
   await expect(question).toHaveText(questionText, { useInnerText: true });
 
-  const wordDownload = page.waitForEvent('download', { timeout: 120_000 });
-  await chooseDownload(page, 'Download Form A Word (.docx)');
-  const word = await wordDownload;
+  const word = await downloadPreparedFile(
+    page,
+    async () => {
+      await chooseDownload(page, 'Download Form A Word (.docx)');
+    },
+    'docx',
+  );
+  expect(word.suggestedFilename()).toMatch(/\.docx$/);
   expect(await word.failure()).toBeNull();
   const archive = await unzipper.Open.file(await word.path());
   const documentXml = (
@@ -436,7 +455,7 @@ test('combines assessment copies with custom covers and appends every form’s a
     });
   }
 
-  const allFormsDownload = await downloadPreparedPdf(page, async () => {
+  const allFormsDownload = await downloadPreparedFile(page, async () => {
     await chooseDownload(page, 'Download all forms (PDF)');
   });
   expect(allFormsDownload.suggestedFilename()).toMatch(/assessment_2_copies\.pdf$/);
@@ -467,7 +486,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   ).reduce((total, count) => total + count, 0);
   const expectedPageCount =
     expectedStudentPages + answerKeyPageCounts.reduce((total, count) => total + count, 0);
-  const download = await downloadPreparedPdf(page, async () => {
+  const download = await downloadPreparedFile(page, async () => {
     await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
   });
   expect(await download.failure()).toBeNull();
@@ -565,7 +584,7 @@ test('validates a booklet count and retries a failed download', async ({
   await expect(submit).toBeEnabled();
   await page.unroute('**/printableAssessmentExport.pdf');
 
-  const downloaded = await downloadPreparedPdf(page, async () => {
+  const downloaded = await downloadPreparedFile(page, async () => {
     await submit.click();
   });
   expect(await downloaded.failure()).toBeNull();

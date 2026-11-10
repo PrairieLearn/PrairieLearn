@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   MAX_COVER_BYTES,
@@ -206,15 +207,6 @@ function PrintPreparation({
     preparingPdf !== null ||
     previewPending;
 
-  function saveDownload(blob: Blob, filename: string) {
-    const url = URL.createObjectURL(blob);
-    const link = window.document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  }
-
   function markStaleSnapshot(error: unknown) {
     if (error instanceof Error && error.message.includes(STALE_PRINT_SNAPSHOT_MESSAGE)) {
       snapshotsRef.current.clear();
@@ -337,7 +329,7 @@ function PrintPreparation({
     }
   }
 
-  function receivePdf(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
+  function receiveExport(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
     void setExportJobId(result.jobSequenceId);
   }
 
@@ -351,7 +343,7 @@ function PrintPreparation({
       const result = await packet.mutateAsync(
         await preparePdfInput(packetMetadata(ids, copyCount, outputDocument), 'packet'),
       );
-      receivePdf(result);
+      receiveExport(result);
     } catch (error) {
       markStaleSnapshot(error);
       throw error;
@@ -422,7 +414,7 @@ function PrintPreparation({
         }
         throw new Error('The download could not be generated. Review the preview and try again.');
       }
-      saveDownload(await response.blob(), `assessment-form-${label}.docx`);
+      receiveExport(z.object({ jobSequenceId: IdSchema }).parse(await response.json()));
     },
     onError: (error: Error) => markStaleSnapshot(error),
   });
@@ -478,7 +470,7 @@ function PrintPreparation({
     setCopies(studentCount);
     booklet.reset();
     try {
-      receivePdf(
+      receiveExport(
         await booklet.mutateAsync(
           await preparePdfInput(packetMetadata(formIds, studentCount, 'booklet'), 'booklet'),
         ),
@@ -568,17 +560,15 @@ function PrintPreparation({
           }
         >
           {exportStatus.data?.ready ? (
-            <a
-              href={`/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/print_preparation/exports/${exportJobId}.pdf`}
-            >
-              Download {exportStatus.data.exportLabel ?? 'prepared PDF'}
+            <a href={exportStatus.data.downloadUrl ?? undefined}>
+              Download {exportStatus.data.exportLabel ?? 'prepared file'}
               {exportStatus.data.sizeBytes !== null &&
                 ` (${filesize(exportStatus.data.sizeBytes, { base: 10, round: 1 })})`}
             </a>
           ) : exportStatus.data?.status === 'Error' ? (
             <>
               {exportStatus.data.failureMessage ??
-                'The PDF could not be prepared because of a server error.'}{' '}
+                'The file could not be prepared because of a server error.'}{' '}
               {exportStatus.data.canViewJobLogs && (
                 <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, exportJobId)}>
                   View job details
@@ -586,13 +576,13 @@ function PrintPreparation({
               )}
             </>
           ) : exportStatus.data?.status === 'Stopped' ? (
-            'PDF preparation was stopped. Try the export again.'
+            'File preparation was stopped. Try the export again.'
           ) : exportStatus.isError ? (
-            'Could not check the PDF preparation status. Refresh the page to try again.'
+            'Could not check the file preparation status. Refresh the page to try again.'
           ) : exportStatus.data?.status === 'Success' ? (
-            'This PDF is no longer available. Prepare it again.'
+            'This file is no longer available. Prepare it again.'
           ) : (
-            'Preparing your PDF in the background. You can return to this page to download it within 24 hours.'
+            'Preparing your file in the background. You can return to this page to download it within 24 hours.'
           )}
           {!exportPending && (
             <Button

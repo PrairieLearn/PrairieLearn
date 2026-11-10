@@ -1,14 +1,20 @@
 import type { Page } from '@playwright/test';
+import { z } from 'zod';
+
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import { serializePrintDocument } from '../../../lib/client/print-document.js';
-import { getPrintFormUrl } from '../../../lib/client/url.js';
+import { getAssessmentTrpcUrl, getPrintFormUrl } from '../../../lib/client/url.js';
 import * as codeCaller from '../../../lib/code-caller/index.js';
+import { config } from '../../../lib/config.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
 import { createPrintForm } from '../../../lib/print-forms.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseById } from '../../../models/course.js';
 import * as freeformServer from '../../../question-servers/freeform.js';
+import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { expect } from '../fixtures.js';
 
@@ -57,7 +63,7 @@ export async function downloadPrintableWord(page: Page, printUrl: string, search
   const id = await page.locator(':root').getAttribute('data-print-snapshot-id');
   const html = await page.locator(':root').evaluate(serializePrintDocument);
   const { id: authnUserId } = await getConfiguredUser();
-  return await page.request.post(`${printUrl}/docx?${search}`, {
+  const queued = await page.request.post(`${printUrl}/docx?${search}`, {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/octet-stream',
@@ -66,4 +72,39 @@ export async function downloadPrintableWord(page: Page, printUrl: string, search
     data: JSON.stringify({ id, html, source }),
     timeout: 30_000,
   });
+  if (!queued.ok()) return queued;
+  expect(queued.headers()['content-type']).toContain('application/json');
+  const { jobSequenceId } = z.object({ jobSequenceId: IdSchema }).parse(await queued.json());
+  const previewUrl = new URL(printUrl, page.url());
+  const [, courseInstanceId, assessmentId] = previewUrl.pathname.match(
+    /^\/pl\/course_instance\/(\d+)\/instructor\/assessment\/(\d+)\/print_form\/\d+$/,
+  )!;
+  const api = createAssessmentTrpcClient({
+    courseInstanceId,
+    assessmentId,
+    urlBase: previewUrl.origin,
+    csrfToken: generatePrefixCsrfToken(
+      { url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId }), authn_user_id: authnUserId },
+      config.secretKey,
+    ),
+  });
+  await expect
+    .poll(
+      async () => {
+        const status = await api.printableAssessmentExport.status.query({ jobSequenceId });
+        return {
+          status: status.status,
+          ready: status.ready,
+          failureMessage: status.failureMessage,
+        };
+      },
+      { timeout: 90_000 },
+    )
+    .toMatchObject({ status: 'Success', ready: true });
+  const completed = await api.printableAssessmentExport.status.query({ jobSequenceId });
+  expect(completed.format).toBe('docx');
+  expect(new URL(completed.downloadUrl!, previewUrl).pathname).toMatch(
+    new RegExp(`/${jobSequenceId}\\.docx$`),
+  );
+  return await page.request.get(completed.downloadUrl!);
 }

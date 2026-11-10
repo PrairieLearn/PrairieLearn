@@ -24,17 +24,18 @@ import { serializePrintDocument } from '../../lib/client/print-document.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { config } from '../../lib/config.js';
+import { queuePrintExport } from '../../lib/print-export-jobs.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
-import { createDocxOutput } from '../../lib/printing/docx-output.js';
+import { DocxSourceSchema } from '../../lib/printing/docx-source-schema.js';
 import {
   PRINT_DOCUMENTS,
+  assertPrintDocumentReady,
   describeOmittedQuestions,
   getPrintRenderer,
   getPrintableFormQuestionIds,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   renderPrintFormQuestions,
-  validatePrintDocument,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
@@ -127,17 +128,7 @@ const DocumentQuerySchema = LayoutQuerySchema.extend({
 const PrintSnapshotSchema = z.strictObject({
   id: z.string().min(1),
   html: z.string().min(1).max(MAX_PRINT_SNAPSHOT_BYTES),
-  source: z.strictObject({
-    html: z.string().max(MAX_PRINT_SNAPSHOT_BYTES),
-    figures: z.array(
-      z.strictObject({
-        id: z.string().regex(/^[1-9]\d*$/),
-        width: z.number().positive().max(4096),
-        height: z.number().positive().max(4096),
-        alt: z.string(),
-      }),
-    ),
-  }) satisfies z.ZodType<DocxSource>,
+  source: DocxSourceSchema,
 });
 
 const DocxPostRequestSchemas = {
@@ -383,17 +374,10 @@ router.post(
   '/docx',
   parseDocxBody,
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    await withPrintRequest(res, async ({ signal, remainingTimeoutMs, throwIfAborted }) => {
+    await withPrintRequest(res, async ({ throwIfAborted }) => {
       const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
       const layout = parsePrintLayout(query);
       const { document } = query;
-
-      if (!isBrowserRenderingAvailable()) {
-        throw new HttpStatusError(
-          404,
-          'Printable document rendering is not configured on this server',
-        );
-      }
 
       await validateQuestionsForPrinting(
         res.locals.print_form.id,
@@ -466,61 +450,30 @@ router.post(
       ) {
         throw new HttpStatusError(400, 'The printable pages contain executable content.');
       }
-      const output = createDocxOutput({
-        source: snapshot.source,
-        cover: layout.includeCoverPage
-          ? (pageDataset) =>
-              makeCover(
-                Number(pageDataset.printQuestionCount),
-                Number(pageDataset.printMaxPoints),
-                pageDataset.printGradingTable
-                  ? PrintGradingTableSchema.parse(JSON.parse(pageDataset.printGradingTable))
-                  : undefined,
-              )
-          : undefined,
-        footerLabel,
+      const root = $('html');
+      const questionCount = Number(root.attr('data-print-question-count'));
+      assertPrintDocumentReady({
+        questionCount,
+        omittedCount: Number(root.attr('data-print-omitted-question-count')),
+        coverPageCount: $('.pagedjs_page')
+          .toArray()
+          .findIndex((page) => $(page).find('.printing-question').length > 0),
+        document,
+        formLabel: layout.formLabel,
       });
+      const gradingTable = root.attr('data-print-grading-table');
+      const cover = layout.includeCoverPage
+        ? makeCover(
+            questionCount,
+            Number(root.attr('data-print-max-points')),
+            gradingTable ? PrintGradingTableSchema.parse(JSON.parse(gradingTable)) : undefined,
+          )
+        : undefined;
       const printFormQuestionIds = await getPrintableFormQuestionIds(
         res.locals.print_form.id,
         layout.excludedQuestionNumbers,
       );
       throwIfAborted();
-      const contents = await getPrintRenderer().render(
-        {
-          url: localPreviewUrl.href,
-          browserOrigin: config.serverCanonicalHost ?? undefined,
-          html: snapshot.html,
-          assetScope: printAssetScope(res.locals, printFormQuestionIds),
-          signal,
-          timeoutMs: remainingTimeoutMs(),
-        },
-        {
-          ...output,
-          produce: async (page) => {
-            const identity = await page.evaluate(() => ({
-              formId: globalThis.document.documentElement.dataset.printFormId,
-              document: globalThis.document.documentElement.dataset.printDocument,
-              formLabel: globalThis.document.documentElement.dataset.printFormLabel,
-            }));
-            throwIfAborted();
-            if (
-              identity.formId !== res.locals.print_form.id ||
-              identity.document !== document ||
-              identity.formLabel !== (layout.formLabel ?? '')
-            ) {
-              throw new HttpStatusError(
-                400,
-                'The preview does not match the requested form, document type, or form label. Generate a new preview before exporting.',
-              );
-            }
-            await validatePrintDocument(page);
-            throwIfAborted();
-            return await output.produce(page);
-          },
-        },
-      );
-      throwIfAborted();
-
       const filename =
         assessmentFilenamePrefix(
           res.locals.assessment,
@@ -534,13 +487,34 @@ router.post(
           }`,
         ) +
         '.docx';
+      throwIfAborted();
+      const jobSequenceId = await queuePrintExport({
+        owner: {
+          assessmentId: res.locals.assessment.id,
+          authnUserId: res.locals.authn_user.id,
+          courseId: res.locals.course.id,
+          courseInstanceId: res.locals.course_instance.id,
+          userId: res.locals.user.id,
+        },
+        work: {
+          format: 'docx',
+          document,
+          filename,
+          snapshot: {
+            formLabel: layout.formLabel ?? '',
+            printDocument: document,
+            localPreviewUrl: localPreviewUrl.href,
+            html: snapshot.html,
+            assetScope: printAssetScope(res.locals, printFormQuestionIds),
+          },
+          source: snapshot.source,
+          cover,
+          footerLabel,
+        },
+      });
+      throwIfAborted();
       res.setHeader('Cache-Control', 'private, no-store');
-      res.setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      );
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(contents);
+      res.json({ jobSequenceId });
     });
   }),
 );

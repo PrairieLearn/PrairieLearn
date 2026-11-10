@@ -32,6 +32,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
       userId: user.id,
     },
     work: {
+      format: 'pdf',
       document: 'assessment',
       copies: 1,
       filename: 'test-export.pdf',

@@ -68,7 +68,7 @@ Omit the `cover` option to start with questions on the first page.
 
 Forms are created explicitly and store their selected questions, order, point values, and floating variants. Reading a preview reuses those saved variants; it does not create student assessment instances or change a student's work.
 
-The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` exports a submitted page snapshot. Access requires course preview permission and ownership by the effective user.
+The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{jobSequenceId}`. Access requires course preview permission and ownership by the effective user.
 
 `document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
 
@@ -84,7 +84,7 @@ The PrairieLearn print endpoint accepts layout choices as query parameters. `blo
 
 The print preparation page can combine multiple saved print forms and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included in student copies, including individual form downloads. Answer key downloads exclude uploaded covers. Generated page numbers remain within the original form; uploaded pages retain their own appearance.
 
-PDF exports are queued in the shared `jobs` table, including individual forms and small packets. The request validates signed page snapshots and stores export inputs in S3; a cron worker claims up to two exports across all hosts and uploads completed PDFs to S3. Each claim has a renewable lease so another worker can retry it after a process crash. Download links are available to the requesting instructor for 24 hours. Run `processPrintExports` and `cleanPrintExports` cron jobs, and configure Cloudflare rendering on worker hosts.
+PDF and Word exports are queued in the shared `jobs` table, including individual forms and small packets. The request validates signed page snapshots and stores export inputs in S3; a cron worker claims up to two exports across all hosts and uploads completed files to S3. Each claim has a renewable lease so another worker can retry it after a process crash. Download links are available to the requesting instructor for 24 hours. Run `processPrintExports` and `cleanPrintExports` cron jobs, and configure Cloudflare rendering on worker hosts.
 
 Automatic blocks are measured at the final printable width after asynchronous question content, MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an exact fraction of the printable content height, including the question's internal spacing, when the content fits. Taller content uses its measured height and moves to the next page or flows across pages when needed.
 

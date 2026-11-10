@@ -14,7 +14,7 @@ import {
   MAX_PRINT_SNAPSHOT_BYTES,
 } from '../../lib/client/print-snapshot-limits.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
-import { getPrintFormUrl } from '../../lib/client/url.js';
+import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { queuePrintExport, selectPrintExportJob } from '../../lib/print-export-jobs.js';
 import type { PrintExportWork } from '../../lib/print-export-render.js';
@@ -169,7 +169,7 @@ export const printableAssessmentExportRouter = t.router({
             message: 'The export would exceed 10,000 pages. Reduce the number of copies.',
           });
         }
-        const snapshots: PrintExportWork['snapshots'] = [];
+        const snapshots: Extract<PrintExportWork, { format: 'pdf' }>['snapshots'] = [];
         let pageFileIndex = 0;
         for (const [index, form] of selectedForms.entries()) {
           const excludedQuestions = new Set(form.settings.excludedQuestions);
@@ -240,6 +240,7 @@ export const printableAssessmentExportRouter = t.router({
         );
         const filename = `${prefix}${plan.filename}_${metadata.copies}_copies.pdf`;
         const work: PrintExportWork = {
+          format: 'pdf',
           document: metadata.document,
           copies: metadata.copies,
           filename,
@@ -307,7 +308,11 @@ export const printableAssessmentExportRouter = t.router({
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
       return {
         status: job.status,
+        format: job.format,
         ready: !!job.result,
+        downloadUrl: job.result
+          ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print_preparation/exports/${input.jobSequenceId}.${job.result.format}`
+          : null,
         sizeBytes: job.result?.sizeBytes ?? null,
         exportLabel: job.result?.exportLabel ?? null,
         failureMessage: job.failureMessage,

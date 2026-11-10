@@ -21,7 +21,9 @@ import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
+import { DocxSourceSchema } from './printing/docx-source-schema.js';
 import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
+import { PrintableCoverSchema } from './printing/printable-cover.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
@@ -45,21 +47,33 @@ export async function waitForPrintExportWorkers() {
   printExportShutdownController = new AbortController();
 }
 
-const PersistedWorkSchema = z.object({
-  document: z.enum(['assessment', 'answer_key', 'booklet']),
-  copies: z.number().int().positive(),
-  filename: z.string(),
-  snapshots: z.array(
-    z.object({
-      formLabel: z.string(),
-      printDocument: z.enum(['assessment', 'answer_key']),
-      localPreviewUrl: z.url(),
-      html: z.string(),
-      assetScope: PrintAssetScopeDataSchema,
-    }),
-  ),
-  covers: z.array(z.object({ name: z.string(), base64: z.string() })),
+const PrintExportFormatSchema = z.enum(['pdf', 'docx']);
+const PersistedSnapshotSchema = z.object({
+  formLabel: z.string(),
+  printDocument: z.enum(['assessment', 'answer_key']),
+  localPreviewUrl: z.url(),
+  html: z.string(),
+  assetScope: PrintAssetScopeDataSchema,
 });
+const PersistedWorkSchema = z.discriminatedUnion('format', [
+  z.object({
+    format: z.literal('pdf'),
+    document: z.enum(['assessment', 'answer_key', 'booklet']),
+    copies: z.number().int().positive(),
+    filename: z.string(),
+    snapshots: z.array(PersistedSnapshotSchema),
+    covers: z.array(z.object({ name: z.string(), base64: z.string() })),
+  }),
+  z.object({
+    format: z.literal('docx'),
+    document: z.enum(['assessment', 'answer_key']),
+    filename: z.string(),
+    snapshot: PersistedSnapshotSchema,
+    source: DocxSourceSchema,
+    cover: PrintableCoverSchema.optional(),
+    footerLabel: z.string(),
+  }),
+]) satisfies z.ZodType<PrintExportWork>;
 
 const PrintExportJobSchema = z.object({
   status: z.enum(['Running', 'Success', 'Error', 'Stopped', 'Stopping']),
@@ -67,7 +81,16 @@ const PrintExportJobSchema = z.object({
   data: z.record(z.string(), z.unknown()).nullable(),
 });
 
-function getPrintExportLabel({ document, copies, snapshots }: PrintExportWork): string {
+function getPrintExportLabel(work: PrintExportWork): string {
+  if (work.format === 'docx') {
+    const form = work.snapshot.formLabel
+      ? `Form ${work.snapshot.formLabel}`
+      : `Form ID ${work.snapshot.assetScope.printFormId}`;
+    return work.document === 'answer_key'
+      ? `${form} answer key Word document`
+      : `${form} Word document`;
+  }
+  const { document, copies, snapshots } = work;
   if (document === 'booklet') {
     return `booklet PDF for ${copies} ${copies === 1 ? 'student' : 'students'}`;
   }
@@ -81,12 +104,14 @@ function getPrintExportLabel({ document, copies, snapshots }: PrintExportWork): 
     : `PDF with ${formLabels.size} forms`;
 }
 
-function printableFailureMessage(error: unknown): string | null {
+function printableFailureMessage(error: unknown, format: PrintExportWork['format']): string | null {
   if (
     error instanceof Error &&
     /^Timed out after \d+ ms (waiting to render|rendering) the /.test(error.message)
   ) {
-    return 'Rendering took too long. Try again, or export fewer forms at once.';
+    return format === 'docx'
+      ? 'Rendering took too long. Try again.'
+      : 'Rendering took too long. Try again, or export fewer forms at once.';
   }
   if (
     error instanceof PrintPacketError ||
@@ -148,7 +173,7 @@ export async function queuePrintExport({
     return await insertPrintExportJob({
       owner,
       filename: work.filename,
-      data: { inputKey, filename: work.filename, document: work.document },
+      data: { inputKey, filename: work.filename, document: work.document, format: work.format },
     });
   } catch (error) {
     await deleteFromS3(bucket, inputKey);
@@ -190,17 +215,19 @@ async function runClaimedPrintExport({
   jobSequenceId,
   inputKey,
   document,
+  format,
   owner,
 }: {
   id: string;
   jobSequenceId: string;
   inputKey: string;
   document: PrintExportWork['document'];
+  format: PrintExportWork['format'];
   owner: string;
 }) {
   const bucket = getFileStoreS3Bucket();
   const meter = metrics.getMeter('prairielearn');
-  const attributes = { document };
+  const attributes = { document, format };
   const startedAt = performance.now();
   const shutdownSignal = printExportShutdownController.signal;
   const heartbeat = setInterval(() => {
@@ -224,7 +251,7 @@ async function runClaimedPrintExport({
         1,
         attributes,
       );
-      const failureMessage = printableFailureMessage(error);
+      const failureMessage = printableFailureMessage(error, format);
       if (failureMessage === null) {
         Sentry.captureException(error, {
           tags: {
@@ -241,15 +268,18 @@ async function runClaimedPrintExport({
         status: 'Error',
         data: {
           inputKey,
+          format,
+          document,
           failureMessage:
-            failureMessage ?? 'The PDF could not be prepared because of a server error.',
+            failureMessage ??
+            `The ${format === 'docx' ? 'Word document' : 'PDF'} could not be prepared because of a server error.`,
         },
         output: error instanceof Error ? (error.stack ?? error.message) : String(error),
       });
       return;
     }
     if (isAborted(shutdownSignal)) return;
-    const key = `${KEY_PREFIX}${randomUUID()}.pdf`;
+    const key = `${KEY_PREFIX}${randomUUID()}.${persisted.format}`;
     try {
       await uploadToS3(bucket, key, null, false, packet);
       if (isAborted(shutdownSignal)) return;
@@ -263,10 +293,11 @@ async function runClaimedPrintExport({
           key,
           filename: persisted.filename,
           document,
+          format: persisted.format,
           exportLabel: getPrintExportLabel(persisted),
           sizeBytes: packet.length,
         },
-        output: 'PDF ready to download',
+        output: `${format === 'docx' ? 'Word document' : 'PDF'} ready to download`,
       });
     } finally {
       if (!inputCanBeDeleted) {
@@ -318,6 +349,7 @@ export async function processQueuedPrintExports(): Promise<void> {
         queued_at: DateFromISOString,
         input_key: z.string(),
         document: z.enum(['assessment', 'answer_key', 'booklet']),
+        format: PrintExportFormatSchema,
       }),
     );
     return { claimed, exhausted };
@@ -338,12 +370,13 @@ export async function processQueuedPrintExports(): Promise<void> {
     getHistogram(metrics.getMeter('prairielearn'), 'print.export.background.queue_wait', {
       unit: 'milliseconds',
       valueType: ValueType.DOUBLE,
-    }).record(Date.now() - job.queued_at.getTime(), { document: job.document });
+    }).record(Date.now() - job.queued_at.getTime(), { document: job.document, format: job.format });
     const worker = runClaimedPrintExport({
       id: job.id,
       jobSequenceId: job.job_sequence_id,
       inputKey: job.input_key,
       document: job.document,
+      format: job.format,
       owner,
     })
       .catch((error: unknown) => {
@@ -383,6 +416,7 @@ export async function selectPrintExportJob({
       key: z.string(),
       filename: z.string(),
       document: z.enum(['assessment', 'answer_key', 'booklet']),
+      format: PrintExportFormatSchema,
       exportLabel: z.string().optional(),
       sizeBytes: z.number().int().nonnegative().optional(),
     })
@@ -390,6 +424,7 @@ export async function selectPrintExportJob({
   const failure = z.object({ failureMessage: z.string() }).safeParse(job.data);
   return {
     status: job.status,
+    format: z.object({ format: PrintExportFormatSchema }).parse(job.data).format,
     failureMessage: job.status === 'Error' && failure.success ? failure.data.failureMessage : null,
     result:
       job.status === 'Success' &&

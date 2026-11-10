@@ -71,7 +71,7 @@ If a download says the preview has expired or changed, select **Update preview**
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-PDFs are prepared in the background. Keep the page open or save its URL so you can return to the download link. The link is available for 24 hours after the PDF is ready.
+PDF and Word files are prepared in the background. Keep the page open or save its URL so you can return to the download link. The link is available for 24 hours after the file is ready.
 
 ### Print copies for a class
 
