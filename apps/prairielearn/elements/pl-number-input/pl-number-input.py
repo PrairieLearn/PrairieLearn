@@ -357,7 +357,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 submitted_raw_answer
             )
 
-        if submitted_raw_answer is not None:
+        if (
+            parse_error is None
+            and name in data["submitted_answers"]
+            and submitted_raw_answer is not None
+        ):
             html_params["raw_input_popover"] = pl.render_raw_input_popover(
                 submitted_raw_answer,
                 aria_label or name,
