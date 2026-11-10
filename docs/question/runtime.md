@@ -53,7 +53,7 @@ Example for SciPy. The newest release as of writing this guide is `1.6.1`.
 A list of the Python libraries that PrairieLearn uses is stored in the `pyproject.toml` file. Note that there are different dependency files for different environments:
 
 - The `pyproject.toml` file in the root directory is used in the question runtime environment, which mostly affects `server.py` in individual questions and custom elements.
-- External graders, like the [Python grader](../python-grader/index.md) or the [C/C++ grader](../c-grader/index.md), have their own set of dependencies in `requirements.txt` in the `graders` directory.
+- External graders, like the [C/C++ grader](../c-grader/index.md), have their own set of dependencies in `requirements.txt` in the `graders` directory. The [Python grader](../python-grader/index.md)'s dependencies are in the [`grader-python-v2`](https://github.com/PrairieLearn/grader-python-v2/tree/main/docker) repository.
 - [Workspaces](../workspaces/index.md), like the Jupyterlab or VSCode environments, have their own set of dependencies in `requirements.txt` in the `workspaces` directory.
 
 Then, create a fork and a new branch, and update the file(s) you wish to modify. In each file you wish to update, add the new library and version on a new line in the format `library==version`, taking care to maintain alphabetical order in the file:
