@@ -29,6 +29,7 @@ const DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS = 64;
 const DEFAULT_CLOUDFLARE_CONCURRENT_RENDERS = 4;
 const CLOUDFLARE_KEEP_ALIVE_MS = 180_000;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
+const BROWSER_CLOSE_GRACE_MS = 5_000;
 const SOCKET_IO_PATH = '/socket.io/';
 
 async function fetchCloudflareAsset(url: URL, signal: AbortSignal, assetToken?: string) {
@@ -181,21 +182,37 @@ export class PrintRenderer {
     );
   }
 
-  /** Rejects queued renders and closes the browser. Further renders are refused. */
+  /** Rejects queued renders and gives the browser five seconds to close. Further renders are refused. */
   async close(): Promise<void> {
     this.closed = true;
     this.worker.rejectAll(new Error('The print renderer has been closed'));
     const browserPromise = this.browserPromise;
     this.browserPromise = null;
     this.browser = null;
-    const browser = await browserPromise?.catch(() => null);
-    await browser?.close();
+    if (!browserPromise) return;
+
+    let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        browserPromise.catch(() => null).then(async (browser) => await browser?.close()),
+        new Promise<void>((resolve) => {
+          graceTimer = setTimeout(resolve, BROWSER_CLOSE_GRACE_MS);
+        }),
+      ]);
+    } finally {
+      if (graceTimer) clearTimeout(graceTimer);
+    }
   }
 
   private getBrowser(timeoutMs: number): Promise<Browser> {
     if (!this.browserPromise) {
       const browserPromise = this.openBrowser(timeoutMs).then(
-        (browser) => {
+        async (browser) => {
+          // A connection may finish after close() has exhausted its grace period.
+          if (this.closed) {
+            await browser.close();
+            throw new Error('The print renderer has been closed');
+          }
           this.browser = browser;
           browser.on('disconnected', () => this.forgetBrowser(browser));
           return browser;
