@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
-import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
-
-/** The agent's working directory, a checkout of the course. */
-export const COURSE_DIR = '/workspace/session/course';
+import { COURSE_DIR, type Clip, type ToolCall } from '@prairielearn/course-agent-types';
 
 /** Bounds on what one call adds to chat history; Codex's thread keeps the full record. */
 const OUTPUT_CHARS = 4_000;

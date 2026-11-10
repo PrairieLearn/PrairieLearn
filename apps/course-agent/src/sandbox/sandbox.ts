@@ -16,7 +16,7 @@ import {
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
 
-import { logEvent, redactSecrets } from '../monitoring.js';
+import { logEvent } from '../monitoring.js';
 
 import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
@@ -87,32 +87,6 @@ const InstanceTypeSchema = z.enum(['lite', 'standard-1', 'standard-2', 'standard
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
-
-// Codex output can contain sensitive content, so stderr is forwarded only when DEBUG_RUNNER_OUTPUT
-// is "true" (staging only), capped in case a runner repeats an error.
-const RUNNER_LOG_LINES = 200;
-const RUNNER_LOG_CHARS = 2000;
-
-/** Forward runner stderr to Worker logs and keep a short tail for startup errors. */
-function forwardRunnerStderr(stream: ReadableStream) {
-  let lines = 0;
-  let tail = '';
-  const done = (async () => {
-    try {
-      for await (const chunk of stream.pipeThrough(new TextDecoderStream())) {
-        tail = (tail + chunk).slice(-RUNNER_LOG_CHARS);
-        for (const line of chunk.split('\n')) {
-          if (line && ++lines <= RUNNER_LOG_LINES) {
-            console.warn(`[codex stderr] ${redactSecrets(line.slice(0, RUNNER_LOG_CHARS))}`);
-          }
-        }
-      }
-    } catch {
-      // The stream errors when the container stops; the runner's exit is handled by the caller.
-    }
-  })();
-  return { done, tail: () => redactSecrets(tail.trim()) };
-}
 
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
 export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
@@ -601,9 +575,6 @@ export class CourseSandbox extends DurableObject<Env> {
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
-    // Temporary: forwards Codex output to diagnose staging sandbox startup. Remove this flag and
-    // the forwarding once that is resolved; production must never set it.
-    const debugOutput = this.env.DEBUG_RUNNER_OUTPUT === 'true';
     const started = Date.now();
     this.process = await this.container.exec(
       [
@@ -622,7 +593,7 @@ export class CourseSandbox extends DurableObject<Env> {
         cwd: `${SESSION}/home`,
         env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
         stdout: 'ignore',
-        stderr: debugOutput ? 'pipe' : 'ignore',
+        stderr: 'ignore',
       },
     );
     logEvent('runner_started', {
@@ -630,7 +601,6 @@ export class CourseSandbox extends DurableObject<Env> {
       pid: this.process.pid,
       elapsedMs: Date.now() - started,
     });
-    const stderr = this.process.stderr ? forwardRunnerStderr(this.process.stderr) : null;
     let exitCode: number | null = null;
     void this.process.exitCode.then((code) => {
       exitCode = code;
@@ -656,16 +626,13 @@ export class CourseSandbox extends DurableObject<Env> {
           await scheduler.wait(100);
           continue;
         }
-        // A runner that is still alive never closes stderr, so only briefly wait for its tail.
-        if (stderr) await Promise.race([stderr.done, scheduler.wait(1000)]);
         const facts = JSON.stringify({
           elapsedMs: Date.now() - started,
           failures,
           exitCode,
           containerRunning: this.container.running,
         });
-        const tail = stderr ? `: ${stderr.tail() || '(no stderr)'}` : '';
-        throw new Error(`Codex runner did not listen: ${facts}${tail}`, { cause: error });
+        throw new Error(`Codex runner did not listen: ${facts}`, { cause: error });
       }
     }
   }

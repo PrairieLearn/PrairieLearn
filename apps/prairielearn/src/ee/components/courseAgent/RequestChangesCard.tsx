@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type ReactNode, useState } from 'react';
+import clsx from 'clsx';
+import { type ReactNode, Suspense, lazy, useState } from 'react';
 import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
 import type { RequestChangesResult } from '@prairielearn/course-agent-types';
@@ -8,6 +9,25 @@ import { AppErrorAlert } from '@prairielearn/trpc/react';
 
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
+import type { ReviewDiffFile } from '../../lib/course-agent/review-diff.js';
+
+// The diff renderer and its syntax highlighter are only needed once the review is opened.
+const LazyReviewDiff = lazy(() =>
+  import('./ReviewDiff.js').then(
+    (module) => module,
+    () => ({ default: ReviewDiffLoadError }),
+  ),
+);
+
+function ReviewDiffLoadError() {
+  return (
+    <Alert variant="danger" className="m-3">
+      Could not load the changes. Reload this page to try again.
+    </Alert>
+  );
+}
+
+import { UserMessage } from './UserMessage.js';
 
 export function RequestChangesCard({
   conversationId,
@@ -50,16 +70,21 @@ export function RequestChangesCard({
     getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
     getAppError<CourseAgentError['Resume']>(resume.error);
   const pending = data?.status === 'pending' ? data : null;
+  const decide = (value: 'approved' | 'denied') =>
+    decision.mutate({ conversationId, reviewId, decision: value });
+  const actionsDisabled = !pending || decision.isPending;
+  const canApprove = !!pending?.diff.files;
   return (
     <div className="border rounded p-2">
       {data?.status === 'decided' && data.result ? (
         <ReviewResult result={data.result} />
       ) : (
         <ReviewActions
-          disabled={!pending || decision.isPending}
-          canApprove={typeof pending?.diff.patch === 'string'}
+          disabled={actionsDisabled}
+          canApprove={canApprove}
+          fileCount={pending?.diff.files?.length ?? null}
           onViewChanges={() => setShowChanges(true)}
-          onDecision={(value) => decision.mutate({ conversationId, reviewId, decision: value })}
+          onDecision={decide}
         />
       )}
       {data?.status === 'decided' && !data.result && (
@@ -103,9 +128,15 @@ export function RequestChangesCard({
         id={reviewId}
         show={showChanges}
         loading={review.isLoading}
-        patch={pending?.diff.patch ?? null}
+        files={pending?.diff.files ?? null}
         error={pending?.diff.error ? <Alert variant="danger">{pending.diff.error}</Alert> : null}
+        actionsDisabled={actionsDisabled}
+        canApprove={canApprove}
         onHide={() => setShowChanges(false)}
+        onDecision={(value) => {
+          decide(value);
+          setShowChanges(false);
+        }}
       />
       {failure && (
         <AppErrorAlert
@@ -121,11 +152,13 @@ export function RequestChangesCard({
 function ReviewActions({
   disabled,
   canApprove,
+  fileCount,
   onViewChanges,
   onDecision,
 }: {
   disabled: boolean;
   canApprove: boolean;
+  fileCount: number | null;
   onViewChanges: () => void;
   onDecision: (decision: 'approved' | 'denied') => void;
 }) {
@@ -136,7 +169,9 @@ function ReviewActions({
         <span>Review course changes</span>
       </div>
       <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
-        View changes
+        {fileCount === null
+          ? 'View changes'
+          : `View ${fileCount === 1 ? '1 changed file' : `${fileCount} changed files`}`}
       </Button>
       <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
         <Button size="sm" disabled={disabled || !canApprove} onClick={() => onDecision('approved')}>
@@ -160,44 +195,67 @@ function ReviewChangesModal({
   show,
   onHide,
   loading,
-  patch,
+  files,
   error,
+  actionsDisabled,
+  canApprove,
+  onDecision,
 }: {
   id: string;
   show: boolean;
   onHide: () => void;
   loading: boolean;
-  patch: string | null;
+  files: ReviewDiffFile[] | null;
   error: ReactNode;
+  actionsDisabled: boolean;
+  canApprove: boolean;
+  onDecision: (decision: 'approved' | 'denied') => void;
 }) {
+  const loadingSpinner = (
+    <div className="d-flex justify-content-center p-4">
+      <Spinner animation="border" size="sm" role="status">
+        <span className="visually-hidden">Loading changes</span>
+      </Spinner>
+    </div>
+  );
   return (
-    <Modal show={show} size="lg" aria-labelledby={`review-title-${id}`} onHide={onHide}>
+    <Modal
+      show={show}
+      size="xl"
+      fullscreen="lg-down"
+      aria-labelledby={`review-title-${id}`}
+      scrollable
+      onHide={onHide}
+    >
       <Modal.Header closeButton>
         <Modal.Title id={`review-title-${id}`}>Review course changes</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
-        {loading && (
-          <Spinner animation="border" size="sm" role="status">
-            <span className="visually-hidden">Loading changes</span>
-          </Spinner>
+      <Modal.Body className={clsx(files && files.length > 0 && 'p-0 d-flex flex-column')}>
+        {loading && loadingSpinner}
+        {files && files.length > 0 && (
+          <Suspense fallback={loadingSpinner}>
+            <LazyReviewDiff files={files} />
+          </Suspense>
         )}
-        {patch !== null && (
-          <pre
-            className="small mb-0 overflow-auto"
-            style={{ maxHeight: '60vh' }}
-            aria-label="Reviewed course changes"
-          >
-            {patch}
-          </pre>
-        )}
-        {patch === null && !loading && !error && (
+        {files?.length === 0 && <p className="m-3">No files were changed.</p>}
+        {files === null && !loading && !error && (
           <p className="mb-0">This review is no longer pending.</p>
         )}
         {error}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onHide}>
+        <Button variant="outline-secondary" onClick={onHide}>
           Close
+        </Button>
+        <Button
+          variant="outline-danger"
+          disabled={actionsDisabled}
+          onClick={() => onDecision('denied')}
+        >
+          Deny
+        </Button>
+        <Button disabled={actionsDisabled || !canApprove} onClick={() => onDecision('approved')}>
+          Approve
         </Button>
       </Modal.Footer>
     </Modal>
@@ -247,4 +305,21 @@ function ReviewResult({ result }: { result: RequestChangesResult }) {
       )}
     </div>
   );
+}
+
+/** A message sent in place of a decision denies the review; it shows as the instructor's reply. */
+export function ReviewFeedback({
+  conversationId,
+  reviewId,
+}: {
+  conversationId: string;
+  reviewId: string;
+}) {
+  const trpc = useTRPC();
+  const review = useQuery({
+    ...trpc.courseAgent.getReview.queryOptions({ conversationId, reviewId }),
+    retry: false,
+  });
+  const feedback = review.data?.status === 'decided' ? review.data.result?.feedback : undefined;
+  return feedback ? <UserMessage text={feedback} /> : null;
 }
