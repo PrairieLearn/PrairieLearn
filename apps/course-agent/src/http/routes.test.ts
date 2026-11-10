@@ -1,8 +1,6 @@
 import { getAgentByName } from 'agents';
 import { describe, expect, it, vi } from 'vitest';
 
-import { MAX_ATTACHMENT_BYTES } from '@prairielearn/course-agent-types';
-
 import app from './routes.js';
 
 vi.mock('agents', () => ({ getAgentByName: vi.fn() }));
@@ -31,28 +29,34 @@ describe('private course agent service', () => {
     expect(response.status).toBe(400);
   });
 
-  it('refuses an upload that would take a conversation over 200 MB', async () => {
-    const conversationId = crypto.randomUUID();
-    // 180 MB and one byte.
-    const objects = [
-      ...Array.from({ length: 9 }, () => ({ size: MAX_ATTACHMENT_BYTES })),
-      { size: 1 },
-    ];
-    const CHECKPOINTS = { list: vi.fn(async () => ({ objects })), put: vi.fn() };
-    const upload = (size: number) =>
+  it('stores an upload only within its reservation, and returns the room if storing fails', async () => {
+    const conversation = { reserveUpload: vi.fn(), releaseUpload: vi.fn() };
+    vi.mocked(getAgentByName).mockResolvedValue(
+      conversation as unknown as Awaited<ReturnType<typeof getAgentByName>>,
+    );
+    const CHECKPOINTS = { put: vi.fn() };
+    const upload = () =>
       app.request(
-        `/conversations/${conversationId}/uploads`,
+        `/conversations/${crypto.randomUUID()}/uploads`,
         {
           method: 'POST',
-          headers: { Authorization: 'Bearer test-token', 'Content-Length': String(size) },
-          body: new Uint8Array(size),
+          headers: { Authorization: 'Bearer test-token', 'Content-Length': '3' },
+          body: new Uint8Array(3),
         },
         { PL_SERVICE_TOKEN: 'test-token', CHECKPOINTS } as unknown as Env,
       );
 
-    expect((await upload(MAX_ATTACHMENT_BYTES)).status).toBe(413);
-    expect((await upload(MAX_ATTACHMENT_BYTES - 1)).status).toBe(201);
-    expect(CHECKPOINTS.list).toHaveBeenCalledWith({ prefix: `uploads/${conversationId}/` });
-    expect(CHECKPOINTS.put).toHaveBeenCalledTimes(1);
+    conversation.reserveUpload.mockResolvedValue(false);
+    expect((await upload()).status).toBe(413);
+    expect(CHECKPOINTS.put).not.toHaveBeenCalled();
+
+    conversation.reserveUpload.mockResolvedValue(true);
+    CHECKPOINTS.put.mockRejectedValueOnce(new Error('R2 unavailable'));
+    expect((await upload()).status).toBe(500);
+    expect(conversation.releaseUpload).toHaveBeenCalledWith(3);
+
+    expect((await upload()).status).toBe(201);
+    expect(conversation.reserveUpload).toHaveBeenLastCalledWith(3);
+    expect(conversation.releaseUpload).toHaveBeenCalledTimes(1);
   });
 });
