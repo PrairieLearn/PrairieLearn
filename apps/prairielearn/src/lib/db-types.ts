@@ -757,6 +757,9 @@ export const CourseSchema = z.object({
   id: IdSchema,
   institution_id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
+  last_successful_sync: z
+    .object({ chunksGenerated: z.boolean(), commitHash: z.string(), version: z.number() })
+    .nullable(),
   options: z.any(),
   path: z.string(),
   questions_receive_user_data: z.boolean(),

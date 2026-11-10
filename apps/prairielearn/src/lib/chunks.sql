@@ -19,6 +19,20 @@ WHERE
   chunks.course_id = $course_id
   AND chunks.superseded_at IS NULL;
 
+-- BLOCK select_current_question_chunk_ids
+SELECT
+  chunks.id
+FROM
+  chunks
+  JOIN questions AS q ON (q.id = chunks.question_id)
+WHERE
+  chunks.course_id = $course_id
+  AND chunks.type = 'question'
+  AND chunks.superseded_at IS NULL
+  AND q.course_id = $course_id
+  AND q.qid = $qid
+  AND q.deleted_at IS NULL;
+
 -- BLOCK select_course_chunks_at_date
 SELECT
   chunks.*

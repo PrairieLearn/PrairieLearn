@@ -827,6 +827,36 @@ async function createAndUploadChunks(coursePath: string, chunksToGenerate: Chunk
   return generatedChunks;
 }
 
+async function replaceChunks({
+  coursePath,
+  courseId,
+  updatedChunks,
+  replacedChunkIds,
+  commitHash,
+}: {
+  coursePath: string;
+  courseId: string;
+  updatedChunks: ChunkMetadata[];
+  replacedChunkIds: string[];
+  commitHash: string | null;
+}) {
+  const generatedChunks = await createAndUploadChunks(coursePath, updatedChunks);
+
+  // Uploads finish before the transaction, so it only holds row locks briefly.
+  await sqldb.runInTransactionAsync(async () => {
+    await sqldb.execute(sql.delete_chunk_revisions, {
+      course_id: courseId,
+      chunk_ids: replacedChunkIds,
+    });
+    await sqldb.execute(sql.insert_chunks, {
+      course_id: courseId,
+      // Force this to a string; otherwise it is converted to a Postgres array.
+      chunks: JSON.stringify(generatedChunks),
+      commit_hash: commitHash,
+    });
+  });
+}
+
 /**
  * Returns the paths to the chunks directories for the given course
  * ID. The "downloads" directory will hold in-progress chunk
@@ -893,6 +923,32 @@ interface UpdateChunksForCourseOptions {
   changedFiles?: string[];
 }
 
+/** Publishes the chunk for a known question without reconciling the entire course. */
+export async function updateQuestionContentChunk({
+  coursePath,
+  courseId,
+  qid,
+}: {
+  coursePath: string;
+  courseId: string;
+  qid: string;
+}): Promise<ChunksDiff> {
+  const updatedChunks: ChunkMetadata[] = [{ type: 'question', questionName: qid }];
+  const replacedChunkIds = await sqldb.queryScalars(
+    sql.select_current_question_chunk_ids,
+    { course_id: courseId, qid },
+    IdSchema,
+  );
+  await replaceChunks({
+    coursePath,
+    courseId,
+    updatedChunks,
+    replacedChunkIds,
+    commitHash: await getCourseCommitHash(coursePath),
+  });
+  return { updatedChunks, deletedChunks: [], replacedChunkIds };
+}
+
 export async function updateChunksForCourse({
   coursePath,
   courseId,
@@ -921,21 +977,12 @@ export async function updateChunksForCourse({
   });
 
   const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
-  const generatedChunks = await createAndUploadChunks(coursePath, updatedChunks);
-
-  // Uploads finish before the transaction, so it only holds row locks briefly.
-  await sqldb.runInTransactionAsync(async () => {
-    await sqldb.execute(sql.delete_chunk_revisions, {
-      course_id: courseId,
-      chunk_ids: replacedChunkIds,
-    });
-    await sqldb.execute(sql.insert_chunks, {
-      course_id: courseId,
-      // Force this to a string; otherwise, our code in `sql-db.js` will try to
-      // convert it into a Postgres `ARRAY[...]` type, which we don't want.
-      chunks: JSON.stringify(generatedChunks),
-      commit_hash: commitHash,
-    });
+  await replaceChunks({
+    coursePath,
+    courseId,
+    updatedChunks,
+    replacedChunkIds,
+    commitHash,
   });
 
   return { updatedChunks, deletedChunks, replacedChunkIds };
