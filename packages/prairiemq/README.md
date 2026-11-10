@@ -2,7 +2,7 @@
 
 PrairieMQ is a Redis-backed job queue for workloads that need fair scheduling across groups. It supports per-group concurrency limits, delayed jobs, retries with fixed or exponential backoff, and recovery when a worker disappears.
 
-This package was extracted from [PrairieTest’s queue library](https://github.com/PrairieLearnInc/PrairieTest/tree/7158e029a077c03e04ffe3b77b20500824d51150/src/lib/queue). The queue implementation and its existing tests are preserved here as a shared library.
+This package was extracted from [PrairieTest’s queue library](https://github.com/PrairieLearnInc/PrairieTest/tree/7158e029a077c03e04ffe3b77b20500824d51150/src/lib/queue). The queue implementation and its existing test coverage are preserved here as a shared library.
 
 ## Requirements
 
@@ -10,6 +10,12 @@ This package was extracted from [PrairieTest’s queue library](https://github.c
 - Redis 6.2 or later.
 - A non-clustered Redis deployment. Redis Cluster is not supported.
 - Redis credentials that permit `INFO`, `TIME`, `SELECT` when using a nonzero database, `EVAL`/`EVALSHA`, `BLPOP`, `SCAN`, `UNLINK`, `MULTI`/`EXEC`, and the keyspace (`DEL`, `EXISTS`, and `PEXPIRE`), string, list, set, sorted-set, and hash commands PrairieMQ uses on its queue keys.
+
+## Migrating from PrairieTest's queue module
+
+Replace imports from PrairieTest's local `lib/queue/*` modules with imports from `@prairielearn/prairiemq`. The package also exports `createJob` for constructing jobs in tests and `MAX_TIMER_DELAY_MILLISECONDS` for validating timer settings. Import `UnrecoverableError` from the package alongside `Worker` so both use the same error class.
+
+Keep the Redis URL, queue names, prefixes, and queue and worker options unchanged. The Redis keys, stored job format, and Lua scripts are unchanged from the source revision linked above, so existing jobs do not require a data migration and workers using either implementation can share a queue. Use the application's existing graceful worker shutdown during deployment.
 
 ## Basic usage
 

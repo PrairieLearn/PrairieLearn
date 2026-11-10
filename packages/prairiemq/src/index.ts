@@ -1,5 +1,5 @@
 export { UnrecoverableError } from './errors.js';
-export type { Job } from './job.js';
+export { createJob, type Job } from './job.js';
 export {
   JobIdDeduplicationConflictError,
   Queue,
@@ -7,6 +7,7 @@ export {
   type QueueEvents,
 } from './queue.js';
 export { RedisCompatibilityError } from './scripts.js';
+export { MAX_TIMER_DELAY_MILLISECONDS } from './types.js';
 export type {
   DeduplicatedJobOptions,
   DefaultJobOptions,
