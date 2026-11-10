@@ -63,7 +63,7 @@ vi.mock('./client.js', () => ({
   deliverCourseAgentReviewResult: vi.fn(),
   resumeCourseAgentConversation: vi.fn(),
 }));
-vi.mock('./review-diff.js', () => ({ createReviewDiff: vi.fn(async () => 'reviewed diff') }));
+vi.mock('./review-diff.js', () => ({ createReviewDiff: vi.fn(async () => []) }));
 
 const PUBLISHED = {
   decision: 'approved',
@@ -216,7 +216,7 @@ it('denies an unreadable review without starting a save job', async () => {
   await withConfig({ fileEditorUseGit: true }, async () => {
     expect(await getReview(course, conversation, review.id)).toEqual({
       status: 'pending',
-      diff: { patch: null, error: 'Missing review base' },
+      diff: { files: null, error: 'Missing review base' },
     });
   });
   await expect(decide('denied')).resolves.toEqual({ decision: 'denied' });

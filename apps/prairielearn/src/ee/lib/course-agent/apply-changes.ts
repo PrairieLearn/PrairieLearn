@@ -47,7 +47,7 @@ import {
   resumeCourseAgentConversation,
 } from './client.js';
 import { ReviewConflictSchema, checkReviewConflicts } from './review-conflicts.js';
-import { createReviewDiff } from './review-diff.js';
+import { type ReviewDiffFile, createReviewDiff } from './review-diff.js';
 
 const jobDescriptions = {
   local: 'Save and sync reviewed local course edits',
@@ -121,10 +121,10 @@ export async function getReview(
   }
   const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
   if (!review) return { status: 'unavailable' as const };
-  let diff: { patch: string | null; error: string | null };
+  let diff: { files: ReviewDiffFile[] | null; error: string | null };
   try {
     verifyReviewBinding(course, review.snapshot);
-    diff = { patch: await createReviewDiff(course, review.snapshot), error: null };
+    diff = { files: await createReviewDiff(course, review.snapshot), error: null };
   } catch (error) {
     // A broken diff must not hide the pending review or prevent its owner from denying it.
     if (!(error instanceof HttpStatusError)) {
@@ -132,7 +132,7 @@ export async function getReview(
       Sentry.captureException(error);
     }
     diff = {
-      patch: null,
+      files: null,
       error: error instanceof Error ? error.message : 'Could not load the reviewed changes.',
     };
   }
