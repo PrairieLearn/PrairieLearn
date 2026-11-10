@@ -2,7 +2,7 @@ import { type FileUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { useCallback, useState } from 'react';
-import { Button, Spinner } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 
 import {
   MAX_ATTACHMENTS_PER_MESSAGE,
@@ -12,8 +12,7 @@ import {
   attachmentUrl,
 } from '@prairielearn/course-agent-types';
 
-const formatBytes = (bytes: number) => filesize(bytes, { round: 1, standard: 'jedec' });
-export const MAX_ATTACHMENT_SIZE = formatBytes(MAX_ATTACHMENT_BYTES);
+export const MAX_ATTACHMENT_SIZE = filesize(MAX_ATTACHMENT_BYTES, { round: 1, standard: 'jedec' });
 
 export type AttachmentStatus =
   | { kind: 'ready' }
@@ -33,10 +32,10 @@ export interface DraftAttachment {
 function statusOf(file: File, position: number): AttachmentStatus {
   const invalid = (problem: string) => ({ kind: 'invalid', problem }) as const;
   if (position >= MAX_ATTACHMENTS_PER_MESSAGE) {
-    return invalid(`Only ${MAX_ATTACHMENTS_PER_MESSAGE} files per message. Remove it.`);
+    return invalid(`Over ${MAX_ATTACHMENTS_PER_MESSAGE} files`);
   }
-  if (file.size > MAX_ATTACHMENT_BYTES) return invalid(`Over ${MAX_ATTACHMENT_SIZE}. Remove it.`);
-  if (file.size === 0) return invalid('Empty file. Remove it.');
+  if (file.size > MAX_ATTACHMENT_BYTES) return invalid(`Over ${MAX_ATTACHMENT_SIZE}`);
+  if (file.size === 0) return invalid('Empty file');
   return { kind: 'ready' };
 }
 
@@ -126,7 +125,7 @@ export async function uploadDraftAttachments(
       setStatus(
         key,
         result.status === 413
-          ? { kind: 'invalid', problem: 'Conversation file limit reached. Remove it.' }
+          ? { kind: 'invalid', problem: 'Conversation is full' }
           : { kind: 'failed' },
       );
       return null;
@@ -145,66 +144,55 @@ function extensionOf(filename: string) {
   return filename.includes('.') ? filename.split('.').at(-1)!.toLowerCase() : '';
 }
 
-function fileIcon(mediaType: string, filename: string) {
-  const extension = extensionOf(filename);
-  if (mediaType.startsWith('image/')) return 'bi-file-earmark-image';
-  if (mediaType === 'application/pdf' || extension === 'pdf') return 'bi-file-earmark-pdf';
-  if (['csv', 'tsv', 'xlsx', 'xls'].includes(extension)) return 'bi-file-earmark-spreadsheet';
-  if (['zip', 'gz', 'tar'].includes(extension)) return 'bi-file-earmark-zip';
-  if (mediaType.startsWith('text/') || ['md', 'json', 'py', 'tex'].includes(extension)) {
-    return 'bi-file-earmark-text';
-  }
-  return 'bi-file-earmark';
-}
-
 function typeLabel(mediaType: string, filename: string) {
   return (extensionOf(filename) || mediaType.split('/').at(-1) || 'File').toUpperCase();
 }
 
-function AttachmentCard({
+/** A square tile for an attachment, with its name and either its type or a problem. */
+function AttachmentTile({
   filename,
-  mediaType,
-  detail,
-  danger = false,
-  busy = false,
+  label,
+  problem = null,
+  percent = null,
   onRemove,
 }: {
   filename: string;
-  mediaType: string;
-  detail: string;
-  danger?: boolean;
-  busy?: boolean;
+  label: string;
+  problem?: string | null;
+  /** Upload progress, shown over the tile while uploading. */
+  percent?: number | null;
   onRemove?: () => void;
 }) {
   return (
     <li
       className={clsx(
-        'course-agent-attachment position-relative d-flex align-items-center gap-2 rounded-2 border bg-body-tertiary',
-        danger && 'border-danger',
+        'course-agent-attachment position-relative flex-shrink-0 rounded-3 border',
+        problem ? 'border-danger bg-danger-subtle' : 'bg-body-tertiary',
       )}
+      title={filename}
     >
-      <span
-        className={clsx(
-          'course-agent-attachment-icon rounded-1 d-flex align-items-center justify-content-center',
-          danger ? 'bg-danger-subtle text-danger' : 'bg-body-secondary text-body-secondary',
+      <div className="position-relative h-100 overflow-hidden rounded-3">
+        <div className="d-flex flex-column justify-content-between h-100 p-2">
+          <span className={clsx('course-agent-attachment-name', problem && 'text-danger')}>
+            {filename}
+          </span>
+          {problem ? (
+            <span className="course-agent-attachment-problem text-danger">
+              <i className="bi bi-exclamation-triangle me-1" aria-hidden="true" />
+              {problem}
+            </span>
+          ) : (
+            <span className="badge rounded-pill border text-body-secondary fw-normal align-self-start mw-100 text-truncate">
+              {label}
+            </span>
+          )}
+        </div>
+        {percent !== null && (
+          <div className="course-agent-attachment-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fw-medium">
+            {percent}%
+          </div>
         )}
-        aria-hidden="true"
-      >
-        {busy ? (
-          <Spinner animation="border" size="sm" />
-        ) : (
-          <i
-            className={clsx(
-              'bi',
-              danger ? 'bi-exclamation-triangle' : fileIcon(mediaType, filename),
-            )}
-          />
-        )}
-      </span>
-      <span className="d-flex flex-column overflow-hidden small lh-sm">
-        <span className="text-truncate">{filename}</span>
-        <span className={danger ? 'text-danger' : 'text-body-secondary'}>{detail}</span>
-      </span>
+      </div>
       {onRemove && (
         <Button
           variant="light"
@@ -220,17 +208,10 @@ function AttachmentCard({
   );
 }
 
-function draftDetail({ file, status }: DraftAttachment) {
-  switch (status.kind) {
-    case 'invalid':
-      return status.problem;
-    case 'uploading':
-      return `Uploading… ${status.percent}%`;
-    case 'failed':
-      return "Couldn't upload. Send to retry.";
-    default:
-      return `${typeLabel(file.type, file.name)} · ${formatBytes(file.size)}`;
-  }
+function draftProblem({ status }: DraftAttachment) {
+  if (status.kind === 'invalid') return status.problem;
+  if (status.kind === 'failed') return 'Upload failed';
+  return null;
 }
 
 export function DraftAttachmentList({
@@ -246,13 +227,12 @@ export function DraftAttachmentList({
   return (
     <ul className="list-unstyled d-flex flex-wrap gap-2 m-0 px-2 pt-2" aria-label="Attachments">
       {attachments.map((attachment) => (
-        <AttachmentCard
+        <AttachmentTile
           key={attachment.key}
           filename={attachment.file.name}
-          mediaType={attachment.file.type}
-          detail={draftDetail(attachment)}
-          danger={attachment.status.kind === 'invalid' || attachment.status.kind === 'failed'}
-          busy={attachment.status.kind === 'uploading'}
+          label={typeLabel(attachment.file.type, attachment.file.name)}
+          problem={draftProblem(attachment)}
+          percent={attachment.status.kind === 'uploading' ? attachment.status.percent : null}
           onRemove={sending ? undefined : () => onRemove(attachment.key)}
         />
       ))}
@@ -272,11 +252,10 @@ export function SentAttachments({ message }: { message: UIMessage }) {
       aria-label="Attachments"
     >
       {files.map((part) => (
-        <AttachmentCard
+        <AttachmentTile
           key={part.url}
           filename={part.filename ?? 'File'}
-          mediaType={part.mediaType}
-          detail={typeLabel(part.mediaType, part.filename ?? '')}
+          label={typeLabel(part.mediaType, part.filename ?? '')}
         />
       ))}
     </ul>
