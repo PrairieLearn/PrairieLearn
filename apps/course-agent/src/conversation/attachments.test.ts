@@ -72,6 +72,16 @@ describe('UploadQuota', () => {
     expect(await quota.reserve(MAX_ATTACHMENT_BYTES)).toBe(true);
   });
 
+  it('ignores a release after a restart, counting from R2 instead', async () => {
+    const quota = new UploadQuota(async () => ({
+      count: MAX_CONVERSATION_ATTACHMENTS - 1,
+      bytes: 0,
+    }));
+    await quota.release(MAX_ATTACHMENT_BYTES);
+    expect(await quota.reserve(1)).toBe(true);
+    expect(await quota.reserve(1)).toBe(false);
+  });
+
   it('caps the number of uploads, and counts again after a failed listing', async () => {
     const countUploads = vi
       .fn<() => Promise<{ count: number; bytes: number }>>()
