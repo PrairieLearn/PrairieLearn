@@ -7,8 +7,13 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { insertCourse, updateCourseCommitHash } from '../models/course.js';
+import {
+  insertCourse,
+  recordSuccessfulCourseSync,
+  updateCourseCommitHash,
+} from '../models/course.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
+import { CURRENT_SYNC_VERSION } from '../sync/version.js';
 
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
@@ -494,7 +499,14 @@ export async function createCourseRepoJob(
     }
 
     job.info('Update course commit hash');
-    await updateCourseCommitHash(inserted_course);
+    const commitHash = await updateCourseCommitHash(inserted_course);
+    if (!syncResult.hadJsonErrors) {
+      await recordSuccessfulCourseSync(inserted_course.id, {
+        commitHash,
+        version: CURRENT_SYNC_VERSION,
+        chunksGenerated: config.chunksGenerator,
+      });
+    }
   };
 
   // Create a server job to wrap the course creation process.

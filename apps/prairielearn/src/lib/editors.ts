@@ -221,6 +221,12 @@ export abstract class Editor {
    */
   abstract write(): Promise<WriteResult | null>;
 
+  /**
+   * Opt an editor into content-only sync by describing its expected file change.
+   * Called under the course lock after restoring the checkout, with the previous
+   * baseline still available on `this.course`. Returning null keeps full sync;
+   * a proposed scope must also pass the post-write Git verification.
+   */
   protected async getContentSyncScope(): Promise<QuestionContentScope | null> {
     return null;
   }
@@ -269,7 +275,6 @@ export abstract class Editor {
         }
         this.course = latestCourse;
         const startGitHash = await getOrUpdateCourseCommitHash(this.course);
-        const contentScope = config.fileEditorUseGit ? await this.getContentSyncScope() : null;
         await invalidateCourseSync(this.course.id);
 
         if (!config.fileEditorUseGit) {
@@ -335,6 +340,7 @@ export abstract class Editor {
         });
 
         await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+        const contentScope = await this.getContentSyncScope();
 
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
@@ -371,7 +377,7 @@ export abstract class Editor {
         };
 
         let courseData: courseDB.CourseData | undefined;
-        let useContentSync = false;
+        let syncContentOnly = false;
         try {
           await writeAndCommitChanges();
 
@@ -380,7 +386,7 @@ export abstract class Editor {
           // to put their course into an invalid state by deleting a shared
           // question or otherwise breaking the invariants we rely upon for
           // question sharing.
-          useContentSync =
+          syncContentOnly =
             contentScope !== null &&
             (await isQuestionContentOnlyChange({
               coursePath: this.course.path,
@@ -390,7 +396,7 @@ export abstract class Editor {
             }));
           let possibleCourseData: courseDB.CourseData | undefined;
           // Content-only edits preserve sharing declarations and question identity.
-          if (!useContentSync) {
+          if (!syncContentOnly) {
             possibleCourseData = await courseDB.loadFullCourse(this.course.id, this.course.path);
             const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
               this.course,
@@ -428,7 +434,7 @@ export abstract class Editor {
             // course data from disk after we do so.
             courseData = possibleCourseData;
           } catch {
-            useContentSync = false;
+            syncContentOnly = false;
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
 
@@ -479,7 +485,7 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          if (useContentSync && contentScope && job.data.saveSucceeded) {
+          if (syncContentOnly && contentScope && job.data.saveSucceeded) {
             const contentSyncStart = performance.now();
             job.info(`Syncing question content only: ${contentScope.qid}`);
             if (config.chunksGenerator) {
