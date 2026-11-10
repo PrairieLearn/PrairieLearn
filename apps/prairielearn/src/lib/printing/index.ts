@@ -15,7 +15,7 @@ import {
   QuestionSchema,
   SprocQuestionOrderSchema,
 } from '../db-types.js';
-import { getAndRenderVariant } from '../question-render.js';
+import { FatalQuestionRenderError, getAndRenderVariant } from '../question-render.js';
 import type { ResLocalsForPage } from '../res-locals.js';
 
 import { combineQuestionHeaders } from './combine-question-headers.js';
@@ -41,6 +41,7 @@ const BROKEN_QUESTION_FAILURE_CODE = 'broken_variant';
 const BROKEN_QUESTION_FAILURE_STAGE = 'variant_creation';
 const BROKEN_QUESTION_FAILURE_MESSAGE =
   'Question could not be rendered due to an error in question code.';
+const QUESTION_RENDER_FAILURE_CODE = 'render_error';
 
 export const PRINT_DOCUMENTS = ['assessment', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
@@ -118,7 +119,7 @@ export const validatePrintDocument: PrintablePageOutput<{
 };
 
 export interface OmittedQuestionWarning {
-  code: typeof BROKEN_QUESTION_FAILURE_CODE;
+  code: typeof BROKEN_QUESTION_FAILURE_CODE | typeof QUESTION_RENDER_FAILURE_CODE;
   question_number: string;
   qid: string | null;
   message: string;
@@ -163,6 +164,13 @@ export type PrintingQuestionResult =
       message: string;
       variantId: string;
       issueIds: string[];
+    })
+  | (PrintingQuestionResultBase & {
+      status: 'failed';
+      code: typeof QUESTION_RENDER_FAILURE_CODE;
+      stage: 'question_render';
+      message: string;
+      variantId: string;
     });
 
 async function selectPrintableQuestions(assessmentInstanceId: string) {
@@ -300,90 +308,103 @@ async function renderAssessmentInstanceQuestionsUnbounded(
       authz_data: resLocals.authz_data,
       authz_result: resLocals.authz_result,
     };
-    const renderState = await getAndRenderVariant(null, null, renderLocals, {
-      includeSubmissions: false,
-      showCorrectAnswer: document === 'answer_key',
-      // Printed copies and answer keys must reuse saved variants, including closed homework variants.
-      requireOpenVariant: false,
-      throwOnFatalError: true,
-      issuesLoadExtraData: false,
-    });
-    signal.throwIfAborted();
+    try {
+      const renderState = await getAndRenderVariant(null, null, renderLocals, {
+        includeSubmissions: false,
+        showCorrectAnswer: document === 'answer_key',
+        // Printed copies and answer keys must reuse saved variants, including closed homework variants.
+        requireOpenVariant: false,
+        throwOnFatalError: true,
+        issuesLoadExtraData: false,
+      });
+      signal.throwIfAborted();
 
-    if (renderState.variant.broken_at != null) {
+      if (renderState.variant.broken_at != null) {
+        questionResults.push({
+          ...base,
+          status: 'failed',
+          code: BROKEN_QUESTION_FAILURE_CODE,
+          stage: BROKEN_QUESTION_FAILURE_STAGE,
+          message: BROKEN_QUESTION_FAILURE_MESSAGE,
+          variantId: renderState.variant.id,
+          issueIds: renderState.issues.map((issue) => issue.id),
+        });
+        continue;
+      }
+
+      let answerHtml = renderState.answerHtml;
+      let extraHeadersHtml = renderState.extraHeadersHtml;
+      if (
+        document === 'answer_key' &&
+        printableQuestion.question.grading_method === 'Manual' &&
+        answerHtml.trim() === ''
+      ) {
+        signal.throwIfAborted();
+        const manualGradingRenderState = await getAndRenderVariant(
+          renderState.variant.id,
+          null,
+          renderLocals,
+          {
+            includeSubmissions: false,
+            showCorrectAnswer: true,
+            requireOpenVariant: false,
+            throwOnFatalError: true,
+            questionRenderContext: 'manual_grading',
+            issuesLoadExtraData: false,
+          },
+        );
+        signal.throwIfAborted();
+        answerHtml = manualGradingRenderState.answerHtml;
+        extraHeadersHtml += `\n${manualGradingRenderState.extraHeadersHtml}`;
+      }
+
+      extraHeaderHtmls.push(extraHeadersHtml);
+
+      const questionHtml = QuestionContainer({
+        resLocals: {
+          ...renderLocals,
+          ...renderState,
+          answerHtml:
+            document === 'answer_key' && answerHtml.trim() === ''
+              ? html`<p class="mb-0 text-muted">
+                  No answer key was provided for this question.
+                </p>`.toString()
+              : answerHtml,
+          issues: [],
+        },
+        questionContext: 'student_exam',
+        showFooter: false,
+      }).toString();
+
+      renderedQuestions.push({
+        namespace: `printing-iq-${printableQuestion.instance_question.id}`,
+        html: html`
+          <section
+            class="printing-question printing-question-freeform"
+            data-print-block-size="${questionBlockSizeOverrides.get(printableQuestion.question_number) ?? defaultQuestionBlockSize}"
+            data-question-number="${printableQuestion.question_number}"
+            data-question-id="${printableQuestion.question.id}"
+            data-instance-question-id="${printableQuestion.instance_question.id}"
+            aria-label="Question ${printableQuestion.question_number}"
+          >
+            ${unsafeHtml(questionHtml)}
+          </section>
+        `.toString(),
+      });
+      questionResults.push({ ...base, status: 'rendered' });
+      maxPoints += printableQuestion.assessment_question.max_points ?? 0;
+    } catch (error) {
+      signal.throwIfAborted();
+      if (!(error instanceof FatalQuestionRenderError)) throw error;
       questionResults.push({
         ...base,
         status: 'failed',
-        code: BROKEN_QUESTION_FAILURE_CODE,
-        stage: BROKEN_QUESTION_FAILURE_STAGE,
-        message: BROKEN_QUESTION_FAILURE_MESSAGE,
-        variantId: renderState.variant.id,
-        issueIds: renderState.issues.map((issue) => issue.id),
+        code: QUESTION_RENDER_FAILURE_CODE,
+        stage: 'question_render',
+        message: error.message,
+        variantId: error.variantId,
       });
-      continue;
     }
-
-    let answerHtml = renderState.answerHtml;
-    let extraHeadersHtml = renderState.extraHeadersHtml;
-    if (
-      document === 'answer_key' &&
-      printableQuestion.question.grading_method === 'Manual' &&
-      answerHtml.trim() === ''
-    ) {
-      signal.throwIfAborted();
-      const manualGradingRenderState = await getAndRenderVariant(
-        renderState.variant.id,
-        null,
-        renderLocals,
-        {
-          includeSubmissions: false,
-          showCorrectAnswer: true,
-          requireOpenVariant: false,
-          throwOnFatalError: true,
-          questionRenderContext: 'manual_grading',
-          issuesLoadExtraData: false,
-        },
-      );
-      signal.throwIfAborted();
-      answerHtml = manualGradingRenderState.answerHtml;
-      extraHeadersHtml += `\n${manualGradingRenderState.extraHeadersHtml}`;
-    }
-
-    extraHeaderHtmls.push(extraHeadersHtml);
-
-    const questionHtml = QuestionContainer({
-      resLocals: {
-        ...renderLocals,
-        ...renderState,
-        answerHtml:
-          document === 'answer_key' && answerHtml.trim() === ''
-            ? html`<p class="mb-0 text-muted">
-                No answer key was provided for this question.
-              </p>`.toString()
-            : answerHtml,
-        issues: [],
-      },
-      questionContext: 'student_exam',
-      showFooter: false,
-    }).toString();
-
-    renderedQuestions.push({
-      namespace: `printing-iq-${printableQuestion.instance_question.id}`,
-      html: html`
-        <section
-          class="printing-question printing-question-freeform"
-          data-print-block-size="${questionBlockSizeOverrides.get(printableQuestion.question_number) ?? defaultQuestionBlockSize}"
-          data-question-number="${printableQuestion.question_number}"
-          data-question-id="${printableQuestion.question.id}"
-          data-instance-question-id="${printableQuestion.instance_question.id}"
-          aria-label="Question ${printableQuestion.question_number}"
-        >
-          ${unsafeHtml(questionHtml)}
-        </section>
-      `.toString(),
-    });
-    questionResults.push({ ...base, status: 'rendered' });
-    maxPoints += printableQuestion.assessment_question.max_points ?? 0;
   }
 
   signal.throwIfAborted();
