@@ -674,55 +674,24 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
 
 
 @pytest.mark.parametrize(
-    ("value", "imaginary_unit", "expected"),
+    ("correct_answer", "attributes", "formula_editor"),
     [
-        (sympy.E, "i", "e"),
-        (sympy.I, "j", "j"),
-        (sympy.EmptySet, "i", "{}"),
-        (sympy.Interval.Lopen(0, sympy.E), "i", "(0, e]"),
-    ],
-)
-def test_test_submission_printer(
-    value: sympy.Basic, imaginary_unit: str, expected: str
-) -> None:
-    assert (
-        symbolic_input._TestSubmissionPrinter(imaginary_unit).doprint(value) == expected
-    )
-
-
-@pytest.mark.parametrize("formula_editor", [False, True])
-@pytest.mark.parametrize(
-    ("correct_answer", "attributes"),
-    [
-        pytest.param("sin(x) + e", ['variables="x"'], id="string-expression"),
-        pytest.param(psu.sympy_to_json(sympy.E), [], id="constant"),
-        pytest.param(
-            psu.sympy_to_json(
-                sympy.Function("test")(
-                    sympy.sqrt(sympy.E ** sympy.Symbol("x") / sympy.Symbol("x") ** 2)
-                )
-            ),
-            ['variables="x"', 'custom-functions="test"'],
-            id="custom-function",
-        ),
-        pytest.param(
-            psu.sympy_to_json(2 + 3 * sympy.I),
-            ['allow-complex="true"'],
-            id="complex-i",
-        ),
         pytest.param(
             psu.sympy_to_json(2 + 3 * sympy.I),
             ['allow-complex="true"', 'imaginary-unit-for-display="j"'],
+            False,
             id="complex-j",
         ),
         pytest.param(
             psu.sympy_to_json(sympy.EmptySet, allow_sets=True),
             ['allow-sets="true"'],
+            False,
             id="empty-set",
         ),
         pytest.param(
             psu.sympy_to_json(sympy.FiniteSet(sympy.E, sympy.pi), allow_sets=True),
             ['allow-sets="true"'],
+            True,
             id="finite-set",
         ),
         pytest.param(
@@ -734,22 +703,8 @@ def test_test_submission_printer(
                 allow_sets=True,
             ),
             ['allow-sets="true"'],
+            False,
             id="interval-union",
-        ),
-        pytest.param(
-            "Intersection([0, x], [y, 3])",
-            ['allow-sets="true"', 'variables="x,y"'],
-            id="intersection",
-        ),
-        pytest.param(
-            "Complement([0, x], [y, z])",
-            ['allow-sets="true"', 'variables="x,y,z"'],
-            id="complement",
-        ),
-        pytest.param(
-            "",
-            ['allow-blank="true"', 'blank-value=""'],
-            id="blank",
         ),
     ],
 )

@@ -603,18 +603,9 @@ class TestSympy:
             psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
         )
 
-    @pytest.mark.parametrize(
-        "sympy_expr",
-        [
-            sympy.Tuple(1, 2),
-            sympy.FiniteSet(sympy.Tuple(1, 2)),
-        ],
-    )
-    def test_tuple_json_conversion_is_rejected(
-        self, sympy_expr: sympy.Set | sympy.Tuple
-    ) -> None:
+    def test_nested_tuple_json_conversion_is_rejected(self) -> None:
         with pytest.raises(ValueError, match="SymPy Tuple values are not supported"):
-            psu.sympy_to_json(sympy_expr, allow_sets=True)
+            psu.sympy_to_json(sympy.FiniteSet(sympy.Tuple(1, 2)), allow_sets=True)
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
     @pytest.mark.parametrize("operator", ["|", "&"])

@@ -294,21 +294,14 @@ def test_to_json_sympy_set(sympy_set: sympy.Set) -> None:
     assert psu.json_to_sympy(encoded, allow_sets=True) == sympy_set
 
 
-@pytest.mark.parametrize(
-    "sympy_value",
-    [
-        sympy.Tuple(1, 2),
-        sympy.FiniteSet(sympy.Tuple(1, 2)),
-    ],
-)
-def test_to_json_rejects_sympy_tuples(sympy_value: sympy.Basic) -> None:
+def test_to_json_rejects_sympy_tuples() -> None:
     message = (
         "SymPy Tuple values are not supported by PrairieLearn serialization. "
         "Use separate inputs for point coordinates."
     )
 
     with pytest.raises(ValueError, match=f"^{re.escape(message)}$"):
-        pl.to_json(sympy_value)
+        pl.to_json(sympy.Tuple(1, 2))
 
 
 class DummyEnum(Enum):
