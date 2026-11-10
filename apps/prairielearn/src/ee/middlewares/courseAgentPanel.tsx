@@ -34,7 +34,7 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
   const csrfToken = (url: string) =>
     generatePrefixCsrfToken({ url, authn_user_id: authnUserId }, config.secretKey);
   res.locals.course_agent_panel = renderHtml(
-    <Hydrate>
+    <Hydrate className="d-flex">
       <CourseAgentPanel
         courseId={courseId}
         authnUserId={authnUserId}
