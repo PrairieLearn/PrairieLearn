@@ -29,6 +29,8 @@ export type QuestionRenderRequiredLocals = Pick<
   questionRenderContext?: QuestionRenderContext;
   /** Preserve scripts and canvases until browser preparation has completed. */
   deferAiGradingHtmlProcessing?: boolean;
+  /** Explain omitted canvas captures in the AI grading preview. */
+  showAiGradingCanvasPlaceholders?: boolean;
 };
 
 export interface RenderSelection {

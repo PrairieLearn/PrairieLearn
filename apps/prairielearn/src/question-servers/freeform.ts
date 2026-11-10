@@ -1057,7 +1057,9 @@ async function renderPanel({
       !locals.deferAiGradingHtmlProcessing
     ) {
       const { stripHtmlForAiGrading } = await import('../ee/lib/ai-grading/ai-grading-render.js');
-      return await stripHtmlForAiGrading(cachedData.html);
+      return await stripHtmlForAiGrading(cachedData.html, {
+        showCanvasPlaceholders: locals.showAiGradingCanvasPlaceholders && panel !== 'submission',
+      });
     }
 
     return cachedData.html;

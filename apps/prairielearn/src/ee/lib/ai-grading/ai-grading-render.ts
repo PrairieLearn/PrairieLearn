@@ -94,7 +94,10 @@ function stripBootstrapAttributes(el: Element): void {
  * This includes removing scripts/stylesheets and attributes that aren't
  * relevant to grading.
  */
-export async function stripHtmlForAiGrading(html: string) {
+export async function stripHtmlForAiGrading(
+  html: string,
+  { showCanvasPlaceholders = false }: { showCanvasPlaceholders?: boolean } = {},
+) {
   const $ = cheerio.load(html, null, false);
 
   // Remove elements that are guaranteed to be irrelevant to grading.
@@ -119,6 +122,12 @@ export async function stripHtmlForAiGrading(html: string) {
     stripStyleAttribute($, el);
     stripBootstrapAttributes(el);
   });
+
+  if (showCanvasPlaceholders) {
+    $('canvas').replaceWith(
+      '<span>Canvas drawing omitted from preview. The drawing will be included as an image during AI grading.</span>',
+    );
+  }
 
   // Remove elements that have neither text content nor images.
   $('*').each((_, el) => {

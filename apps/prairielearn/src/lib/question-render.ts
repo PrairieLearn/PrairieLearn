@@ -685,6 +685,7 @@ export async function getAndRenderVariant(
       showCorrectAnswer: showCorrectAnswer && !isAiGradingPreview,
       allowAnswerEditing: newLocals.allowAnswerEditing,
       questionRenderContext,
+      showAiGradingCanvasPlaceholders: isAiGradingPreview,
     },
     user: locals.user,
     authn_user: locals.authn_user,
@@ -845,6 +846,7 @@ export async function renderPanelsForSubmission({
   const locals = {
     urlPrefix,
     questionRenderContext,
+    showAiGradingCanvasPlaceholders: questionRenderContext === 'ai_grading',
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     ...buildLocals({
       variant,
