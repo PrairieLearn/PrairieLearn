@@ -30,14 +30,16 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
     timeout: 15_000,
   });
 
-  await expect(page.getByRole('textbox', { name: 'Matrix value' })).toHaveValue('[1 2]');
+  await expect(page.getByRole('textbox', { name: 'Matrix value', exact: true })).toHaveValue(
+    '[1,\u200b 2]',
+  );
 
-  for (const label of ['String value', 'Big O value', 'Units value', 'Matrix value']) {
+  for (const label of ['String value', 'Big O value', 'Units value', 'Valid matrix value']) {
     await expect(
       page.getByRole('button', { name: `Answer as entered for ${label}` }),
     ).toBeVisible();
   }
-  for (const label of ['Integer value', 'Number value', 'Invalid number value']) {
+  for (const label of ['Integer value', 'Number value', 'Invalid number value', 'Matrix value']) {
     await expect(page.getByRole('button', { name: `Answer as entered for ${label}` })).toHaveCount(
       0,
     );

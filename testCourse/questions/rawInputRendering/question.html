@@ -71,10 +71,19 @@
 </pl-card>
 
 <pl-card header="Matrix inputs">
-  <pl-matrix-input
-    answers-name="matrix_value"
-    aria-label="Matrix value"
-    label="Literal matrix:"
-    initial-value="[1 2]"
-  ></pl-matrix-input>
+  <div class="vstack gap-3">
+    <pl-matrix-input
+      answers-name="matrix_value"
+      aria-label="Matrix value"
+      label="Literal matrix:"
+      initial-value="[1,&#8203; 2]"
+    ></pl-matrix-input>
+
+    <pl-matrix-input
+      answers-name="valid_matrix_value"
+      aria-label="Valid matrix value"
+      label="Valid matrix:"
+      initial-value="[1 2]"
+    ></pl-matrix-input>
+  </div>
 </pl-card>
