@@ -18,7 +18,7 @@ export interface QuestionContentScope {
   relativeFilePath: string;
 }
 
-/** Called under the course lock, before invalidating the previous sync state. */
+/** Requires the course lock and the baseline loaded before its database invalidation. */
 export async function getQuestionContentScope(
   course: Course,
   filePath: string,
@@ -70,7 +70,8 @@ export async function isQuestionContentOnlyChange({
   scope: QuestionContentScope;
 }): Promise<boolean> {
   if (oldHash === newHash) return false;
-  // A metadata symlink elsewhere in the course could read the edited content file.
+  // Git mode 120000 identifies a symlink. A metadata symlink elsewhere in the
+  // course could read the edited content file, widening the scope of the edit.
   const { stdout: trackedFiles } = await execa('git', ['ls-files', '--stage', '-z', '--', '.'], {
     cwd: coursePath,
   });
