@@ -1,12 +1,14 @@
 <pl-question-panel>
   <p>
     These inputs exercise the answer-as-entered popovers used by elements in this question. Some
-    values contain characters that are also shown as codes.
+    values contain invisible or non-ASCII characters.
   </p>
   <p>
     Select <strong>Save &amp; Grade</strong>, then open each question-mark popover in the submitted
-    answer panel. When useful, the popovers show a second version with special characters displayed
-    as codes. After submitting, confirm that the literal values are restored to the input fields.
+    answer panel. The popovers label invisible characters with their Unicode code points (for
+    example, <code>&lt;U+200b&gt;</code>). When useful, they also show a second version with every
+    non-ASCII character replaced by its code point. After submitting, confirm that the literal
+    values are restored to the input fields.
   </p>
 </pl-question-panel>
 
