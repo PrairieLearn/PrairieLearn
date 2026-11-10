@@ -19,7 +19,6 @@ import {
   createScriptedClient,
   ensureSelectedDatabase,
 } from './scripts.js';
-import { realNowTimestamp } from './time.js';
 import { type JobOptions, MAX_TIMER_DELAY_MILLISECONDS, type WorkerOptions } from './types.js';
 import {
   normalizeRedisUrl,
@@ -834,7 +833,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       await this.client.ensureMinimumRedisVersion();
       const [requeued, failed] = await this.client.pmqCheckStalled(
         this.keys.base,
-        realNowTimestamp(),
+        Date.now(),
         this.stalledInterval,
       );
       for (const jobId of requeued) {

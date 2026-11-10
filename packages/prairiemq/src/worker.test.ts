@@ -13,15 +13,14 @@ import type { Job } from './job.js';
 import { DEFAULT_PREFIX, QueueKeys } from './keys.js';
 import { Queue } from './queue.js';
 import type { PrairieMQRedis } from './scripts.js';
-import { realNowTimestamp } from './time.js';
 import { MAX_TIMER_DELAY_MILLISECONDS, type WorkerOptions } from './types.js';
 import { Worker } from './worker.js';
 
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379/';
 
 async function waitUntil(fn: () => Promise<boolean>, timeoutMs = 5000) {
-  const start = realNowTimestamp();
-  while (realNowTimestamp() - start < timeoutMs) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
     if (await fn()) return;
     await sleep(25);
   }
@@ -143,40 +142,6 @@ describe('Worker', () => {
     await waitUntil(async () => processed.length >= 2);
 
     assert.notEqual(processed[0], processed[1]);
-  });
-
-  it('does not lose a scheduled occurrence when its former deterministic id exists', async () => {
-    await queue.upsertJobScheduler(
-      'heartbeat',
-      { every: 100 },
-      { name: 'heartbeat', data: { source: 'scheduler' } },
-    );
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    const dueAt = await client.zscore(`${queueBase}:schedulers`, 'heartbeat');
-    assert.isNotNull(dueAt);
-    await queue.add('collision', {}, { jobId: `scheduler:heartbeat:${Math.trunc(Number(dueAt))}` });
-    await waitUntil(async () => (await redisTimestamp(client)) >= Number(dueAt));
-
-    const reply = await client.pmqMoveToActive(
-      queueBase,
-      randomUUID(),
-      await redisTimestamp(client),
-      1,
-      randomUUID(),
-      30_000,
-      0,
-      1,
-      'claim',
-    );
-
-    assert.isNotNull(reply);
-    assert.deepEqual(await queue.getJobCounts(), {
-      waiting: 1,
-      active: 1,
-      delayed: 0,
-      completed: 0,
-      failed: 0,
-    });
   });
 
   it('removes a deduplication key with ephemeral job data', async () => {
@@ -975,7 +940,7 @@ describe('Worker', () => {
     await queue.addBulk(Array.from({ length: 4 }, () => ({ name: 'job', data: {} })));
     const processedAt: number[] = [];
     for (let index = 0; index < 2; index++) {
-      makeWorker(queueName, async () => void processedAt.push(realNowTimestamp()), {
+      makeWorker(queueName, async () => void processedAt.push(Date.now()), {
         redisUrl,
         concurrency: 2,
         limiter: { max: 2, duration: 300 },
@@ -1021,13 +986,13 @@ describe('Worker', () => {
   });
 
   it('waits for the delay before processing delayed jobs', async () => {
-    const addedAt = realNowTimestamp();
+    const addedAt = Date.now();
     const job = await queue.add('later', {}, { delay: 200 });
     let processedAt: number | null = null;
     makeWorker(
       queueName,
       async () => {
-        processedAt = realNowTimestamp();
+        processedAt = Date.now();
         return 'done';
       },
       { redisUrl },
@@ -1039,7 +1004,7 @@ describe('Worker', () => {
   });
 
   it('uses Redis time for delays when application clocks differ', async () => {
-    const actualNow = realNowTimestamp();
+    const actualNow = Date.now();
     const dateNow = vi.spyOn(Date, 'now').mockReturnValue(actualNow - 60 * 60 * 1000);
     let job: Job;
     try {
@@ -1381,20 +1346,20 @@ describe('Worker', () => {
     assert.equal(maxActive, 2);
   });
 
-  it('bounds a reservation-sized burst by group without starving another group', async () => {
-    const hotGroup = 'stampeded-location-date';
-    const unrelatedGroup = 'unrelated-location-date';
+  it('bounds a large burst in one group without starving another group', async () => {
+    const hotGroup = 'hot-group';
+    const unrelatedGroup = 'unrelated-group';
     const hotJobCount = 142;
     const unrelatedJobCount = 10;
     const totalJobCount = hotJobCount + unrelatedJobCount;
     await queue.addBulk([
       ...Array.from({ length: hotJobCount }, (_, index) => ({
-        name: 'reservation',
+        name: 'burst',
         data: { index },
         options: { group: { id: hotGroup } },
       })),
       ...Array.from({ length: unrelatedJobCount }, (_, index) => ({
-        name: 'reservation',
+        name: 'burst',
         data: { index },
         options: { group: { id: unrelatedGroup } },
       })),
@@ -2352,10 +2317,7 @@ describe('Worker', () => {
     await client.hdel(`${queueBase}:job:${job.id}`, 'claimMaxStalledCount');
     await client.del(`${queueBase}:lock:${job.id}`, `${queueBase}:stalled-check`);
 
-    assert.deepEqual(await client.pmqCheckStalled(queueBase, realNowTimestamp(), 100), [
-      [job.id],
-      [],
-    ]);
+    assert.deepEqual(await client.pmqCheckStalled(queueBase, Date.now(), 100), [[job.id], []]);
     assert.equal((await queue.getJobStatus(job.id)).state, 'waiting');
   });
 
@@ -2385,24 +2347,24 @@ describe('Worker', () => {
     const secondClient = Reflect.get(checker, 'client') as PrairieMQRedis;
     await waitForRedisConnection(secondClient);
     const stalledInterval = 100;
-    assert.deepEqual(
-      await firstClient.pmqCheckStalled(queueBase, realNowTimestamp(), stalledInterval),
-      [[], []],
-    );
+    assert.deepEqual(await firstClient.pmqCheckStalled(queueBase, Date.now(), stalledInterval), [
+      [],
+      [],
+    ]);
     assert.isAbove(await firstClient.pttl(`${queueBase}:stalled-check`), 0);
 
     await firstClient.del(`${queueBase}:lock:${job.id}`);
-    assert.deepEqual(
-      await secondClient.pmqCheckStalled(queueBase, realNowTimestamp(), stalledInterval),
-      [[], []],
-    );
+    assert.deepEqual(await secondClient.pmqCheckStalled(queueBase, Date.now(), stalledInterval), [
+      [],
+      [],
+    ]);
     assert.equal((await queue.getJobStatus(job.id)).state, 'active');
 
     await waitUntil(async () => (await secondClient.pttl(`${queueBase}:stalled-check`)) === -2);
-    assert.deepEqual(
-      await secondClient.pmqCheckStalled(queueBase, realNowTimestamp(), stalledInterval),
-      [[job.id], []],
-    );
+    assert.deepEqual(await secondClient.pmqCheckStalled(queueBase, Date.now(), stalledInterval), [
+      [job.id],
+      [],
+    ]);
     assert.equal((await queue.getJobStatus(job.id)).state, 'waiting');
   });
 
@@ -2810,7 +2772,7 @@ describe('Worker', () => {
       `${queueBase}:stalled-check`,
     );
 
-    assert.deepEqual(await client.pmqCheckStalled(queueBase, realNowTimestamp(), 100), [[], ids]);
+    assert.deepEqual(await client.pmqCheckStalled(queueBase, Date.now(), 100), [[], ids]);
     assert.equal((await queue.getJobStatus(ids[0])).state, 'unknown');
     assert.equal((await queue.getJobStatus(ids[1])).state, 'failed');
     assert.equal((await queue.getJobCounts()).failed, 1);

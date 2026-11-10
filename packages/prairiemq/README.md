@@ -2,20 +2,12 @@
 
 PrairieMQ is a Redis-backed job queue for workloads that need fair scheduling across groups. It supports per-group concurrency limits, delayed jobs, retries with fixed or exponential backoff, and recovery when a worker disappears.
 
-This package was extracted from [PrairieTest’s queue library](https://github.com/PrairieLearnInc/PrairieTest/tree/7158e029a077c03e04ffe3b77b20500824d51150/src/lib/queue). The queue implementation and its existing test coverage are preserved here as a shared library.
-
 ## Requirements
 
 - Node.js 24 or later.
 - Redis 6.2 or later.
 - A non-clustered Redis deployment. Redis Cluster is not supported.
 - Redis credentials that permit `INFO`, `TIME`, `SELECT` when using a nonzero database, `EVAL`/`EVALSHA`, `BLPOP`, `SCAN`, `UNLINK`, `MULTI`/`EXEC`, and the keyspace (`DEL`, `EXISTS`, and `PEXPIRE`), string, list, set, sorted-set, and hash commands PrairieMQ uses on its queue keys.
-
-## Migrating from PrairieTest's queue module
-
-Replace imports from PrairieTest's local `lib/queue/*` modules with imports from `@prairielearn/prairiemq`. The package also exports `createJob` for constructing jobs in tests and `MAX_TIMER_DELAY_MILLISECONDS` for validating timer settings. Import `UnrecoverableError` from the package alongside `Worker` so both use the same error class.
-
-Keep the Redis URL, queue names, prefixes, and queue and worker options unchanged. The Redis keys, stored job format, and Lua scripts are unchanged from the source revision linked above, so existing jobs do not require a data migration and workers using either implementation can share a queue. Use the application's existing graceful worker shutdown during deployment.
 
 ## Basic usage
 
@@ -104,9 +96,9 @@ Job data and results must contain only JSON values. An `undefined` processor res
 
 By default, completed and failed jobs remain in Redis. `removeOnComplete` and `removeOnFail` can remove them immediately (`true`) or keep only the most recent number of jobs. Large numeric-retention cleanups are recorded durably and continued by a running or restarted worker in fixed-size batches, even if no more jobs finish. Counts can briefly exceed the requested history size while that cleanup is pending.
 
-`priority` is an integer from `0` through `2,097,152`. Priority applies within a group; it does not bypass the round-robin scheduling between groups. For example, an email queue can use the default group to prioritize verification emails over reservation notifications.
+`priority` is an integer from `0` through `2,097,152`. Priority applies within a group; it does not bypass the round-robin scheduling between groups. For example, an email queue can use the default group to prioritize password-reset emails over digest emails.
 
-Fixed backoff repeats the configured delay. Exponential backoff doubles it after each failure, starting with the configured delay after the first failure. Retry delays are stored as Redis timestamps, so they can exceed the Node.js timer range. Exponential growth and due timestamps saturate at the largest exactly representable integer (`Number.MAX_SAFE_INTEGER`). Optional `jitter` ranges from `0` to `1` and randomizes the delay between `(1 - jitter)` times the calculated delay and the full delay. Throw `UnrecoverableError` from `@prairielearn/prairiemq` to stop retrying a permanent failure immediately.
+Fixed backoff repeats the configured delay. Exponential backoff doubles it after each failure, starting with the configured delay after the first failure. Retry delays are stored as Redis timestamps, so they can exceed the Node.js timer range. Exponential growth and due timestamps saturate at the largest exactly representable integer (`Number.MAX_SAFE_INTEGER`). Optional `jitter` ranges from `0` to `1` and randomizes the delay between `(1 - jitter)` times the calculated delay and the full delay. Throw `UnrecoverableError` from `@prairielearn/prairiemq` to stop retrying a permanent failure immediately. Import it from the package root alongside `Worker` so both use the same error class.
 
 ### Rate limiting
 
@@ -236,5 +228,7 @@ Start Redis with `make start-redis` from the repository root, then run:
 pnpm --filter @prairielearn/prairiemq... build
 pnpm --filter @prairielearn/prairiemq test
 ```
+
+Use `createJob` to construct `Job` instances when unit testing processors without Redis. `MAX_TIMER_DELAY_MILLISECONDS` is the largest value accepted for timer-backed settings such as `stalledInterval` and `limiter.duration`.
 
 The tests use unique queue names and remove only those queues’ keys. Set `REDIS_URL` to use another standalone Redis server or database. No PrairieLearn application server or PostgreSQL setup is needed.
