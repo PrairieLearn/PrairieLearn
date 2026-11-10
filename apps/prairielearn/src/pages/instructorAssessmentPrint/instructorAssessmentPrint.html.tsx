@@ -15,7 +15,7 @@ import {
   MAX_COVER_BYTES,
   MAX_COVER_FILES,
   MAX_COVER_PAGES,
-  MAX_PRINT_INSTANCES,
+  MAX_PRINT_FORMS,
 } from '../../lib/client/print-packet.js';
 import {
   DEFAULT_PRINT_SETTINGS,
@@ -29,10 +29,10 @@ import {
   capturePrintSnapshot,
   renderPrintSnapshot,
 } from '../../lib/client/print-snapshot.js';
-import type { StaffAssessmentInstance } from '../../lib/client/safe-db-types.js';
+import type { StaffPrintForm } from '../../lib/client/safe-db-types.js';
 import {
-  getAssessmentInstanceUrl,
   getCourseInstanceJobSequenceUrl,
+  getPrintFormUrl,
   getQuestionUrl,
 } from '../../lib/client/url.js';
 import type { PrintDocument } from '../../lib/printing/index.js';
@@ -58,7 +58,7 @@ interface PrintPreparationProps {
   hasRandomization: boolean;
   groupWork: boolean;
   requireHonorCode: boolean;
-  instances: StaffAssessmentInstance[];
+  forms: StaffPrintForm[];
   enrolledStudents: number;
   defaultCopies: number;
   renderingAvailable: boolean;
@@ -94,41 +94,33 @@ function PrintPreparation({
   hasRandomization,
   groupWork,
   requireHonorCode,
-  instances: initialInstances,
+  forms: initialForms,
   enrolledStudents,
   defaultCopies,
   renderingAvailable,
   docxCsrfToken,
 }: PrintPreparationProps) {
   const trpc = useTRPC();
-  const instances = useQuery(
-    trpc.printableAssessments.list.queryOptions(undefined, { initialData: initialInstances }),
+  const forms = useQuery(
+    trpc.printForms.list.queryOptions(undefined, { initialData: initialForms }),
   );
-  const [selectedInstance, setSelectedInstance] = useQueryState('instance', parseAsString);
-  const [selectedInstances, setSelectedInstances] = useQueryState(
-    'instances',
-    parseAsArrayOf(parseAsString),
-  );
-  const savedInstanceIds =
-    selectedInstances ??
-    [selectedInstance ?? initialInstances.at(0)?.id].filter((id): id is string => !!id);
-  const availableInstanceIds = [...new Set(savedInstanceIds)]
-    .filter((id) => instances.data.some((instance) => instance.id === id))
-    .slice(0, MAX_PRINT_INSTANCES);
-  const instanceIds = hasRandomization ? availableInstanceIds : availableInstanceIds.slice(0, 1);
-  const instanceId =
-    selectedInstance && instanceIds.includes(selectedInstance)
-      ? selectedInstance
-      : (instanceIds.at(0) ?? null);
-  const formLabel = String.fromCharCode(65 + Math.max(0, instanceIds.indexOf(instanceId ?? '')));
-  const [instanceSettings, setInstanceSettings] = useState<Partial<Record<string, PrintSettings>>>(
-    {},
-  );
+  const [selectedForm, setSelectedForm] = useQueryState('form', parseAsString);
+  const [selectedForms, setSelectedForms] = useQueryState('forms', parseAsArrayOf(parseAsString));
+  const savedFormIds =
+    selectedForms ?? [selectedForm ?? initialForms.at(0)?.id].filter((id): id is string => !!id);
+  const availableFormIds = [...new Set(savedFormIds)]
+    .filter((id) => forms.data.some((form) => form.id === id))
+    .slice(0, MAX_PRINT_FORMS);
+  const formIds = hasRandomization ? availableFormIds : availableFormIds.slice(0, 1);
+  const formId =
+    selectedForm && formIds.includes(selectedForm) ? selectedForm : (formIds.at(0) ?? null);
+  const formLabel = String.fromCharCode(65 + Math.max(0, formIds.indexOf(formId ?? '')));
+  const [formSettings, setFormSettings] = useState<Partial<Record<string, PrintSettings>>>({});
   const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
   const [copies, setCopies] = useState(defaultCopies);
   const [showBookletModal, setShowBookletModal] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const validInstance = instances.data.some((instance) => instance.id === instanceId);
+  const validForm = forms.data.some((form) => form.id === formId);
   const [document, setDocument] = useState<PrintDocument>('assessment');
   const defaultSettings = { ...DEFAULT_PRINT_SETTINGS, includeHonorCode: requireHonorCode };
   const [settings, setSettings] = useState<PrintSettings>(defaultSettings);
@@ -163,27 +155,24 @@ function PrintPreparation({
   const excludedQuestions = watch('excludedQuestions');
   const excludedQuestionNumbers = new Set(excludedQuestions);
   const layout = `${printLayoutSearch(settings)}&form_label=${formLabel}`;
-  const printBase = instanceId
-    ? `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: instanceId })}/print`
+  const printBase = formId
+    ? getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: formId })
     : '';
   const previewUrl = `${printBase}/preview?${layout}&document=${document}`;
   const questions = useQuery(
-    trpc.printableAssessments.questions.queryOptions(
-      { assessmentInstanceId: instanceId ?? '1' },
-      { enabled: validInstance },
-    ),
+    trpc.printForms.questions.queryOptions({ printFormId: formId ?? '1' }, { enabled: validForm }),
   );
   const create = useMutation(
-    trpc.printableAssessments.create.mutationOptions({
+    trpc.printForms.create.mutationOptions({
       onSuccess: async () => {
-        await instances.refetch();
+        await forms.refetch();
       },
     }),
   );
   const regenerate = useMutation(
-    trpc.printableAssessments.regenerate.mutationOptions({
+    trpc.printForms.regenerate.mutationOptions({
       onSuccess: async () => {
-        await instances.refetch();
+        await forms.refetch();
       },
     }),
   );
@@ -231,18 +220,16 @@ function PrintPreparation({
     }
   }
 
-  function settingsForInstance(id: string, appliedSettings = settings): PrintSettings {
+  function settingsForForm(id: string, appliedSettings = settings): PrintSettings {
     return {
       ...appliedSettings,
       identityFields: appliedSettings.includeCoverPage ? appliedSettings.identityFields : '',
       questionSizes:
-        id === instanceId
-          ? appliedSettings.questionSizes
-          : (instanceSettings[id]?.questionSizes ?? {}),
+        id === formId ? appliedSettings.questionSizes : (formSettings[id]?.questionSizes ?? {}),
       excludedQuestions:
-        id === instanceId
+        id === formId
           ? appliedSettings.excludedQuestions
-          : (instanceSettings[id]?.excludedQuestions ?? []),
+          : (formSettings[id]?.excludedQuestions ?? []),
     };
   }
 
@@ -253,10 +240,10 @@ function PrintPreparation({
     appliedSettings = settings,
   ) {
     return {
-      instances: ids.map((id) => ({
-        assessmentInstanceId: id,
-        formLabel: String.fromCharCode(65 + instanceIds.indexOf(id)),
-        settings: settingsForInstance(id, appliedSettings),
+      forms: ids.map((id) => ({
+        printFormId: id,
+        formLabel: String.fromCharCode(65 + formIds.indexOf(id)),
+        settings: settingsForForm(id, appliedSettings),
       })),
       copies: copyCount,
       document: outputDocument,
@@ -269,7 +256,7 @@ function PrintPreparation({
     appliedSettings: PrintSettings,
     printDocument: PrintDocument,
   ) {
-    const base = `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: id })}/print`;
+    const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
     const url = `${base}/preview?${printLayoutSearch(appliedSettings)}&form_label=${label}&document=${printDocument}`;
     const cached = snapshotsRef.current.get(url);
     if (cached) return cached;
@@ -294,32 +281,27 @@ function PrintPreparation({
     if (metadata.document !== 'answer_key') {
       for (const { file } of coverPages) input.append('coverPages', file);
     }
-    const snapshotRequests = metadata.instances.flatMap((instance, index) =>
+    const snapshotRequests = metadata.forms.flatMap((form, index) =>
       (metadata.document === 'booklet'
         ? (['assessment', 'answer_key'] as const)
         : ([metadata.document] as PrintDocument[])
       )
         .filter((printDocument) => printDocument !== 'assessment' || index < metadata.copies)
-        .map((printDocument) => ({ instance, printDocument })),
+        .map((printDocument) => ({ form, printDocument })),
     );
     setPdfPreparationProgress({ completed: 0, total: snapshotRequests.length });
     for (let index = 0; index < snapshotRequests.length; index += SNAPSHOT_PREPARATION_BATCH_SIZE) {
       const batch = snapshotRequests.slice(index, index + SNAPSHOT_PREPARATION_BATCH_SIZE);
       const snapshots = await Promise.all(
-        batch.map(({ instance, printDocument }) =>
-          snapshotFor(
-            instance.assessmentInstanceId,
-            instance.formLabel,
-            instance.settings,
-            printDocument,
-          ),
+        batch.map(({ form, printDocument }) =>
+          snapshotFor(form.printFormId, form.formLabel, form.settings, printDocument),
         ),
       );
       for (const [batchIndex, snapshot] of snapshots.entries()) {
-        const { instance, printDocument } = batch[batchIndex];
+        const { form, printDocument } = batch[batchIndex];
         input.append(
           'pages',
-          new File([snapshot.html], `form-${instance.formLabel}-${printDocument}.html`),
+          new File([snapshot.html], `form-${form.formLabel}-${printDocument}.html`),
         );
         input.append('snapshotIds', snapshot.id);
       }
@@ -354,12 +336,7 @@ function PrintPreparation({
   }
 
   function receivePdf(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
-    if (result.type === 'background') {
-      void setExportJobId(result.jobSequenceId);
-    } else {
-      const bytes = Uint8Array.from(atob(result.base64), (character) => character.charCodeAt(0));
-      saveDownload(new Blob([bytes], { type: 'application/pdf' }), result.filename);
-    }
+    void setExportJobId(result.jobSequenceId);
   }
 
   async function downloadPacket(
@@ -385,41 +362,39 @@ function PrintPreparation({
     setPreview(null);
   }
 
-  function switchInstance(id: string) {
-    if (id === instanceId) return;
+  function switchForm(id: string) {
+    if (id === formId) return;
 
-    void setSelectedInstance(id);
-    const next = { ...settingsForInstance(id), identityFields: settings.identityFields };
+    void setSelectedForm(id);
+    const next = { ...settingsForForm(id), identityFields: settings.identityFields };
     setSettings(next);
     reset(next);
     setSelectedQuestion(null);
     setPreview(null);
   }
 
-  async function addInstance() {
+  async function addForm() {
     const result = await create.mutateAsync();
-    void setSelectedInstances([...instanceIds, result.assessmentInstanceId]);
-    switchInstance(result.assessmentInstanceId);
+    void setSelectedForms([...formIds, result.printFormId]);
+    switchForm(result.printFormId);
   }
 
-  async function regenerateInstance(id: string) {
-    const result = await regenerate.mutateAsync({ assessmentInstanceId: id });
-    void setSelectedInstances(
-      instanceIds.map((value) => (value === id ? result.assessmentInstanceId : value)),
-    );
-    switchInstance(result.assessmentInstanceId);
+  async function regenerateForm(id: string) {
+    const result = await regenerate.mutateAsync({ printFormId: id });
+    void setSelectedForms(formIds.map((value) => (value === id ? result.printFormId : value)));
+    switchForm(result.printFormId);
   }
 
-  function removeInstance(id: string) {
-    const nextIds = instanceIds.filter((value) => value !== id);
-    void setSelectedInstances(nextIds);
-    if (id === instanceId) switchInstance(nextIds[0]);
+  function removeForm(id: string) {
+    const nextIds = formIds.filter((value) => value !== id);
+    void setSelectedForms(nextIds);
+    if (id === formId) switchForm(nextIds[0]);
   }
   const download = useMutation({
     mutationFn: async (id: string) => {
-      const label = String.fromCharCode(65 + instanceIds.indexOf(id));
-      const base = `${getAssessmentInstanceUrl({ courseInstanceId, assessmentInstanceId: id })}/print`;
-      const appliedSettings = settingsForInstance(id);
+      const label = String.fromCharCode(65 + formIds.indexOf(id));
+      const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
+      const appliedSettings = settingsForForm(id);
       const search = `${printLayoutSearch(appliedSettings)}&form_label=${label}`;
       const url = `${base}/preview?${search}&document=assessment`;
       const livePreview = previewDocumentRef.current;
@@ -486,7 +461,7 @@ function PrintPreparation({
     snapshotStale ||
     exportNeedsNewPreview;
   const canDownload =
-    validInstance &&
+    validForm &&
     !isDirty &&
     currentPreview?.status === 'ready' &&
     currentPreview.questions > 0 &&
@@ -503,7 +478,7 @@ function PrintPreparation({
     try {
       receivePdf(
         await booklet.mutateAsync(
-          await preparePdfInput(packetMetadata(instanceIds, studentCount, 'booklet'), 'booklet'),
+          await preparePdfInput(packetMetadata(formIds, studentCount, 'booklet'), 'booklet'),
         ),
       );
       setShowBookletModal(false);
@@ -529,15 +504,15 @@ function PrintPreparation({
     download.reset();
     setPdfPreparationError(null);
     try {
-      if (!instanceId) {
+      if (!formId) {
         const result = await create.mutateAsync();
-        void setSelectedInstances([result.assessmentInstanceId]);
-        void setSelectedInstance(result.assessmentInstanceId);
-        setInstanceSettings((previous) => ({ ...previous, [result.assessmentInstanceId]: values }));
+        void setSelectedForms([result.printFormId]);
+        void setSelectedForm(result.printFormId);
+        setFormSettings((previous) => ({ ...previous, [result.printFormId]: values }));
       } else if (printLayoutSearch(values) === printLayoutSearch(settings)) {
         await questions.refetch();
       }
-      if (instanceId) setInstanceSettings((previous) => ({ ...previous, [instanceId]: values }));
+      if (formId) setFormSettings((previous) => ({ ...previous, [formId]: values }));
       setSettings(values);
       reset(values);
       setRetry((value) => value + 1);
@@ -562,7 +537,7 @@ function PrintPreparation({
         onDismiss={() => create.reset()}
       />
       <AppErrorAlert
-        error={getAppError<never>(instances.error)}
+        error={getAppError<never>(forms.error)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
       <AppErrorAlert
@@ -642,7 +617,7 @@ function PrintPreparation({
           figures.
         </Alert>
       )}
-      {savedInstanceIds.some((id) => !instances.data.some((instance) => instance.id === id)) && (
+      {savedFormIds.some((id) => !forms.data.some((form) => form.id === id)) && (
         <Alert variant="danger">
           Unavailable forms were removed from the selection. Review the remaining forms or create a
           new preview.
@@ -692,17 +667,13 @@ function PrintPreparation({
               {hasRandomization && (
                 <Card className="mb-3">
                   <Card.Body>
-                    <h2 className="h6 mb-2">Assessment instances</h2>
+                    <h2 className="h6 mb-2">Print forms</h2>
                     <p className="small text-muted">
-                      Each form is a different randomized instance of this assessment. Select a form
-                      to preview it. Copies cycle through these forms in order.
+                      Each form saves its own questions and randomization. Select a form to preview
+                      it. Copies cycle through these forms in order.
                     </p>
-                    <div
-                      className="d-flex flex-column gap-2"
-                      role="group"
-                      aria-label="Assessment instances"
-                    >
-                      {instanceIds.map((id, index) => {
+                    <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
+                      {formIds.map((id, index) => {
                         const label = String.fromCharCode(65 + index);
                         return (
                           <div key={id} className="d-flex align-items-center gap-2">
@@ -710,13 +681,13 @@ function PrintPreparation({
                               type="button"
                               size="sm"
                               className="flex-grow-1 text-start"
-                              variant={id === instanceId ? 'primary' : 'outline-secondary'}
-                              aria-pressed={id === instanceId}
+                              variant={id === formId ? 'primary' : 'outline-secondary'}
+                              aria-pressed={id === formId}
                               disabled={busy || isDirty || isSubmitting || download.isPending}
-                              onClick={() => switchInstance(id)}
+                              onClick={() => switchForm(id)}
                             >
                               Form {label}
-                              {id === instanceId && <span className="float-end">Previewing</span>}
+                              {id === formId && <span className="float-end">Previewing</span>}
                             </Button>
                             <OverlayTrigger
                               placement="top"
@@ -733,7 +704,7 @@ function PrintPreparation({
                                 disabled={
                                   busy || isDirty || isSubmitting || download.isPending || groupWork
                                 }
-                                onClick={() => void regenerateInstance(id).catch(() => {})}
+                                onClick={() => void regenerateForm(id).catch(() => {})}
                               >
                                 <i className="bi bi-arrow-clockwise" aria-hidden="true" />
                               </Button>
@@ -744,13 +715,13 @@ function PrintPreparation({
                               variant="outline-secondary"
                               aria-label={`Remove Form ${label}`}
                               disabled={
-                                instanceIds.length === 1 ||
+                                formIds.length === 1 ||
                                 busy ||
                                 isDirty ||
                                 isSubmitting ||
                                 download.isPending
                               }
-                              onClick={() => removeInstance(id)}
+                              onClick={() => removeForm(id)}
                             >
                               <i className="bi bi-x-lg" aria-hidden="true" />
                             </Button>
@@ -769,12 +740,11 @@ function PrintPreparation({
                         isSubmitting ||
                         download.isPending ||
                         groupWork ||
-                        instanceIds.length >= MAX_PRINT_INSTANCES
+                        formIds.length >= MAX_PRINT_FORMS
                       }
-                      onClick={() => void addInstance().catch(() => {})}
+                      onClick={() => void addForm().catch(() => {})}
                     >
-                      <i className="bi bi-plus-lg me-2" aria-hidden="true" /> Add assessment
-                      instance
+                      <i className="bi bi-plus-lg me-2" aria-hidden="true" /> Add form
                     </Button>
                     {isDirty && (
                       <p className="small text-muted mt-2 mb-0">
@@ -962,7 +932,7 @@ function PrintPreparation({
                   )}
                 </Card.Body>
               </Card>
-              {validInstance && (
+              {validForm && (
                 <Card id="print-preparation-questions" className="mb-3">
                   <Card.Header className="bg-white d-flex flex-wrap align-items-center justify-content-between gap-3 py-3">
                     <div>
@@ -1166,8 +1136,8 @@ function PrintPreparation({
                   isSubmitting ||
                   busy ||
                   noQuestionsSelected ||
-                  (!!instanceId && !isDirty && !previewHasError) ||
-                  (groupWork && !instanceId)
+                  (!!formId && !isDirty && !previewHasError) ||
+                  (groupWork && !formId)
                 }
               >
                 {isSubmitting ? (
@@ -1178,7 +1148,7 @@ function PrintPreparation({
                 ) : (
                   <>
                     <i className="bi bi-arrow-clockwise me-2" aria-hidden="true" />
-                    {instanceId ? 'Update preview' : 'Create preview'}
+                    {formId ? 'Update preview' : 'Create preview'}
                   </>
                 )}
               </Button>
@@ -1195,12 +1165,12 @@ function PrintPreparation({
                         size="sm"
                         className="w-auto"
                         aria-label="Preview form"
-                        value={instanceId ?? ''}
-                        disabled={isDirty || instanceIds.length < 2}
-                        onChange={(event) => switchInstance(event.target.value)}
+                        value={formId ?? ''}
+                        disabled={isDirty || formIds.length < 2}
+                        onChange={(event) => switchForm(event.target.value)}
                       >
-                        {instanceIds.length === 0 && <option value="">Form A</option>}
-                        {instanceIds.map((id, index) => (
+                        {formIds.length === 0 && <option value="">Form A</option>}
+                        {formIds.map((id, index) => (
                           <option key={id} value={id}>
                             Form {String.fromCharCode(65 + index)}
                           </option>
@@ -1236,7 +1206,7 @@ function PrintPreparation({
                       {currentPreview.points} {currentPreview.points === 1 ? 'point' : 'points'}
                     </span>
                   )}
-                  {validInstance && (
+                  {validForm && (
                     <a
                       href={previewUrl}
                       target="_blank"
@@ -1254,7 +1224,7 @@ function PrintPreparation({
                   changes or download files.
                 </div>
               )}
-              {validInstance ? (
+              {validForm ? (
                 <PrintPreview
                   key={`${previewUrl}:${retry}`}
                   url={previewUrl}
@@ -1296,7 +1266,7 @@ function PrintPreparation({
                           Download
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
-                          {instanceIds.map((id, index) => {
+                          {formIds.map((id, index) => {
                             const label = String.fromCharCode(65 + index);
                             return (
                               <Fragment key={id}>
@@ -1324,15 +1294,13 @@ function PrintPreparation({
                             );
                           })}
                           <Dropdown.Divider />
-                          {instanceIds.length > 1 && (
+                          {formIds.length > 1 && (
                             <Dropdown.Item
                               disabled={!renderingAvailable}
                               onClick={() =>
-                                void downloadPacket(
-                                  instanceIds,
-                                  instanceIds.length,
-                                  'assessment',
-                                ).catch(() => {})
+                                void downloadPacket(formIds, formIds.length, 'assessment').catch(
+                                  () => {},
+                                )
                               }
                             >
                               Download all forms (PDF)
@@ -1378,7 +1346,7 @@ function PrintPreparation({
         show={showBookletModal}
         students={copies}
         enrolledStudents={enrolledStudents}
-        formLabels={instanceIds.map((_, index) => String.fromCharCode(65 + index))}
+        formLabels={formIds.map((_, index) => String.fromCharCode(65 + index))}
         pending={booklet.isPending || preparingPdf === 'booklet'}
         progress={preparingPdf === 'booklet' ? pdfPreparationProgress : null}
         error={

@@ -4,15 +4,17 @@ import type { Page } from '@playwright/test';
 import axe from 'axe-core';
 import { PDFDocument } from 'pdf-lib';
 import * as unzipper from 'unzipper';
+import { z } from 'zod';
 
-import { MAX_INLINE_PRINT_PACKET_PAGES } from '../../../lib/client/print-packet.js';
-import { selectAssessmentInstanceById } from '../../../models/assessment-instance.js';
+import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
 import { syncCourse } from '../../helperCourse.js';
 import { getOrCreateUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
 
+const sql = loadSqlEquiv(import.meta.url);
 const test = createTest({ features: { 'printable-assessments': true } });
 
 test.describe.configure({ timeout: 180_000 });
@@ -27,6 +29,24 @@ async function chooseDownload(page: Page, item: string) {
   await page.getByRole('button', { name: item, exact: true }).click();
 }
 
+async function downloadPreparedPdf(page: Page, submit: () => Promise<void>) {
+  const submitted = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/printableAssessmentExport.pdf'),
+  );
+  await submit();
+  const response = await submitted;
+  expect(response.status()).toBe(200);
+  const { result } = await response.json();
+  const jobSequenceId = result.data.json.jobSequenceId;
+  const link = page.getByRole('link', { name: /^Download / });
+  await expect(link).toHaveAttribute('href', new RegExp(`/exports/${jobSequenceId}\\.pdf$`), {
+    timeout: 120_000,
+  });
+  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
+  await link.click();
+  return await downloaded;
+}
+
 async function assessmentFor(courseInstanceId: string, tid = 'exam20-assessmentTools') {
   return await selectAssessmentByTid({ course_instance_id: courseInstanceId, tid });
 }
@@ -38,7 +58,7 @@ async function openPrintPreparation(
 ) {
   const assessment = await assessmentFor(courseInstanceId, tid);
   await page.goto(
-    `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/print_preparation?instances=`,
+    `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/print_preparation?forms=`,
   );
   return assessment;
 }
@@ -49,10 +69,20 @@ async function preparePreview(page: Page) {
 }
 
 test('recovers when creating the first preview fails', async ({ page, courseInstance }) => {
-  await page.route('**/printableAssessments.create', (route) => route.abort('failed'), {
+  await page.route('**/printForms.create', (route) => route.abort('failed'), {
     times: 1,
   });
   const assessment = await openPrintPreparation(page, courseInstance.id);
+  const attemptsBefore = await queryScalar(
+    sql.count_assessment_instances,
+    { assessment_id: assessment.id },
+    z.number(),
+  );
+  const formsBefore = await queryScalar(
+    sql.count_print_forms,
+    { assessment_id: assessment.id },
+    z.number(),
+  );
 
   const createPreview = page.getByRole('button', { name: 'Create preview', exact: true });
   await createPreview.click();
@@ -61,16 +91,16 @@ test('recovers when creating the first preview fails', async ({ page, courseInst
 
   await createPreview.click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  const instanceId = new URL(page.url()).searchParams.get('instance')!;
-  expect((await selectAssessmentInstanceById(instanceId)).for_printing).toBe(true);
-  await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-  await expect(page.locator(`a[href*="/assessment_instance/${instanceId}/"]`)).toHaveCount(0);
-  // An earlier test may have started a regular attempt, so this page can open that instead.
+  expect(
+    await queryScalar(sql.count_print_forms, { assessment_id: assessment.id }, z.number()),
+  ).toBe(formsBefore + 1);
+  expect(
+    await queryScalar(sql.count_assessment_instances, { assessment_id: assessment.id }, z.number()),
+  ).toBe(attemptsBefore);
   const assessmentPage = await page.goto(
     `/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}`,
   );
   expect(assessmentPage?.status()).toBe(200);
-  expect(page.url()).not.toContain(`/assessment_instance/${instanceId}`);
 });
 
 test('rejects a changed Word snapshot and offers a fresh preview', async ({
@@ -81,7 +111,7 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
   await preparePreview(page);
 
   await page.route(
-    '**/print/docx?*',
+    '**/print_form/*/docx?*',
     async (route) => {
       const snapshot = JSON.parse(route.request().postData()!) as {
         id: string;
@@ -107,7 +137,7 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
   await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
 
-  await page.route('**/print/preview?*', async (route) => {
+  await page.route('**/print_form/*/preview?*', async (route) => {
     if (new URL(route.request().url()).searchParams.get('document') !== 'answer_key') {
       return await route.continue();
     }
@@ -133,8 +163,8 @@ test('prepares an assessment and key with consistent variants and downloads', as
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
-  const instancesLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
+  const formsLoaded = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/printForms.list'),
   );
   await page.getByRole('button', { name: 'Print', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Paper and layout', exact: true })).toBeVisible();
@@ -142,7 +172,8 @@ test('prepares an assessment and key with consistent variants and downloads', as
     'href',
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
-  await instancesLoaded;
+  await formsLoaded;
+  await openPrintPreparation(page, courseInstance.id);
   await page.getByLabel('Additional student information').fill('Section');
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   await expect(downloadMenu(page)).toBeEnabled({
@@ -151,10 +182,10 @@ test('prepares an assessment and key with consistent variants and downloads', as
   const previewUrl = await page
     .getByTitle('Printable document preview', { exact: true })
     .getAttribute('src');
-  const form = previewUrl!.match(/\/assessment_instance\/(\d+)\/print\//)![1];
+  const form = previewUrl!.match(/\/print_form\/(\d+)\//)![1];
   const url = new URL(page.url());
-  url.searchParams.set('instances', form);
-  url.searchParams.set('instance', form);
+  url.searchParams.set('forms', form);
+  url.searchParams.set('form', form);
   await page.goto(url.href);
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   await expect(page.getByRole('button', { name: /^Form A/ })).toHaveAttribute(
@@ -186,7 +217,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
     });
   expect(pageSize.width).toBeCloseTo((210 / 25.4) * 96, 0);
   expect(pageSize.height).toBeCloseTo((297 / 25.4) * 96, 0);
-  expect(new URL(page.url()).searchParams.get('instance')).toBe(form);
+  expect(new URL(page.url()).searchParams.get('form')).toBe(form);
   await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
   await page.getByRole('button', { name: 'Update preview', exact: true }).last().click();
   await expect(downloadMenu(page)).toBeEnabled({
@@ -226,13 +257,13 @@ test('prepares an assessment and key with consistent variants and downloads', as
   await expect(frame.locator(':root')).toHaveAttribute('data-print-document', 'answer_key');
   await expect(frame.locator('.printing-question[data-question-number="1"]')).toHaveCount(0);
   await expect(frame.locator(':root')).toHaveAttribute('data-print-question-count', '1');
-  expect(new URL(page.url()).searchParams.get('instance')).toBe(form);
+  expect(new URL(page.url()).searchParams.get('form')).toBe(form);
   await page.addScriptTag({ content: axe.source });
   const { violations } = await page.evaluate(async () => await axe.run());
   expect(violations).toEqual([]);
-  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-  await chooseDownload(page, 'Download Form A answer key (PDF)');
-  const file = await downloaded;
+  const file = await downloadPreparedPdf(page, async () => {
+    await chooseDownload(page, 'Download Form A answer key (PDF)');
+  });
   expect(await file.failure()).toBeNull();
   const pdf = await PDFDocument.load(await fs.readFile(await file.path()));
   const { width, height } = pdf.getPage(0).getSize();
@@ -248,7 +279,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
     'data-print-block-size',
     'full',
   );
-  expect(new URL(page.url()).searchParams.get('instance')).toBe(form);
+  expect(new URL(page.url()).searchParams.get('form')).toBe(form);
 });
 
 test('prepares homework with matching student copies, answer keys, and Word exports', async ({
@@ -262,11 +293,12 @@ test('prepares homework with matching student copies, answer keys, and Word expo
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
-  const instancesLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
+  const formsLoaded = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/printForms.list'),
   );
   await page.getByRole('button', { name: 'Print', exact: true }).click();
-  await instancesLoaded;
+  await formsLoaded;
+  await openPrintPreparation(page, courseInstance.id, 'hw15-lockpoints');
   await page.getByLabel('Additional student information').fill('Section');
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   const downloadButton = downloadMenu(page);
@@ -331,21 +363,19 @@ test('combines assessment copies with custom covers and appends every form’s a
     .context()
     .addCookies([{ name: 'pl_test_user', value: 'test_instructor', url: baseURL }]);
 
-  const instancesLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
+  const formsLoaded = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/printForms.list'),
   );
   await openPrintPreparation(page, courseInstance.id);
-  await instancesLoaded;
+  await formsLoaded;
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
-  const originalInstanceId = new URL(page.url()).searchParams.get('instance')!;
-  const originalInstance = await selectAssessmentInstanceById(originalInstanceId);
+  const originalFormId = new URL(page.url()).searchParams.get('form')!;
+  const originalForm = await selectPrintFormById(originalFormId);
   await page.getByRole('button', { name: 'Regenerate Form A', exact: true }).click();
-  await expect
-    .poll(() => new URL(page.url()).searchParams.get('instance'))
-    .not.toBe(originalInstanceId);
+  await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(originalFormId);
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
@@ -353,10 +383,10 @@ test('combines assessment copies with custom covers and appends every form’s a
     'aria-pressed',
     'true',
   );
-  expect(await selectAssessmentInstanceById(originalInstanceId)).toEqual(originalInstance);
+  expect(await selectPrintFormById(originalFormId)).toEqual(originalForm);
 
-  const formIds = [new URL(page.url()).searchParams.get('instance')!];
-  await page.getByRole('button', { name: 'Add assessment instance', exact: true }).click();
+  const formIds = [new URL(page.url()).searchParams.get('form')!];
+  await page.getByRole('button', { name: 'Add form', exact: true }).click();
   await expect(page.getByRole('button', { name: /^Form B/ })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -364,7 +394,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
-  formIds.push(new URL(page.url()).searchParams.get('instance')!);
+  formIds.push(new URL(page.url()).searchParams.get('form')!);
   expect(new Set(formIds).size).toBe(2);
   const pageCounts: number[] = [];
   const answerKeyPageCounts: number[] = [];
@@ -380,9 +410,7 @@ test('combines assessment copies with custom covers and appends every form’s a
       'aria-pressed',
       'true',
     );
-    expect(new URL(page.url()).searchParams.get('instance')).toBe(
-      formIds[['A', 'B'].indexOf(label)],
-    );
+    expect(new URL(page.url()).searchParams.get('form')).toBe(formIds[['A', 'B'].indexOf(label)]);
     if (label === 'A') {
       await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
       await expect(
@@ -407,14 +435,9 @@ test('combines assessment copies with custom covers and appends every form’s a
     });
   }
 
-  // Every form, one copy each, before any cover pages are uploaded.
-  const allForms = page.waitForEvent('download', { timeout: 120_000 });
-  const allFormsResponse = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableAssessmentExport.pdf'),
-  );
-  await chooseDownload(page, 'Download all forms (PDF)');
-  expect((await allFormsResponse).status()).toBe(200);
-  const allFormsDownload = await allForms;
+  const allFormsDownload = await downloadPreparedPdf(page, async () => {
+    await chooseDownload(page, 'Download all forms (PDF)');
+  });
   expect(allFormsDownload.suggestedFilename()).toMatch(/assessment_2_copies\.pdf$/);
   expect(
     (await PDFDocument.load(await fs.readFile(await allFormsDownload.path()))).getPageCount(),
@@ -428,7 +451,7 @@ test('combines assessment copies with custom covers and appends every form’s a
     buffer: Buffer.from(await cover.save()),
   });
   await expect(page.getByText('extended-instructions.pdf', { exact: true })).toBeVisible();
-  expect(new URL(page.url()).searchParams.get('instances')?.split(',')).toEqual(formIds);
+  expect(new URL(page.url()).searchParams.get('forms')?.split(',')).toEqual(formIds);
   const copies = 45;
   await chooseDownload(page, 'Download booklet PDF…');
   await page.getByLabel('Number of students', { exact: true }).fill(String(copies));
@@ -443,15 +466,9 @@ test('combines assessment copies with custom covers and appends every form’s a
   ).reduce((total, count) => total + count, 0);
   const expectedPageCount =
     expectedStudentPages + answerKeyPageCounts.reduce((total, count) => total + count, 0);
-  expect(expectedPageCount).toBeGreaterThanOrEqual(MAX_INLINE_PRINT_PACKET_PAGES);
-  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-  await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
-  const preparedPdf = page.getByRole('link', {
-    name: `Download booklet PDF for ${copies} students`,
+  const download = await downloadPreparedPdf(page, async () => {
+    await page.getByRole('button', { name: 'Download booklet PDF', exact: true }).click();
   });
-  await expect(preparedPdf).toBeVisible({ timeout: 120_000 });
-  await preparedPdf.click();
-  const download = await downloaded;
   expect(await download.failure()).toBeNull();
   const packet = await PDFDocument.load(await fs.readFile(await download.path()));
   expect(packet.getPageCount()).toBe(expectedPageCount);
@@ -478,11 +495,11 @@ test('distinguishes paper review flags from broken questions omitted from the do
   page,
   courseInstance,
 }) => {
-  const instancesLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printableAssessments.list'),
+  const formsLoaded = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/printForms.list'),
   );
   await openPrintPreparation(page, courseInstance.id, 'exam23-printing');
-  await instancesLoaded;
+  await formsLoaded;
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   await expect(page.getByText('Review printability', { exact: true }).first()).toBeVisible({
     timeout: 120_000,
@@ -511,7 +528,7 @@ test('distinguishes paper review flags from broken questions omitted from the do
   });
   await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Add assessment instance', exact: true }).click();
+  await page.getByRole('button', { name: 'Add form', exact: true }).click();
   await expect(page.getByText('Omitted', { exact: true }).first()).toBeVisible({
     timeout: 120_000,
   });
@@ -547,9 +564,10 @@ test('validates a booklet count and retries a failed download', async ({
   await expect(submit).toBeEnabled();
   await page.unroute('**/printableAssessmentExport.pdf');
 
-  const downloaded = page.waitForEvent('download', { timeout: 120_000 });
-  await submit.click();
-  expect(await (await downloaded).failure()).toBeNull();
+  const downloaded = await downloadPreparedPdf(page, async () => {
+    await submit.click();
+  });
+  expect(await downloaded.failure()).toBeNull();
   await expect(downloadMenu(page)).toBeEnabled();
 });
 test('limits static assessments to one form', async ({ page, courseInstance, testCoursePath }) => {
@@ -572,12 +590,10 @@ test('limits static assessments to one form', async ({ page, courseInstance, tes
     await fs.writeFile(assessmentFile, JSON.stringify(assessmentInfo));
     await syncCourse(testCoursePath);
     await openPrintPreparation(page, courseInstance.id);
-    await expect(
-      page.getByRole('heading', { name: 'Assessment instances', exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Print forms', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Create preview', exact: true }).click();
     await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-    await page.getByRole('button', { name: 'Add assessment instance', exact: true }).click();
+    await page.getByRole('button', { name: 'Add form', exact: true }).click();
     await expect(
       page.getByRole('combobox', { name: 'Preview form', exact: true }).getByRole('option'),
     ).toHaveCount(2);
@@ -587,12 +603,8 @@ test('limits static assessments to one form', async ({ page, courseInstance, tes
     await syncCourse(testCoursePath);
     await page.reload();
     await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-    await expect(
-      page.getByRole('heading', { name: 'Assessment instances', exact: true }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByRole('button', { name: 'Add assessment instance', exact: true }),
-    ).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Print forms', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add form', exact: true })).toHaveCount(0);
     await expect(page.getByRole('combobox', { name: 'Preview form', exact: true })).toHaveCount(0);
     await downloadMenu(page).click();
     await expect(

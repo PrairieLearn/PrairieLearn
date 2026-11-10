@@ -7,7 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { MAX_PRINT_COPIES } from '../../lib/client/print-packet.js';
-import { StaffAssessmentInstanceSchema } from '../../lib/client/safe-db-types.js';
+import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { assessmentHasPrintRandomization } from '../../lib/print-preparation.js';
@@ -16,8 +16,8 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
-import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
 import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js';
+import { selectPrintFormsForUser } from '../../models/print-form.js';
 
 import { InstructorAssessmentPrint } from './instructorAssessmentPrint.html.js';
 
@@ -36,10 +36,10 @@ router.get(
       pageType: 'assessment',
       accessType: 'instructor',
     });
-    const instances = StaffAssessmentInstanceSchema.array().parse(
-      await selectAssessmentInstancesForUser({
-        assessment_id: assessment.id,
-        user_id: authz_data.user.id,
+    const forms = StaffPrintFormSchema.array().parse(
+      await selectPrintFormsForUser({
+        assessmentId: assessment.id,
+        userId: authz_data.user.id,
       }),
     );
     const studentCount = await countJoinedStudentsInCourseInstance(course_instance);
@@ -55,7 +55,7 @@ router.get(
     );
     const docxCsrfToken = generatePrefixCsrfToken(
       {
-        url: `/pl/course_instance/${course_instance.id}/instructor/assessment_instance/`,
+        url: `/pl/course_instance/${course_instance.id}/instructor/assessment/${assessment.id}/print_form/`,
         authn_user_id: authn_user.id,
       },
       config.secretKey,
@@ -76,7 +76,7 @@ router.get(
               hasRandomization={await assessmentHasPrintRandomization(assessment.id)}
               groupWork={assessment.team_work}
               requireHonorCode={!!assessment.require_honor_code}
-              instances={instances}
+              forms={forms}
               enrolledStudents={studentCount}
               defaultCopies={Math.min(MAX_PRINT_COPIES, Math.max(1, studentCount))}
               renderingAvailable={isBrowserRenderingAvailable()}

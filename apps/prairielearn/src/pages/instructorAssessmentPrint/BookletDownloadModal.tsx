@@ -91,7 +91,8 @@ export function BookletDownloadModal({
               ? `Forms ${formLabels.join(', ')} repeat in order, one complete copy per student.`
               : 'Each student receives a copy of the same form.'}{' '}
             Every copy includes your cover pages. One answer key for each form is appended at the
-            end. Print single-sided.
+            end. Print single-sided. Your PDF will be prepared in the background; download it from
+            this page when it is ready.
           </p>
         </Modal.Body>
         <Modal.Footer>

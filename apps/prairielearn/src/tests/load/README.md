@@ -2,16 +2,6 @@
 
 This runner captures a real preview and PDF export request in a browser, then replays that workflow concurrently. Use several assessment sizes so the results include both quick exports and booklet exports. It records per-request preview time, time until the export is ready, download time, response bytes, and failures. The application records render queue wait and process memory in OpenTelemetry.
 
-## Run against an isolated local server
-
-The Playwright wrapper starts an isolated PrairieLearn server, signs in with a development account, selects two assessments from the test course, and writes the results to your system temporary directory. It removes the temporary authentication files after each run.
-
-```sh
-PRINT_LOAD_USERS=10 pnpm --filter @prairielearn/prairielearn test:e2e src/tests/e2e/print-preparation-load.spec.ts
-```
-
-Set `PRINT_LOAD_BOOKLET_COPIES=75` to add a booklet export to the workload. Raise `PRINT_LOAD_USERS` gradually after checking failures and memory at each level. The Playwright test reports measurements; it does not enforce performance targets. The p50 and p95 timings only include requests that reached the measured stage, so always read them with the failure count. This isolated test course is useful for repeatable local measurements but does not represent the size of a production assessment.
-
 ## Prepare an authenticated session
 
 Start the development server, then use Playwright to sign in and save its browser state:
@@ -29,12 +19,12 @@ Close the codegen browser after signing in. Keep the storage file private: it co
   "scenarios": [
     {
       "name": "short form",
-      "url": "http://localhost:3000/pl/course_instance/1/instructor/assessment/2/print_preparation?instances=",
+      "url": "http://localhost:3000/pl/course_instance/1/instructor/assessment/2/print_preparation?forms=",
       "export": "form"
     },
     {
       "name": "75-student booklet",
-      "url": "http://localhost:3000/pl/course_instance/1/instructor/assessment/3/print_preparation?instances=",
+      "url": "http://localhost:3000/pl/course_instance/1/instructor/assessment/3/print_preparation?forms=",
       "export": "booklet",
       "copies": 75
     }
@@ -71,6 +61,5 @@ Use the following OpenTelemetry metrics alongside the result file:
 | `print.export.packet.duration`                                                 | Full PDF packet render and assembly time                                  |
 | `print.export.background.queue_wait`                                           | Time before a shared worker claimed a queued export                       |
 | `print.export.background.duration`, `print.export.background.rss`              | Background render time and worker memory                                  |
-| `print.export.path`                                                            | Inline or background exports, including why background was chosen         |
 
-Compare p95 preview time, queue wait, export time, peak memory, and failure count at each concurrency level. Background exports are stored in S3 and claimed from a shared database queue. The worker pool permits two active exports across all hosts. This local test measures one deployment shape; repeat it against a production-like Cloudflare rendering setup before treating 200 concurrent users as verified.
+Compare p95 preview time, queue wait, export time, peak memory, and failure count at each concurrency level. All PDF exports are stored in S3 and claimed from a shared database queue. The worker pool permits two active exports across all hosts. This local test measures one deployment shape; repeat it against a production-like Cloudflare rendering setup before treating 200 concurrent users as verified.
