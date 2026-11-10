@@ -121,3 +121,18 @@ WHERE
   AND deleted_at IS NULL
 RETURNING
   *;
+
+-- BLOCK sync_question_topic
+UPDATE questions AS q
+SET
+  topic_id = t.id
+FROM
+  topics AS t
+WHERE
+  q.course_id = $course_id
+  AND q.qid = $qid
+  AND q.deleted_at IS NULL
+  AND t.course_id = q.course_id
+  AND t.name = $topic
+RETURNING
+  q.*;

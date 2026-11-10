@@ -5,26 +5,42 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 
 import { contains } from '@prairielearn/path-utils';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { type Course, QuestionSchema } from '../lib/db-types.js';
+import { selectQuestionByQid, syncQuestionTitle, syncQuestionTopic } from '../models/question.js';
+import { selectTagNamesForOtherQuestions } from '../models/tags.js';
+import { selectTopicNamesForOtherQuestions } from '../models/topics.js';
+import { type CourseJson, CourseJsonSchema } from '../schemas/infoCourse.js';
 import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
 
-import { loadInfoFile } from './course-db.js';
+import { getDefaultTagsInUse, loadInfoFile } from './course-db.js';
+import { deduplicateByName } from './deduplicate.js';
+import { syncQuestionTags } from './fromDisk/tags.js';
+import { syncTopics } from './fromDisk/topics.js';
 import { CURRENT_SYNC_VERSION } from './version.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export interface QuestionSyncScope {
-  kind: 'content' | 'title';
+  kind: 'content' | 'metadata';
   qid: string;
   relativeFilePath: string;
 }
 
-export type QuestionSyncChange =
-  | (QuestionSyncScope & { kind: 'content' })
-  | (QuestionSyncScope & { kind: 'title'; title: string });
+export type QuestionSyncChange = Omit<QuestionSyncScope, 'kind'> &
+  (
+    | { kind: 'content' }
+    | { kind: 'title'; title: string }
+    | {
+        kind: 'metadata';
+        metadata: { title: string; tags: string[]; topic: string };
+        tagsChanged: boolean;
+        topicChanged: boolean;
+        courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
+      }
+  );
 
 /** Requires the course lock and the baseline loaded before its database invalidation. */
 export async function getQuestionSyncScope(
@@ -55,7 +71,7 @@ export async function getQuestionSyncScope(
   if (!question?.qid) return null;
 
   const kind =
-    relativeFilePath === path.join('questions', question.qid, 'info.json') ? 'title' : 'content';
+    relativeFilePath === path.join('questions', question.qid, 'info.json') ? 'metadata' : 'content';
 
   // Symlinked content could alias a metadata file despite a content-looking path.
   const realCoursePath = await fs.realpath(course.path);
@@ -101,8 +117,10 @@ export async function getVerifiedQuestionChange({
     filePath: scope.relativeFilePath,
   });
   if (!loaded?.data || loaded.errors.length > 0) return null;
-  const title = QuestionJsonSchema.shape.title.safeParse(loaded.data.title);
-  if (!title.success) return null;
+  const metadata = QuestionJsonSchema.pick({ title: true, tags: true, topic: true })
+    .strip()
+    .safeParse(loaded.data);
+  if (!metadata.success) return null;
 
   const { stdout: original } = await execa(
     'git',
@@ -110,8 +128,82 @@ export async function getVerifiedQuestionChange({
     { cwd: coursePath },
   );
   // The baseline guarantees that unchanged metadata has already passed full sync.
-  const { title: oldTitle, ...oldMetadata } = JSON.parse(original) as Record<string, unknown>;
-  const { title: newTitle, ...newMetadata } = loaded.data;
-  if (oldTitle === newTitle || !isDeepStrictEqual(oldMetadata, newMetadata)) return null;
-  return { ...scope, kind: 'title', title: title.data };
+  const {
+    title: oldTitle,
+    tags: oldTags,
+    topic: oldTopic,
+    ...oldMetadata
+  } = JSON.parse(original) as Record<string, unknown>;
+  const { title: newTitle, tags: newTags, topic: newTopic, ...newMetadata } = loaded.data;
+  if (!isDeepStrictEqual(oldMetadata, newMetadata)) return null;
+  const tagsChanged = !isDeepStrictEqual(oldTags, newTags);
+  const topicChanged = oldTopic !== newTopic;
+  if (!tagsChanged && !topicChanged) {
+    return oldTitle === newTitle ? null : { ...scope, kind: 'title', title: metadata.data.title };
+  }
+  const courseInfo = await loadInfoFile({ coursePath, filePath: 'infoCourse.json' });
+  if (!courseInfo?.data || courseInfo.errors.length > 0) return null;
+  const courseMetadata = CourseJsonSchema.safeParse(courseInfo.data);
+  if (!courseMetadata.success) return null;
+  return {
+    ...scope,
+    kind: 'metadata',
+    metadata: metadata.data,
+    tagsChanged,
+    topicChanged,
+    courseMetadata: courseMetadata.data,
+  };
+}
+
+/** Requires a verified baseline and the course lock; disk and chunk publication are owned by the editor. */
+export async function syncQuestionMetadata(
+  course: Course,
+  change: Extract<QuestionSyncChange, { kind: 'metadata' }>,
+) {
+  await runInTransactionAsync(async () => {
+    const question = await selectQuestionByQid({ course_id: course.id, qid: change.qid });
+    if (change.tagsChanged) {
+      const knownNames = new Set(
+        await selectTagNamesForOtherQuestions({ course_id: course.id, question_id: question.id }),
+      );
+      change.metadata.tags.forEach((name) => knownNames.add(name));
+      const courseTags = deduplicateByName(
+        change.courseMetadata.tags ?? [],
+        getDefaultTagsInUse(knownNames),
+      ).entries;
+      await syncQuestionTags({
+        courseId: course.id,
+        courseTags,
+        questionTags: [{ questionId: question.id, tags: change.metadata.tags }],
+        knownNames,
+        isInfoCourseValid: true,
+        deleteUnused: true,
+      });
+    }
+    if (change.topicChanged) {
+      const knownNames = new Set(
+        await selectTopicNamesForOtherQuestions({ course_id: course.id, question_id: question.id }),
+      );
+      knownNames.add(change.metadata.topic);
+      await syncTopics({
+        courseId: course.id,
+        courseTopics: deduplicateByName(change.courseMetadata.topics).entries,
+        knownNames,
+        isInfoCourseValid: true,
+        deleteUnused: true,
+      });
+      await syncQuestionTopic({
+        course_id: course.id,
+        qid: change.qid,
+        topic: change.metadata.topic,
+      });
+    }
+    if (question.title !== change.metadata.title) {
+      await syncQuestionTitle({
+        course_id: course.id,
+        qid: change.qid,
+        title: change.metadata.title,
+      });
+    }
+  });
 }
