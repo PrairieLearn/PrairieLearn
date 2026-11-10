@@ -28,11 +28,17 @@ export function historyBefore(history: UIMessage[], message: UIMessage | null) {
   if (index === -1) return history;
   return history.filter((entry, i) => i < index || (i > index && entry.role !== 'user'));
 }
-export const reviewTag = (reviewId: string) => `review:${reviewId}`;
 
-/** A one-line account of a review result, used in chat history markers and catch-up text. */
+/**
+ * An account of a review result, used in chat history markers and catch-up text. A denial sent
+ * as a message includes it in full, like any other user message in catch-up.
+ */
 export function summarizeReview(result: RequestChangesResult) {
-  if (result.decision === 'denied') return 'The instructor denied the submitted changes.';
+  if (result.decision === 'denied') {
+    return result.feedback
+      ? `The instructor denied the submitted changes by sending this message:\n\n${result.feedback}`
+      : 'The instructor denied the submitted changes.';
+  }
   const approved = 'The instructor approved the submitted changes';
   const sync = result.sync.status === 'failed' ? ', but the course sync failed' : '';
   switch (result.publication.status) {
@@ -60,6 +66,15 @@ export function describeReviewResult(result: RequestChangesResult, source: 'gith
   const parts = [summarizeReview(result)];
   if (result.decision === 'denied') {
     parts.push('Nothing was saved; your edits remain private to this conversation.');
+    if (result.feedback) {
+      parts.push(
+        'Respond to their message. If it asks for changes, make them and submit the revised changes for review. If it only asks a question, answer it, then submit the same changes for review again. If it says to drop the changes, do not resubmit.',
+      );
+    } else {
+      parts.push(
+        'Do not revise or resubmit on your own. Ask the instructor what they would like changed, then end your turn.',
+      );
+    }
   } else if (result.publication.status === 'published') {
     parts.push(
       'Fetch the configured origin branch and reconcile your checkout before editing again.',
