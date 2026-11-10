@@ -80,8 +80,19 @@
   transition: opacity 0.15s;
 }
 
-.course-agent-attachment:is(:hover, :focus-within) .course-agent-attachment-download {
+:is(.course-agent-attachment, .course-agent-sent-image):is(:hover, :focus-within)
+  .course-agent-attachment-download {
   opacity: 1;
+}
+
+.course-agent-sent-image {
+  max-width: 100%;
+}
+
+/* A sent image shows whole, at its own aspect ratio, within these bounds. */
+.course-agent-sent-image img {
+  max-width: 100%;
+  max-height: 20rem;
 }
 
 /* Touch screens have no hover, so they always show the remove button. */

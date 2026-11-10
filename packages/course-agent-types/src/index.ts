@@ -237,8 +237,8 @@ export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
 export const MAX_CONVERSATION_ATTACHMENT_BYTES = 200 * 1024 * 1024;
 export const MAX_CONVERSATION_ATTACHMENTS = 100;
 // The browser makes each image's chat preview, at most this many pixels on its longer side.
-export const THUMBNAIL_PIXELS = 256;
-export const MAX_THUMBNAIL_BYTES = 512 * 1024;
+export const THUMBNAIL_PIXELS = 1024;
+export const MAX_THUMBNAIL_BYTES = 1024 * 1024;
 
 export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
 

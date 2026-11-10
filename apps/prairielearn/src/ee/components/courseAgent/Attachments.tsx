@@ -112,7 +112,7 @@ function uploadFile(url: string, csrfToken: string, file: File, onProgress: (p: 
 }
 
 /**
- * A small WebP of an image for its preview in chat history, or null if the browser can't decode
+ * A reduced WebP of an image for its preview in chat history, or null if the browser can't decode
  * it (HEIC in most browsers, or a corrupt file). Browsers without WebP encoding produce a PNG.
  */
 async function makeThumbnail(file: File) {
@@ -346,6 +346,47 @@ export function DraftAttachmentList({
   );
 }
 
+/** A sent image shown whole, or as a file card if it has no preview. */
+function SentImage({
+  filename,
+  mediaType,
+  previewUrl,
+  downloadUrl,
+}: {
+  filename: string;
+  mediaType: string;
+  previewUrl: string;
+  downloadUrl: string;
+}) {
+  // Uploads from before previews existed, and images the browser couldn't decode, have none.
+  const [previewFailed, setPreviewFailed] = useState(false);
+  if (previewFailed) {
+    return (
+      <AttachmentCard
+        filename={filename}
+        mediaType={mediaType}
+        detail={typeLabel(mediaType, filename)}
+        downloadUrl={downloadUrl}
+      />
+    );
+  }
+  return (
+    <li className="course-agent-sent-image position-relative">
+      <a href={downloadUrl} download={filename} aria-label={`Download ${filename}`}>
+        <img
+          src={previewUrl}
+          alt=""
+          className="d-block rounded-3 border"
+          onError={() => setPreviewFailed(true)}
+        />
+        <span className="course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 rounded-3 d-flex align-items-center justify-content-center fs-4">
+          <i className="bi bi-download" aria-hidden="true" />
+        </span>
+      </a>
+    </li>
+  );
+}
+
 /** A sent message's attachments, shown above its text. Each one downloads when clicked. */
 export function SentAttachments({
   message,
@@ -365,16 +406,25 @@ export function SentAttachments({
       className="list-unstyled d-flex flex-wrap justify-content-end gap-2 m-0"
       aria-label="Attachments"
     >
-      {files.map(({ part, url }) => (
-        <AttachmentCard
-          key={part.url}
-          filename={part.filename ?? 'File'}
-          mediaType={part.mediaType}
-          detail={typeLabel(part.mediaType, part.filename ?? '')}
-          previewUrl={part.mediaType.startsWith('image/') ? `${url}/thumbnail` : null}
-          downloadUrl={url}
-        />
-      ))}
+      {files.map(({ part, url }) =>
+        part.mediaType.startsWith('image/') ? (
+          <SentImage
+            key={part.url}
+            filename={part.filename ?? 'Image'}
+            mediaType={part.mediaType}
+            previewUrl={`${url}/thumbnail`}
+            downloadUrl={url}
+          />
+        ) : (
+          <AttachmentCard
+            key={part.url}
+            filename={part.filename ?? 'File'}
+            mediaType={part.mediaType}
+            detail={typeLabel(part.mediaType, part.filename ?? '')}
+            downloadUrl={url}
+          />
+        ),
+      )}
     </ul>
   );
 }
