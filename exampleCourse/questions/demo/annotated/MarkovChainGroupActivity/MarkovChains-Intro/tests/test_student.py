@@ -48,12 +48,16 @@ def test_power_iteration(sandbox: StudentFixture, M: np.ndarray, x: np.ndarray) 
     assert_true(
         isinstance(value, np.ndarray), msg="Your function should return a numpy array"
     )
-
-    try:
-        np.testing.assert_allclose(
-            value, _power_iteration(M, x), rtol=1e-5, atol=1e-8, strict=True
-        )
-    except AssertionError:
-        # numpy's message includes the expected values, which would reveal the
-        # hidden test case's answer.
-        pytest.fail("The return value from your function power_iteration is inaccurate")
+    assert_true(
+        np.issubdtype(value.dtype, np.number),
+        msg="Your function should return an array of numbers",
+    )
+    expected = _power_iteration(M, x)
+    assert_true(
+        value.shape == expected.shape,
+        msg=f"Your function should return an array of shape {expected.shape}",
+    )
+    assert_true(
+        np.allclose(value, expected, rtol=1e-5, atol=1e-8),
+        msg="The return value from your function power_iteration is inaccurate",
+    )

@@ -42,11 +42,14 @@ XSTAR2 = np.linalg.matrix_power(G, 100) @ np.array([0.0, 0.0, 1.0, 0.0])
 def test_variable(sandbox: StudentFixture, name: str, expected: np.ndarray) -> None:
     value = sandbox.query(name)
     assert_true(isinstance(value, np.ndarray), msg=f"{name} should be a numpy array")
-
-    try:
-        np.testing.assert_allclose(
-            value.astype(float), expected, rtol=1e-5, atol=1e-8, strict=True
-        )
-    except (AssertionError, TypeError, ValueError):
-        # numpy's message includes the expected values, which are the answer.
-        pytest.fail(f"{name} is inaccurate")
+    assert_true(
+        np.issubdtype(value.dtype, np.number), msg=f"{name} should contain numbers"
+    )
+    assert_true(
+        value.shape == expected.shape,
+        msg=f"{name} should have shape {expected.shape}",
+    )
+    assert_true(
+        np.allclose(value, expected, rtol=1e-5, atol=1e-8),
+        msg=f"{name} is inaccurate",
+    )
