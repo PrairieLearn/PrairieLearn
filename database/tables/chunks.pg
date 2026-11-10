@@ -9,6 +9,7 @@ columns
     question_id: bigint
     size_compressed: bigint
     size_uncompressed: bigint
+    superseded_at: timestamp with time zone
     type: enum_chunk_type not null
     uuid: uuid not null
 
