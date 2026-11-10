@@ -117,6 +117,10 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
   const themeType = bootstrapThemeType();
   const additions = parsed.reduce((sum, file) => sum + file.additions, 0);
   const deletions = parsed.reduce((sum, file) => sum + file.deletions, 0);
+  // Only modified files render split, so the toggle would do nothing without one.
+  const canSplit = parsed.some(
+    ({ file, diff }) => file.change === 'modified' && diff && diff.hunks.length > 0,
+  );
 
   const jumpTo = (path: string) => {
     const section = sectionsRef.current.get(path);
@@ -156,7 +160,7 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
             ))}
           </Form.Select>
         )}
-        {wide && (
+        {wide && canSplit && (
           <ToggleButtonGroup
             type="radio"
             name={`${id}-layout`}
@@ -244,7 +248,10 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
                     }}
                   />
                 ) : (
-                  <FileNotice file={file} message="No content changes." />
+                  <FileNotice
+                    file={file}
+                    message={file.change === 'modified' ? 'No content changes.' : 'Empty file.'}
+                  />
                 )
               ) : (
                 <FileNotice
