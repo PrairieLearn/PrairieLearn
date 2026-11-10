@@ -20,7 +20,12 @@ import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
 import { ChunkSchema, QuestionSchema, type User } from '../lib/db-types.js';
 import { computeEncodedFileContentHash } from '../lib/editorUtil.js';
-import { FileModifyEditor, classifyEditOutcome } from '../lib/editors.js';
+import {
+  FileModifyEditor,
+  MultiEditor,
+  QuestionRenameEditor,
+  classifyEditOutcome,
+} from '../lib/editors.js';
 import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import {
   getCourseCommitHash,
@@ -90,16 +95,40 @@ describe('content-only question save', () => {
     });
   }
 
-  async function save(targetPath = filePath, content = '<p>Updated</p>') {
+  async function save(
+    targetPath = filePath,
+    content = '<p>Updated</p>',
+    mode: 'file' | 'settings' | 'rename' = 'file',
+  ) {
     const course = await selectCourseById(courseId);
     const previous = await fs.readFile(targetPath, 'utf8');
-    const editor = new FileModifyEditor({
-      locals: { course, user, authz_data: { has_course_permission_edit: true, authn_user: user } },
+    const locals = {
+      course,
+      user,
+      authz_data: { has_course_permission_edit: true, authn_user: user },
+    };
+    const fileEditor = new FileModifyEditor({
+      locals,
       container: { rootPath: courseDir, invalidRootPaths: [] },
       filePath: targetPath,
       editContents: b64EncodeUnicode(content),
       origHash: computeEncodedFileContentHash(b64EncodeUnicode(previous)),
     });
+    const question = await selectQuestionByQid({ course_id: courseId, qid });
+    const renameEditor = new QuestionRenameEditor({
+      locals: { ...locals, question },
+      qid_new: question.qid!,
+      title_new: mode === 'rename' ? (JSON.parse(content) as { title: string }).title : undefined,
+    });
+    const editor =
+      mode === 'settings'
+        ? new MultiEditor({ locals, description: 'Update question settings' }, [
+            fileEditor,
+            renameEditor,
+          ])
+        : mode === 'rename'
+          ? renameEditor
+          : fileEditor;
     const job = await editor.prepareServerJob();
     return {
       editor,
@@ -218,11 +247,42 @@ describe('content-only question save', () => {
     assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
   });
 
+  it.each(['settings', 'rename'] as const)(
+    'syncs a title-only %s edit without loading the course',
+    async (mode) => {
+      config.chunksGenerator = true;
+      await establishBaseline();
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      const targeted = vi.spyOn(chunks, 'updateQuestionContentChunk');
+      const before = await util.dumpTableWithSchema('questions', QuestionSchema);
+      const infoPath = path.join(path.dirname(filePath), 'info.json');
+      const info = await fs.readJson(infoPath);
+      const operation = await save(infoPath, JSON.stringify({ ...info, title: 'New title' }), mode);
+      await operation.run();
+      expect(load).not.toHaveBeenCalled();
+      expect(targeted).toHaveBeenCalledExactlyOnceWith({ coursePath: courseDir, courseId, qid });
+      assert.sameDeepMembers(
+        await util.dumpTableWithSchema('questions', QuestionSchema),
+        before.map((question) =>
+          question.qid === qid ? { ...question, title: 'New title' } : question,
+        ),
+      );
+      assert.equal(
+        (await selectCourseById(courseId)).last_successful_sync?.commitHash,
+        await getCourseCommitHash(courseDir),
+      );
+      assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
+    },
+  );
+
   it('fully syncs restored question metadata and does not establish a baseline on JSON errors', async () => {
     const jsonPath = path.join(path.dirname(filePath), 'info.json');
     const info = await fs.readJson(jsonPath);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
-    const operation = await save(jsonPath, JSON.stringify({ ...info, title: 'Changed title' }));
+    const operation = await save(
+      jsonPath,
+      JSON.stringify({ ...info, title: 'Changed title', topic: 'Changed topic' }),
+    );
     await fs.remove(jsonPath);
     await operation.run();
     expect(load).toHaveBeenCalled();
@@ -302,12 +362,19 @@ describe('content-only question save', () => {
     await establishBaseline();
     const previousCommit = (await selectCourseById(courseId)).commit_hash;
     vi.spyOn(chunks, 'updateQuestionContentChunk').mockRejectedValue(new Error('Upload failed'));
-    const operation = await save();
+    const infoPath = path.join(path.dirname(filePath), 'info.json');
+    const info = await fs.readJson(infoPath);
+    const operation = await save(
+      infoPath,
+      JSON.stringify({ ...info, title: 'New title' }),
+      'settings',
+    );
     await expect(operation.run()).rejects.toThrow('Upload failed');
     assert.equal(classifyEditOutcome((await operation.result()).data), 'sync_failed');
     const failed = await selectCourseById(courseId);
     assert.isNull(failed.last_successful_sync);
     assert.equal(failed.commit_hash, previousCommit);
+    assert.equal((await selectQuestionByQid({ course_id: courseId, qid })).title, 'New title');
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const next = await save(filePath, '<p>Another update</p>');
     await next.run();

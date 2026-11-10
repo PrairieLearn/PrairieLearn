@@ -110,3 +110,14 @@ WHERE
   AND q.deleted_at IS NULL
   AND a.deleted_at IS NULL
   AND aq.deleted_at IS NULL;
+
+-- BLOCK sync_question_title
+UPDATE questions
+SET
+  title = $title
+WHERE
+  course_id = $course_id
+  AND qid = $qid
+  AND deleted_at IS NULL
+RETURNING
+  *;

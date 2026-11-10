@@ -177,3 +177,16 @@ export async function selectQuestionsForCourseInstanceCopy(
   });
   return questions;
 }
+
+/** Syncs a verified title-only change without reconciling other question metadata. */
+export async function syncQuestionTitle({
+  course_id,
+  qid,
+  title,
+}: {
+  course_id: string;
+  qid: string;
+  title: string;
+}): Promise<Question> {
+  return await queryRow(sql.sync_question_title, { course_id, qid, title }, QuestionSchema);
+}
