@@ -140,7 +140,24 @@ export async function getReview(
 }
 
 /** Repeated decisions must agree with the first; the unique review row makes the first win. */
-function matchDecision(review: CourseAgentReview, decision: 'approved' | 'denied') {
+function matchDecision(
+  review: CourseAgentReview,
+  decision: 'approved' | 'denied',
+  feedback: string | undefined,
+) {
+  if (feedback !== undefined) {
+    // A repeated submission of the same message (a double submit or a retry) already denied it.
+    const recorded =
+      review.result === null ? null : RequestChangesResultSchema.parse(review.result);
+    if (recorded?.feedback === feedback) return { decision };
+    // Any other message must reach the agent, so it cannot merge into an earlier decision.
+    throw new HttpStatusError(
+      409,
+      review.decision === 'approved'
+        ? 'These changes were already approved, so your message was not sent. Send it again once the course agent continues.'
+        : 'These changes were already denied, so your message was not sent. Send it again once the course agent continues.',
+    );
+  }
   if (review.decision !== decision) {
     throw new HttpStatusError(409, 'This review already has a different decision.');
   }
@@ -154,6 +171,7 @@ export async function postReviewDecision({
   authzData,
   reviewId,
   decision,
+  feedback,
 }: {
   course: Pick<Course, 'id'>;
   conversation: CourseAgentConversation;
@@ -161,21 +179,26 @@ export async function postReviewDecision({
   authzData: { has_course_permission_edit: boolean; authn_user: Pick<User, 'id'> };
   reviewId: string;
   decision: 'approved' | 'denied';
+  /** A chat message sent while the review was pending, which denies it. */
+  feedback?: string;
 }) {
   const key = { course_agent_conversation_id: conversation.id, agent_review_id: reviewId };
   const existing = await selectOptionalCourseAgentReview(key);
-  if (existing) return matchDecision(existing, decision);
+  if (existing) return matchDecision(existing, decision, feedback);
   const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
   if (!review) throw new HttpStatusError(409, 'This review is no longer pending.');
   if (decision === 'denied') {
+    const result = feedback === undefined ? DENIED : { ...DENIED, feedback };
     const row = await insertCourseAgentReview({
       ...key,
       decision,
       job_sequence_id: null,
-      result: DENIED,
+      result,
     });
-    if (!row) return matchDecision((await selectOptionalCourseAgentReview(key))!, decision);
-    await deliverResult(conversation, row, DENIED);
+    if (!row) {
+      return matchDecision((await selectOptionalCourseAgentReview(key))!, decision, feedback);
+    }
+    await deliverResult(conversation, row, result);
     return { decision };
   }
   const course = await selectCourseById(courseContext.id);
@@ -210,7 +233,7 @@ export async function postReviewDecision({
     await serverJob.executeUnsafe(async (job) => {
       job.stop('Another decision for this review was recorded first.');
     });
-    return matchDecision((await selectOptionalCourseAgentReview(key))!, decision);
+    return matchDecision((await selectOptionalCourseAgentReview(key))!, decision, undefined);
   }
   void applyChanges(editor, serverJob, course, conversation, row, review);
   return { decision };

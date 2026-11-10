@@ -9,6 +9,8 @@ import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 
+import { UserMessage } from './UserMessage.js';
+
 export function RequestChangesCard({
   conversationId,
   reviewId,
@@ -247,4 +249,21 @@ function ReviewResult({ result }: { result: RequestChangesResult }) {
       )}
     </div>
   );
+}
+
+/** A message sent in place of a decision denies the review; it shows as the instructor's reply. */
+export function ReviewFeedback({
+  conversationId,
+  reviewId,
+}: {
+  conversationId: string;
+  reviewId: string;
+}) {
+  const trpc = useTRPC();
+  const review = useQuery({
+    ...trpc.courseAgent.getReview.queryOptions({ conversationId, reviewId }),
+    retry: false,
+  });
+  const feedback = review.data?.status === 'decided' ? review.data.result?.feedback : undefined;
+  return feedback ? <UserMessage text={feedback} /> : null;
 }
