@@ -100,6 +100,17 @@ const SubmissionInfoSchema = z.object({
  */
 const MAX_RECENT_SUBMISSIONS = 3;
 
+export class FatalQuestionRenderError extends Error {
+  constructor(
+    message: string,
+    readonly variantId: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = 'FatalQuestionRenderError';
+  }
+}
+
 /**
  * Renders the HTML for a variant.
  *
@@ -172,9 +183,11 @@ async function render({
   );
   const fatalIssue = courseIssues.find((issue) => issue.fatal);
   if (throwOnFatalError && fatalIssue) {
-    throw new Error(`Question ${question.qid ?? question.id} could not be rendered.`, {
-      cause: fatalIssue,
-    });
+    throw new FatalQuestionRenderError(
+      `Question ${question.qid ?? question.id} could not be rendered.`,
+      variant.id,
+      { cause: fatalIssue },
+    );
   }
   return data;
 }

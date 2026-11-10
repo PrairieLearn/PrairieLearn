@@ -241,7 +241,7 @@ test('preserves literal dollar patterns in Word exports', async ({
   }
 });
 
-test('refuses incomplete question and answer-key renders and recovers after a correction', async ({
+test('omits failed question and answer-key renders and recovers after a correction', async ({
   page,
   courseInstance,
   testCoursePath,
@@ -256,13 +256,33 @@ test('refuses incomplete question and answer-key renders and recovers after a co
         `${original}\n\ndef render(data, html):\n    if data["panel"] == "${panel}":\n        raise Exception("Deliberately broken printable render")\n    return html\n`,
       );
       await syncCourse(testCoursePath);
-      const assessment = await page.request.get(`${printUrl}/preview?paper_size=Letter`);
-      expect(assessment.status()).toBe(panel === 'question' ? 500 : 200);
-      const answerKey = await page.request.get(
-        `${printUrl}/preview?paper_size=Letter&document=answer_key`,
+      const assessment = await page.goto(`${printUrl}/preview?paper_size=Letter`);
+      expect(assessment!.status()).toBe(200);
+      await waitForPrintablePage(page);
+      expect((await readWarnings(page)).map((warning) => warning.code)).toEqual(
+        panel === 'question' ? ['render_error'] : [],
       );
-      expect(answerKey.status()).toBe(500);
-      expect(await answerKey.text()).toContain('could not be rendered.');
+
+      const query = 'paper_size=Letter&document=answer_key';
+      const answerKey = await page.goto(`${printUrl}/preview?${query}`);
+      expect(answerKey!.status()).toBe(200);
+      await waitForPrintablePage(page);
+      const warnings = await readWarnings(page);
+      expect(warnings).toEqual([
+        expect.objectContaining({ code: 'render_error', qid: 'addNumbers' }),
+      ]);
+      await expect(page.getByText('Consider two numbers')).toHaveCount(0);
+
+      const incomplete = await downloadPrintableWord(page, printUrl, query);
+      expect(incomplete.status()).toBe(400);
+      expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
+
+      const selectedQuery = `${query}&exclude_question=${warnings[0].question_number}`;
+      await page.goto(`${printUrl}/preview?${selectedQuery}`);
+      await waitForPrintablePage(page);
+      expect(await readWarnings(page)).toEqual([]);
+      const selectedDocument = await downloadPrintableWord(page, printUrl, selectedQuery);
+      expect(selectedDocument.status()).toBe(200);
     }
   } finally {
     await fs.writeFile(serverPath, original);
@@ -270,5 +290,12 @@ test('refuses incomplete question and answer-key renders and recovers after a co
   }
   await page.goto(`${printUrl}/preview?paper_size=Letter&document=answer_key`);
   await waitForPrintablePage(page);
+  expect(await readWarnings(page)).toEqual([]);
   await expect(page.getByText('Consider two numbers')).toBeVisible();
+  const recovered = await downloadPrintableWord(
+    page,
+    printUrl,
+    'paper_size=Letter&document=answer_key',
+  );
+  expect(recovered.status()).toBe(200);
 });

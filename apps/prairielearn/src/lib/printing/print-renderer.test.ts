@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/unbound-method -- The browser harness methods are Vitest spies passed to expect. */
 import {
   type Browser,
   type BrowserContext,
@@ -946,6 +945,85 @@ describe('PrintRenderer', () => {
 
     expect(await failure).toMatchObject({ message: 'The print renderer has been closed' });
     expect(playwrightMocks.launch).not.toHaveBeenCalled();
+  });
+
+  it('bounds shutdown when the browser does not finish closing', async () => {
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer();
+    await renderPdf(renderer, { url: 'http://localhost:3000/print', timeoutMs: 0 });
+    vi.mocked(harness.browser.close).mockImplementation(
+      async () => await new Promise<void>(() => undefined),
+    );
+    vi.useFakeTimers();
+
+    try {
+      const settled = vi.fn();
+      const closing = renderer.close().then(settled);
+      await vi.advanceTimersByTimeAsync(4999);
+      expect(settled).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await closing;
+      expect(harness.browser.close).toHaveBeenCalledOnce();
+      expect(settled).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('bounds shutdown while a browser connection is pending', async () => {
+    createBrowserHarness();
+    playwrightMocks.launch.mockImplementation(
+      async () => await new Promise<Browser>(() => undefined),
+    );
+    const controller = new AbortController();
+    const renderer = new PrintRenderer();
+    const render = renderPdf(renderer, {
+      url: 'http://localhost:3000/print',
+      timeoutMs: 0,
+      signal: controller.signal,
+    });
+    const failure = render.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(playwrightMocks.launch).toHaveBeenCalledOnce());
+    vi.useFakeTimers();
+
+    try {
+      const closing = renderer.close();
+      await vi.advanceTimersByTimeAsync(5000);
+      await closing;
+    } finally {
+      controller.abort(new Error('Request aborted'));
+      await failure;
+      vi.useRealTimers();
+    }
+  });
+
+  it('closes a browser that connects after the shutdown grace period', async () => {
+    const gate = createGate();
+    const harness = createBrowserHarness();
+    playwrightMocks.launch.mockImplementation(async () => {
+      await gate.opened;
+      return harness.browser;
+    });
+    const renderer = new PrintRenderer();
+    const render = renderPdf(renderer, { url: 'http://localhost:3000/print', timeoutMs: 0 });
+    const failure = render.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(playwrightMocks.launch).toHaveBeenCalledOnce());
+    vi.useFakeTimers();
+
+    try {
+      const closing = renderer.close();
+      await vi.advanceTimersByTimeAsync(5000);
+      await closing;
+      gate.open();
+      expect(await failure).toMatchObject({ message: 'The print renderer has been closed' });
+      expect(harness.browser.close).toHaveBeenCalledOnce();
+      expect(harness.browser.newContext).not.toHaveBeenCalled();
+      await renderer.close();
+      expect(harness.browser.close).toHaveBeenCalledOnce();
+    } finally {
+      gate.open();
+      vi.useRealTimers();
+    }
   });
 
   it('rejects missing and unsuccessful page responses', async () => {
