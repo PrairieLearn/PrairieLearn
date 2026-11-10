@@ -211,7 +211,7 @@ router.get(
   '/preview',
   selectAndAuthzAssessmentInstance,
   typedAsyncHandler<'assessment-instance'>(async (req, res) => {
-    await withPrintRequest(res, async ({ signal, remainingTimeoutMs }) => {
+    await withPrintRequest(res, async ({ signal, remainingTimeoutMs, throwIfAborted }) => {
       const query = parseRequestQuery(req, DocumentQuerySchema);
       const layout = parsePrintLayout(query);
       const { document } = query;
@@ -233,7 +233,7 @@ router.get(
         excludedQuestionNumbers: layout.excludedQuestionNumbers,
         document,
       });
-      signal.throwIfAborted();
+      throwIfAborted();
       if (printingResult.questionHtmls.length === 0) {
         throw new HttpStatusError(
           422,
@@ -265,6 +265,7 @@ router.get(
         req.originalUrl,
         `${config.serverType}://localhost:${config.serverPort}`,
       );
+      throwIfAborted();
       const { html, source } = await getPrintRenderer().render<{
         html: string;
         source: DocxSource;
@@ -296,7 +297,7 @@ router.get(
           },
         },
       );
-      remainingTimeoutMs();
+      throwIfAborted();
       PrintSnapshotSchema.shape.source.parse(source);
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader(
@@ -319,7 +320,7 @@ router.post(
   selectAndAuthzAssessmentInstance,
   parseDocxBody,
   typedAsyncHandler<'assessment-instance'>(async (req, res) => {
-    await withPrintRequest(res, async ({ signal, remainingTimeoutMs }) => {
+    await withPrintRequest(res, async ({ signal, remainingTimeoutMs, throwIfAborted }) => {
       const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
       const layout = parsePrintLayout(query);
       const { document } = query;
@@ -336,7 +337,7 @@ router.post(
         layout.questionBlockSizeOverrides,
         layout.excludedQuestionNumbers,
       );
-      signal.throwIfAborted();
+      throwIfAborted();
       const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
       const footerLabel = getPrintFooterLabel({
         document,
@@ -400,7 +401,7 @@ router.post(
         res.locals.assessment_instance.id,
         layout.excludedQuestionNumbers,
       );
-      signal.throwIfAborted();
+      throwIfAborted();
       const contents = await getPrintRenderer().render(
         {
           url: localPreviewUrl.href,
@@ -419,7 +420,7 @@ router.post(
               formLabel: globalThis.document.documentElement.dataset.printFormLabel,
               paperSize: globalThis.document.documentElement.dataset.printPaperSize,
             }));
-            signal.throwIfAborted();
+            throwIfAborted();
             if (
               identity.document !== document ||
               identity.formLabel !== (layout.formLabel ?? '') ||
@@ -431,12 +432,12 @@ router.post(
               );
             }
             await validatePrintDocument(page);
-            signal.throwIfAborted();
+            throwIfAborted();
             return await output.produce(page);
           },
         },
       );
-      remainingTimeoutMs();
+      throwIfAborted();
 
       const filename =
         assessmentFilenamePrefix(

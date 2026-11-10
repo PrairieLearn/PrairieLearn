@@ -25,7 +25,11 @@ export async function stopPrintRequests(): Promise<void> {
 /** Shares one deadline across preparation and rendering, including time spent in either queue. */
 export async function withPrintRequest(
   res: Response,
-  callback: (request: { signal: AbortSignal; remainingTimeoutMs: () => number }) => Promise<void>,
+  callback: (request: {
+    signal: AbortSignal;
+    remainingTimeoutMs: () => number;
+    throwIfAborted: () => void;
+  }) => Promise<void>,
 ): Promise<void> {
   if (!acceptingPrintRequests) {
     throw new HttpStatusError(503, 'Printing is shutting down. Try again shortly.');
@@ -38,11 +42,11 @@ export async function withPrintRequest(
     'Printing took too long. Try again or select fewer questions.',
   );
   const timeout = setTimeout(() => controller.abort(timeoutError), PRINT_REQUEST_TIMEOUT_MS);
-  const remainingTimeoutMs = () => {
-    const remaining = deadline - Date.now();
-    if (remaining <= 0) controller.abort(timeoutError);
+  // A zero timeout disables the renderer's deadline.
+  const remainingTimeoutMs = () => Math.max(1, deadline - Date.now());
+  const throwIfAborted = () => {
+    if (Date.now() >= deadline) controller.abort(timeoutError);
     signal.throwIfAborted();
-    return remaining;
   };
   const { promise: aborted, reject } = withResolvers<never>();
   const onAbort = () => reject(signal.reason);
@@ -56,8 +60,8 @@ export async function withPrintRequest(
   if (res.destroyed) onClose();
 
   const work = async () => {
-    remainingTimeoutMs();
-    await callback({ signal, remainingTimeoutMs });
+    throwIfAborted();
+    await callback({ signal, remainingTimeoutMs, throwIfAborted });
   };
   const pendingWork = work().finally(() => {
     activePrintRequests.delete(controller);
