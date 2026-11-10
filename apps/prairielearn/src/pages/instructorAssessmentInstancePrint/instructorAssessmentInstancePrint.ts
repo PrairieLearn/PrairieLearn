@@ -20,7 +20,6 @@ import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
 import {
   PRINT_DOCUMENTS,
-  type PrintDocument,
   describeOmittedQuestions,
   getPrintRenderer,
   getPrintableInstanceQuestionIds,
@@ -172,30 +171,6 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
     questionBlockSizeOverrides,
     excludedQuestionNumbers,
   };
-}
-
-function buildPrintSearchParams(layout: PrintLayout, document: PrintDocument): URLSearchParams {
-  const params = new URLSearchParams({ paper_size: layout.paperSize });
-  if (!layout.includeCoverPage) params.set('include_cover', 'false');
-  if (layout.includeGradingTable) params.set('grading_table', 'true');
-  if (layout.includeHonorCode !== undefined) {
-    params.set('include_honor_code', String(layout.includeHonorCode));
-  }
-  if (layout.formLabel) params.set('form_label', layout.formLabel);
-  for (const identityField of layout.identityFields) params.append('identity_field', identityField);
-  if (layout.blockSize) params.set('block_size', layout.blockSize);
-  for (const [questionNumber, blockSize] of layout.questionBlockSizeOverrides) {
-    params.append('question_block_size', `${questionNumber}:${blockSize}`);
-  }
-  for (const questionNumber of layout.excludedQuestionNumbers) {
-    params.append('exclude_question', questionNumber);
-  }
-  if (document !== 'assessment') params.set('document', document);
-  return params;
-}
-
-function printUrl(baseUrl: string, route: string, layout: PrintLayout, document: PrintDocument) {
-  return `${baseUrl}/${route}?${buildPrintSearchParams(layout, document)}`;
 }
 
 function getCoverHtml(resLocals: ResLocalsForPage<'assessment-instance'>) {
@@ -417,7 +392,7 @@ router.post(
         throw new HttpStatusError(400, 'The printable pages contain executable content.');
       }
       const localPreviewUrl = new URL(
-        printUrl(req.baseUrl, 'preview', layout, document),
+        `${req.baseUrl}/preview`,
         `${config.serverType}://localhost:${config.serverPort}`,
       );
       const output = createDocxOutput({
