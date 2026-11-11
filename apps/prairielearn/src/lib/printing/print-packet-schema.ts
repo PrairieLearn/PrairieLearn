@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { PrintIdentityFieldsTextSchema } from '../client/printing/print-cover.js';
 import { MAX_PRINT_COPIES, MAX_PRINT_FORMS } from '../client/printing/print-packet.js';
-import { PrintIdentityFieldsTextSchema } from '../client/printing/print-preparation.js';
 
 import { PAPER_SIZES } from './pdf-output.js';
 import { QUESTION_BLOCK_SIZES } from './question-block-size.js';
 
 const QuestionNumberSchema = z.string().min(1);
-export const PrintSettingsSchema = z.strictObject({
+const PrintSettingsSchema = z.strictObject({
   paperSize: z.enum(PAPER_SIZES),
   includeCoverPage: z.boolean().default(true),
   includeGradingTable: z.boolean().default(false),

@@ -29,6 +29,8 @@ export type ConversationState = ConversationLifecycle & {
   sandboxLost: boolean;
   /** A review whose outcome the agent has not yet received. New messages wait for it. */
   reviewId: string | null;
+  /** Generated from the first message; PrairieLearn shows its own fallback until then. */
+  title: string | null;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
@@ -235,3 +237,22 @@ export const ToolCallSchema = z
   );
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
+
+/**
+ * Input the agent requested from staff with Codex's `request_user_input_async`, in a
+ * `data-input-request` part keyed by the Codex item ID. The tool returns at once; staff's next
+ * message is the answer, so the part holds no answer and is never rewritten.
+ */
+export const InputRequestPartSchema = z.object({
+  v: z.literal(1),
+  itemId: z.string(),
+  prompts: z.array(
+    z.object({
+      title: z.string(),
+      /** Suggested answers, recommended first. The instructor can always write their own. */
+      options: z.array(z.string()).nullable(),
+    }),
+  ),
+});
+
+export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;

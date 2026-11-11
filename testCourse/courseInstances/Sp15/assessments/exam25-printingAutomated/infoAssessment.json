@@ -7,6 +7,7 @@
   "comment": "A few questions with the controls the printing tests check. exam23-printing covers every question type for manual testing.",
   "shuffleQuestions": false,
   "autoClose": false,
+  "text": "<p>Answer every question in the space provided. Show your work, since partial credit depends on it.</p><p>Write clearly; answers that cannot be read will not receive credit.</p><p>Calculators are allowed, but phones and notes must stay in your bag for the whole exam.</p><p>If a question seems ambiguous, state your assumptions and answer the question as you understand it.</p><p>Raise your hand if you need more paper. Do not detach any pages from this booklet.</p><p>When you finish, check that your name appears on every page before handing in your exam.</p>",
   "accessControl": [
     {
       "dateControl": {
