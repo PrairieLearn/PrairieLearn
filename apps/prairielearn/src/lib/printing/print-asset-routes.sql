@@ -1,4 +1,18 @@
--- BLOCK select_print_instance_question
+-- BLOCK select_print_variant
+SELECT
+  v.*
+FROM
+  print_form_questions AS pfq
+  JOIN variants AS v ON v.id = pfq.variant_id
+WHERE
+  pfq.id = $print_form_question_id
+  AND pfq.print_form_id = $print_form_id
+  AND v.id = $variant_id
+  AND v.instance_question_id IS NULL
+  AND v.question_id = $question_id
+  AND v.course_id = $course_id;
+
+-- BLOCK select_ai_grading_instance_question
 SELECT
   to_jsonb(iq.*) AS instance_question,
   to_jsonb(q.*) AS question
@@ -11,9 +25,9 @@ WHERE
   AND iq.assessment_instance_id = $assessment_instance_id
   AND aq.assessment_id = $assessment_id;
 
--- BLOCK select_print_variant
+-- BLOCK select_ai_grading_variant
 SELECT
-  to_jsonb(v.*) AS variant
+  v.*
 FROM
   variants AS v
 WHERE

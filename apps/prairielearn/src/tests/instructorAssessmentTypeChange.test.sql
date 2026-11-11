@@ -16,8 +16,7 @@ INSERT INTO
     max_points,
     points,
     score_perc,
-    open,
-    for_printing
+    open
   )
 VALUES
   (
@@ -28,8 +27,7 @@ VALUES
     100,
     0,
     0,
-    true,
-    $for_printing
+    true
   );
 
 -- BLOCK delete_dummy_instances

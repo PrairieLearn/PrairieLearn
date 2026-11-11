@@ -68,7 +68,6 @@ WITH
         type,
         description,
         status,
-        finish_date,
         legacy
       )
     SELECT
@@ -80,11 +79,7 @@ WITH
       $authn_user_id,
       'print_export',
       $description,
-      $status::enum_job_status,
-      CASE
-        WHEN $status = 'Success' THEN CURRENT_TIMESTAMP
-        ELSE NULL
-      END,
+      'Running'::enum_job_status,
       FALSE
     FROM
       job_sequences AS js
@@ -107,7 +102,6 @@ WITH
         type,
         description,
         status,
-        finish_date,
         data
       )
     SELECT
@@ -121,142 +115,59 @@ WITH
       $authn_user_id,
       'print_export',
       $description,
-      $status::enum_job_status,
-      CASE
-        WHEN $status = 'Success' THEN CURRENT_TIMESTAMP
-        ELSE NULL
-      END,
+      'Running'::enum_job_status,
       $data::jsonb
     FROM
       new_job_sequence
-  )
-SELECT
-  id AS job_sequence_id
-FROM
-  new_job_sequence;
-
--- BLOCK lock_print_export_queue
-SELECT
-  pg_advisory_xact_lock(2, 0);
-
--- BLOCK fail_exhausted_print_exports
-WITH
-  failed AS (
-    UPDATE jobs AS j
-    SET
-      status = 'Error',
-      finish_date = CURRENT_TIMESTAMP,
-      data = jsonb_build_object(
-        'inputKey',
-        j.data ->> 'inputKey',
-        'failureMessage',
-        'The export stopped repeatedly while rendering. Try fewer forms or contact support.'
-      ),
-      output = 'Print export worker lease expired three times'
-    WHERE
-      j.type = 'print_export'
-      AND j.status = 'Running'
-      AND j.data ? 'inputKey'
-      AND coalesce((j.data ->> 'attempts')::integer, 0) >= 3
-      AND (j.data ->> 'leaseUntil')::timestamptz <= CURRENT_TIMESTAMP
     RETURNING
-      j.id,
-      j.job_sequence_id,
-      j.data ->> 'inputKey' AS input_key
-  ),
-  updated_job_sequences AS (
-    UPDATE job_sequences AS js
-    SET
-      status = 'Error',
-      finish_date = CURRENT_TIMESTAMP
-    FROM
-      failed
-    WHERE
-      js.id = failed.job_sequence_id
-      AND js.status = 'Running'
+      id
   )
 SELECT
-  id,
-  input_key
+  new_job_sequence.id AS job_sequence_id,
+  job.id AS job_id
 FROM
-  failed;
+  new_job_sequence,
+  job;
 
--- BLOCK claim_print_exports
-WITH
-  active AS (
-    SELECT
-      count(*) AS count
-    FROM
-      jobs
-    WHERE
-      type = 'print_export'
-      AND status = 'Running'
-      AND data ? 'leaseOwner'
-      AND (data ->> 'leaseUntil')::timestamptz > CURRENT_TIMESTAMP
-  ),
-  pending AS (
-    SELECT
-      j.id
-    FROM
-      jobs AS j
-    WHERE
-      j.type = 'print_export'
-      AND j.status = 'Running'
-      AND j.data ? 'inputKey'
-      AND (
-        NOT (j.data ? 'leaseUntil')
-        OR (j.data ->> 'leaseUntil')::timestamptz <= CURRENT_TIMESTAMP
-      )
-    ORDER BY
-      j.id
-    LIMIT
-      greatest(
-        0,
-        $limit::integer - (
-          SELECT
-            count
-          FROM
-            active
-        )
-      )
-    FOR UPDATE OF
-      j SKIP LOCKED
-  )
+-- BLOCK select_pending_print_exports
+SELECT
+  j.id,
+  j.data ->> 'format' AS format
+FROM
+  jobs AS j
+WHERE
+  j.id > $after_id
+  AND j.type = 'print_export'
+  AND j.status = 'Running'
+  AND j.data ? 'inputKey'
+ORDER BY
+  j.id
+LIMIT
+  100;
+
+-- BLOCK claim_print_export_job
 UPDATE jobs AS j
 SET
   data = j.data || jsonb_build_object(
-    'leaseOwner',
+    'runOwner',
     $owner::text,
-    'leaseUntil',
-    (CURRENT_TIMESTAMP + INTERVAL '5 minutes')::text,
     'attempts',
     coalesce((j.data ->> 'attempts')::integer, 0) + 1
   ),
   heartbeat_at = CURRENT_TIMESTAMP
-FROM
-  pending
 WHERE
-  j.id = pending.id
+  j.id = $job_id
+  AND j.type = 'print_export'
+  AND j.status = 'Running'
+  AND j.data ? 'inputKey'
 RETURNING
   j.id,
   j.job_sequence_id,
   j.start_date AS queued_at,
   j.data ->> 'inputKey' AS input_key,
-  j.data ->> 'document' AS document;
-
--- BLOCK renew_print_export_lease
-UPDATE jobs
-SET
-  data = jsonb_set(
-    data,
-    '{leaseUntil}',
-    to_jsonb((CURRENT_TIMESTAMP + INTERVAL '5 minutes')::text)
-  ),
-  heartbeat_at = CURRENT_TIMESTAMP
-WHERE
-  id = $job_id
-  AND status = 'Running'
-  AND data ->> 'leaseOwner' = $owner;
+  j.data ->> 'document' AS document,
+  j.data ->> 'format' AS format,
+  (j.data ->> 'attempts')::integer AS attempts;
 
 -- BLOCK finish_print_export_job
 UPDATE jobs
@@ -269,7 +180,7 @@ SET
 WHERE
   id = $job_id
   AND status = 'Running'
-  AND data ->> 'leaseOwner' = $owner;
+  AND data ->> 'runOwner' = $owner;
 
 -- BLOCK finish_print_export_sequence
 UPDATE job_sequences

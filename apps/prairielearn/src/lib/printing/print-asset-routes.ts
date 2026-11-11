@@ -4,11 +4,14 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
 import { selectAssessmentById } from '../../models/assessment.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
+import { selectOptionalPrintFormQuestion } from '../../models/print-form-question.js';
+import { selectOptionalPrintForm } from '../../models/print-form.js';
 import clientFilesAssessment from '../../pages/clientFilesAssessment/clientFilesAssessment.js';
 import clientFilesCourse from '../../pages/clientFilesCourse/clientFilesCourse.js';
 import clientFilesCourseInstance from '../../pages/clientFilesCourseInstance/clientFilesCourseInstance.js';
@@ -29,11 +32,70 @@ import {
 } from './print-asset-access.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const PrintInstanceQuestionSchema = z.object({
+const QuestionParamsSchema = z.object({ print_form_question_id: IdSchema });
+const GeneratedFileParamsSchema = z.object({ variant_id: IdSchema, 0: z.string().min(1) });
+const AiGradingInstanceQuestionSchema = z.object({
   instance_question: InstanceQuestionSchema,
   question: QuestionSchema,
 });
-const PrintVariantSchema = z.object({ variant: VariantSchema });
+
+/** Shares saved-variant asset access between authenticated previews and scoped renderer requests. */
+export function createPrintFormQuestionAssetRouter() {
+  const router = Router({ mergeParams: true });
+  router.use(
+    asyncHandler(async (req, res, next) => {
+      const { print_form_question_id: printFormQuestionId } = parseRequestParams(
+        req,
+        QuestionParamsSchema,
+      );
+      const row = await selectOptionalPrintFormQuestion({
+        printFormId: res.locals.print_form.id,
+        printFormQuestionId,
+      });
+      if (!row) throw new HttpStatusError(403, 'Print asset access denied');
+      res.locals.print_form_question = row.print_form_question;
+      res.locals.question = row.question;
+      res.setHeader('Cache-Control', 'private, no-store');
+      next();
+    }),
+  );
+  router.use('/clientFilesCourse', clientFilesCourse);
+  router.use('/clientFilesQuestion', clientFilesQuestion());
+  router.get(
+    '/generatedFilesQuestion/variant/:variant_id(\\d+)/*',
+    asyncHandler(async (req, res) => {
+      const { variant_id: variantId, 0: filename } = parseRequestParams(
+        req,
+        GeneratedFileParamsSchema,
+      );
+      const variant = await sqldb.queryOptionalRow(
+        sql.select_print_variant,
+        {
+          variant_id: variantId,
+          print_form_question_id: res.locals.print_form_question.id,
+          print_form_id: res.locals.print_form.id,
+          question_id: res.locals.question.id,
+          course_id: res.locals.course.id,
+        },
+        VariantSchema,
+      );
+      if (!variant) throw new HttpStatusError(403, 'Print asset access denied');
+      const scope = res.locals.printAssetScope;
+      const contents = await getDynamicFile({
+        filename,
+        variant,
+        submission: null,
+        question: res.locals.question,
+        variant_course: res.locals.course,
+        user_id: scope?.userId ?? res.locals.user.id,
+        authn_user_id: scope?.authnUserId ?? res.locals.authn_user.id,
+      });
+      res.attachment(filename);
+      res.send(contents);
+    }),
+  );
+  return router;
+}
 
 export function applyPrintAssetRoutes(app: Express): void {
   const router = Router();
@@ -50,13 +112,9 @@ export function applyPrintAssetRoutes(app: Express): void {
         return next('router');
       }
 
-      const assessmentInstance = await selectAssessmentInstanceById(scope.assessmentInstanceId);
       const assessment = await selectAssessmentById(scope.assessmentId);
       const courseInstance = await selectCourseInstanceById(scope.courseInstanceId);
-      if (
-        !idsEqual(assessmentInstance.assessment_id, assessment.id) ||
-        !idsEqual(assessment.course_instance_id, courseInstance.id)
-      ) {
+      if (!idsEqual(assessment.course_instance_id, courseInstance.id)) {
         throw new HttpStatusError(403, 'Print asset access denied');
       }
       const course = await selectCourseById(courseInstance.course_id);
@@ -75,61 +133,76 @@ export function applyPrintAssetRoutes(app: Express): void {
       res.locals.course = course;
       res.locals.course_instance = courseInstance;
       res.locals.assessment = assessment;
-      res.locals.assessment_instance = assessmentInstance;
-
-      if (route.type === 'question') {
-        const row = await sqldb.queryOptionalRow(
-          sql.select_print_instance_question,
-          {
-            instance_question_id: route.instanceQuestionId,
-            assessment_instance_id: scope.assessmentInstanceId,
-            assessment_id: scope.assessmentId,
-          },
-          PrintInstanceQuestionSchema,
-        );
-        if (!row) throw new HttpStatusError(403, 'Print asset access denied');
-        res.locals.instance_question = row.instance_question;
-        res.locals.question = row.question;
+      if (scope.purpose === 'ai_grading') {
+        const assessmentInstance = await selectAssessmentInstanceById(scope.assessmentInstanceId);
+        if (!idsEqual(assessmentInstance.assessment_id, assessment.id)) {
+          throw new HttpStatusError(403, 'Print asset access denied');
+        }
+        res.locals.assessment_instance = assessmentInstance;
+        if (route.type === 'instance_question') {
+          const row = await sqldb.queryOptionalRow(
+            sql.select_ai_grading_instance_question,
+            {
+              instance_question_id: route.instanceQuestionId,
+              assessment_instance_id: scope.assessmentInstanceId,
+              assessment_id: scope.assessmentId,
+            },
+            AiGradingInstanceQuestionSchema,
+          );
+          if (!row) throw new HttpStatusError(403, 'Print asset access denied');
+          res.locals.instance_question = row.instance_question;
+          res.locals.question = row.question;
+        }
+      } else {
+        const printForm = await selectOptionalPrintForm({
+          printFormId: scope.printFormId,
+          assessmentId: scope.assessmentId,
+          userId: scope.userId,
+        });
+        if (!printForm) throw new HttpStatusError(403, 'Print asset access denied');
+        res.locals.print_form = printForm;
       }
-
-      res.setHeader('Cache-Control', 'private, no-store');
       res.locals.printAssetScope = scope;
+      res.setHeader('Cache-Control', 'private, no-store');
       next();
     }),
   );
 
   const instructor = '/pl/course_instance/:course_instance_id(\\d+)/instructor';
   const assessment = `${instructor}/assessment/:assessment_id(\\d+)`;
-  const question = `${instructor}/instance_question/:instance_question_id(\\d+)`;
-
+  const question = `${assessment}/print_form/:print_form_id(\\d+)/question/:print_form_question_id(\\d+)`;
   router.use(`${assessment}/clientFilesAssessment`, clientFilesAssessment);
   router.use(`${assessment}/clientFilesCourse`, clientFilesCourse);
   router.use(`${assessment}/clientFilesCourseInstance`, clientFilesCourseInstance);
   router.use(`${instructor}/clientFilesCourse`, clientFilesCourse);
   router.use(`${instructor}/clientFilesCourseInstance`, clientFilesCourseInstance);
-  router.use(`${question}/clientFilesCourse`, clientFilesCourse);
-  router.use(`${question}/clientFilesQuestion`, clientFilesQuestion());
+  router.use(question, createPrintFormQuestionAssetRouter());
 
-  const generatedFiles = Router({ mergeParams: true });
-  generatedFiles.get(
-    '/variant/:variant_id(\\d+)/*',
+  const instanceQuestion = `${instructor}/instance_question/:instance_question_id(\\d+)`;
+  router.use(`${instanceQuestion}/clientFilesCourse`, clientFilesCourse);
+  router.use(`${instanceQuestion}/clientFilesQuestion`, clientFilesQuestion());
+  router.get(
+    `${instanceQuestion}/generatedFilesQuestion/variant/:variant_id(\\d+)/*`,
     asyncHandler(async (req, res) => {
-      const scope = res.locals.printAssetScope;
-      const row = await sqldb.queryOptionalRow(
-        sql.select_print_variant,
+      const { variant_id: variantId, 0: filename } = parseRequestParams(
+        req,
+        GeneratedFileParamsSchema,
+      );
+      const variant = await sqldb.queryOptionalRow(
+        sql.select_ai_grading_variant,
         {
-          variant_id: req.params.variant_id,
+          variant_id: variantId,
           instance_question_id: res.locals.instance_question.id,
           question_id: res.locals.question.id,
           course_id: res.locals.course.id,
         },
-        PrintVariantSchema,
+        VariantSchema,
       );
-      if (!row) throw new HttpStatusError(403, 'Print asset access denied');
-      const filename = req.params[0];
+      if (!variant) throw new HttpStatusError(403, 'Print asset access denied');
+      const scope = res.locals.printAssetScope;
       const contents = await getDynamicFile({
         filename,
-        variant: row.variant,
+        variant,
         submission: null,
         question: res.locals.question,
         variant_course: res.locals.course,
@@ -140,7 +213,6 @@ export function applyPrintAssetRoutes(app: Express): void {
       res.send(contents);
     }),
   );
-  router.use(`${question}/generatedFilesQuestion`, generatedFiles);
 
   router.use(
     '/pl/static/elements',

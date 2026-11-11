@@ -23,7 +23,7 @@ export async function prepareCanvasHtmlForAiGrading({
   panelHtml: string;
   extraHeadersHtml: string;
   urlPrefix: string;
-  assetScope: PrintAssetScope;
+  assetScope: Omit<Extract<PrintAssetScope, { purpose: 'ai_grading' }>, 'purpose'>;
 }): Promise<string> {
   if (!panelHtml.trim() || !/<(?:canvas|script)\b/i.test(panelHtml + extraHeadersHtml)) {
     return await stripHtmlForAiGrading(panelHtml);

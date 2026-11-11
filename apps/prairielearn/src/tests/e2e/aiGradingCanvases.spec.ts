@@ -20,15 +20,14 @@ import { closePrintRenderer } from '../../lib/printing/index.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
-import { createTest, expect } from './fixtures.js';
-
-const test = createTest({ isEnterprise: true });
+import { expect, test } from './fixtures.js';
 
 // Browser startup and MathJax initialization can exceed the default test timeout.
 test.describe.configure({ timeout: 120_000 });
 
 test.beforeAll(async () => {
   config.devMode = true;
+  config.compiledAssetsDevMode = false;
   await init();
 });
 

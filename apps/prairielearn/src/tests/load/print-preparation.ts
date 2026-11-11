@@ -85,7 +85,7 @@ async function captureScenario(
   const page = await context.newPage();
   const previews: Promise<CapturedRequest>[] = [];
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.endsWith('/print/preview')) {
+    if (/\/print_form\/\d+\/preview$/.test(new URL(request.url()).pathname)) {
       previews.push(capturedRequest(request));
     }
   });
@@ -203,11 +203,6 @@ async function runUser(
     });
     const body = await drain(response);
     if (!response.ok) throw new Error(`Export returned HTTP ${response.status}`);
-    if (body.prefix.includes('"type":"inline"')) {
-      result.exportMs = performance.now() - exportStarted;
-      result.bytes = body.bytes;
-      return result;
-    }
     const data = trpcData(body.prefix);
     const jobSequenceId = z.string().parse(data.jobSequenceId);
     result.jobSequenceId = jobSequenceId;

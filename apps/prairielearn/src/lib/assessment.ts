@@ -100,7 +100,6 @@ export function renderText(
  * @param params.time_limit_min - The time limit for the new assessment instance.
  * @param params.date - The date of creation for the new assessment instance.
  * @param params.client_fingerprint_id - The client fingerprint ID.
- * @param params.forPrinting - Create an independent instructor print instance without changing student attempt limits.
  * @returns The ID of the new assessment instance.
  */
 export async function makeAssessmentInstance({
@@ -111,7 +110,6 @@ export async function makeAssessmentInstance({
   time_limit_min,
   date,
   client_fingerprint_id,
-  forPrinting = false,
 }: {
   assessment: Assessment;
   user_id: string;
@@ -120,7 +118,6 @@ export async function makeAssessmentInstance({
   time_limit_min: number | null;
   date: Date;
   client_fingerprint_id: string | null;
-  forPrinting?: boolean;
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
     let group_id: string | null = null;
@@ -131,14 +128,6 @@ export async function makeAssessmentInstance({
       }
     }
 
-    // Ordinary and printable instances share the same number sequence. Lock the
-    // owner before allocating a number, without blocking assessment foreign keys.
-    // Bulk callers must visit owners in a consistent order within their transaction.
-    await sqldb.execute(sql.lock_assessment_instance_number, {
-      assessment_id: assessment.id,
-      group_id,
-      user_id,
-    });
     const { assessment_instance_id, created } = await sqldb.queryRow(
       sql.insert_assessment_instance,
       {
@@ -150,7 +139,6 @@ export async function makeAssessmentInstance({
         date,
         client_fingerprint_id,
         authn_user_id,
-        for_printing: forPrinting,
       },
       z.object({ assessment_instance_id: IdSchema, created: z.boolean() }),
     );
@@ -649,19 +637,6 @@ export async function deleteAllAssessmentInstancesForAssessment(
     assessment_id,
     authn_user_id,
     assessment_instance_ids,
-    for_printing_only: false,
-  });
-}
-
-export async function deletePrintableAssessmentInstancesForAssessment(
-  assessment_id: string,
-  authn_user_id: string,
-): Promise<void> {
-  await sqldb.execute(sql.delete_all_assessment_instances_for_assessment, {
-    assessment_id,
-    authn_user_id,
-    assessment_instance_ids: null,
-    for_printing_only: true,
   });
 }
 

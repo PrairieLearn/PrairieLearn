@@ -13,25 +13,31 @@ import { requirePrintableAssessments } from '../../middlewares/requirePrintableA
 
 const router = Router();
 router.use(requirePrintableAssessments);
-const ParamsSchema = z.object({ jobSequenceId: IdSchema });
+const ParamsSchema = z.object({ jobSequenceId: IdSchema, format: z.enum(['pdf', 'docx']) });
 
 router.get(
-  '/:jobSequenceId.pdf',
+  '/:jobSequenceId.:format',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_preview'],
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const { jobSequenceId } = parseRequestParams(req, ParamsSchema);
+    const { jobSequenceId, format } = parseRequestParams(req, ParamsSchema);
     const job = await selectPrintExportJob({
       jobSequenceId,
       assessmentId: res.locals.assessment.id,
       authnUserId: res.locals.authn_user.id,
     });
-    if (!job?.result) throw new HttpStatusError(404, 'PDF not found or no longer available');
+    if (!job?.result || job.result.format !== format) {
+      throw new HttpStatusError(404, 'Export not found or no longer available');
+    }
     const stream = await getPrintExportStream(job.result.key);
     res.setHeader('Cache-Control', 'private, no-store');
-    res.type('application/pdf');
+    res.type(
+      format === 'docx'
+        ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        : 'application/pdf',
+    );
     res.attachment(job.result.filename);
     await pipeline(stream, res);
   }),

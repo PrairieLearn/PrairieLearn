@@ -248,7 +248,7 @@ FROM
   jobs AS j
 WHERE
   j.status = 'Running'
-  -- Print exports recover through their persisted input and expiring lease.
+  -- Print exports recover through their persisted input and queue reconciliation.
   AND j.type IS DISTINCT FROM 'print_export'
   AND j.heartbeat_at < (
     CURRENT_TIMESTAMP - make_interval(secs => $timeout_secs)

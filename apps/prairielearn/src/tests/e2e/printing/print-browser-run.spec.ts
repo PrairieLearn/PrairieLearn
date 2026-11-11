@@ -1,42 +1,21 @@
-import { makeAssessmentInstance } from '../../../lib/assessment.js';
-import { getPrintableInstanceQuestionIds } from '../../../lib/printing/index.js';
+import { getPrintableFormQuestionIds } from '../../../lib/printing/index.js';
 import { PrintRenderer } from '../../../lib/printing/print-renderer.js';
-import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { waitForPrintablePage } from './utils.js';
+import { createPrintableForm, waitForPrintablePage } from './utils.js';
 
 const cloudflareAccountId = process.env.CF_ACCOUNT_ID;
 const cloudflareApiToken = process.env.CF_API_TOKEN;
 const browserOrigin = 'https://example.com';
-const test = createTest(
-  cloudflareAccountId && cloudflareApiToken
-    ? {
-        features: { 'printable-assessments': true },
-        printingCloudflareAccountId: cloudflareAccountId,
-        printingCloudflareApiToken: cloudflareApiToken,
-        serverCanonicalHost: browserOrigin,
-      }
-    : { features: { 'printable-assessments': true } },
-);
+const test = createTest({ features: { 'printable-assessments': true } });
 
 test('loads course assets in the rendering browser', async ({ page, courseInstance }) => {
   const user = await getConfiguredUser();
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid: 'exam20-assessmentTools',
-  });
-  const assessmentInstanceId = await makeAssessmentInstance({
-    assessment,
-    user_id: user.id,
-    authn_user_id: user.id,
-    mode: 'Public',
-    time_limit_min: null,
-    date: new Date(),
-    client_fingerprint_id: null,
-  });
-  const printUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}/print`;
+  const { printForm, printUrl } = await createPrintableForm(
+    courseInstance,
+    'exam20-assessmentTools',
+  );
   await page.goto(`${printUrl}/preview?paper_size=Letter`);
   await waitForPrintablePage(page);
 
@@ -49,9 +28,9 @@ test('loads course assets in the rendering browser', async ({ page, courseInstan
   try {
     const assetScope = {
       courseInstanceId: courseInstance.id,
-      assessmentId: assessment.id,
-      assessmentInstanceId,
-      instanceQuestionIds: await getPrintableInstanceQuestionIds(assessmentInstanceId, new Set()),
+      assessmentId: printForm.assessment_id,
+      printFormId: printForm.id,
+      printFormQuestionIds: await getPrintableFormQuestionIds(printForm.id, new Set()),
       authnUserId: user.id,
       userId: user.id,
     };

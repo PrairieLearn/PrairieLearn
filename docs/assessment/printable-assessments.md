@@ -2,7 +2,7 @@
 
 With course preview permission, you can prepare paper copies of an existing exam or homework assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. You can also preview and download answer keys.
 
-For assessments with randomization, you can prepare several versions, called _forms_. Each form has its own questions and matching answer key. Printable forms are not currently supported for group assessments.
+For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its own question selection, randomized values, and matching answer key. Creating or regenerating a print form does not start or change a student attempt. Printable forms are not currently supported for group assessments.
 
 ## Prepare an assessment
 
@@ -30,7 +30,7 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add assessment instance** to create another form. You can prepare up to 26 forms, labeled A through Z. Assessments without randomization use a single form.
+If your assessment uses randomization, select **Add form** to create another form. You can prepare up to 26 forms, labeled A through Z. Assessments without randomization use a single form.
 
 Select a form to review it and choose its questions and spacing. Apply any changes with **Update preview** before switching to another form.
 
@@ -71,7 +71,7 @@ If a download says the preview has expired or changed, select **Update preview**
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-Larger PDFs are prepared in the background. Keep the page open or save its URL so you can return to the download link. The link is available for 24 hours after the PDF is ready.
+PDF and Word files are prepared in the background. Keep the page open or save its URL so you can return to the download link. The link is available for 24 hours after the file is ready.
 
 ### Print copies for a class
 

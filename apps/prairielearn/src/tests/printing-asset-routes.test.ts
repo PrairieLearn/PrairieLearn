@@ -1,16 +1,64 @@
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
+import { makeAssessmentInstance } from '../lib/assessment.js';
+import { getPrintFormUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { createPrintForm } from '../lib/print-forms.js';
 import {
   PRINT_ASSET_TOKEN_HEADER,
   beginPrintAssetAccess,
 } from '../lib/printing/print-asset-access.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectUserByUid } from '../models/user.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
+import { selectPrintFormQuestions } from '../models/print-form-question.js';
 
-import { fetchCheerio, parseAssessmentInstanceId } from './helperClient.js';
+import { fetchCheerio, parseInstanceQuestionId } from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { getConfiguredUser, getOrCreateUser } from './utils/auth.js';
+import { withConfig } from './utils/config.js';
+
+async function createAssetForm() {
+  const courseInstance = await selectCourseInstanceById('1');
+  const course = await selectCourseById(courseInstance.course_id);
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'hw11-variantAccess',
+  });
+  const user = await getConfiguredUser();
+  const form = await createPrintForm({
+    assessment,
+    course,
+    courseInstance,
+    userId: user.id,
+    authnUserId: user.id,
+  });
+  const [row] = await selectPrintFormQuestions(form.id);
+  const scope = {
+    courseInstanceId: courseInstance.id,
+    assessmentId: assessment.id,
+    printFormId: form.id,
+    printFormQuestionIds: [row.print_form_question.id],
+    authnUserId: user.id,
+    userId: user.id,
+  };
+  const { token } = beginPrintAssetAccess(scope, config.secretKey);
+  const siteUrl = `http://localhost:${config.serverPort}`;
+  const formUrl =
+    siteUrl +
+    getPrintFormUrl({
+      courseInstanceId: courseInstance.id,
+      assessmentId: assessment.id,
+      printFormId: form.id,
+    });
+  return {
+    scope,
+    row,
+    formUrl,
+    headers: { [PRINT_ASSET_TOKEN_HEADER]: token, Accept: 'application/json' },
+  };
+}
 
 describe('Print asset routes', () => {
   beforeAll(async () => {
@@ -20,52 +68,180 @@ describe('Print asset routes', () => {
   afterAll(helperServer.after);
 
   it('serves scoped assets without a session and refuses unrelated instructor paths', async () => {
-    const siteUrl = `http://localhost:${config.serverPort}`;
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: '1',
-      tid: 'exam1-automaticTestSuite',
-    });
-    const user = await selectUserByUid('dev@example.com');
-    const assessmentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}/`;
-    const page = await fetchCheerio(assessmentUrl);
-    const csrfToken = page.$('form input[name="__csrf_token"]').val();
-    assert(typeof csrfToken === 'string');
-    const started = await fetch(assessmentUrl, {
-      method: 'POST',
-      body: new URLSearchParams({ __action: 'new_instance', __csrf_token: csrfToken }),
-    });
-    assert.equal(started.status, 200);
-    const assessmentInstanceId = String(parseAssessmentInstanceId(started.url));
-    const { token } = beginPrintAssetAccess(
-      {
-        courseInstanceId: '1',
-        assessmentId: assessment.id,
-        assessmentInstanceId,
-        instanceQuestionIds: [],
-        authnUserId: user.id,
-        userId: user.id,
-      },
-      config.secretKey,
-    );
-    const headers = { [PRINT_ASSET_TOKEN_HEADER]: token, Accept: 'application/json' };
-
+    const { scope, formUrl, row, headers } = await createAssetForm();
     const asset = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/clientFilesCourse/data.txt`,
+      `${formUrl}/question/${row.print_form_question.id}/clientFilesCourse/data.txt`,
       { headers },
     );
     assert.equal(asset.status, 200);
     assert.equal(await asset.text(), 'This data is specific to the course.');
 
-    const instructorPage = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/questions`,
-      { headers },
+    const assessmentUrl = `http://localhost:${config.serverPort}/pl/course_instance/1/instructor/assessment/${scope.assessmentId}`;
+    const assessmentAsset = await fetch(`${assessmentUrl}/clientFilesCourse/data.txt`, { headers });
+    assert.equal(assessmentAsset.status, 200);
+    assert.equal((await fetch(`${assessmentUrl}/questions`, { headers })).status, 403);
+    assert.equal((await fetch(`${formUrl}/preview?paper_size=Letter`, { headers })).status, 403);
+    assert.equal(
+      (
+        await fetch(
+          `${assessmentUrl.replace(`/assessment/${scope.assessmentId}`, '/assessment/999999999')}/clientFilesCourse/data.txt`,
+          { headers },
+        )
+      ).status,
+      403,
     );
-    assert.equal(instructorPage.status, 403);
+    const owner = await getOrCreateUser({
+      uid: 'other-print-owner@example.com',
+      name: 'Other print owner',
+      uin: 'other-print-owner',
+    });
+    const { token } = beginPrintAssetAccess({ ...scope, userId: owner.id }, config.secretKey);
+    assert.equal(
+      (
+        await fetch(`${assessmentUrl}/clientFilesCourse/data.txt`, {
+          headers: { [PRINT_ASSET_TOKEN_HEADER]: token },
+        })
+      ).status,
+      403,
+    );
+  });
 
-    const otherAssessmentAsset = await fetch(
-      `${siteUrl}/pl/course_instance/1/instructor/assessment/999999999/clientFilesCourse/data.txt`,
-      { headers },
+  it('binds generated assets to the saved form question and variant', async () => {
+    const first = await createAssetForm();
+    const second = await createAssetForm();
+    const questionUrl = `${first.formUrl}/question/${first.row.print_form_question.id}`;
+    const generatedUrl = `${questionUrl}/generatedFilesQuestion/variant/${first.row.print_form_question.variant_id}/file.txt`;
+    const asset = await fetch(generatedUrl, { headers: first.headers });
+    assert.equal(asset.status, 200);
+    assert.equal(await asset.text(), 'This data is generated by code.');
+    const authenticatedAsset = await fetch(generatedUrl);
+    assert.equal(authenticatedAsset.status, 200);
+    assert.equal(await authenticatedAsset.text(), 'This data is generated by code.');
+    assert.equal(
+      (
+        await fetch(
+          generatedUrl.replace(
+            `/variant/${first.row.print_form_question.variant_id}/`,
+            `/variant/${second.row.print_form_question.variant_id}/`,
+          ),
+          { headers: first.headers },
+        )
+      ).status,
+      403,
     );
-    assert.equal(otherAssessmentAsset.status, 403);
+    assert.equal(
+      (
+        await fetch(
+          `${first.formUrl}/question/${second.row.print_form_question.id}/clientFilesCourse/data.txt`,
+          { headers: first.headers },
+        )
+      ).status,
+      403,
+    );
+  });
+
+  it('refuses scoped assets after the printing feature is disabled', async () => {
+    const { formUrl, row, headers } = await createAssetForm();
+    await features.disable('printable-assessments');
+    try {
+      const response = await fetch(
+        `${formUrl}/question/${row.print_form_question.id}/clientFilesCourse/data.txt`,
+        { headers },
+      );
+      assert.equal(response.status, 403);
+    } finally {
+      await features.enable('printable-assessments');
+    }
+  });
+
+  it('serves AI grading assets without a print form and binds generated files to the instance question', async () => {
+    const printForm = await createAssetForm();
+    const user = await getConfiguredUser();
+    const assessmentInstanceId = await makeAssessmentInstance({
+      assessment: await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'hw11-variantAccess',
+      }),
+      user_id: user.id,
+      authn_user_id: user.id,
+      mode: 'Public',
+      time_limit_min: null,
+      date: new Date(),
+      client_fingerprint_id: null,
+    });
+    const siteUrl = `http://localhost:${config.serverPort}`;
+    const instancePage = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/assessment_instance/${assessmentInstanceId}/`,
+    );
+    const questionPath = instancePage.$('a[href*="/instance_question/"]').first().attr('href');
+    assert(typeof questionPath === 'string');
+    const instanceQuestionId = String(parseInstanceQuestionId(questionPath));
+    const questionPage = await fetchCheerio(`${siteUrl}${questionPath}`);
+    const variantId = questionPage.$('.question-container').attr('data-variant-id');
+    assert(typeof variantId === 'string');
+    const scope = {
+      purpose: 'ai_grading' as const,
+      courseInstanceId: printForm.scope.courseInstanceId,
+      assessmentId: printForm.scope.assessmentId,
+      assessmentInstanceId,
+      instanceQuestionIds: [instanceQuestionId],
+      authnUserId: user.id,
+      userId: user.id,
+    };
+    const { token } = beginPrintAssetAccess(scope, config.secretKey);
+    const headers = { [PRINT_ASSET_TOKEN_HEADER]: token };
+    const questionUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_question/${instanceQuestionId}`;
+    await features.disable('printable-assessments');
+    try {
+      await withConfig({ isEnterprise: true }, async () => {
+        const asset = await fetch(`${questionUrl}/clientFilesCourse/data.txt`, { headers });
+        assert.equal(asset.status, 200);
+        assert.equal(await asset.text(), 'This data is specific to the course.');
+        const generated = await fetch(
+          `${questionUrl}/generatedFilesQuestion/variant/${variantId}/file.txt`,
+          { headers },
+        );
+        assert.equal(generated.status, 200);
+        assert.equal(await generated.text(), 'This data is generated by code.');
+        assert.equal(
+          (
+            await fetch(
+              `${questionUrl}/generatedFilesQuestion/variant/${printForm.row.print_form_question.variant_id}/file.txt`,
+              { headers },
+            )
+          ).status,
+          403,
+        );
+        assert.equal(
+          (
+            await fetch(
+              `${printForm.formUrl}/question/${printForm.row.print_form_question.id}/clientFilesCourse/data.txt`,
+              { headers },
+            )
+          ).status,
+          403,
+        );
+        const unscopedToken = beginPrintAssetAccess(
+          { ...scope, instanceQuestionIds: [] },
+          config.secretKey,
+        ).token;
+        assert.equal(
+          (
+            await fetch(`${questionUrl}/clientFilesCourse/data.txt`, {
+              headers: { [PRINT_ASSET_TOKEN_HEADER]: unscopedToken },
+            })
+          ).status,
+          403,
+        );
+      });
+      await withConfig({ isEnterprise: false }, async () => {
+        assert.equal(
+          (await fetch(`${questionUrl}/clientFilesCourse/data.txt`, { headers })).status,
+          403,
+        );
+      });
+    } finally {
+      await features.enable('printable-assessments');
+    }
   });
 });

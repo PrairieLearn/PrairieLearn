@@ -11,6 +11,7 @@ import type { AssetsManifest } from '@prairielearn/compiled-assets';
 import { serializePrintDocument } from '../../../lib/client/print-document.js';
 import type { DocxSource } from '../../../lib/printing/docx-browser.js';
 import { createDocxDocument } from '../../../lib/printing/docx-document.js';
+import { DocxSourceSchema } from '../../../lib/printing/docx-source-schema.js';
 import {
   checkPrintSnapshotId,
   createPrintSnapshotId,
@@ -114,18 +115,17 @@ test('exports shadow-root figures and visible slotted text from a paginated page
       '<p>Nested question text</p>';
   });
   await loadPrintClient(page);
-  const source = await page.evaluate(
-    () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource | undefined,
+  const source = DocxSourceSchema.parse(
+    await page.evaluate(() => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__')),
   );
-  expect(source).toBeDefined();
   const html = await page.locator(':root').evaluate(serializePrintDocument);
   const snapshot = {
-    assessmentInstanceId: '123',
+    printFormId: '123',
     authnUserId: '45',
     search: new URLSearchParams('paper_size=Letter&form_label=A&document=assessment'),
     questionListDigest: 'question-list-1',
     html,
-    source: source!,
+    source,
   };
   const secretKey = 'print-snapshot-browser-test-key';
   const id = createPrintSnapshotId(snapshot, secretKey);
@@ -154,7 +154,7 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   await expect(
     page.locator('.pagedjs_page').getByText('Hidden answer', { exact: true }),
   ).toBeHidden();
-  const { zip, documentXml } = await readWordOutput(page, source!);
+  const { zip, documentXml } = await readWordOutput(page, source);
   expect(documentXml).toContain('Shadow question');
   expect(documentXml.match(/Assigned text/g)).toHaveLength(1);
   expect(documentXml).toContain('Fallback instructions');
@@ -204,8 +204,8 @@ test('keeps printing when an equation cannot become editable Word math', async (
 
   await loadPrintClient(page);
   await expect(page.locator('.pagedjs_page').first()).toBeVisible();
-  const source = await page.evaluate(
-    () => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__') as DocxSource,
+  const source = DocxSourceSchema.parse(
+    await page.evaluate(() => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__')),
   );
   expect(source.figures).toEqual([expect.objectContaining({ id: '1', alt: 'Equation' })]);
   expect(source.html).toContain('<img data-docx-figure="1">');

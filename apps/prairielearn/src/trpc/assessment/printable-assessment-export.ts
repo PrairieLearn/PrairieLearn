@@ -2,53 +2,41 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import {
-  ValueType,
-  getCounter,
-  getHistogram,
-  instrumentedWithMetrics,
-  metrics,
-} from '@prairielearn/opentelemetry';
+import { ValueType, getHistogram, metrics } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  MAX_INLINE_PRINT_PACKET_BYTES,
-  MAX_INLINE_PRINT_PACKET_INPUT_BYTES,
-  MAX_INLINE_PRINT_PACKET_PAGES,
-  MAX_PACKET_PAGES,
-} from '../../lib/client/print-packet.js';
+import { MAX_PACKET_PAGES } from '../../lib/client/print-packet.js';
 import { printLayoutSearch } from '../../lib/client/print-preparation.js';
 import {
   MAX_PRINT_PACKET_SNAPSHOT_BYTES,
   MAX_PRINT_SNAPSHOT_BYTES,
 } from '../../lib/client/print-snapshot-limits.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
-import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
+import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import {
-  queuePrintExport,
-  selectPrintExportJob,
-  storeCompletedPrintExport,
-} from '../../lib/print-export-jobs.js';
-import { type PrintExportWork, renderPrintExport } from '../../lib/print-export-render.js';
+import { queuePrintExport, selectPrintExportJob } from '../../lib/print-export-jobs.js';
+import type { PrintExportWork } from '../../lib/print-export-render.js';
 import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
 import { PrintPacketError, readPrintCoverPages } from '../../lib/print-packet.js';
 import {
   type PrintDocument,
-  getPrintRenderer,
-  getPrintableInstanceQuestionIds,
+  getPrintableFormQuestionIds,
   getPrintableQuestionListDigest,
-  isBrowserRenderingAvailable,
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { selectAssessmentInstancesForUser } from '../../models/assessment-instance.js';
+import { selectPrintFormsForUser } from '../../models/print-form.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
-import { requirePrintableAssessments } from './printable-assessments.js';
+import { requirePrintableAssessments } from './print-forms.js';
+
+export interface PrintableAssessmentExportError {
+  pdf: never;
+  status: never;
+}
 
 export const printableAssessmentExportRouter = t.router({
   pdf: t.procedure
@@ -71,19 +59,16 @@ export const printableAssessmentExportRouter = t.router({
           cause: error,
         });
       }
-      const instances = await selectAssessmentInstancesForUser({
-        assessment_id: ctx.assessment.id,
-        user_id: ctx.locals.user.id,
+      const forms = await selectPrintFormsForUser({
+        assessmentId: ctx.assessment.id,
+        userId: ctx.locals.user.id,
       });
       if (
-        metadata.instances.some(
-          (selected) =>
-            !instances.some((instance) => instance.id === selected.assessmentInstanceId),
-        )
+        metadata.forms.some((selected) => !forms.some((form) => form.id === selected.printFormId))
       ) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'An assessment instance is not available.',
+          message: 'A print form is not available.',
         });
       }
       const files = z.array(z.instanceof(File)).safeParse(input.getAll('coverPages'));
@@ -132,11 +117,11 @@ export const printableAssessmentExportRouter = t.router({
               return assertNever(metadata.document);
           }
         });
-        const selectedInstances = plan.appendAnswerKeys
-          ? metadata.instances
-          : metadata.instances.slice(0, metadata.copies);
-        const expectedPageFiles = selectedInstances.reduce(
-          (count, _instance, index) =>
+        const selectedForms = plan.appendAnswerKeys
+          ? metadata.forms
+          : metadata.forms.slice(0, metadata.copies);
+        const expectedPageFiles = selectedForms.reduce(
+          (count, _form, index) =>
             count +
             plan.documents.filter(
               (document) => document !== 'assessment' || index < metadata.copies,
@@ -159,7 +144,7 @@ export const printableAssessmentExportRouter = t.router({
         const formPageCounts: number[] = [];
         const answerKeyPageCounts: number[] = [];
         let pageCountIndex = 0;
-        for (const index of selectedInstances.keys()) {
+        for (const index of selectedForms.keys()) {
           for (const printDocument of plan.documents) {
             if (printDocument === 'assessment' && index >= metadata.copies) continue;
             const count = pageCounts[pageCountIndex++];
@@ -184,29 +169,29 @@ export const printableAssessmentExportRouter = t.router({
             message: 'The export would exceed 10,000 pages. Reduce the number of copies.',
           });
         }
-        const snapshots: PrintExportWork['snapshots'] = [];
+        const snapshots: Extract<PrintExportWork, { format: 'pdf' }>['snapshots'] = [];
         let pageFileIndex = 0;
-        for (const [index, instance] of selectedInstances.entries()) {
-          const excludedQuestions = new Set(instance.settings.excludedQuestions);
+        for (const [index, form] of selectedForms.entries()) {
+          const excludedQuestions = new Set(form.settings.excludedQuestions);
           await validateQuestionsForPrinting(
-            instance.assessmentInstanceId,
+            form.printFormId,
             new Map(
-              Object.entries(instance.settings.questionSizes).flatMap(([number, size]) =>
+              Object.entries(form.settings.questionSizes).flatMap(([number, size]) =>
                 size ? [[number, size] as const] : [],
               ),
             ),
             excludedQuestions,
           );
           const questionListDigest = await getPrintableQuestionListDigest(
-            instance.assessmentInstanceId,
+            form.printFormId,
             excludedQuestions,
           );
           const assetScope = {
             courseInstanceId: ctx.course_instance.id,
             assessmentId: ctx.assessment.id,
-            assessmentInstanceId: instance.assessmentInstanceId,
-            instanceQuestionIds: await getPrintableInstanceQuestionIds(
-              instance.assessmentInstanceId,
+            printFormId: form.printFormId,
+            printFormQuestionIds: await getPrintableFormQuestionIds(
+              form.printFormId,
               excludedQuestions,
             ),
             authnUserId: ctx.authn_user.id,
@@ -214,11 +199,11 @@ export const printableAssessmentExportRouter = t.router({
           };
           for (const printDocument of plan.documents) {
             if (printDocument === 'assessment' && index >= metadata.copies) continue;
-            const search = new URLSearchParams(printLayoutSearch(instance.settings));
+            const search = new URLSearchParams(printLayoutSearch(form.settings));
             search.set('document', printDocument);
-            search.set('form_label', instance.formLabel);
+            search.set('form_label', form.formLabel);
             const localPreviewUrl = new URL(
-              `${getAssessmentInstanceUrl({ courseInstanceId: ctx.course_instance.id, assessmentInstanceId: instance.assessmentInstanceId })}/print/preview?${search}`,
+              `${getPrintFormUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id, printFormId: form.printFormId })}/preview?${search}`,
               `${config.serverType}://localhost:${config.serverPort}`,
             );
             const html = pageHtmls[pageFileIndex];
@@ -227,7 +212,7 @@ export const printableAssessmentExportRouter = t.router({
               !checkPrintSnapshotId(
                 {
                   id,
-                  assessmentInstanceId: instance.assessmentInstanceId,
+                  printFormId: form.printFormId,
                   authnUserId: ctx.authn_user.id,
                   search: localPreviewUrl.searchParams,
                   questionListDigest,
@@ -239,7 +224,7 @@ export const printableAssessmentExportRouter = t.router({
               throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
             }
             snapshots.push({
-              formLabel: instance.formLabel,
+              formLabel: form.formLabel,
               printDocument,
               localPreviewUrl: localPreviewUrl.href,
               html,
@@ -255,6 +240,7 @@ export const printableAssessmentExportRouter = t.router({
         );
         const filename = `${prefix}${plan.filename}_${metadata.copies}_copies.pdf`;
         const work: PrintExportWork = {
+          format: 'pdf',
           document: metadata.document,
           copies: metadata.copies,
           filename,
@@ -269,15 +255,8 @@ export const printableAssessmentExportRouter = t.router({
         const inputBytes =
           pages.data.reduce((sum, page) => sum + page.size, 0) +
           files.data.reduce((sum, file) => sum + file.size, 0);
-        if (!isBrowserRenderingAvailable()) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: 'PDF rendering is not configured on this server.',
-          });
-        }
         const meter = metrics.getMeter('prairielearn');
         const attributes = { document: metadata.document };
-        const pathCounter = getCounter(meter, 'print.export.path', { valueType: ValueType.INT });
         getHistogram(meter, 'print.export.pages', { valueType: ValueType.INT }).record(
           estimatedPages,
           attributes,
@@ -286,19 +265,6 @@ export const printableAssessmentExportRouter = t.router({
           unit: 'bytes',
           valueType: ValueType.INT,
         }).record(inputBytes, attributes);
-        const renderPacketUnmeasured = async () => await renderPrintExport(work, covers);
-        const renderPacket = async () =>
-          await instrumentedWithMetrics(
-            meter,
-            'print.export.packet',
-            renderPacketUnmeasured,
-            () => {
-              getHistogram(meter, 'print.export.rss', {
-                unit: 'bytes',
-                valueType: ValueType.INT,
-              }).record(process.memoryUsage().rss, attributes);
-            },
-          );
         const owner = {
           assessmentId: ctx.assessment.id,
           authnUserId: ctx.authn_user.id,
@@ -306,43 +272,7 @@ export const printableAssessmentExportRouter = t.router({
           courseInstanceId: ctx.course_instance.id,
           userId: ctx.locals.user.id,
         };
-        const queue = async () => ({
-          type: 'background' as const,
-          jobSequenceId: await queuePrintExport({ owner, work }),
-        });
-        const backgroundReason =
-          estimatedPages >= MAX_INLINE_PRINT_PACKET_PAGES
-            ? 'page_count'
-            : inputBytes >= MAX_INLINE_PRINT_PACKET_INPUT_BYTES
-              ? 'input_bytes'
-              : null;
-        if (backgroundReason) {
-          pathCounter.add(1, { ...attributes, path: 'background', reason: backgroundReason });
-          return await queue();
-        }
-        // Admission is best effort; the render queue still bounds requests that race this check.
-        if (!getPrintRenderer().getLoad().canStartImmediately) {
-          pathCounter.add(1, { ...attributes, path: 'background', reason: 'capacity' });
-          return await queue();
-        }
-        const packet = await renderPacket();
-        getHistogram(meter, 'print.export.output_bytes', {
-          unit: 'bytes',
-          valueType: ValueType.INT,
-        }).record(packet.length, attributes);
-        if (packet.length > MAX_INLINE_PRINT_PACKET_BYTES) {
-          pathCounter.add(1, { ...attributes, path: 'background', reason: 'output_size' });
-          return {
-            type: 'background' as const,
-            jobSequenceId: await storeCompletedPrintExport({
-              owner,
-              packet,
-              work,
-            }),
-          };
-        }
-        pathCounter.add(1, { ...attributes, path: 'inline', reason: 'small' });
-        return { type: 'inline' as const, base64: packet.toString('base64'), filename };
+        return { jobSequenceId: await queuePrintExport({ owner, work }) };
       } catch (error) {
         if (error instanceof HttpStatusError && error.status === 503) {
           throw new TRPCError({
@@ -378,7 +308,11 @@ export const printableAssessmentExportRouter = t.router({
       if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
       return {
         status: job.status,
+        format: job.format,
         ready: !!job.result,
+        downloadUrl: job.result
+          ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print_preparation/exports/${input.jobSequenceId}.${job.result.format}`
+          : null,
         sizeBytes: job.result?.sizeBytes ?? null,
         exportLabel: job.result?.exportLabel ?? null,
         failureMessage: job.failureMessage,

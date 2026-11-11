@@ -1,10 +1,10 @@
 import { features } from '../../../lib/features/index.js';
-import { storeCompletedPrintExport } from '../../../lib/print-export-jobs.js';
-import { selectAssessmentByTid } from '../../../models/assessment.js';
+import { queuePrintExport } from '../../../lib/print-export-jobs.js';
+import { getPrintableFormQuestionIds } from '../../../lib/printing/index.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { expect, test } from '../fixtures.js';
 
-import { createPrintableAssessmentInstance } from './utils.js';
+import { createPrintableForm } from './utils.js';
 
 test('hides Print and blocks printable pages when the feature is disabled', async ({
   page,
@@ -12,27 +12,27 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
   courseInstance,
   enableFeatureFlag,
 }) => {
+  test.setTimeout(90_000);
   await enableFeatureFlag('printable-assessments');
-  const tid = 'exam20-assessmentTools';
-  const assessment = await selectAssessmentByTid({
-    course_instance_id: courseInstance.id,
-    tid,
-  });
-  const base = `/pl/course_instance/${courseInstance.id}/instructor`;
-  const assessmentBase = `${base}/assessment/${assessment.id}`;
-  const assessmentInstanceId = await createPrintableAssessmentInstance(courseInstance.id, tid);
-  const previewUrl = `${base}/assessment_instance/${assessmentInstanceId}/print/preview?paper_size=Letter`;
+  const { printForm, printUrl } = await createPrintableForm(
+    courseInstance,
+    'exam20-assessmentTools',
+  );
+  const assessmentBase = `/pl/course_instance/${courseInstance.id}/instructor/assessment/${printForm.assessment_id}`;
+  const previewUrl = `${printUrl}/preview?paper_size=Letter&form_label=A`;
+  const preview = await page.request.get(previewUrl);
+  expect(preview.status()).toBe(200);
   const user = await getConfiguredUser();
-  const jobSequenceId = await storeCompletedPrintExport({
+  const jobSequenceId = await queuePrintExport({
     owner: {
-      assessmentId: assessment.id,
+      assessmentId: printForm.assessment_id,
       authnUserId: user.id,
       courseId: courseInstance.course_id,
       courseInstanceId: courseInstance.id,
       userId: user.id,
     },
-    packet: Buffer.from('%PDF-1.4\nfeature gate export\n'),
     work: {
+      format: 'pdf',
       document: 'assessment',
       copies: 1,
       filename: 'test-export.pdf',
@@ -41,12 +41,12 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
           formLabel: 'A',
           printDocument: 'assessment',
           localPreviewUrl: new URL(previewUrl, baseURL).href,
-          html: '',
+          html: await preview.text(),
           assetScope: {
             courseInstanceId: courseInstance.id,
-            assessmentId: assessment.id,
-            assessmentInstanceId,
-            instanceQuestionIds: [],
+            assessmentId: printForm.assessment_id,
+            printFormId: printForm.id,
+            printFormQuestionIds: await getPrintableFormQuestionIds(printForm.id, new Set()),
             authnUserId: user.id,
             userId: user.id,
           },
@@ -57,8 +57,9 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
   });
   const exportUrl = `${assessmentBase}/print_preparation/exports/${jobSequenceId}.pdf`;
 
-  expect((await page.request.get(previewUrl)).status()).toBe(200);
-  expect((await page.request.get(exportUrl)).status()).toBe(200);
+  await expect
+    .poll(async () => (await page.request.get(exportUrl)).status(), { timeout: 60_000 })
+    .toBe(200);
 
   await features.disable('printable-assessments');
 

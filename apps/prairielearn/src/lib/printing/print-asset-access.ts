@@ -12,19 +12,30 @@ import { IdSchema } from '@prairielearn/zod';
 export const PRINT_ASSET_TOKEN_HEADER = 'X-PL-Print-Asset-Token';
 const PRINT_ASSET_TOKEN_MAX_AGE_MS = 5 * 60 * 1000;
 
-const PrintAssetScopeSchema = z.strictObject({
-  jobId: z.uuid(),
+const AssetScopeDataSchema = z.strictObject({
   courseInstanceId: IdSchema,
   assessmentId: IdSchema,
-  assessmentInstanceId: IdSchema,
-  instanceQuestionIds: z.array(IdSchema),
   authnUserId: IdSchema,
   userId: IdSchema,
-  purpose: z.enum(['printing', 'ai_grading']).optional(),
 });
 
-export const PrintAssetScopeDataSchema = PrintAssetScopeSchema.omit({ jobId: true });
-export type PrintAssetScope = z.infer<typeof PrintAssetScopeDataSchema>;
+export const PrintAssetScopeDataSchema = AssetScopeDataSchema.extend({
+  purpose: z.literal('printing').optional(),
+  printFormId: IdSchema,
+  printFormQuestionIds: z.array(IdSchema),
+});
+const AiGradingAssetScopeDataSchema = AssetScopeDataSchema.extend({
+  purpose: z.literal('ai_grading'),
+  assessmentInstanceId: IdSchema,
+  instanceQuestionIds: z.array(IdSchema),
+});
+
+const PrintAssetScopeSchema = z.discriminatedUnion('purpose', [
+  PrintAssetScopeDataSchema.extend({ jobId: z.uuid() }),
+  AiGradingAssetScopeDataSchema.extend({ jobId: z.uuid() }),
+]);
+export type PrintFormAssetScope = z.infer<typeof PrintAssetScopeDataSchema>;
+export type PrintAssetScope = PrintFormAssetScope | z.infer<typeof AiGradingAssetScopeDataSchema>;
 
 export function beginPrintAssetAccess(scope: PrintAssetScope, secretKey: SecretKey) {
   const jobId = randomUUID();
@@ -52,6 +63,11 @@ export type PrintAssetRoute =
   | { type: 'course'; kind: 'clientFilesCourse' | 'clientFilesCourseInstance' }
   | {
       type: 'question';
+      kind: 'clientFilesCourse' | 'clientFilesQuestion' | 'generatedFilesQuestion';
+      printFormQuestionId: string;
+    }
+  | {
+      type: 'instance_question';
       kind: 'clientFilesCourse' | 'clientFilesQuestion' | 'generatedFilesQuestion';
       instanceQuestionId: string;
     }
@@ -91,24 +107,29 @@ export function classifyPrintAssetPath(
     };
   }
   const questionMatch =
-    /^instance_question\/(\d+)\/(clientFilesCourse|clientFilesQuestion|generatedFilesQuestion)\/(.+)$/.exec(
-      relativePath,
-    );
-  if (questionMatch && scope.instanceQuestionIds.includes(questionMatch[1])) {
+    scope.purpose === 'ai_grading'
+      ? /^instance_question\/(\d+)\/(clientFilesCourse|clientFilesQuestion|generatedFilesQuestion)\/(.+)$/.exec(
+          relativePath,
+        )
+      : new RegExp(
+          `^assessment/${scope.assessmentId}/print_form/${scope.printFormId}/question/(\\d+)/(clientFilesCourse|clientFilesQuestion|generatedFilesQuestion)/(.+)$`,
+        ).exec(relativePath);
+  const questionIds =
+    scope.purpose === 'ai_grading' ? scope.instanceQuestionIds : scope.printFormQuestionIds;
+  if (questionMatch && questionIds.includes(questionMatch[1])) {
     if (
       questionMatch[2] === 'generatedFilesQuestion' &&
       !/^variant\/\d+\/.+$/.test(questionMatch[3])
     ) {
       return null;
     }
-    return {
-      type: 'question',
-      instanceQuestionId: questionMatch[1],
-      kind: questionMatch[2] as
-        | 'clientFilesCourse'
-        | 'clientFilesQuestion'
-        | 'generatedFilesQuestion',
-    };
+    const kind = questionMatch[2] as
+      | 'clientFilesCourse'
+      | 'clientFilesQuestion'
+      | 'generatedFilesQuestion';
+    return scope.purpose === 'ai_grading'
+      ? { type: 'instance_question', instanceQuestionId: questionMatch[1], kind }
+      : { type: 'question', printFormQuestionId: questionMatch[1], kind };
   }
   if (
     /^(?:sharedElements\/course\/\d+\/)?(?:cacheableElements\/[^/]+|elements)\/.+$/.test(

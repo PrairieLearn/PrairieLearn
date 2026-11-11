@@ -23,6 +23,7 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.shared.js';
 import { idsEqual } from '../lib/id.js';
+import { issueMailtoLink } from '../lib/issues.shared.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
@@ -38,6 +39,7 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  questionNumber,
   questionRenderContext,
   showFooter = true,
   manualGradingPreviewUrl,
@@ -48,6 +50,7 @@ export function QuestionContainer({
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
+  questionNumber?: string;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
@@ -101,6 +104,7 @@ export function QuestionContainer({
                 ${QuestionPanel({
                   resLocals,
                   questionContext,
+                  questionNumber,
                   questionRenderContext,
                   showFooter,
                   manualGradingPreviewUrl,
@@ -109,7 +113,7 @@ export function QuestionContainer({
                 })}
               </form>
             `
-          : QuestionPanel({ resLocals, showFooter, questionContext })
+          : QuestionPanel({ resLocals, showFooter, questionContext, questionNumber })
       }
       ${
         // The AI grader omits a blank answer, so the preview omits the card entirely.
@@ -350,10 +354,9 @@ function IssuePanel({
       idsEqual(course_instance.id, issue.course_instance_id) &&
       authz_data.has_course_instance_permission_view);
 
-  const msgBody = `Hello ${issue.user_name}\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`;
-  const mailtoLink = `mailto:${
-    issue.user_email || issue.user_uid || '-'
-  }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(msgBody)}`;
+  const mailtoLink = issueMailtoLink(issue);
+  const userUid = issue.user_uid || '-';
+  const userUidLink = mailtoLink ? html`<a href="${mailtoLink}">${userUid}</a>` : userUid;
 
   return html`
     <div class="card mb-3">
@@ -375,14 +378,16 @@ function IssuePanel({
             ${
               showUserName
                 ? html`
-                    <tr>
-                      <th>User:</th>
-                      <td>
-                        ${issue.user_name || '-'} (<a href="${mailtoLink}"
-                          >${issue.user_uid || '-'}</a
-                        >)
-                      </td>
-                    </tr>
+                    ${
+                      issue.user_id != null
+                        ? html`
+                            <tr>
+                              <th>User:</th>
+                              <td>${issue.user_name || '-'} (${userUidLink})</td>
+                            </tr>
+                          `
+                        : ''
+                    }
                     <tr>
                       <th>Student message:</th>
                       <td style="white-space: pre-wrap;">${issue.student_message}</td>
@@ -942,6 +947,7 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  questionNumber,
   questionRenderContext,
   showFooter,
   manualGradingPreviewUrl,
@@ -950,6 +956,7 @@ function QuestionPanel({
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
+  questionNumber?: string;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
@@ -973,7 +980,7 @@ function QuestionPanel({
           ${QuestionTitle({
             questionContext,
             question,
-            questionNumber: instance_question_info?.question_number,
+            questionNumber: questionNumber ?? instance_question_info?.question_number,
             // Student contexts honor the assessment setting; other contexts always render titles.
             showQuestionTitles:
               questionContext === 'student_exam' || questionContext === 'student_homework'

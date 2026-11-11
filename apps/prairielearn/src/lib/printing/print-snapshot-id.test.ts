@@ -4,7 +4,7 @@ import { checkPrintSnapshotId, createPrintSnapshotId } from './print-snapshot-id
 
 const secretKey = 'print-snapshot-test-key';
 const snapshot = {
-  assessmentInstanceId: '123',
+  printFormId: '123',
   authnUserId: '45',
   search: new URLSearchParams('paper_size=Letter&form_label=A&document=assessment'),
   questionListDigest: 'question-list-1',
@@ -32,9 +32,7 @@ describe('print snapshot IDs', () => {
     expect(
       checkPrintSnapshotId({ ...snapshot, id, questionListDigest: 'question-list-2' }, secretKey),
     ).toBe(false);
-    expect(checkPrintSnapshotId({ ...snapshot, id, assessmentInstanceId: '124' }, secretKey)).toBe(
-      false,
-    );
+    expect(checkPrintSnapshotId({ ...snapshot, id, printFormId: '124' }, secretKey)).toBe(false);
     expect(
       checkPrintSnapshotId(
         { ...snapshot, id, search: new URLSearchParams('paper_size=A4') },

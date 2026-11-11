@@ -1,10 +1,3 @@
--- BLOCK set_multiple_instance
-UPDATE assessments
-SET
-  multiple_instance = $multiple_instance
-WHERE
-  id = $assessment_id;
-
 -- BLOCK age_print_export_job
 UPDATE jobs
 SET
@@ -26,15 +19,17 @@ SET
 WHERE
   id = $job_sequence_id;
 
--- BLOCK expire_print_export_lease
+-- BLOCK exhaust_print_export_attempts
 UPDATE jobs
 SET
-  data = data || jsonb_build_object(
-    'attempts',
-    3,
-    'leaseUntil',
-    (CURRENT_TIMESTAMP - INTERVAL '1 minute')::text
-  )
+  data = data || jsonb_build_object('attempts', 3)
+WHERE
+  job_sequence_id = $job_sequence_id;
+
+-- BLOCK replace_print_export_owner
+UPDATE jobs
+SET
+  data = data || jsonb_build_object('runOwner', 'replacement-owner')
 WHERE
   job_sequence_id = $job_sequence_id;
 
@@ -128,3 +123,26 @@ SET
   number_choose = $number_choose
 WHERE
   assessment_id = $assessment_id;
+
+-- BLOCK change_source_question
+UPDATE assessment_questions
+SET
+  deleted_at = now(),
+  max_points = max_points + 10
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK restore_source_question
+UPDATE assessment_questions
+SET
+  deleted_at = $deleted_at,
+  max_points = $max_points
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK set_team_work
+UPDATE assessments
+SET
+  team_work = $team_work
+WHERE
+  id = $assessment_id;

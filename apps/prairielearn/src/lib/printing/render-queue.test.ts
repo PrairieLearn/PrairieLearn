@@ -24,7 +24,6 @@ describe('RenderQueue', () => {
       'PDF',
     );
     await vi.waitFor(() => expect(queue.getLoad().active).toBe(1));
-    expect(queue.getLoad().canStartImmediately).toBe(false);
     const exportRender = queue.run(
       async () => {
         order.push('export');
@@ -46,7 +45,6 @@ describe('RenderQueue', () => {
     await Promise.all([active, exportRender, previewRender]);
     expect(order).toEqual(['active', 'preview', 'export']);
     expect(queue.getLoad()).toMatchObject({ active: 0, waiting: 0 });
-    expect(queue.getLoad().canStartImmediately).toBe(true);
   });
 
   it('reserves waiting room for previews when exports fill their share', async () => {

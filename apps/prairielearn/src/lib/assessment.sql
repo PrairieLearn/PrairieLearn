@@ -1,19 +1,3 @@
--- BLOCK lock_assessment_instance_number
-SELECT
-  pg_advisory_xact_lock(
-    hashtextextended (
-      jsonb_build_array(
-        'assessment-instance-number',
-        $assessment_id::bigint,
-        $group_id::bigint,
-        CASE
-          WHEN $group_id::bigint IS NULL THEN $user_id::bigint
-        END
-      )::text,
-      0
-    )
-  );
-
 -- BLOCK insert_assessment_instance
 WITH
   latest_assessment_instance AS (
@@ -34,28 +18,6 @@ WITH
     LIMIT
       1
   ),
-  existing_single_assessment_instance AS (
-    SELECT
-      ai.id
-    FROM
-      assessment_instances AS ai
-      JOIN assessments AS a ON a.id = ai.assessment_id
-    WHERE
-      ai.assessment_id = $assessment_id
-      AND NOT a.multiple_instance
-      AND NOT $for_printing::boolean
-      AND NOT ai.for_printing
-      AND (
-        CASE
-          WHEN $group_id::bigint IS NOT NULL THEN ai.team_id = $group_id
-          ELSE ai.user_id = $user_id
-        END
-      )
-    ORDER BY
-      ai.number DESC
-    LIMIT
-      1
-  ),
   inserted_assessment_instance AS (
     INSERT INTO
       assessment_instances (
@@ -64,7 +26,6 @@ WITH
         user_id,
         team_id,
         mode,
-        for_printing,
         auto_close,
         date_limit,
         number,
@@ -79,28 +40,21 @@ WITH
       END,
       $group_id,
       $mode,
-      $for_printing::boolean,
       a.auto_close
-      AND NOT $for_printing::boolean
       AND a.type = 'Exam',
       CASE
         WHEN $time_limit_min::integer IS NOT NULL THEN $date::timestamptz + make_interval(mins => $time_limit_min)
       END,
       COALESCE(lai.number, 0) + 1,
-      NOT $for_printing::boolean
-      AND NOT users_is_instructor_in_course_instance ($user_id, a.course_instance_id),
+      NOT users_is_instructor_in_course_instance ($user_id, a.course_instance_id),
       $client_fingerprint_id
     FROM
       assessments AS a
-      LEFT JOIN latest_assessment_instance AS lai ON TRUE
+      -- Only retrieve the latest assessment instance if the assessment allows
+      -- multiple instances, otherwise trigger a conflict on number.
+      LEFT JOIN latest_assessment_instance AS lai ON a.multiple_instance
     WHERE
       a.id = $assessment_id
-      AND NOT EXISTS (
-        SELECT
-          1
-        FROM
-          existing_single_assessment_instance
-      )
     ON CONFLICT DO NOTHING
     RETURNING
       *
@@ -156,34 +110,14 @@ SELECT
 FROM
   inserted_assessment_instance
 UNION ALL
--- Reuse an ordinary single-instance attempt, even if later printable instances exist.
+-- If the assessment instance was not inserted because of a conflict on number, return the existing assessment instance.
 SELECT
   id AS assessment_instance_id,
   FALSE AS created
 FROM
-  existing_single_assessment_instance
+  latest_assessment_instance
 WHERE
   NOT EXISTS (
-    SELECT
-      1
-    FROM
-      inserted_assessment_instance
-  )
-UNION ALL
--- Preserve the existing conflict behavior for multiple-instance assessments
--- and printable instances.
-SELECT
-  lai.id AS assessment_instance_id,
-  FALSE AS created
-FROM
-  latest_assessment_instance AS lai
-  JOIN assessments AS a ON a.id = lai.assessment_id
-WHERE
-  (
-    a.multiple_instance
-    OR $for_printing::boolean
-  )
-  AND NOT EXISTS (
     SELECT
       1
     FROM
@@ -192,111 +126,22 @@ WHERE
 
 -- BLOCK insert_instance_questions
 WITH
-  existing_instance_questions AS (
-    SELECT
-      *
-    FROM
-      instance_questions
-    WHERE
-      assessment_instance_id IS NOT DISTINCT FROM $assessment_instance_id
-  ),
-  -- First assign two random orderings to the list of questions, one for
-  -- alternative_group question selection and one for zone question
-  -- selection, plus a fixed ordering based on the existing question
-  -- number (if any).
-  randomized_assessment_questions AS (
-    SELECT
-      aq.*,
-      CASE
-        WHEN iq.id IS NOT NULL THEN 1
-        ELSE 2
-      END AS existing_order,
-      random() AS ag_rand, -- for alternative_group selection
-      random() AS z_rand -- for zone selection
-    FROM
-      assessment_questions AS aq
-      LEFT JOIN existing_instance_questions AS iq ON (iq.assessment_question_id = aq.id)
-    WHERE
-      aq.assessment_id = $assessment_id
-      AND aq.deleted_at IS NULL
-  ),
-  -- Next choose subsets of each alternative_group with the correct
-  -- number of questions, or all of them if number_choose isn't
-  -- specified for that alternative_group.
-  --
-  -- To do this, we start by sorting the questions within each
-  -- alternative_group by the ag_rand value.
-  ag_numbered_assessment_questions AS (
-    SELECT
-      aq.*,
-      (
-        row_number() OVER (
-          PARTITION BY
-            aq.alternative_group_id
-          ORDER BY
-            aq.existing_order,
-            aq.ag_rand,
-            aq.id
-        )
-      ) AS ag_row_number
-    FROM
-      randomized_assessment_questions AS aq
-  ),
-  -- Now we actually choose the questions in each alternative_group.
-  ag_chosen_assessment_questions AS (
+  selected_assessment_questions AS (
     SELECT
       aq.*
     FROM
-      ag_numbered_assessment_questions AS aq
-      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
-    WHERE
-      (ag.number_choose IS NULL)
-      OR (ag_row_number <= ag.number_choose)
-  ),
-  -- Next we choose subsets of questions in each zone (or all of them
-  -- if number_choose isn't specified for the zone).
-  --
-  -- We start by sorting the questions within each zone, similarly to
-  -- what we did above for each alternative_group. A key difference
-  -- is that we first sort by the ag_row_number and then by z_rand.
-  -- This means that all the questions with ag_row_number = 1 will be
-  -- used up first, then all the ones with ag_row_number = 2, etc.
-  -- This has the effect of spreading out our choices among the
-  -- different alternative_groups in the zone as much as possible.
-  z_numbered_assessment_questions AS (
-    SELECT
-      aq.*,
-      (
-        row_number() OVER (
-          PARTITION BY
-            z.id
-          ORDER BY
-            aq.ag_row_number,
-            aq.existing_order,
-            aq.z_rand,
-            aq.id
+      assessment_questions_select (
+        $assessment_id,
+        ARRAY(
+          SELECT
+            assessment_question_id
+          FROM
+            instance_questions
+          WHERE
+            assessment_instance_id IS NOT DISTINCT FROM $assessment_instance_id
         )
-      ) AS z_row_number
-    FROM
-      ag_chosen_assessment_questions AS aq
-      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
-      JOIN zones AS z ON (z.id = ag.zone_id)
-  ),
-  -- Now we actually select the questions within the zone.
-  z_chosen_assessment_questions AS (
-    SELECT
-      aq.*
-    FROM
-      z_numbered_assessment_questions AS aq
-      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
-      JOIN zones AS z ON (z.id = ag.zone_id)
-      JOIN questions AS q ON (q.id = aq.question_id)
-    WHERE
-      (
-        z.number_choose IS NULL
-        OR z_row_number <= z.number_choose
-      )
-      AND q.deleted_at IS NULL
+      ) AS selected
+      JOIN assessment_questions AS aq ON (aq.id = selected.assessment_question_id)
   ),
   inserted_instance_questions AS (
     INSERT INTO
@@ -320,7 +165,7 @@ WITH
       0,
       0 -- These points are updated manually because their default value is set to NULL for migration purposes
     FROM
-      z_chosen_assessment_questions AS aq
+      selected_assessment_questions AS aq
     ON CONFLICT (assessment_question_id, assessment_instance_id) DO NOTHING
     RETURNING
       iq.*
@@ -457,7 +302,6 @@ FROM
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
-  AND NOT ai.for_printing
   AND ai.open
   AND (
     $assessment_instance_ids::bigint[] IS NULL
@@ -1986,10 +1830,6 @@ WITH
       AND (
         $assessment_instance_ids::bigint[] IS NULL
         OR ai.id = ANY ($assessment_instance_ids::bigint[])
-      )
-      AND (
-        NOT $for_printing_only::boolean
-        OR ai.for_printing
       )
     RETURNING
       ai.*

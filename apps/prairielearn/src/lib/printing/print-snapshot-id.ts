@@ -13,7 +13,7 @@ import type { DocxSource } from './docx-browser.js';
 
 const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const SnapshotIdSchema = z.strictObject({
-  assessmentInstanceId: z.string(),
+  printFormId: z.string(),
   authnUserId: z.string(),
   search: z.string(),
   questionListDigest: z.string(),
@@ -39,14 +39,14 @@ function normalizedSearch(search: URLSearchParams): string {
 
 export function createPrintSnapshotId(
   {
-    assessmentInstanceId,
+    printFormId,
     authnUserId,
     search,
     questionListDigest,
     html,
     source,
   }: {
-    assessmentInstanceId: string;
+    printFormId: string;
     authnUserId: string;
     search: URLSearchParams;
     questionListDigest: string;
@@ -57,7 +57,7 @@ export function createPrintSnapshotId(
 ): string {
   return generateSignedToken(
     {
-      assessmentInstanceId,
+      printFormId,
       authnUserId,
       search: normalizedSearch(search),
       questionListDigest,
@@ -71,7 +71,7 @@ export function createPrintSnapshotId(
 export function checkPrintSnapshotId(
   {
     id,
-    assessmentInstanceId,
+    printFormId,
     authnUserId,
     search,
     questionListDigest,
@@ -79,7 +79,7 @@ export function checkPrintSnapshotId(
     source,
   }: {
     id: string;
-    assessmentInstanceId: string;
+    printFormId: string;
     authnUserId: string;
     search: URLSearchParams;
     questionListDigest: string;
@@ -94,7 +94,7 @@ export function checkPrintSnapshotId(
   if (!result.success) return false;
   const snapshot = result.data;
   return (
-    snapshot.assessmentInstanceId === assessmentInstanceId &&
+    snapshot.printFormId === printFormId &&
     snapshot.authnUserId === authnUserId &&
     snapshot.search === normalizedSearch(search) &&
     snapshot.questionListDigest === questionListDigest &&
