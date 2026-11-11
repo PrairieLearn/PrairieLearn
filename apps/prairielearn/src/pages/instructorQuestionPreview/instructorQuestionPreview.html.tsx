@@ -8,6 +8,7 @@ import { CalculatorDrawerHeadScripts } from '../../components/CalculatorAssets.j
 import { CalculatorDrawer, CalculatorDrawerToggle } from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionBrowserServicesData } from '../../components/QuestionBrowserServicesData.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { SyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -123,6 +124,7 @@ export function InstructorQuestionPreview({
       storageKey: `calculator-preview-${resLocals.question.id}`,
     }),
     content: html`
+      ${questionHostingUpdate ? QuestionBrowserServicesData({ resLocals, questionContext: 'instructor', renderSubmissionSearchParams }) : ''}
       ${questionHostingUpdate ? '' : previewAlerts}
       <div class="row question-page-row">
         <div

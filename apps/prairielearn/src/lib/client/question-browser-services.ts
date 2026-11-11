@@ -35,10 +35,13 @@ export function createLocalQuestionBrowserServices({
       if (!renderUrl) throw new Error('Unknown submission');
 
       const url = new URL(renderUrl, document.location.origin);
+      if (url.origin !== document.location.origin) {
+        throw new Error('Submission render URL must be same-origin');
+      }
       if (purpose === 'grading-result') url.searchParams.set('render_score_panels', 'true');
 
       const requestSignal = AbortSignal.any([signal, abortController.signal]);
-      const response = await fetch(url, { signal: requestSignal });
+      const response = await fetch(url, { signal: requestSignal, mode: 'same-origin' });
       if (!response.ok) throw new Error('Failed to fetch submission');
       const panels: SubmissionPanels = await response.json();
 
@@ -47,7 +50,9 @@ export function createLocalQuestionBrowserServices({
       assertCurrent();
       updateQuestionPagePanels(document, panels);
 
-      // Only content intended for the question document crosses this boundary.
+      // Select these fields explicitly: the question renderer must not receive
+      // application score or navigation panels. Returning `panels` would include
+      // them at runtime even though QuestionContentPanels omits them in TypeScript.
       return {
         submissionPanel: panels.submissionPanel,
         extraHeadersHtml: panels.extraHeadersHtml,
@@ -60,7 +65,8 @@ export function createLocalQuestionBrowserServices({
       assertCurrent();
       const socket = io('/external-grading');
       let closed = false;
-      const onStatus = (msg: StatusMessage) => {
+      const onStatus = (msg: StatusMessage | null) => {
+        if (msg == null) return;
         if (closed || abortController.signal.aborted || !isCurrent()) return;
         if (msg.variant_id !== variantId) return;
         listener(msg.submissions);

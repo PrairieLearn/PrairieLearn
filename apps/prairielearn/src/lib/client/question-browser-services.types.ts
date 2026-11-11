@@ -20,3 +20,10 @@ export interface QuestionBrowserServices {
 
   subscribeToGradingStatus(listener: (submissions: StatusMessageSubmission[]) => void): () => void;
 }
+
+/** Application-owned initialization data, kept outside the question container. */
+export interface QuestionBrowserServicesData {
+  variantId: string;
+  variantToken: string;
+  submissionRenderUrls: [string, string][];
+}
