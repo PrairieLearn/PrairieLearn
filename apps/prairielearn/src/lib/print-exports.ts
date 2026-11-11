@@ -1,35 +1,34 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRows,
-  queryScalar,
-} from '@prairielearn/postgres';
 import { Queue, Worker } from '@prairielearn/prairiemq';
 import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
+import {
+  claimPrintExport,
+  failStalePrintExports,
+  finishPrintExport,
+  insertPrintExport,
+  releasePrintExport,
+  selectPendingPrintExports,
+} from '../models/print-export.js';
+
 import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
-import { PrintExportSchema } from './db-types.js';
 import { getFileStoreS3Bucket } from './file-store.js';
-import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
+import {
+  type PrintExportWork,
+  PrintExportWorkSchema,
+  renderPrintExport,
+} from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
-import { DocxSourceSchema } from './printing/docx-source-schema.js';
 import { isBrowserRenderingAvailable } from './printing/index.js';
-import { PAPER_SIZES } from './printing/pdf-output.js';
-import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
-import { PrintableCoverSchema } from './printing/printable-cover.js';
 
-const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
 const QUEUE_NAME = 'print-exports';
 // Courses take turns starting exports and each runs at most two at once, so total
@@ -131,34 +130,6 @@ async function publishPrintExport({
   }
 }
 
-const PersistedSnapshotSchema = z.object({
-  formLabel: z.string(),
-  paperSize: z.enum(PAPER_SIZES),
-  printDocument: z.enum(['assessment', 'answer_key']),
-  localPreviewUrl: z.url(),
-  html: z.string(),
-  assetScope: PrintAssetScopeDataSchema,
-});
-const PersistedWorkSchema = z.discriminatedUnion('format', [
-  z.object({
-    format: z.literal('pdf'),
-    document: z.enum(['assessment', 'answer_key', 'booklet']),
-    copies: z.number().int().positive(),
-    filename: z.string(),
-    snapshots: z.array(PersistedSnapshotSchema),
-    covers: z.array(z.object({ name: z.string(), base64: z.string() })),
-  }),
-  z.object({
-    format: z.literal('docx'),
-    document: z.enum(['assessment', 'answer_key']),
-    filename: z.string(),
-    snapshot: PersistedSnapshotSchema,
-    source: DocxSourceSchema,
-    cover: PrintableCoverSchema.optional(),
-    footerLabel: z.string(),
-  }),
-]) satisfies z.ZodType<PrintExportWork>;
-
 function getPrintExportLabel(work: PrintExportWork): string {
   if (work.format === 'docx') {
     const form = work.snapshot.formLabel
@@ -216,18 +187,14 @@ export async function queuePrintExport({
   await uploadToS3(bucket, inputKey, null, false, Buffer.from(JSON.stringify(work)));
   let printExportId: string;
   try {
-    printExportId = await queryScalar(
-      sql.insert_print_export,
-      {
-        assessment_id: owner.assessmentId,
-        user_id: owner.userId,
-        authn_user_id: owner.authnUserId,
-        format: work.format,
-        filename: work.filename,
-        input_key: inputKey,
-      },
-      IdSchema,
-    );
+    printExportId = await insertPrintExport({
+      assessmentId: owner.assessmentId,
+      userId: owner.userId,
+      authnUserId: owner.authnUserId,
+      format: work.format,
+      filename: work.filename,
+      inputKey,
+    });
   } catch (error) {
     await deleteFromS3(bucket, inputKey);
     throw error;
@@ -237,37 +204,16 @@ export async function queuePrintExport({
   return printExportId;
 }
 
-async function finishPrintExport(
-  id: string,
-  result:
-    | { status: 'succeeded'; outputKey: string; sizeBytes: number; label: string }
-    | { status: 'failed'; failureMessage: string },
-): Promise<boolean> {
-  const updated = await execute(sql.finish_print_export, {
-    id,
-    status: result.status,
-    output_key: result.status === 'succeeded' ? result.outputKey : null,
-    size_bytes: result.status === 'succeeded' ? result.sizeBytes : null,
-    label: result.status === 'succeeded' ? result.label : null,
-    failure_message: result.status === 'failed' ? result.failureMessage : null,
-  });
-  return updated > 0;
-}
-
 async function processPrintExport(printExportId: string) {
   const signal = shutdownController.signal;
   if (signal.aborted) return;
-  const printExport = await queryOptionalRow(
-    sql.claim_print_export,
-    { id: printExportId },
-    PrintExportSchema,
-  );
+  const printExport = await claimPrintExport(printExportId);
   if (!printExport) return;
   const { format } = printExport;
   const bucket = getFileStoreS3Bucket();
   const meter = metrics.getMeter('prairielearn');
   const attributes = { format };
-  getHistogram(meter, 'print.export.background.queue_wait', {
+  getHistogram(meter, 'print.export.queue_wait', {
     unit: 'milliseconds',
     valueType: ValueType.DOUBLE,
   }).record(Date.now() - printExport.created_at.getTime(), attributes);
@@ -276,7 +222,7 @@ async function processPrintExport(printExportId: string) {
     if (printExport.attempts > MAX_ATTEMPTS) {
       throw new HttpStatusError(400, exhaustedFailureMessage(format));
     }
-    const work = PersistedWorkSchema.parse(
+    const work = PrintExportWorkSchema.parse(
       JSON.parse((await getFromS3(bucket, printExport.input_key, true)).toString('utf8')),
     );
     const packet = await renderPrintExport(work, signal);
@@ -290,20 +236,13 @@ async function processPrintExport(printExportId: string) {
       label: getPrintExportLabel(work),
     });
     if (!finished) await deleteFromS3(bucket, outputKey);
-    getHistogram(meter, 'print.export.output_bytes', {
-      unit: 'bytes',
-      valueType: ValueType.INT,
-    }).record(packet.length, attributes);
   } catch (error) {
     if (signal.aborted) {
       // Another worker reruns the export once the reconciliation republishes it.
-      await execute(sql.release_print_export, { id: printExport.id }).catch(reportQueueError);
+      await releasePrintExport(printExport.id).catch(reportQueueError);
       return;
     }
-    getCounter(meter, 'print.export.background.failures', { valueType: ValueType.INT }).add(
-      1,
-      attributes,
-    );
+    getCounter(meter, 'print.export.failures', { valueType: ValueType.INT }).add(1, attributes);
     const failureMessage = printableFailureMessage(error, format);
     if (failureMessage === null) {
       Sentry.captureException(error, { tags: { 'print_export.id': printExport.id } });
@@ -315,7 +254,7 @@ async function processPrintExport(printExportId: string) {
         `The ${format === 'docx' ? 'Word document' : 'PDF'} could not be prepared because of a server error.`,
     });
   } finally {
-    getHistogram(meter, 'print.export.background.duration', {
+    getHistogram(meter, 'print.export.duration', {
       unit: 'milliseconds',
       valueType: ValueType.DOUBLE,
     }).record(performance.now() - startedAt, attributes);
@@ -334,11 +273,8 @@ export async function processQueuedPrintExports(): Promise<void> {
   if (!currentQueue) return;
   // Exports that no worker finished before they would expire, such as when no host runs a
   // worker, would otherwise stay pending and be republished forever.
-  await execute(sql.fail_stale_print_exports);
-  const pending = await queryRows(
-    sql.select_pending_print_exports,
-    z.object({ id: IdSchema, course_id: IdSchema }),
-  );
+  await failStalePrintExports();
+  const pending = await selectPendingPrintExports();
   for (const { id, course_id } of pending) {
     if (shutdownController.signal.aborted) return;
     // Completed and failed jobs are removed from Redis, so they also read as unknown.
@@ -347,25 +283,6 @@ export async function processQueuedPrintExports(): Promise<void> {
       await publishPrintExport({ printExportId: id, courseId: course_id });
     }
   }
-}
-
-const SelectedPrintExportSchema = PrintExportSchema.extend({ expired: z.boolean() });
-
-/** Returns an export owned by this user, or null. Downloads expire 24 hours after queueing. */
-export async function selectPrintExport({
-  printExportId,
-  assessmentId,
-  authnUserId,
-}: {
-  printExportId: string;
-  assessmentId: string;
-  authnUserId: string;
-}): Promise<z.infer<typeof SelectedPrintExportSchema> | null> {
-  return await queryOptionalRow(
-    sql.select_print_export,
-    { id: printExportId, assessment_id: assessmentId, authn_user_id: authnUserId },
-    SelectedPrintExportSchema,
-  );
 }
 
 export async function getPrintExportStream(key: string) {

@@ -6,10 +6,11 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 
-import { getPrintExportStream, selectPrintExport } from '../../lib/print-exports.js';
+import { getPrintExportStream } from '../../lib/print-exports.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
+import { selectOptionalPrintExport } from '../../models/print-export.js';
 
 const router = Router();
 router.use(requirePrintableAssessments);
@@ -23,7 +24,7 @@ router.get(
   }),
   typedAsyncHandler<'assessment'>(async (req, res) => {
     const { printExportId } = parseRequestParams(req, ParamsSchema);
-    const printExport = await selectPrintExport({
+    const printExport = await selectOptionalPrintExport({
       printExportId,
       assessmentId: res.locals.assessment.id,
       authnUserId: res.locals.authn_user.id,

@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 
-import { load } from 'cheerio';
 import { z } from 'zod';
 
 import {
@@ -25,9 +24,9 @@ function digest(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function digestHtml(html: string): string {
-  // Browser versions serialize characters in HTML attributes differently.
-  return digest(load(html).html());
+/** Digests HTML serialized by `serializePrintDocument` in the server's browser. */
+export function digestPrintHtml(html: string): string {
+  return digest(html);
 }
 
 function normalizedSearch(search: URLSearchParams): string {
@@ -61,13 +60,18 @@ export function createPrintSnapshotId(
       authnUserId,
       search: normalizedSearch(search),
       questionListDigest,
-      htmlDigest: digestHtml(html),
+      htmlDigest: digestPrintHtml(html),
       sourceDigest: digest(JSON.stringify(source)),
     },
     secretKey,
   );
 }
 
+/**
+ * Returns the signed HTML digest if the ID matches this form, user, layout, and
+ * question list, or null. Export workers compare the digest after the browser has
+ * normalized the submitted HTML.
+ */
 export function checkPrintSnapshotId(
   {
     id,
@@ -75,7 +79,6 @@ export function checkPrintSnapshotId(
     authnUserId,
     search,
     questionListDigest,
-    html,
     source,
   }: {
     id: string;
@@ -83,22 +86,20 @@ export function checkPrintSnapshotId(
     authnUserId: string;
     search: URLSearchParams;
     questionListDigest: string;
-    html: string;
     source?: DocxSource;
   },
   secretKey: SecretKey,
-): boolean {
+): string | null {
   const result = SnapshotIdSchema.safeParse(
     getCheckedSignedTokenData(id, secretKey, { maxAge: SNAPSHOT_MAX_AGE_MS }),
   );
-  if (!result.success) return false;
+  if (!result.success) return null;
   const snapshot = result.data;
-  return (
+  const matches =
     snapshot.printFormId === printFormId &&
     snapshot.authnUserId === authnUserId &&
     snapshot.search === normalizedSearch(search) &&
     snapshot.questionListDigest === questionListDigest &&
-    snapshot.htmlDigest === digestHtml(html) &&
-    (source === undefined || snapshot.sourceDigest === digest(JSON.stringify(source)))
-  );
+    (source === undefined || snapshot.sourceDigest === digest(JSON.stringify(source)));
+  return matches ? snapshot.htmlDigest : null;
 }

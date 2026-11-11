@@ -8,7 +8,7 @@ import { PAPER_SIZES } from './printing/pdf-output.js';
 import { QUESTION_BLOCK_SIZES } from './printing/question-block-size.js';
 
 const QuestionNumberSchema = z.string().min(1);
-const PrintSettingsSchema = z.strictObject({
+export const PrintSettingsSchema = z.strictObject({
   paperSize: z.enum(PAPER_SIZES),
   includeCoverPage: z.boolean().default(true),
   includeGradingTable: z.boolean().default(false),
@@ -23,6 +23,7 @@ const PrintSettingsSchema = z.strictObject({
     (numbers) => new Set(numbers).size === numbers.length,
   ),
 });
+export type PrintSettings = z.infer<typeof PrintSettingsSchema>;
 
 export const PrintPacketMetadataSchema = z.strictObject({
   forms: z

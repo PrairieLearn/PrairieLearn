@@ -15,6 +15,7 @@ import { DocxSourceSchema } from '../../../lib/printing/docx-source-schema.js';
 import {
   checkPrintSnapshotId,
   createPrintSnapshotId,
+  digestPrintHtml,
 } from '../../../lib/printing/print-snapshot-id.js';
 import { expect, test } from '../fixtures.js';
 
@@ -140,14 +141,10 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   expect(reloadedHtml).toBe(html);
   expect(
     checkPrintSnapshotId(
-      {
-        ...snapshot,
-        id: (await page.locator(':root').getAttribute('data-print-snapshot-id'))!,
-        html: reloadedHtml,
-      },
+      { ...snapshot, id: (await page.locator(':root').getAttribute('data-print-snapshot-id'))! },
       secretKey,
     ),
-  ).toBe(true);
+  ).toBe(digestPrintHtml(reloadedHtml));
   await expect(
     page.locator('.pagedjs_page').getByText('Nested question text', { exact: true }),
   ).toBeVisible();

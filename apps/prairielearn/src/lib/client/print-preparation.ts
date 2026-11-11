@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-import type { PaperSize } from '../printing/pdf-output.js';
-import type { QuestionBlockSize } from '../printing/question-block-size.js';
+import type { PrintSettings } from '../print-packet-schema.js';
 
 import { PrintIdentityFieldsSchema } from './print-cover.js';
 
@@ -11,17 +10,6 @@ export interface PrintPreparationQuestion {
   questionId: string;
   points: number;
   concerns: string[];
-}
-
-export interface PrintSettings {
-  paperSize: PaperSize;
-  includeCoverPage: boolean;
-  includeGradingTable: boolean;
-  includeHonorCode: boolean;
-  identityFields: string;
-  blockSize: QuestionBlockSize;
-  questionSizes: Record<string, QuestionBlockSize | ''>;
-  excludedQuestions: string[];
 }
 
 export const DEFAULT_PRINT_SETTINGS: PrintSettings = {

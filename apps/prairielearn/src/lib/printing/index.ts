@@ -447,7 +447,6 @@ export async function renderPrintFormQuestions(
     // The request signal bounds both queueing and execution with the same deadline.
     0,
     'print preview',
-    'preview',
     options.signal,
   );
 }

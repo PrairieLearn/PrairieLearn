@@ -5,7 +5,6 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
-import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
 import { escapeRegExp } from '@prairielearn/sanitize';
 import {
   IdSchema,
@@ -243,26 +242,6 @@ router.get(
       res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
-      const meter = metrics.getMeter('prairielearn');
-      const attributes = { document };
-      const startedAt = performance.now();
-      res.once('finish', () => {
-        getHistogram(meter, 'print.preview.request.duration', {
-          unit: 'milliseconds',
-          valueType: ValueType.DOUBLE,
-        }).record(performance.now() - startedAt, attributes);
-        getHistogram(meter, 'print.preview.rss', {
-          unit: 'bytes',
-          valueType: ValueType.INT,
-        }).record(process.memoryUsage().rss, attributes);
-        if (res.statusCode >= 400) {
-          getCounter(meter, 'print.preview.failures', { valueType: ValueType.INT }).add(
-            1,
-            attributes,
-          );
-        }
-      });
-
       const printingResult = await renderPrintFormQuestions(res.locals, {
         signal,
         defaultQuestionBlockSize: layout.blockSize ?? 'auto',
@@ -271,10 +250,6 @@ router.get(
         document,
       });
       throwIfAborted();
-      getHistogram(meter, 'print.preview.questions.duration', {
-        unit: 'milliseconds',
-        valueType: ValueType.DOUBLE,
-      }).record(performance.now() - startedAt, attributes);
       if (printingResult.questionHtmls.length === 0) {
         throw new HttpStatusError(
           422,
@@ -420,44 +395,27 @@ router.post(
         layout.excludedQuestionNumbers,
       );
       throwIfAborted();
-      if (
-        !checkPrintSnapshotId(
-          {
-            ...snapshot,
-            printFormId: res.locals.print_form.id,
-            authnUserId: res.locals.authn_user.id,
-            search: localPreviewUrl.searchParams,
-            questionListDigest,
-          },
-          config.secretKey,
-        )
-      ) {
-        throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
-      }
-      const $ = load(snapshot.html);
-      const hasExecutableAttributes =
-        $('*').filter((_index, node) =>
-          'attribs' in node
-            ? Object.entries(node.attribs).some(
-                ([name, value]) =>
-                  /^on/i.test(name) || name === 'srcdoc' || /^\s*javascript:/i.test(String(value)),
-              )
-            : false,
-        ).length > 0;
-      if (
-        $('script, iframe, object, embed, base, meta[http-equiv="refresh"]').length > 0 ||
-        hasExecutableAttributes
-      ) {
-        throw new HttpStatusError(400, 'The printable pages contain executable content.');
-      }
-      const root = $('html');
+      const htmlDigest = checkPrintSnapshotId(
+        {
+          id: snapshot.id,
+          source: snapshot.source,
+          printFormId: res.locals.print_form.id,
+          authnUserId: res.locals.authn_user.id,
+          search: localPreviewUrl.searchParams,
+          questionListDigest,
+        },
+        config.secretKey,
+      );
+      if (!htmlDigest) throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+      // Parse only the root element: the export worker checks the full page against the signed
+      // digest and its layout, which avoids parsing large pages on the request thread.
+      const root = load(`${/<html\b[^>]*>/i.exec(snapshot.html)?.[0] ?? '<html>'}</html>`)('html');
       const questionCount = Number(root.attr('data-print-question-count'));
       assertPrintDocumentReady({
         questionCount,
         omittedCount: Number(root.attr('data-print-omitted-question-count')),
-        coverPageCount: $('.pagedjs_page')
-          .toArray()
-          .findIndex((page) => $(page).find('.printing-question').length > 0),
+        // The worker checks that the questions start after the cover.
+        coverPageCount: 0,
         document,
         formLabel: layout.formLabel,
       });
@@ -501,10 +459,10 @@ router.post(
           filename,
           snapshot: {
             formLabel: layout.formLabel ?? '',
-            paperSize: layout.paperSize,
             printDocument: document,
             localPreviewUrl: localPreviewUrl.href,
             html: snapshot.html,
+            htmlDigest,
             assetScope: printAssetScope(res.locals, printFormQuestionIds),
           },
           source: snapshot.source,

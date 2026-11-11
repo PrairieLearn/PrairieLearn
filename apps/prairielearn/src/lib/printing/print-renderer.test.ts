@@ -649,7 +649,7 @@ describe('PrintRenderer', () => {
     try {
       await expect(
         renderPdf(renderer, { url: 'http://localhost:3000/print/overloaded', timeoutMs: 0 }),
-      ).rejects.toThrow('Print rendering is busy. Try this export again shortly.');
+      ).rejects.toThrow('Print rendering is busy. Try again shortly.');
     } finally {
       gate.open();
       await Promise.all(accepted);

@@ -1,68 +1,65 @@
 import type { Page } from 'playwright';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
+import { serializePrintDocument } from './client/print-document.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from './client/print-snapshot.js';
 import { config } from './config.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
-import type { DocxSource } from './printing/docx-browser.js';
 import { createDocxOutput } from './printing/docx-output.js';
-import {
-  type PrintDocument,
-  getPrintRenderer,
-  isBrowserRenderingAvailable,
-  validatePrintDocument,
-} from './printing/index.js';
-import { type PaperSize, createPdfOutput } from './printing/pdf-output.js';
-import type { PrintAssetScope } from './printing/print-asset-access.js';
-import type { PrintableCover } from './printing/printable-cover.js';
+import { DocxSourceSchema } from './printing/docx-source-schema.js';
+import { getPrintRenderer, validatePrintDocument } from './printing/index.js';
+import { createPdfOutput } from './printing/pdf-output.js';
+import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
+import { digestPrintHtml } from './printing/print-snapshot-id.js';
+import { PrintableCoverSchema } from './printing/printable-cover.js';
 
-interface PrintExportSnapshot {
-  formLabel: string;
-  paperSize: PaperSize;
-  printDocument: PrintDocument;
-  localPreviewUrl: string;
-  html: string;
-  assetScope: PrintAssetScope;
-}
+const PrintExportSnapshotSchema = z.object({
+  formLabel: z.string(),
+  printDocument: z.enum(['assessment', 'answer_key']),
+  localPreviewUrl: z.url(),
+  html: z.string(),
+  /** Signed digest of the preview HTML, checked once the page is loaded. */
+  htmlDigest: z.string(),
+  assetScope: PrintAssetScopeDataSchema,
+});
+type PrintExportSnapshot = z.infer<typeof PrintExportSnapshotSchema>;
 
-export type PrintExportWork =
-  | {
-      format: 'pdf';
-      document: 'assessment' | 'answer_key' | 'booklet';
-      copies: number;
-      filename: string;
-      snapshots: PrintExportSnapshot[];
-      covers: { name: string; base64: string }[];
-    }
-  | {
-      format: 'docx';
-      document: PrintDocument;
-      filename: string;
-      snapshot: PrintExportSnapshot;
-      source: DocxSource;
-      cover?: PrintableCover;
-      footerLabel: string;
-    };
+export const PrintExportWorkSchema = z.discriminatedUnion('format', [
+  z.object({
+    format: z.literal('pdf'),
+    document: z.enum(['assessment', 'answer_key', 'booklet']),
+    copies: z.number().int().positive(),
+    filename: z.string(),
+    snapshots: z.array(PrintExportSnapshotSchema),
+    covers: z.array(z.object({ name: z.string(), base64: z.string() })),
+  }),
+  z.object({
+    format: z.literal('docx'),
+    document: z.enum(['assessment', 'answer_key']),
+    filename: z.string(),
+    snapshot: PrintExportSnapshotSchema,
+    source: DocxSourceSchema,
+    cover: PrintableCoverSchema.optional(),
+    footerLabel: z.string(),
+  }),
+]);
+export type PrintExportWork = z.infer<typeof PrintExportWorkSchema>;
 
+/**
+ * Rejects pages that differ from the signed preview. The browser normalizes the
+ * submitted HTML, so the comparison doesn't block the Node event loop.
+ */
 async function validateSnapshot(
   page: Page,
   snapshot: PrintExportSnapshot,
   shutdownSignal?: AbortSignal,
 ) {
-  const identity = await page.evaluate(() => ({
-    printFormId: document.documentElement.dataset.printFormId,
-    document: document.documentElement.dataset.printDocument,
-    formLabel: document.documentElement.dataset.printFormLabel,
-    paperSize: document.documentElement.dataset.printPaperSize,
-  }));
+  const html = await page.locator(':root').evaluate(serializePrintDocument);
   shutdownSignal?.throwIfAborted();
-  if (
-    identity.printFormId !== snapshot.assetScope.printFormId ||
-    identity.document !== snapshot.printDocument ||
-    identity.formLabel !== snapshot.formLabel ||
-    identity.paperSize !== snapshot.paperSize
-  ) {
-    throw new HttpStatusError(400, 'The printable pages do not match the selected form.');
+  if (digestPrintHtml(html) !== snapshot.htmlDigest) {
+    throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
   }
   const state = await validatePrintDocument(page);
   shutdownSignal?.throwIfAborted();
@@ -84,12 +81,6 @@ export async function renderPrintExport(
         )
       : [];
   if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
-  if (!isBrowserRenderingAvailable()) {
-    throw new HttpStatusError(
-      503,
-      `${work.format === 'docx' ? 'Word' : 'PDF'} rendering is not configured on this server.`,
-    );
-  }
   const renderer = getPrintRenderer();
   if (work.format === 'docx') {
     const output = createDocxOutput({
