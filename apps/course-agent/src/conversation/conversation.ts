@@ -407,7 +407,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const message = continuation
       ? null
       : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
-    const deniedReviewId = continuation ? null : (this.record.deniedByMessage ?? null);
     const earlier = historyBefore(this.messages, message);
     const checkedSandboxId = this.record.sandboxId;
     const lost =
@@ -415,6 +414,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
     const review = this.record.review;
     const status = this.record.lifecycle.status;
+    // Read with `review`: a denial recorded during the await settles the review it admits by.
+    const deniedReviewId = continuation ? null : (this.record.deniedByMessage ?? null);
     // deliverWaitingResult() claims the conversation before the SDK calls back for a continuation.
     const admitted = continuation
       ? review?.result && status === 'waiting_for_agent'

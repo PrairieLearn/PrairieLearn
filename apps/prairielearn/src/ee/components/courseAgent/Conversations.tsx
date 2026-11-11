@@ -360,16 +360,22 @@ function Chat({
     retry: false,
   });
   // A message sent while a review awaits a decision denies it, and the agent receives the denial
-  // with the message.
-  const replyDenies = pendingReview && agentIdle && review.data?.status === 'pending';
+  // with the message. A denial by message the agent has not received can be sent again.
+  const replyDenies =
+    pendingReview &&
+    agentIdle &&
+    (review.data?.status === 'pending' ||
+      (review.data?.status === 'decided' && review.data.result?.viaMessage === true));
   const deny = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
     // On a conflict the draft stays, and the review shows the decision that won.
-    onSettled: (_, __, { conversationId, reviewId }) =>
-      queryClient.invalidateQueries({
+    // Not awaited: the message is sent once the denial is delivered, not after the refetch.
+    onSettled: (_, __, { conversationId, reviewId }) => {
+      void queryClient.invalidateQueries({
         queryKey: trpc.courseAgent.getReview.queryKey({ conversationId, reviewId }),
-      }),
+      });
+    },
   });
   const denyError = getAppError<CourseAgentError['PostReviewDecision']>(deny.error);
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';

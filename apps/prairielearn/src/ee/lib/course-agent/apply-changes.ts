@@ -173,7 +173,7 @@ async function deliverDenialByMessage(
   if (!(await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result)))) {
     throw new HttpStatusError(
       503,
-      'The course agent could not be reached, so your message was not sent. Try again.',
+      'The changes were denied, but the course agent could not be reached, so your message was not sent. Try again.',
     );
   }
 }

@@ -93,7 +93,8 @@ export function RequestChangesCard({
       {data?.status === 'unavailable' && (
         <p className="small text-muted mt-2 mb-0">This review is no longer available.</p>
       )}
-      {canResume && data?.status === 'decided' && data.result && (
+      {/* The composer delivers a denial by message again when the instructor resends it. */}
+      {canResume && data?.status === 'decided' && data.result && !data.result.viaMessage && (
         <div className="d-flex align-items-center gap-2 mt-2">
           <span className="small text-muted">The course agent has not received this result.</span>
           <Button
