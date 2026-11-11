@@ -13,7 +13,7 @@ import clsx from 'clsx';
 import { dequal } from 'dequal';
 import { Fragment, memo, useId, useRef } from 'react';
 import { Alert, Badge, Button } from 'react-bootstrap';
-import { type FieldErrors, useFormState, useWatch } from 'react-hook-form';
+import { type FieldErrors, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
@@ -231,8 +231,14 @@ export function AccessControlSummary({
     useSensor(KeyboardSensor),
   );
 
-  const defaultRule = useWatch<AccessControlFormData, 'defaultRule'>({ name: 'defaultRule' });
-  const overrides = useWatch<AccessControlFormData, 'overrides'>({ name: 'overrides' });
+  // The watches only trigger re-renders. Values are read with `getValues`
+  // because react-hook-form reports add/remove/move to watchers one render
+  // late, which would briefly render the old list against new errors and
+  // selection.
+  useWatch<AccessControlFormData, 'defaultRule'>({ name: 'defaultRule' });
+  useWatch<AccessControlFormData, 'overrides'>({ name: 'overrides' });
+  const { getValues } = useFormContext<AccessControlFormData>();
+  const { defaultRule, overrides } = getValues();
   const { errors } = useFormState<AccessControlFormData>();
 
   const [defaultRuleSnapshot] = useStableSnapshots([defaultRule]);

@@ -196,13 +196,19 @@ export function AccessControlForm({
     name: 'overrides',
   });
 
-  // Subscribe only to what this component renders. Watching the whole form here
-  // would re-render every rule summary on each keystroke.
-  const overrideTargetTypes = useWatch({
+  // Re-render only when override target types change; watching the whole form
+  // here would re-render every rule summary on each keystroke. The values are
+  // read with `getValues` because react-hook-form reports add/remove/move to
+  // watchers one render late, while `useFieldArray` re-renders this component
+  // immediately.
+  useWatch({
     control,
     name: 'overrides',
     compute: (overrides) => overrides.map((override) => override.appliesTo.targetType),
   });
+  const overrideTargetTypes = getValues('overrides').map(
+    (override) => override.appliesTo.targetType,
+  );
   const overrideLimitPolicy = getOverrideLimitPolicy(overrideTargetTypes, canEditEnrollmentRules);
 
   const handleFormSubmit = async (data: AccessControlFormData) => {
