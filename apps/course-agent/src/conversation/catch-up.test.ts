@@ -51,6 +51,37 @@ describe('missedTurns', () => {
   });
 });
 
+describe('page hints in catch-up', () => {
+  it('names the most specific item on the page each staff line was sent from', () => {
+    const page = { path: '/pl/course_instance/1/instructor/assessment/2', page: 'Assessment' };
+    const located: UIMessage[] = [
+      {
+        id: 'u1',
+        role: 'user',
+        metadata: { location: { ...page, courseInstance: 'Fa25', assessment: 'hw1' } },
+        parts: [{ type: 'text', text: 'Shorten this assessment' }],
+      },
+      {
+        id: 'u2',
+        role: 'user',
+        metadata: { location: { ...page, courseInstance: 'Fa25', question: 'algebra/add' } },
+        parts: [{ type: 'text', text: 'Fix this question' }],
+      },
+      {
+        id: 'u3',
+        role: 'user',
+        metadata: { location: 'bad' },
+        parts: [{ type: 'text', text: 'Hi' }],
+      },
+    ];
+    expect(missedTurns(located, undefined)).toEqual([
+      'Staff (on assessment "hw1"): Shorten this assessment',
+      'Staff (on question "algebra/add"): Fix this question',
+      'Staff: Hi',
+    ]);
+  });
+});
+
 describe('tool calls in catch-up', () => {
   it('records changed files in one line and leaves other calls out', () => {
     const diff = { text: '', omitted: 0 };

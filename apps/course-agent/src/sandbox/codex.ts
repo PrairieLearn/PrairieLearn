@@ -69,6 +69,11 @@ export interface TurnInput {
   text: string;
   tag: string;
   once?: boolean;
+  /**
+   * The page the instructor was viewing. Codex shows it to the model as untrusted context ahead
+   * of the text, keeps the text verbatim, and skips resending an unchanged page.
+   */
+  page?: string;
   /** Text to prepend given the thread's latest tag (undefined for a thread started this turn). */
   catchUp?: (latestTag: string | null | undefined) => string | null;
 }
@@ -289,6 +294,9 @@ export class CodexAppServerClient {
           ...(context ? [{ type: 'text' as const, text: context, text_elements: [] }] : []),
           { type: 'text', text: input.text, text_elements: [] },
         ],
+        ...(input.page
+          ? { additionalContext: { prairielearn_page: { kind: 'untrusted', value: input.page } } }
+          : {}),
       } satisfies TurnStartParams,
       TurnResult,
     );

@@ -1,6 +1,10 @@
 import type { UIMessage, UIMessageChunk } from 'ai';
 
-import { type RequestChangesResult, ToolCallSchema } from '@prairielearn/course-agent-types';
+import {
+  type RequestChangesResult,
+  ToolCallSchema,
+  UserMessageMetadataSchema,
+} from '@prairielearn/course-agent-types';
 
 /** Keep the newest turns within a bound that leaves room for the current request. */
 const MAX_CATCH_UP_CHARS = 32_000;
@@ -119,6 +123,22 @@ function describeFileChange(data: unknown) {
   return `[Changed files: ${paths.join(', ')}.]`;
 }
 
+/**
+ * A replayed staff line names the most specific item on the page it was sent from, so "this
+ * question" in an earlier message keeps its referent.
+ */
+function staffSpeaker(metadata: unknown) {
+  const location = UserMessageMetadataSchema.safeParse(metadata ?? {}).data?.location;
+  const [kind, name] = location?.question
+    ? ['question', location.question]
+    : location?.assessment
+      ? ['assessment', location.assessment]
+      : location?.courseInstance
+        ? ['course instance', location.courseInstance]
+        : [];
+  return kind ? `Staff (on ${kind} ${JSON.stringify(name)})` : 'Staff';
+}
+
 /** Split chat history into the turns Codex received, each with its tag and visible text. */
 function splitTurns(history: UIMessage[]) {
   const turns: Turn[] = [];
@@ -141,7 +161,8 @@ function splitTurns(history: UIMessage[]) {
               ? describeFileChange(part.data)
               : '';
       if (!text) continue;
-      turns.at(-1)?.entries.push(`${message.role === 'user' ? 'Staff' : 'You'}: ${text}`);
+      const speaker = message.role === 'user' ? staffSpeaker(message.metadata) : 'You';
+      turns.at(-1)?.entries.push(`${speaker}: ${text}`);
     }
   }
   return turns;

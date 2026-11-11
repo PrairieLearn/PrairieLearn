@@ -59,7 +59,7 @@ export function HeadContents(titleOptions: TitleOptions) {
 }
 
 /** e.g. "hello_world" => "Hello World" */
-function displayFriendlyPage(page: string) {
+export function displayFriendlyPage(page: string) {
   return page
     .toLowerCase()
     .split('_')
