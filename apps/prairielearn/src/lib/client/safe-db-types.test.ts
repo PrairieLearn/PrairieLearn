@@ -412,6 +412,7 @@ const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSche
   json_max_auto_points: null,
   json_max_points: null,
   json_points: null,
+  json_qid: null,
   json_tries_per_variant: null,
   last_submission_score_hist: null,
   last_submission_score_variance: null,
