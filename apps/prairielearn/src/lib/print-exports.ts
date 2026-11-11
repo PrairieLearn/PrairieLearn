@@ -205,8 +205,8 @@ export async function queuePrintExport({
 }
 
 async function processPrintExport(printExportId: string) {
+  if (shutdownController.signal.aborted) return;
   const signal = shutdownController.signal;
-  if (signal.aborted) return;
   const printExport = await claimPrintExport(printExportId);
   if (!printExport) return;
   const { format } = printExport;
