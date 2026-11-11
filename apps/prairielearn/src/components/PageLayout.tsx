@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
@@ -298,18 +297,6 @@ export function PageLayout({
   const courseAgentPanel =
     sideNavEnabled && resolvedOptions.showCourseAgentPanel ? resLocals.course_agent_panel : null;
 
-  // Names the course agent uses for this page, as course files name them.
-  const courseAgentPageNames = courseAgentPanel
-    ? EncodedData(
-        {
-          courseInstance: resLocals.course_instance?.short_name ?? undefined,
-          assessment: resLocals.assessment?.tid ?? undefined,
-          question: resLocals.question?.qid ?? undefined,
-        },
-        'course-agent-page-names',
-      )
-    : '';
-
   let showContextNavigation = [
     'instructor',
     'administrator_institution',
@@ -517,7 +504,7 @@ export function PageLayout({
               ${postContentString}
             </div>
           </div>
-          ${courseAgentPanel ?? ''} ${courseAgentPageNames}
+          ${courseAgentPanel ?? ''}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

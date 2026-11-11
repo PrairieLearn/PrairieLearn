@@ -71,10 +71,6 @@ Each Codex tool call (a command, a file change, or any other tool: MCP and dynam
 
 History keeps a bounded copy: command text up to 2,000 characters, output up to 4,000 (its start and end), arguments up to 1,000, each diff up to 4,000, and 50 files per change. Paths in the course checkout are stored relative to the course root. Once a message's tool calls exceed 300,000 characters, later calls in it keep their labels but no output, diffs, or arguments, so the message stays well within a Durable Object row; Codex's own thread keeps the full record. A successful `request_changes` call has no part, because its review card shows it; a failed one does, so the instructor sees why. Catch-up omits tool calls except a one-line list of the files each completed change touched.
 
-## Page location
-
-Each user message may carry `metadata.location` (`PageLocationSchema`): the path and title of the PrairieLearn page the instructor was viewing, plus the course instance, assessment, and question names PrairieLearn rendered for that page. The browser supplies it, so the turn input presents it as context in a bracketed note ahead of the message text; it is never an instruction.
-
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:

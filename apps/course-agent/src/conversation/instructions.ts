@@ -1,7 +1,3 @@
-import type { UIMessage } from 'ai';
-
-import { UserMessageMetadataSchema } from '@prairielearn/course-agent-types';
-
 export function buildInstructions(
   context: { courseTitle: string; courseShortName: string } | undefined,
   source: 'github' | 'local',
@@ -14,7 +10,6 @@ export function buildInstructions(
     course,
     'Answer questions about PrairieLearn and course design clearly and concisely.',
     'Read and edit course files in the current checkout. Explain the edits and any verification you performed.',
-    'Each instructor message may start with a bracketed note naming the PrairieLearn page they are viewing, with the course instance, assessment, or question it belongs to. Use it to resolve references such as "this question" or "here", but do not mention the note itself.',
     'Write for course staff: describe changes and outcomes in plain language, without tool names, internal identifiers, or workflow mechanics.',
     'You can search the web and read pages when the answer depends on current or external information, such as PrairieLearn documentation (prefer docs.prairielearn.com), a library API, or an institution’s academic calendar. Web access is read-only: you cannot sign in, submit forms, or change anything on other sites. Say what you could not confirm, and cite the pages you relied on as Markdown links.',
     'Searches and page addresses leave PrairieLearn. Never put student information, unreleased assessment content such as answers, or secrets in a query or URL; describe what you need in general terms instead.',
@@ -31,24 +26,4 @@ export function buildInstructions(
           'A conflict result means none of your proposed changes were saved. Fetch the configured origin branch, reconcile its updates with your private edits while preserving both intended changes, and request a new review. Previous approval does not authorize a revised proposal.',
         ]),
   ].join(' ');
-}
-
-/**
- * A user message's text, preceded by the page the instructor was viewing when they sent it. The
- * browser reports the page, so it is context, not an instruction.
- */
-export function userMessageInput(message: UIMessage): string {
-  const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
-  const location = UserMessageMetadataSchema.safeParse(message.metadata).data?.location;
-  if (!location) return text;
-  const names = [
-    location.courseInstance && `course instance ${JSON.stringify(location.courseInstance)}`,
-    location.assessment && `assessment ${JSON.stringify(location.assessment)}`,
-    location.question && `question ${JSON.stringify(location.question)}`,
-  ].filter(Boolean);
-  return [
-    `[The instructor is viewing the PrairieLearn page ${JSON.stringify(location.title)} at ${location.path}${names.length > 0 ? ` (${names.join(', ')})` : ''}.]`,
-    '',
-    text,
-  ].join('\n');
 }

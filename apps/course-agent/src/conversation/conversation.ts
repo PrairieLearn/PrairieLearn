@@ -36,7 +36,7 @@ import {
   turnMarker,
 } from './catch-up.js';
 import { getCourseData } from './course-data.js';
-import { buildInstructions, userMessageInput } from './instructions.js';
+import { buildInstructions } from './instructions.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
 // without traffic, including idle chats and long silent turns.
@@ -428,7 +428,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           }
         : {
             tag: messageTag(message!.id),
-            text: userMessageInput(message!),
+            text: message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n'),
           }),
       // A restored or new thread may lack turns that chat history has.
       ...((startup || this.record.threadMayBeBehind) && earlier.length > 0
