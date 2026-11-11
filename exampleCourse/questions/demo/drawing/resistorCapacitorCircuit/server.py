@@ -58,4 +58,4 @@ def generate(data):
     # fully charged, no current flows through R1, and the full battery voltage
     # appears across C.
     Q = C * V
-    data["correct_answers"]["charge"] = str(Q.to_base_units())
+    data["correct_answers"]["charge"] = str(Q.to(ureg.microcoulomb))
