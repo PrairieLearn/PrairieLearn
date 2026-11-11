@@ -7,25 +7,25 @@
         {{#formula_editor}}
         <script>
             $(function() {
-                window.PLSymbolicInput("{{name}}");
+                window.PLSymbolicInput("{{uuid}}");
             });
         </script>
             <input
                 name="{{name}}"
-                id="symbolic-input-sub-{{name}}"
+                id="symbolic-input-sub-{{uuid}}"
                 type="hidden"
                 value=""
                 data-deferred-initial-value="true"
             />
             <input
                 name="{{name}}-latex"
-                id="symbolic-input-latex-{{name}}"
+                id="symbolic-input-latex-{{uuid}}"
                 type="hidden"
                 value="{{raw_submitted_answer_latex}}"
                 data-deferred-initial-value="true"
             />
             <math-field
-                id="symbolic-input-{{name}}"
+                id="symbolic-input-{{uuid}}"
                 theme="light"
                 class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid no-validation-icon{{/parse_error}}{{^formula_editor_buttons}} no-buttons{{/formula_editor_buttons}}"
                 {{#parse_error}}aria-invalid="true"{{/parse_error}}

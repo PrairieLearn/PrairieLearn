@@ -15,5 +15,8 @@ LDFLAGS="-L${graphviz_libdir} -Wl,-rpath,${graphviz_libdir}" \
 # Clear various caches to minimize the final image size.
 apt-get clean && rm -rf /var/lib/apt/lists/*
 pip3 cache purge
+# pip runs as root here, so it creates XDG_CACHE_HOME owned by root. Remove it
+# so that the workspace user can create caches there, such as matplotlib's.
+rm -rf "$XDG_CACHE_HOME"
 
 rm /requirements.txt /install.sh

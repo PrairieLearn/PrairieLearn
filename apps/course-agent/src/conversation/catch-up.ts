@@ -1,6 +1,10 @@
 import type { UIMessage, UIMessageChunk } from 'ai';
 
-import { type RequestChangesResult, ToolCallSchema } from '@prairielearn/course-agent-types';
+import {
+  InputRequestPartSchema,
+  type RequestChangesResult,
+  ToolCallSchema,
+} from '@prairielearn/course-agent-types';
 
 import { attachmentOf, attachmentPath } from './attachments.js';
 
@@ -136,13 +140,33 @@ function describeFileChange(data: unknown) {
   return `[Changed files: ${paths.join(', ')}.]`;
 }
 
-/** The text catch-up shows for a part of a message, or an empty string to leave it out. */
+/** A restored thread may have lost the prompts that staff's next message answers. */
+function describeInputRequest(data: unknown) {
+  const part = InputRequestPartSchema.safeParse(data);
+  if (!part.success) return '';
+  return part.data.prompts
+    .map(({ title, options }) =>
+      options?.length ? `[Asked: ${title} (options: ${options.join('; ')})]` : `[Asked: ${title}]`,
+    )
+    .join('\n');
+}
+
+/** The text a part contributes to catch-up, or an empty string if it contributes none. */
 function describePart(part: UIMessage['parts'][number]) {
-  if (part.type === 'text') return part.text.trim();
-  if (part.type === 'data-review') return '[Submitted changes for instructor review.]';
-  if (part.type === 'data-tool') return describeFileChange(part.data);
-  const attachment = attachmentOf(part);
-  return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';
+  switch (part.type) {
+    case 'text':
+      return part.text.trim();
+    case 'data-review':
+      return '[Submitted changes for instructor review.]';
+    case 'data-input-request':
+      return describeInputRequest(part.data);
+    case 'data-tool':
+      return describeFileChange(part.data);
+    default: {
+      const attachment = attachmentOf(part);
+      return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';
+    }
+  }
 }
 
 /** Split chat history into the turns Codex received, each with its tag and visible text. */
