@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from matplotlib.figure import Figure
 from pytest_prairielearn_grader.assertions import assert_true
-from pytest_prairielearn_grader.fixture import StudentFixture
+from pytest_prairielearn_grader.fixture import FeedbackFixture, StudentFixture
 from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 # Importing matplotlib in student code can take longer than the default timeout.
@@ -11,12 +11,13 @@ sandbox_timeout = 15
 
 @pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="plot", points=1)
-def test_plot(sandbox: StudentFixture) -> None:
+def test_plot(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
     figure = sandbox.query("plot")
     assert_true(
         isinstance(figure, Figure),
         msg="plot should be a Matplotlib plot, such as plt.gca()",
     )
+    feedback.add_image(figure, label="Your plot")
     assert_true(len(figure.axes) == 1, msg="plot should have exactly one set of axes")
     axes = figure.axes[0]
 
