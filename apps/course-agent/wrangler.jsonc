@@ -12,8 +12,7 @@
     "USER_IDLE_SECONDS": "600",
     // A Cloudflare instance type: lite or standard-1 through standard-4.
     "SANDBOX_INSTANCE_TYPE": "standard-2",
-    "SENTRY_ENVIRONMENT": "development",
-    "DEBUG_RUNNER_OUTPUT": "false"
+    "SENTRY_ENVIRONMENT": "development"
   },
   "version_metadata": {
     "binding": "VERSION_METADATA"
@@ -82,10 +81,7 @@
         "USER_IDLE_SECONDS": "600",
         // A Cloudflare instance type: lite or standard-1 through standard-4.
         "SANDBOX_INSTANCE_TYPE": "standard-2",
-        "SENTRY_ENVIRONMENT": "staging",
-        // Temporary: forwards Codex runner output to diagnose staging sandbox startup. Codex output
-        // can be sensitive; remove once startup is fixed and never enable it in production.
-        "DEBUG_RUNNER_OUTPUT": "true"
+        "SENTRY_ENVIRONMENT": "staging"
       },
       "secrets": {
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
@@ -134,8 +130,7 @@
         "USER_IDLE_SECONDS": "600",
         // A Cloudflare instance type: lite or standard-1 through standard-4.
         "SANDBOX_INSTANCE_TYPE": "standard-2",
-        "SENTRY_ENVIRONMENT": "production",
-        "DEBUG_RUNNER_OUTPUT": "false"
+        "SENTRY_ENVIRONMENT": "production"
       },
       "secrets": {
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
