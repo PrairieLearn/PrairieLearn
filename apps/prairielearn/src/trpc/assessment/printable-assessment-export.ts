@@ -4,19 +4,15 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
-import { MAX_PACKET_PAGES } from '../../lib/client/print-packet.js';
-import { printLayoutSearch } from '../../lib/client/print-preparation.js';
 import {
   MAX_PRINT_PACKET_SNAPSHOT_BYTES,
   MAX_PRINT_SNAPSHOT_BYTES,
 } from '../../lib/client/print-snapshot-limits.js';
-import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
+import { MAX_PACKET_PAGES } from '../../lib/client/printing/print-packet.js';
+import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import type { PrintExportWork } from '../../lib/print-export-render.js';
-import { queuePrintExport } from '../../lib/print-exports.js';
-import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
-import { PrintPacketError, readPrintCoverPages } from '../../lib/print-packet.js';
 import {
   type PrintDocument,
   getPrintableFormQuestionIds,
@@ -24,6 +20,10 @@ import {
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
+import type { PrintExportWork } from '../../lib/printing/print-export-render.js';
+import { queuePrintExport } from '../../lib/printing/print-exports.js';
+import { PrintPacketMetadataSchema } from '../../lib/printing/print-packet-schema.js';
+import { PrintPacketError, readPrintCoverPages } from '../../lib/printing/print-packet.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectOptionalPrintExport } from '../../models/print-export.js';

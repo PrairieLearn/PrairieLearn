@@ -21,9 +21,8 @@ import {
 } from '../../lib/client/print-cover.js';
 import { serializePrintDocument } from '../../lib/client/print-document.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
-import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { config } from '../../lib/config.js';
-import { queuePrintExport } from '../../lib/print-exports.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { DocxSourceSchema } from '../../lib/printing/docx-source-schema.js';
 import {
@@ -46,6 +45,7 @@ import {
   buildPrintableCover,
   getPrintFooterLabel,
 } from '../../lib/printing/print-cover.js';
+import { queuePrintExport } from '../../lib/printing/print-exports.js';
 import { withPrintRequest } from '../../lib/printing/print-request.js';
 import {
   checkPrintSnapshotId,

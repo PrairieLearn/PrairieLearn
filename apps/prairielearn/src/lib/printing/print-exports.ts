@@ -16,18 +16,19 @@ import {
   insertPrintExport,
   releasePrintExport,
   selectPendingPrintExports,
-} from '../models/print-export.js';
+} from '../../models/print-export.js';
+import { deleteFromS3, getFromS3, uploadToS3 } from '../aws.js';
+import { config } from '../config.js';
+import { getFileStoreS3Bucket } from '../file-store.js';
 
-import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
-import { config } from './config.js';
-import { getFileStoreS3Bucket } from './file-store.js';
 import {
   type PrintExportWork,
   PrintExportWorkSchema,
   renderPrintExport,
 } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
-import { isBrowserRenderingAvailable } from './printing/index.js';
+
+import { isBrowserRenderingAvailable } from './index.js';
 
 const KEY_PREFIX = 'print-exports/';
 const QUEUE_NAME = 'print-exports';

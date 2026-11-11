@@ -2,10 +2,11 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { MAX_PRINT_COPIES, MAX_PRINT_FORMS } from './client/print-packet.js';
-import { PrintIdentityFieldsTextSchema } from './client/print-preparation.js';
-import { PAPER_SIZES } from './printing/pdf-output.js';
-import { QUESTION_BLOCK_SIZES } from './printing/question-block-size.js';
+import { MAX_PRINT_COPIES, MAX_PRINT_FORMS } from '../client/printing/print-packet.js';
+import { PrintIdentityFieldsTextSchema } from '../client/printing/print-preparation.js';
+
+import { PAPER_SIZES } from './pdf-output.js';
+import { QUESTION_BLOCK_SIZES } from './question-block-size.js';
 
 const QuestionNumberSchema = z.string().min(1);
 export const PrintSettingsSchema = z.strictObject({

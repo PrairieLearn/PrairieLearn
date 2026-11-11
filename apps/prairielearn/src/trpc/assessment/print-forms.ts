@@ -7,7 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { createPrintForm } from '../../lib/print-forms.js';
-import { inspectPrintPreparationQuestions } from '../../lib/print-preparation.js';
+import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
 import { selectOptionalPrintForm, selectPrintFormsForUser } from '../../models/print-form.js';
 
 import { type createContext, requireCoursePermissionPreview, t } from './init.js';

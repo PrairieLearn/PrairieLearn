@@ -76,12 +76,12 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { closePrintRenderer } from './lib/printing/index.js';
 import {
   beginPrintExportShutdown,
   initPrintExportWorker,
   waitForPrintExportWorkers,
-} from './lib/print-exports.js';
-import { closePrintRenderer } from './lib/printing/index.js';
+} from './lib/printing/print-exports.js';
 import { initPrintRequests, stopPrintRequests } from './lib/printing/print-request.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';

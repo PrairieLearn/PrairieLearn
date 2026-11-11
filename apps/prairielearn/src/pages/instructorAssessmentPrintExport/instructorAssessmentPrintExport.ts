@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 
-import { getPrintExportStream } from '../../lib/print-exports.js';
+import { getPrintExportStream } from '../../lib/printing/print-exports.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';

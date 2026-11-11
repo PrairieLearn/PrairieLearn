@@ -17,8 +17,11 @@ import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { beginPrintExportShutdown, waitForPrintExportWorkers } from '../lib/print-exports.js';
 import { closePrintRenderer } from '../lib/printing/index.js';
+import {
+  beginPrintExportShutdown,
+  waitForPrintExportWorkers,
+} from '../lib/printing/print-exports.js';
 import { stopPrintRequests } from '../lib/printing/print-request.js';
 import * as serverJobs from '../lib/server-jobs.js';
 import * as socketServer from '../lib/socket-server.js';

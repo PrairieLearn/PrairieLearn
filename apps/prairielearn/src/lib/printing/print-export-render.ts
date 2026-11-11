@@ -3,17 +3,19 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { serializePrintDocument } from './client/print-document.js';
-import { STALE_PRINT_SNAPSHOT_MESSAGE } from './client/print-snapshot.js';
-import { config } from './config.js';
+import { serializePrintDocument } from '../client/print-document.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../client/printing/print-snapshot.js';
+import { config } from '../config.js';
+
+import { createDocxOutput } from './docx-output.js';
+import { DocxSourceSchema } from './docx-source-schema.js';
+import { createPdfOutput } from './pdf-output.js';
+import { PrintAssetScopeDataSchema } from './print-asset-access.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
-import { createDocxOutput } from './printing/docx-output.js';
-import { DocxSourceSchema } from './printing/docx-source-schema.js';
-import { getPrintRenderer, validatePrintDocument } from './printing/index.js';
-import { createPdfOutput } from './printing/pdf-output.js';
-import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
-import { digestPrintHtml } from './printing/print-snapshot-id.js';
-import { PrintableCoverSchema } from './printing/printable-cover.js';
+import { digestPrintHtml } from './print-snapshot-id.js';
+import { PrintableCoverSchema } from './printable-cover.js';
+
+import { getPrintRenderer, validatePrintDocument } from './index.js';
 
 const PrintExportSnapshotSchema = z.object({
   formLabel: z.string(),

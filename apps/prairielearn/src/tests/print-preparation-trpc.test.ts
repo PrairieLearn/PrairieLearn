@@ -12,23 +12,26 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
-import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
+import {
+  DEFAULT_PRINT_SETTINGS,
+  printLayoutSearch,
+} from '../lib/client/printing/print-preparation.js';
 import { getAssessmentTrpcUrl, getPrintFormUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import * as printExportRender from '../lib/print-export-render.js';
+import { createPrintForm } from '../lib/print-forms.js';
+import * as printing from '../lib/printing/index.js';
+import * as printExportRender from '../lib/printing/print-export-render.js';
 import {
   beginPrintExportShutdown,
   initPrintExportWorker,
   processQueuedPrintExports,
   queuePrintExport,
   waitForPrintExportWorkers,
-} from '../lib/print-exports.js';
-import { createPrintForm } from '../lib/print-forms.js';
-import { PrintPacketMetadataSchema } from '../lib/print-packet-schema.js';
-import { assessmentHasPrintRandomization } from '../lib/print-preparation.js';
-import * as printing from '../lib/printing/index.js';
+} from '../lib/printing/print-exports.js';
+import { PrintPacketMetadataSchema } from '../lib/printing/print-packet-schema.js';
+import { assessmentHasPrintRandomization } from '../lib/printing/print-preparation.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';

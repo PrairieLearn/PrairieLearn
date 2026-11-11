@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
-import type { PrintSettings } from '../print-packet-schema.js';
-
-import { PrintIdentityFieldsSchema } from './print-cover.js';
+import type { PrintSettings } from '../../printing/print-packet-schema.js';
+import { PrintIdentityFieldsSchema } from '../print-cover.js';
 
 export interface PrintPreparationQuestion {
   number: string;
