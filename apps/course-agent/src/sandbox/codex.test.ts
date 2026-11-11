@@ -54,7 +54,19 @@ function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
   return { sandbox, native, commands, emit, disconnect: () => socket.close() };
 }
 
-const thread = { model: 'test', instructions: 'Edit course', threadId: null };
+const thread = {
+  model: 'test',
+  instructions: 'Edit course',
+  threadId: null,
+  pages: [
+    {
+      key: 'assessment.settings',
+      label: 'Settings',
+      params: ['courseInstance' as const, 'assessment' as const],
+      file: false,
+    },
+  ],
+};
 
 function options(onAccepted: () => void, threadId: string | null = null) {
   return {
@@ -276,7 +288,7 @@ describe('course agent turns', () => {
     ]);
   });
 
-  it('opens pages named as course files name them, rejecting targets PrairieLearn cannot name', async () => {
+  it('opens catalog pages, rejecting unknown pages and missing names', async () => {
     const { sandbox, native, commands, emit } = runner();
     const accepted = Promise.withResolvers<undefined>();
     const turn = new SandboxTurn(
@@ -304,10 +316,23 @@ describe('course agent turns', () => {
         return (frame as unknown as { result: { success: boolean } }).result;
       });
     };
+    const target = { page: 'assessment.settings', courseInstance: 'Fa25', assessment: 'hw1' };
+    expect(await call('open', target)).toMatchObject({ success: true });
+    expect(await call('unknown', { page: 'assessment.nope' })).toMatchObject({ success: false });
     expect(
-      await call('open', { courseInstance: 'Fa25', assessment: 'hw1', page: 'settings' }),
-    ).toMatchObject({ success: true });
-    expect(await call('bad', { page: '../admin' })).toMatchObject({ success: false });
+      await call('missing', { page: 'assessment.settings', courseInstance: 'Fa25' }),
+    ).toMatchObject({ success: false });
+    const start = commands.find((command) => command.method === 'thread/start');
+    expect(start).toMatchObject({
+      params: {
+        dynamicTools: [
+          {
+            name: 'navigate',
+            inputSchema: { properties: { page: { enum: ['assessment.settings'] } } },
+          },
+        ],
+      },
+    });
     emit({
       method: 'turn/completed',
       params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
@@ -319,10 +344,7 @@ describe('course agent turns', () => {
       {
         type: 'data-navigation',
         id: 'navigation:open',
-        data: {
-          action: 'open',
-          target: { courseInstance: 'Fa25', assessment: 'hw1', page: 'settings' },
-        },
+        data: { action: 'open', target, label: 'Settings' },
       },
     ]);
   });

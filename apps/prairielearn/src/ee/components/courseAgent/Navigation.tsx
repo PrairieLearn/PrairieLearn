@@ -4,11 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from 'react-bootstrap';
 import { z } from 'zod';
 
-import {
-  type NavigationPart,
-  NavigationPartSchema,
-  type NavigationTarget,
-} from '@prairielearn/course-agent-types';
+import { type NavigationPart, NavigationPartSchema } from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
 
 import { useTRPC } from '../../../trpc/course/context.js';
@@ -87,15 +83,17 @@ export function useAgentNavigation({
   return { errors, navigate };
 }
 
-function describeTarget(target: NavigationTarget) {
-  const subject = target.assessment
-    ? `assessment ${target.assessment}`
-    : target.question
-      ? `question ${target.question}`
-      : target.courseInstance
-        ? `course instance ${target.courseInstance}`
-        : 'course';
-  return target.page ? `${subject} (${target.page.replaceAll('_', ' ')})` : subject;
+function describeTarget({ target, label }: Extract<NavigationPart, { action: 'open' }>) {
+  const subject =
+    target.file ??
+    (target.assessment
+      ? `assessment ${target.assessment}`
+      : target.question
+        ? `question ${target.question}`
+        : target.courseInstance
+          ? `course instance ${target.courseInstance}`
+          : null);
+  return subject ? `${label} (${subject})` : label;
 }
 
 export function NavigationNotice({
@@ -112,13 +110,13 @@ export function NavigationNotice({
       <i className="bi bi-box-arrow-up-right" aria-hidden="true" />
       {error ? (
         <span className="text-danger">
-          Could not open {describeTarget(navigation.target)}. {error}
+          Could not open {describeTarget(navigation)}. {error}
         </span>
       ) : (
         <>
           Opened
           <Button variant="link" size="sm" className="p-0 align-baseline" onClick={onOpen}>
-            {describeTarget(navigation.target)}
+            {describeTarget(navigation)}
           </Button>
         </>
       )}

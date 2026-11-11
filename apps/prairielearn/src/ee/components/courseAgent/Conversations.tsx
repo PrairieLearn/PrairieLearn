@@ -33,9 +33,9 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
 import { NavigationNotice, navigationOf, useAgentNavigation } from './Navigation.js';
-import { currentPageLocation } from './pageLocation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
+import { currentPageLocation } from './pageLocation.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });

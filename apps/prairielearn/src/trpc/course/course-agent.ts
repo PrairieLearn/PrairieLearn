@@ -15,6 +15,7 @@ import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
+import { agentPageUrl, buildPageCatalog, findAgentPage } from '../../ee/lib/course-agent/pages.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
@@ -97,49 +98,58 @@ export const courseAgentRouter = t.router({
       return resumeConversation(conversation);
     }),
 
-  /** The URL of a page the agent named the way course files do. */
+  /** The URL of a catalog page, with its names resolved the way course files name things. */
   resolveNavigation: courseAgentProcedure
     .input(NavigationTargetSchema)
     .output(z.strictObject({ url: z.string() }))
     .query(async ({ ctx, input }) => {
       const notFound = (message: string) => new TRPCError({ code: 'NOT_FOUND', message });
-      const courseInstance = input.courseInstance
+      const page = findAgentPage(input.page);
+      if (!page) throw notFound(`No page named "${input.page}".`);
+      const missing = page.params.filter((param) => !input[param]);
+      if (missing.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `This page also needs: ${missing.join(', ')}.`,
+        });
+      }
+
+      const course_instance = input.courseInstance
         ? await selectOptionalCourseInstanceByShortName({
             course: ctx.course,
             shortName: input.courseInstance,
           })
         : null;
-      if (input.courseInstance && !courseInstance) {
+      if (input.courseInstance && !course_instance) {
         throw notFound(`No course instance named "${input.courseInstance}".`);
       }
-      const base = courseInstance
-        ? `/pl/course_instance/${courseInstance.id}/instructor`
-        : `/pl/course/${ctx.course.id}`;
-      if (input.assessment) {
-        if (!courseInstance) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'An assessment needs its course instance.',
-          });
-        }
-        const assessment = await selectOptionalAssessmentByTid({
-          course_instance_id: courseInstance.id,
-          tid: input.assessment,
-        });
-        if (!assessment) throw notFound(`No assessment named "${input.assessment}".`);
-        return { url: `${base}/assessment/${assessment.id}/${input.page ?? 'questions'}` };
+      // Names a page does not use are ignored, so only its own params are looked up.
+      const assessment =
+        page.params.includes('assessment') && course_instance
+          ? await selectOptionalAssessmentByTid({
+              course_instance_id: course_instance.id,
+              tid: input.assessment!,
+            })
+          : null;
+      if (page.params.includes('assessment') && !assessment) {
+        throw notFound(`No assessment named "${input.assessment}".`);
       }
-      if (input.question) {
-        const question = await selectOptionalQuestionByQid({
-          qid: input.question,
-          course_id: ctx.course.id,
-        });
-        if (!question) throw notFound(`No question named "${input.question}".`);
-        return { url: `${base}/question/${question.id}/${input.page ?? 'preview'}` };
+      const question = page.params.includes('question')
+        ? await selectOptionalQuestionByQid({ qid: input.question!, course_id: ctx.course.id })
+        : null;
+      if (page.params.includes('question') && !question) {
+        throw notFound(`No question named "${input.question}".`);
       }
-      const page =
-        input.page ?? (courseInstance ? 'instance_admin/assessments' : 'course_admin/questions');
-      return { url: `${base}/${page}` };
+      return {
+        url: agentPageUrl({
+          key: page.key,
+          course: ctx.course,
+          course_instance,
+          assessment,
+          question,
+          file: input.file ?? null,
+        }),
+      };
     }),
 
   // Record only conversations whose Cloudflare startup succeeded.
@@ -148,7 +158,7 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const agentConversationId = await run(async () => {
         if (config.devMode && !config.fileEditorUseGit) {
-          return createLocalCourseAgentConversation(ctx.course.path);
+          return createLocalCourseAgentConversation(ctx.course.path, buildPageCatalog());
         } else {
           const repository = parseGithubRepository(ctx.course.repository ?? '');
           if (!repository || !ctx.course.branch) {
@@ -167,7 +177,7 @@ export const courseAgentRouter = t.router({
               message: 'The course repository or branch is invalid.',
             });
           }
-          return createCourseAgentConversation(binding.data);
+          return createCourseAgentConversation({ ...binding.data, pages: buildPageCatalog() });
         }
       });
       const title = input.text.replaceAll(/\s+/g, ' ');
