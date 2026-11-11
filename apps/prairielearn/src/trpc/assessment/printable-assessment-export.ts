@@ -16,8 +16,8 @@ import {
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { queuePrintExport, selectPrintExportJob } from '../../lib/print-export-jobs.js';
 import type { PrintExportWork } from '../../lib/print-export-render.js';
+import { queuePrintExport, selectPrintExport } from '../../lib/print-exports.js';
 import { PrintPacketMetadataSchema } from '../../lib/print-packet-schema.js';
 import { PrintPacketError, readPrintCoverPages } from '../../lib/print-packet.js';
 import {
@@ -271,10 +271,9 @@ export const printableAssessmentExportRouter = t.router({
           assessmentId: ctx.assessment.id,
           authnUserId: ctx.authn_user.id,
           courseId: ctx.course.id,
-          courseInstanceId: ctx.course_instance.id,
           userId: ctx.locals.user.id,
         };
-        return { jobSequenceId: await queuePrintExport({ owner, work }) };
+        return { printExportId: await queuePrintExport({ owner, work }) };
       } catch (error) {
         if (error instanceof HttpStatusError && error.status === 503) {
           throw new TRPCError({
@@ -300,25 +299,24 @@ export const printableAssessmentExportRouter = t.router({
   status: t.procedure
     .use(requireCoursePermissionPreview)
     .use(requirePrintableAssessments)
-    .input(z.object({ jobSequenceId: IdSchema }))
+    .input(z.object({ printExportId: IdSchema }))
     .query(async ({ ctx, input }) => {
-      const job = await selectPrintExportJob({
-        jobSequenceId: input.jobSequenceId,
+      const printExport = await selectPrintExport({
+        printExportId: input.printExportId,
         assessmentId: ctx.assessment.id,
         authnUserId: ctx.authn_user.id,
       });
-      if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (!printExport) throw new TRPCError({ code: 'NOT_FOUND' });
       return {
-        status: job.status,
-        format: job.format,
-        ready: !!job.result,
-        downloadUrl: job.result
-          ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print_preparation/exports/${input.jobSequenceId}.${job.result.format}`
-          : null,
-        sizeBytes: job.result?.sizeBytes ?? null,
-        exportLabel: job.result?.exportLabel ?? null,
-        failureMessage: job.failureMessage,
-        canViewJobLogs: ctx.authz_data.has_course_instance_permission_view,
+        status: printExport.status,
+        format: printExport.format,
+        downloadUrl:
+          printExport.status === 'succeeded'
+            ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print_preparation/exports/${printExport.id}`
+            : null,
+        sizeBytes: printExport.size_bytes,
+        label: printExport.label,
+        failureMessage: printExport.failure_message,
       };
     }),
 });

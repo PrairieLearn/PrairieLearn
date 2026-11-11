@@ -1,4 +1,4 @@
-import { processQueuedPrintExports } from '../lib/print-export-jobs.js';
+import { processQueuedPrintExports } from '../lib/print-exports.js';
 
 export async function run() {
   await processQueuedPrintExports();

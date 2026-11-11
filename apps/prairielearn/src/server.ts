@@ -80,7 +80,7 @@ import {
   beginPrintExportShutdown,
   initPrintExportWorker,
   waitForPrintExportWorkers,
-} from './lib/print-export-jobs.js';
+} from './lib/print-exports.js';
 import { closePrintRenderer } from './lib/printing/index.js';
 import { initPrintRequests, stopPrintRequests } from './lib/printing/print-request.js';
 import * as serverJobs from './lib/server-jobs.js';

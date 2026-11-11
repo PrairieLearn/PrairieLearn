@@ -24,7 +24,7 @@ import { serializePrintDocument } from '../../lib/client/print-document.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
 import { config } from '../../lib/config.js';
-import { queuePrintExport } from '../../lib/print-export-jobs.js';
+import { queuePrintExport } from '../../lib/print-exports.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { DocxSourceSchema } from '../../lib/printing/docx-source-schema.js';
 import {
@@ -488,12 +488,11 @@ router.post(
         ) +
         '.docx';
       throwIfAborted();
-      const jobSequenceId = await queuePrintExport({
+      const printExportId = await queuePrintExport({
         owner: {
           assessmentId: res.locals.assessment.id,
           authnUserId: res.locals.authn_user.id,
           courseId: res.locals.course.id,
-          courseInstanceId: res.locals.course_instance.id,
           userId: res.locals.user.id,
         },
         work: {
@@ -514,7 +513,7 @@ router.post(
         },
       });
       res.setHeader('Cache-Control', 'private, no-store');
-      res.json({ jobSequenceId });
+      res.json({ printExportId });
     });
   }),
 );
