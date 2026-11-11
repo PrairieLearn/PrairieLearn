@@ -16,7 +16,7 @@ test('fills the cover grading table down columns using only included questions',
   courseInstance,
 }) => {
   test.setTimeout(180_000);
-  const { printUrl: base } = await createPrintableForm(courseInstance, 'exam23-printing');
+  const { printUrl: base } = await createPrintableForm(courseInstance, 'exam25-printingAutomated');
   await page.goto(`${base}/preview?paper_size=Letter&grading_table=true&exclude_question=2`);
   await waitForPrintablePage(page);
   const cover = page.getByRole('article', { name: 'Exam cover page' });
