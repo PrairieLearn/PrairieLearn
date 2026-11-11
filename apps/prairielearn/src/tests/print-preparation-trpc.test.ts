@@ -296,8 +296,16 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect(
       (await api.printForms.questions.query({ printFormId: otherUserForm.id })).length,
     ).toBeGreaterThan(0);
-    const replacement = await api.printForms.regenerate.mutate({ printFormId: otherUserForm.id });
-    expect(replacement.printFormId).not.toBe(otherUserForm.id);
+    await api.printForms.archive.mutate({ printFormId: otherUserForm.id });
+    expect(
+      (await api.printForms.list.query()).find((form) => form.id === otherUserForm.id)!.archived_at,
+    ).not.toBeNull();
+    expect(
+      (await api.printForms.questions.query({ printFormId: otherUserForm.id })).length,
+    ).toBeGreaterThan(0);
+    await expect(
+      api.printForms.regenerate.mutate({ printFormId: otherUserForm.id }),
+    ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
     await expect(
       api.printableAssessmentExport.pdf.mutate(packetInput(otherUserForm.id)),
     ).rejects.toThrow('The printable pages are incomplete.');

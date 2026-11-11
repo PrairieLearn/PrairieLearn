@@ -186,7 +186,7 @@ describe('print packet settings', () => {
   test('rejects duplicate form IDs, supplied labels, unknown settings, and invalid layout values', () => {
     for (const forms of [
       [{ ...form, formLabel: 'B' }],
-      [form, { ...form, printFormId: '2' }],
+      [form, { ...form }],
       [{ ...form, settings: { ...form.settings, paperSize: 'Legal' } }],
       [{ ...form, settings: { ...form.settings, extra: true } }],
       [{ ...form, settings: { ...form.settings, excludedQuestions: ['1', '1'] } }],
