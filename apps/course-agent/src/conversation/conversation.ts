@@ -17,6 +17,7 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  UserMessageMetadataSchema,
 } from '@prairielearn/course-agent-types';
 
 import { logEvent, reportError } from '../monitoring.js';
@@ -35,7 +36,7 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
-import { buildInstructions, userMessageInput } from './instructions.js';
+import { buildInstructions, describePageLocation } from './instructions.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
 // without traffic, including idle chats and long silent turns.
@@ -416,6 +417,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (abandoned) this.abandonLostSandbox();
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
+    const metadata = message && UserMessageMetadataSchema.safeParse(message.metadata ?? {});
+    // The turn still runs without the page, but a newer browser's metadata should not vanish quietly.
+    if (metadata && !metadata.success) {
+      logEvent('message_metadata_invalid', {
+        conversationId: this.name,
+        paths: metadata.error.issues.map((issue) => issue.path.join('.')),
+      });
+    }
+    const location = metadata?.data?.location;
     const input: TurnInput = {
       ...(continuation && review?.result
         ? {
@@ -425,7 +435,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           }
         : {
             tag: messageTag(message!.id),
-            text: userMessageInput(message!),
+            text: message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n'),
+            ...(location ? { page: describePageLocation(location) } : {}),
           }),
       // A restored or new thread may lack turns that chat history has.
       ...((startup || this.record.threadMayBeBehind) && earlier.length > 0

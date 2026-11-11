@@ -223,13 +223,15 @@ export const ToolCallSchema = z
 export type ToolCall = z.infer<typeof ToolCallSchema>;
 
 /**
- * The PrairieLearn page an instructor was viewing when they sent a message. Names are the ones
- * the agent sees in course files: a course instance's directory, an assessment's `tid`, and a
- * question's `qid`.
+ * The PrairieLearn page an instructor was viewing when they sent a message. `page` is a label
+ * PrairieLearn chose for the kind of page. Names are the ones the agent sees in course files: a
+ * course instance's directory, an assessment's `tid`, and a question's `qid` (only for this
+ * course's own questions). Unknown keys are stripped, so PrairieLearn can add fields before the
+ * Worker reads them.
  */
-export const PageLocationSchema = z.strictObject({
+export const PageLocationSchema = z.object({
   path: z.string().max(2000),
-  title: z.string().max(500),
+  page: z.string().max(500),
   courseInstance: z.string().max(500).optional(),
   assessment: z.string().max(500).optional(),
   question: z.string().max(500).optional(),
