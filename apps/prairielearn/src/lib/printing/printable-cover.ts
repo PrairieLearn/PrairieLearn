@@ -1,7 +1,8 @@
+/* oxlint-disable typescript/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
-import { PrintGradingTableSchema } from '../client/print-cover.js';
+import { PrintGradingTableSchema } from '../client/printing/print-cover.js';
 
 type HtmlNode = ReturnType<ReturnType<typeof cheerio.load>>['0'];
 type HtmlElement = Extract<HtmlNode, { type: 'tag' | 'script' | 'style' }>;

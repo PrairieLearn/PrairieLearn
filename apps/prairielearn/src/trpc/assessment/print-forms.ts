@@ -6,15 +6,15 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
-import { inspectPrintPreparationQuestions } from '../../lib/print-preparation.js';
 import { createPrintForm } from '../../lib/printing/print-forms.js';
+import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
 import {
   archivePrintForm,
   selectOptionalPrintForm,
   selectPrintFormsForAssessment,
 } from '../../models/print-form.js';
 
-import { requireCoursePermissionPreview, t } from './init.js';
+import { type createContext, requireCoursePermissionPreview, t } from './init.js';
 
 export interface PrintFormsError {
   archive: never;
@@ -35,7 +35,7 @@ const printFormProcedure = t.procedure
   .use(requireCoursePermissionPreview)
   .use(requirePrintableAssessments);
 
-const createFormProcedure = printFormProcedure.use(async ({ ctx, next }) => {
+const rejectGroupWork = t.middleware(async ({ ctx, next }) => {
   if (ctx.assessment.team_work) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
@@ -58,7 +58,13 @@ const assessmentFormProcedure = printFormProcedure
     return next();
   });
 
-const createForm = createFormProcedure.mutation(async ({ ctx }) => {
+async function createForm({
+  ctx,
+  replacesPrintFormId,
+}: {
+  ctx: ReturnType<typeof createContext>;
+  replacesPrintFormId?: string;
+}) {
   try {
     const form = await createPrintForm({
       assessment: ctx.assessment,
@@ -66,15 +72,24 @@ const createForm = createFormProcedure.mutation(async ({ ctx }) => {
       courseInstance: ctx.course_instance,
       userId: ctx.locals.user.id,
       authnUserId: ctx.authn_user.id,
+      replacesPrintFormId,
     });
     return { printFormId: form.id, label: form.label };
   } catch (error) {
-    if (error instanceof HttpStatusError && error.status === 400) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+    if (error instanceof HttpStatusError) {
+      if (error.status === 400) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+      }
+      if (error.status === 404) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: error.message, cause: error });
+      }
+      if (error.status === 409) {
+        throw new TRPCError({ code: 'CONFLICT', message: error.message, cause: error });
+      }
     }
     throw error;
   }
-});
+}
 
 export const printFormsRouter = t.router({
   questions: assessmentFormProcedure.query(async ({ input }) => {
@@ -85,42 +100,21 @@ export const printFormsRouter = t.router({
       await selectPrintFormsForAssessment({ assessmentId: ctx.assessment.id }),
     ),
   ),
-  create: createForm,
-  regenerate: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
-    if (ctx.assessment.team_work) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Creating print forms for group assessments is not supported yet.',
-      });
-    }
-    try {
-      const form = await createPrintForm({
-        assessment: ctx.assessment,
-        course: ctx.course,
-        courseInstance: ctx.course_instance,
-        userId: ctx.locals.user.id,
-        authnUserId: ctx.authn_user.id,
-        replacesPrintFormId: input.printFormId,
-      });
-      return { printFormId: form.id, label: form.label };
-    } catch (error) {
-      if (error instanceof HttpStatusError && (error.status === 400 || error.status === 404)) {
-        throw new TRPCError({
-          code: error.status === 404 ? 'NOT_FOUND' : 'BAD_REQUEST',
-          message: error.message,
-          cause: error,
-        });
-      }
-      throw error;
-    }
-  }),
+  create: printFormProcedure
+    .use(rejectGroupWork)
+    .mutation(async ({ ctx }) => await createForm({ ctx })),
+  regenerate: assessmentFormProcedure
+    .use(rejectGroupWork)
+    .mutation(
+      async ({ ctx, input }) => await createForm({ ctx, replacesPrintFormId: input.printFormId }),
+    ),
   archive: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
-    const form = await archivePrintForm({
+    const archived = await archivePrintForm({
       printFormId: input.printFormId,
       assessmentId: ctx.assessment.id,
     });
-    if (!form) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is not available.' });
+    if (!archived) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is no longer active.' });
     }
   }),
 });

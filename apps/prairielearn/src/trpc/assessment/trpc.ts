@@ -1,7 +1,7 @@
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import type { RequestHandler } from 'express';
 
-import { MAX_PRINT_EXPORT_UPLOAD_BYTES } from '../../lib/client/print-packet.js';
+import { MAX_PRINT_EXPORT_UPLOAD_BYTES } from '../../lib/client/printing/print-packet.js';
 import { config } from '../../lib/config.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 

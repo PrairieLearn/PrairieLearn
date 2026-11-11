@@ -1,11 +1,10 @@
 import { load } from 'cheerio';
-import { type RequestHandler, Router, raw } from 'express';
+import { type ErrorRequestHandler, type RequestHandler, Router, raw } from 'express';
 import mustache from 'mustache';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
-import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
 import { escapeRegExp } from '@prairielearn/sanitize';
 import {
   IdSchema,
@@ -19,12 +18,11 @@ import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import {
   PrintGradingTableSchema,
   PrintIdentityFieldsSchema,
-} from '../../lib/client/print-cover.js';
-import { serializePrintDocument } from '../../lib/client/print-document.js';
-import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
-import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/print-snapshot.js';
+} from '../../lib/client/printing/print-cover.js';
+import { serializePrintDocument } from '../../lib/client/printing/print-document.js';
+import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/printing/print-snapshot-limits.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { config } from '../../lib/config.js';
-import { queuePrintExport } from '../../lib/print-export-jobs.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { DocxSourceSchema } from '../../lib/printing/docx-source-schema.js';
 import {
@@ -36,7 +34,6 @@ import {
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
   renderPrintFormQuestions,
-  validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
@@ -47,7 +44,8 @@ import {
   buildPrintableCover,
   getPrintFooterLabel,
 } from '../../lib/printing/print-cover.js';
-import { withPrintRequest } from '../../lib/printing/print-request.js';
+import { queuePrintExport } from '../../lib/printing/print-exports.js';
+import { startPrintRequest } from '../../lib/printing/print-request.js';
 import {
   checkPrintSnapshotId,
   createPrintSnapshotId,
@@ -98,10 +96,6 @@ const LayoutQuerySchema = z.strictObject({
     .enum(['true', 'false'])
     .default('true')
     .transform((value) => value === 'true'),
-  form_label: z
-    .string()
-    .regex(/^[A-Z]$/)
-    .optional(),
   identity_field: IdentityFieldsSchema,
   block_size: QuestionBlockSizeSchema.optional(),
   question_block_size: z
@@ -146,7 +140,6 @@ interface PrintLayout {
   includeCoverPage: boolean;
   includeGradingTable: boolean;
   includeHonorCode: boolean | undefined;
-  formLabel: string | undefined;
   identityFields: string[];
   blockSize: QuestionBlockSize | undefined;
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>;
@@ -159,7 +152,6 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
     includeCoverPage: query.include_cover,
     includeGradingTable: query.grading_table,
     includeHonorCode: query.include_honor_code,
-    formLabel: query.form_label,
     identityFields: query.identity_field,
     blockSize: query.block_size,
     questionBlockSizeOverrides: new Map(
@@ -216,7 +208,6 @@ router.use(
     const printForm = await selectOptionalPrintForm({
       printFormId,
       assessmentId: res.locals.assessment.id,
-      userId: res.locals.user.id,
     });
     if (!printForm) throw new HttpStatusError(404, 'Printable form not found');
     Object.assign(res.locals, { print_form: printForm });
@@ -228,145 +219,116 @@ router.use('/question/:print_form_question_id(\\d+)', createPrintFormQuestionAss
 router.get(
   '/preview',
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    await withPrintRequest(res, async ({ signal, remainingTimeoutMs, throwIfAborted }) => {
-      const query = parseRequestQuery(req, DocumentQuerySchema);
-      const layout = parsePrintLayout(query);
-      const { document } = query;
+    const { signal, disconnectSignal, remainingTimeoutMs } = startPrintRequest(res);
+    const query = parseRequestQuery(req, DocumentQuerySchema);
+    const layout = parsePrintLayout(query);
+    const { document } = query;
 
-      if (!isBrowserRenderingAvailable()) {
-        throw new HttpStatusError(
-          404,
-          'Printable document rendering is not configured on this server',
-        );
-      }
-
-      res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-
-      const meter = metrics.getMeter('prairielearn');
-      const attributes = { document };
-      const startedAt = performance.now();
-      res.once('finish', () => {
-        getHistogram(meter, 'print.preview.request.duration', {
-          unit: 'milliseconds',
-          valueType: ValueType.DOUBLE,
-        }).record(performance.now() - startedAt, attributes);
-        getHistogram(meter, 'print.preview.rss', {
-          unit: 'bytes',
-          valueType: ValueType.INT,
-        }).record(process.memoryUsage().rss, attributes);
-        if (res.statusCode >= 400) {
-          getCounter(meter, 'print.preview.failures', { valueType: ValueType.INT }).add(
-            1,
-            attributes,
-          );
-        }
-      });
-
-      const printingResult = await renderPrintFormQuestions(res.locals, {
-        signal,
-        defaultQuestionBlockSize: layout.blockSize ?? 'auto',
-        questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
-        excludedQuestionNumbers: layout.excludedQuestionNumbers,
-        document,
-      });
-      throwIfAborted();
-      getHistogram(meter, 'print.preview.questions.duration', {
-        unit: 'milliseconds',
-        valueType: ValueType.DOUBLE,
-      }).record(performance.now() - startedAt, attributes);
-      if (printingResult.questionHtmls.length === 0) {
-        throw new HttpStatusError(
-          422,
-          'No questions could be rendered for this printable assessment',
-        );
-      }
-      const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-      const warnings = describeOmittedQuestions(printingResult.questionResults);
-
-      const rawHtml = InstructorAssessmentPrintForm({
-        resLocals: res.locals,
-        paperSize: layout.paperSize,
-        includeCoverPage: layout.includeCoverPage,
-        includeGradingTable: layout.includeGradingTable,
-        includeHonorCode:
-          layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
-        document,
-        formLabel: layout.formLabel,
-        identityFields: layout.identityFields,
-        questionHtmls: printingResult.questionHtmls,
-        omittedQuestionCount: warnings.length,
-        warnings,
-        extraHeadersHtml: printingResult.extraHeadersHtml,
-        maxPoints: printingResult.maxPoints,
-        assessmentTextHtml,
-        honorCodeHtml,
-      }).toString();
-      const localPreviewUrl = new URL(
-        req.originalUrl,
-        `${config.serverType}://localhost:${config.serverPort}`,
+    if (!isBrowserRenderingAvailable()) {
+      throw new HttpStatusError(
+        404,
+        'Printable document rendering is not configured on this server',
       );
-      throwIfAborted();
-      const { html, source } = await getPrintRenderer().render<{
-        html: string;
-        source: DocxSource;
-      }>(
-        {
-          url: localPreviewUrl.href,
-          browserOrigin: config.serverCanonicalHost ?? undefined,
-          html: rawHtml,
-          assetScope: printAssetScope(
-            res.locals,
-            printingResult.questionResults
-              .filter((result) => result.status === 'rendered')
-              .map(({ printFormQuestionId }) => printFormQuestionId),
-          ),
-          runScripts: true,
-          signal,
-          timeoutMs: remainingTimeoutMs(),
-        },
-        {
-          label: 'preview',
-          produce: async (page) => {
-            const capturedSource = await page.evaluate(() =>
-              Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__'),
-            );
-            if (!capturedSource) {
-              throw new Error('The preview did not capture editable question content.');
-            }
-            const source = PrintSnapshotSchema.shape.source.parse(capturedSource);
-            return { html: await page.locator(':root').evaluate(serializePrintDocument), source };
-          },
-        },
-      );
-      throwIfAborted();
-      const id = createPrintSnapshotId(
-        {
-          printFormId: res.locals.print_form.id,
-          authnUserId: res.locals.authn_user.id,
-          search: localPreviewUrl.searchParams,
-          questionListDigest: printingResult.questionListDigest,
-          html,
-          source,
-        },
-        config.secretKey,
-      );
-      const snapshotHtml = html
-        .replace('<html', () => `<html data-print-snapshot-id="${id}"`)
-        .replace(
-          '</head>',
-          () =>
-            `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(source).replaceAll('<', '\\u003c')}</script></head>`,
-        );
-      throwIfAborted();
-      res.setHeader('Cache-Control', 'private, no-store');
-      res.setHeader(
-        'Content-Security-Policy',
-        "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
-      );
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      res.send(snapshotHtml);
+    }
+
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+
+    const printingResult = await renderPrintFormQuestions(res.locals, {
+      signal,
+      defaultQuestionBlockSize: layout.blockSize ?? 'auto',
+      questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
+      excludedQuestionNumbers: layout.excludedQuestionNumbers,
+      document,
     });
+    if (printingResult.questionHtmls.length === 0) {
+      throw new HttpStatusError(
+        422,
+        'No questions could be rendered for this printable assessment',
+      );
+    }
+    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const warnings = describeOmittedQuestions(printingResult.questionResults);
+
+    const rawHtml = InstructorAssessmentPrintForm({
+      resLocals: res.locals,
+      paperSize: layout.paperSize,
+      includeCoverPage: layout.includeCoverPage,
+      includeGradingTable: layout.includeGradingTable,
+      includeHonorCode:
+        layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+      document,
+      formLabel: res.locals.print_form.label,
+      identityFields: layout.identityFields,
+      questionHtmls: printingResult.questionHtmls,
+      omittedQuestionCount: warnings.length,
+      warnings,
+      extraHeadersHtml: printingResult.extraHeadersHtml,
+      maxPoints: printingResult.maxPoints,
+      assessmentTextHtml,
+      honorCodeHtml,
+    }).toString();
+    const localPreviewUrl = new URL(
+      req.originalUrl,
+      `${config.serverType}://localhost:${config.serverPort}`,
+    );
+    const { html, source } = await getPrintRenderer().render<{
+      html: string;
+      source: DocxSource;
+    }>(
+      {
+        url: localPreviewUrl.href,
+        browserOrigin: config.serverCanonicalHost ?? undefined,
+        html: rawHtml,
+        assetScope: printAssetScope(
+          res.locals,
+          printingResult.questionResults
+            .filter((result) => result.status === 'rendered')
+            .map(({ printFormQuestionId }) => printFormQuestionId),
+        ),
+        runScripts: true,
+        signal: disconnectSignal,
+        timeoutMs: remainingTimeoutMs(),
+      },
+      {
+        label: 'preview',
+        produce: async (page) => {
+          const capturedSource = await page.evaluate(() =>
+            Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__'),
+          );
+          if (!capturedSource) {
+            throw new Error('The preview did not capture editable question content.');
+          }
+          const source = PrintSnapshotSchema.shape.source.parse(capturedSource);
+          return { html: await page.locator(':root').evaluate(serializePrintDocument), source };
+        },
+      },
+    );
+    const id = createPrintSnapshotId(
+      {
+        printFormId: res.locals.print_form.id,
+        authnUserId: res.locals.authn_user.id,
+        search: localPreviewUrl.searchParams,
+        questionListDigest: printingResult.questionListDigest,
+        html,
+        source,
+      },
+      config.secretKey,
+    );
+    const snapshotHtml = html
+      .replace('<html', () => `<html data-print-snapshot-id="${id}"`)
+      .replace(
+        '</head>',
+        () =>
+          `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(source).replaceAll('<', '\\u003c')}</script></head>`,
+      );
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
+    );
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.send(snapshotHtml);
   }),
 );
 
@@ -374,149 +336,128 @@ router.post(
   '/docx',
   parseDocxBody,
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    await withPrintRequest(res, async ({ throwIfAborted }) => {
-      const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
-      const layout = parsePrintLayout(query);
-      const { document } = query;
+    const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
+    const layout = parsePrintLayout(query);
+    const { document } = query;
 
-      await validateQuestionsForPrinting(
-        res.locals.print_form.id,
-        layout.questionBlockSizeOverrides,
-        layout.excludedQuestionNumbers,
-      );
-      throwIfAborted();
-      const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-      const footerLabel = getPrintFooterLabel({
-        document,
-        formId: res.locals.print_form.id,
-        formLabel: layout.formLabel,
-      });
-      const makeCover = (
-        questionCount: number,
-        maxPoints: number,
-        gradingTable?: z.infer<typeof PrintGradingTableSchema>,
-      ) =>
-        buildPrintableCover({
-          resLocals: res.locals,
-          document,
-          formLabel: layout.formLabel,
-          identityFields: layout.identityFields,
-          questionCount,
-          maxPoints,
-          assessmentTextHtml,
-          honorCodeHtml,
-          includeHonorCode:
-            layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
-          gradingTable,
-        });
-
-      const localPreviewUrl = new URL(
-        req.originalUrl,
-        `${config.serverType}://localhost:${config.serverPort}`,
-      );
-      localPreviewUrl.pathname = `${req.baseUrl}/preview`;
-      const questionListDigest = await getPrintableQuestionListDigest(
-        res.locals.print_form.id,
-        layout.excludedQuestionNumbers,
-      );
-      throwIfAborted();
-      if (
-        !checkPrintSnapshotId(
-          {
-            ...snapshot,
-            printFormId: res.locals.print_form.id,
-            authnUserId: res.locals.authn_user.id,
-            search: localPreviewUrl.searchParams,
-            questionListDigest,
-          },
-          config.secretKey,
-        )
-      ) {
-        throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
-      }
-      const $ = load(snapshot.html);
-      const hasExecutableAttributes =
-        $('*').filter((_index, node) =>
-          'attribs' in node
-            ? Object.entries(node.attribs).some(
-                ([name, value]) =>
-                  /^on/i.test(name) || name === 'srcdoc' || /^\s*javascript:/i.test(String(value)),
-              )
-            : false,
-        ).length > 0;
-      if (
-        $('script, iframe, object, embed, base, meta[http-equiv="refresh"]').length > 0 ||
-        hasExecutableAttributes
-      ) {
-        throw new HttpStatusError(400, 'The printable pages contain executable content.');
-      }
-      const root = $('html');
-      const questionCount = Number(root.attr('data-print-question-count'));
-      assertPrintDocumentReady({
-        questionCount,
-        omittedCount: Number(root.attr('data-print-omitted-question-count')),
-        coverPageCount: $('.pagedjs_page')
-          .toArray()
-          .findIndex((page) => $(page).find('.printing-question').length > 0),
-        document,
-        formLabel: layout.formLabel,
-      });
-      const gradingTable = root.attr('data-print-grading-table');
-      const cover = layout.includeCoverPage
-        ? makeCover(
-            questionCount,
-            Number(root.attr('data-print-max-points')),
-            gradingTable ? PrintGradingTableSchema.parse(JSON.parse(gradingTable)) : undefined,
-          )
-        : undefined;
-      const printFormQuestionIds = await getPrintableFormQuestionIds(
-        res.locals.print_form.id,
-        layout.excludedQuestionNumbers,
-      );
-      throwIfAborted();
-      const filename =
-        assessmentFilenamePrefix(
-          res.locals.assessment,
-          res.locals.assessment_set,
-          res.locals.course_instance,
-          res.locals.course,
-        ) +
-        sanitizeString(
-          `form_${res.locals.print_form.id}_${layout.paperSize.toLowerCase()}${
-            document === 'answer_key' ? '_answer_key' : ''
-          }`,
-        ) +
-        '.docx';
-      throwIfAborted();
-      const jobSequenceId = await queuePrintExport({
-        owner: {
-          assessmentId: res.locals.assessment.id,
-          authnUserId: res.locals.authn_user.id,
-          courseId: res.locals.course.id,
-          courseInstanceId: res.locals.course_instance.id,
-          userId: res.locals.user.id,
-        },
-        work: {
-          format: 'docx',
-          document,
-          filename,
-          snapshot: {
-            formLabel: layout.formLabel ?? '',
-            printDocument: document,
-            localPreviewUrl: localPreviewUrl.href,
-            html: snapshot.html,
-            assetScope: printAssetScope(res.locals, printFormQuestionIds),
-          },
-          source: snapshot.source,
-          cover,
-          footerLabel,
-        },
-      });
-      throwIfAborted();
-      res.setHeader('Cache-Control', 'private, no-store');
-      res.json({ jobSequenceId });
+    const printFormQuestionIds = await getPrintableFormQuestionIds(
+      res.locals.print_form.id,
+      layout.questionBlockSizeOverrides,
+      layout.excludedQuestionNumbers,
+    );
+    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const footerLabel = getPrintFooterLabel({
+      document,
+      formId: res.locals.print_form.id,
+      formLabel: res.locals.print_form.label,
     });
+    const makeCover = (
+      questionCount: number,
+      maxPoints: number,
+      gradingTable?: z.infer<typeof PrintGradingTableSchema>,
+    ) =>
+      buildPrintableCover({
+        resLocals: res.locals,
+        document,
+        formLabel: res.locals.print_form.label,
+        identityFields: layout.identityFields,
+        questionCount,
+        maxPoints,
+        assessmentTextHtml,
+        honorCodeHtml,
+        includeHonorCode:
+          layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+        gradingTable,
+      });
+
+    const localPreviewUrl = new URL(
+      req.originalUrl,
+      `${config.serverType}://localhost:${config.serverPort}`,
+    );
+    localPreviewUrl.pathname = `${req.baseUrl}/preview`;
+    const questionListDigest = await getPrintableQuestionListDigest(
+      res.locals.print_form.id,
+      layout.excludedQuestionNumbers,
+    );
+    const htmlDigest = checkPrintSnapshotId(
+      {
+        id: snapshot.id,
+        source: snapshot.source,
+        printFormId: res.locals.print_form.id,
+        authnUserId: res.locals.authn_user.id,
+        search: localPreviewUrl.searchParams,
+        questionListDigest,
+      },
+      config.secretKey,
+    );
+    if (!htmlDigest) throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+    // Parse only the root element: the export worker checks the full page against the signed
+    // digest and its layout, which avoids parsing large pages on the request thread.
+    const root = load(`${/<html\b[^>]*>/i.exec(snapshot.html)?.[0] ?? '<html>'}</html>`)('html');
+    const questionCount = Number(root.attr('data-print-question-count'));
+    assertPrintDocumentReady({
+      questionCount,
+      omittedCount: Number(root.attr('data-print-omitted-question-count')),
+      // The worker checks that the questions start after the cover.
+      coverPageCount: 0,
+      document,
+      formLabel: res.locals.print_form.label,
+    });
+    const gradingTable = root.attr('data-print-grading-table');
+    const cover = layout.includeCoverPage
+      ? makeCover(
+          questionCount,
+          Number(root.attr('data-print-max-points')),
+          gradingTable ? PrintGradingTableSchema.parse(JSON.parse(gradingTable)) : undefined,
+        )
+      : undefined;
+    const filename =
+      assessmentFilenamePrefix(
+        res.locals.assessment,
+        res.locals.assessment_set,
+        res.locals.course_instance,
+        res.locals.course,
+      ) +
+      sanitizeString(
+        `form_${res.locals.print_form.id}_${layout.paperSize.toLowerCase()}${
+          document === 'answer_key' ? '_answer_key' : ''
+        }`,
+      ) +
+      '.docx';
+    const printExportId = await queuePrintExport({
+      owner: {
+        assessmentId: res.locals.assessment.id,
+        authnUserId: res.locals.authn_user.id,
+        courseId: res.locals.course.id,
+        userId: res.locals.user.id,
+      },
+      work: {
+        format: 'docx',
+        document,
+        filename,
+        snapshot: {
+          formLabel: res.locals.print_form.label,
+          printDocument: document,
+          localPreviewUrl: localPreviewUrl.href,
+          html: snapshot.html,
+          htmlDigest,
+          assetScope: printAssetScope(res.locals, printFormQuestionIds),
+        },
+        source: snapshot.source,
+        cover,
+        footerLabel,
+      },
+    });
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ printExportId });
   }),
 );
+
+// A disconnected print request, e.g. a preview reloaded after a layout change, has nobody left
+// to answer, so its cancellation isn't an error worth reporting.
+router.use(((err, _req, res, next) => {
+  if (res.destroyed) return;
+  next(err);
+}) satisfies ErrorRequestHandler);
 
 export default router;

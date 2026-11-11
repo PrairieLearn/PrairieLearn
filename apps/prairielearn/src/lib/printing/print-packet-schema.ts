@@ -2,10 +2,11 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { MAX_PRINT_COPIES, MAX_PRINT_FORMS } from './client/print-packet.js';
-import { PrintIdentityFieldsTextSchema } from './client/print-preparation.js';
-import { PAPER_SIZES } from './printing/paper-size.js';
-import { QUESTION_BLOCK_SIZES } from './printing/question-block-size.js';
+import { MAX_PRINT_COPIES, MAX_PRINT_FORMS } from '../client/printing/print-packet.js';
+import { PrintIdentityFieldsTextSchema } from '../client/printing/print-preparation.js';
+
+import { PAPER_SIZES } from './paper-size.js';
+import { QUESTION_BLOCK_SIZES } from './question-block-size.js';
 
 const QuestionNumberSchema = z.string().min(1);
 const PrintSettingsSchema = z.strictObject({
@@ -23,13 +24,13 @@ const PrintSettingsSchema = z.strictObject({
     (numbers) => new Set(numbers).size === numbers.length,
   ),
 });
+export type PrintSettings = z.infer<typeof PrintSettingsSchema>;
 
 export const PrintPacketMetadataSchema = z.strictObject({
   forms: z
     .array(
       z.strictObject({
         printFormId: IdSchema,
-        formLabel: z.string().regex(/^[A-Z]$/),
         settings: PrintSettingsSchema,
       }),
     )
@@ -38,10 +39,6 @@ export const PrintPacketMetadataSchema = z.strictObject({
     .refine(
       (forms) => new Set(forms.map((form) => form.printFormId)).size === forms.length,
       'Select each print form only once.',
-    )
-    .refine(
-      (forms) => new Set(forms.map((form) => form.formLabel)).size === forms.length,
-      'Each print form must have a different form label.',
     ),
   copies: z.number().int().min(1).max(MAX_PRINT_COPIES),
   document: z.enum(['assessment', 'answer_key', 'booklet']),

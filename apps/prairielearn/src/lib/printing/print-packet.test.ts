@@ -1,8 +1,13 @@
 import { PDFBool, PDFDict, PDFDocument, PDFName, PDFRawStream, PDFStream } from 'pdf-lib';
 import { describe, expect, test } from 'vitest';
 
-import { MAX_COVER_BYTES, MAX_COVER_FILES, MAX_COVER_PAGES } from './client/print-packet.js';
-import { DEFAULT_PRINT_SETTINGS } from './client/print-preparation.js';
+import {
+  MAX_COVER_BYTES,
+  MAX_COVER_FILES,
+  MAX_COVER_PAGES,
+} from '../client/printing/print-packet.js';
+import { DEFAULT_PRINT_SETTINGS } from '../client/printing/print-preparation.js';
+
 import { PrintPacketMetadataSchema } from './print-packet-schema.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
 
@@ -175,13 +180,13 @@ describe('print packets', () => {
 });
 
 describe('print packet settings', () => {
-  const form = { printFormId: '1', formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS };
+  const form = { printFormId: '1', settings: DEFAULT_PRINT_SETTINGS };
   const metadata = { forms: [form], copies: 45, document: 'assessment' };
 
-  test('rejects duplicate form IDs or labels, unknown settings, and invalid layout values', () => {
+  test('rejects duplicate form IDs, supplied labels, unknown settings, and invalid layout values', () => {
     for (const forms of [
-      [form, { ...form, formLabel: 'B' }],
-      [form, { ...form, printFormId: '2' }],
+      [{ ...form, formLabel: 'B' }],
+      [form, { ...form }],
       [{ ...form, settings: { ...form.settings, paperSize: 'Legal' } }],
       [{ ...form, settings: { ...form.settings, extra: true } }],
       [{ ...form, settings: { ...form.settings, excludedQuestions: ['1', '1'] } }],

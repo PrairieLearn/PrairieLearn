@@ -6,7 +6,7 @@ Tools for creating printable PDFs and editable Word documents, plus a helper tha
 
 The browser lays out questions and splits them into pages. PDFs use the finished pages. Word documents use question content saved before page breaks are added, along with images of figures. Create one renderer per application process:
 
-The preview response carries a signed snapshot ID covering its HTML, editable Word source, saved print form, generating user, layout query, and selected question identities and order. PDF and Word exports verify the ID and current question list before rendering. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
+The preview response carries a signed snapshot ID covering its HTML, editable Word source, saved print form, generating user, layout query, and selected question identities and order. Export requests verify the ID and current question list; the export worker loads the submitted pages in the browser and compares their normalized HTML with the signed digest before rendering, so the check doesn't block the Node event loop. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
 
 ```ts
 import { config } from './config.js';
@@ -66,15 +66,15 @@ Omit the `cover` option to start with questions on the first page.
 
 ### PrairieLearn endpoint parameters
 
-Forms are created explicitly and store their selected questions, order, point values, and floating variants. Reading a preview reuses those saved variants; it does not create student assessment instances or change a student's work.
+Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. Regenerating creates a new labeled form and archives the old one. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
-The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{jobSequenceId}`. Access requires course preview permission and ownership by the effective user.
+The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
 
 `document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
-`form_label=A` through `form_label=Z` gives a saved print form a short label on its cover and footers. Omitting it preserves the print form's numeric Form ID label.
+The form's saved label appears on covers and footers. Labels progress from `A` through `Z`, then `AA`, `AB`, and so on; query parameters cannot change them.
 
 `include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
 
@@ -84,7 +84,7 @@ The PrairieLearn print endpoint accepts layout choices as query parameters. `blo
 
 The print preparation page can combine multiple saved print forms and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included in student copies, including individual form downloads. Answer key downloads exclude uploaded covers. Generated page numbers remain within the original form; uploaded pages retain their own appearance.
 
-PDF and Word exports are accepted in the shared `jobs` table, including individual forms and small packets. The request validates signed page snapshots, stores export inputs in S3, and publishes the job ID to PrairieMQ. Workers share a limit of two active exports across all hosts. PostgreSQL retains status, results, and an attempt counter; `processPrintExports` reconciles pending jobs whose Redis publication was lost. Workers use an ownership token to prevent an older attempt from publishing over its replacement. Configure a non-evicting Redis instance through `nonVolatileRedisUrl`. The queue namespace defaults to a hash of the PostgreSQL host and database, keeping separate deployments isolated even when Redis is shared. Hosts that use different aliases for the same database must configure the same `printExportQueuePrefix`. Download links are available to the requesting instructor for 24 hours; keep `cleanPrintExports` enabled and configure Cloudflare rendering on worker hosts.
+PDF and Word exports are queued. Each export is a row in `print_exports`, which is the source of truth for its status, result, and attempt count; its input is stored in S3, and its ID is published to PrairieMQ for dispatch. Exports are grouped by course so courses take turns, and total throughput scales with the number of workers. `processPrintExports` republishes pending exports whose Redis job was lost or interrupted, and fails exports still pending after 24 hours. Workers run on hosts with `printExportWorkerActive` and a browser renderer (local Chromium or Cloudflare). A graceful shutdown returns its attempt; a crashed run is retried once. Downloads are available to the requesting user for 24 hours. The app doesn't delete export files: configure an S3 lifecycle rule on the `print-exports/` prefix that also expires noncurrent versions. PrairieMQ requires a non-clustered Redis without eviction through `nonVolatileRedisUrl`. The queue namespace defaults to a hash of the PostgreSQL host and database, so deployments sharing a Redis stay separate; set `printExportQueuePrefix` when hosts use different aliases for the same database.
 
 Automatic blocks are measured at the final printable width after asynchronous question content, MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an exact fraction of the printable content height, including the question's internal spacing, when the content fits. Taller content uses its measured height and moves to the next page or flows across pages when needed.
 

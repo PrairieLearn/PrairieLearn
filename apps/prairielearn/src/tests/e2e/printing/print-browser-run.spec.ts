@@ -30,7 +30,7 @@ test('loads course assets in the rendering browser', async ({ page, courseInstan
       courseInstanceId: courseInstance.id,
       assessmentId: printForm.assessment_id,
       printFormId: printForm.id,
-      printFormQuestionIds: await getPrintableFormQuestionIds(printForm.id, new Set()),
+      printFormQuestionIds: await getPrintableFormQuestionIds(printForm.id, new Map(), new Set()),
       authnUserId: user.id,
       userId: user.id,
     };

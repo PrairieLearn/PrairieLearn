@@ -101,11 +101,7 @@ const SubmissionInfoSchema = z.object({
 const MAX_RECENT_SUBMISSIONS = 3;
 
 export class FatalQuestionRenderError extends Error {
-  constructor(
-    message: string,
-    readonly variantId: string,
-    options?: ErrorOptions,
-  ) {
+  constructor(message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = 'FatalQuestionRenderError';
   }
@@ -185,7 +181,6 @@ async function render({
   if (throwOnFatalError && fatalIssue) {
     throw new FatalQuestionRenderError(
       `Question ${question.qid ?? question.id} could not be rendered.`,
-      variant.id,
       { cause: fatalIssue },
     );
   }
@@ -488,6 +483,7 @@ export async function getAndRenderVariant(
     showCorrectAnswer: showCorrectAnswerOverride,
     requireOpenVariant = !!locals.assessment && locals.assessment.type !== 'Exam',
     throwOnFatalError = false,
+    printFormQuestionId,
   }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
@@ -518,6 +514,8 @@ export async function getAndRenderVariant(
     requireOpenVariant?: boolean;
     /** Reject fatal rendering errors instead of returning incomplete HTML. Defaults to false. */
     throwOnFatalError?: boolean;
+    /** Grants course staff access to a saved print-form variant, including in example courses. */
+    printFormQuestionId?: string;
   } = {},
 ): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
@@ -536,6 +534,8 @@ export async function getAndRenderVariant(
         question_id: locals.question.id,
         course_instance_id: locals.course_instance?.id,
         instance_question_id: locals.instance_question?.id,
+        print_form_question_id: printFormQuestionId,
+        assessment_id: locals.assessment?.id,
         authz_data: locals.authz_data,
         authn_user: locals.authn_user,
         user: locals.user,

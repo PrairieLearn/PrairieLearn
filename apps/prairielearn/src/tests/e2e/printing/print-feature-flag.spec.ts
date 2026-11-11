@@ -1,6 +1,11 @@
+import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
-import { queuePrintExport } from '../../../lib/print-export-jobs.js';
-import { getPrintableFormQuestionIds } from '../../../lib/printing/index.js';
+import {
+  getPrintableFormQuestionIds,
+  getPrintableQuestionListDigest,
+} from '../../../lib/printing/index.js';
+import { queuePrintExport } from '../../../lib/printing/print-exports.js';
+import { checkPrintSnapshotId } from '../../../lib/printing/print-snapshot-id.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { expect, test } from '../fixtures.js';
 
@@ -23,12 +28,23 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
   const preview = await page.request.get(previewUrl);
   expect(preview.status()).toBe(200);
   const user = await getConfiguredUser();
-  const jobSequenceId = await queuePrintExport({
+  const html = await preview.text();
+  const snapshotId = /data-print-snapshot-id="([^"]+)"/.exec(html)![1];
+  const htmlDigest = checkPrintSnapshotId(
+    {
+      id: snapshotId,
+      printFormId: printForm.id,
+      authnUserId: user.id,
+      search: new URL(previewUrl, baseURL).searchParams,
+      questionListDigest: await getPrintableQuestionListDigest(printForm.id, new Set()),
+    },
+    config.secretKey,
+  )!;
+  const printExportId = await queuePrintExport({
     owner: {
       assessmentId: printForm.assessment_id,
       authnUserId: user.id,
       courseId: courseInstance.course_id,
-      courseInstanceId: courseInstance.id,
       userId: user.id,
     },
     work: {
@@ -41,7 +57,8 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
           formLabel: printForm.label,
           printDocument: 'assessment',
           localPreviewUrl: new URL(previewUrl, baseURL).href,
-          html: await preview.text(),
+          html,
+          htmlDigest,
           assetScope: {
             courseInstanceId: courseInstance.id,
             assessmentId: printForm.assessment_id,
@@ -59,7 +76,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
       covers: [],
     },
   });
-  const exportUrl = `${assessmentBase}/print_preparation/exports/${jobSequenceId}.pdf`;
+  const exportUrl = `${assessmentBase}/print_preparation/exports/${printExportId}`;
 
   await expect
     .poll(async () => (await page.request.get(exportUrl)).status(), { timeout: 60_000 })

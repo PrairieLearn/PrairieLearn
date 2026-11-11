@@ -16,7 +16,6 @@ import type { ResLocalsForPage } from '../res-locals.js';
 import { combineQuestionHeaders } from './combine-question-headers.js';
 import { namespaceQuestionHtmls } from './namespace-question-htmls.js';
 import { PrintRenderer } from './print-renderer.js';
-import { stopPrintRequests } from './print-request.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import type { QuestionBlockSize } from './question-block-size.js';
 import { RenderQueue } from './render-queue.js';
@@ -24,10 +23,9 @@ import { RenderQueue } from './render-queue.js';
 type PrintableQuestion = Awaited<ReturnType<typeof selectPrintFormQuestions>>[number];
 
 const BROKEN_QUESTION_FAILURE_CODE = 'broken_variant';
-const BROKEN_QUESTION_FAILURE_STAGE = 'variant_creation';
-const BROKEN_QUESTION_FAILURE_MESSAGE =
-  'Question could not be rendered due to an error in question code.';
 const QUESTION_RENDER_FAILURE_CODE = 'render_error';
+// v2 questions render in the browser with question-specific JavaScript, which printing can't run.
+const UNSUPPORTED_QUESTION_FAILURE_CODE = 'unsupported_question_type';
 
 export const PRINT_DOCUMENTS = ['assessment', 'answer_key'] as const;
 export type PrintDocument = (typeof PRINT_DOCUMENTS)[number];
@@ -52,15 +50,9 @@ export function getPrintRenderer(): PrintRenderer {
 }
 
 export async function closePrintRenderer(): Promise<void> {
-  questionPreparationQueue.rejectAll(new Error('Print preparation is shutting down'));
   const renderer = printRenderer;
   printRenderer = null;
   await renderer?.close();
-}
-
-export async function stopPrinting(): Promise<void> {
-  await stopPrintRequests();
-  await closePrintRenderer();
 }
 
 /** Export only when a remote browser or the matching local Chromium build is installed. */
@@ -112,7 +104,7 @@ export const validatePrintDocument: PrintablePageOutput<{
 };
 
 export interface OmittedQuestionWarning {
-  code: typeof BROKEN_QUESTION_FAILURE_CODE | typeof QUESTION_RENDER_FAILURE_CODE;
+  code: FailedPrintingQuestionResult['code'];
   question_number: string;
   qid: string | null;
   message: string;
@@ -132,7 +124,10 @@ export function describeOmittedQuestions(
         code: result.code,
         question_number: result.questionNumber,
         qid: result.qid,
-        message: `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
+        message:
+          result.code === UNSUPPORTED_QUESTION_FAILURE_CODE
+            ? `${label} uses an older question format that can't be printed and is omitted from the printable documents.`
+            : `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
       },
     ];
   });
@@ -140,9 +135,7 @@ export function describeOmittedQuestions(
 
 interface PrintingQuestionResultBase {
   questionNumber: string;
-  questionId: string;
   qid: string | null;
-  assessmentQuestionId: string;
   printFormQuestionId: string;
 }
 
@@ -150,21 +143,15 @@ export type PrintingQuestionResult =
   | (PrintingQuestionResultBase & {
       status: 'rendered';
     })
-  | (PrintingQuestionResultBase & {
-      status: 'failed';
-      code: typeof BROKEN_QUESTION_FAILURE_CODE;
-      stage: typeof BROKEN_QUESTION_FAILURE_STAGE;
-      message: string;
-      variantId: string;
-      issueIds: string[];
-    })
-  | (PrintingQuestionResultBase & {
-      status: 'failed';
-      code: typeof QUESTION_RENDER_FAILURE_CODE;
-      stage: 'question_render';
-      message: string;
-      variantId: string;
-    });
+  | FailedPrintingQuestionResult;
+
+type FailedPrintingQuestionResult = PrintingQuestionResultBase & {
+  status: 'failed';
+  code:
+    | typeof BROKEN_QUESTION_FAILURE_CODE
+    | typeof QUESTION_RENDER_FAILURE_CODE
+    | typeof UNSUPPORTED_QUESTION_FAILURE_CODE;
+};
 
 function assertQuestionBlockSizeOverridesExist(
   questions: PrintableQuestion[],
@@ -234,30 +221,21 @@ export async function getPrintableQuestionListDigest(
   return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
 }
 
+/** Validates a Word export's layout against the form and returns the included question IDs. */
 export async function getPrintableFormQuestionIds(
   printFormId: string,
+  questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,
   excludedQuestionNumbers: ReadonlySet<string>,
 ): Promise<string[]> {
   const questions = await selectPrintFormQuestions(printFormId);
+  assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
   return selectIncludedQuestions(questions, excludedQuestionNumbers).map(
     ({ print_form_question }) => print_form_question.id,
   );
 }
 
-export async function validateQuestionsForPrinting(
-  printFormId: string,
-  questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,
-  excludedQuestionNumbers: ReadonlySet<string>,
-): Promise<void> {
-  if (questionBlockSizeOverrides.size === 0 && excludedQuestionNumbers.size === 0) return;
-
-  const questions = await selectPrintFormQuestions(printFormId);
-  assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
-  selectIncludedQuestions(questions, excludedQuestionNumbers);
-}
-
 export interface RenderPrintFormQuestionsOptions {
-  /** Shared request cancellation for queueing and preparing questions. */
+  /** Stops queueing and preparing questions once the request is aborted. */
   signal: AbortSignal;
   defaultQuestionBlockSize?: QuestionBlockSize;
   questionBlockSizeOverrides?: ReadonlyMap<string, QuestionBlockSize>;
@@ -281,9 +259,7 @@ async function renderPrintFormQuestionsUnbounded(
   extraHeadersHtml: string;
   maxPoints: number;
 }> {
-  signal.throwIfAborted();
   const questions = await selectPrintFormQuestions(resLocals.print_form.id);
-  signal.throwIfAborted();
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
   const includedQuestions = selectIncludedQuestions(questions, excludedQuestionNumbers);
   const extraHeaderHtmls: string[] = [];
@@ -295,11 +271,13 @@ async function renderPrintFormQuestionsUnbounded(
     signal.throwIfAborted();
     const base: PrintingQuestionResultBase = {
       questionNumber: printableQuestion.print_form_question.question_number,
-      questionId: printableQuestion.question.id,
       qid: printableQuestion.question.qid,
-      assessmentQuestionId: printableQuestion.assessment_question.id,
       printFormQuestionId: printableQuestion.print_form_question.id,
     };
+    if (printableQuestion.question.type !== 'Freeform') {
+      questionResults.push({ ...base, status: 'failed', code: UNSUPPORTED_QUESTION_FAILURE_CODE });
+      continue;
+    }
     const renderLocals = {
       urlPrefix: resLocals.urlPrefix,
       authn_user: resLocals.authn_user,
@@ -322,8 +300,6 @@ async function renderPrintFormQuestionsUnbounded(
       questionUrl: `${questionUrl}/`,
       clientFilesQuestionUrl: `${questionUrl}/clientFilesQuestion`,
       clientFilesCourseUrl: `${questionUrl}/clientFilesCourse`,
-      calculationQuestionFileUrl: `${questionUrl}/file`,
-      calculationQuestionGeneratedFileUrl: `${questionUrl}/generatedFilesQuestion/variant/${printableQuestion.print_form_question.variant_id}`,
       clientFilesQuestionGeneratedFileUrl: `${questionUrl}/generatedFilesQuestion/variant/${printableQuestion.print_form_question.variant_id}`,
     };
     try {
@@ -333,6 +309,7 @@ async function renderPrintFormQuestionsUnbounded(
         renderLocals,
         {
           urlOverrides,
+          printFormQuestionId: printableQuestion.print_form_question.id,
           includeSubmissions: false,
           showCorrectAnswer: document === 'answer_key',
           // Every output reuses the variants saved when this form was created.
@@ -341,17 +318,12 @@ async function renderPrintFormQuestionsUnbounded(
           issuesLoadExtraData: false,
         },
       );
-      signal.throwIfAborted();
 
       if (renderState.variant.broken_at != null) {
         questionResults.push({
           ...base,
           status: 'failed',
           code: BROKEN_QUESTION_FAILURE_CODE,
-          stage: BROKEN_QUESTION_FAILURE_STAGE,
-          message: BROKEN_QUESTION_FAILURE_MESSAGE,
-          variantId: renderState.variant.id,
-          issueIds: renderState.issues.map((issue) => issue.id),
         });
         continue;
       }
@@ -363,13 +335,13 @@ async function renderPrintFormQuestionsUnbounded(
         printableQuestion.question.grading_method === 'Manual' &&
         answerHtml.trim() === ''
       ) {
-        signal.throwIfAborted();
         const manualGradingRenderState = await getAndRenderVariant(
           renderState.variant.id,
           null,
           renderLocals,
           {
             urlOverrides,
+            printFormQuestionId: printableQuestion.print_form_question.id,
             includeSubmissions: false,
             showCorrectAnswer: true,
             requireOpenVariant: false,
@@ -378,7 +350,6 @@ async function renderPrintFormQuestionsUnbounded(
             issuesLoadExtraData: false,
           },
         );
-        signal.throwIfAborted();
         answerHtml = manualGradingRenderState.answerHtml;
         extraHeadersHtml += `\n${manualGradingRenderState.extraHeadersHtml}`;
       }
@@ -409,8 +380,6 @@ async function renderPrintFormQuestionsUnbounded(
             class="printing-question printing-question-freeform"
             data-print-block-size="${questionBlockSizeOverrides.get(printableQuestion.print_form_question.question_number) ?? defaultQuestionBlockSize}"
             data-question-number="${printableQuestion.print_form_question.question_number}"
-            data-question-id="${printableQuestion.question.id}"
-            data-print-form-question-id="${printableQuestion.print_form_question.id}"
             aria-label="Question ${printableQuestion.print_form_question.question_number}"
           >
             ${unsafeHtml(questionHtml)}
@@ -420,20 +389,15 @@ async function renderPrintFormQuestionsUnbounded(
       questionResults.push({ ...base, status: 'rendered' });
       maxPoints += printableQuestion.print_form_question.max_points;
     } catch (error) {
-      signal.throwIfAborted();
       if (!(error instanceof FatalQuestionRenderError)) throw error;
       questionResults.push({
         ...base,
         status: 'failed',
         code: QUESTION_RENDER_FAILURE_CODE,
-        stage: 'question_render',
-        message: error.message,
-        variantId: error.variantId,
       });
     }
   }
 
-  signal.throwIfAborted();
   return {
     questionHtmls: await namespaceQuestionHtmls(renderedQuestions),
     questionListDigest: digestPrintableQuestions(includedQuestions),
@@ -450,10 +414,8 @@ export async function renderPrintFormQuestions(
 ) {
   return await questionPreparationQueue.run(
     async () => await renderPrintFormQuestionsUnbounded(resLocals, options),
-    // The request signal bounds both queueing and execution with the same deadline.
     0,
     'print preview',
-    'preview',
     options.signal,
   );
 }

@@ -4,12 +4,12 @@ import { z } from 'zod';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
-import { serializePrintDocument } from '../../../lib/client/print-document.js';
+import { serializePrintDocument } from '../../../lib/client/printing/print-document.js';
 import { getAssessmentTrpcUrl, getPrintFormUrl } from '../../../lib/client/url.js';
 import * as codeCaller from '../../../lib/code-caller/index.js';
 import { config } from '../../../lib/config.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
-import { createPrintForm } from '../../../lib/print-forms.js';
+import { createPrintForm } from '../../../lib/printing/print-forms.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseById } from '../../../models/course.js';
@@ -74,7 +74,7 @@ export async function downloadPrintableWord(page: Page, printUrl: string, search
   });
   if (!queued.ok()) return queued;
   expect(queued.headers()['content-type']).toContain('application/json');
-  const { jobSequenceId } = z.object({ jobSequenceId: IdSchema }).parse(await queued.json());
+  const { printExportId } = z.object({ printExportId: IdSchema }).parse(await queued.json());
   const previewUrl = new URL(printUrl, page.url());
   const [, courseInstanceId, assessmentId] = previewUrl.pathname.match(
     /^\/pl\/course_instance\/(\d+)\/instructor\/assessment\/(\d+)\/print_form\/\d+$/,
@@ -91,20 +91,13 @@ export async function downloadPrintableWord(page: Page, printUrl: string, search
   await expect
     .poll(
       async () => {
-        const status = await api.printableAssessmentExport.status.query({ jobSequenceId });
-        return {
-          status: status.status,
-          ready: status.ready,
-          failureMessage: status.failureMessage,
-        };
+        const status = await api.printableAssessmentExport.status.query({ printExportId });
+        return { status: status.status, failureMessage: status.failureMessage };
       },
       { timeout: 90_000 },
     )
-    .toMatchObject({ status: 'Success', ready: true });
-  const completed = await api.printableAssessmentExport.status.query({ jobSequenceId });
+    .toMatchObject({ status: 'succeeded' });
+  const completed = await api.printableAssessmentExport.status.query({ printExportId });
   expect(completed.format).toBe('docx');
-  expect(new URL(completed.downloadUrl!, previewUrl).pathname).toMatch(
-    new RegExp(`/${jobSequenceId}\\.docx$`),
-  );
   return await page.request.get(completed.downloadUrl!);
 }
