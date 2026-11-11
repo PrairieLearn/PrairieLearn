@@ -1,7 +1,7 @@
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CodexAppServerClient, type ToolReply } from './codex.js';
+import { CodexAppServerClient, type CourseDataRequest, type ToolReply } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
@@ -9,10 +9,13 @@ import { SandboxTurn } from './turn.js';
 function runner({
   loseAcceptance = false,
   history = [] as unknown[],
-  onCourseData = async (_request: { dataset?: string }): Promise<ToolReply> => ({
-    success: false,
-    text: 'Not used in this test',
-  }),
+  courseData = {
+    list: async (): Promise<ToolReply> => ({ success: false, text: 'Not used in this test' }),
+    get: async (_request: CourseDataRequest): Promise<ToolReply> => ({
+      success: false,
+      text: 'Not used in this test',
+    }),
+  },
 } = {}) {
   const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>
@@ -57,7 +60,7 @@ function runner({
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox, onCourseData);
+  const native = new CodexAppServerClient(sandbox, courseData);
   return { sandbox, native, commands, emit, disconnect: () => socket.close() };
 }
 
@@ -269,18 +272,21 @@ describe('course agent turns', () => {
     ]);
   });
 
-  it('offers get_course_data to new threads and returns its replies to the model', async () => {
-    const onCourseData = vi.fn(async ({ dataset }: { dataset?: string }) => {
-      if (dataset === 'missing') throw new Error('404: Unknown dataset "missing"');
-      return { success: true, text: `Wrote rows for ${dataset}` };
-    });
-    const { native, commands, emit } = runner({ onCourseData });
+  it('offers the course data tools to new threads and returns their replies to the model', async () => {
+    const courseData = {
+      list: vi.fn(async () => ({ success: true, text: 'Course datasets' })),
+      get: vi.fn(async ({ dataset }: CourseDataRequest) => {
+        if (dataset === 'missing') throw new Error('404: Unknown dataset "missing"');
+        return { success: true, text: `Wrote rows for ${dataset}` };
+      }),
+    };
+    const { native, commands, emit } = runner({ courseData });
     await native.connect();
     await native.thread(thread);
     expect(commands.find((command) => command.method === 'thread/start')?.params).toMatchObject({
-      dynamicTools: [{ name: 'get_course_data' }],
+      dynamicTools: [{ name: 'list_course_datasets' }, { name: 'get_course_data' }],
     });
-    const call = (id: number, args: unknown) =>
+    const call = (id: number, tool: string, args: unknown) =>
       emit({
         id,
         method: 'item/tool/call',
@@ -289,29 +295,39 @@ describe('course agent turns', () => {
           turnId: 'turn',
           callId: `call-${id}`,
           namespace: null,
-          tool: 'get_course_data',
+          tool,
           arguments: args,
         },
       });
-    call(10, { dataset: 'submissions', filters: [{ column: 'score', op: 'lt', value: 0.5 }] });
-    call(11, { dataset: 'missing' });
-    call(12, { limit: 'ten' });
+    call(10, 'list_course_datasets', {});
+    call(11, 'get_course_data', {
+      dataset: 'submissions',
+      filters: [{ column: 'score', op: 'lt', value: 0.5 }],
+    });
+    call(12, 'get_course_data', { dataset: 'missing' });
+    call(13, 'get_course_data', { filters: [] });
     const replies = () => commands.filter((command) => 'result' in command);
-    await vi.waitFor(() => expect(replies()).toHaveLength(3));
-    expect(onCourseData).toHaveBeenCalledWith({
+    await vi.waitFor(() => expect(replies()).toHaveLength(4));
+    expect(courseData.list).toHaveBeenCalledOnce();
+    expect(courseData.get).toHaveBeenCalledWith({
       dataset: 'submissions',
       filters: [{ column: 'score', op: 'lt', value: 0.5 }],
     });
     const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
     expect(byId[10]).toEqual({
       success: true,
-      contentItems: [{ type: 'inputText', text: 'Wrote rows for submissions' }],
+      contentItems: [{ type: 'inputText', text: 'Course datasets' }],
     });
     expect(byId[11]).toEqual({
+      success: true,
+      contentItems: [{ type: 'inputText', text: 'Wrote rows for submissions' }],
+    });
+    expect(byId[12]).toEqual({
       success: false,
       contentItems: [{ type: 'inputText', text: '404: Unknown dataset "missing"' }],
     });
-    expect(byId[12]).toMatchObject({ success: false });
+    expect(byId[13]).toMatchObject({ success: false });
+    expect(courseData.get).toHaveBeenCalledTimes(2);
   });
 
   it('shows input the agent requests as an input request part', async () => {

@@ -88,48 +88,68 @@ async function errorMessage(response: Response) {
   return parsed.success ? parsed.data.message : response.statusText;
 }
 
-/**
- * Serves `get_course_data` from PrairieLearn's course data API. PrairieLearn identifies the user
- * and course from the conversation, so the model chooses only which rows to read.
- */
-export async function getCourseData({
-  plUrl,
-  serviceToken,
-  conversationId,
-  courseId,
-  sandbox,
-  request,
-}: {
+interface CourseDataContext {
   plUrl: string;
   serviceToken: string;
   conversationId: string;
   courseId: string | undefined;
-  sandbox: DurableObjectStub<CourseSandbox>;
-  request: CourseDataRequest;
-}): Promise<ToolReply> {
-  if (!courseId) {
-    return { success: false, text: 'Course data is unavailable. Reload the PrairieLearn page.' };
-  }
-  const { dataset, ...query } = request;
-  const url = new URL(`/pl/api/v1/course/${courseId}/data`, plUrl);
-  const headers = {
-    Authorization: `Bearer ${serviceToken}`,
-    'X-Course-Agent-Conversation': conversationId,
-  };
-  const started = Date.now();
-  const response = dataset
-    ? await fetch(`${url}/${encodeURIComponent(dataset)}`, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(query),
-        signal: AbortSignal.timeout(120_000),
-      })
-    : await fetch(url, { headers, signal: AbortSignal.timeout(120_000) });
+}
+
+/**
+ * Calls PrairieLearn's course data API. PrairieLearn identifies the user and course from the
+ * conversation, so the model chooses only which rows to read.
+ */
+async function fetchCourseData(
+  { plUrl, serviceToken, conversationId, courseId }: CourseDataContext,
+  path: string,
+  init: RequestInit = {},
+) {
+  if (!courseId) return null;
+  return await fetch(new URL(`/pl/api/v1/course/${courseId}/data${path}`, plUrl), {
+    ...init,
+    headers: {
+      ...init.headers,
+      Authorization: `Bearer ${serviceToken}`,
+      'X-Course-Agent-Conversation': conversationId,
+    },
+    signal: AbortSignal.timeout(120_000),
+  });
+}
+
+const UNAVAILABLE: ToolReply = {
+  success: false,
+  text: 'Course data is unavailable. Reload the PrairieLearn page.',
+};
+
+/** Serves `list_course_datasets`. */
+export async function listCourseDatasets(context: CourseDataContext): Promise<ToolReply> {
+  const response = await fetchCourseData(context, '');
+  if (!response) return UNAVAILABLE;
   if (!response.ok) {
     return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
   }
-  if (!dataset) {
-    return { success: true, text: describeSchema(SchemaResponse.parse(await response.json())) };
+  return { success: true, text: describeSchema(SchemaResponse.parse(await response.json())) };
+}
+
+/** Serves `get_course_data`: saves the rows in the sandbox and describes the file. */
+export async function getCourseData({
+  sandbox,
+  request,
+  ...context
+}: CourseDataContext & {
+  sandbox: DurableObjectStub<CourseSandbox>;
+  request: CourseDataRequest;
+}): Promise<ToolReply> {
+  const { dataset, ...query } = request;
+  const started = Date.now();
+  const response = await fetchCourseData(context, `/${encodeURIComponent(dataset)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(query),
+  });
+  if (!response) return UNAVAILABLE;
+  if (!response.ok) {
+    return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
   }
 
   const body = await readCapped(response);
@@ -147,7 +167,7 @@ export async function getCourseData({
   );
   const path = await sandbox.writeCourseData(dataset, body.text);
   logEvent('course_data_fetched', {
-    conversationId,
+    conversationId: context.conversationId,
     dataset,
     filters,
     rows,

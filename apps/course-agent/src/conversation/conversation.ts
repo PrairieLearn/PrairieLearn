@@ -35,7 +35,7 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
-import { getCourseData } from './course-data.js';
+import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions } from './instructions.js';
 import { generateTitle } from './title.js';
 
@@ -148,6 +148,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     reportError(error, {
       'course_agent.lifecycle': this._record?.lifecycle.status ?? 'uninitialized',
     });
+  }
+
+  private courseDataContext() {
+    return {
+      plUrl: this.env.PL_URL,
+      serviceToken: this.env.PL_SERVICE_TOKEN,
+      conversationId: this.name,
+      courseId: this.record.courseContext?.courseId,
+    };
   }
 
   override onError(...args: [error: unknown] | [connection: Connection, error: unknown]) {
@@ -461,16 +470,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
     });
     log('turn_started', { startup });
-    const native = (this.native ??= new CodexAppServerClient(this.sandbox, (request) =>
-      getCourseData({
-        plUrl: this.env.PL_URL,
-        serviceToken: this.env.PL_SERVICE_TOKEN,
-        conversationId: this.name,
-        courseId: this.record.courseContext?.courseId,
-        sandbox: this.sandbox,
-        request,
-      }),
-    ));
+    const native = (this.native ??= new CodexAppServerClient(this.sandbox, {
+      list: () => listCourseDatasets(this.courseDataContext()),
+      get: (request) =>
+        getCourseData({ ...this.courseDataContext(), sandbox: this.sandbox, request }),
+    }));
     let nativeThreadId = this.record.nativeThreadId;
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
