@@ -320,7 +320,8 @@ router.get(
     res.send(
       html.replace(
         '</head>',
-        `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(source).replaceAll('<', '\\u003c')}</script></head>`,
+        () =>
+          `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(source).replaceAll('<', '\\u003c')}</script></head>`,
       ),
     );
   }),

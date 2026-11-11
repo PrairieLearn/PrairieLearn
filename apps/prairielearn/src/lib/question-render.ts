@@ -481,7 +481,6 @@ export async function getAndRenderVariant(
     questionRenderContext,
     includeSubmissions = true,
     showCorrectAnswer: showCorrectAnswerOverride,
-    requireOpenVariant = !!locals.assessment && locals.assessment.type !== 'Exam',
     throwOnFatalError = false,
   }: {
     urlOverrides?: Partial<QuestionUrls>;
@@ -506,11 +505,6 @@ export async function getAndRenderVariant(
     includeSubmissions?: boolean;
     /** Overrides correct-answer visibility. If omitted, the existing visibility rules apply. */
     showCorrectAnswer?: boolean;
-    /**
-     * Whether a reused variant must be open. Defaults to true for non-Exam assessments.
-     * Ignored when `variant_id` is provided.
-     */
-    requireOpenVariant?: boolean;
     /** Reject fatal rendering errors instead of returning incomplete HTML. Defaults to false. */
     throwOnFatalError?: boolean;
   } = {},
@@ -547,7 +541,7 @@ export async function getAndRenderVariant(
         variant_course: locals.course,
         question_course,
         options: { variant_seed },
-        require_open: requireOpenVariant,
+        require_open: !!locals.assessment && locals.assessment.type !== 'Exam',
         client_fingerprint_id: locals.client_fingerprint_id ?? null,
       });
     }
