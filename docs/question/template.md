@@ -35,7 +35,7 @@ Text in `question.html` can be set to only display in the "question" panel by wr
 
 === "Bad"
 
-    ```html
+    ```html { .no-copy }
     <p>What is y, if y is 1 + 3?</p>
     <pl-number-input answers-name="y" label="$y =$"></pl-number-input>
     ```
@@ -58,7 +58,7 @@ By default, feedback given by elements (`data["partial_scores"][NAME]["feedback"
 
 === "Bad"
 
-    ```html
+    ```html { .no-copy }
     <p>Feedback: {{feedback.y}}</p>
     ```
 
@@ -164,7 +164,7 @@ That question would be rendered like this:
         ```
     === "Bad"
 
-        ```html
+        ```html { .no-copy }
         <div>
           <markdown>
             # Hello, world!
