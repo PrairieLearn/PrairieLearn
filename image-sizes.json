@@ -1,22 +1,22 @@
 {
   "prairielearn/executor": {
     "linux/amd64": {
-      "digest": "sha256:cadd714b4c807cb4cd72b977e872aab2364acce0a0c67608fd8ac73f920a08ec",
-      "size": 1483310598
+      "digest": "sha256:c75fe3e0f92aa429a03db5859077ba19e55614b5cc39b2ef1c1a7fffe08ad42e",
+      "size": 1483298403
     },
     "linux/arm64": {
-      "digest": "sha256:d7ab54413edeb58dffe9b19ff0b898cd8668659f5f2734d2aa54bb768b94f7e8",
-      "size": 1453313312
+      "digest": "sha256:76c1997c99ffa524769e118309edd3eed4444a1f4500a077c38e2c3f1470d3f8",
+      "size": 1453314420
     }
   },
   "prairielearn/prairielearn": {
     "linux/amd64": {
-      "digest": "sha256:08a0d148d4814d97071eb0b8c999716aa2c44c21844bae1c88a5c043fb1f8dd0",
-      "size": 1483307764
+      "digest": "sha256:89fd05a6610b6f753e3a19df31865421ed72d4fc2dd69fb37f8c02b0951eebc2",
+      "size": 1483295566
     },
     "linux/arm64": {
-      "digest": "sha256:65a0eb1ec5c0c84a32c069a2901e3e0589ad4cb4052911e0a5c11cd06b720222",
-      "size": 1453310482
+      "digest": "sha256:6a475d6e96217d8b3a1355a284faea28410eb7e5e579c9d1ae1a6dfdb22cd88a",
+      "size": 1453311589
     }
   },
   "prairielearn/workspace-desktop": {
@@ -45,8 +45,8 @@
       "size": 697072238
     },
     "linux/arm64": {
-      "digest": "sha256:2d03009b5db745301a9ac28b104f03e9b84406b0c9e76cb14ce7c92c8b0a6320",
-      "size": 651234892
+      "digest": "sha256:18a64ba88dd87b7267ff231adfd95c4c47116226964c8a3f823a9fdfbc1263ce",
+      "size": 663520116
     }
   },
   "prairielearn/workspace-jupyterlab-python": {
@@ -55,8 +55,8 @@
       "size": 984465810
     },
     "linux/arm64": {
-      "digest": "sha256:aface09e6a27c02b90ed2e27b4ec85ad7bdca759bcecaf48499b9a74fd9aebd6",
-      "size": 933288068
+      "digest": "sha256:87c7f8a1742802637ce20d524071b2e2a49c0e4e7e15586d89cf02067aaadc1e",
+      "size": 945581648
     }
   },
   "prairielearn/workspace-jupyterlab-r": {
@@ -65,8 +65,8 @@
       "size": 1193382837
     },
     "linux/arm64": {
-      "digest": "sha256:3cfc3a0649e4b3625282584f2513f6aed08ddbda2b524e844c0e5bf20d94c6b8",
-      "size": 1113806369
+      "digest": "sha256:3e8586df0ec4c4578fbb73850154c0d48240b6c5a52ccc9cbbc7d8b59bd1e712",
+      "size": 1137688415
     }
   },
   "prairielearn/workspace-vscode-python": {
