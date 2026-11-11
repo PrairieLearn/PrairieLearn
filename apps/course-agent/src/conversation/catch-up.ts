@@ -162,10 +162,12 @@ function describePart(part: UIMessage['parts'][number]) {
       return describeInputRequest(part.data);
     case 'data-tool':
       return describeFileChange(part.data);
-    default: {
+    case 'file': {
       const attachment = attachmentOf(part);
       return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';
     }
+    default:
+      return '';
   }
 }
 

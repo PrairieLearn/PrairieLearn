@@ -41,6 +41,7 @@ import {
   DraftAttachmentList,
   FileDropArea,
   SentAttachments,
+  hasInvalidAttachment,
   uploadDraftAttachments,
   useDraftAttachments,
 } from './Attachments.js';
@@ -676,10 +677,10 @@ function Composer({
   onStop?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const hasInvalidAttachment = attachments.some((a) => a.status.kind === 'invalid');
+  const invalidAttachment = hasInvalidAttachment(attachments);
   const submit = (event: SyntheticEvent) => {
     event.preventDefault();
-    if (!hasInvalidAttachment) onSubmit(event);
+    if (!invalidAttachment) onSubmit(event);
   };
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -750,7 +751,7 @@ function Composer({
               type="submit"
               size="sm"
               aria-label={sendLabel}
-              disabled={!draft.trim() || disabled || pending || hasInvalidAttachment}
+              disabled={!draft.trim() || disabled || pending || invalidAttachment}
             >
               {pending ? (
                 <Spinner animation="border" size="sm" aria-hidden="true" />
