@@ -20,6 +20,7 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
+  InputRequestPartSchema,
   type ToolCall,
   ToolCallSchema,
   reviewTag,
@@ -35,6 +36,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
+import { InputRequestCard } from './InputRequestCard.js';
 import { RequestChangesCard, ReviewFeedback } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -277,6 +279,23 @@ function Chat({
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const setTitle = useMutation({
+    ...trpc.courseAgent.setTitle.mutationOptions(),
+    onSuccess: async (updated) => {
+      // A list fetch that started before the save would otherwise restore the old title.
+      await queryClient.cancelQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+      queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) =>
+        current?.map((conversation) => (conversation.id === updated.id ? updated : conversation)),
+      );
+    },
+    // The next state update retries the save.
+    onError: () => {
+      savingTitleRef.current = null;
+    },
+  });
+  // State updates repeat while a save is in flight, so save each generated title once.
+  const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
   const [connectionFailed, setConnectionFailed] = useState(false);
@@ -291,6 +310,14 @@ function Chat({
     onStateUpdate: (state) => {
       setLifecycle(state);
       if (state.status !== 'offline') setAwaitingStart(false);
+      // The agent service generates the title; the owner's browser saves it to the list.
+      const savedTitle = queryClient
+        .getQueryData(trpc.courseAgent.list.queryKey())
+        ?.find((conversation) => conversation.id === conversationId)?.title;
+      if (state.title && state.title !== savedTitle && state.title !== savingTitleRef.current) {
+        savingTitleRef.current = state.title;
+        setTitle.mutate({ conversationId, title: state.title });
+      }
     },
     onOpen: () => setConnectionFailed(false),
     onError: () => setConnectionFailed(true),
@@ -326,7 +353,6 @@ function Chat({
   const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
-  const queryClient = useQueryClient();
   const reviewInput = lifecycle?.reviewId
     ? { conversationId, reviewId: lifecycle.reviewId }
     : skipToken;
@@ -398,9 +424,23 @@ function Chat({
     !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
       ? (lifecycle.reviewId ?? null)
       : null;
+  // An input request is open until staff send their next message, which answers it however it is sent.
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
+  const latest = messages.at(-1);
+  const inputRequestOpen =
+    latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
+
+  const canSend = connected && readyToSend && !responseActive;
+
+  const send = (text: string) => {
+    if (lifecycle?.status === 'offline') setAwaitingStart(true);
+    // A refused denial's error no longer applies once the message goes out normally.
+    deny.reset();
+    void sendMessage({ text });
+  };
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
@@ -415,11 +455,8 @@ function Chat({
       });
       return;
     }
-    if (!readyToSend) return;
-    if (lifecycle.status === 'offline') setAwaitingStart(true);
-    // A refused denial's error no longer applies once the message goes out normally.
-    deny.reset();
-    void sendMessage({ text });
+    if (!canSend) return;
+    send(text);
     setDraft('');
   };
 
@@ -443,7 +480,10 @@ function Chat({
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
               linkTransform={linkTransform}
+              answered={index < lastUserIndex}
+              canAnswer={canSend}
               onToolCallExpand={stickToBottom.stopScroll}
+              onAnswer={send}
             />
           ))}
           {showInitialText && <UserMessage text={initialText} />}
@@ -509,7 +549,13 @@ function Chat({
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
-        placeholder={replyDenies ? 'Explain what to change…' : undefined}
+        placeholder={
+          replyDenies
+            ? 'Explain what to change…'
+            : inputRequestOpen
+              ? 'Reply to the agent, or ask something else…'
+              : undefined
+        }
         sendLabel={replyDenies ? 'Deny and send' : undefined}
         stopDisabled={!connected || !canStop}
         onDraftChange={setDraft}
@@ -608,8 +654,15 @@ function Message({
   awaitingReviewId,
   linkTransform,
   onToolCallExpand,
+  answered,
+  canAnswer,
+  onAnswer,
 }: {
   message: UIMessage;
+  /** Staff have sent a message since this one, which answers any input it requests. */
+  answered: boolean;
+  canAnswer: boolean;
+  onAnswer: (text: string) => void;
   /** Whether this message is still streaming. */
   live: boolean;
   conversationId: string;
@@ -672,6 +725,19 @@ function Message({
         return <TextPart key={key} part={part} urlTransform={linkTransform} />;
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+      if (part.type === 'data-input-request') {
+        const request = InputRequestPartSchema.safeParse(part.data).data;
+        if (!request) return null;
+        return (
+          <InputRequestCard
+            key={key}
+            part={request}
+            answered={answered}
+            canAnswer={canAnswer}
+            onAnswer={onAnswer}
+          />
+        );
+      }
       if (part.type === 'data-turn') {
         const { tag } = TurnPartSchema.parse(part.data);
         const reviewId = reviewIds.find((id) => reviewTag(id) === tag);
