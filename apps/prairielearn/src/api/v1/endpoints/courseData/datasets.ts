@@ -4,11 +4,17 @@ import { CourseDataQuerySchema, courseDataQuerySchema } from '@prairielearn/cour
 import { loadSqlEquiv } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import {
+  EnumAssessmentTypeSchema,
+  EnumGradingMethodSchema,
+  EnumInstanceQuestionStatusSchema,
+  EnumModeSchema,
+} from '../../../../lib/db-types.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 // Rows are JSON: IDs are strings, as in the rest of the API, and timestamps are ISO 8601 in UTC.
 const TimestampSchema = z.iso.datetime();
-const ModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 
 function dataset<Shape extends Record<string, z.ZodType>>({
   description,
@@ -35,15 +41,15 @@ function dataset<Shape extends Record<string, z.ZodType>>({
  */
 export const COURSE_DATA_DATASETS = {
   course_instances: dataset({
-    description: 'Course instances: offerings of the course, such as a semester.',
+    description: 'Offerings of the course, each with its own students and assessments.',
     query: sql.select_course_instances_by_course_id,
     schema: z.object({
       id: IdSchema,
-      short_name: z.string().describe('Directory name under courseInstances/, such as Fa25.'),
-      long_name: z.string().nullable().describe('Display name, such as "Fall 2025".'),
+      short_name: z.string().describe('Directory name under courseInstances/.'),
+      long_name: z.string().nullable().describe('Display name.'),
       display_timezone: z
         .string()
-        .describe('IANA timezone for dates in this course instance, such as America/Chicago.'),
+        .describe('IANA timezone name used to display dates in this course instance.'),
       publishing_start_date: TimestampSchema.nullable().describe(
         'When students can first access the course instance.',
       ),
@@ -51,7 +57,7 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   assessments: dataset({
-    description: 'Assessments, such as homeworks, quizzes, and exams, in each course instance.',
+    description: 'Assessments in each course instance.',
     query: sql.select_assessments_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -60,11 +66,13 @@ export const COURSE_DATA_DATASETS = {
         .string()
         .nullable()
         .describe("Directory name under the course instance's assessments/."),
-      title: z.string().nullable(),
-      label: z.string().describe('Short label shown to students, such as HW3 or Q4.'),
-      set_name: z.string().nullable().describe('Assessment set name, such as Homework or Quiz.'),
+      title: z.string().nullable().describe('Title shown to students.'),
+      label: z
+        .string()
+        .describe('Short label shown to students: the assessment set abbreviation and number.'),
+      set_name: z.string().nullable().describe('Name of the assessment set.'),
       number: z.string().describe('Number within the assessment set.'),
-      type: z.enum(['Homework', 'Exam', 'RetryExam', 'Basic', 'Game']),
+      type: EnumAssessmentTypeSchema.describe('Assessment type.'),
       max_points: z.number().nullable().describe('Points needed for a score of 100%.'),
       max_bonus_points: z.number().nullable().describe('Points available beyond 100%.'),
       multiple_instance: z.boolean().describe('Whether a student can start more than one attempt.'),
@@ -77,14 +85,14 @@ export const COURSE_DATA_DATASETS = {
     schema: z.object({
       id: IdSchema,
       qid: z.string().nullable().describe('Directory path under questions/.'),
-      title: z.string().nullable(),
-      topic: z.string().nullable(),
-      grading_method: z.enum(['Internal', 'External', 'Manual', 'AI']),
+      title: z.string().nullable().describe('Question title.'),
+      topic: z.string().nullable().describe('Topic name.'),
+      grading_method: EnumGradingMethodSchema.describe('How submissions are graded.'),
       single_variant: z
         .boolean()
         .nullable()
         .describe('Whether every student sees the same variant.'),
-      draft: z.boolean(),
+      draft: z.boolean().describe('Whether the question is a draft.'),
     }),
   }),
   assessment_questions: dataset({
@@ -116,7 +124,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   assessment_instances: dataset({
     description:
-      "Students' or teams' attempts at assessments, with totals. An assessment with multiple_instance can have several attempts per student.",
+      'Attempts at assessments by students or teams, with totals. An assessment with multiple_instance can have several attempts per student.',
     query: sql.select_assessment_instances_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -125,12 +133,12 @@ export const COURSE_DATA_DATASETS = {
       user_id: IdSchema.nullable().describe('Null for team work.'),
       team_id: IdSchema.nullable().describe('Null for individual work.'),
       number: z.number().describe('Attempt number for this student and assessment, from 1.'),
-      mode: ModeSchema.nullable().describe('Where the attempt was taken.'),
+      mode: EnumModeSchema.nullable().describe('Access mode when the attempt started.'),
       open: z.boolean().describe('Whether the attempt is still open.'),
-      started_at: TimestampSchema.nullable(),
-      closed_at: TimestampSchema.nullable(),
+      started_at: TimestampSchema.nullable().describe('When the attempt started.'),
+      closed_at: TimestampSchema.nullable().describe('When the attempt closed.'),
       duration: z.number().nullable().describe('Time spent on the attempt, in seconds.'),
-      points: z.number().nullable(),
+      points: z.number().nullable().describe('Points earned.'),
       max_points: z.number().nullable().describe('Points needed for a score of 100%.'),
       score_perc: z
         .number()
@@ -152,9 +160,7 @@ export const COURSE_DATA_DATASETS = {
       assessment_question_id: IdSchema,
       question_id: IdSchema,
       number: z.number().nullable().describe('Position in the attempt.'),
-      status: z
-        .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
-        .nullable(),
+      status: EnumInstanceQuestionStatusSchema.nullable().describe('Grading status.'),
       points: z.number().nullable().describe('Points from automatic and manual grading.'),
       auto_points: z.number().nullable().describe('Points from automatic grading.'),
       manual_points: z.number().nullable().describe('Points from manual grading.'),
@@ -188,7 +194,7 @@ export const COURSE_DATA_DATASETS = {
       user_id: IdSchema.nullable().describe('Null for team work.'),
       team_id: IdSchema.nullable().describe('Null for individual work.'),
       number: z.number().nullable().describe('Variant number within the instance question.'),
-      created_at: TimestampSchema.nullable(),
+      created_at: TimestampSchema.nullable().describe('When the variant was generated.'),
       open: z.boolean().nullable().describe('Whether more submissions are accepted.'),
       broken: z.boolean().describe('Whether the variant was marked broken.'),
     }),
@@ -207,21 +213,20 @@ export const COURSE_DATA_DATASETS = {
       variant_id: IdSchema,
       user_id: IdSchema.nullable().describe('Null for team work.'),
       team_id: IdSchema.nullable().describe('Null for individual work.'),
-      submitted_at: TimestampSchema.nullable(),
-      mode: ModeSchema.nullable().describe('Where the submission was made.'),
+      submitted_at: TimestampSchema.nullable().describe('When the answer was submitted.'),
+      mode: EnumModeSchema.nullable().describe('Access mode when the answer was submitted.'),
       gradable: z.boolean().nullable().describe('False when the answer had format errors.'),
       broken: z.boolean().nullable().describe('Whether grading hit an error.'),
-      graded_at: TimestampSchema.nullable().describe('Null if not graded.'),
+      graded_at: TimestampSchema.nullable().describe(
+        'When the submission was graded. Null if not graded.',
+      ),
       score: z
         .number()
         .nullable()
         .describe('Score from 0 to 1, after any manual override. Null if not graded.'),
       correct: z.boolean().nullable().describe('Whether the submission was fully correct.'),
       overridden: z.boolean().describe('Whether staff manually overrode the score.'),
-      credit: z
-        .number()
-        .nullable()
-        .describe('Credit percentage applied at submission time, such as 100 or 80.'),
+      credit: z.number().nullable().describe('Credit percentage applied at submission time.'),
     }),
   }),
 };

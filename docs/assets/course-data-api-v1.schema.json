@@ -61,7 +61,7 @@
   },
   "datasets": {
     "course_instances": {
-      "description": "Course instances: offerings of the course, such as a semester.",
+      "description": "Offerings of the course, each with its own students and assessments.",
       "schema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -72,15 +72,15 @@
           },
           "short_name": {
             "type": "string",
-            "description": "Directory name under courseInstances/, such as Fa25."
+            "description": "Directory name under courseInstances/."
           },
           "long_name": {
-            "description": "Display name, such as \"Fall 2025\".",
+            "description": "Display name.",
             "type": ["string", "null"]
           },
           "display_timezone": {
             "type": "string",
-            "description": "IANA timezone for dates in this course instance, such as America/Chicago."
+            "description": "IANA timezone name used to display dates in this course instance."
           },
           "publishing_start_date": {
             "anyOf": [
@@ -121,7 +121,7 @@
       }
     },
     "assessments": {
-      "description": "Assessments, such as homeworks, quizzes, and exams, in each course instance.",
+      "description": "Assessments in each course instance.",
       "schema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -139,14 +139,15 @@
             "type": ["string", "null"]
           },
           "title": {
+            "description": "Title shown to students.",
             "type": ["string", "null"]
           },
           "label": {
             "type": "string",
-            "description": "Short label shown to students, such as HW3 or Q4."
+            "description": "Short label shown to students: the assessment set abbreviation and number."
           },
           "set_name": {
-            "description": "Assessment set name, such as Homework or Quiz.",
+            "description": "Name of the assessment set.",
             "type": ["string", "null"]
           },
           "number": {
@@ -155,7 +156,8 @@
           },
           "type": {
             "type": "string",
-            "enum": ["Homework", "Exam", "RetryExam", "Basic", "Game"]
+            "enum": ["Exam", "RetryExam", "Basic", "Game", "Homework"],
+            "description": "Assessment type."
           },
           "max_points": {
             "description": "Points needed for a score of 100%.",
@@ -206,21 +208,25 @@
             "type": ["string", "null"]
           },
           "title": {
+            "description": "Question title.",
             "type": ["string", "null"]
           },
           "topic": {
+            "description": "Topic name.",
             "type": ["string", "null"]
           },
           "grading_method": {
             "type": "string",
-            "enum": ["Internal", "External", "Manual", "AI"]
+            "enum": ["Internal", "External", "Manual"],
+            "description": "How submissions are graded."
           },
           "single_variant": {
             "description": "Whether every student sees the same variant.",
             "type": ["boolean", "null"]
           },
           "draft": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the question is a draft."
           }
         },
         "required": ["id", "qid", "title", "topic", "grading_method", "single_variant", "draft"],
@@ -295,7 +301,7 @@
       }
     },
     "assessment_instances": {
-      "description": "Students' or teams' attempts at assessments, with totals. An assessment with multiple_instance can have several attempts per student.",
+      "description": "Attempts at assessments by students or teams, with totals. An assessment with multiple_instance can have several attempts per student.",
       "schema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -350,7 +356,7 @@
                 "type": "null"
               }
             ],
-            "description": "Where the attempt was taken."
+            "description": "Access mode when the attempt started."
           },
           "open": {
             "type": "boolean",
@@ -366,7 +372,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "When the attempt started."
           },
           "closed_at": {
             "anyOf": [
@@ -378,13 +385,15 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "When the attempt closed."
           },
           "duration": {
             "description": "Time spent on the attempt, in seconds.",
             "type": ["number", "null"]
           },
           "points": {
+            "description": "Points earned.",
             "type": ["number", "null"]
           },
           "max_points": {
@@ -471,7 +480,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Grading status."
           },
           "points": {
             "description": "Points from automatic and manual grading.",
@@ -605,7 +615,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "When the variant was generated."
           },
           "open": {
             "description": "Whether more submissions are accepted.",
@@ -700,7 +711,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "When the answer was submitted."
           },
           "mode": {
             "anyOf": [
@@ -712,7 +724,7 @@
                 "type": "null"
               }
             ],
-            "description": "Where the submission was made."
+            "description": "Access mode when the answer was submitted."
           },
           "gradable": {
             "description": "False when the answer had format errors.",
@@ -733,7 +745,7 @@
                 "type": "null"
               }
             ],
-            "description": "Null if not graded."
+            "description": "When the submission was graded. Null if not graded."
           },
           "score": {
             "description": "Score from 0 to 1, after any manual override. Null if not graded.",
@@ -748,7 +760,7 @@
             "description": "Whether staff manually overrode the score."
           },
           "credit": {
-            "description": "Credit percentage applied at submission time, such as 100 or 80.",
+            "description": "Credit percentage applied at submission time.",
             "type": ["number", "null"]
           }
         },
