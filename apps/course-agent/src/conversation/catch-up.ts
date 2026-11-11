@@ -35,16 +35,9 @@ export function historyBefore(history: UIMessage[], message: UIMessage | null) {
   return history.filter((entry, i) => i < index || (i > index && entry.role !== 'user'));
 }
 
-/**
- * An account of a review result, used in chat history markers and catch-up text. A denial sent
- * as a message includes it in full, like any other user message in catch-up.
- */
+/** An account of a review result, used in chat history markers and catch-up text. */
 export function summarizeReview(result: RequestChangesResult) {
-  if (result.decision === 'denied') {
-    return result.feedback
-      ? `The instructor denied the submitted changes by sending this message:\n\n${result.feedback}`
-      : 'The instructor denied the submitted changes.';
-  }
+  if (result.decision === 'denied') return 'The instructor denied the submitted changes.';
   const approved = 'The instructor approved the submitted changes';
   const sync = result.sync.status === 'failed' ? ', but the course sync failed' : '';
   switch (result.publication.status) {
@@ -63,6 +56,22 @@ export function summarizeReview(result: RequestChangesResult) {
   }
 }
 
+const DENIAL_NOT_SAVED = 'Nothing was saved; your edits remain private to this conversation.';
+const DENIED_BY_MESSAGE = 'The instructor denied the submitted changes by sending this message.';
+
+/**
+ * The input of a turn whose message denied a pending review: the denial and what the agent
+ * should do next, then the message as written.
+ */
+export function describeDenialMessage(text: string) {
+  return [
+    DENIED_BY_MESSAGE,
+    DENIAL_NOT_SAVED,
+    'Respond to their message. If it asks for changes, make them and submit the revised changes for review. If it only asks a question, answer it, then submit the same changes for review again. If it says to drop the changes, do not resubmit.',
+    `Their message:\n\n${text}`,
+  ].join('\n\n');
+}
+
 /**
  * The delivery turn's input: the summary, what the agent should do next, and any save or sync
  * output. The agent never sees the result's structure, only this text.
@@ -71,16 +80,10 @@ export function describeReviewResult(result: RequestChangesResult, source: 'gith
   const output = (title: string, text: string) => `${title}:\n${text.trim() || '(no output)'}`;
   const parts = [summarizeReview(result)];
   if (result.decision === 'denied') {
-    parts.push('Nothing was saved; your edits remain private to this conversation.');
-    if (result.feedback) {
-      parts.push(
-        'Respond to their message. If it asks for changes, make them and submit the revised changes for review. If it only asks a question, answer it, then submit the same changes for review again. If it says to drop the changes, do not resubmit.',
-      );
-    } else {
-      parts.push(
-        'Do not revise or resubmit on your own. Ask the instructor what they would like changed, then end your turn.',
-      );
-    }
+    parts.push(
+      DENIAL_NOT_SAVED,
+      'Do not revise or resubmit on your own. Ask the instructor what they would like changed, then end your turn.',
+    );
   } else if (result.publication.status === 'published') {
     parts.push(
       'Fetch the configured origin branch and reconcile your checkout before editing again.',
@@ -118,6 +121,11 @@ export function describeReviewResult(result: RequestChangesResult, source: 'gith
  */
 export function turnMarker(tag: string, summary: string): UIMessageChunk {
   return { type: 'data-turn', id: tag, data: { tag, summary } };
+}
+
+/** Marks, in chat history, that the turn's user message denied a pending review. */
+export function denialMarker(reviewId: string): UIMessageChunk {
+  return { type: 'data-denial', id: `denial:${reviewId}`, data: { reviewId } };
 }
 
 interface Turn {
@@ -180,6 +188,11 @@ function splitTurns(history: UIMessage[]) {
       if (part.type === 'data-turn') {
         const { tag, summary } = part.data as { tag: string; summary: string };
         turns.push({ tag, entries: [`PrairieLearn: ${summary}`] });
+        continue;
+      }
+      if (part.type === 'data-denial') {
+        // The marker follows the user message it describes, so it precedes it in catch-up.
+        turns.at(-1)?.entries.unshift(`PrairieLearn: ${DENIED_BY_MESSAGE}`);
         continue;
       }
       const text = describePart(part);

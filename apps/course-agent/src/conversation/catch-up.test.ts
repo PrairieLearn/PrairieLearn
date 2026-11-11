@@ -161,11 +161,25 @@ describe('describeReviewResult', () => {
       'Do not revise or resubmit on your own.',
     );
   });
+});
 
-  it('passes on the message an instructor sent in place of a decision', () => {
-    const text = describeReviewResult({ ...denied, feedback: 'Use three midterms' }, 'github');
-    expect(text).toContain('Use three midterms');
-    expect(text).toContain('Respond to their message.');
-    expect(text).not.toContain('Do not revise or resubmit on your own.');
+describe('denial by message', () => {
+  it('describes the message that denied a review before it in catch-up', () => {
+    const denial: UIMessage[] = [
+      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Use three midterms' }] },
+      {
+        id: 'a1',
+        role: 'assistant',
+        parts: [
+          { type: 'data-denial', id: 'denial:r1', data: { reviewId: 'r1' } },
+          { type: 'text', text: 'Switching to three midterms.' },
+        ],
+      },
+    ];
+    expect(missedTurns(denial, undefined)).toEqual([
+      'PrairieLearn: The instructor denied the submitted changes by sending this message.',
+      'Staff: Use three midterms',
+      'You: Switching to three midterms.',
+    ]);
   });
 });
