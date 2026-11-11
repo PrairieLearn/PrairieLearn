@@ -1,4 +1,4 @@
-import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { QueryClient, skipToken, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
@@ -12,6 +12,7 @@ import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/reac
 import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
 import { IdSchema } from '@prairielearn/zod';
 
+import { PrintIdentityFieldsTextSchema } from '../../lib/client/printing/print-cover.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
 import {
   MAX_COVER_BYTES,
@@ -20,7 +21,6 @@ import {
 } from '../../lib/client/printing/print-packet.js';
 import {
   DEFAULT_PRINT_SETTINGS,
-  PrintIdentityFieldsTextSchema,
   printLayoutSearch,
 } from '../../lib/client/printing/print-preparation.js';
 import {
@@ -150,7 +150,7 @@ function PrintPreparation({
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
   const [retry, setRetry] = useState(0);
   const [snapshotStale, setSnapshotStale] = useState(false);
-  const [printExportId, setPrintExportId] = useQueryState('export', parseAsString);
+  const [exportId, setExportId] = useQueryState('export', parseAsString);
   const {
     register,
     handleSubmit,
@@ -196,16 +196,15 @@ function PrintPreparation({
   const booklet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
   const exportStatus = useQuery(
     trpc.printableAssessmentExport.status.queryOptions(
-      { printExportId: printExportId ?? '1' },
+      exportId === null ? skipToken : { printExportId: exportId },
       {
-        enabled: printExportId !== null,
         refetchInterval: (query) => (query.state.data?.status === 'pending' ? 2_000 : false),
       },
     ),
   );
   const exportNeedsNewPreview = exportStatus.data?.failureMessage === STALE_PRINT_SNAPSHOT_MESSAGE;
   const exportPending =
-    printExportId !== null && (exportStatus.isPending || exportStatus.data?.status === 'pending');
+    exportId !== null && (exportStatus.isPending || exportStatus.data?.status === 'pending');
   const busy =
     create.isPending ||
     regenerate.isPending ||
@@ -337,7 +336,7 @@ function PrintPreparation({
   }
 
   function receiveExport(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
-    void setPrintExportId(result.printExportId);
+    void setExportId(result.printExportId);
   }
 
   async function downloadPacket(
@@ -505,7 +504,7 @@ function PrintPreparation({
     setPreviewPending(true);
     setPreview(null);
     snapshotsRef.current.clear();
-    if (exportNeedsNewPreview) void setPrintExportId(null);
+    if (exportNeedsNewPreview) void setExportId(null);
     packet.reset();
     booklet.reset();
     download.reset();
@@ -567,7 +566,7 @@ function PrintPreparation({
           setPdfPreparationError(null);
         }}
       />
-      {printExportId && (
+      {exportId && (
         <Alert
           variant={
             exportStatus.data?.status === 'failed' || exportStatus.isError ? 'danger' : 'info'
@@ -595,7 +594,7 @@ function PrintPreparation({
               size="sm"
               className="ms-2 p-0"
               onClick={() => {
-                void setPrintExportId(null);
+                void setExportId(null);
               }}
             >
               Dismiss

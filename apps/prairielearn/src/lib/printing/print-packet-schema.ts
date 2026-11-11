@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { PrintIdentityFieldsTextSchema } from '../client/printing/print-cover.js';
 import { MAX_PRINT_COPIES, MAX_PRINT_FORMS } from '../client/printing/print-packet.js';
-import { PrintIdentityFieldsTextSchema } from '../client/printing/print-preparation.js';
 
 import { PAPER_SIZES } from './paper-size.js';
 import { QUESTION_BLOCK_SIZES } from './question-block-size.js';
