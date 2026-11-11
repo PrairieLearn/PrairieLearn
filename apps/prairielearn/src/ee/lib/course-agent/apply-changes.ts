@@ -193,7 +193,7 @@ export async function postReviewDecision({
       result,
     });
     if (!row) {
-      return matchDecision((await selectOptionalCourseAgentReview(key)), decision, viaMessage);
+      return matchDecision((await selectOptionalCourseAgentReview(key))!, decision, viaMessage);
     }
     await deliverResult(conversation, row, result);
     return { decision };
@@ -230,7 +230,7 @@ export async function postReviewDecision({
     await serverJob.executeUnsafe(async (job) => {
       job.stop('Another decision for this review was recorded first.');
     });
-    return matchDecision((await selectOptionalCourseAgentReview(key)), decision);
+    return matchDecision((await selectOptionalCourseAgentReview(key))!, decision);
   }
   void applyChanges(editor, serverJob, course, conversation, row, review);
   return { decision };
