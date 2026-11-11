@@ -5,13 +5,16 @@ import type {
   StaffAssessmentQuestionRow,
 } from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
+import { ZoneAssessmentJsonSchema } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+import { prepareZonesForEditor } from './dataTransform.js';
 import {
+  type QuestionMetadataMap,
   buildHierarchicalAssessment,
   compactPoints,
   computeAltPoolChosenRange,
@@ -256,14 +259,14 @@ describe('computeQuestionTotalPoints', () => {
       expected: 10,
     },
     {
-      name: 'points array + manualPoints for Exam',
-      input: { points: [4, 3, 2], manualPoints: 4 },
+      name: 'autoPoints array + manualPoints for Exam',
+      input: { autoPoints: [4, 3, 2], manualPoints: 4 },
       type: 'Exam' as const,
       expected: 8,
     },
     {
-      name: 'uniform points array + manualPoints for Exam',
-      input: { points: [3, 3, 3], manualPoints: 5 },
+      name: 'uniform autoPoints array + manualPoints for Exam',
+      input: { autoPoints: [3, 3, 3], manualPoints: 5 },
       type: 'Exam' as const,
       expected: 8,
     },
@@ -274,6 +277,55 @@ describe('computeQuestionTotalPoints', () => {
   it('inherits points from parent when question has none', () => {
     expect(computeQuestionTotalPoints({}, 'Homework', { points: 10 })).toBe(10);
   });
+
+  it.each(['Exam', 'Homework'] as const)(
+    'treats explicit zero manual points as split points for %s',
+    (assessmentType) => {
+      expect(computeQuestionTotalPoints({ manualPoints: 0 }, assessmentType, { points: 10 })).toBe(
+        0,
+      );
+    },
+  );
+});
+
+describe('point calculations with unavailable alternatives', () => {
+  it.each([
+    { siblingPoints: 2, expectedTotal: 2, expectedMismatch: false },
+    { siblingPoints: undefined, expectedTotal: 10, expectedMismatch: true },
+  ])(
+    'uses split points with unavailable sibling points $siblingPoints',
+    ({ siblingPoints, expectedTotal, expectedMismatch }) => {
+      const jsonZone = ZoneAssessmentJsonSchema.parse({
+        numberChoose: 1,
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            alternatives: [
+              { id: 'known', manualPoints: 2 },
+              { id: '@shared/unavailable', points: siblingPoints },
+            ],
+          },
+          { id: 'standalone', autoPoints: 2 },
+        ],
+      });
+      const metadata = {
+        known: { question: { grading_method: 'Manual' } },
+        standalone: { question: { grading_method: 'Internal' } },
+      } as unknown as QuestionMetadataMap;
+      const [zone] = prepareZonesForEditor([jsonZone], metadata);
+      const pool = zone.questions[0];
+      const alternatives = pool.alternatives!;
+
+      expect(computeQuestionTotalPoints(alternatives[0], 'Exam', pool)).toBe(2);
+      const totals = computeZonePointTotals(zone.questions, 'Exam', {
+        numberChoose: zone.numberChoose,
+      });
+      expect(totals.autoPoints + totals.manualPoints).toBe(expectedTotal);
+      expect(hasPointsMismatch(alternatives, 'Exam', pool)).toBe(expectedMismatch);
+      expect(getZonePointsMismatch(zone, 'Exam') != null).toBe(expectedMismatch);
+    },
+  );
 });
 
 describe('hasPointsMismatch', () => {
@@ -523,7 +575,7 @@ describe('computeZonePointTotals', () => {
       expectedManual: 0,
     },
   ])('$name', ({ questions, opts, expectedAuto, expectedManual }) => {
-    const result = computeZonePointTotals(questions as ZoneQuestionBlockForm[], opts);
+    const result = computeZonePointTotals(questions as ZoneQuestionBlockForm[], 'Homework', opts);
     expect(result.autoPoints).toBe(expectedAuto);
     expect(result.manualPoints).toBe(expectedManual);
   });
@@ -534,7 +586,7 @@ describe('computeZonePointTotals', () => {
       { trackingId: 'q2', id: 'q2', autoPoints: 2, maxAutoPoints: 8 },
     ] as ZoneQuestionBlockForm[];
 
-    const result = computeZonePointTotals(questions);
+    const result = computeZonePointTotals(questions, 'Homework');
     expect(result.autoPoints).toBe(13);
   });
 
@@ -543,7 +595,7 @@ describe('computeZonePointTotals', () => {
       { trackingId: 'q1', id: 'q1', points: 1, maxPoints: 5 },
     ] as ZoneQuestionBlockForm[];
 
-    const result = computeZonePointTotals(questions);
+    const result = computeZonePointTotals(questions, 'Homework');
     expect(result.autoPoints).toBe(5);
   });
 
@@ -561,7 +613,7 @@ describe('computeZonePointTotals', () => {
       },
     ] as ZoneQuestionBlockForm[];
 
-    const result = computeZonePointTotals(questions);
+    const result = computeZonePointTotals(questions, 'Homework');
     // Alternative a2 overrides with max 10; a1 inherits pool max 5.
     // numberChoose=1, so pick the best = 10.
     expect(result.autoPoints).toBe(10);

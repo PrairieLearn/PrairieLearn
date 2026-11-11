@@ -308,7 +308,7 @@ function ZonePointsBadge({
   assessmentType: EnumAssessmentType;
   tooltipId: string;
 }) {
-  const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions, {
+  const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions, assessmentType, {
     bestQuestions: zone.bestQuestions,
     numberChoose: zone.numberChoose,
   });
