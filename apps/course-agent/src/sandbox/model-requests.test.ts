@@ -16,6 +16,25 @@ describe('modelRequestRefusal', () => {
       expect(modelRequestRefusal({ tools: [{ type: 'function' }, { type }] })).not.toBeNull();
     }
   });
+
+  // Codex declares tools in `additional_tools` input items for models using Responses Lite.
+  it('checks tools declared in input items and namespaces', () => {
+    const declare = (tools: unknown[]) => ({
+      input: [
+        { type: 'additional_tools', role: 'developer', tools },
+        { type: 'message', role: 'user', content: [] },
+      ],
+    });
+    expect(
+      modelRequestRefusal(
+        declare([{ type: 'namespace', tools: [{ type: 'function' }, { type: 'custom' }] }]),
+      ),
+    ).toBeNull();
+    expect(modelRequestRefusal(declare([{ type: 'mcp' }]))).not.toBeNull();
+    expect(
+      modelRequestRefusal(declare([{ type: 'namespace', tools: [{ type: 'web_search' }] }])),
+    ).not.toBeNull();
+  });
 });
 
 describe('prepareSearchRequest', () => {

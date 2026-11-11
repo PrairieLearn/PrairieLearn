@@ -23,6 +23,7 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
+  InputRequestPartSchema,
   type ToolCall,
   ToolCallSchema,
   reviewTag,
@@ -47,6 +48,7 @@ import {
   useDraftAttachments,
 } from './Attachments.js';
 import { ConversationStats } from './ConversationStats.js';
+import { InputRequestCard } from './InputRequestCard.js';
 import { RequestChangesCard, ReviewFeedback } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -410,6 +412,7 @@ function Chat({
 
   const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
   const { setStatus, setAttachments } = drafts;
+  const { reset: resetDeny } = deny;
   const offline = lifecycle?.status === 'offline';
   /** Upload the attachments, then send. A failed upload keeps the draft for another try. */
   const send = useCallback(
@@ -423,13 +426,17 @@ function Chat({
       setSending(false);
       if (!files) return false;
       if (offline) setAwaitingStart(true);
+      // A refused denial's error no longer applies once the message goes out normally.
+      resetDeny();
       void sendMessage({ text, files });
-      setDraft('');
-      revokePreviews(attachments);
-      setAttachments([]);
+      // An answer chosen on an input request leaves the composer's attachments alone.
+      if (attachments.length > 0) {
+        revokePreviews(attachments);
+        setAttachments([]);
+      }
       return true;
     },
-    [uploadsUrl, chatCsrfToken, setStatus, setAttachments, sendMessage, offline],
+    [uploadsUrl, chatCsrfToken, setStatus, setAttachments, resetDeny, sendMessage, offline],
   );
 
   const initialMessageSentRef = useRef(false);
@@ -483,9 +490,16 @@ function Chat({
     !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
       ? (lifecycle.reviewId ?? null)
       : null;
+  // An input request is open until staff send their next message, which answers it however it is sent.
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
+  const latest = messages.at(-1);
+  const inputRequestOpen =
+    latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
+
+  const canSend = connected && readyToSend && !responseActive && !sending;
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
@@ -502,10 +516,10 @@ function Chat({
       });
       return;
     }
-    if (!readyToSend) return;
-    // A refused denial's error no longer applies once the message goes out normally.
-    deny.reset();
-    void send(text, drafts.attachments);
+    if (!canSend) return;
+    void send(text, drafts.attachments).then((sent) => {
+      if (sent) setDraft('');
+    });
   };
 
   return (
@@ -529,7 +543,10 @@ function Chat({
               uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
               linkTransform={linkTransform}
+              answered={index < lastUserIndex}
+              canAnswer={canSend}
               onToolCallExpand={stickToBottom.stopScroll}
+              onAnswer={(text) => void send(text, [])}
             />
           ))}
           {showInitialText && <UserMessage text={initialText} />}
@@ -600,7 +617,13 @@ function Chat({
           deny.isPending ||
           (replyDenies && drafts.attachments.length > 0)
         }
-        placeholder={replyDenies ? 'Explain what to change…' : undefined}
+        placeholder={
+          replyDenies
+            ? 'Explain what to change…'
+            : inputRequestOpen
+              ? 'Reply to the agent, or ask something else…'
+              : undefined
+        }
         sendLabel={replyDenies ? 'Deny and send' : undefined}
         canAttach={!replyDenies}
         pending={sending}
@@ -785,8 +808,15 @@ function Message({
   awaitingReviewId,
   linkTransform,
   onToolCallExpand,
+  answered,
+  canAnswer,
+  onAnswer,
 }: {
   message: UIMessage;
+  /** Staff have sent a message since this one, which answers any input it requests. */
+  answered: boolean;
+  canAnswer: boolean;
+  onAnswer: (text: string) => void;
   /** Whether this message is still streaming. */
   live: boolean;
   conversationId: string;
@@ -855,6 +885,19 @@ function Message({
         return <TextPart key={key} part={part} urlTransform={linkTransform} />;
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+      if (part.type === 'data-input-request') {
+        const request = InputRequestPartSchema.safeParse(part.data).data;
+        if (!request) return null;
+        return (
+          <InputRequestCard
+            key={key}
+            part={request}
+            answered={answered}
+            canAnswer={canAnswer}
+            onAnswer={onAnswer}
+          />
+        );
+      }
       if (part.type === 'data-turn') {
         const { tag } = TurnPartSchema.parse(part.data);
         const reviewId = reviewIds.find((id) => reviewTag(id) === tag);
