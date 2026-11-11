@@ -11,85 +11,44 @@ def file(data):
 
     params_dict = data["params"]
 
-    with schemdraw.Drawing(show=False) as drawing:
-        # Top edge left half: battery from pA to pB
-        drawing += (
-            elm.BatteryCell()
-            .at((params_dict["pA"][0], -params_dict["pA"][1]))
-            .to((params_dict["pB"][0], -params_dict["pB"][1]))
-            .label(params_dict["V_label"])
-        )
+    def pt(name):
+        # Geometry is stored in pl-drawing pixels; schemdraw element symbols are ~1 unit wide.
+        x, y = params_dict[name]
+        return (x / 30, -y / 30)
 
-        # Top edge right half: resistor R1 from pB to pC (same placement as the original)
-        drawing += (
-            elm.Resistor()
-            .at((params_dict["pB"][0], -params_dict["pB"][1]))
-            .to((params_dict["pC"][0], -params_dict["pC"][1]))
-            .label(params_dict["R1_label"])
-        )
+    drawing = schemdraw.Drawing(show=False)
+    # Top edge left half: battery from pA to pB
+    drawing += elm.BatteryCell().at(pt("pA")).to(pt("pB")).label(params_dict["V_label"])
 
-        # Right edge: line pC down to pD
-        drawing += (
-            elm.Line()
-            .at((params_dict["pC"][0], -params_dict["pC"][1]))
-            .to((params_dict["pD"][0], -params_dict["pD"][1]))
-        )
+    # Top edge right half: resistor R1 from pB to pC (same placement as the original)
+    drawing += elm.Resistor().at(pt("pB")).to(pt("pC")).label(params_dict["R1_label"])
 
-        # Bottom edge right: line pD -> pE
-        drawing += (
-            elm.Line()
-            .at((params_dict["pD"][0], -params_dict["pD"][1]))
-            .to((params_dict["pE"][0], -params_dict["pE"][1]))
-        )
+    # Right edge: line pC down to pD
+    drawing += elm.Line().at(pt("pC")).to(pt("pD"))
 
-        # Bottom edge left stub: line pF -> pG (original leaves pG..pE span open —
-        # the branch loop below closes the circuit through capacitor C)
+    # Bottom edge right: line pD -> pE
+    drawing += elm.Line().at(pt("pD")).to(pt("pE"))
 
-        # Switch A: pA -> pF along the left edge (closed for a long time — normally-closed)
-        drawing += (
-            elm.Switch(nc=True)
-            .at((params_dict["pA"][0], -params_dict["pA"][1]))
-            .to((params_dict["pF"][0], -params_dict["pF"][1]))
-            .label("A")
-        )
+    # Bottom edge left: line pF -> pG
+    drawing += elm.Line().at(pt("pF")).to(pt("pG"))
 
-        # Branch left side: line pJ -> pK (vertical, passes through junction pG)
-        drawing += (
-            elm.Line()
-            .at((params_dict["pJ"][0], -params_dict["pJ"][1]))
-            .to((params_dict["pK"][0], -params_dict["pK"][1]))
-        )
+    # Switch A: pA -> pF along the left edge (closed for a long time — normally-closed)
+    drawing += elm.Switch(nc=True).at(pt("pA")).to(pt("pF")).label("A")
 
-        # Branch top: resistor R2 from pL to pH (same placement as the original)
-        drawing += (
-            elm.Resistor()
-            .at((params_dict["pL"][0], -params_dict["pL"][1]))
-            .to((params_dict["pH"][0], -params_dict["pH"][1]))
-            .label(params_dict["R2_label"])
-        )
+    # Branch left side: line pJ -> pK (vertical, passes through junction pG)
+    drawing += elm.Line().at(pt("pJ")).to(pt("pK"))
 
-        # Branch right side: line pH -> pI (vertical)
-        drawing += (
-            elm.Line()
-            .at((params_dict["pH"][0], -params_dict["pH"][1]))
-            .to((params_dict["pI"][0], -params_dict["pI"][1]))
-        )
+    # Branch top: resistor R2 from pL to pH (same placement as the original)
+    drawing += elm.Resistor().at(pt("pL")).to(pt("pH")).label(params_dict["R2_label"])
 
-        # Switch B: pJ -> pL on the branch top (open)
-        drawing += (
-            elm.Switch()
-            .at((params_dict["pJ"][0], -params_dict["pJ"][1]))
-            .to((params_dict["pL"][0], -params_dict["pL"][1]))
-            .label("B")
-        )
+    # Branch right side: line pH -> pI (vertical)
+    drawing += elm.Line().at(pt("pH")).to(pt("pI"))
 
-        # Capacitor: pK -> pI on the branch bottom
-        drawing += (
-            elm.Capacitor()
-            .at((params_dict["pK"][0], -params_dict["pK"][1]))
-            .to((params_dict["pI"][0], -params_dict["pI"][1]))
-            .label(params_dict["C_label"])
-        )
+    # Switch B: pJ -> pL on the branch top (open)
+    drawing += elm.Switch().at(pt("pJ")).to(pt("pL")).label("B")
+
+    # Capacitor: pK -> pI on the branch bottom
+    drawing += elm.Capacitor().at(pt("pK")).to(pt("pI")).label(params_dict["C_label"])
 
     return drawing.get_imagedata()
 
