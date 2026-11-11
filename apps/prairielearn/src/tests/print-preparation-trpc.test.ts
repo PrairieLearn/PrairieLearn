@@ -880,6 +880,18 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
+  test('fails exports that no worker finished within 24 hours', async () => {
+    const { assessment, printExportId } = await queueTestPdf('stale-export.pdf');
+    await execute(sql.age_print_export, { print_export_id: printExportId });
+    await processQueuedPrintExports();
+    expect(
+      await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
+    ).toMatchObject({
+      status: 'failed',
+      failureMessage: 'The export did not finish within 24 hours. Try again.',
+    });
+  });
+
   test('limits each course to two concurrent exports across workers', async () => {
     const gate = withResolvers<Buffer>();
     const render = vi.spyOn(printExportRender, 'renderPrintExport').mockReturnValue(gate.promise);

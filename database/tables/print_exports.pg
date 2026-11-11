@@ -20,6 +20,7 @@ indexes
     print_exports_pending_idx: USING btree (id) WHERE status = 'pending'::text
 
 check constraints
+    print_exports_check: CHECK ((status = 'succeeded'::text) = (output_key IS NOT NULL))
     print_exports_format_check: CHECK (format = ANY (ARRAY['pdf'::text, 'docx'::text]))
     print_exports_status_check: CHECK (status = ANY (ARRAY['pending'::text, 'succeeded'::text, 'failed'::text]))
 

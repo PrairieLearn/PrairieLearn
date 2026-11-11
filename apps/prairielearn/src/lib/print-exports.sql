@@ -31,6 +31,16 @@ WHERE
   AND assessment_id = $assessment_id
   AND authn_user_id = $authn_user_id;
 
+-- BLOCK fail_stale_print_exports
+UPDATE print_exports
+SET
+  status = 'failed',
+  finished_at = CURRENT_TIMESTAMP,
+  failure_message = 'The export did not finish within 24 hours. Try again.'
+WHERE
+  status = 'pending'
+  AND created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours';
+
 -- BLOCK select_pending_print_exports
 SELECT
   pe.id,

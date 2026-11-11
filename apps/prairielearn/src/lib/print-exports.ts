@@ -32,7 +32,9 @@ import { PrintableCoverSchema } from './printing/printable-cover.js';
 const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
 const QUEUE_NAME = 'print-exports';
-// Each course gets a fair share of the workers; total throughput scales with the number of workers.
+// Courses take turns starting exports and each runs at most two at once, so total
+// throughput scales with the number of workers. PrairieMQ persists this value in Redis
+// and stops workers that disagree, so changing it also requires a new queue prefix.
 const COURSE_CONCURRENCY = 2;
 // Graceful shutdowns release their attempt, so only runs that crash or stall count.
 const MAX_ATTEMPTS = 2;
@@ -69,7 +71,7 @@ function getQueue() {
   return queue;
 }
 
-/** Starts this host's export worker. Errors are reported instead of failing startup. */
+/** Starts this host's export worker. Connection errors are reported instead of failing startup. */
 export function initPrintExportWorker() {
   if (
     worker ||
@@ -206,7 +208,7 @@ export async function queuePrintExport({
   owner: { assessmentId: string; authnUserId: string; courseId: string; userId: string };
   work: PrintExportWork;
 }): Promise<string> {
-  if (!getQueue() || shutdownController.signal.aborted) {
+  if (shutdownController.signal.aborted || !getQueue()) {
     throw new HttpStatusError(503, 'Print export queuing is not available on this server.');
   }
   const bucket = getFileStoreS3Bucket();
@@ -330,6 +332,9 @@ function exhaustedFailureMessage(format: PrintExportWork['format']) {
 export async function processQueuedPrintExports(): Promise<void> {
   const currentQueue = getQueue();
   if (!currentQueue) return;
+  // Exports that no worker finished before they would expire, such as when no host runs a
+  // worker, would otherwise stay pending and be republished forever.
+  await execute(sql.fail_stale_print_exports);
   const pending = await queryRows(
     sql.select_pending_print_exports,
     z.object({ id: IdSchema, course_id: IdSchema }),
