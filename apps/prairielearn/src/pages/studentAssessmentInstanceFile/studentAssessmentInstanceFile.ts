@@ -1,3 +1,5 @@
+import { pipeline } from 'node:stream/promises';
+
 import { Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -20,7 +22,7 @@ router.get(
   studentAssessmentAccess,
   clientFingerprint,
   logPageView('studentAssessmentInstanceFile'),
-  typedAsyncHandler<'assessment-instance'>(async (req, res, next) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     // Assert that the file belongs to this assessment, that the display
     // filename matches, and that the file is not deleted.
     const file = await queryOptionalRow(
@@ -43,7 +45,7 @@ router.get(
     // Ensure the response is interpreted as an "attachment" (file to be downloaded)
     // and not as a webpage.
     res.attachment(file.display_filename);
-    stream.on('error', next).pipe(res);
+    await pipeline(stream, res);
   }),
 );
 

@@ -9,6 +9,7 @@ Adds support for flash messages to Express applications.
 ```ts
 import express from 'express';
 import session from 'express-session';
+
 import { flashMiddleware } from '@prairielearn/flash';
 
 const app = express();

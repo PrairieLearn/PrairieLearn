@@ -1,5 +1,17 @@
 # @prairielearn/browser-utils
 
+## 2.7.8
+
+### Patch Changes
+
+- e6c306d: Add accessible Close buttons to click-triggered popovers and include them in focus traps.
+
+## 2.7.7
+
+### Patch Changes
+
+- bae4e10: Escape formula-like text values in CSV downloads so spreadsheets treat them as text.
+
 ## 2.7.6
 
 ### Patch Changes

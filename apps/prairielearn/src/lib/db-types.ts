@@ -1,6 +1,4 @@
-/* eslint perfectionist/sort-objects: error */
-/* eslint perfectionist/sort-sets: error */
-
+// `oxlint.config.mts` keeps the objects and sets in this file sorted; update it if this file moves.
 import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
@@ -13,7 +11,12 @@ import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
-export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
+export const EnumAiGradingProviderSchema = z.enum([
+  'openai',
+  'google',
+  'anthropic',
+  'openai-compatible',
+]);
 export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
 export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
@@ -47,6 +50,9 @@ export const EnumChunkTypeSchema = z.enum([
   'question',
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
+
+export const EnumCourseAgentReviewDecisionSchema = z.enum(['approved', 'denied']);
+export type EnumCourseAgentReviewDecision = z.infer<typeof EnumCourseAgentReviewDecisionSchema>;
 
 export const EnumCourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
 export type EnumCourseRole = z.infer<typeof EnumCourseRoleSchema>;
@@ -328,9 +334,10 @@ export const AiGradingCreditPoolChangeSchema = z.object({
 export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
 
 export const AiGradingJobSchema = z.object({
+  base_url: z.string().nullable(),
   completion: z.any(),
   completion_tokens: z.number(),
-  cost: z.number(),
+  cost: z.number().nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema,
   grading_job_id: IdSchema,
@@ -339,6 +346,7 @@ export const AiGradingJobSchema = z.object({
   model: z.string(),
   prompt: z.unknown(),
   prompt_tokens: z.number(),
+  provider: EnumAiGradingProviderSchema.nullable(),
   rotation_correction_degrees: z.record(z.string(), z.number()).nullable(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
@@ -523,6 +531,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_last_selected_credential_id: IdSchema.nullable(),
   ai_grading_last_selected_model: z.string().nullable(),
   ai_grading_mode: z.boolean(),
   allow_real_time_grading: z.boolean(),
@@ -683,12 +692,18 @@ export const BatchedMigrationSchema = null;
 
 export const ChunkSchema = z.object({
   assessment_id: IdSchema.nullable(),
+  commit_hash: z.string().nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
+  created_at: DateFromISOString.nullable(),
+  deleted: z.boolean(),
   id: IdSchema,
   question_id: IdSchema.nullable(),
+  size_compressed: z.coerce.number().nullable(),
+  size_uncompressed: z.coerce.number().nullable(),
+  superseded_at: DateFromISOString.nullable(),
   type: EnumChunkTypeSchema,
-  uuid: z.string(), // TODO: should this be a UUID?
+  uuid: z.string(),
 });
 export type Chunk = z.infer<typeof ChunkSchema>;
 
@@ -702,6 +717,30 @@ export const ClientFingerprintSchema = z.object({
   user_session_id: IdSchema,
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
+
+export const CourseAgentConversationSchema = z.object({
+  agent_conversation_id: z.string(),
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  title: z.string(),
+  user_id: IdSchema,
+});
+export type CourseAgentConversation = z.infer<typeof CourseAgentConversationSchema>;
+
+export const CourseAgentReviewSchema = z.object({
+  agent_review_id: z.string(),
+  course_agent_conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  decision: EnumCourseAgentReviewDecisionSchema,
+  delivery_expired_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  result: z.unknown(),
+  result_delivered_at: DateFromISOString.nullable(),
+  stuck_delivery_reported_at: DateFromISOString.nullable(),
+});
+export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
 
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
@@ -731,6 +770,7 @@ export const CourseSchema = z.object({
   sync_warnings: z.string().nullable(),
   template_course: z.boolean(),
   title: z.string().nullable(),
+  uuid: z.string(),
   yearly_enrollment_limit: z.number().nullable(),
 });
 export type Course = z.infer<typeof CourseSchema>;
@@ -777,6 +817,7 @@ export const CourseInstanceAccessRuleSchema = z.object({
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
 export const CourseInstanceAiGradingCredentialSchema = z.object({
+  base_url: z.string().nullable(),
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   created_by: IdSchema,
@@ -991,7 +1032,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
-/* eslint-disable @typescript-eslint/no-deprecated */
+/* oxlint-disable typescript/no-deprecated */
 /** @deprecated */
 export const TeamSchema = z.object({
   course_instance_id: IdSchema,
@@ -1077,7 +1118,7 @@ export type GroupUser = TeamUser;
 export const GroupUserRoleSchema = TeamUserRoleSchema;
 export type GroupUserRole = TeamUserRole;
 export const GroupLogSchema = TeamLogSchema;
-/* eslint-enable @typescript-eslint/no-deprecated */
+/* oxlint-enable typescript/no-deprecated */
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
@@ -1408,7 +1449,10 @@ export const QuestionGenerationContextEmbeddingSchema = z.object({
 });
 
 export const QuestionSchema = z.object({
+  authors: z.array(z.string()).nullable(),
   client_files: z.array(z.string()).nullable(),
+  copied_from: z.string().nullable(),
+  copied_from_question_id: IdSchema.nullable(),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   dependencies: z.any(),
@@ -1801,6 +1845,8 @@ export const TableNames = [
   'batched_migrations',
   'chunks',
   'client_fingerprints',
+  'course_agent_conversations',
+  'course_agent_reviews',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',

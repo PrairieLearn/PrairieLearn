@@ -165,7 +165,7 @@ router.get(
       });
 
       res.attachment(req.params.filename);
-      await pipeline(cursor.stream(100), stringifier, res);
+      await pipeline(cursor.stream(1), stringifier, res);
     } else {
       throw new HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }

@@ -169,12 +169,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     parse_error = data["format_errors"].get(name)
 
-    constants_class = psu._Constants
-
     operators: list[str] = list(psu.STANDARD_OPERATORS)
-    operators.extend(constants_class.functions.keys())
+    operators.extend(
+        sorted(
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=False,
+                include_helpers=False,
+            )
+        )
+    )
 
-    constants = list(constants_class.variables.keys())
+    constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
     # Get the info string using these parameters
     info_params = {
@@ -193,6 +198,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error: str | None = data["format_errors"].get(name)
     missing_input = False
     a_sub = None
+    submitted_raw_answer = data["raw_submitted_answers"].get(name)
+    raw_input_popover = None
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
@@ -205,6 +212,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_trig_functions=False,
                 )
             )
+        if data["panel"] == "submission" and submitted_raw_answer is not None:
+            raw_input_popover = pl.render_raw_input_popover(
+                submitted_raw_answer, aria_label or name
+            )
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -215,9 +226,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ).strip()
 
     # Next, get some attributes we will use in multiple places
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(
+    raw_answer_or_initial_value = submitted_raw_answer
+    if raw_answer_or_initial_value is None:
+        raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         )
     score = data["partial_scores"].get(name, {}).get("score")
@@ -236,7 +247,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "aria_label": aria_label,
             "placeholder": placeholder,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
             "type": bigo_type,
             "parse_error": parse_error,
         }
@@ -248,8 +259,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
-        # No need to escape the raw_submitted_answer,
-        # this gets done automatically by mustache
         html_params = {
             "submission": True,
             "type": bigo_type,
@@ -258,8 +267,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "error": parse_error or missing_input,
             "a_sub": a_sub,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": (
+                pl.escape_unicode_string(submitted_raw_answer)
+                if parse_error is not None and submitted_raw_answer is not None
+                else None
+            ),
             "missing_input": missing_input,
+            "raw_input_popover": raw_input_popover,
         }
 
         if show_score and score is not None:

@@ -224,7 +224,10 @@ export abstract class Editor {
     return serverJob;
   }
 
-  async executeWithServerJob(serverJob: ServerJobExecutor) {
+  async executeWithServerJob(
+    serverJob: ServerJobExecutor,
+    { beforeWrite }: { beforeWrite?: (job: ServerJob) => Promise<void> } = {},
+  ) {
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
     // made. We use `executeUnsafe` instead of `execute` because we want
@@ -249,6 +252,7 @@ export abstract class Editor {
 
           job.info('Write changes to disk');
           job.data.saveAttempted = true;
+          await beforeWrite?.(job);
           await this.write();
           job.data.saveSucceeded = true;
 
@@ -307,6 +311,9 @@ export abstract class Editor {
           job.data.saveAttempted = true;
 
           job.info('Write changes to disk');
+          // Validate the entire edit under the course lock, including after a push
+          // retry resets to newer remote files. No part may be written before validation.
+          await beforeWrite?.(job);
           const writeResult = await this.write();
 
           if (!writeResult) {
@@ -621,6 +628,18 @@ export class AssessmentCopyEditor extends Editor {
 
     delete infoJson.shareSourcePublicly;
     removeStudentSpecificAccessControlRulesForCopy(infoJson);
+    for (const rule of infoJson.accessControl ?? []) {
+      if (rule.integrations) {
+        delete rule.integrations.prairieTest;
+        if (Object.keys(rule.integrations).length === 0) {
+          delete rule.integrations;
+        }
+      }
+    }
+    if (infoJson.allowAccess) {
+      // Removing only the exam UUID would broaden access beyond that PrairieTest exam.
+      infoJson.allowAccess = infoJson.allowAccess.filter((rule) => !rule.examUuid);
+    }
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -1020,6 +1039,7 @@ export class CourseInstanceCopyEditor extends Editor {
           from_course: this.from_course,
           from_path,
           from_qid,
+          source_qid: question.qid,
           uuid,
           existingTitles: existingQuestionTitles,
           existingQids: existingQuestionQids,
@@ -2091,6 +2111,7 @@ async function copyQuestion({
   from_course,
   from_path,
   from_qid,
+  source_qid = from_qid,
   uuid,
   existingTitles: oldLongNames,
   existingQids: oldShortNames,
@@ -2099,6 +2120,7 @@ async function copyQuestion({
   from_course: Course | StaffCourse;
   from_path: string;
   from_qid: string;
+  source_qid?: string;
   uuid: string;
   existingTitles: string[];
   existingQids: string[];
@@ -2140,6 +2162,11 @@ async function copyQuestion({
   debug('Write info.json with new title and uuid');
   infoJson.title = questionTitle;
   infoJson.uuid = uuid;
+
+  if (!idsEqual(course.id, from_course.id)) {
+    infoJson.copiedFrom = `${from_course.uuid}/${sourceInfoJson.uuid}/${source_qid}`;
+    delete infoJson.authors;
+  }
 
   // When transferring a question from an example/template course, drop the tags. They
   // are likely undesirable in the template course.

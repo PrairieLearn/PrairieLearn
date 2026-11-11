@@ -66,3 +66,39 @@ test('Staff controls allow institution admins to edit themselves and remove Owne
   await expect(ownCheckbox).toHaveCount(0);
   await expect(ownerCheckbox).toHaveCount(0);
 });
+
+const OWNER_USER = { uid: 'course-owner@example.com', name: 'Course owner', uin: 'course-owner' };
+const ownerTest = createTest({
+  authUid: OWNER_USER.uid,
+  authName: OWNER_USER.name,
+  authUin: OWNER_USER.uin,
+  authEmail: OWNER_USER.uid,
+});
+
+ownerTest('Owners can remove other Owners from the staff', async ({ page, courseInstance }) => {
+  const user = await getOrCreateUser(OWNER_USER);
+  const ownerUid = 'other-owner@example.com';
+  for (const uid of [user.uid, ownerUid]) {
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid,
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+  }
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/staff`);
+  const ownCheckbox = page.getByRole('checkbox', { name: `Select ${user.uid}`, exact: true });
+  const ownerCheckbox = page.getByRole('checkbox', { name: `Select ${ownerUid}`, exact: true });
+  const deleteButton = page.getByRole('button', { name: 'Delete', exact: true });
+  await ownCheckbox.check();
+  await expect(deleteButton).toBeDisabled();
+  await ownerCheckbox.check();
+  await expect(deleteButton).toBeEnabled();
+  await deleteButton.click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Remove 1 user', exact: true })
+    .click();
+  await expect(ownerCheckbox).toHaveCount(0);
+  await expect(ownCheckbox).toBeVisible();
+});

@@ -30,6 +30,32 @@ import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+export async function applyCourseStaffPermissions({
+  courseId,
+  authnUserId,
+  updates,
+}: {
+  courseId: string;
+  authnUserId: string;
+  updates: {
+    uid: string;
+    courseRole: z.infer<typeof EnumCourseRoleSchema>;
+    courseInstanceChanges: { courseInstanceId: string; role: EnumCourseInstanceRole }[];
+  }[];
+}) {
+  await runInTransactionAsync(async () => {
+    const params = {
+      course_id: courseId,
+      authn_user_id: authnUserId,
+      updates: JSON.stringify(updates),
+    };
+    await execute(sql.insert_staff_users, { updates: params.updates });
+    await execute(sql.upsert_staff_course_permissions, params);
+    await execute(sql.delete_staff_instance_permissions, params);
+    await execute(sql.upsert_staff_instance_permissions, params);
+  });
+}
+
 /**
  * Inserts course permissions for a user identified by UID. If the user doesn't
  * exist, they are created first. This only allows stepping up in permissions;

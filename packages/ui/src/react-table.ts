@@ -1,6 +1,5 @@
 import type { CellData, RowData, TableFeatures } from '@tanstack/react-table';
 
-/* eslint-disable @typescript-eslint/no-unused-vars -- Declaration merging requires TanStack's exact type parameters. */
 declare module '@tanstack/react-table' {
   // https://tanstack.com/table/latest/docs/api/core/column-def#meta
 
@@ -24,6 +23,3 @@ declare module '@tanstack/react-table' {
     autoSizeSample?: (data: TData[]) => number[];
   }
 }
-/* eslint-enable @typescript-eslint/no-unused-vars */
-
-export {};

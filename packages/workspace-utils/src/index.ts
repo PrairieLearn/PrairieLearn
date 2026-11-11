@@ -14,6 +14,7 @@ export {
   type OpenedWorkspaceGradedFiles,
   type WorkspaceGradedFile,
   workspaceFastGlobDefaultOptions,
+  writeWorkspaceGradedFilesArchive,
 } from './graded-files.js';
 
 const WorkspaceVersionSchema = z.object({

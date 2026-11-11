@@ -18,7 +18,7 @@ import type {
 import { ColumnManager } from './ColumnManager.js';
 import {
   TanstackTableDownloadButton,
-  type TanstackTableDownloadButtonProps,
+  type TanstackTableDownloadButtonOptions,
 } from './TanstackTableDownloadButton.js';
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 import { useAutoSizeColumns } from './useAutoSizeColumns.js';
@@ -509,7 +509,7 @@ export function TanstackTable<RowDataModel extends RowData>({
  * @param params.globalFilter - Configuration for the global filter
  * @param params.globalFilter.placeholder - Placeholder text for the search input
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
- * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
+ * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonOptions} for more details.
  * @param params.statusContent - Optional content to replace the default "Showing X of Y" status text.
  * @param params.onResetColumnFilters - Callback that if provided, adds a clear filters control.
  */
@@ -541,10 +541,10 @@ export function TanstackTableCard<RowDataModel extends RowData>({
     placeholder: string;
   };
   tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
-  downloadButtonOptions?: Omit<
-    TanstackTableDownloadButtonProps<RowDataModel>,
-    'table' | 'singularLabel' | 'pluralLabel'
-  > & { pluralLabel?: string; singularLabel?: string };
+  downloadButtonOptions?: TanstackTableDownloadButtonOptions<RowDataModel> & {
+    pluralLabel?: string;
+    singularLabel?: string;
+  };
   statusContent?: ReactNode;
   onResetColumnFilters?: () => void;
 } & Omit<ComponentProps<'div'>, 'class'>) {

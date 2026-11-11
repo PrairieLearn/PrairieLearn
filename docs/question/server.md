@@ -232,6 +232,10 @@ Any custom grading function for the whole question should set `data["score"]` as
 - [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
 - [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
 
+!!! note "Partial credit settings"
+
+    Setting `data["score"]` to a value other than 0 or 1 will assign partial credit to the submission, even if the question is configured to not allow partial credit. If you want to disable partial credit, you should ensure that `data["score"]` is either 0 or 1, or use the [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] utility to compute the score.
+
 This can be used like so:
 
 ```python title="server.py"
@@ -320,7 +324,25 @@ def grade(data):
 
 ## `server.py` functions
 
-This table summarizes the functions that can be defined in `server.py`.
+The functions that can be defined in `server.py` have the following signatures. Type annotations are optional. See the [`data` dictionary](#data-dictionary) for the available fields and the function table below for which fields each function can modify.
+
+```python
+import io
+from collections.abc import Buffer
+
+
+def generate(data: dict) -> None: ...
+def prepare(data: dict) -> None: ...
+def render(data: dict, html: str) -> str: ...
+def parse(data: dict) -> None: ...
+def grade(data: dict) -> None: ...
+def file(data: dict) -> str | Buffer | io.IOBase | None: ...
+def test(data: dict) -> None: ...
+```
+
+For `file()`, `Buffer` covers bytes-like objects such as `bytes`, `bytearray`, and `memoryview`; `io.IOBase` covers file-like objects such as `io.StringIO` and `io.BytesIO`. Annotate your own `file()` function with the specific type it returns.
+
+This table summarizes what each function does.
 
 | Function     | Updates `data`?    | Modifiable `data` keys                                                                                   | Description                                                                                                                                                                                                                                                                   |
 | ------------ | ------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -332,7 +354,7 @@ This table summarizes the functions that can be defined in `server.py`.
 | `file()`     | :x:                | N/A. Returns an `object` (string, bytes-like, file-like)                                                 | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
 | `test()`     | :white_check_mark: | `feedback`, `format_errors`, `gradable`, `partial_scores`, `raw_submitted_answers`, `score`              | Generate test cases to ensure the question can grade a variety of student inputs.                                                                                                                                                                                             |
 
-As shown in the table, all functions (except for `render`) accept a single argument, `data` (a dictionary), and modify it in place. The `render` function accepts two arguments: the `data` dictionary and the `html` content computed from the template and elements.
+All functions except `render()` accept a single argument, `data` (a dictionary). The `render()` function accepts two arguments: the `data` dictionary and the `html` content computed from the template and elements, in that order. Functions with a `None` return type modify `data` in place and do not need a `return` statement. The `render()` and `file()` functions return content instead of modifying `data`.
 
 ### `data` dictionary
 
@@ -347,7 +369,7 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `score`                 | `float` | The total score for the question variant.                                                                                                                           |
 | `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.                                            |
 | `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                                                        |
-| `preferences`           | `dict`  | Read-only [question preferences](preferences.md) for the current assessment context. Values come from the question's defaults merged with any assessment overrides. |
+| `preferences`           | `dict`  | Read-only [question preferences](preferences.md) saved when each variant is created. Values come from the question's defaults merged with any assessment overrides. |
 | `options`               | `dict`  | System-provided options such as file paths and URLs (see [accessing files](#accessing-files-on-disk)).                                                              |
 | `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                                                             |
 | `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                                                |
@@ -376,7 +398,7 @@ Each field in the `data` dictionary is either stored **per-variant** (shared acr
 | `partial_scores`        | Submission       | —                                               |
 | `score`                 | Submission       | —                                               |
 | `feedback`              | Submission       | —                                               |
-| `preferences`           | Variant          |                                                 |
+| `preferences`           | Variant          | Saved when the variant is created.              |
 | `variant_seed`          | Variant          | —                                               |
 | `options`               | Variant          | —                                               |
 | `filename`              | None (not saved) | Only in `file()`.                               |

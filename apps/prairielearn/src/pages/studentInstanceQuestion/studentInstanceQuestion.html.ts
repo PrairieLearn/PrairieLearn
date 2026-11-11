@@ -46,7 +46,7 @@ export function StudentInstanceQuestion({
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
   // TODO: support more tools
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  // oxlint-disable-next-line typescript/no-unnecessary-condition
   const calculator = enabledTools.find((t) => t.tool === 'calculator');
 
   return PageLayout({
@@ -229,6 +229,7 @@ export function StudentInstanceQuestion({
           })}
           ${QuestionNavSideGroup({
             urlPrefix: resLocals.urlPrefix,
+            assessmentInstanceId: resLocals.assessment_instance.id,
             prevInstanceQuestionId: resLocals.instance_question_info.prev_instance_question.id,
             nextInstanceQuestionId: resLocals.instance_question_info.next_instance_question.id,
             nextQuestionAccessMode:

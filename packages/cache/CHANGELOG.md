@@ -1,5 +1,13 @@
 # @prairielearn/cache
 
+## 2.1.19
+
+### Patch Changes
+
+- 5160bea: Specify the default Redis reply mapping explicitly to avoid unnecessary TypeScript inference.
+- Updated dependencies [08f657e]
+  - @prairielearn/sentry@6.0.0
+
 ## 2.1.18
 
 ### Patch Changes

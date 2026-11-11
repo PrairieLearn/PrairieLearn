@@ -113,6 +113,11 @@
       "default": 60,
       "type": "number"
     },
+    "workspaceHostMinAvailableDiskMB": {
+      "default": 10000,
+      "type": "number",
+      "minimum": 0
+    },
     "workspaceHostMinPortRange": {
       "default": 1024,
       "type": "number"

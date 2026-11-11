@@ -1,5 +1,17 @@
 # @prairielearn/eslint-config
 
+## 3.2.2
+
+### Patch Changes
+
+- f5afff0: Align TypeScript ESLint dependencies with the types pulled in by the JSDoc plugin update to fix incompatible rule and rule tester types during builds.
+
+## 3.2.1
+
+### Patch Changes
+
+- 9f4d854: Update @eslint-react/eslint-plugin to 5.21.0.
+
 ## 3.2.0
 
 ### Minor Changes

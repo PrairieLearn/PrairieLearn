@@ -17,6 +17,15 @@ body {
   --keycap-text: #3d4144;
 }
 
+/* TODO: Remove this workaround once PrairieLearn uses a MathLive release containing
+ * https://github.com/arnog/mathlive/pull/3126
+ */
+@media (prefers-color-scheme: dark) {
+  math-field.pl-symbolic-input-input[theme='light'] {
+    --contains-highlight-background-color: hsl(var(--hue, 212), 40%, 95%) !important;
+  }
+}
+
 math-field.read-only {
   background-color: #f0f0f0;
   border-color: #cccccc;

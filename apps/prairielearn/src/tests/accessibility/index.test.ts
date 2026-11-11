@@ -291,6 +291,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/gradebook/raw_data.json',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion/*',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
@@ -336,6 +337,7 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
+  '/pl/public/course_instance/:course_instance_id/assessment/:assessment_id/file_download/*',
 
   // File upload pages for external image capture.
   '/pl/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
@@ -417,11 +419,13 @@ const SKIP_ROUTES = [
 ];
 
 function shouldSkipPath(path: string) {
+  // A router mounted at the root can be reported with two leading slashes.
+  const normalizedPath = path.replace(/^\/+/, '/');
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
-      return r === path;
+      return r === normalizedPath;
     } else if (r instanceof RegExp) {
-      return r.test(path);
+      return r.test(normalizedPath);
     } else {
       assertNever(r);
     }

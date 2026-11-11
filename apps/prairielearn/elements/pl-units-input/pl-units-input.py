@@ -53,9 +53,9 @@ def get_with_units_atol(
 
     name = pl.get_string_attrib(element, "answers-name")
     correct_answer = data["correct_answers"].get(name)
-    if correct_answer == "":
+    if correct_answer is None or correct_answer == "":
         raise ValueError(
-            'In "with-units" grading with a blank "correct-answer", "atol" units cannot be inferred and must be set for display in the question panel.'
+            'In "with-units" grading without a nonblank correct answer, "atol" units cannot be inferred and must be set.'
         )
     correct_answer_units = str(ureg.Quantity(correct_answer).units)
 
@@ -129,13 +129,22 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     # In with-units mode, absolute tolerance must have units. Otherwise just a float
     if grading_mode is GradingMode.WITH_UNITS:
-        parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
-        if parsed_atol.dimensionless:
-            atol = pl.get_string_attrib(element, "atol")
-            raise ValueError(
-                f'"atol" attribute "{atol}" must have units in "with-units" grading.'
-            )
+        if correct_answer is not None or pl.has_attrib(element, "atol"):
+            parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
+            if parsed_atol.dimensionless:
+                atol = pl.get_string_attrib(element, "atol")
+                raise ValueError(
+                    f'"atol" attribute "{atol}" must have units in "with-units" grading.'
+                )
 
+            if correct_answer is not None and correct_answer != "":
+                correct_answer_parsed = ureg.Quantity(correct_answer)
+
+                if not correct_answer_parsed.check(parsed_atol.dimensionality):
+                    raise ValueError(
+                        f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
+                        f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
+                    )
         if pl.has_attrib(element, "comparison"):
             raise ValueError(
                 'Cannot set attribute "comparison" in "with-units" grading.'
@@ -150,14 +159,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
             )
 
-        if correct_answer != "":
-            correct_answer_parsed = ureg.Quantity(correct_answer)
-
-            if not correct_answer_parsed.check(parsed_atol.dimensionality):
-                raise ValueError(
-                    f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
-                    f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
-                )
     else:
         atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
         parsed_atol = ureg.Quantity(atol)
@@ -189,9 +190,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(
+    raw_answer_or_initial_value = data["raw_submitted_answers"].get(name)
+    if raw_answer_or_initial_value is None:
+        raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         )
     partial_scores = data["partial_scores"].get(name, {})
@@ -216,6 +217,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             placeholder_text = pl.get_string_attrib(element, "placeholder")
         elif grading_mode is GradingMode.ONLY_UNITS:
             placeholder_text = "Unit"
+        elif data["correct_answers"].get(name) is None:
+            placeholder_text = "Number + Unit"
         elif grading_mode is GradingMode.WITH_UNITS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = get_with_units_atol(element, data, ureg)
@@ -253,7 +256,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "parse_error": parse_error,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
         }
 
         if show_score and score is not None:
@@ -263,6 +266,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
+        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "label": label,
@@ -284,15 +288,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     a_sub_parsed, custom_format, grading_mode
                 )
             html_params["suffix"] = suffix
-            html_params["raw_submitted_answer"] = raw_submitted_answer
-
+            if submitted_raw_answer is not None:
+                html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                    submitted_raw_answer, aria_label or name
+                )
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
 
-        elif raw_submitted_answer is not None:
+        elif submitted_raw_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                raw_submitted_answer
+                submitted_raw_answer
             )
 
         if show_score and score is not None:
@@ -488,6 +494,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
+        assert a_tru is not None
         if isinstance(a_tru, str) and a_tru.strip() == "":
             a_tru = "1 meter"
         if grading_mode is GradingMode.ONLY_UNITS:

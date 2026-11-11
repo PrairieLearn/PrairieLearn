@@ -1,3 +1,5 @@
+import './behaviors/bootstrap-compat.js';
+
 import { observe } from 'selector-observer';
 import { type Socket, io } from 'socket.io-client';
 
@@ -14,7 +16,6 @@ import type { GradingJobStatus } from '../../src/models/grading-job.js';
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
-import './behaviors/bootstrap-compat.js';
 
 // We use `selector-observer` throughout this file to handle the case of
 // updating the page's contents without reloading the whole page. At the
@@ -24,6 +25,17 @@ import './behaviors/bootstrap-compat.js';
 // automatically garbage collected when the container is removed from the DOM,
 // so some of these observers don't need explicit cleanup logic.
 onDocumentReady(() => {
+  // Safari does not fire load for PDF objects. Keep the URL usable until removal,
+  // including while a preview is collapsed or moved within the document.
+  // https://github.com/WebKit/WebKit/pull/43885
+  // https://bugs.webkit.org/show_bug.cgi?id=143673
+  observe('object.js-file-preview-pdf', {
+    constructor: HTMLObjectElement,
+    remove(pdf) {
+      if (!pdf.isConnected) URL.revokeObjectURL(pdf.data);
+    },
+  });
+
   observe('.question-container', {
     constructor: HTMLDivElement,
     initialize(container) {
@@ -150,12 +162,14 @@ function initializeExternalGrading({ container }: { container: HTMLElement }) {
   if (!gradingPending) return;
 
   const socket = io('/external-grading');
-  socket.emit(
-    'init',
-    { variant_id: variantId, variant_token: variantToken },
-    (msg: StatusMessage) =>
-      handleStatusChange({ container, socket, msg, signal: abortController.signal }),
-  );
+  socket.on('connect', () => {
+    socket.emit(
+      'init',
+      { variant_id: variantId, variant_token: variantToken },
+      (msg: StatusMessage) =>
+        handleStatusChange({ container, socket, msg, signal: abortController.signal }),
+    );
+  });
   socket.on('change:status', (msg: StatusMessage) =>
     handleStatusChange({ container, socket, msg, signal: abortController.signal }),
   );
@@ -390,9 +404,9 @@ function updateDynamicPanels({
   if (msg.questionNavNextButton) {
     // Note: we use `document` and not `container` here because this button
     // is outside the question container.
-    const questionNavNextButton = document.getElementById('question-nav-next');
-    if (questionNavNextButton) {
-      questionNavNextButton.outerHTML = msg.questionNavNextButton;
+    const questionNavNextButtonContainer = document.getElementById('question-nav-next-container');
+    if (questionNavNextButtonContainer) {
+      questionNavNextButtonContainer.outerHTML = msg.questionNavNextButton;
     }
   }
 }

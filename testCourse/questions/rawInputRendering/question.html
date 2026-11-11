@@ -1,0 +1,89 @@
+<pl-question-panel>
+  <p>
+    These inputs exercise the answer-as-entered popovers used by elements in this question. Some
+    values contain invisible or non-ASCII characters.
+  </p>
+  <p>
+    Select <strong>Save &amp; Grade</strong>, then open each question-mark popover in the submitted
+    answer panel. The popovers label invisible characters with their Unicode code points (for
+    example, <code>&lt;U+200b&gt;</code>). When useful, they also show a second version with every
+    non-ASCII character replaced by its code point. After submitting, confirm that the literal
+    values are restored to the input fields.
+  </p>
+</pl-question-panel>
+
+<pl-card header="Scalar inputs">
+  <div class="vstack gap-3">
+    <pl-string-input
+      answers-name="string_value"
+      aria-label="String value"
+      label="String:"
+      initial-value="caf&#233;"
+      correct-answer="cafe"
+      display="block"
+    ></pl-string-input>
+
+    <pl-big-o-input
+      answers-name="big_o_value"
+      aria-label="Big O value"
+      variables="n"
+      initial-value="n&#8203;"
+      correct-answer="n"
+      display="block"
+    ></pl-big-o-input>
+
+    <pl-integer-input
+      answers-name="integer_value"
+      aria-label="Integer value"
+      label="Integer:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-integer-input>
+
+    <pl-number-input
+      answers-name="number_value"
+      aria-label="Number value"
+      label="Number:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-number-input>
+
+    <pl-number-input
+      answers-name="invalid_number_value"
+      aria-label="Invalid number value"
+      label="Invalid number:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-number-input>
+
+    <pl-units-input
+      answers-name="units_value"
+      aria-label="Units value"
+      label="Units:"
+      initial-value="1 m&#8203;"
+      correct-answer="1 m"
+      display="block"
+    ></pl-units-input>
+  </div>
+</pl-card>
+
+<pl-card header="Matrix inputs">
+  <div class="vstack gap-3">
+    <pl-matrix-input
+      answers-name="matrix_value"
+      aria-label="Matrix value"
+      label="Literal matrix:"
+      initial-value="[1,&#8203; 2]"
+    ></pl-matrix-input>
+
+    <pl-matrix-input
+      answers-name="valid_matrix_value"
+      aria-label="Valid matrix value"
+      label="Valid matrix:"
+      initial-value="[1 2]"
+    ></pl-matrix-input>
+  </div>
+</pl-card>

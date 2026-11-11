@@ -2,14 +2,16 @@ import pathlib
 import random
 import re
 from enum import Enum
+from functools import lru_cache
 from sys import get_int_max_str_digits
-from typing import assert_never
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from sympy.printing.str import StrPrinter
 
 
 class DisplayType(Enum):
@@ -229,19 +231,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
-    constants_class = psu._Constants
-
     operators: list[str] = list(psu.STANDARD_OPERATORS)
     if allow_sets:
         operators.extend(psu.SET_NOTATION_OPERATORS)
     operators.extend(custom_functions)
-    operators.extend(constants_class.functions.keys())
-    if allow_trig:
-        operators.extend(constants_class.trig_functions.keys())
-    if allow_sets:
-        operators.extend(constants_class.set_functions.keys())
+    operators.extend(
+        sorted(
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+                include_helpers=False,
+            )
+        )
+    )
 
-    constants = list(constants_class.variables.keys())
+    constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
     info_params = {
         "format": True,
@@ -481,12 +485,19 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
 
     if formula_editor:
-        submitted_answer = format_formula_editor_submission_for_sympy(
+        formatted_answer = format_formula_editor_submission_for_sympy(
             submitted_answer,
             allow_trig,
             variables,
             custom_functions,
+            allow_sets=allow_sets,
+            latex=data["raw_submitted_answers"].get(name + "-latex"),
         )
+        if submitted_answer is not None and formatted_answer is None:
+            data["format_errors"][name] = psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION
+            data["submitted_answers"][name] = None
+            return
+        submitted_answer = formatted_answer
 
     # Pre-processing to make submission parseable by SymPy
     a_sub, error_msg = format_submission_for_sympy(
@@ -564,6 +575,36 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
+_PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
+
+
+def _restore_plus_minus(submission: str, latex: str) -> str | None:
+    r"""
+    Turn the "+-" that the formula editor writes for `\pm` back into "±".
+
+    The editor's plain text uses "+-" for both `\pm` and a typed "+" followed by
+    "-". Both appear in the same order in the submitted LaTeX, so the k-th "+-" in
+    the plain text comes from the k-th `\pm` or "+-" in the LaTeX.
+
+    Returns:
+        The submission with "±" restored, or None if the two can't be matched up
+    """
+    from_plus_minus = [
+        match.group(0).startswith("\\")
+        for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
+    ]
+    parts = submission.split("+-")
+    if len(parts) - 1 != len(from_plus_minus):
+        return None
+    if not any(from_plus_minus):
+        return submission
+
+    result = [parts[0]]
+    for is_plus_minus, part in zip(from_plus_minus, parts[1:], strict=True):
+        result.extend(("±" if is_plus_minus else "+-", part))
+    return "".join(result)
+
+
 def format_submission_for_sympy(
     sub: str | None, *, allow_sets: bool = False
 ) -> tuple[str | None, str | None]:
@@ -588,18 +629,26 @@ def format_submission_for_sympy(
     if sub is None:
         return None, None
 
+    # The formula editor writes \lvert, \rvert and \mid as U+2223 (DIVIDES).
+    sub = sub.replace("∣", "|")  # ruff:ignore[ambiguous-unicode-character-string]
+
     pattern = re.compile(
         r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
     )
+    bar_pattern = re.compile(r"\|")
     search_from = 0
-    while True:
+    preceding_bars: list[int] = []
+    while match := pattern.search(sub, search_from):
         # Find matches of |...| where:
         # when ignoring spaces, it either:
         # - starts with letter/number/opening paren/plus/minus and ends with letter/number/closing/exclamation mark paren
         # - is a single leter/number
-        match = pattern.search(sub, search_from)
-        if not match:
-            break
+        # Retain passed bars so nested matches can resume from the nearest one
+        # without repeatedly scanning the processed prefix.
+        preceding_bars.extend(
+            bar_match.start()
+            for bar_match in bar_pattern.finditer(sub, search_from, match.start())
+        )
 
         content = match.group(0)[1:-1]  # Strip the bars
         # When set notation is allowed, a comma inside the match means the
@@ -608,11 +657,12 @@ def format_submission_for_sympy(
         # absolute value.
         # TODO: This can skip min/max operators or other functions that contain commas.
         if allow_sets and "," in content:
+            preceding_bars.append(match.start())
             search_from = match.start() + 1
             continue
 
         sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
-        search_from = 0
+        search_from = preceding_bars.pop() if preceding_bars else match.start()
 
     if not allow_sets and "|" in sub:
         return (
@@ -628,32 +678,50 @@ def format_formula_editor_submission_for_sympy(
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
+    *,
+    allow_sets: bool = False,
+    latex: str | None = None,
 ) -> str | None:
-    """
+    r"""
     Format raw formula editor input to be compatible with SymPy.
 
     The formula editor outputs text with several quirks that need correction:
-    1. Invisible "{:" and ":}" operators from LaTeX copy-paste
-    2. Multi-character names are space-separated: "s i n" instead of "sin"
-    3. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
+    1. The formula editor serializes ``\pm`` as "+-", which is restored when raw
+       LaTeX is provided
+    2. Invisible "{:" and ":}" operators from LaTeX copy-paste
+    3. Multi-character names are space-separated: "s i n" instead of "sin"
+    4. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
 
     Args:
         sub: Raw text from the formula editor
         allow_trig: Whether trig functions (sin, cos, etc.) are available
         variables: List of allowed variable names
         custom_functions: List of custom function names
+        allow_sets: Whether set operators and constructors are available
+        latex: Raw LaTeX from the formula editor
 
     Returns:
-        Formatted text ready for SymPy parsing, or None if input is None
+        Formatted text ready for SymPy parsing, or None if input is None or the
+        text and LaTeX representations can't be matched
     """
     if sub is None:
         return None
 
+    text = sub if latex is None else _restore_plus_minus(sub, latex)
+    if text is None:
+        return None
+
     # Remove invisible LaTeX formatting operators
-    text = sub.replace("{:", "").replace(":}", "")
+    text = text.replace("{:", "").replace(":}", "")
+
+    # The editor writes \div as "-:" and \ast as " ** ". Powers are always written
+    # with "^", so " ** " can only be a multiplication.
+    text = text.replace("-:", "/").replace(" ** ", " * ")
 
     # Build list of all multi-character tokens that should be recognized as units
-    known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
+    known_tokens = _build_known_tokens(
+        allow_trig, variables, custom_functions, allow_sets=allow_sets
+    )
 
     # Replace Greek unicode letters with spaced ASCII for consistent handling further on
     text = "".join(_greek_transform(char) for char in text)
@@ -665,6 +733,18 @@ def format_formula_editor_submission_for_sympy(
     # but preserve tokens like "f2" that are custom function names
     text = _add_multiplication_spaces(text, known_tokens)
 
+    function_names = frozenset(
+        psu.greek_unicode_transform(name)
+        for name in (
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+            )
+            | set(custom_functions)
+        )
+    )
+    text = _wrap_bare_function_arguments(text, function_names)
+
     return text
 
 
@@ -672,6 +752,8 @@ def _build_known_tokens(
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
+    *,
+    allow_sets: bool = False,
 ) -> list[str]:
     """
     Build a list of all multi-character tokens that should be recognized as single units.
@@ -679,17 +761,18 @@ def _build_known_tokens(
     Returns:
         List of all multi-character tokens that should be recognized as single units.
     """
-    constants_class = psu._Constants
-
     # Include 1-letter tokens here since Greek letters might become multi-letter tokens when transformed
     tokens = (
         list(psu.STANDARD_OPERATORS)
-        + list(constants_class.functions.keys())
+        + list(
+            psu.get_builtin_functions(
+                allow_trig_functions=allow_trig,
+                allow_sets=allow_sets,
+            )
+        )
         + custom_functions
         + variables
     )
-    if allow_trig:
-        tokens += list(constants_class.trig_functions.keys())
 
     # Add transformed versions of Greek letters
     tokens += [
@@ -698,8 +781,9 @@ def _build_known_tokens(
         if psu.greek_unicode_transform(token) != token
     ]
 
-    # Filter out single-letter tokens
-    tokens = [token for token in tokens if len(token) > 1]
+    # Filter out single-letter tokens. The editor writes powers with "^", so merging
+    # "* *" into "**" would only turn adjacent multiplication signs into a Python power.
+    tokens = [token for token in tokens if len(token) > 1 and token != "**"]
 
     return tokens
 
@@ -801,6 +885,182 @@ def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
     return "".join(result)
 
 
+_TRAILING_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_]\w*$")
+
+
+def _is_implicit_multiplication_paren(
+    text: str,
+    argument_start: int,
+    argument_end: int,
+    function_names: frozenset[str],
+) -> bool:
+    """
+    Whether a "(" after an argument multiplies it rather than calling a function
+    or grouping an exponent.
+
+    Returns:
+        True if the argument ends with a number, a closing bracket, or a name
+        that isn't a function.
+    """
+    # An empty candidate provides no left-hand factor for implicit multiplication.
+    if argument_end == argument_start:
+        return False
+
+    # Isolate the final identifier before checking its last character. This keeps
+    # digit-suffixed function names such as atan2 from looking like numbers.
+    name_start = argument_end
+    while name_start > argument_start and (
+        text[name_start - 1].isalnum() or text[name_start - 1] == "_"
+    ):
+        name_start -= 1
+    name = _TRAILING_IDENTIFIER_PATTERN.search(text, name_start, argument_end)
+
+    # Known functions consume the "(" as a call; all other names multiply the
+    # parenthesized factor.
+    if name is not None:
+        return name.group(0) not in function_names
+
+    # Known digit-suffixed functions were handled above, so a remaining digit
+    # ends a numeric argument before the next implicitly multiplied factor.
+    if text[argument_end - 1].isdigit():
+        return True
+
+    # A closing delimiter completes a grouped argument, making the following
+    # "(" the start of a new implicitly multiplied factor.
+    return text[argument_end - 1] in ")]}"
+
+
+@lru_cache(maxsize=128)
+def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+    """
+    Match bare function starts and tokens that affect their argument boundaries.
+
+    Returns:
+        The compiled pattern, cached per set of function names
+    """
+    names = sorted(function_names, key=len, reverse=True)
+    return re.compile(
+        r"(?P<function>(?<![A-Za-z_])(?:"
+        + "|".join(map(re.escape, names))
+        + r")\s+(?=[^\s(]))|(?P<token>\*+|[()\[\]{}+\-/,])"
+    )
+
+
+def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> str:
+    r"""
+    Parenthesize unparenthesized function arguments that are followed by "*" or "(".
+
+    The formula editor displays `{\ln 4}\cdot x` as ln(4)·x but submits it as
+    "ln 4 * x". SymPy's implicit function application ends the argument at "+",
+    "-", or "/", but not at "*", so it would parse this as ln(4x). It also can't
+    end the argument at a "(" that multiplies it, so "ln 8(x+1)" is a syntax error.
+
+    Example: "ln 4 * cot (9x)" becomes "ln (4) * cot (9x)", and "ln 8(x+1)"
+    becomes "ln (8)(x+1)"
+
+    Returns:
+        The text with those arguments wrapped in parentheses
+    """
+    if not function_names:
+        return text
+    pattern = _bare_function_token_pattern(function_names)
+
+    # Each "(" sorts before a ")" at the same index, which only happens for an
+    # empty argument.
+    insertions: list[tuple[int, str]] = []
+    # Only the first bare function at a given nesting depth can claim the next
+    # implicit multiplication boundary; any later one is inside its argument.
+    pending_arguments: dict[int, int] = {}
+    depth = 0
+    for match in pattern.finditer(text):
+        if match.lastgroup == "function":
+            pending_arguments.setdefault(depth, match.end())
+            continue
+
+        token = match.group(0)
+        match token:
+            case "(" | "*":
+                start = pending_arguments.get(depth)
+                if start is not None:
+                    argument_end = match.start()
+                    while argument_end > start and text[argument_end - 1].isspace():
+                        argument_end -= 1
+                    if token == "*" or _is_implicit_multiplication_paren(
+                        text, start, argument_end, function_names
+                    ):
+                        pending_arguments.pop(depth)
+                        insertions.extend(((start, "("), (argument_end, ")")))
+                if token == "(":
+                    depth += 1
+            case "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
+            case "+" | "-" | "/" | ",":
+                pending_arguments.pop(depth, None)
+            case _:
+                pass
+
+    result = []
+    pos = 0
+    for index, paren in sorted(insertions):
+        result.extend((text[pos:index], paren))
+        pos = index
+    result.append(text[pos:])
+    return "".join(result)
+
+
+def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
+    """Compare set components by symbolic equivalence instead of structure."""
+    comparison_cache: dict[tuple[sympy.Basic, sympy.Basic], bool] = {}
+
+    def compare(left: sympy.Basic, right: sympy.Basic) -> bool:
+        pair = (left, right)
+        if pair in comparison_cache:
+            return comparison_cache[pair]
+        reverse_pair = (right, left)
+        if reverse_pair in comparison_cache:
+            return comparison_cache[reverse_pair]
+
+        if left is right or left == right:
+            result = True
+        elif type(left) is type(right) and isinstance(
+            left, (sympy.FiniteSet, sympy.Union, sympy.Intersection)
+        ):
+            result = all(
+                any(compare(value, candidate) for candidate in right.args)
+                for value in left.args
+            ) and all(
+                any(compare(value, candidate) for candidate in left.args)
+                for value in right.args
+            )
+        elif isinstance(left, sympy.Interval) and isinstance(right, sympy.Interval):
+            result = (
+                left.left_open == right.left_open
+                and left.right_open == right.right_open
+                and compare(left.start, right.start)
+                and compare(left.end, right.end)
+            )
+        elif isinstance(left, sympy.Complement) and isinstance(right, sympy.Complement):
+            result = len(left.args) == len(right.args) and all(
+                compare(left_arg, right_arg)
+                for left_arg, right_arg in zip(left.args, right.args, strict=True)
+            )
+        elif isinstance(left, (sympy.Expr, sympy.logic.boolalg.Boolean)) and isinstance(
+            right, (sympy.Expr, sympy.logic.boolalg.Boolean)
+        ):
+            result = left.equals(right) is True
+        else:
+            result = False
+
+        comparison_cache[pair] = result
+        comparison_cache[reverse_pair] = result
+        return result
+
+    return compare(a, b)
+
+
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
@@ -833,7 +1093,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    def grade_function(a_sub: str | psu.SympyJson) -> tuple[bool, None]:
+    def grade_function(a_sub: str | psu.SympyJson | None) -> tuple[bool, None]:
+        if a_sub is None:
+            return False, None
+
         # Special case: submitted answer or correct answer is the empty string
         if isinstance(a_tru, str) and a_tru == "":
             if isinstance(a_sub, str) and a_sub == "":
@@ -893,10 +1156,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             assert isinstance(a_sub_sympy, sympy.Expr)
             assert isinstance(a_tru_sympy, sympy.Expr)
 
-        if isinstance(a_tru_sympy, sympy.Set) or isinstance(a_sub_sympy, sympy.Set):
-            return a_tru_sympy == a_sub_sympy, None
-
-        return a_tru_sympy.equals(a_sub_sympy) is True, None
+        return _sympy_values_equal(a_tru_sympy, a_sub_sympy), None
 
     try:
         pl.grade_answer_parameterized(
@@ -922,6 +1182,30 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         else:
             raise
+
+
+class _TestSubmissionPrinter(StrPrinter):
+    def __init__(self, imaginary_unit: str) -> None:
+        super().__init__()
+        self._constant_names = {
+            sympy.E: "e",
+            sympy.I: imaginary_unit,
+        }
+
+    def _print(self, expr: Any, **kwargs: Any) -> str:
+        if isinstance(expr, sympy.Basic) and expr in self._constant_names:
+            return self._constant_names[expr]
+        return super()._print(expr, **kwargs)
+
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
+        return "{}"
+
+    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff:ignore[invalid-function-name]
+        start = self._print(i.start)
+        end = self._print(i.end)
+        left = "(" if i.left_open else "["
+        right = ")" if i.right_open else "]"
+        return f"{left}{start}, {end}{right}"
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
@@ -955,13 +1239,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             # This element cannot test itself. Defer the generation of test inputs to server.py
             return
 
-        # Get raw correct answer
         a_tru = data["correct_answers"][name]
-
-        # Parse correct answer based on type
-        if isinstance(a_tru, str):
-            if a_tru != "":
-                a_tru = psu.convert_string_to_sympy(
+        if a_tru != "":
+            if isinstance(a_tru, str):
+                a_tru_sympy = psu.convert_string_to_sympy(
                     a_tru,
                     variables,
                     allow_complex=allow_complex,
@@ -970,17 +1251,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
                 )
-        else:
-            a_tru = psu.json_to_sympy(
-                a_tru,
-                allow_complex=allow_complex,
-                allow_sets=allow_sets,
-                allow_trig_functions=allow_trig,
-            )
+            else:
+                a_tru_sympy = psu.json_to_sympy(
+                    a_tru,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    allow_trig_functions=allow_trig,
+                )
 
-        if a_tru != "":
-            # Substitute in imaginary unit symbol
-            a_tru_str = str(_replace_imaginary_for_display(a_tru, imaginary_unit))
+            a_tru_str = _TestSubmissionPrinter(imaginary_unit).doprint(a_tru_sympy)
 
     if result == "correct":
         if a_tru_str == "":
