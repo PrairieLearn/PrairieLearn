@@ -262,7 +262,7 @@ describe('course agent turns', () => {
     ]);
   });
 
-  it('shows questions the agent asks as a question part', async () => {
+  it('shows input the agent requests as an input request part', async () => {
     const { sandbox, native, emit } = runner();
     const accepted = Promise.withResolvers<undefined>();
     const turn = new SandboxTurn(
@@ -271,7 +271,7 @@ describe('course agent turns', () => {
       options(() => accepted.resolve(undefined)),
     );
     await accepted.promise;
-    const questions = [
+    const prompts = [
       { title: 'How should students enter the sum?', options: ['One fraction', 'Two fields'] },
       { title: 'Anything else?', options: null },
     ];
@@ -287,7 +287,7 @@ describe('course agent turns', () => {
           phase: 'final_answer',
           memoryCitation: null,
           delivery: 'async',
-          questions,
+          questions: prompts,
         },
       },
     });
@@ -299,7 +299,11 @@ describe('course agent turns', () => {
     const chunks: UIMessageChunk[] = [];
     for await (const chunk of turn.stream) chunks.push(chunk);
     expect(chunks.filter((chunk) => chunk.type.startsWith('data-'))).toEqual([
-      { type: 'data-question', id: 'question:ask', data: { v: 1, itemId: 'ask', questions } },
+      {
+        type: 'data-input-request',
+        id: 'input-request:ask',
+        data: { v: 1, itemId: 'ask', prompts },
+      },
     ]);
   });
 

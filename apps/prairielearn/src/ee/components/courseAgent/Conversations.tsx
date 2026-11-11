@@ -20,7 +20,7 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
-  QuestionPartSchema,
+  InputRequestPartSchema,
   type ToolCall,
   ToolCallSchema,
   reviewTag,
@@ -36,7 +36,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
-import { QuestionCard } from './QuestionCard.js';
+import { InputRequestCard } from './InputRequestCard.js';
 import { RequestChangesCard, ReviewFeedback } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -400,11 +400,11 @@ function Chat({
     !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
       ? (lifecycle.reviewId ?? null)
       : null;
-  // Questions are open until staff send their next message, which answers them however it is sent.
+  // An input request is open until staff send their next message, which answers it however it is sent.
   const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   const latest = messages.at(-1);
-  const questionOpen =
-    latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-question');
+  const inputRequestOpen =
+    latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
@@ -528,7 +528,7 @@ function Chat({
         placeholder={
           replyDenies
             ? 'Explain what to change…'
-            : questionOpen
+            : inputRequestOpen
               ? 'Reply to the agent, or ask something else…'
               : undefined
         }
@@ -635,7 +635,7 @@ function Message({
   onAnswer,
 }: {
   message: UIMessage;
-  /** Staff have sent a message since this one, which answers any questions it asks. */
+  /** Staff have sent a message since this one, which answers any input it requests. */
   answered: boolean;
   canAnswer: boolean;
   onAnswer: (text: string) => void;
@@ -701,13 +701,13 @@ function Message({
         return <TextPart key={key} part={part} urlTransform={linkTransform} />;
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-      if (part.type === 'data-question') {
-        const question = QuestionPartSchema.safeParse(part.data).data;
-        if (!question) return null;
+      if (part.type === 'data-input-request') {
+        const request = InputRequestPartSchema.safeParse(part.data).data;
+        if (!request) return null;
         return (
-          <QuestionCard
+          <InputRequestCard
             key={key}
-            part={question}
+            part={request}
             answered={answered}
             canAnswer={canAnswer}
             onAnswer={onAnswer}

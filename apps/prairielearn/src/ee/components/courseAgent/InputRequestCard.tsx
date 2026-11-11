@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
 
-import type { QuestionPart } from '@prairielearn/course-agent-types';
+import type { InputRequestPart } from '@prairielearn/course-agent-types';
 
 const OTHER = -1;
 
@@ -9,16 +9,16 @@ const replaceAt = <T,>(items: T[], index: number, value: T) =>
   items.map((item, i) => (i === index ? value : item));
 
 /**
- * Questions the agent asked with `request_user_input_async`. Answering sends an ordinary user
- * message, so any message sent while the questions are open answers them too.
+ * Input the agent requested with `request_user_input_async`. Answering sends an ordinary user
+ * message, so any message sent while the request is open answers it too.
  */
-export function QuestionCard({
+export function InputRequestCard({
   part,
   answered,
   canAnswer,
   onAnswer,
 }: {
-  part: QuestionPart;
+  part: InputRequestPart;
   /** Staff have sent a message since the agent asked; it shows below as the answer. */
   answered: boolean;
   canAnswer: boolean;
@@ -26,36 +26,34 @@ export function QuestionCard({
 }) {
   // The recommended option is listed first and starts selected.
   const [selected, setSelected] = useState<number[]>(() =>
-    part.questions.map((question) => (question.options?.length ? 0 : OTHER)),
+    part.prompts.map((prompt) => (prompt.options?.length ? 0 : OTHER)),
   );
-  const [other, setOther] = useState(() => part.questions.map(() => ''));
+  const [other, setOther] = useState(() => part.prompts.map(() => ''));
 
   if (answered) {
     return (
       <div className="border rounded p-2 small text-muted">
-        {part.questions.map((question, index) => (
-          // A part's questions never change, and titles need not be unique.
+        {part.prompts.map((prompt, index) => (
+          // A part's prompts never change, and titles need not be unique.
           // oxlint-disable-next-line react/no-array-index-key
-          <div key={index}>{question.title}</div>
+          <div key={index}>{prompt.title}</div>
         ))}
       </div>
     );
   }
 
-  const answers = part.questions.map((question, index) =>
-    selected[index] === OTHER ? other[index].trim() : question.options![selected[index]],
+  const answers = part.prompts.map((prompt, index) =>
+    selected[index] === OTHER ? other[index].trim() : prompt.options![selected[index]],
   );
   const complete = answers.every((answer) => answer.length > 0);
 
   const submit = () => {
     if (!complete || !canAnswer) return;
-    // With several questions, each answer needs its question to be unambiguous.
+    // With several prompts, each answer needs its prompt to be unambiguous.
     onAnswer(
       answers.length === 1
         ? answers[0]
-        : part.questions
-            .map((question, index) => `${question.title}\n${answers[index]}`)
-            .join('\n\n'),
+        : part.prompts.map((prompt, index) => `${prompt.title}\n${answers[index]}`).join('\n\n'),
     );
   };
 
@@ -67,13 +65,13 @@ export function QuestionCard({
         submit();
       }}
     >
-      {part.questions.map((question, index) => {
-        const name = `question-${part.itemId}-${index}`;
+      {part.prompts.map((prompt, index) => {
+        const name = `input-request-${part.itemId}-${index}`;
         return (
           // oxlint-disable-next-line react/no-array-index-key
           <fieldset key={index} className={index > 0 ? 'mt-3' : undefined}>
-            <legend className="fs-6 fw-semibold mb-2">{question.title}</legend>
-            {question.options?.map((option, optionIndex) => (
+            <legend className="fs-6 fw-semibold mb-2">{prompt.title}</legend>
+            {prompt.options?.map((option, optionIndex) => (
               <Form.Check
                 // oxlint-disable-next-line react/no-array-index-key
                 key={optionIndex}
@@ -87,7 +85,7 @@ export function QuestionCard({
               />
             ))}
             <div className="d-flex align-items-center gap-2 mt-1">
-              {question.options?.length ? (
+              {prompt.options?.length ? (
                 <Form.Check
                   type="radio"
                   id={`${name}-other`}
@@ -100,8 +98,8 @@ export function QuestionCard({
               ) : null}
               <Form.Control
                 size="sm"
-                placeholder={question.options?.length ? 'Something else…' : 'Your answer…'}
-                aria-label={question.options?.length ? 'Other answer' : 'Answer'}
+                placeholder={prompt.options?.length ? 'Something else…' : 'Your answer…'}
+                aria-label={prompt.options?.length ? 'Other answer' : 'Answer'}
                 value={other[index]}
                 disabled={!canAnswer}
                 // Selecting on focus would strand keyboard users tabbing past the field to Send.
@@ -116,7 +114,7 @@ export function QuestionCard({
       })}
       <div className="d-flex justify-content-end mt-2">
         <Button type="submit" size="sm" disabled={!complete || !canAnswer}>
-          {part.questions.length === 1 ? 'Send answer' : 'Send answers'}
+          {part.prompts.length === 1 ? 'Send answer' : 'Send answers'}
         </Button>
       </div>
     </Form>

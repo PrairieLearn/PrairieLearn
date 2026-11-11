@@ -2,7 +2,7 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import { COURSE_DIR, type QuestionPart, type ToolCall } from '@prairielearn/course-agent-types';
+import { COURSE_DIR, type InputRequestPart, type ToolCall } from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
@@ -58,9 +58,9 @@ const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
 });
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
- * questions are shown only through this item.
+ * prompts are shown only through this item. Codex calls them questions.
  */
-const QuestionItem = z.object({
+const InputRequestItem = z.object({
   type: z.literal('agentMessage'),
   id: z.string(),
   delivery: z.literal('async'),
@@ -180,21 +180,22 @@ export class CodexAppServerClient {
       this.toolCall('completed', params);
       const { threadId, turnId, item } = params;
       if (threadId !== this.threadId || (this.turnId && turnId !== this.turnId)) return;
-      const question = QuestionItem.safeParse(item);
-      if (question.success) {
+      const request = InputRequestItem.safeParse(item);
+      if (request.success) {
         this.emit({
-          type: 'data-question',
-          id: `question:${item.id}`,
+          type: 'data-input-request',
+          id: `input-request:${item.id}`,
           data: {
             v: 1,
             itemId: item.id,
-            questions: question.data.questions,
-          } satisfies QuestionPart,
+            prompts: request.data.questions,
+          } satisfies InputRequestPart,
         });
         return;
       }
-      // Codex never streams async messages, so any other one, including questions whose shape
-      // changed, would otherwise vanish.
+      // Async agent messages arrive only here, complete, never as streamed deltas, so the text
+      // handling below would drop them. If a Codex upgrade changes the input request shape so the
+      // check above fails, show the message's text rather than silently losing what was asked.
       const unparsed = UnstreamedAsyncMessage.safeParse(item);
       if (unparsed.success) {
         const id = `text:${item.id}`;
