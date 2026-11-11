@@ -16,7 +16,6 @@ import type { ResLocalsForPage } from '../res-locals.js';
 import { combineQuestionHeaders } from './combine-question-headers.js';
 import { namespaceQuestionHtmls } from './namespace-question-htmls.js';
 import { PrintRenderer } from './print-renderer.js';
-import { stopPrintRequests } from './print-request.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import type { QuestionBlockSize } from './question-block-size.js';
 import { RenderQueue } from './render-queue.js';
@@ -56,11 +55,6 @@ export async function closePrintRenderer(): Promise<void> {
   const renderer = printRenderer;
   printRenderer = null;
   await renderer?.close();
-}
-
-export async function stopPrinting(): Promise<void> {
-  await stopPrintRequests();
-  await closePrintRenderer();
 }
 
 /** Export only when a remote browser or the matching local Chromium build is installed. */

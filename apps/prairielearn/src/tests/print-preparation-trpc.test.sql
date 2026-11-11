@@ -22,7 +22,7 @@ WHERE
 -- BLOCK exhaust_print_export_attempts
 UPDATE jobs
 SET
-  data = data || jsonb_build_object('attempts', 3)
+  data = data || jsonb_build_object('attempts', 2)
 WHERE
   job_sequence_id = $job_sequence_id;
 

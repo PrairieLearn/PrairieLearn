@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 

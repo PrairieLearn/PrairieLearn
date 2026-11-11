@@ -24,6 +24,7 @@ import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
 import { DocxSourceSchema } from './printing/docx-source-schema.js';
+import { isBrowserRenderingAvailable } from './printing/index.js';
 import { PAPER_SIZES } from './printing/pdf-output.js';
 import { PrintAssetScopeDataSchema } from './printing/print-asset-access.js';
 import { PrintableCoverSchema } from './printing/printable-cover.js';
@@ -32,6 +33,10 @@ const sql = loadSqlEquiv(import.meta.url);
 const KEY_PREFIX = 'print-exports/';
 const PRINT_EXPORT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 const QUEUE_NAME = 'print-exports';
+// Graceful shutdowns release their attempt, so only runs that crash or stall count.
+const MAX_ATTEMPTS = 2;
+// Each course gets a fair share of the workers; total throughput scales with the number of workers.
+const COURSE_CONCURRENCY = 2;
 let queue: Queue<{ jobId: string }, void> | null = null;
 let worker: Worker<{ jobId: string }, void> | null = null;
 let workerClosing: Promise<void> | null = null;
@@ -47,54 +52,52 @@ function reportQueueError(error: unknown) {
   Sentry.captureException(error);
 }
 
-export async function initPrintExportQueue(): Promise<void> {
-  if (queue || !config.nonVolatileRedisUrl) return;
-  const connection = {
-    redisUrl: config.nonVolatileRedisUrl,
+function queueConnection(redisUrl: string) {
+  return {
+    redisUrl,
     prefix:
       config.printExportQueuePrefix ??
       `prairielearn-print-exports-${createHash('sha256')
         .update(JSON.stringify([config.postgresqlHost, config.postgresqlDatabase]))
         .digest('hex')}`,
   };
-  queue = new Queue(QUEUE_NAME, {
-    ...connection,
-    defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
-  });
-  queue.on('error', reportQueueError);
-  const currentWorker = new Worker<{ jobId: string }, void>(
+}
+
+/** Connects lazily so hosts that never queue or reconcile exports don't need Redis. */
+function getQueue() {
+  if (!queue && config.nonVolatileRedisUrl) {
+    queue = new Queue(QUEUE_NAME, {
+      ...queueConnection(config.nonVolatileRedisUrl),
+      defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
+    });
+    queue.on('error', reportQueueError);
+  }
+  return queue;
+}
+
+/** Starts this host's export worker. Errors are reported instead of failing startup. */
+export function initPrintExportWorker() {
+  if (
+    worker ||
+    !config.nonVolatileRedisUrl ||
+    !config.printExportWorkerActive ||
+    !isBrowserRenderingAvailable()
+  ) {
+    return;
+  }
+  worker = new Worker<{ jobId: string }, void>(
     QUEUE_NAME,
     async (job) => await processPrintExportJob(IdSchema.parse(job.data.jobId)),
     {
-      ...connection,
+      ...queueConnection(config.nonVolatileRedisUrl),
       concurrency: 2,
-      groupConcurrency: 2,
+      groupConcurrency: COURSE_CONCURRENCY,
       maxStalledCount: 2,
       lockDuration: 300_000,
-      autorun: false,
     },
   );
-  worker = currentWorker;
-  currentWorker.on('error', reportQueueError);
-  currentWorker.on('failed', (_job, error) => reportQueueError(error));
-  try {
-    await queue.waitUntilReady();
-    await currentWorker.preflight();
-    currentWorker.run();
-    await currentWorker.waitUntilReady();
-    currentWorker.on('error', () => {
-      // A fatal PrairieMQ error closes the worker; stop accepting exports until restart.
-      void currentWorker.waitUntilReady().catch(() => {
-        beginPrintExportShutdown();
-        void waitForPrintExportWorkers().catch(reportQueueError);
-      });
-    });
-    await processQueuedPrintExports();
-  } catch (error) {
-    beginPrintExportShutdown();
-    await waitForPrintExportWorkers();
-    throw error;
-  }
+  worker.on('error', reportQueueError);
+  worker.on('failed', (_job, error) => reportQueueError(error));
 }
 
 export function beginPrintExportShutdown() {
@@ -115,9 +118,14 @@ export async function waitForPrintExportWorkers() {
   }
 }
 
-async function publishPrintExport(jobId: string) {
-  if (queue && !isAborted(printExportShutdownController.signal)) {
-    await queue.add('render', { jobId }, { jobId: `print-export-${jobId}` });
+async function publishPrintExport({ jobId, courseId }: { jobId: string; courseId: string }) {
+  const currentQueue = getQueue();
+  if (currentQueue && !isAborted(printExportShutdownController.signal)) {
+    await currentQueue.add(
+      'render',
+      { jobId },
+      { jobId: `print-export-${jobId}`, group: { id: courseId } },
+    );
   }
 }
 
@@ -241,7 +249,7 @@ export async function queuePrintExport({
   owner: PrintExportOwner;
   work: PrintExportWork;
 }) {
-  if (!queue || isAborted(printExportShutdownController.signal)) {
+  if (!getQueue() || isAborted(printExportShutdownController.signal)) {
     throw new HttpStatusError(503, 'Print export queuing is not available on this server.');
   }
   const bucket = getFileStoreS3Bucket();
@@ -259,7 +267,7 @@ export async function queuePrintExport({
     throw error;
   }
   // The accepted PostgreSQL job survives a lost or failed Redis publication.
-  await publishPrintExport(job.job_id).catch(reportQueueError);
+  await publishPrintExport({ jobId: job.job_id, courseId: owner.courseId }).catch(reportQueueError);
   return job.job_sequence_id;
 }
 
@@ -292,7 +300,7 @@ async function finishPrintExport({
   });
 }
 
-async function processPrintExportJob(jobId: string, terminalFailure?: string) {
+async function processPrintExportJob(jobId: string) {
   const shutdownSignal = printExportShutdownController.signal;
   if (isAborted(shutdownSignal)) return;
   const owner = randomUUID();
@@ -309,7 +317,7 @@ async function processPrintExportJob(jobId: string, terminalFailure?: string) {
       attempts: z.number().int(),
     }),
   );
-  if (!job || isAborted(shutdownSignal)) return;
+  if (!job) return;
   const {
     id,
     job_sequence_id: jobSequenceId,
@@ -328,11 +336,12 @@ async function processPrintExportJob(jobId: string, terminalFailure?: string) {
   }).record(Date.now() - job.queued_at.getTime(), { document: job.document, format: job.format });
   let inputCanBeDeleted = false;
   try {
+    if (isAborted(shutdownSignal)) return;
     let persisted: z.infer<typeof PersistedWorkSchema>;
     let packet: Buffer;
     try {
-      if (terminalFailure || attempts > 3) {
-        throw new HttpStatusError(400, terminalFailure ?? exhaustedFailureMessage(format));
+      if (attempts > MAX_ATTEMPTS) {
+        throw new HttpStatusError(400, exhaustedFailureMessage(format));
       }
       persisted = PersistedWorkSchema.parse(
         JSON.parse((await getFromS3(bucket, inputKey, true)).toString('utf8')),
@@ -409,6 +418,9 @@ async function processPrintExportJob(jobId: string, terminalFailure?: string) {
       } catch (error) {
         logger.error('Could not remove completed print export input', error);
       }
+    } else if (isAborted(shutdownSignal)) {
+      // Another worker reruns the job once the reconciliation republishes it.
+      await execute(sql.release_print_export_job, { job_id: id, owner }).catch(reportQueueError);
     }
     getHistogram(meter, 'print.export.background.duration', {
       unit: 'milliseconds',
@@ -427,9 +439,9 @@ function exhaustedFailureMessage(format: PrintExportWork['format']) {
     : 'The export stopped repeatedly while rendering. Try fewer forms or contact support.';
 }
 
-/** Repairs accepted PostgreSQL jobs whose Redis publication was lost or failed. */
+/** Republishes accepted PostgreSQL jobs whose Redis job was lost, failed, or interrupted. */
 export async function processQueuedPrintExports(): Promise<void> {
-  const currentQueue = queue;
+  const currentQueue = getQueue();
   const signal = printExportShutdownController.signal;
   if (!currentQueue || isAborted(signal)) return;
   let afterId = '0';
@@ -437,16 +449,14 @@ export async function processQueuedPrintExports(): Promise<void> {
     const pending = await queryRows(
       sql.select_pending_print_exports,
       { after_id: afterId },
-      z.object({ id: IdSchema, format: PrintExportFormatSchema }),
+      z.object({ id: IdSchema, course_id: IdSchema }),
     );
     for (const job of pending) {
       if (isAborted(signal)) return;
+      // Completed and failed jobs are removed from Redis, so they also read as unknown.
       const { state } = await currentQueue.getJobStatus(`print-export-${job.id}`);
-      if (isAborted(signal)) return;
       if (state === 'unknown') {
-        await publishPrintExport(job.id);
-      } else if (state === 'failed') {
-        await processPrintExportJob(job.id, exhaustedFailureMessage(job.format));
+        await publishPrintExport({ jobId: job.id, courseId: job.course_id });
       }
     }
     if (pending.length < 100) return;

@@ -132,7 +132,7 @@ FROM
 -- BLOCK select_pending_print_exports
 SELECT
   j.id,
-  j.data ->> 'format' AS format
+  j.course_id
 FROM
   jobs AS j
 WHERE
@@ -168,6 +168,21 @@ RETURNING
   j.data ->> 'document' AS document,
   j.data ->> 'format' AS format,
   (j.data ->> 'attempts')::integer AS attempts;
+
+-- BLOCK release_print_export_job
+UPDATE jobs
+SET
+  data = (data - 'runOwner') || jsonb_build_object(
+    'attempts',
+    greatest(
+      coalesce((data ->> 'attempts')::integer, 0) - 1,
+      0
+    )
+  )
+WHERE
+  id = $job_id
+  AND status = 'Running'
+  AND data ->> 'runOwner' = $owner;
 
 -- BLOCK finish_print_export_job
 UPDATE jobs

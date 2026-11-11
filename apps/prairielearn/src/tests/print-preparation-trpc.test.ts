@@ -24,7 +24,7 @@ import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
   beginPrintExportShutdown,
   cleanExpiredPrintExports,
-  initPrintExportQueue,
+  initPrintExportWorker,
   processQueuedPrintExports,
   queuePrintExport,
   selectPrintExportJob,
@@ -122,6 +122,16 @@ describe('print preparation', { timeout: 60_000 }, () => {
       .toBe(status);
   }
 
+  function startPrintExportWorker() {
+    // Vitest hosts may not have a browser installed; these tests mock rendering.
+    const available = vi.spyOn(printing, 'isBrowserRenderingAvailable').mockReturnValue(true);
+    try {
+      initPrintExportWorker();
+    } finally {
+      available.mockRestore();
+    }
+  }
+
   async function queueTestPdf(filename: string) {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
@@ -156,7 +166,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     courseDirectory = await tmp.dir({ unsafeCleanup: true });
     await fs.cp(TEST_COURSE_PATH, courseDirectory.path, { recursive: true });
     await helperServer.before(courseDirectory.path)();
-    await initPrintExportQueue();
+    startPrintExportWorker();
     await features.enable('printable-assessments');
   });
   beforeEach(async () => {
@@ -781,7 +791,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
   );
 
   test('separates default queue namespaces for different PostgreSQL deployments', async () => {
-    const createQueue = vi.spyOn(PrairieMQ, 'Queue');
+    const createWorker = vi.spyOn(PrairieMQ, 'Worker');
     const prefixes = new Set<string>();
     const host = `test-print-host-${randomUUID()}`;
     const explicitPrefix = `test-print-override-${randomUUID()}`;
@@ -800,8 +810,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
           printExportQueuePrefix: prefix,
         },
         async () => {
-          await initPrintExportQueue();
-          const [, options] = createQueue.mock.calls.at(-1)!;
+          startPrintExportWorker();
+          const [, , options] = createWorker.mock.calls.at(-1)!;
           const resolvedPrefix = options.prefix!;
           prefixes.add(resolvedPrefix);
           beginPrintExportShutdown();
@@ -840,7 +850,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     } finally {
       beginPrintExportShutdown();
       await waitForPrintExportWorkers();
-      createQueue.mockRestore();
+      createWorker.mockRestore();
       for (const prefix of prefixes) {
         const cleanupQueue = new PrairieMQ.Queue('print-exports', {
           redisUrl: config.nonVolatileRedisUrl!,
@@ -852,7 +862,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
           await cleanupQueue.close();
         }
       }
-      await initPrintExportQueue();
+      startPrintExportWorker();
     }
   });
 
@@ -914,7 +924,36 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test('keeps the two-export limit shared with another queue worker', async () => {
+  test('does not count a run interrupted by shutdown as an attempt', async () => {
+    const render = vi
+      .spyOn(printExportRender, 'renderPrintExport')
+      .mockImplementationOnce(
+        async (_work, signal) =>
+          await new Promise((_resolve, reject) => {
+            signal?.addEventListener('abort', () => reject(new Error('Interrupted')));
+          }),
+      )
+      .mockResolvedValue(Buffer.from('%PDF-1.4 rerun export'));
+    try {
+      const { assessment, jobSequenceId } = await queueTestPdf('interrupted-export.pdf');
+      await printQueue.resume();
+      await vi.waitFor(() => expect(render).toHaveBeenCalledOnce(), { timeout: 10_000 });
+      beginPrintExportShutdown();
+      await waitForPrintExportWorkers();
+      const [job] = await selectJobsByJobSequenceId(jobSequenceId);
+      expect(job.status).toBe('Running');
+      expect(job.data).toMatchObject({ attempts: 0 });
+      expect(job.data).not.toHaveProperty('runOwner');
+
+      startPrintExportWorker();
+      await completePrintExport(assessment.id, jobSequenceId);
+      expect(render).toHaveBeenCalledTimes(2);
+    } finally {
+      render.mockRestore();
+    }
+  });
+
+  test('limits each course to two concurrent exports across workers', async () => {
     const gate = withResolvers<Buffer>();
     const render = vi.spyOn(printExportRender, 'renderPrintExport').mockReturnValue(gate.promise);
     const otherProcessor = vi.fn(async () => undefined);
@@ -934,7 +973,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await otherWorker.waitUntilReady();
       await sleep(200);
       expect(otherProcessor).not.toHaveBeenCalled();
-      expect(await printQueue.getGroups()).toEqual([{ id: null, waiting: 1, active: 2 }]);
+      const { course_id } = await selectCourseInstanceById('1');
+      expect(await printQueue.getGroups()).toEqual([{ id: course_id, waiting: 1, active: 2 }]);
       await otherWorker.close();
       otherWorker = undefined;
       gate.resolve(Buffer.from('%PDF-1.4 concurrent export'));
@@ -949,7 +989,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test('stops retrying after three interrupted rendering attempts', async () => {
+  test('stops retrying after two crashed rendering attempts', async () => {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const jobSequenceId = await queuePrintExport({

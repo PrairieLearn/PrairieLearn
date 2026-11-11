@@ -513,7 +513,6 @@ router.post(
           footerLabel,
         },
       });
-      throwIfAborted();
       res.setHeader('Cache-Control', 'private, no-store');
       res.json({ jobSequenceId });
     });

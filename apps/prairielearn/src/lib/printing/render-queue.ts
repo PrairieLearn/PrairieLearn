@@ -132,7 +132,7 @@ export class RenderQueue {
       previewIndex !== -1 && (exportIndex === -1 || this.previewsSinceExport < 3);
     const next = this.waiters.splice(choosePreview ? previewIndex : exportIndex, 1)[0];
     this.previewsSinceExport = choosePreview ? this.previewsSinceExport + 1 : 0;
-    // Transfer the permit directly so a new render cannot pass the oldest waiter.
+    // Transfer the permit directly so a newly arriving render cannot jump ahead of the queue.
     next.cleanup();
     next.resolve({ queueWaitMs: Date.now() - next.queuedAt, release });
   }

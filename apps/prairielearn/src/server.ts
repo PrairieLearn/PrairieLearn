@@ -78,11 +78,11 @@ import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import {
   beginPrintExportShutdown,
-  initPrintExportQueue,
+  initPrintExportWorker,
   waitForPrintExportWorkers,
 } from './lib/print-export-jobs.js';
-import { stopPrinting } from './lib/printing/index.js';
-import { initPrintRequests } from './lib/printing/print-request.js';
+import { closePrintRenderer } from './lib/printing/index.js';
+import { initPrintRequests, stopPrintRequests } from './lib/printing/print-request.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -2731,7 +2731,7 @@ if (esMain(import.meta)) {
     // requests, as they may actually end up executing course code.
     await externalGraderResults.init();
     await externalGraderDeadLetters.init();
-    await initPrintExportQueue();
+    initPrintExportWorker();
 
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
@@ -2816,6 +2816,7 @@ async function close() {
   // Stop polling and scheduled work and finish pending workspace startups while
   // their shared dependencies are still available.
   await settleShutdownTasks([
+    stopPrintRequests(),
     externalGraderDeadLetters.stop(),
     externalGraderResults.stop(),
     cron.stop(),
@@ -2827,9 +2828,9 @@ async function close() {
   // for their final status writes and notifications before closing dependencies.
   await settleShutdownTasks([serverJobs.stop()]);
 
-  // Let print workers finish cleanup while their dependencies are available.
+  // Let print workers finish cleanup before closing the renderer they use.
   await settleShutdownTasks([waitForPrintExportWorkers()]);
-  await settleShutdownTasks([stopPrinting()]);
+  await settleShutdownTasks([closePrintRenderer()]);
 
   await settleShutdownTasks([
     serverJobProgressSocket.close(),
