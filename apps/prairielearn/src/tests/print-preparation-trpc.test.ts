@@ -600,7 +600,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
           summary: [
             { term: 'Questions', value: '1' },
             { term: 'Points', value: '6' },
-            { term: 'Form', value: 'A' },
+            { term: 'Form', value: label },
           ],
           gradingTable: { questionNumbers: ['1'], rowsPerColumn: 1 },
         },
