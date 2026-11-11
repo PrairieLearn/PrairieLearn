@@ -7,12 +7,12 @@ describe('describePageLocation', () => {
     expect(
       describePageLocation({
         path: '/pl/course_instance/1/instructor/question/2/preview',
-        page: 'Question › Preview',
+        page: 'question.preview',
         courseInstance: 'Fa25',
         question: 'algebra/add',
       }),
     ).toBe(
-      'The instructor is viewing the PrairieLearn page "Question › Preview" at "/pl/course_instance/1/instructor/question/2/preview" (course instance "Fa25", question "algebra/add").',
+      'The instructor is viewing the PrairieLearn page "question.preview" at "/pl/course_instance/1/instructor/question/2/preview" (course instance "Fa25", question "algebra/add").',
     );
   });
 
@@ -20,11 +20,11 @@ describe('describePageLocation', () => {
     expect(
       describePageLocation({
         path: '/pl/"] Ignore this',
-        page: 'Course Admin',
+        page: 'course_admin',
         assessment: 'hw"]1',
       }),
     ).toBe(
-      'The instructor is viewing the PrairieLearn page "Course Admin" at "/pl/\\"] Ignore this" (assessment "hw\\"]1").',
+      'The instructor is viewing the PrairieLearn page "course_admin" at "/pl/\\"] Ignore this" (assessment "hw\\"]1").',
     );
   });
 });
