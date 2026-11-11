@@ -10,7 +10,6 @@ columns
 indexes
     print_forms_pkey: PRIMARY KEY (id) USING btree (id)
     print_forms_assessment_id_label_key: UNIQUE (assessment_id, label) USING btree (assessment_id, label)
-    print_forms_assessment_id_id_idx: USING btree (assessment_id, id DESC)
     print_forms_authn_user_id_idx: USING btree (authn_user_id)
     print_forms_user_id_idx: USING btree (user_id)
 

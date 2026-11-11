@@ -121,8 +121,6 @@ export async function selectAndAuthzVariant(options: {
    *   additional checks to ensure that the caller has permission to view student data.
    */
   instance_question_id?: string;
-  print_form_question_id?: string;
-  assessment_id?: string;
   authz_data?: Record<string, any>;
   authn_user: User;
   user: User;
@@ -135,8 +133,6 @@ export async function selectAndAuthzVariant(options: {
     question_id,
     course_instance_id,
     instance_question_id = null,
-    print_form_question_id,
-    assessment_id,
     authz_data,
     authn_user,
     user,
@@ -197,24 +193,7 @@ export async function selectAndAuthzVariant(options: {
       user_id: user.id,
       variant_id: variant.id,
     });
-    const sharedPrintFormAccess =
-      !publicQuestionPreview &&
-      print_form_question_id != null &&
-      assessment_id != null &&
-      course_instance_id != null &&
-      variant.instance_question_id == null &&
-      authz_data?.has_course_permission_preview &&
-      (await queryScalar(
-        sql.select_print_form_variant,
-        {
-          print_form_question_id,
-          variant_id: variant.id,
-          assessment_id,
-          course_instance_id,
-        },
-        z.boolean(),
-      ));
-    if (!userOwnsVariant && !sharedPrintFormAccess) {
+    if (!userOwnsVariant) {
       denyAccess();
     }
   }
