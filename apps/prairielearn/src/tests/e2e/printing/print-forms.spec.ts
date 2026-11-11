@@ -124,7 +124,8 @@ test('renders accessible previews and readable answer keys for every student que
     'exam20-assessmentTools',
   );
   const initialRecords = await queryRow(sql.select_record_counts, {}, RecordCountsSchema);
-  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID&form_label=Z`;
+  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
+  expect((await page.request.get(`${endpoint}&form_label=Z`)).status()).toBe(400);
 
   const assessmentResponse = await page.goto(endpoint);
   await expect(page.locator(':root')).toHaveAttribute('data-print-form-label', printForm.label);

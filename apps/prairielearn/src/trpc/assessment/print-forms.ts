@@ -25,7 +25,12 @@ export interface PrintFormsError {
 }
 
 export const requirePrintableAssessments = t.middleware(async (opts) => {
-  if (!(await features.enabledFromLocals('printable-assessments', opts.ctx.locals))) {
+  // Everyone has preview access to example courses, so shared print forms there would be one
+  // pool that any user could fill or regenerate.
+  if (
+    opts.ctx.course.example_course ||
+    !(await features.enabledFromLocals('printable-assessments', opts.ctx.locals))
+  ) {
     throw new TRPCError({ code: 'NOT_FOUND' });
   }
   return opts.next();

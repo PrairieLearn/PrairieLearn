@@ -348,7 +348,6 @@ router.post(
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
     const footerLabel = getPrintFooterLabel({
       document,
-      formId: res.locals.print_form.id,
       formLabel: res.locals.print_form.label,
     });
     const makeCover = (

@@ -9,8 +9,6 @@ CREATE TABLE print_forms (
   UNIQUE (assessment_id, label)
 );
 
-CREATE INDEX print_forms_assessment_id_id_idx ON print_forms (assessment_id, id DESC);
-
 CREATE INDEX print_forms_user_id_idx ON print_forms (user_id);
 
 CREATE INDEX print_forms_authn_user_id_idx ON print_forms (authn_user_id);

@@ -109,7 +109,7 @@ test('reports omitted questions and exports the selected Word content', async ({
   expect(documentXml).toContain('<m:oMath>');
   expect(documentXml).toContain('Consider two numbers');
   expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
-  for (const label of ['Name', 'Section', 'Student ID', 'Date', `Form ID ${printForm.id}`]) {
+  for (const label of ['Name', 'Section', 'Student ID', 'Date', `Form ${printForm.label}`]) {
     expect(documentXml).toContain(label);
   }
 });
