@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { CourseAgentConversationSchema } from '../../lib/db-types.js';
+import { type CourseAgentConversation, CourseAgentConversationSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -52,6 +52,20 @@ export async function selectOptionalCourseAgentConversation({
   return await queryOptionalRow(
     sql.select_course_agent_conversation,
     { id, course_id, user_id },
+    CourseAgentConversationSchema,
+  );
+}
+
+export async function updateCourseAgentConversationTitle({
+  conversation,
+  title,
+}: {
+  conversation: CourseAgentConversation;
+  title: string;
+}) {
+  return await queryRow(
+    sql.update_course_agent_conversation_title,
+    { id: conversation.id, title },
     CourseAgentConversationSchema,
   );
 }
