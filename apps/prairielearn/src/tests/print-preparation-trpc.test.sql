@@ -1,37 +1,16 @@
--- BLOCK age_print_export_job
-UPDATE jobs
+-- BLOCK age_print_export
+UPDATE print_exports
 SET
-  finish_date = CURRENT_TIMESTAMP - INTERVAL '25 hours'
+  created_at = CURRENT_TIMESTAMP - INTERVAL '25 hours'
 WHERE
-  job_sequence_id = $job_sequence_id;
-
--- BLOCK add_print_export_input_key
-UPDATE jobs
-SET
-  data = data || jsonb_build_object('inputKey', $input_key::text)
-WHERE
-  job_sequence_id = $job_sequence_id;
-
--- BLOCK age_print_export_sequence
-UPDATE job_sequences
-SET
-  finish_date = CURRENT_TIMESTAMP - INTERVAL '25 hours'
-WHERE
-  id = $job_sequence_id;
+  id = $print_export_id;
 
 -- BLOCK exhaust_print_export_attempts
-UPDATE jobs
+UPDATE print_exports
 SET
-  data = data || jsonb_build_object('attempts', 3)
+  attempts = 2
 WHERE
-  job_sequence_id = $job_sequence_id;
-
--- BLOCK replace_print_export_owner
-UPDATE jobs
-SET
-  data = data || jsonb_build_object('runOwner', 'replacement-owner')
-WHERE
-  job_sequence_id = $job_sequence_id;
+  id = $print_export_id;
 
 -- BLOCK set_static_assessment
 WITH

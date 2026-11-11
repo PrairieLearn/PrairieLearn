@@ -48,13 +48,13 @@ async function downloadPreparedFile(
   const response = await submitted;
   expect(response.status()).toBe(200);
   const body = await response.json();
-  const { jobSequenceId } = format === 'pdf' ? body.result.data.json : body;
+  const { printExportId } = format === 'pdf' ? body.result.data.json : body;
   if (format === 'docx') {
-    await expect.poll(() => new URL(page.url()).searchParams.get('export')).toBe(jobSequenceId);
+    await expect.poll(() => new URL(page.url()).searchParams.get('export')).toBe(printExportId);
     await page.reload();
   }
   const link = page.getByRole('link', { name: /^Download / });
-  await expect(link).toHaveAttribute('href', new RegExp(`/exports/${jobSequenceId}\\.${format}$`), {
+  await expect(link).toHaveAttribute('href', new RegExp(`/exports/${printExportId}$`), {
     timeout: 120_000,
   });
   const downloaded = page.waitForEvent('download', { timeout: 120_000 });

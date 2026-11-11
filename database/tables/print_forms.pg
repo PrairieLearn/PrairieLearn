@@ -8,6 +8,8 @@ columns
 indexes
     print_forms_pkey: PRIMARY KEY (id) USING btree (id)
     print_forms_assessment_id_user_id_idx: USING btree (assessment_id, user_id)
+    print_forms_authn_user_id_idx: USING btree (authn_user_id)
+    print_forms_user_id_idx: USING btree (user_id)
 
 foreign-key constraints
     print_forms_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

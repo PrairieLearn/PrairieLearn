@@ -2,7 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Spinner } from 'react-bootstrap';
 
-import { type PrintSnapshot, capturePrintSnapshot } from '../../lib/client/print-snapshot.js';
+import {
+  type PrintSnapshot,
+  capturePrintSnapshot,
+} from '../../lib/client/printing/print-snapshot.js';
 import type { PrintDocument } from '../../lib/printing/index.js';
 
 export type PreviewState =

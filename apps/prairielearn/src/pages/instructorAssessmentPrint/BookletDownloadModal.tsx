@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
-import { MAX_PRINT_COPIES } from '../../lib/client/print-packet.js';
+import { MAX_PRINT_COPIES } from '../../lib/client/printing/print-packet.js';
 
 export function BookletDownloadModal({
   show,

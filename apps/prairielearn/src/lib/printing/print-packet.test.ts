@@ -1,8 +1,13 @@
 import { PDFBool, PDFDict, PDFDocument, PDFName, PDFRawStream, PDFStream } from 'pdf-lib';
 import { describe, expect, test } from 'vitest';
 
-import { MAX_COVER_BYTES, MAX_COVER_FILES, MAX_COVER_PAGES } from './client/print-packet.js';
-import { DEFAULT_PRINT_SETTINGS } from './client/print-preparation.js';
+import {
+  MAX_COVER_BYTES,
+  MAX_COVER_FILES,
+  MAX_COVER_PAGES,
+} from '../client/printing/print-packet.js';
+import { DEFAULT_PRINT_SETTINGS } from '../client/printing/print-preparation.js';
+
 import { PrintPacketMetadataSchema } from './print-packet-schema.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
 

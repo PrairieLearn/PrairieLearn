@@ -2,13 +2,14 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { MAX_PRINT_COPIES, MAX_PRINT_FORMS } from './client/print-packet.js';
-import { PrintIdentityFieldsTextSchema } from './client/print-preparation.js';
-import { PAPER_SIZES } from './printing/paper-size.js';
-import { QUESTION_BLOCK_SIZES } from './printing/question-block-size.js';
+import { MAX_PRINT_COPIES, MAX_PRINT_FORMS } from '../client/printing/print-packet.js';
+import { PrintIdentityFieldsTextSchema } from '../client/printing/print-preparation.js';
+
+import { PAPER_SIZES } from './paper-size.js';
+import { QUESTION_BLOCK_SIZES } from './question-block-size.js';
 
 const QuestionNumberSchema = z.string().min(1);
-const PrintSettingsSchema = z.strictObject({
+export const PrintSettingsSchema = z.strictObject({
   paperSize: z.enum(PAPER_SIZES),
   includeCoverPage: z.boolean().default(true),
   includeGradingTable: z.boolean().default(false),
@@ -23,6 +24,7 @@ const PrintSettingsSchema = z.strictObject({
     (numbers) => new Set(numbers).size === numbers.length,
   ),
 });
+export type PrintSettings = z.infer<typeof PrintSettingsSchema>;
 
 export const PrintPacketMetadataSchema = z.strictObject({
   forms: z

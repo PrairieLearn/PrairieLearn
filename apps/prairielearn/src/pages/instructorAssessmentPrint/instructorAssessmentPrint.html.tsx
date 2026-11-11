@@ -1,4 +1,4 @@
-import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { QueryClient, skipToken, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
@@ -17,26 +17,22 @@ import {
   MAX_COVER_FILES,
   MAX_COVER_PAGES,
   MAX_PRINT_FORMS,
-} from '../../lib/client/print-packet.js';
+} from '../../lib/client/printing/print-packet.js';
 import {
   DEFAULT_PRINT_SETTINGS,
   PrintIdentityFieldsTextSchema,
-  type PrintSettings,
   printLayoutSearch,
-} from '../../lib/client/print-preparation.js';
+} from '../../lib/client/printing/print-preparation.js';
 import {
   type PrintSnapshot,
   STALE_PRINT_SNAPSHOT_MESSAGE,
   capturePrintSnapshot,
   renderPrintSnapshot,
-} from '../../lib/client/print-snapshot.js';
+} from '../../lib/client/printing/print-snapshot.js';
 import type { StaffPrintForm } from '../../lib/client/safe-db-types.js';
-import {
-  getCourseInstanceJobSequenceUrl,
-  getPrintFormUrl,
-  getQuestionUrl,
-} from '../../lib/client/url.js';
+import { getPrintFormUrl, getQuestionUrl } from '../../lib/client/url.js';
 import type { PrintDocument } from '../../lib/printing/index.js';
+import type { PrintSettings } from '../../lib/printing/print-packet-schema.js';
 import type { QuestionBlockSize } from '../../lib/printing/question-block-size.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
@@ -144,7 +140,7 @@ function PrintPreparation({
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
   const [retry, setRetry] = useState(0);
   const [snapshotStale, setSnapshotStale] = useState(false);
-  const [exportJobId, setExportJobId] = useQueryState('export', parseAsString);
+  const [exportId, setExportId] = useQueryState('export', parseAsString);
   const {
     register,
     handleSubmit,
@@ -183,22 +179,15 @@ function PrintPreparation({
   const booklet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
   const exportStatus = useQuery(
     trpc.printableAssessmentExport.status.queryOptions(
-      { jobSequenceId: exportJobId ?? '1' },
+      exportId === null ? skipToken : { printExportId: exportId },
       {
-        enabled: exportJobId !== null,
-        refetchInterval: (query) =>
-          query.state.data?.status === 'Running' || query.state.data?.status === 'Stopping'
-            ? 2_000
-            : false,
+        refetchInterval: (query) => (query.state.data?.status === 'pending' ? 2_000 : false),
       },
     ),
   );
   const exportNeedsNewPreview = exportStatus.data?.failureMessage === STALE_PRINT_SNAPSHOT_MESSAGE;
   const exportPending =
-    exportJobId !== null &&
-    (exportStatus.isPending ||
-      exportStatus.data?.status === 'Running' ||
-      exportStatus.data?.status === 'Stopping');
+    exportId !== null && (exportStatus.isPending || exportStatus.data?.status === 'pending');
   const busy =
     create.isPending ||
     regenerate.isPending ||
@@ -330,7 +319,7 @@ function PrintPreparation({
   }
 
   function receiveExport(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
-    void setExportJobId(result.jobSequenceId);
+    void setExportId(result.printExportId);
   }
 
   async function downloadPacket(
@@ -414,7 +403,7 @@ function PrintPreparation({
         }
         throw new Error('The download could not be generated. Review the preview and try again.');
       }
-      receiveExport(z.object({ jobSequenceId: IdSchema }).parse(await response.json()));
+      receiveExport(z.object({ printExportId: IdSchema }).parse(await response.json()));
     },
     onError: (error: Error) => markStaleSnapshot(error),
   });
@@ -492,7 +481,7 @@ function PrintPreparation({
     setPreviewPending(true);
     setPreview(null);
     snapshotsRef.current.clear();
-    if (exportNeedsNewPreview) void setExportJobId(null);
+    if (exportNeedsNewPreview) void setExportId(null);
     packet.reset();
     booklet.reset();
     download.reset();
@@ -549,37 +538,24 @@ function PrintPreparation({
           setPdfPreparationError(null);
         }}
       />
-      {exportJobId && (
+      {exportId && (
         <Alert
           variant={
-            exportStatus.data?.status === 'Error' ||
-            exportStatus.data?.status === 'Stopped' ||
-            exportStatus.isError
-              ? 'danger'
-              : 'info'
+            exportStatus.data?.status === 'failed' || exportStatus.isError ? 'danger' : 'info'
           }
         >
-          {exportStatus.data?.ready ? (
+          {exportStatus.data?.status === 'succeeded' ? (
             <a href={exportStatus.data.downloadUrl ?? undefined}>
-              Download {exportStatus.data.exportLabel ?? 'prepared file'}
+              Download {exportStatus.data.label ?? 'prepared file'}
               {exportStatus.data.sizeBytes !== null &&
                 ` (${filesize(exportStatus.data.sizeBytes, { base: 10, round: 1 })})`}
             </a>
-          ) : exportStatus.data?.status === 'Error' ? (
-            <>
-              {exportStatus.data.failureMessage ??
-                'The file could not be prepared because of a server error.'}{' '}
-              {exportStatus.data.canViewJobLogs && (
-                <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, exportJobId)}>
-                  View job details
-                </a>
-              )}
-            </>
-          ) : exportStatus.data?.status === 'Stopped' ? (
-            'File preparation was stopped. Try the export again.'
+          ) : exportStatus.data?.status === 'failed' ? (
+            (exportStatus.data.failureMessage ??
+            'The file could not be prepared because of a server error.')
           ) : exportStatus.isError ? (
             'Could not check the file preparation status. Refresh the page to try again.'
-          ) : exportStatus.data?.status === 'Success' ? (
+          ) : exportStatus.data?.status === 'expired' ? (
             'This file is no longer available. Prepare it again.'
           ) : (
             'Preparing your file in the background. You can return to this page to download it within 24 hours.'
@@ -590,7 +566,7 @@ function PrintPreparation({
               size="sm"
               className="ms-2 p-0"
               onClick={() => {
-                void setExportJobId(null);
+                void setExportId(null);
               }}
             >
               Dismiss

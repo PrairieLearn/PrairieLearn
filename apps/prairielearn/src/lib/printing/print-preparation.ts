@@ -8,9 +8,9 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 
-import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from './chunks.js';
-import type { PrintPreparationQuestion } from './client/print-preparation.js';
-import { CourseSchema, PrintFormQuestionSchema, QuestionSchema } from './db-types.js';
+import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from '../chunks.js';
+import type { PrintPreparationQuestion } from '../client/printing/print-preparation.js';
+import { CourseSchema, PrintFormQuestionSchema, QuestionSchema } from '../db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

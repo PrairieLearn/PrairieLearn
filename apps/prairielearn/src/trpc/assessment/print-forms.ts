@@ -6,11 +6,11 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
-import { createPrintForm } from '../../lib/print-forms.js';
-import { inspectPrintPreparationQuestions } from '../../lib/print-preparation.js';
+import { createPrintForm } from '../../lib/printing/print-forms.js';
+import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
 import { selectOptionalPrintForm, selectPrintFormsForUser } from '../../models/print-form.js';
 
-import { requireCoursePermissionPreview, t } from './init.js';
+import { type createContext, requireCoursePermissionPreview, t } from './init.js';
 
 export interface PrintFormsError {
   questions: never;
@@ -30,7 +30,7 @@ const printFormProcedure = t.procedure
   .use(requireCoursePermissionPreview)
   .use(requirePrintableAssessments);
 
-const createFormProcedure = printFormProcedure.use(async ({ ctx, next }) => {
+const rejectGroupWork = t.middleware(async ({ ctx, next }) => {
   if (ctx.assessment.team_work) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
@@ -54,7 +54,7 @@ const ownedFormProcedure = printFormProcedure
     return next();
   });
 
-const createForm = createFormProcedure.mutation(async ({ ctx, signal }) => {
+async function createForm({ ctx }: { ctx: ReturnType<typeof createContext> }) {
   try {
     const form = await createPrintForm({
       assessment: ctx.assessment,
@@ -62,7 +62,6 @@ const createForm = createFormProcedure.mutation(async ({ ctx, signal }) => {
       courseInstance: ctx.course_instance,
       userId: ctx.locals.user.id,
       authnUserId: ctx.authn_user.id,
-      signal,
     });
     return { printFormId: form.id };
   } catch (error) {
@@ -71,7 +70,7 @@ const createForm = createFormProcedure.mutation(async ({ ctx, signal }) => {
     }
     throw error;
   }
-});
+}
 
 export const printFormsRouter = t.router({
   questions: ownedFormProcedure.query(async ({ input }) => {
@@ -85,29 +84,7 @@ export const printFormsRouter = t.router({
       }),
     ),
   ),
-  create: createForm,
-  regenerate: ownedFormProcedure.mutation(async ({ ctx, signal }) => {
-    if (ctx.assessment.team_work) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Creating print forms for group assessments is not supported yet.',
-      });
-    }
-    try {
-      const form = await createPrintForm({
-        assessment: ctx.assessment,
-        course: ctx.course,
-        courseInstance: ctx.course_instance,
-        userId: ctx.locals.user.id,
-        authnUserId: ctx.authn_user.id,
-        signal,
-      });
-      return { printFormId: form.id };
-    } catch (error) {
-      if (error instanceof HttpStatusError && error.status === 400) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
-      }
-      throw error;
-    }
-  }),
+  create: printFormProcedure.use(rejectGroupWork).mutation(createForm),
+  // Regenerating keeps the original form and creates a new one.
+  regenerate: ownedFormProcedure.use(rejectGroupWork).mutation(createForm),
 });

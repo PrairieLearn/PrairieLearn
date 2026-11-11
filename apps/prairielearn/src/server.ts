@@ -76,13 +76,12 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { closePrintRenderer } from './lib/printing/index.js';
 import {
   beginPrintExportShutdown,
-  initPrintExportQueue,
+  initPrintExportWorker,
   waitForPrintExportWorkers,
-} from './lib/print-export-jobs.js';
-import { stopPrinting } from './lib/printing/index.js';
-import { initPrintRequests } from './lib/printing/print-request.js';
+} from './lib/printing/print-exports.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -144,7 +143,6 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  * @returns The express "app" object that was created.
  */
 export async function initExpress(): Promise<Express> {
-  initPrintRequests();
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
   app.set('trust proxy', config.trustProxy);
@@ -2735,7 +2733,7 @@ if (esMain(import.meta)) {
     // requests, as they may actually end up executing course code.
     await externalGraderResults.init();
     await externalGraderDeadLetters.init();
-    await initPrintExportQueue();
+    initPrintExportWorker();
 
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
@@ -2831,9 +2829,9 @@ async function close() {
   // for their final status writes and notifications before closing dependencies.
   await settleShutdownTasks([serverJobs.stop()]);
 
-  // Let print workers finish cleanup while their dependencies are available.
+  // Let print workers finish cleanup before closing the renderer they use.
   await settleShutdownTasks([waitForPrintExportWorkers()]);
-  await settleShutdownTasks([stopPrinting()]);
+  await settleShutdownTasks([closePrintRenderer()]);
 
   await settleShutdownTasks([
     serverJobProgressSocket.close(),

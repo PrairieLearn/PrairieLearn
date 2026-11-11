@@ -16,7 +16,7 @@ import {
   MAX_COVER_FILES,
   MAX_COVER_PAGES,
   MAX_PACKET_PAGES,
-} from './client/print-packet.js';
+} from '../client/printing/print-packet.js';
 
 export class PrintPacketError extends Error {}
 

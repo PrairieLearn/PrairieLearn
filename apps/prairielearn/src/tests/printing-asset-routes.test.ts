@@ -3,11 +3,11 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { getPrintFormUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { createPrintForm } from '../lib/print-forms.js';
 import {
   PRINT_ASSET_TOKEN_HEADER,
   beginPrintAssetAccess,
 } from '../lib/printing/print-asset-access.js';
+import { createPrintForm } from '../lib/printing/print-forms.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';

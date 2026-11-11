@@ -248,9 +248,9 @@ const SKIP_ROUTES = [
   /\.json$/,
   '/pl/request_course/check',
 
-  // The printable preview requires browser-side transformations and pagination.
-  // Accessibility is checked after rendering in e2e/printing/assessment-instance-printing.spec.ts.
-  '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/print/preview',
+  // The print form preview requires browser-side pagination, and its question asset routes
+  // serve files rather than pages.
+  /\/instructor\/assessment\/:assessment_id\/print_form\/:print_form_id\//,
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -421,7 +421,7 @@ const SKIP_ROUTES = [
   // API routes.
   '/pl/course_instance/lookup',
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_preparation/exports/:jobSequenceId.pdf',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_preparation/exports/:printExportId',
 ];
 
 function shouldSkipPath(path: string) {

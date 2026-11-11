@@ -17,9 +17,11 @@ import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { beginPrintExportShutdown, waitForPrintExportWorkers } from '../lib/print-export-jobs.js';
 import { closePrintRenderer } from '../lib/printing/index.js';
-import { stopPrintRequests } from '../lib/printing/print-request.js';
+import {
+  beginPrintExportShutdown,
+  waitForPrintExportWorkers,
+} from '../lib/printing/print-exports.js';
 import * as serverJobs from '../lib/server-jobs.js';
 import * as socketServer from '../lib/socket-server.js';
 import * as freeformServer from '../question-servers/freeform.js';
@@ -108,7 +110,7 @@ export async function after(): Promise<void> {
   // Drain background work before closing the resources it may still use.
   try {
     debug('after(): stop server');
-    await Promise.all([server.stopServer(), stopPrintRequests()]);
+    await server.stopServer();
 
     debug('after(): stop cron');
     await cron.stop();

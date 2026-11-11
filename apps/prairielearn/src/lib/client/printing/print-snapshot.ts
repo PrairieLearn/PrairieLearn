@@ -1,4 +1,4 @@
-import type { DocxSource } from '../printing/docx-browser.js';
+import type { DocxSource } from '../../printing/docx-browser.js';
 
 import { serializePrintDocument } from './print-document.js';
 
