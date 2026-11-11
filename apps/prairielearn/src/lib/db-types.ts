@@ -107,6 +107,9 @@ export const EnumQuestionTypeSchema = z.enum([
 ]);
 export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 
+export const EnumRubricItemShowToStudentsSchema = z.enum(['always', 'when_selected', 'never']);
+export type EnumRubricItemShowToStudents = z.infer<typeof EnumRubricItemShowToStudentsSchema>;
+
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
@@ -1549,6 +1552,7 @@ export const RubricItemSchema = z.object({
   number: z.number(),
   points: z.number(),
   rubric_id: IdSchema,
+  show_to_students: EnumRubricItemShowToStudentsSchema,
 });
 export type RubricItem = z.infer<typeof RubricItemSchema>;
 
