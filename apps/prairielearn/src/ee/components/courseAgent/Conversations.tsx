@@ -696,6 +696,13 @@ function Composer({
           onKeyDown={onKeyDown}
           onPaste={(event) => {
             if (!attachable || event.clipboardData.files.length === 0) return;
+            // Copied cells and rich text carry an image of themselves beside their text; paste the text.
+            if (
+              event.clipboardData.getData('text/plain') &&
+              event.clipboardData.getData('text/html')
+            ) {
+              return;
+            }
             event.preventDefault();
             onAttach([...event.clipboardData.files]);
           }}
