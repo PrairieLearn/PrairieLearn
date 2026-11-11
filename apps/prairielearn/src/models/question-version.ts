@@ -11,7 +11,7 @@ const QuestionVersionAtDateSchema = z.object({
   question_version: QuestionVersionSchema.nullable(),
 });
 
-export class QuestionHistoryUnavailableError extends Error {
+class QuestionHistoryUnavailableError extends Error {
   constructor(question_id: string, at_date: string) {
     super(`Question history is unavailable for question ${question_id} at ${at_date}.`);
     this.name = 'QuestionHistoryUnavailableError';
