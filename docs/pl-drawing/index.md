@@ -1565,8 +1565,6 @@ More information about the grading attributes in the Grading section below.
 
 #### Example implementations
 
-- [demo/drawing/resistorCapacitorCircuit]: Example that includes a capacitor
-
 - [element/drawingGallery]: Image gallery with drawing objects
 
 ### `pl-resistor` element
@@ -1620,8 +1618,6 @@ More information about the grading attributes in the Grading section below.
 
 #### Example implementations
 
-- [demo/drawing/resistorCapacitorCircuit]: Example that includes a resistor
-
 - [element/drawingGallery]: Image gallery with drawing objects
 
 ### `pl-battery` element
@@ -1659,8 +1655,6 @@ More information about the grading attributes in the Grading section below.
 | `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                           |
 
 #### Example implementations
-
-- [demo/drawing/resistorCapacitorCircuit]: Example that includes a battery
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1710,8 +1704,6 @@ More information about the grading attributes in the Grading section below.
 | `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
 
 #### Example implementations
-
-- [demo/drawing/resistorCapacitorCircuit]: Example that includes a switch
 
 - [element/drawingGallery]: Image gallery with drawing objects
 

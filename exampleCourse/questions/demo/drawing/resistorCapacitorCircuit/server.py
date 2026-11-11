@@ -9,48 +9,34 @@ def file(data):
     if data["filename"] != "figure.svg":
         return None
 
-    params_dict = data["params"]
+    params = data["params"]
 
-    def pt(name):
-        # Geometry is stored in pl-drawing pixels; schemdraw element symbols are ~1 unit wide.
-        x, y = params_dict[name]
-        return (x / 30, -y / 30)
+    # Elements created inside the `with` block are added to the drawing automatically,
+    # and each one starts where the previous one ended.
+    with schemdraw.Drawing(show=False) as drawing:
+        battery = elm.BatteryCell().right().length(5).label(params["V_label"])
+        elm.Resistor().right().length(5).label(params["R1_label"])
+        elm.Line().down().length(4)
+        elm.Line().left().length(2)
+        elm.Dot()
+        right_junction = drawing.here
 
-    drawing = schemdraw.Drawing(show=False)
-    # Top edge left half: battery from pA to pB
-    drawing += elm.BatteryCell().at(pt("pA")).to(pt("pB")).label(params_dict["V_label"])
+        # Parallel branch: the capacitor on the bottom, switch B and R2 on top.
+        elm.Line().down().length(1)
+        elm.Capacitor().left().length(6).label(params["C_label"], loc="bottom")
+        elm.Line().up().length(1)
+        elm.Dot()
+        left_junction = drawing.here
+        elm.Line().up().length(1)
+        elm.Switch().right().length(3).label("B")
+        elm.Resistor().right().length(3).label(params["R2_label"])
+        elm.Line().down().to(right_junction)
 
-    # Top edge right half: resistor R1 from pB to pC (same placement as the original)
-    drawing += elm.Resistor().at(pt("pB")).to(pt("pC")).label(params_dict["R1_label"])
+        # Return path through switch A, which has been closed for a long time.
+        elm.Line().at(left_junction).left().length(2)
+        elm.Switch(nc=True).up().toy(battery.start).label("A")
 
-    # Right edge: line pC down to pD
-    drawing += elm.Line().at(pt("pC")).to(pt("pD"))
-
-    # Bottom edge right: line pD -> pE
-    drawing += elm.Line().at(pt("pD")).to(pt("pE"))
-
-    # Bottom edge left: line pF -> pG
-    drawing += elm.Line().at(pt("pF")).to(pt("pG"))
-
-    # Switch A: pA -> pF along the left edge (closed for a long time — normally-closed)
-    drawing += elm.Switch(nc=True).at(pt("pA")).to(pt("pF")).label("A")
-
-    # Branch left side: line pJ -> pK (vertical, passes through junction pG)
-    drawing += elm.Line().at(pt("pJ")).to(pt("pK"))
-
-    # Branch top: resistor R2 from pL to pH (same placement as the original)
-    drawing += elm.Resistor().at(pt("pL")).to(pt("pH")).label(params_dict["R2_label"])
-
-    # Branch right side: line pH -> pI (vertical)
-    drawing += elm.Line().at(pt("pH")).to(pt("pI"))
-
-    # Switch B: pJ -> pL on the branch top (open)
-    drawing += elm.Switch().at(pt("pJ")).to(pt("pL")).label("B")
-
-    # Capacitor: pK -> pI on the branch bottom
-    drawing += elm.Capacitor().at(pt("pK")).to(pt("pI")).label(params_dict["C_label"])
-
-    return drawing.get_imagedata()
+    return drawing.get_imagedata("svg")
 
 
 def generate(data):
@@ -62,52 +48,14 @@ def generate(data):
     C = random.randint(5, 15) * ureg.microfarad
 
     # LaTeX labels for the circuit figure
-    data["params"]["V_label"] = f"$V = {V:~L}$"
-    data["params"]["R1_label"] = f"$R_1 = {R1:~L}$"
-    data["params"]["R2_label"] = f"$R_2 = {R2:~L}$"
-    data["params"]["C_label"] = f"$C = {C:~L}$"
+    data["params"]["V_label"] = f"${V:~L}$"
+    data["params"]["R1_label"] = f"${R1:~L}$"
+    data["params"]["R2_label"] = f"${R2:~L}$"
+    data["params"]["C_label"] = f"${C:~L}$"
 
-    # Magnitudes for pl-variable-output display (per #10712 pattern)
-    data["params"]["V_quantity"] = int(V.magnitude)
-    data["params"]["R1_quantity"] = int(R1.magnitude)
-    data["params"]["R2_quantity"] = int(R2.magnitude)
-    data["params"]["C_quantity"] = int(C.magnitude)
-
-    # Physics: switch B is open, so the capacitor branch is fully disconnected
-    # and carries no current; switch A closed for a long time charges the
-    # capacitor directly across the source:
-    #   Q = C * V
-    # (Matches the original demo's answer key and the stated switch
-    # conditions — see review discussion on #15929.)
+    # With B open, R2 carries no current, so the capacitor is in series with the
+    # battery and R1. After A has been closed for a long time the capacitor is
+    # fully charged, no current flows through R1, and the full battery voltage
+    # appears across C.
     Q = C * V
     data["correct_answers"]["charge"] = str(Q.to_base_units())
-
-    # Circuit geometry (unchanged from the original pl-drawing version)
-    pA = [60, 60]
-    L = 300
-    h = 120
-
-    pB = [pA[0] + L / 2, pA[1]]
-    pC = [pA[0] + L, pA[1]]
-    pD = [pA[0] + L, pA[1] + h]
-    pE = [pA[0] + 4 / 5 * L, pA[1] + h]
-    pF = [pA[0], pA[1] + h]
-    pG = [pA[0] + 1 / 5 * L, pB[1] + h]
-    pH = [pE[0], pE[1] - h / 4]
-    pI = [pE[0], pE[1] + h / 4]
-    pJ = [pG[0], pG[1] - h / 4]
-    pK = [pG[0], pG[1] + h / 4]
-    pL = [pF[0] + L / 2, pG[1] - h / 4]
-
-    data["params"]["pA"] = pA
-    data["params"]["pB"] = pB
-    data["params"]["pC"] = pC
-    data["params"]["pD"] = pD
-    data["params"]["pE"] = pE
-    data["params"]["pF"] = pF
-    data["params"]["pG"] = pG
-    data["params"]["pH"] = pH
-    data["params"]["pI"] = pI
-    data["params"]["pJ"] = pJ
-    data["params"]["pK"] = pK
-    data["params"]["pL"] = pL
