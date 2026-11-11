@@ -29,10 +29,11 @@ function areContainerLogsExpired(workspaceLogs: WorkspaceLog[]): boolean {
     return false;
   }
 
-  if (workspaceLogs.length === 0) return false;
-  const firstLog = workspaceLogs[0];
-  // @ts-expect-error -- We need to mark `workspace_logs.date` as non-nullable.
-  return firstLog.date < config.workspaceLogsExpirationDays * 24 * 60 * 60 * 1000;
+  const firstLogDate = workspaceLogs.at(0)?.date;
+  if (firstLogDate == null) return false;
+
+  const expirationMs = config.workspaceLogsExpirationDays * 24 * 60 * 60 * 1000;
+  return Date.now() - firstLogDate.getTime() > expirationMs;
 }
 
 function areContainerLogsEnabled() {

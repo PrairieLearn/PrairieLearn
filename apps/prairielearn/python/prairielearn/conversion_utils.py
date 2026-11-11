@@ -170,7 +170,8 @@ def to_json(
         The serialized value
 
     Raises:
-        ValueError: If `np_encoding_version` or `df_encoding_version` is invalid.
+        ValueError: If `np_encoding_version` or `df_encoding_version` is invalid, or
+            the value is or contains a SymPy tuple.
     """
     if np_encoding_version not in {1, 2}:
         raise ValueError(f"Invalid np_encoding {np_encoding_version}, must be 1 or 2.")
@@ -193,6 +194,8 @@ def to_json(
                 "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
+    elif isinstance(v, sympy.Tuple):
+        return sympy_to_json(v)
     elif isinstance(v, sympy.Set):
         return sympy_to_json(v, allow_sets=True)
     elif isinstance(v, sympy.Expr):

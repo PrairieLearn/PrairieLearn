@@ -1575,7 +1575,7 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
 
 
 def sympy_to_json(
-    a: sympy.Expr | sympy.Set,
+    a: sympy.Expr | sympy.Set | sympy.Tuple,
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
@@ -1588,7 +1588,13 @@ def sympy_to_json(
 
     Raises:
         HasSetNotationError: If the expression is a set and `allow_sets` is `False`.
+        ValueError: If the expression contains a SymPy tuple.
     """
+    if a.has(sympy.Tuple):
+        raise ValueError(
+            "SymPy Tuple values are not supported by PrairieLearn serialization. Use separate inputs for point coordinates."
+        )
+
     if isinstance(a, sympy.Set) and not allow_sets:
         raise HasSetNotationError
 

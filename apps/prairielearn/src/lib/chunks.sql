@@ -112,18 +112,36 @@ FROM
 LIMIT
   100;
 
--- BLOCK delete_chunk_revisions
--- Remove every revision of each replaced identity, so this works whether or
--- not the one-row-per-chunk index still exists.
-DELETE FROM chunks USING chunks AS replaced
+-- BLOCK lock_course_for_chunk_publication
+SELECT
+  id
+FROM
+  courses
 WHERE
-  replaced.id = ANY ($chunk_ids::bigint[])
-  AND replaced.course_id = $course_id
-  AND chunks.course_id = replaced.course_id
-  AND chunks.type = replaced.type
-  AND coalesce(chunks.question_id, -1) = coalesce(replaced.question_id, -1)
-  AND coalesce(chunks.course_instance_id, -1) = coalesce(replaced.course_instance_id, -1)
-  AND coalesce(chunks.assessment_id, -1) = coalesce(replaced.assessment_id, -1);
+  id = $course_id
+FOR NO KEY UPDATE;
+
+-- BLOCK supersede_chunks
+WITH
+  chunk_publication AS (
+    SELECT
+      clock_timestamp() AS created_at
+  ),
+  superseded AS (
+    UPDATE chunks
+    SET
+      superseded_at = chunk_publication.created_at
+    FROM
+      chunk_publication
+    WHERE
+      course_id = $course_id
+      AND id = ANY ($chunk_ids::bigint[])
+      AND superseded_at IS NULL
+  )
+SELECT
+  created_at::text
+FROM
+  chunk_publication;
 
 -- BLOCK insert_chunks
 INSERT INTO
@@ -146,7 +164,7 @@ SELECT
   ci.id AS course_instance_id,
   a.id AS assessment_id,
   (chunk ->> 'uuid')::uuid,
-  now(),
+  $created_at::timestamptz,
   $commit_hash,
   (chunk ->> 'sizeCompressed')::bigint,
   (chunk ->> 'sizeUncompressed')::bigint
