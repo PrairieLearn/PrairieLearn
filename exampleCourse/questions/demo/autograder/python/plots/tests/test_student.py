@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
-from pytest_prairielearn_grader.assertions import assert_true
+from pytest_prairielearn_grader.assertions import assert_plot_equal
 from pytest_prairielearn_grader.fixture import FeedbackFixture, StudentFixture
 from pytest_prairielearn_grader.utils import GradingOutputLevel
 
@@ -9,31 +9,18 @@ from pytest_prairielearn_grader.utils import GradingOutputLevel
 sandbox_timeout = 15
 
 
+def reference_plot() -> Figure:
+    figure = Figure()
+    axes = figure.subplots()
+    x = np.arange(0, 11)
+    axes.semilogy(x, np.exp(x))
+    return figure
+
+
 @pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="plot", points=1)
 def test_plot(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
-    figure = sandbox.query("plot")
-    assert_true(
-        isinstance(figure, Figure),
-        msg="plot should be a Matplotlib plot, such as plt.gca()",
-    )
-    feedback.add_image(figure, label="Your plot")
-    assert_true(len(figure.axes) == 1, msg="plot should have exactly one set of axes")
-    axes = figure.axes[0]
-
-    assert_true(
-        axes.get_xscale() == "linear" and axes.get_yscale() == "log",
-        msg="plot does not have the correct scale for its axes",
-    )
-
-    lines = axes.get_lines()
-    assert_true(len(lines) == 1, msg=f"plot has {len(lines)} lines, but should have 1")
-
-    x, y = (np.asarray(data, dtype=float) for data in lines[0].get_data())
-    expected_x = np.arange(0, 11)
-    assert_true(
-        x.shape == expected_x.shape
-        and np.allclose(x, expected_x)
-        and np.allclose(y, np.exp(expected_x)),
-        msg="plot is inaccurate",
-    )
+    plot = sandbox.query("plot")
+    if isinstance(plot, Figure):
+        feedback.add_image(plot, label="Your plot")
+    assert_plot_equal(plot, reference_plot())

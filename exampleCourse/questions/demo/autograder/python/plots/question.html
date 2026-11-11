@@ -1,7 +1,7 @@
 <pl-question-panel>
     <p>
         <i>
-            This question shows how the Python autograder checks Matplotlib plots. Student code draws the plot as usual and saves its axes in a variable. The test reads that variable with <code>sandbox.query("plot")</code> and receives the plot as a Matplotlib figure, so it can check the axis scales and line data directly. It also passes the figure to <code>feedback.add_image</code>, which shows the plot with the grading results.
+            This question shows how the Python autograder checks Matplotlib plots. Student code draws the plot as usual and saves its axes in a variable. The test reads that variable with <code>sandbox.query("plot")</code> and receives the plot as a Matplotlib figure. It compares that figure with a reference plot using <code>assert_plot_equal</code>, which checks the axis scales and line data. It also passes the figure to <code>feedback.add_image</code>, which shows the plot with the grading results.
         </i>
     </p>
     <p>
