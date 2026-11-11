@@ -76,8 +76,7 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
-import { stopPrinting } from './lib/printing/index.js';
-import { initPrintRequests } from './lib/printing/print-request.js';
+import { closePrintRenderer } from './lib/printing/index.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -139,7 +138,6 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  * @returns The express "app" object that was created.
  */
 export async function initExpress(): Promise<Express> {
-  initPrintRequests();
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
   app.set('trust proxy', config.trustProxy);
@@ -2803,7 +2801,7 @@ async function close() {
   // Stop polling and scheduled work and finish pending workspace startups while
   // their shared dependencies are still available.
   await settleShutdownTasks([
-    stopPrinting(),
+    closePrintRenderer(),
     externalGraderDeadLetters.stop(),
     externalGraderResults.stop(),
     cron.stop(),

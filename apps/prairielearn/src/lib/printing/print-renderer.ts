@@ -468,8 +468,9 @@ export class PrintRenderer {
       clearDeadline();
       assetController.abort();
       const openContext = state.context;
-      // A context created after cancellation may still be pending, so discard its browser.
-      if (signal.aborted && !openContext) this.discardBrowser(browser);
+      // A context still being created at the deadline may never arrive, so discard its browser.
+      // Other aborts leave the shared browser alone: render() closes a late context itself.
+      if (deadlineController.signal.aborted && !openContext) this.discardBrowser(browser);
       if (openContext) {
         await this.discardContext(browser, openContext);
       }

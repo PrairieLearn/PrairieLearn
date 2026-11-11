@@ -812,7 +812,7 @@ describe('PrintRenderer', () => {
     expect(harness.browser.newContext).toHaveBeenCalledTimes(2);
   });
 
-  it('closes a context that finishes opening after cancellation', async () => {
+  it('closes a context that finishes opening after cancellation and keeps the browser', async () => {
     const contextStarted = createGate();
     const contextFinished = createGate();
     const controller = new AbortController();
@@ -833,13 +833,13 @@ describe('PrintRenderer', () => {
 
     try {
       expect(await failure).toMatchObject({ message: 'Request aborted' });
-      expect(harness.browser.close).toHaveBeenCalledOnce();
     } finally {
       contextFinished.open();
     }
     await vi.waitFor(() => expect(harness.contexts[0].close).toHaveBeenCalledOnce());
     expect(harness.contexts[0].newPage).not.toHaveBeenCalled();
     expect(harness.getOpenContexts()).toBe(0);
+    expect(harness.browser.close).not.toHaveBeenCalled();
   });
 
   it('discards the browser when closing a context fails', async () => {

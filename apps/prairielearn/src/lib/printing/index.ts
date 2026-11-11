@@ -15,7 +15,6 @@ import type { ResLocalsForPage } from '../res-locals.js';
 import { combineQuestionHeaders } from './combine-question-headers.js';
 import { namespaceQuestionHtmls } from './namespace-question-htmls.js';
 import { PrintRenderer } from './print-renderer.js';
-import { stopPrintRequests } from './print-request.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import type { QuestionBlockSize } from './question-block-size.js';
 import { RenderQueue } from './render-queue.js';
@@ -51,15 +50,9 @@ export function getPrintRenderer(): PrintRenderer {
 }
 
 export async function closePrintRenderer(): Promise<void> {
-  questionPreparationQueue.rejectAll(new Error('Print preparation is shutting down'));
   const renderer = printRenderer;
   printRenderer = null;
   await renderer?.close();
-}
-
-export async function stopPrinting(): Promise<void> {
-  await stopPrintRequests();
-  await closePrintRenderer();
 }
 
 /** Export only when a remote browser or the matching local Chromium build is installed. */
@@ -235,7 +228,7 @@ export async function validateQuestionsForPrinting(
 }
 
 export interface RenderPrintFormQuestionsOptions {
-  /** Shared request cancellation for queueing and preparing questions. */
+  /** Stops queueing and preparing questions once the request is aborted. */
   signal: AbortSignal;
   defaultQuestionBlockSize?: QuestionBlockSize;
   questionBlockSizeOverrides?: ReadonlyMap<string, QuestionBlockSize>;
@@ -258,9 +251,7 @@ async function renderPrintFormQuestionsUnbounded(
   extraHeadersHtml: string;
   maxPoints: number;
 }> {
-  signal.throwIfAborted();
   const questions = await selectPrintFormQuestions(resLocals.print_form.id);
-  signal.throwIfAborted();
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
   const includedQuestions = selectIncludedQuestions(questions, excludedQuestionNumbers);
   const extraHeaderHtmls: string[] = [];
@@ -318,7 +309,6 @@ async function renderPrintFormQuestionsUnbounded(
           issuesLoadExtraData: false,
         },
       );
-      signal.throwIfAborted();
 
       if (renderState.variant.broken_at != null) {
         questionResults.push({
@@ -340,7 +330,6 @@ async function renderPrintFormQuestionsUnbounded(
         printableQuestion.question.grading_method === 'Manual' &&
         answerHtml.trim() === ''
       ) {
-        signal.throwIfAborted();
         const manualGradingRenderState = await getAndRenderVariant(
           renderState.variant.id,
           null,
@@ -355,7 +344,6 @@ async function renderPrintFormQuestionsUnbounded(
             issuesLoadExtraData: false,
           },
         );
-        signal.throwIfAborted();
         answerHtml = manualGradingRenderState.answerHtml;
         extraHeadersHtml += `\n${manualGradingRenderState.extraHeadersHtml}`;
       }
@@ -397,7 +385,6 @@ async function renderPrintFormQuestionsUnbounded(
       questionResults.push({ ...base, status: 'rendered' });
       maxPoints += printableQuestion.print_form_question.max_points;
     } catch (error) {
-      signal.throwIfAborted();
       if (!(error instanceof FatalQuestionRenderError)) throw error;
       questionResults.push({
         ...base,
@@ -410,7 +397,6 @@ async function renderPrintFormQuestionsUnbounded(
     }
   }
 
-  signal.throwIfAborted();
   return {
     questionHtmls: await namespaceQuestionHtmls(renderedQuestions),
     questionResults,
@@ -426,7 +412,6 @@ export async function renderPrintFormQuestions(
 ) {
   return await questionPreparationQueue.run(
     async () => await renderPrintFormQuestionsUnbounded(resLocals, options),
-    // The request signal bounds both queueing and execution with the same deadline.
     0,
     'print preview',
     options.signal,

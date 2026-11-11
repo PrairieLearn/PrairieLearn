@@ -25,16 +25,13 @@ export async function createPrintForm({
   courseInstance,
   userId,
   authnUserId,
-  signal,
 }: {
   assessment: Assessment;
   course: Course;
   courseInstance: CourseInstance;
   userId: string;
   authnUserId: string;
-  signal?: AbortSignal;
 }) {
-  signal?.throwIfAborted();
   const selectedQuestions = await queryRows(
     sql.select_questions_for_new_form,
     { assessment_id: assessment.id },
@@ -51,7 +48,6 @@ export async function createPrintForm({
 
   const questions: Omit<PrintFormQuestion, 'id' | 'print_form_id'>[] = [];
   for (const selected of selectedQuestions) {
-    signal?.throwIfAborted();
     const variant = await ensureVariant({
       question_id: selected.question.id,
       instance_question_id: null,
@@ -74,10 +70,8 @@ export async function createPrintForm({
   }
 
   return await runInTransactionAsync(async () => {
-    signal?.throwIfAborted();
     const form = await insertPrintForm({ assessmentId: assessment.id, userId, authnUserId });
     await insertPrintFormQuestions({ printFormId: form.id, questions });
-    signal?.throwIfAborted();
     return form;
   });
 }

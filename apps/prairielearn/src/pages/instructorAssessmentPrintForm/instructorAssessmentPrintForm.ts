@@ -43,7 +43,7 @@ import {
   buildPrintableCover,
   getPrintFooterLabel,
 } from '../../lib/printing/print-cover.js';
-import { withPrintRequest } from '../../lib/printing/print-request.js';
+import { startPrintRequest } from '../../lib/printing/print-request.js';
 import {
   QUESTION_BLOCK_SIZES,
   type QuestionBlockSize,
@@ -228,107 +228,103 @@ router.use('/question/:print_form_question_id(\\d+)', createPrintFormQuestionAss
 router.get(
   '/preview',
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    await withPrintRequest(res, async ({ signal, remainingTimeoutMs, throwIfAborted }) => {
-      const query = parseRequestQuery(req, DocumentQuerySchema);
-      const layout = parsePrintLayout(query);
-      const { document } = query;
+    const { signal, remainingTimeoutMs } = startPrintRequest(res);
+    const query = parseRequestQuery(req, DocumentQuerySchema);
+    const layout = parsePrintLayout(query);
+    const { document } = query;
 
-      if (!isBrowserRenderingAvailable()) {
-        throw new HttpStatusError(
-          404,
-          'Printable document rendering is not configured on this server',
-        );
-      }
+    if (!isBrowserRenderingAvailable()) {
+      throw new HttpStatusError(
+        404,
+        'Printable document rendering is not configured on this server',
+      );
+    }
 
-      res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
-      const printingResult = await renderPrintFormQuestions(res.locals, {
-        signal,
-        defaultQuestionBlockSize: layout.blockSize ?? 'auto',
-        questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
-        excludedQuestionNumbers: layout.excludedQuestionNumbers,
-        document,
-      });
-      throwIfAborted();
-      if (printingResult.questionHtmls.length === 0) {
-        throw new HttpStatusError(
-          422,
-          'No questions could be rendered for this printable assessment',
-        );
-      }
-      const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-      const warnings = describeOmittedQuestions(printingResult.questionResults);
-
-      const rawHtml = InstructorAssessmentPrintForm({
-        resLocals: res.locals,
-        paperSize: layout.paperSize,
-        includeCoverPage: layout.includeCoverPage,
-        includeGradingTable: layout.includeGradingTable,
-        includeHonorCode:
-          layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
-        document,
-        formLabel: layout.formLabel,
-        identityFields: layout.identityFields,
-        questionHtmls: printingResult.questionHtmls,
-        omittedQuestionCount: warnings.length,
-        warnings,
-        extraHeadersHtml: printingResult.extraHeadersHtml,
-        maxPoints: printingResult.maxPoints,
-        assessmentTextHtml,
-        honorCodeHtml,
-      }).toString();
-      const localPreviewUrl = new URL(
-        req.originalUrl,
-        `${config.serverType}://localhost:${config.serverPort}`,
-      );
-      throwIfAborted();
-      const { html, source } = await getPrintRenderer().render<{
-        html: string;
-        source: DocxSource;
-      }>(
-        {
-          url: localPreviewUrl.href,
-          browserOrigin: config.serverCanonicalHost ?? undefined,
-          html: rawHtml,
-          assetScope: printAssetScope(
-            res.locals,
-            printingResult.questionResults
-              .filter((result) => result.status === 'rendered')
-              .map(({ printFormQuestionId }) => printFormQuestionId),
-          ),
-          runScripts: true,
-          signal,
-          timeoutMs: remainingTimeoutMs(),
-        },
-        {
-          label: 'preview',
-          produce: async (page) => {
-            const capturedSource = await page.evaluate(() =>
-              Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__'),
-            );
-            if (!capturedSource) {
-              throw new Error('The preview did not capture editable question content.');
-            }
-            const source = PrintSnapshotSchema.shape.source.parse(capturedSource);
-            return { html: await page.locator(':root').evaluate(serializePrintDocument), source };
-          },
-        },
-      );
-      throwIfAborted();
-      res.setHeader('Cache-Control', 'private, no-store');
-      res.setHeader(
-        'Content-Security-Policy',
-        "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
-      );
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      res.send(
-        html.replace(
-          '</head>',
-          `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(source).replaceAll('<', '\\u003c')}</script></head>`,
-        ),
-      );
+    const printingResult = await renderPrintFormQuestions(res.locals, {
+      signal,
+      defaultQuestionBlockSize: layout.blockSize ?? 'auto',
+      questionBlockSizeOverrides: layout.questionBlockSizeOverrides,
+      excludedQuestionNumbers: layout.excludedQuestionNumbers,
+      document,
     });
+    if (printingResult.questionHtmls.length === 0) {
+      throw new HttpStatusError(
+        422,
+        'No questions could be rendered for this printable assessment',
+      );
+    }
+    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const warnings = describeOmittedQuestions(printingResult.questionResults);
+
+    const rawHtml = InstructorAssessmentPrintForm({
+      resLocals: res.locals,
+      paperSize: layout.paperSize,
+      includeCoverPage: layout.includeCoverPage,
+      includeGradingTable: layout.includeGradingTable,
+      includeHonorCode:
+        layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+      document,
+      formLabel: layout.formLabel,
+      identityFields: layout.identityFields,
+      questionHtmls: printingResult.questionHtmls,
+      omittedQuestionCount: warnings.length,
+      warnings,
+      extraHeadersHtml: printingResult.extraHeadersHtml,
+      maxPoints: printingResult.maxPoints,
+      assessmentTextHtml,
+      honorCodeHtml,
+    }).toString();
+    const localPreviewUrl = new URL(
+      req.originalUrl,
+      `${config.serverType}://localhost:${config.serverPort}`,
+    );
+    const { html, source } = await getPrintRenderer().render<{
+      html: string;
+      source: DocxSource;
+    }>(
+      {
+        url: localPreviewUrl.href,
+        browserOrigin: config.serverCanonicalHost ?? undefined,
+        html: rawHtml,
+        assetScope: printAssetScope(
+          res.locals,
+          printingResult.questionResults
+            .filter((result) => result.status === 'rendered')
+            .map(({ printFormQuestionId }) => printFormQuestionId),
+        ),
+        runScripts: true,
+        signal,
+        timeoutMs: remainingTimeoutMs(),
+      },
+      {
+        label: 'preview',
+        produce: async (page) => {
+          const capturedSource = await page.evaluate(() =>
+            Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__'),
+          );
+          if (!capturedSource) {
+            throw new Error('The preview did not capture editable question content.');
+          }
+          const source = PrintSnapshotSchema.shape.source.parse(capturedSource);
+          return { html: await page.locator(':root').evaluate(serializePrintDocument), source };
+        },
+      },
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
+    );
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.send(
+      html.replace(
+        '</head>',
+        `<script id="pl-print-docx-source" type="application/json">${JSON.stringify(source).replaceAll('<', '\\u003c')}</script></head>`,
+      ),
+    );
   }),
 );
 
@@ -336,147 +332,141 @@ router.post(
   '/docx',
   parseDocxBody,
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    await withPrintRequest(res, async ({ signal, remainingTimeoutMs, throwIfAborted }) => {
-      const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
-      const layout = parsePrintLayout(query);
-      const { document } = query;
+    const { signal, remainingTimeoutMs } = startPrintRequest(res);
+    const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
+    const layout = parsePrintLayout(query);
+    const { document } = query;
 
-      if (!isBrowserRenderingAvailable()) {
-        throw new HttpStatusError(
-          404,
-          'Printable document rendering is not configured on this server',
-        );
-      }
+    if (!isBrowserRenderingAvailable()) {
+      throw new HttpStatusError(
+        404,
+        'Printable document rendering is not configured on this server',
+      );
+    }
 
-      await validateQuestionsForPrinting(
-        res.locals.print_form.id,
-        layout.questionBlockSizeOverrides,
-        layout.excludedQuestionNumbers,
-      );
-      throwIfAborted();
-      const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-      const footerLabel = getPrintFooterLabel({
-        document,
-        formId: res.locals.print_form.id,
-        formLabel: layout.formLabel,
-      });
-      const makeCover = (
-        questionCount: number,
-        maxPoints: number,
-        gradingTable?: z.infer<typeof PrintGradingTableSchema>,
-      ) =>
-        buildPrintableCover({
-          resLocals: res.locals,
-          document,
-          formLabel: layout.formLabel,
-          identityFields: layout.identityFields,
-          questionCount,
-          maxPoints,
-          assessmentTextHtml,
-          honorCodeHtml,
-          includeHonorCode:
-            layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
-          gradingTable,
-        });
-
-      const $ = load(snapshot.html);
-      const hasExecutableAttributes =
-        $('*').filter((_index, node) =>
-          'attribs' in node
-            ? Object.entries(node.attribs).some(
-                ([name, value]) =>
-                  /^on/i.test(name) || name === 'srcdoc' || /^\s*javascript:/i.test(String(value)),
-              )
-            : false,
-        ).length > 0;
-      if (
-        $('script, iframe, object, embed, base, meta[http-equiv="refresh"]').length > 0 ||
-        hasExecutableAttributes
-      ) {
-        throw new HttpStatusError(400, 'The printable pages contain executable content.');
-      }
-      const localPreviewUrl = new URL(
-        `${req.baseUrl}/preview`,
-        `${config.serverType}://localhost:${config.serverPort}`,
-      );
-      const output = createDocxOutput({
-        source: snapshot.source,
-        cover: layout.includeCoverPage
-          ? (pageDataset) =>
-              makeCover(
-                Number(pageDataset.printQuestionCount),
-                Number(pageDataset.printMaxPoints),
-                pageDataset.printGradingTable
-                  ? PrintGradingTableSchema.parse(JSON.parse(pageDataset.printGradingTable))
-                  : undefined,
-              )
-          : undefined,
-        footerLabel,
-      });
-      const printFormQuestionIds = await getPrintableFormQuestionIds(
-        res.locals.print_form.id,
-        layout.excludedQuestionNumbers,
-      );
-      throwIfAborted();
-      const contents = await getPrintRenderer().render(
-        {
-          url: localPreviewUrl.href,
-          browserOrigin: config.serverCanonicalHost ?? undefined,
-          html: snapshot.html,
-          assetScope: printAssetScope(res.locals, printFormQuestionIds),
-          signal,
-          timeoutMs: remainingTimeoutMs(),
-        },
-        {
-          ...output,
-          produce: async (page) => {
-            const identity = await page.evaluate(() => ({
-              formId: globalThis.document.documentElement.dataset.printFormId,
-              document: globalThis.document.documentElement.dataset.printDocument,
-              formLabel: globalThis.document.documentElement.dataset.printFormLabel,
-              paperSize: globalThis.document.documentElement.dataset.printPaperSize,
-            }));
-            throwIfAborted();
-            if (
-              identity.formId !== res.locals.print_form.id ||
-              identity.document !== document ||
-              identity.formLabel !== (layout.formLabel ?? '') ||
-              identity.paperSize !== layout.paperSize
-            ) {
-              throw new HttpStatusError(
-                400,
-                'The preview does not match the requested form, document type, form label, or paper size. Generate a new preview before exporting.',
-              );
-            }
-            await validatePrintDocument(page);
-            throwIfAborted();
-            return await output.produce(page);
-          },
-        },
-      );
-      throwIfAborted();
-
-      const filename =
-        assessmentFilenamePrefix(
-          res.locals.assessment,
-          res.locals.assessment_set,
-          res.locals.course_instance,
-          res.locals.course,
-        ) +
-        sanitizeString(
-          `form_${res.locals.print_form.id}_${layout.paperSize.toLowerCase()}${
-            document === 'answer_key' ? '_answer_key' : ''
-          }`,
-        ) +
-        '.docx';
-      res.setHeader('Cache-Control', 'private, no-store');
-      res.setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      );
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.send(contents);
+    await validateQuestionsForPrinting(
+      res.locals.print_form.id,
+      layout.questionBlockSizeOverrides,
+      layout.excludedQuestionNumbers,
+    );
+    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const footerLabel = getPrintFooterLabel({
+      document,
+      formId: res.locals.print_form.id,
+      formLabel: layout.formLabel,
     });
+    const makeCover = (
+      questionCount: number,
+      maxPoints: number,
+      gradingTable?: z.infer<typeof PrintGradingTableSchema>,
+    ) =>
+      buildPrintableCover({
+        resLocals: res.locals,
+        document,
+        formLabel: layout.formLabel,
+        identityFields: layout.identityFields,
+        questionCount,
+        maxPoints,
+        assessmentTextHtml,
+        honorCodeHtml,
+        includeHonorCode:
+          layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
+        gradingTable,
+      });
+
+    const $ = load(snapshot.html);
+    const hasExecutableAttributes =
+      $('*').filter((_index, node) =>
+        'attribs' in node
+          ? Object.entries(node.attribs).some(
+              ([name, value]) =>
+                /^on/i.test(name) || name === 'srcdoc' || /^\s*javascript:/i.test(String(value)),
+            )
+          : false,
+      ).length > 0;
+    if (
+      $('script, iframe, object, embed, base, meta[http-equiv="refresh"]').length > 0 ||
+      hasExecutableAttributes
+    ) {
+      throw new HttpStatusError(400, 'The printable pages contain executable content.');
+    }
+    const localPreviewUrl = new URL(
+      `${req.baseUrl}/preview`,
+      `${config.serverType}://localhost:${config.serverPort}`,
+    );
+    const output = createDocxOutput({
+      source: snapshot.source,
+      cover: layout.includeCoverPage
+        ? (pageDataset) =>
+            makeCover(
+              Number(pageDataset.printQuestionCount),
+              Number(pageDataset.printMaxPoints),
+              pageDataset.printGradingTable
+                ? PrintGradingTableSchema.parse(JSON.parse(pageDataset.printGradingTable))
+                : undefined,
+            )
+        : undefined,
+      footerLabel,
+    });
+    const printFormQuestionIds = await getPrintableFormQuestionIds(
+      res.locals.print_form.id,
+      layout.excludedQuestionNumbers,
+    );
+    const contents = await getPrintRenderer().render(
+      {
+        url: localPreviewUrl.href,
+        browserOrigin: config.serverCanonicalHost ?? undefined,
+        html: snapshot.html,
+        assetScope: printAssetScope(res.locals, printFormQuestionIds),
+        signal,
+        timeoutMs: remainingTimeoutMs(),
+      },
+      {
+        ...output,
+        produce: async (page) => {
+          const identity = await page.evaluate(() => ({
+            formId: globalThis.document.documentElement.dataset.printFormId,
+            document: globalThis.document.documentElement.dataset.printDocument,
+            formLabel: globalThis.document.documentElement.dataset.printFormLabel,
+            paperSize: globalThis.document.documentElement.dataset.printPaperSize,
+          }));
+          if (
+            identity.formId !== res.locals.print_form.id ||
+            identity.document !== document ||
+            identity.formLabel !== (layout.formLabel ?? '') ||
+            identity.paperSize !== layout.paperSize
+          ) {
+            throw new HttpStatusError(
+              400,
+              'The preview does not match the requested form, document type, form label, or paper size. Generate a new preview before exporting.',
+            );
+          }
+          await validatePrintDocument(page);
+          return await output.produce(page);
+        },
+      },
+    );
+
+    const filename =
+      assessmentFilenamePrefix(
+        res.locals.assessment,
+        res.locals.assessment_set,
+        res.locals.course_instance,
+        res.locals.course,
+      ) +
+      sanitizeString(
+        `form_${res.locals.print_form.id}_${layout.paperSize.toLowerCase()}${
+          document === 'answer_key' ? '_answer_key' : ''
+        }`,
+      ) +
+      '.docx';
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(contents);
   }),
 );
 
