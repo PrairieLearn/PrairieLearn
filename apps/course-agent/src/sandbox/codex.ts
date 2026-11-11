@@ -2,7 +2,7 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import type { ToolCall } from '@prairielearn/course-agent-types';
+import { COURSE_DIR, type ToolCall } from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
@@ -16,7 +16,7 @@ import type { TurnStartParams } from '../../generated/types/v2/TurnStartParams.j
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
-import { COURSE_DIR, MESSAGE_TOOL_CHARS, toolCallFromItem } from './tool-calls.js';
+import { MESSAGE_TOOL_CHARS, toolCallFromItem } from './tool-calls.js';
 
 // Validate only fields consumed by this adapter; Codex may return additional data.
 const EmptyResult = z.object({});
@@ -435,6 +435,6 @@ const requestChangesTool: DynamicToolSpec = {
   type: 'function',
   name: 'request_changes',
   description:
-    'Submit the current course edits for instructor review. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
+    'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 };

@@ -49,6 +49,7 @@ import {
   turnMarker,
 } from './catch-up.js';
 import { buildInstructions } from './instructions.js';
+import { generateTitle } from './title.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
 // without traffic, including idle chats and long silent turns.
@@ -101,6 +102,8 @@ interface RecordData {
   review: ReviewRecord | null;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
+  /** Absent in records saved before titles were generated. */
+  title?: string | null;
 }
 
 // Destruction is a private phase because the replacement checkpoint is committed
@@ -140,6 +143,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     deadlineAt: null,
     sandboxLost: false,
     reviewId: null,
+    title: null,
   };
 
   private _record: ConversationRecord | null = null;
@@ -186,6 +190,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       deadlineAt: this.record.deadline?.at ?? null,
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
+      title: this.record.title ?? null,
     };
   }
 
@@ -268,6 +273,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: false,
       threadMayBeBehind: false,
       submittedMessageId: null,
+      title: null,
     });
   }
 
@@ -437,6 +443,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
+    if (message && earlier.length === 0 && !this.record.title) this.startTitle(message);
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const input: TurnInput = {
@@ -564,6 +571,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       })
       .finally(() => options.abortSignal?.removeEventListener('abort', abort));
     return createUIMessageStreamResponse({ stream: execution.stream });
+  }
+
+  /** Runs alongside sandbox startup, so the title adds no latency to the first turn. */
+  private startTitle(message: UIMessage) {
+    const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
+    if (!text.trim()) return;
+    void this.keepAliveWhile(async () => {
+      const title = await generateTitle({
+        apiKey: this.env.OPENAI_API_KEY,
+        model: this.record.config.model,
+        message: text,
+      });
+      if (title) this.setRecord({ ...this.record, title });
+    }).catch((error: unknown) => this.reportError(error));
   }
 
   /** Which attachments are images, or null if any upload is missing. */
@@ -777,7 +798,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.native?.emit({ type: 'data-review', id, data: { reviewId: id } });
     return {
       success: true,
-      text: 'Submitted the changes for instructor review. Later edits are not included. The decision arrives in a later message.',
+      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. If you have not yet described the changes for staff, do so briefly now. Then end your turn without making further edits.',
     };
   }
 

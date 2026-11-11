@@ -12,10 +12,12 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
+import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 import { z } from 'zod';
 
@@ -47,6 +49,7 @@ import { ConversationStats } from './ConversationStats.js';
 import { RequestChangesCard, ReviewFeedback } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
+import { courseFileLinkTransform } from './courseFileLinks.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -299,6 +302,23 @@ function Chat({
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const setTitle = useMutation({
+    ...trpc.courseAgent.setTitle.mutationOptions(),
+    onSuccess: async (updated) => {
+      // A list fetch that started before the save would otherwise restore the old title.
+      await queryClient.cancelQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+      queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) =>
+        current?.map((conversation) => (conversation.id === updated.id ? updated : conversation)),
+      );
+    },
+    // The next state update retries the save.
+    onError: () => {
+      savingTitleRef.current = null;
+    },
+  });
+  // State updates repeat while a save is in flight, so save each generated title once.
+  const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
   const [connectionFailed, setConnectionFailed] = useState(false);
@@ -313,6 +333,14 @@ function Chat({
     onStateUpdate: (state) => {
       setLifecycle(state);
       if (state.status !== 'offline') setAwaitingStart(false);
+      // The agent service generates the title; the owner's browser saves it to the list.
+      const savedTitle = queryClient
+        .getQueryData(trpc.courseAgent.list.queryKey())
+        ?.find((conversation) => conversation.id === conversationId)?.title;
+      if (state.title && state.title !== savedTitle && state.title !== savingTitleRef.current) {
+        savingTitleRef.current = state.title;
+        setTitle.mutate({ conversationId, title: state.title });
+      }
     },
     onOpen: () => setConnectionFailed(false),
     onError: () => setConnectionFailed(true),
@@ -351,7 +379,6 @@ function Chat({
   // A new conversation's first attachments start in the composer, where their uploads show progress.
   const drafts = useDraftAttachments(initialMessage?.attachments);
   const [sending, setSending] = useState(false);
-  const queryClient = useQueryClient();
   const reviewInput = lifecycle?.reviewId
     ? { conversationId, reviewId: lifecycle.reviewId }
     : skipToken;
@@ -454,6 +481,8 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  // A stable transform lets memoized Markdown blocks skip re-rendering.
+  const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
@@ -495,6 +524,7 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
+              linkTransform={linkTransform}
               onToolCallExpand={stickToBottom.stopScroll}
             />
           ))}
@@ -741,6 +771,7 @@ function Message({
   live,
   conversationId,
   awaitingReviewId,
+  linkTransform,
   onToolCallExpand,
 }: {
   message: UIMessage;
@@ -749,6 +780,7 @@ function Message({
   conversationId: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
+  linkTransform: UrlTransform;
   /** Opening a tool call must not scroll it out from under the pointer. */
   onToolCallExpand: () => void;
 }) {
@@ -806,7 +838,9 @@ function Message({
       }
       const { key, part } = segment;
       if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) return null;
-      if (part.type === 'text') return <TextPart key={key} part={part} />;
+      if (part.type === 'text') {
+        return <TextPart key={key} part={part} urlTransform={linkTransform} />;
+      }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
       if (part.type === 'data-turn') {
         const { tag } = TurnPartSchema.parse(part.data);
