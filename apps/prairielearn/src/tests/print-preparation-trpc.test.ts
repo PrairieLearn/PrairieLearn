@@ -13,18 +13,15 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { withResolvers } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { getFromS3 } from '../lib/aws.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { DEFAULT_PRINT_SETTINGS, printLayoutSearch } from '../lib/client/print-preparation.js';
 import { getAssessmentTrpcUrl, getPrintFormUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { getFileStoreS3Bucket } from '../lib/file-store.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as printExportRender from '../lib/print-export-render.js';
 import {
   beginPrintExportShutdown,
-  cleanExpiredPrintExports,
   initPrintExportWorker,
   processQueuedPrintExports,
   queuePrintExport,
@@ -499,14 +496,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
       ).status,
     ).toBe(404);
     await execute(sql.age_print_export, { print_export_id: printExportId });
-    await cleanExpiredPrintExports();
-    await expect(
-      client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).rejects.toThrow('NOT_FOUND');
+    expect(
+      await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
+    ).toMatchObject({ status: 'expired', downloadUrl: null });
     expect((await fetch(url)).status).toBe(404);
-    const bucket = getFileStoreS3Bucket();
-    await expect(getFromS3(bucket, printExport.input_key, true)).rejects.toThrow();
-    await expect(getFromS3(bucket, printExport.output_key!, true)).rejects.toThrow();
   });
 
   test('queues a Word export with its signed source and streams it only to its owner', async () => {
@@ -651,10 +644,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
       ).status,
     ).toBe(404);
     await execute(sql.age_print_export, { print_export_id: printExportId });
-    await cleanExpiredPrintExports();
-    await expect(api.printableAssessmentExport.status.query({ printExportId })).rejects.toThrow(
-      'NOT_FOUND',
-    );
+    expect(await api.printableAssessmentExport.status.query({ printExportId })).toMatchObject({
+      status: 'expired',
+      downloadUrl: null,
+    });
     expect((await fetch(`${siteUrl}${downloadUrl}`)).status).toBe(404);
   });
 

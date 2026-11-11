@@ -22,14 +22,14 @@ RETURNING
 
 -- BLOCK select_print_export
 SELECT
-  *
+  *,
+  created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours' AS expired
 FROM
   print_exports
 WHERE
   id = $id
   AND assessment_id = $assessment_id
-  AND authn_user_id = $authn_user_id
-  AND created_at > CURRENT_TIMESTAMP - INTERVAL '24 hours';
+  AND authn_user_id = $authn_user_id;
 
 -- BLOCK select_pending_print_exports
 SELECT
@@ -72,20 +72,3 @@ SET
 WHERE
   id = $id
   AND status = 'pending';
-
--- BLOCK select_expired_print_exports
-SELECT
-  *
-FROM
-  print_exports
-WHERE
-  created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'
-ORDER BY
-  id
-LIMIT
-  100;
-
--- BLOCK delete_print_export
-DELETE FROM print_exports
-WHERE
-  id = $id;

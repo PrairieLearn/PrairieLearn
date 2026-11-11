@@ -19,7 +19,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { deleteFromS3, getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
-import { type PrintExport, PrintExportSchema } from './db-types.js';
+import { PrintExportSchema } from './db-types.js';
 import { getFileStoreS3Bucket } from './file-store.js';
 import { type PrintExportWork, renderPrintExport } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
@@ -344,7 +344,9 @@ export async function processQueuedPrintExports(): Promise<void> {
   }
 }
 
-/** Returns an unexpired export owned by this user, or null. */
+const SelectedPrintExportSchema = PrintExportSchema.extend({ expired: z.boolean() });
+
+/** Returns an export owned by this user, or null. Downloads expire 24 hours after queueing. */
 export async function selectPrintExport({
   printExportId,
   assessmentId,
@@ -353,28 +355,14 @@ export async function selectPrintExport({
   printExportId: string;
   assessmentId: string;
   authnUserId: string;
-}): Promise<PrintExport | null> {
+}): Promise<z.infer<typeof SelectedPrintExportSchema> | null> {
   return await queryOptionalRow(
     sql.select_print_export,
     { id: printExportId, assessment_id: assessmentId, authn_user_id: authnUserId },
-    PrintExportSchema,
+    SelectedPrintExportSchema,
   );
 }
 
 export async function getPrintExportStream(key: string) {
   return await getFromS3(getFileStoreS3Bucket(), key, false);
-}
-
-/** Deletes exports and their files 24 hours after they were queued. */
-export async function cleanExpiredPrintExports() {
-  const bucket = getFileStoreS3Bucket();
-  while (true) {
-    const expired = await queryRows(sql.select_expired_print_exports, PrintExportSchema);
-    for (const printExport of expired) {
-      await deleteFromS3(bucket, printExport.input_key);
-      if (printExport.output_key) await deleteFromS3(bucket, printExport.output_key);
-      await execute(sql.delete_print_export, { id: printExport.id });
-    }
-    if (expired.length < 100) return;
-  }
 }

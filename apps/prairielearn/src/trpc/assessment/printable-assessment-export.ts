@@ -307,11 +307,13 @@ export const printableAssessmentExportRouter = t.router({
         authnUserId: ctx.authn_user.id,
       });
       if (!printExport) throw new TRPCError({ code: 'NOT_FOUND' });
+      const status =
+        printExport.status === 'succeeded' && printExport.expired ? 'expired' : printExport.status;
       return {
-        status: printExport.status,
+        status,
         format: printExport.format,
         downloadUrl:
-          printExport.status === 'succeeded'
+          status === 'succeeded'
             ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print_preparation/exports/${printExport.id}`
             : null,
         sizeBytes: printExport.size_bytes,

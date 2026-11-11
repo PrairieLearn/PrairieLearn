@@ -28,7 +28,7 @@ router.get(
       assessmentId: res.locals.assessment.id,
       authnUserId: res.locals.authn_user.id,
     });
-    if (!printExport?.output_key) {
+    if (!printExport?.output_key || printExport.expired) {
       throw new HttpStatusError(404, 'Export not found or no longer available');
     }
     const stream = await getPrintExportStream(printExport.output_key);

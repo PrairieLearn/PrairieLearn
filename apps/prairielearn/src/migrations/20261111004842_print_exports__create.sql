@@ -16,4 +16,6 @@ CREATE TABLE print_exports (
   finished_at TIMESTAMPTZ
 );
 
-CREATE INDEX print_exports_created_at_idx ON print_exports (created_at);
+CREATE INDEX print_exports_pending_idx ON print_exports (id)
+WHERE
+  status = 'pending';

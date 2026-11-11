@@ -17,7 +17,7 @@ columns
 
 indexes
     print_exports_pkey: PRIMARY KEY (id) USING btree (id)
-    print_exports_created_at_idx: USING btree (created_at)
+    print_exports_pending_idx: USING btree (id) WHERE status = 'pending'::text
 
 check constraints
     print_exports_format_check: CHECK (format = ANY (ARRAY['pdf'::text, 'docx'::text]))

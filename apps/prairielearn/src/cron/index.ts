@@ -109,11 +109,6 @@ export async function init() {
       module: await import('./processPrintExports.js'),
       intervalSec: 5,
     },
-    {
-      name: 'cleanPrintExports',
-      module: await import('./cleanPrintExports.js'),
-      intervalSec: 'daily',
-    },
   ];
 
   if (config.newsFeedUrl) {
