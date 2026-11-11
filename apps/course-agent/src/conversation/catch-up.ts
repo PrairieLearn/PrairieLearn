@@ -129,7 +129,7 @@ function describeQuestions(data: unknown) {
   if (!part.success) return '';
   return part.data.questions
     .map(({ title, options }) =>
-      options ? `[Asked: ${title} Options: ${options.join('; ')}]` : `[Asked: ${title}]`,
+      options ? `[Asked: ${title} (options: ${options.join('; ')})]` : `[Asked: ${title}]`,
     )
     .join('\n');
 }

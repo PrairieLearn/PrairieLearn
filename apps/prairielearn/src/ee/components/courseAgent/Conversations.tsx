@@ -377,6 +377,7 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   // Questions are open until staff send their next message, which answers them however it is sent.
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   const latest = messages.at(-1);
   const questionOpen =
     latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-question');
@@ -413,7 +414,7 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
-              answered={messages.slice(index + 1).some((later) => later.role === 'user')}
+              answered={index < lastUserIndex}
               canAnswer={connected && readyToSend && !responseActive}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={send}

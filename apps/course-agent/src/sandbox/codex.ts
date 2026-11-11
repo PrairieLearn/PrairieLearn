@@ -2,7 +2,7 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import type { ToolCall } from '@prairielearn/course-agent-types';
+import type { QuestionPart, ToolCall } from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
@@ -178,18 +178,23 @@ export class CodexAppServerClient {
     onNotification('item/started', ItemEvent, (params) => this.toolCall('started', params));
     onNotification('item/completed', ItemEvent, (params) => {
       this.toolCall('completed', params);
-      const { threadId, item } = params;
-      if (threadId !== this.threadId) return;
+      const { threadId, turnId, item } = params;
+      if (threadId !== this.threadId || (this.turnId && turnId !== this.turnId)) return;
       const question = QuestionItem.safeParse(item);
       if (question.success) {
         this.emit({
           type: 'data-question',
           id: `question:${item.id}`,
-          data: { v: 1, itemId: item.id, questions: question.data.questions },
+          data: {
+            v: 1,
+            itemId: item.id,
+            questions: question.data.questions,
+          } satisfies QuestionPart,
         });
         return;
       }
-      // Codex never streams an async message, so one whose questions changed shape would vanish.
+      // Codex never streams async messages, so any other one, including questions whose shape
+      // changed, would otherwise vanish.
       const unparsed = UnstreamedAsyncMessage.safeParse(item);
       if (unparsed.success) {
         const id = `text:${item.id}`;
