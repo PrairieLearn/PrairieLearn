@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import type { z } from 'zod';
 
 import { extractPageContext } from './page-context.js';
-import type { StaffInstitution, StaffUser } from './safe-db-types.js';
+import {
+  type StaffAssessmentQuestionSchema,
+  type StaffInstitution,
+  type StaffUser,
+} from './safe-db-types.js';
 
 // Reusable test data
 const TEST_USER = {
@@ -286,6 +291,7 @@ const STAFF_ASSESSMENT_QUESTION = {
   json_max_auto_points: null,
   json_max_points: null,
   json_points: null,
+  json_qid: null,
   json_tries_per_variant: null,
   last_submission_score_hist: [8, 12, 16, 20],
   last_submission_score_variance: 12,
@@ -306,22 +312,13 @@ const STAFF_ASSESSMENT_QUESTION = {
   question_id: '1',
   question_score_variance: 20,
   quintile_question_scores: [60, 70, 80, 90, 100],
-  some_nonzero_submission: true,
   some_nonzero_submission_perc: 95,
-  some_perfect_submission: true,
   some_perfect_submission_perc: 20,
-  some_submission: true,
   some_submission_perc: 98,
-  some_submission_perc_by_quintile: [80, 85, 90, 95, 100],
-  statistics_last_updated_at: new Date(),
-  status: 'Enabled' as const,
   submission_score_array_averages: [70, 80, 85],
   submission_score_array_variances: [10, 12, 8],
-  sync_errors: null,
-  sync_job_sequence_id: null,
-  sync_warnings: null,
   tries_per_variant: null,
-};
+} satisfies z.input<typeof StaffAssessmentQuestionSchema>;
 
 const STAFF_QUESTION = {
   authors: null,
