@@ -1,6 +1,10 @@
 import { getAgentByName } from 'agents';
 import { describe, expect, it, vi } from 'vitest';
 
+import { MAX_CONVERSATION_ATTACHMENTS } from '@prairielearn/course-agent-types';
+
+import { UploadQuota } from '../conversation/attachments.js';
+
 import app from './routes.js';
 
 vi.mock('agents', () => ({ getAgentByName: vi.fn() }));
@@ -28,35 +32,46 @@ describe('private course agent service', () => {
     );
     expect(response.status).toBe(400);
   });
+});
 
-  it('stores an upload only within its reservation, and returns the room if storing fails', async () => {
-    const conversation = { reserveUpload: vi.fn(), releaseUpload: vi.fn() };
-    vi.mocked(getAgentByName).mockResolvedValue(
-      conversation as unknown as Awaited<ReturnType<typeof getAgentByName>>,
+describe('uploads', () => {
+  const bytes = new Uint8Array([1, 2, 3]);
+
+  /** Upload a file to a conversation that already holds `stored` uploads. */
+  function upload(stored: number) {
+    const conversationId = crypto.randomUUID();
+    const quota = new UploadQuota(async () => ({ count: stored, bytes: 0 }));
+    vi.mocked(getAgentByName).mockResolvedValue({
+      reserveUpload: (size: number) => quota.reserve(size),
+      releaseUpload: (size: number) => quota.release(size),
+    } as unknown as Awaited<ReturnType<typeof getAgentByName>>);
+    const bucket = new Map<string, Uint8Array>();
+    const CHECKPOINTS = {
+      put: async (key: string, body: ReadableStream) => {
+        bucket.set(key, new Uint8Array(await new Response(body).arrayBuffer()));
+      },
+    };
+    const response = app.request(
+      `/conversations/${conversationId}/uploads`,
+      {
+        method: 'POST',
+        headers: { Authorization: 'Bearer test-token', 'Content-Length': String(bytes.length) },
+        body: bytes,
+      },
+      { PL_SERVICE_TOKEN: 'test-token', CHECKPOINTS } as unknown as Env,
     );
-    const CHECKPOINTS = { put: vi.fn() };
-    const upload = () =>
-      app.request(
-        `/conversations/${crypto.randomUUID()}/uploads`,
-        {
-          method: 'POST',
-          headers: { Authorization: 'Bearer test-token', 'Content-Length': '3' },
-          body: new Uint8Array(3),
-        },
-        { PL_SERVICE_TOKEN: 'test-token', CHECKPOINTS } as unknown as Env,
-      );
+    return { conversationId, response, bucket };
+  }
 
-    conversation.reserveUpload.mockResolvedValue(false);
-    expect((await upload()).status).toBe(413);
-    expect(CHECKPOINTS.put).not.toHaveBeenCalled();
+  it('stores an uploaded file under the ID it returns', async () => {
+    const { conversationId, response, bucket } = upload(0);
+    const { id } = await (await response).json<{ id: string }>();
+    expect(bucket.get(`uploads/${conversationId}/${id}`)).toEqual(bytes);
+  });
 
-    conversation.reserveUpload.mockResolvedValue(true);
-    CHECKPOINTS.put.mockRejectedValueOnce(new Error('R2 unavailable'));
-    expect((await upload()).status).toBe(500);
-    expect(conversation.releaseUpload).toHaveBeenCalledWith(3);
-
-    expect((await upload()).status).toBe(201);
-    expect(conversation.reserveUpload).toHaveBeenLastCalledWith(3);
-    expect(conversation.releaseUpload).toHaveBeenCalledTimes(1);
+  it('refuses an upload to a full conversation', async () => {
+    const { response, bucket } = upload(MAX_CONVERSATION_ATTACHMENTS);
+    expect((await response).status).toBe(413);
+    expect(bucket.size).toBe(0);
   });
 });
