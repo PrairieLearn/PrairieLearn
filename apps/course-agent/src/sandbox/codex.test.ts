@@ -314,6 +314,51 @@ describe('course agent turns', () => {
     expect(byId[12]).toMatchObject({ success: false });
   });
 
+  it('shows input the agent requests as an input request part', async () => {
+    const { sandbox, native, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const prompts = [
+      { title: 'How should students enter the sum?', options: ['One fraction', 'Two fields'] },
+      { title: 'Anything else?', options: null },
+    ];
+    emit({
+      method: 'item/completed',
+      params: {
+        threadId: 'thread',
+        turnId: 'turn',
+        item: {
+          type: 'agentMessage',
+          id: 'ask',
+          text: 'How should students enter the sum?',
+          phase: 'final_answer',
+          memoryCitation: null,
+          delivery: 'async',
+          questions: prompts,
+        },
+      },
+    });
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type.startsWith('data-'))).toEqual([
+      {
+        type: 'data-input-request',
+        id: 'input-request:ask',
+        data: { v: 1, itemId: 'ask', prompts },
+      },
+    ]);
+  });
+
   it('keeps only labels for tool calls past the message budget', async () => {
     const { sandbox, native, emit } = runner();
     const accepted = Promise.withResolvers<undefined>();
