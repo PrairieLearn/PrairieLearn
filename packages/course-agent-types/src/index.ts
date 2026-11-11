@@ -29,9 +29,17 @@ export type ConversationState = ConversationLifecycle & {
   sandboxLost: boolean;
   /** A review whose outcome the agent has not yet received. New messages wait for it. */
   reviewId: string | null;
+  /** Generated from the first message; PrairieLearn shows its own fallback until then. */
+  title: string | null;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
+
+/**
+ * The agent's working directory, a checkout of the course. The agent links to course files by
+ * their absolute paths under it.
+ */
+export const COURSE_DIR = '/workspace/session/course';
 
 export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
