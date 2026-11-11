@@ -6,6 +6,23 @@ FROM
 WHERE
   v.id = $variant_id;
 
+-- BLOCK select_print_form_variant
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      print_form_questions AS pfq
+      JOIN print_forms AS pf ON pf.id = pfq.print_form_id
+      JOIN assessments AS a ON a.id = pf.assessment_id
+    WHERE
+      pfq.id = $print_form_question_id
+      AND pfq.variant_id = $variant_id
+      AND pf.assessment_id = $assessment_id
+      AND a.course_instance_id = $course_instance_id
+      AND a.deleted_at IS NULL
+  ) AS is_print_form_variant;
+
 -- BLOCK select_and_lock_assessment_instance_or_variant
 WITH
   variant_info AS (

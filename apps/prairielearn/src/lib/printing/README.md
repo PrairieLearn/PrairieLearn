@@ -62,15 +62,15 @@ Omit the `cover` option to start with questions on the first page.
 
 ### PrairieLearn endpoint parameters
 
-Forms are created explicitly and store their selected questions, order, point values, and floating variants. Reading a preview reuses those saved variants; it does not create student assessment instances or change a student's work.
+Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. Regenerating creates a new labeled form and archives the old one. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
-The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` exports a submitted page snapshot. Access requires course preview permission and ownership by the effective user.
+The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` exports a submitted page snapshot. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
 
 `document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
-`form_label=A` through `form_label=Z` gives a saved print form a short label on its cover and footers. Omitting it preserves the print form's numeric Form ID label.
+The form's saved label appears on covers and footers. Labels progress from `A` through `Z`, then `AA`, `AB`, and so on; query parameters cannot change them.
 
 `include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
 

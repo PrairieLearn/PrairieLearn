@@ -14,7 +14,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectPrintFormQuestions } from '../models/print-form-question.js';
 
 import * as helperServer from './helperServer.js';
-import { getConfiguredUser, getOrCreateUser } from './utils/auth.js';
+import { getConfiguredUser } from './utils/auth.js';
 
 async function createAssetForm() {
   const courseInstance = await selectCourseInstanceById('1');
@@ -81,20 +81,6 @@ describe('Print asset routes', () => {
           `${assessmentUrl.replace(`/assessment/${scope.assessmentId}`, '/assessment/999999999')}/clientFilesCourse/data.txt`,
           { headers },
         )
-      ).status,
-      403,
-    );
-    const owner = await getOrCreateUser({
-      uid: 'other-print-owner@example.com',
-      name: 'Other print owner',
-      uin: 'other-print-owner',
-    });
-    const { token } = beginPrintAssetAccess({ ...scope, userId: owner.id }, config.secretKey);
-    assert.equal(
-      (
-        await fetch(`${assessmentUrl}/clientFilesCourse/data.txt`, {
-          headers: { [PRINT_ASSET_TOKEN_HEADER]: token },
-        })
       ).status,
       403,
     );

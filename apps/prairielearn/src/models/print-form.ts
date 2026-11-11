@@ -1,4 +1,14 @@
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { z } from 'zod';
+
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryOptionalScalar,
+  queryRow,
+  queryRows,
+  queryScalar,
+} from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PrintFormSchema } from '../lib/db-types.js';
 
@@ -8,44 +18,76 @@ export async function insertPrintForm({
   assessmentId,
   userId,
   authnUserId,
+  label,
 }: {
   assessmentId: string;
   userId: string;
   authnUserId: string;
+  label: string;
 }) {
   return await queryRow(
     sql.insert_print_form,
-    { assessment_id: assessmentId, user_id: userId, authn_user_id: authnUserId },
+    { assessment_id: assessmentId, user_id: userId, authn_user_id: authnUserId, label },
     PrintFormSchema,
+  );
+}
+
+export async function lockAssessmentForPrintForms(assessmentId: string): Promise<void> {
+  await queryScalar(sql.lock_assessment_for_print_forms, { assessment_id: assessmentId }, IdSchema);
+}
+
+export async function selectLatestPrintFormLabel(assessmentId: string): Promise<string | null> {
+  return await queryOptionalScalar(
+    sql.select_latest_print_form_label,
+    { assessment_id: assessmentId },
+    z.string(),
   );
 }
 
 export async function selectOptionalPrintForm({
   printFormId,
   assessmentId,
-  userId,
 }: {
   printFormId: string;
   assessmentId: string;
-  userId: string;
 }) {
   return await queryOptionalRow(
     sql.select_optional_print_form,
-    { print_form_id: printFormId, assessment_id: assessmentId, user_id: userId },
+    { print_form_id: printFormId, assessment_id: assessmentId },
     PrintFormSchema,
   );
 }
 
-export async function selectPrintFormsForUser({
+export async function selectPrintFormsForAssessment({ assessmentId }: { assessmentId: string }) {
+  return await queryRows(
+    sql.select_print_forms_for_assessment,
+    { assessment_id: assessmentId },
+    PrintFormSchema,
+  );
+}
+
+export async function selectActivePrintFormsForAssessment({
   assessmentId,
-  userId,
 }: {
   assessmentId: string;
-  userId: string;
 }) {
   return await queryRows(
-    sql.select_print_forms_for_user,
-    { assessment_id: assessmentId, user_id: userId },
+    sql.select_active_print_forms_for_assessment,
+    { assessment_id: assessmentId },
+    PrintFormSchema,
+  );
+}
+
+export async function archivePrintForm({
+  printFormId,
+  assessmentId,
+}: {
+  printFormId: string;
+  assessmentId: string;
+}) {
+  return await queryOptionalRow(
+    sql.archive_print_form,
+    { print_form_id: printFormId, assessment_id: assessmentId },
     PrintFormSchema,
   );
 }

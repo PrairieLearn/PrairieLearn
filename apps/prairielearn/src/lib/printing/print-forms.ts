@@ -4,18 +4,52 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { insertPrintFormQuestions } from '../../models/print-form-question.js';
-import { insertPrintForm } from '../../models/print-form.js';
+import {
+  archivePrintForm,
+  insertPrintForm,
+  lockAssessmentForPrintForms,
+  selectActivePrintFormsForAssessment,
+  selectLatestPrintFormLabel,
+} from '../../models/print-form.js';
+import { MAX_ACTIVE_PRINT_FORMS } from '../client/printing/print-form-limits.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
   type Course,
   type CourseInstance,
+  type PrintForm,
   type PrintFormQuestion,
   QuestionSchema,
 } from '../db-types.js';
 import { ensureVariant, getQuestionCourse } from '../question-variant.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+export function nextPrintFormLabel(previous: string | null): string {
+  if (previous === null) return 'A';
+  const letters = previous.split('');
+  for (let index = letters.length - 1; index >= 0; index--) {
+    if (letters[index] !== 'Z') {
+      letters[index] = String.fromCharCode(letters[index].charCodeAt(0) + 1);
+      return letters.join('');
+    }
+    letters[index] = 'A';
+  }
+  return `A${letters.join('')}`;
+}
+
+function assertCanCreatePrintForm(activeForms: PrintForm[], replacesPrintFormId?: string) {
+  if (replacesPrintFormId) {
+    if (!activeForms.some((form) => form.id === replacesPrintFormId)) {
+      throw new HttpStatusError(404, 'The form to regenerate is no longer active.');
+    }
+  } else if (activeForms.length >= MAX_ACTIVE_PRINT_FORMS) {
+    throw new HttpStatusError(
+      400,
+      `An assessment can have at most ${MAX_ACTIVE_PRINT_FORMS} active print forms.`,
+    );
+  }
+}
 
 /** Creates an independent form with saved question selection, ordering, and variants. */
 export async function createPrintForm({
@@ -24,13 +58,19 @@ export async function createPrintForm({
   courseInstance,
   userId,
   authnUserId,
+  replacesPrintFormId,
 }: {
   assessment: Assessment;
   course: Course;
   courseInstance: CourseInstance;
   userId: string;
   authnUserId: string;
+  replacesPrintFormId?: string;
 }) {
+  assertCanCreatePrintForm(
+    await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
+    replacesPrintFormId,
+  );
   const selectedQuestions = await queryRows(
     sql.select_questions_for_new_form,
     { assessment_id: assessment.id },
@@ -69,8 +109,21 @@ export async function createPrintForm({
   }
 
   return await runInTransactionAsync(async () => {
-    const form = await insertPrintForm({ assessmentId: assessment.id, userId, authnUserId });
+    await lockAssessmentForPrintForms(assessment.id);
+    assertCanCreatePrintForm(
+      await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
+      replacesPrintFormId,
+    );
+    const label = nextPrintFormLabel(await selectLatestPrintFormLabel(assessment.id));
+    const form = await insertPrintForm({ assessmentId: assessment.id, userId, authnUserId, label });
     await insertPrintFormQuestions({ printFormId: form.id, questions });
+    if (replacesPrintFormId) {
+      const archived = await archivePrintForm({
+        printFormId: replacesPrintFormId,
+        assessmentId: assessment.id,
+      });
+      if (!archived) throw new HttpStatusError(409, 'The form to regenerate is no longer active.');
+    }
     return form;
   });
 }
