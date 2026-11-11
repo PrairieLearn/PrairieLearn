@@ -32,6 +32,7 @@ import {
   attachmentPath,
   attachmentsOf,
   attachmentsToWrite,
+  formatRequest,
   isImage,
   keepUploadReferences,
   uploadKey,
