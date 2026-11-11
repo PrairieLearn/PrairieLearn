@@ -119,11 +119,15 @@ test('renders accessible previews and readable answer keys for every student que
   courseInstance,
 }) => {
   await page.context().addInitScript({ content: axe.source });
-  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const { printForm, printUrl } = await createPrintableForm(
+    courseInstance,
+    'exam20-assessmentTools',
+  );
   const initialRecords = await queryRow(sql.select_record_counts, {}, RecordCountsSchema);
-  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
+  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID&form_label=Z`;
 
   const assessmentResponse = await page.goto(endpoint);
+  await expect(page.locator(':root')).toHaveAttribute('data-print-form-label', printForm.label);
   const assessmentLayout = await readPaginatedQuestionLayout(page);
   await expectAccessiblePreview(page);
   expect(assessmentResponse?.headers()['content-security-policy']).toContain("script-src 'none'");

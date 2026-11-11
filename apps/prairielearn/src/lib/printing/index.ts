@@ -309,6 +309,7 @@ async function renderPrintFormQuestionsUnbounded(
         renderLocals,
         {
           urlOverrides,
+          printFormQuestionId: printableQuestion.print_form_question.id,
           includeSubmissions: false,
           showCorrectAnswer: document === 'answer_key',
           // Every output reuses the variants saved when this form was created.
@@ -340,6 +341,7 @@ async function renderPrintFormQuestionsUnbounded(
           renderLocals,
           {
             urlOverrides,
+            printFormQuestionId: printableQuestion.print_form_question.id,
             includeSubmissions: false,
             showCorrectAnswer: true,
             requireOpenVariant: false,
