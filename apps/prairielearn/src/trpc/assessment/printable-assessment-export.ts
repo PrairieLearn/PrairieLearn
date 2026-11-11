@@ -267,7 +267,7 @@ export const printableAssessmentExportRouter = t.router({
         format: printExport.format,
         downloadUrl:
           status === 'succeeded'
-            ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print_preparation/exports/${printExport.id}`
+            ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print/exports/${printExport.id}`
             : null,
         sizeBytes: printExport.size_bytes,
         label: printExport.label,

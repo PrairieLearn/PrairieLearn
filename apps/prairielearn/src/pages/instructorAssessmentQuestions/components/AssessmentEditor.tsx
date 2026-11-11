@@ -1141,7 +1141,7 @@ function AssessmentEditorInner({
                         <Button
                           variant="outline-secondary"
                           size="sm"
-                          href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print_preparation`}
+                          href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print`}
                         >
                           <i className="bi bi-printer me-1" aria-hidden="true" /> Print
                         </Button>

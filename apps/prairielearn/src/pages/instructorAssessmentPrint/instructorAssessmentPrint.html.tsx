@@ -374,12 +374,12 @@ function PrintPreparation({
     if (id === formId) switchForm(nextIds[0]);
   }
   const download = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, printDocument }: { id: string; printDocument: PrintDocument }) => {
       const label = String.fromCharCode(65 + formIds.indexOf(id));
       const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
       const appliedSettings = settingsForForm(id);
       const search = `${printLayoutSearch(appliedSettings)}&form_label=${label}`;
-      const url = `${base}/preview?${search}&document=assessment`;
+      const url = `${base}/preview?${search}&document=${printDocument}`;
       const livePreview = previewDocumentRef.current;
       const snapshot =
         livePreview?.url === url && livePreview.doc.documentElement.dataset.printStatus === 'ready'
@@ -391,7 +391,7 @@ function PrintPreparation({
         'X-CSRF-Token': docxCsrfToken,
         'Content-Type': 'application/octet-stream',
       });
-      const response = await fetch(`${base}/docx?${search}&document=assessment`, {
+      const response = await fetch(`${base}/docx?${search}&document=${printDocument}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(snapshot),
@@ -1247,7 +1247,11 @@ function PrintPreparation({
                                 >
                                   Download Form {label} (PDF)
                                 </Dropdown.Item>
-                                <Dropdown.Item onClick={() => download.mutate(id)}>
+                                <Dropdown.Item
+                                  onClick={() =>
+                                    download.mutate({ id, printDocument: 'assessment' })
+                                  }
+                                >
                                   Download Form {label} Word (.docx)
                                 </Dropdown.Item>
                                 <Dropdown.Item
@@ -1257,6 +1261,13 @@ function PrintPreparation({
                                   }
                                 >
                                   Download Form {label} answer key (PDF)
+                                </Dropdown.Item>
+                                <Dropdown.Item
+                                  onClick={() =>
+                                    download.mutate({ id, printDocument: 'answer_key' })
+                                  }
+                                >
+                                  Download Form {label} answer key Word (.docx)
                                 </Dropdown.Item>
                               </Fragment>
                             );

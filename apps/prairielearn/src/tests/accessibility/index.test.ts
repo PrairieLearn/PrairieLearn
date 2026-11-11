@@ -421,7 +421,7 @@ const SKIP_ROUTES = [
   // API routes.
   '/pl/course_instance/lookup',
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_preparation/exports/:printExportId',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print/exports/:printExportId',
 ];
 
 function shouldSkipPath(path: string) {
@@ -546,7 +546,7 @@ describe('accessibility', () => {
       // Print preparation requires an Exam rather than the default Homework assessment.
       const params =
         endpoint.path ===
-        '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_preparation'
+        '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print'
           ? { ...routeParams, assessment_id: printAssessmentId }
           : routeParams;
       const missingParams = getMissingRouteParams(endpoint.path, params);

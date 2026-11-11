@@ -28,7 +28,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
     await page.goto(`${assessmentBase}/questions`);
     await expect(page.getByRole('button', { name: 'Print', exact: true })).toHaveCount(0);
 
-    expect((await page.request.get(`${assessmentBase}/print_preparation`)).status()).toBe(404);
+    expect((await page.request.get(`${assessmentBase}/print`)).status()).toBe(404);
     expect((await page.request.get(exportUrl)).status()).toBe(404);
     expect((await page.request.get(previewUrl)).status()).toBe(404);
   } finally {

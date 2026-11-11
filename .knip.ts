@@ -174,7 +174,6 @@ const config: KnipConfig = {
         'src/{batched-migrations,migrations}/*.{ts,mts}',
         'src/admin_queries/*.ts',
         'src/executor.ts',
-        'src/tests/load/*.ts',
         'src/question-servers/calculation-worker.ts',
       ],
       ignore: [

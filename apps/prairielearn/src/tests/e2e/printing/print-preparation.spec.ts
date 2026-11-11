@@ -73,7 +73,7 @@ async function openPrintPreparation(
 ) {
   const assessment = await assessmentFor(courseInstanceId, tid);
   await page.goto(
-    `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/print_preparation?forms=`,
+    `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/print?forms=`,
   );
   return assessment;
 }

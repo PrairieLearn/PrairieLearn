@@ -1,6 +1,6 @@
-# Printable assessments
+# Printing assessments
 
-With course preview permission, you can prepare paper copies of an existing exam or homework assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. You can also preview and download answer keys.
+With course preview permission, you can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. You can also preview and download answer keys.
 
 For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its own question selection, randomized values, and matching answer key. Creating or regenerating a print form does not start or change a student attempt. Printable forms are not currently supported for group assessments.
 
@@ -59,13 +59,14 @@ Uploaded covers do not appear in the preview. Download a student copy or booklet
 
 Select **Update preview** after making changes, then open **Download**. The available files depend on your forms:
 
-| Option                               | What you get                                                                             |
-| ------------------------------------ | ---------------------------------------------------------------------------------------- |
-| **Download Form A (PDF)**            | One student copy of Form A, including uploaded cover pages.                              |
-| **Download Form A Word (.docx)**     | An editable student copy of Form A.                                                      |
-| **Download Form A answer key (PDF)** | The answer key for Form A.                                                               |
-| **Download all forms (PDF)**         | One student copy of each form, including uploaded covers. Available with multiple forms. |
-| **Download booklet PDF…**            | A student copy with uploaded covers for each student, followed by the answer keys.       |
+| Option                                      | What you get                                                                             |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Download Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                              |
+| **Download Form A Word (.docx)**            | An editable student copy of Form A.                                                      |
+| **Download Form A answer key (PDF)**        | The answer key for Form A.                                                               |
+| **Download Form A answer key Word (.docx)** | An editable answer key for Form A.                                                       |
+| **Download all forms (PDF)**                | One student copy of each form, including uploaded covers. Available with multiple forms. |
+| **Download booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.       |
 
 If a download says the preview has expired or changed, select **Update preview** and try again.
 

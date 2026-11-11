@@ -454,12 +454,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).toEqual({
       status: 'succeeded',
       format: 'pdf',
-      downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${printExportId}`,
+      downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`,
       sizeBytes: pdf.length,
       label: 'Form A PDF',
       failureMessage: null,
     });
-    const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${printExportId}`;
+    const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`;
     const response = await fetch(url);
     expect(response.status).toBe(200);
     const printExport = (await selectOptionalPrintExport({
@@ -483,7 +483,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect(
       (
         await fetch(
-          `${siteUrl}/pl/course_instance/1/instructor/assessment/${otherAssessment.id}/print_preparation/exports/${printExportId}`,
+          `${siteUrl}/pl/course_instance/1/instructor/assessment/${otherAssessment.id}/print/exports/${printExportId}`,
         )
       ).status,
     ).toBe(404);
@@ -571,7 +571,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       render.mockRestore();
     }
     const status = await api.printableAssessmentExport.status.query({ printExportId });
-    const downloadUrl = `/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${printExportId}`;
+    const downloadUrl = `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`;
     expect(status).toEqual({
       status: 'succeeded',
       format: 'docx',
