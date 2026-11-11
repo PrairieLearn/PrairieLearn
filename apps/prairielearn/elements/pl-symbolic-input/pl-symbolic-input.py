@@ -264,6 +264,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error: str | None = data["format_errors"].get(name)
     missing_input = False
     a_sub_converted = None
+    submitted_raw_answer = data["raw_submitted_answers"].get(name, None)
+    raw_input_popover = None
+    raw_input_popover_content = None
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
@@ -299,6 +302,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if display_log_as_ln and a_sub_parsed != "":
             a_sub_parsed = a_sub_parsed.replace(sympy.log, sympy.Function("ln"))
         a_sub_converted = "" if a_sub_parsed == "" else sympy.latex(a_sub_parsed)
+        if data["panel"] == "submission" and submitted_raw_answer is not None:
+            raw_input_popover = pl.render_raw_input_popover(
+                submitted_raw_answer, aria_label or name
+            )
+            raw_input_popover_content = pl.render_raw_input_popover_content(
+                submitted_raw_answer
+            )
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -318,7 +328,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
-    submitted_raw_answer = data["raw_submitted_answers"].get(name, None)
     raw_submitted_answer = submitted_raw_answer
     if raw_submitted_answer is None:
         raw_submitted_answer = initial_value
@@ -394,6 +403,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else submitted_raw_answer
             ),
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
+            "raw_input_popover": raw_input_popover,
+            "raw_input_popover_content": raw_input_popover_content,
             "raw_input_popover_label": f"Answer as entered for {aria_label or name}",
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
@@ -405,14 +416,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "error": parse_error or missing_input,
             "missing_input": missing_input,
         }
-
-        if submitted_raw_answer is not None:
-            html_params["raw_input_popover"] = pl.render_raw_input_popover(
-                submitted_raw_answer, aria_label or name
-            )
-            html_params["raw_input_popover_content"] = (
-                pl.render_raw_input_popover_content(submitted_raw_answer)
-            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
