@@ -46,7 +46,27 @@ For example, an SVG file can be included with:
 <pl-figure file-name="diagram.svg"></pl-figure>
 ```
 
-Inline `<svg>` drawings, `<canvas>` drawings, and CSS background images are not captured. AI grading does not execute browser JavaScript to produce images. Student-submitted files follow the [submitted file format rules](#submitted-file-formats) below; submitted SVG files are handled as text rather than rendered images.
+Canvas drawings in the question and instructor reference answer, including `pl-drawing`, are rendered in a browser and included as PNG images. Question scripts and their declared dependencies run before the canvases are captured. Each panel is rendered separately, so its scripts should initialize drawings within that panel.
+
+Scripts may create canvases dynamically, including by appending them to `document.body`. Mathematical expressions explicitly typeset by question elements are restored to TeX before preparing the grading prompt. External `<img>` sources continue through the existing image loader; they do not need to load in the rendering browser. Images used by scripts to draw onto a canvas must still be served through PrairieLearn.
+
+For asynchronous drawing code, register a promise before initialization finishes:
+
+```html
+<canvas id="diagram" width="400" height="200" aria-label="Force diagram"></canvas>
+<script>
+  const ready = drawDiagram(document.getElementById('diagram'));
+  window.PrairieLearnAssessmentPrinting?.waitUntil(ready);
+</script>
+```
+
+The promise should resolve after the final drawing operation. `pl-drawing` registers its initialization and mathematical labels automatically. Scripts that create canvases dynamically are supported as well. Animations should provide a completed frame through the readiness promise; arbitrary timers are not automatically awaited.
+
+Canvas rendering uses the shared printing browser and queue: configure `printingCloudflareAccountId`, `printingCloudflareApiToken`, and `serverCanonicalHost` for Cloudflare Browser Run, or install the matching Playwright Chromium build for local development. Canvas rendering does not require the printable assessments feature flag. Browser requests are limited to same-origin assets authorized for the assessment instance and question; external drawing dependencies must be served through PrairieLearn. Each panel may contain up to 32 nonempty canvases, with at most 16 million pixels per canvas and 10 MiB of captured PNG data. Canvas images also count toward the section's existing image budget. Rendering failures stop grading rather than omitting the drawing.
+
+Inline `<svg>` drawings and CSS background images are not captured. Canvas conversion currently applies to the question and instructor reference answer panels. Student-submitted files follow the [submitted file format rules](#submitted-file-formats) below; submitted SVG files are handled as text rather than rendered images.
+
+When developing locally with Cloudflare, set `serverCanonicalHost` to a public HTTPS origin such as `https://example.com`, rather than `http://localhost:3000`. This is the remote browser's page origin; your development server still runs on localhost, and the renderer proxies assets from it. No public tunnel is required. A localhost origin can cause `page.goto: net::ERR_BLOCKED_BY_ADMINISTRATOR` in the remote browser.
 
 Repeated references to the same image source are included once per question or reference-answer section. If an image cannot be loaded or uses an unsupported format, AI grading fails for that submission.
 

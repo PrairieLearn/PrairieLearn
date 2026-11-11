@@ -80,9 +80,18 @@
      {{#input_answer}}
      let submitted_answer = JSON.parse(`{{{input_answer}}}`);
      {{/input_answer}}
-     $(function() {
-         window.PLDrawingApi.setupCanvas(element, options, submitted_answer);
+     const ready = new Promise((resolve, reject) => {
+         $(function() {
+             try {
+                 window.PLDrawingApi.setupCanvas(element, options, submitted_answer);
+                 resolve();
+             } catch (error) {
+                 reject(error);
+             }
+         });
      });
+     if (window.PrairieLearnAssessmentPrinting) window.PrairieLearnAssessmentPrinting.waitUntil(ready);
+     else ready.catch((error) => { throw error; });
  })();
 </script>
 {{/render_element}}

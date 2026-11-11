@@ -46,6 +46,7 @@ import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { prepareCanvasHtmlForAiGrading } from './ai-grading-canvases.js';
 import { resolveAiGradingModel } from './ai-grading-model.js';
 import { AI_GRADING_MODEL_IDS } from './ai-grading-models.shared.js';
 import {
@@ -609,7 +610,7 @@ export async function aiGrade({
         submission: null,
         submissions: [],
         course: question_course,
-        locals,
+        locals: { ...locals, deferAiGradingHtmlProcessing: true },
         caller: aiCaller,
       });
       if (render_question_results.courseIssues.length > 0) {
@@ -617,8 +618,26 @@ export async function aiGrade({
         logger.error('Errors occurred while AI grading, see output for details');
         return false;
       }
-      const questionPrompt = render_question_results.data.questionHtml;
-      const questionAnswer = render_question_results.data.answerHtml;
+      const canvasContext = {
+        extraHeadersHtml: render_question_results.data.extraHeadersHtml,
+        urlPrefix,
+        assetScope: {
+          courseInstanceId: course_instance.id,
+          assessmentId: assessment.id,
+          assessmentInstanceId: instance_question.assessment_instance_id,
+          instanceQuestionIds: [instance_question.id],
+          authnUserId: authn_user_id,
+          userId: user_id,
+        },
+      };
+      const questionPrompt = await prepareCanvasHtmlForAiGrading({
+        ...canvasContext,
+        panelHtml: render_question_results.data.questionHtml,
+      });
+      const questionAnswer = await prepareCanvasHtmlForAiGrading({
+        ...canvasContext,
+        panelHtml: render_question_results.data.answerHtml,
+      });
       const imageContext = {
         urls: locals,
         question,

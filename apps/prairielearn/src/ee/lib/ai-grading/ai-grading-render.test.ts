@@ -4,6 +4,19 @@ import { describe, expect, it } from 'vitest';
 import { stripHtmlForAiGrading } from './ai-grading-render.js';
 
 describe('stripHtmlForAiGrading', () => {
+  it('shows canvas placeholders only when requested for the preview', async () => {
+    const html = '<div><canvas></canvas></div><script>drawCanvas()</script>';
+    const preview = cheerio.load(
+      await stripHtmlForAiGrading(html, { showCanvasPlaceholders: true }),
+    );
+
+    expect(preview('div > span').text().replace(/\s+/g, ' ').trim()).toBe(
+      'Canvas drawing omitted from preview. The drawing will be included as an image during AI grading.',
+    );
+    expect(preview('canvas, script').length).toBe(0);
+    expect(await stripHtmlForAiGrading(html)).toBe('');
+  });
+
   it('preserves cleaned HTML when a large inline image exceeds the formatting limit', async () => {
     const src = `data:image/png;base64,${'A'.repeat(10000)}`;
     const result = await stripHtmlForAiGrading(

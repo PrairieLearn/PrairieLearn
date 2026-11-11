@@ -1051,9 +1051,15 @@ async function renderPanel({
   // of `getCachedDataOrCompute` so that we don't need to find a way to factor
   // the transformation into the cache key.
   const html = await run(async () => {
-    if (isEnterprise() && locals.questionRenderContext === 'ai_grading') {
+    if (
+      isEnterprise() &&
+      locals.questionRenderContext === 'ai_grading' &&
+      !locals.deferAiGradingHtmlProcessing
+    ) {
       const { stripHtmlForAiGrading } = await import('../ee/lib/ai-grading/ai-grading-render.js');
-      return await stripHtmlForAiGrading(cachedData.html);
+      return await stripHtmlForAiGrading(cachedData.html, {
+        showCanvasPlaceholders: locals.showAiGradingCanvasPlaceholders && panel !== 'submission',
+      });
     }
 
     return cachedData.html;

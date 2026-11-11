@@ -13,7 +13,7 @@ import {
   validatePrintDocument,
 } from './printing/index.js';
 import { createPdfOutput } from './printing/pdf-output.js';
-import type { PrintAssetScope } from './printing/print-asset-access.js';
+import type { PrintFormAssetScope } from './printing/print-asset-access.js';
 import type { PrintableCover } from './printing/printable-cover.js';
 
 interface PrintExportSnapshot {
@@ -21,7 +21,7 @@ interface PrintExportSnapshot {
   printDocument: PrintDocument;
   localPreviewUrl: string;
   html: string;
-  assetScope: PrintAssetScope;
+  assetScope: PrintFormAssetScope;
 }
 
 export type PrintExportWork =

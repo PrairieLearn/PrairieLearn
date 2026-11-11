@@ -7,6 +7,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
+import { initializeQuestionRendering } from '../../lib/client/question-rendering.js';
 import { getDefaultHonorCodePledge } from '../../lib/honor-code.js';
 import { PAPER_DIMENSIONS, type PaperSize } from '../../lib/printing/paper-size.js';
 import {
@@ -84,13 +85,7 @@ export function InstructorAssessmentPrintForm({
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
           window.PagedConfig = { auto: false };
-          window.__PL_PRINT_READINESS_PROMISES__ = [];
-          window.PrairieLearnAssessmentPrinting = {
-            waitUntil(promise) {
-              void promise.catch(() => undefined);
-              window.__PL_PRINT_READINESS_PROMISES__.push(promise);
-            },
-          };
+          (${unsafeHtml(initializeQuestionRendering.toString())})();
         </script>
         ${compiledScriptTag('assessment-printing-client.ts')}
         <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>

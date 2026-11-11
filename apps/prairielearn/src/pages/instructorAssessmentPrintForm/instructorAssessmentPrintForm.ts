@@ -39,7 +39,7 @@ import {
   validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
-import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
+import type { PrintFormAssetScope } from '../../lib/printing/print-asset-access.js';
 import { createPrintFormQuestionAssetRouter } from '../../lib/printing/print-asset-routes.js';
 import {
   BLANK_NAME_PLACEHOLDER,
@@ -186,7 +186,7 @@ function getCoverHtml(resLocals: ResLocalsForPage<'print-form'>) {
 function printAssetScope(
   resLocals: ResLocalsForPage<'print-form'>,
   printFormQuestionIds: string[],
-): PrintAssetScope {
+): PrintFormAssetScope {
   return {
     courseInstanceId: resLocals.course_instance.id,
     assessmentId: resLocals.assessment.id,
