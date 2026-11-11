@@ -2,6 +2,7 @@ import * as https from 'node:https';
 
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { ValueType, getHistogram, metrics } from '@prairielearn/opentelemetry';
 
 import { config } from '../config.js';
@@ -315,7 +316,10 @@ export class PrintRenderer {
         : setTimeout(
             () =>
               deadlineController.abort(
-                new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`),
+                new HttpStatusError(
+                  504,
+                  `Timed out after ${timeoutMs} ms rendering the ${output.label}`,
+                ),
               ),
             remainingTimeoutMs(),
           );
@@ -342,7 +346,9 @@ export class PrintRenderer {
     const render = async () => {
       signal.throwIfAborted();
       const context = await browser.newContext({
-        ignoreHTTPSErrors: true,
+        // Local Chromium fetches assets from this server, which may use a self-signed
+        // certificate in development. Cloudflare only loads public assets from the real host.
+        ignoreHTTPSErrors: !this.cloudflare,
         serviceWorkers: 'block',
         javaScriptEnabled: runScripts,
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),
@@ -475,8 +481,9 @@ export class PrintRenderer {
       clearDeadline();
       assetController.abort();
       const openContext = state.context;
-      // A context created after cancellation may still be pending, so discard its browser.
-      if (signal.aborted && !openContext) this.discardBrowser(browser);
+      // A context still being created at the deadline may never arrive, so discard its browser.
+      // Other aborts leave the shared browser alone: render() closes a late context itself.
+      if (deadlineController.signal.aborted && !openContext) this.discardBrowser(browser);
       if (openContext) {
         await this.discardContext(browser, openContext);
       }

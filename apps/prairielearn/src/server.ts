@@ -82,7 +82,6 @@ import {
   initPrintExportWorker,
   waitForPrintExportWorkers,
 } from './lib/printing/print-exports.js';
-import { initPrintRequests, stopPrintRequests } from './lib/printing/print-request.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -144,7 +143,6 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  * @returns The express "app" object that was created.
  */
 export async function initExpress(): Promise<Express> {
-  initPrintRequests();
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
   app.set('trust proxy', config.trustProxy);
@@ -2816,7 +2814,6 @@ async function close() {
   // Stop polling and scheduled work and finish pending workspace startups while
   // their shared dependencies are still available.
   await settleShutdownTasks([
-    stopPrintRequests(),
     externalGraderDeadLetters.stop(),
     externalGraderResults.stop(),
     cron.stop(),

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { MAX_PRINT_SNAPSHOT_BYTES } from '../client/print-snapshot-limits.js';
+import { MAX_PRINT_SNAPSHOT_BYTES } from '../client/printing/print-snapshot-limits.js';
 
 import type { DocxSource } from './docx-browser.js';
 

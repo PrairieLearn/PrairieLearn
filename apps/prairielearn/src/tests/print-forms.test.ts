@@ -6,7 +6,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance, updateAssessmentInstance } from '../lib/assessment.js';
 import { VariantSchema } from '../lib/db-types.js';
-import { createPrintForm } from '../lib/print-forms.js';
+import { createPrintForm } from '../lib/printing/print-forms.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';

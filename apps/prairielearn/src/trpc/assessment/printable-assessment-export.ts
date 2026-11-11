@@ -4,12 +4,12 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
+import { MAX_PACKET_PAGES } from '../../lib/client/printing/print-packet.js';
+import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import {
   MAX_PRINT_PACKET_SNAPSHOT_BYTES,
   MAX_PRINT_SNAPSHOT_BYTES,
-} from '../../lib/client/print-snapshot-limits.js';
-import { MAX_PACKET_PAGES } from '../../lib/client/printing/print-packet.js';
-import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
+} from '../../lib/client/printing/print-snapshot-limits.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
@@ -17,7 +17,6 @@ import {
   type PrintDocument,
   getPrintableFormQuestionIds,
   getPrintableQuestionListDigest,
-  validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import type { PrintExportWork } from '../../lib/printing/print-export-render.js';
@@ -139,7 +138,7 @@ export const printableAssessmentExportRouter = t.router({
         >();
         for (const form of forms) {
           const excludedQuestions = new Set(form.settings.excludedQuestions);
-          await validateQuestionsForPrinting(
+          const printFormQuestionIds = await getPrintableFormQuestionIds(
             form.printFormId,
             new Map(
               Object.entries(form.settings.questionSizes).flatMap(([number, size]) =>
@@ -157,10 +156,7 @@ export const printableAssessmentExportRouter = t.router({
               courseInstanceId: ctx.course_instance.id,
               assessmentId: ctx.assessment.id,
               printFormId: form.printFormId,
-              printFormQuestionIds: await getPrintableFormQuestionIds(
-                form.printFormId,
-                excludedQuestions,
-              ),
+              printFormQuestionIds,
               authnUserId: ctx.authn_user.id,
               userId: ctx.locals.user.id,
             },

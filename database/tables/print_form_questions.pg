@@ -12,8 +12,9 @@ indexes
     print_form_questions_print_form_id_assessment_question_id_key: UNIQUE (print_form_id, assessment_question_id) USING btree (print_form_id, assessment_question_id)
     print_form_questions_print_form_id_position_key: UNIQUE (print_form_id, "position") USING btree (print_form_id, "position")
     print_form_questions_variant_id_key: UNIQUE (variant_id) USING btree (variant_id)
+    print_form_questions_assessment_question_id_idx: USING btree (assessment_question_id)
 
 foreign-key constraints
     print_form_questions_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     print_form_questions_print_form_id_fkey: FOREIGN KEY (print_form_id) REFERENCES print_forms(id) ON UPDATE CASCADE ON DELETE CASCADE
-    print_form_questions_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE
+    print_form_questions_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE

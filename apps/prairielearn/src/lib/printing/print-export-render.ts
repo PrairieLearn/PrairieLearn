@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { serializePrintDocument } from '../client/print-document.js';
+import { serializePrintDocument } from '../client/printing/print-document.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../client/printing/print-snapshot.js';
 import { config } from '../config.js';
 
