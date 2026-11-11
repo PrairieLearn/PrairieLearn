@@ -274,9 +274,11 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
 };
 
 const minimalStaffPrintForm: z.input<typeof StaffPrintFormSchema> = {
+  archived_at: null,
   assessment_id: '2',
   created_at: new Date(),
   id: '10',
+  label: 'A',
 };
 
 const minimalStudentAssessmentInstanceAuthzResult: z.input<
