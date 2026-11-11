@@ -10,14 +10,11 @@ import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { dispatchInstanceQuestionGradingPanelUpdate } from '../lib/client/manual-grading-events.js';
 import { mathjaxTypeset } from '../lib/client/mathjax.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
-import { EnumRubricItemShowToStudentsSchema, type RubricItem } from '../lib/db-types.js';
+import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
-  rubric_item: Omit<
-    RubricItem,
-    'rubric_id' | 'id' | 'number' | 'points' | 'always_show_to_students'
-  > & {
+  rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number' | 'points' | 'show_to_students'> & {
     id?: string;
     points: number | null;
   };
@@ -32,7 +29,7 @@ const ExportedRubricItemSchema = z.object({
   description: z.string(),
   explanation: z.string(),
   grader_note: z.string(),
-  show_to_students: EnumRubricItemShowToStudentsSchema,
+  always_show_to_students: z.boolean(),
 });
 
 const ExportedRubricDataSchema = z.object({
@@ -44,19 +41,7 @@ const ExportedRubricDataSchema = z.object({
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
   grader_guidelines: z.string().optional(),
-  rubric_items: z.array(
-    z.union([
-      ExportedRubricItemSchema,
-      ExportedRubricItemSchema.omit({ show_to_students: true })
-        .extend({ always_show_to_students: z.boolean() })
-        .transform(({ always_show_to_students, ...item }) => ({
-          ...item,
-          show_to_students: always_show_to_students
-            ? ('always' as const)
-            : ('when_selected' as const),
-        })),
-    ]),
-  ),
+  rubric_items: z.array(ExportedRubricItemSchema),
 });
 
 type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
@@ -68,7 +53,7 @@ function rubricItemEquals(a: RubricItemData['rubric_item'], b: RubricItemData['r
     a.description === b.description &&
     (a.explanation ?? '') === (b.explanation ?? '') &&
     (a.grader_note ?? '') === (b.grader_note ?? '') &&
-    a.show_to_students === b.show_to_students
+    a.always_show_to_students === b.always_show_to_students
   );
 }
 
@@ -200,7 +185,7 @@ export function RubricSettings({
       // Only initialize these parameters to be consistent with current new row behavior
       {
         rubric_item: {
-          show_to_students: 'always',
+          always_show_to_students: true,
           deleted_at: null,
           description: '',
           explanation: null,
@@ -301,7 +286,7 @@ export function RubricSettings({
         description: it.rubric_item.description,
         explanation: it.rubric_item.explanation ?? '',
         grader_note: it.rubric_item.grader_note ?? '',
-        show_to_students: it.rubric_item.show_to_students,
+        always_show_to_students: it.rubric_item.always_show_to_students,
       })),
     };
 
@@ -383,7 +368,7 @@ export function RubricSettings({
 
       const scaledRubricItems: RubricItemData[] = Array.from(rubricItems, (rubricItem) => ({
         rubric_item: {
-          show_to_students: rubricItem.show_to_students,
+          always_show_to_students: rubricItem.always_show_to_students,
           deleted_at: null,
           description: rubricItem.description,
           explanation: rubricItem.explanation,
@@ -453,7 +438,7 @@ export function RubricSettings({
           description: it.rubric_item.description,
           explanation: it.rubric_item.explanation,
           grader_note: it.rubric_item.grader_note,
-          show_to_students: it.rubric_item.show_to_students,
+          always_show_to_students: it.rubric_item.always_show_to_students,
         })),
         tag_for_manual_grading: tagForGrading,
       };
@@ -1173,8 +1158,8 @@ function RubricRow({
             />
             <input
               type="hidden"
-              name={`rubric_item[${item.rubric_item.id}][show_to_students]`}
-              value={item.rubric_item.show_to_students}
+              name={`rubric_item[${item.rubric_item.id}][always_show_to_students]`}
+              value={item.rubric_item.always_show_to_students ? 'true' : 'false'}
             />
           </>
         )}
@@ -1251,9 +1236,9 @@ function RubricRow({
             <input
               type="radio"
               className="form-check-input"
-              checked={item.rubric_item.show_to_students === 'always'}
+              checked={item.rubric_item.always_show_to_students}
               disabled={!hasCourseInstancePermissionEdit}
-              onChange={() => updateRubricItem({ show_to_students: 'always' })}
+              onChange={() => updateRubricItem({ always_show_to_students: true })}
             />
             Always
           </label>
@@ -1263,23 +1248,11 @@ function RubricRow({
             <input
               type="radio"
               className="form-check-input"
-              checked={item.rubric_item.show_to_students === 'when_selected'}
+              checked={!item.rubric_item.always_show_to_students}
               disabled={!hasCourseInstancePermissionEdit}
-              onChange={() => updateRubricItem({ show_to_students: 'when_selected' })}
+              onChange={() => updateRubricItem({ always_show_to_students: false })}
             />
             If selected
-          </label>
-        </div>
-        <div className="form-check form-check-inline">
-          <label className="form-check-label text-nowrap">
-            <input
-              type="radio"
-              className="form-check-input"
-              checked={item.rubric_item.show_to_students === 'never'}
-              disabled={!hasCourseInstancePermissionEdit}
-              onChange={() => updateRubricItem({ show_to_students: 'never' })}
-            />
-            Never
           </label>
         </div>
       </td>

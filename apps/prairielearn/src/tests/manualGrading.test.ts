@@ -57,7 +57,7 @@ interface RubricItem {
   description: string;
   explanation?: string;
   grader_note?: string;
-  show_to_students: 'always' | 'when_selected' | 'never';
+  always_show_to_students: boolean;
   description_render?: string;
   explanation_render?: string;
   grader_note_render?: string;
@@ -305,11 +305,6 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
       feedback_note,
     );
 
-    assert.equal(
-      feedbackBlock.find('[data-testid="rubric-hidden-items-notice"]').length,
-      rubric_items?.some((item) => item.show_to_students === 'never') ? 1 : 0,
-    );
-
     if (!rubric_items) {
       const container = feedbackBlock.find('[data-testid^="rubric-item-container-"]');
       assert.equal(container.length, 0);
@@ -317,10 +312,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
       rubric_items.forEach((item, index) => {
         assert.isDefined(selected_rubric_items);
         const container = feedbackBlock.find(`[data-testid="rubric-item-container-${item.id}"]`);
-        if (
-          item.show_to_students === 'always' ||
-          (item.show_to_students === 'when_selected' && selected_rubric_items.includes(index))
-        ) {
+        if (item.always_show_to_students || selected_rubric_items.includes(index)) {
           assert.equal(container.length, 1);
           assert.equal(
             container.find('input[type="checkbox"]').is(':checked'),
@@ -397,8 +389,10 @@ function checkSettingsResults(
       assert.equal(explanation.val() ?? '', b64EncodeUnicode(item.explanation ?? ''));
       const graderNote = form.find(`[name="rubric_item[${item.id}][grader_note]"]`);
       assert.equal(graderNote.val() ?? '', b64EncodeUnicode(item.grader_note ?? ''));
-      const show_to_students = form.find(`[name="rubric_item[${item.id}][show_to_students]"]`);
-      assert.equal(show_to_students.val(), item.show_to_students);
+      const always_show_to_students = form.find(
+        `[name="rubric_item[${item.id}][always_show_to_students]"]`,
+      );
+      assert.equal(always_show_to_students.val(), item.always_show_to_students ? 'true' : 'false');
     });
 
     const storedItems = await sqldb.queryRows(
@@ -408,7 +402,10 @@ function checkSettingsResults(
     );
     assert.lengthOf(storedItems, rubric_items.length);
     for (const item of storedItems) {
-      assert.equal(item.always_show_to_students, item.show_to_students === 'always');
+      assert.equal(
+        item.show_to_students,
+        item.always_show_to_students ? 'always' : 'when_selected',
+      );
     }
   });
 
@@ -819,7 +816,7 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           rubric_items = [
-            { points: 6, description: 'First rubric item', show_to_students: 'always' },
+            { points: 6, description: 'First rubric item', always_show_to_students: true },
             {
               points: 3,
               description: 'Second rubric item (partial, with `markdown`)',
@@ -828,7 +825,7 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
               description_render: 'Second rubric item (partial, with <code>markdown</code>)',
               explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
               grader_note_render: '<p>Instructions with <em>markdown</em></p>',
-              show_to_students: 'when_selected',
+              always_show_to_students: false,
             },
             {
               points: 0.4,
@@ -840,17 +837,17 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
               explanation_render: '<p>Explanation with moustache: 43</p>',
               grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
-              show_to_students: 'always',
+              always_show_to_students: true,
             },
             {
               points: -1.6,
               description: 'Penalty rubric item (negative points, floating point)',
-              show_to_students: 'never',
+              always_show_to_students: false,
             },
             {
               points: 0,
               description: 'Rubric item with no value (zero points)',
-              show_to_students: 'never',
+              always_show_to_students: true,
             },
           ];
 
@@ -1081,7 +1078,7 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           rubric_items = [
-            { points: 0, description: 'First rubric item', show_to_students: 'always' },
+            { points: 0, description: 'First rubric item', always_show_to_students: true },
             {
               points: -3,
               description: 'Second rubric item (partial, with `markdown`)',
@@ -1090,7 +1087,7 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
               description_render: 'Second rubric item (partial, with <code>markdown</code>)',
               explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
               grader_note_render: '<p>Instructions with <em>markdown</em></p>',
-              show_to_students: 'always',
+              always_show_to_students: true,
             },
             {
               points: -4,
@@ -1102,18 +1099,18 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
               explanation_render: '<p>Explanation with moustache: 43</p>',
               grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
-              show_to_students: 'when_selected',
+              always_show_to_students: false,
             },
             {
               points: 1.6,
               description:
                 'Positive rubric item in negative grading (positive points, floating point)',
-              show_to_students: 'when_selected',
+              always_show_to_students: false,
             },
             {
               points: 6,
               description: 'Rubric item with positive reaching maximum',
-              show_to_students: 'always',
+              always_show_to_students: true,
             },
           ];
 

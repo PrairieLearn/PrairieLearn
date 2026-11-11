@@ -152,10 +152,9 @@ export function SubmissionPanel({
                             ${(rubric_data?.rubric_items || [])
                               .filter(
                                 (item) =>
-                                  item.rubric_item.show_to_students === 'always' ||
-                                  (item.rubric_item.show_to_students === 'when_selected' &&
-                                    submission.rubric_grading?.rubric_items?.[item.rubric_item.id]
-                                      ?.score),
+                                  item.rubric_item.always_show_to_students ||
+                                  submission.rubric_grading?.rubric_items?.[item.rubric_item.id]
+                                    ?.score,
                               )
                               .map((item) =>
                                 RubricItem({
@@ -166,20 +165,6 @@ export function SubmissionPanel({
                                     ] ?? null,
                                 }),
                               )}
-                            ${
-                              rubric_data?.rubric_items.some(
-                                (item) => item.rubric_item.show_to_students === 'never',
-                              )
-                                ? html`
-                                    <div
-                                      class="text-muted small mb-2"
-                                      data-testid="rubric-hidden-items-notice"
-                                    >
-                                      Some rubric items are hidden by the instructor.
-                                    </div>
-                                  `
-                                : ''
-                            }
                             ${
                               submission.rubric_grading.adjust_points
                                 ? html`
