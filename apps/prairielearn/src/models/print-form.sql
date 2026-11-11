@@ -14,7 +14,7 @@ FROM
 WHERE
   id = $assessment_id
   AND deleted_at IS NULL
-FOR UPDATE;
+FOR NO KEY UPDATE;
 
 -- BLOCK select_latest_print_form_label
 SELECT

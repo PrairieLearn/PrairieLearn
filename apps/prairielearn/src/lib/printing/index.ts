@@ -71,10 +71,8 @@ function assertPrintDocumentReady(state: {
   formLabel: string | undefined;
 }): void {
   if (!state.questionCount || state.omittedCount || state.coverPageCount < 0) {
-    let label = state.formLabel ? `Form ${state.formLabel}` : 'This assessment';
-    if (state.document === 'answer_key') {
-      label = state.formLabel ? `The answer key for ${label}` : 'This answer key';
-    }
+    const form = `Form ${state.formLabel}`;
+    const label = state.document === 'answer_key' ? `The answer key for ${form}` : form;
     throw new HttpStatusError(
       400,
       `${label} has missing or unprintable questions. Review its preview and exclude or fix those questions before exporting.`,
@@ -286,7 +284,6 @@ async function renderPrintFormQuestionsUnbounded(
         renderLocals,
         {
           urlOverrides,
-          printFormQuestionId: printableQuestion.print_form_question.id,
           includeSubmissions: false,
           showCorrectAnswer: document === 'answer_key',
           throwOnFatalError: true,
@@ -316,7 +313,6 @@ async function renderPrintFormQuestionsUnbounded(
           renderLocals,
           {
             urlOverrides,
-            printFormQuestionId: printableQuestion.print_form_question.id,
             includeSubmissions: false,
             showCorrectAnswer: true,
             throwOnFatalError: true,

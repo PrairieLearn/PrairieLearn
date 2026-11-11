@@ -21,8 +21,8 @@ export const DEFAULT_ASSESSMENT_INSTRUCTIONS: readonly string[] = [
   'If you need more room, identify the question number on any additional page.',
 ];
 
-export function answerKeyDescription(formId: string, formLabel?: string): string {
-  return `Correct answers are shown with the questions for assessment ${formLabel ? `Form ${formLabel}` : `Form ID ${formId}`}.`;
+export function answerKeyDescription(formLabel: string): string {
+  return `Correct answers are shown with the questions for assessment Form ${formLabel}.`;
 }
 
 export function getPrintCoverFields({
@@ -42,14 +42,12 @@ export function getPrintCoverFields({
 
 export function getPrintFooterLabel({
   document,
-  formId,
   formLabel,
 }: {
   document: PrintDocument;
-  formId: string;
-  formLabel?: string;
+  formLabel: string;
 }): string {
-  return `${document === 'answer_key' ? 'Answer key  |  ' : ''}${formLabel ? `Form ${formLabel}` : `Form ID ${formId}`}`;
+  return `${document === 'answer_key' ? 'Answer key  |  ' : ''}Form ${formLabel}`;
 }
 
 /**
@@ -71,7 +69,7 @@ export function buildPrintableCover({
 }: {
   resLocals: ResLocalsForPage<'print-form'>;
   document: PrintDocument;
-  formLabel?: string;
+  formLabel: string;
   identityFields: readonly string[];
   questionCount: number;
   maxPoints: number;
@@ -81,12 +79,11 @@ export function buildPrintableCover({
   gradingTable?: PrintableCover['gradingTable'];
 }): PrintableCover {
   const isAnswerKey = document === 'answer_key';
-  const formId = resLocals.print_form.id;
   const teamWork = resLocals.assessment.team_work;
 
   const instructionBlocks: PrintableTextBlock[] = [
     isAnswerKey
-      ? { type: 'paragraph', runs: [{ text: answerKeyDescription(formId, formLabel) }] }
+      ? { type: 'paragraph', runs: [{ text: answerKeyDescription(formLabel) }] }
       : {
           type: 'list',
           ordered: true,
@@ -126,10 +123,10 @@ export function buildPrintableCover({
     summary: [
       { term: 'Questions', value: String(questionCount) },
       { term: 'Points', value: String(maxPoints) },
-      { term: formLabel ? 'Form' : 'Form ID', value: formLabel ?? formId },
+      { term: 'Form', value: formLabel },
     ],
     sections,
     gradingTable: isAnswerKey ? undefined : gradingTable,
-    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  ${getPrintFooterLabel({ document: 'assessment', formId, formLabel })}`,
+    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  ${getPrintFooterLabel({ document: 'assessment', formLabel })}`,
   };
 }
