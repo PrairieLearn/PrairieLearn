@@ -29,6 +29,8 @@ export type ConversationState = ConversationLifecycle & {
   sandboxLost: boolean;
   /** A review whose outcome the agent has not yet received. New messages wait for it. */
   reviewId: string | null;
+  /** Generated from the first message; PrairieLearn shows its own fallback until then. */
+  title: string | null;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
