@@ -53,6 +53,13 @@ def generate(data):
     data["params"]["R2_label"] = f"${R2:~L}$"
     data["params"]["C_label"] = f"${C:~L}$"
 
+    # The figure is the only place the values appear, so the alt text must include them.
+    data["params"]["alt"] = (
+        f"Circuit diagram: a battery ({V:~P}), a resistor ({R1:~P}), and closed switch A "
+        f"in series with two parallel branches. One branch has a capacitor ({C:~P}). "
+        f"The other has open switch B and a resistor ({R2:~P})."
+    )
+
     # With B open, R2 carries no current, so the capacitor is in series with the
     # battery and R1. After A has been closed for a long time the capacitor is
     # fully charged, no current flows through R1, and the full battery voltage
