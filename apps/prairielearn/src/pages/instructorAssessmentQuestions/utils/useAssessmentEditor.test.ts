@@ -252,23 +252,33 @@ describe('createEditorReducer', () => {
     expect(state.zones[0].questions).toHaveLength(2);
   });
 
-  it('extract alternative inherits points from parent alt pool', () => {
-    // alt1 has no own points — it inherits autoPoints from the pool
+  it.each([
+    {
+      format: 'split',
+      poolPoints: { autoPoints: 3, manualPoints: 2 },
+      ownPoints: { autoPoints: 7 },
+      expectedPoints: { autoPoints: 7, manualPoints: 2 },
+    },
+    {
+      format: 'legacy',
+      poolPoints: { points: 10, maxPoints: 20 },
+      ownPoints: { points: 2 },
+      expectedPoints: { points: 2, maxPoints: 20 },
+    },
+  ])('extracts alternatives with inherited $format points and explicit overrides', (scenario) => {
     const alt1 = makeAlternative('a1', { id: 'alt-qid-1' });
-    // alt2 has its own autoPoints, which should be preserved
-    const alt2 = makeAlternative('a2', { id: 'alt-qid-2', autoPoints: 7 });
+    const alt2 = makeAlternative('a2', { id: 'alt-qid-2', ...scenario.ownPoints });
     const altPool = makeQuestion('ag1', {
       alternatives: [alt1, alt2],
       numberChoose: 1,
-      autoPoints: 3,
-      manualPoints: 2,
+      autoPoints: undefined,
+      ...scenario.poolPoints,
     });
     const initialState = makeState({
       zones: [makeZone('z1', [altPool])],
     });
     const reducer = createEditorReducer(initialState);
 
-    // Extract alt1 (inheriting points) to standalone
     let state = reducer(initialState, {
       type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
       alternativeTrackingId: 'a1',
@@ -278,11 +288,8 @@ describe('createEditorReducer', () => {
 
     const extracted1 = state.zones[0].questions[1];
     expect(extracted1.trackingId).toEqual(tid('a1'));
-    // Should inherit autoPoints and manualPoints from the pool
-    expect(extracted1.autoPoints).toBe(3);
-    expect(extracted1.manualPoints).toBe(2);
+    expect(extracted1).toMatchObject(scenario.poolPoints);
 
-    // Extract alt2 (own points) to standalone
     state = reducer(state, {
       type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
       alternativeTrackingId: 'a2',
@@ -292,9 +299,7 @@ describe('createEditorReducer', () => {
 
     const extracted2 = state.zones[0].questions[2];
     expect(extracted2.trackingId).toEqual(tid('a2'));
-    // Should keep its own autoPoints, inherit manualPoints from pool
-    expect(extracted2.autoPoints).toBe(7);
-    expect(extracted2.manualPoints).toBe(2);
+    expect(extracted2).toMatchObject(scenario.expectedPoints);
   });
 
   it('extract alternative inherits non-point fields from parent alt pool', () => {
@@ -432,6 +437,47 @@ describe('createEditorReducer', () => {
     ]);
   });
 
+  it('preserves inherited points when moving into a pool without defaults', () => {
+    const target = makeQuestion('target', {
+      autoPoints: undefined,
+      alternatives: [
+        makeAlternative('existing', { id: '@shared/existing', points: 6 }),
+        makeAlternative('modern', { id: 'modern', autoPoints: 5 }),
+      ],
+    });
+    const source = makeQuestion('source', {
+      autoPoints: undefined,
+      points: 3,
+      maxPoints: 9,
+      alternatives: [
+        makeAlternative('incoming', { id: '@shared/incoming' }),
+        makeAlternative('staying', { id: '@shared/staying' }),
+      ],
+    });
+    const initialState = makeState({
+      zones: [makeZone('z1', [target, source])],
+    });
+    const reducer = createEditorReducer(initialState);
+
+    const state = reducer(initialState, {
+      type: 'REORDER_ALTERNATIVE',
+      alternativeTrackingId: 'incoming',
+      toAltPoolTrackingId: 'target',
+      beforeAlternativeTrackingId: null,
+    });
+
+    expect(serializeZonesForJson(stripTrackingIds(state.zones))[0].questions).toEqual([
+      {
+        alternatives: [
+          { id: '@shared/existing', points: 6 },
+          { id: 'modern', autoPoints: 5 },
+          { id: '@shared/incoming', points: 3, maxPoints: 9 },
+        ],
+      },
+      { points: 3, maxPoints: 9, alternatives: [{ id: '@shared/staying' }] },
+    ]);
+  });
+
   it.each([
     { sourcePoints: { autoPoints: 5 }, targetPoints: { points: 6, maxPoints: 12 } },
     { sourcePoints: { points: 6, maxPoints: 12 }, targetPoints: { autoPoints: 5 } },
@@ -468,6 +514,45 @@ describe('createEditorReducer', () => {
         alternatives: [
           { id: '@shared/existing', ...scenario.targetPoints },
           { id: '@shared/incoming', ...scenario.sourcePoints },
+        ],
+      },
+    ]);
+  });
+
+  it('gives a picked question its own points when a nonempty pool has no defaults', () => {
+    const target = makeQuestion('target', {
+      autoPoints: undefined,
+      alternatives: [
+        makeAlternative('existing', { id: '@shared/existing', points: 6 }),
+        makeAlternative('modern', { id: 'modern', autoPoints: 5 }),
+      ],
+    });
+    const selectedItem = {
+      type: 'altPoolPicker',
+      zoneTrackingId: 'z1',
+      altPoolTrackingId: 'target',
+    } as const;
+    const initialState = makeState({
+      zones: [makeZone('z1', [target])],
+      selectedItem,
+    });
+    const reducer = createEditorReducer(initialState);
+
+    const state = reducer(initialState, {
+      type: 'QUESTION_PICKED',
+      qid: 'picked',
+      metadata: {
+        question: { qid: 'picked', grading_method: 'Manual' },
+      } as unknown as EditorQuestionMetadata,
+      expectedSelectedItem: selectedItem,
+    });
+
+    expect(serializeZonesForJson(stripTrackingIds(state.zones))[0].questions).toEqual([
+      {
+        alternatives: [
+          { id: '@shared/existing', points: 6 },
+          { id: 'modern', autoPoints: 5 },
+          { id: 'picked', manualPoints: 1 },
         ],
       },
     ]);

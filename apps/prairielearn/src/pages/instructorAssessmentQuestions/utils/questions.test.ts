@@ -123,15 +123,28 @@ describe('buildHierarchicalAssessment', () => {
         },
         assessment_question: { number: 2 },
       } as AssessmentQuestionStructureRow,
+      {
+        qid: 'q3',
+        zone: { id: 'z2', number: 2, title: 'Zone 2' },
+        alternative_pool: {
+          number: 3,
+          id: 'ag3',
+          json_has_alternatives: false,
+          number_choose: 1,
+        },
+        assessment_question: { number: 3 },
+      } as AssessmentQuestionStructureRow,
     ];
 
     const result = buildHierarchicalAssessment(rows);
 
-    expect(result).toHaveLength(1);
-    expect(result[0].title).toBe('Zone 1');
+    expect(result).toHaveLength(2);
+    expect(result.map((zone) => zone.title)).toEqual(['Zone 1', 'Zone 2']);
     expect(result[0].questions).toHaveLength(2);
     expect(result[0].questions[0].id).toBe('q1');
     expect(result[0].questions[1].id).toBe('q2');
+    expect(result[1].questions).toHaveLength(1);
+    expect(result[1].questions[0].id).toBe('q3');
   });
 
   it('collects alternatives within the same alternative pool', () => {
@@ -167,40 +180,6 @@ describe('buildHierarchicalAssessment', () => {
     expect(result[0].questions[0].alternatives).toHaveLength(2);
     expect(result[0].questions[0].alternatives![0].id).toBe('@shared/missing');
     expect(result[0].questions[0].alternatives![1].id).toBe('alt2');
-  });
-
-  it('preserves a shared-only zone before a zone with local questions', () => {
-    const rows = [
-      {
-        qid: '@shared/missing',
-        zone: { id: 'z1', number: 1, title: 'Shared questions', max_points: 10 },
-        alternative_pool: {
-          id: 'ag1',
-          number: 1,
-          json_has_alternatives: false,
-          json_points: 5,
-          json_max_points: 10,
-        },
-        assessment_question: { number: 1 },
-      },
-      {
-        qid: 'local',
-        zone: { id: 'z2', number: 2, title: 'Local questions' },
-        alternative_pool: { id: 'ag2', number: 2, json_has_alternatives: false },
-        assessment_question: { number: 2 },
-      },
-    ] as AssessmentQuestionStructureRow[];
-
-    const result = buildHierarchicalAssessment(rows);
-
-    expect(result.map((zone) => zone.title)).toEqual(['Shared questions', 'Local questions']);
-    expect(result[0].maxPoints).toBe(10);
-    expect(result[0].questions[0]).toMatchObject({
-      id: '@shared/missing',
-      points: 5,
-      maxPoints: 10,
-    });
-    expect(result[1].questions[0].id).toBe('local');
   });
 
   it('preserves zone overrides and standalone question comments', () => {

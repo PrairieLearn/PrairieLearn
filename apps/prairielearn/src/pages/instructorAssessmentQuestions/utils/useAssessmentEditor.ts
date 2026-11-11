@@ -55,6 +55,9 @@ function prepareAlternativeForPool(
   sourcePool?: ZoneQuestionBlockForm,
 ): QuestionAlternativeForm {
   const effectivePoints = sourcePool ? inheritPointFields(alternative, sourcePool) : alternative;
+  if (!hasLegacyPointFields(pool) && !hasModernPointFields(pool)) {
+    return { ...alternative, ...effectivePoints };
+  }
   const hasConflictingDefaults =
     (hasLegacyPointFields(effectivePoints) && hasModernPointFields(pool)) ||
     (hasModernPointFields(effectivePoints) && hasLegacyPointFields(pool));
@@ -197,25 +200,16 @@ function handleQuestionPicked(
       // Adding to existing alt pool
       const altPoolResult = findQuestionByTrackingId(newZones, selectedItem.altPoolTrackingId);
       if (!altPoolResult) return state;
-
-      // Empty pools start neutral; seed point defaults from the first picked question.
-      const shouldInitializeAltPoolPoints =
-        altPoolResult.question.alternatives?.length === 0 &&
-        altPoolResult.question.points == null &&
-        altPoolResult.question.maxPoints == null &&
-        altPoolResult.question.autoPoints == null &&
-        altPoolResult.question.maxAutoPoints == null &&
-        altPoolResult.question.manualPoints == null;
-
-      if (shouldInitializeAltPoolPoints) {
-        const pointFields = getDefaultPointFieldsForNewQuestion(gradingMethod);
-        Object.assign(altPoolResult.question, pointFields);
-      }
-
-      if (!altPoolResult.question.alternatives) return state;
-
+      const pool = altPoolResult.question;
+      if (!pool.alternatives) return state;
       const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
-      altPoolResult.question.alternatives.push(newAlt);
+      if (!hasLegacyPointFields(pool) && !hasModernPointFields(pool)) {
+        const pointFields = getDefaultPointFieldsForNewQuestion(gradingMethod);
+        // A nonempty pool may have distributed its defaults to preserve legacy
+        // points, so new defaults must only apply to the picked alternative.
+        Object.assign(pool.alternatives.length === 0 ? pool : newAlt, pointFields);
+      }
+      pool.alternatives.push(newAlt);
       newQuestionMetadata[qid] = metadata;
     } else {
       // Creating new alt pool: first question picked creates the pool

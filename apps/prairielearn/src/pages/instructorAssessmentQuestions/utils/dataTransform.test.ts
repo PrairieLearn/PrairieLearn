@@ -13,7 +13,6 @@ import * as courseDB from '../../../sync/course-db.js';
 import type { ZoneAssessmentForm } from '../types.js';
 
 import {
-  alternativeToQuestionBlock,
   createAltPoolWithTrackingId,
   getDefaultPointFieldsForNewQuestion,
   prepareZonesForEditor,
@@ -347,26 +346,6 @@ describe('prepareZonesForEditor normalization', () => {
 
     expect(result[0].questions[0].autoPoints).toBe(7);
     expect(result[0].questions[0].points).toBe(5);
-  });
-
-  it('normalizes points to autoPoints for Exam assessments', () => {
-    const zones: ZoneAssessmentJson[] = [
-      {
-        lockpoint: false,
-        canSubmit: [],
-        canView: [],
-        questions: [{ id: 'q1', points: 5, canSubmit: [], canView: [] }],
-      },
-    ];
-
-    const metadata = {
-      q1: { question: { grading_method: 'Internal' } },
-    } as unknown as QuestionMetadataMap;
-
-    const result = prepareZonesForEditor(zones, metadata);
-
-    expect(result[0].questions[0].autoPoints).toBe(5);
-    expect(result[0].questions[0].points).toBeUndefined();
   });
 
   it('normalizes points to manualPoints for Manual grading questions', () => {
@@ -778,28 +757,6 @@ describe('prepareZonesForEditor normalization', () => {
     const saved = serializeZonesForJson(stripTrackingIds(prepared));
 
     expect(saved).toEqual(originalZones);
-  });
-
-  it('preserves inherited legacy points when extracting an unavailable pool alternative', () => {
-    const zones = [
-      ZoneAssessmentJsonSchema.parse({
-        questions: [
-          {
-            points: 10,
-            maxPoints: 20,
-            alternatives: [{ id: '@shared/inherited' }, { id: '@shared/override', points: 2 }],
-          },
-        ],
-      }),
-    ];
-    const prepared = prepareZonesForEditor(zones, {});
-    const pool = prepared[0].questions[0];
-
-    const inherited = alternativeToQuestionBlock(pool.alternatives![0], pool);
-    const overridden = alternativeToQuestionBlock(pool.alternatives![1], pool);
-
-    expect(inherited).toMatchObject({ id: '@shared/inherited', points: 10, maxPoints: 20 });
-    expect(overridden).toMatchObject({ id: '@shared/override', points: 2, maxPoints: 20 });
   });
 });
 

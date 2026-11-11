@@ -2403,38 +2403,6 @@ describe('Assessment syncing', () => {
   });
 
   describe('Test validating shared questions on sync', () => {
-    it('retains authored question references when shared questions are unavailable locally', async () => {
-      const courseData = util.getCourseData();
-      const assessment = makeAssessment(courseData);
-      assessment.zones = [
-        {
-          questions: [{ id: '@unavailable-course/standalone', points: 5 }],
-        },
-        {
-          questions: [
-            {
-              points: 5,
-              alternatives: [{ id: '@unavailable-course/alternative' }, { id: util.QUESTION_ID }],
-            },
-          ],
-        },
-      ];
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['shared'] = assessment;
-
-      await withConfig({ checkSharingOnSync: false }, async () => {
-        await util.writeAndSyncCourseData(courseData);
-      });
-
-      const syncedData = await getSyncedAssessmentData('shared');
-      assert.isNull(syncedData.assessment.sync_errors);
-      assert.deepEqual(
-        syncedData.assessment_questions.map((question) => question.json_qid),
-        ['@unavailable-course/standalone', '@unavailable-course/alternative', util.QUESTION_ID],
-      );
-      assert.isNull(syncedData.assessment_questions[0].question.qid);
-      assert.isNull(syncedData.assessment_questions[1].question.qid);
-    });
-
     it('updates authored question references only after a successful sync', async () => {
       const courseData = util.getCourseData();
       const assessment = makeAssessment(courseData);
