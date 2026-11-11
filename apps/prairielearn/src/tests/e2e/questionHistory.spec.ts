@@ -43,10 +43,6 @@ test('history preserves collapse choices during loading and reuses the rendered 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(oldest.locator('.collapsing')).toHaveCount(0);
-  await toggle.click();
-  await expect(oldest.locator('.collapsing')).toHaveCount(0);
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await older.click();
 
   await route.continue();

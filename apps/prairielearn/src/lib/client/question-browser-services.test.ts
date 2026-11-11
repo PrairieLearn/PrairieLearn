@@ -33,12 +33,15 @@ const submissionInfo: SubmissionInfo = {
   gradingJobUrl: null,
 };
 
-function createServices(dialogData: QuestionDialogData) {
+function createServices(
+  dialogData: QuestionDialogData,
+  submissionRenderUrls = new Map([['2', '/pl/question/1/variant/3/submission/2']]),
+) {
   return createLocalQuestionBrowserServices({
     document,
     variantId: '3',
     variantToken: 'token',
-    submissionRenderUrls: new Map([['2', '/pl/question/1/variant/3/submission/2']]),
+    submissionRenderUrls,
     dialogData,
     isCurrent: () => true,
   });
@@ -164,16 +167,8 @@ it('updates an open submission dialog from server data without returning that da
 });
 
 it('discards submission responses received after the view is disposed', async () => {
-  let respond!: (response: Response) => void;
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(
-      () =>
-        new Promise<Response>((resolve) => {
-          respond = resolve;
-        }),
-    ),
-  );
+  const response = withResolvers<Response>();
+  vi.stubGlobal('fetch', vi.fn().mockReturnValue(response.promise));
   const { services, dispose } = createServices({
     copyQuestion: null,
     submissions: [submissionInfo],
@@ -183,12 +178,12 @@ it('discards submission responses received after the view is disposed', async ()
     { signal: new AbortController().signal },
   );
   dispose();
-  respond(Response.json({ ...panels, submissionInfo }));
+  response.resolve(Response.json({ ...panels, submissionInfo }));
   await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
   expect(document.querySelector('.modal')).toBeNull();
 });
 
-it('discards an older render of the same submission before updating scores or dialog metadata', async () => {
+it('discards an older render of the same submission before updating scores', async () => {
   const old = withResolvers<Response>();
   vi.stubGlobal(
     'fetch',
@@ -221,17 +216,13 @@ it('keeps feedback for different submissions without letting late responses roll
     vi.fn().mockReturnValueOnce(old.promise).mockResolvedValueOnce(Response.json(panels)),
   );
   document.body.innerHTML = '<div id="question-score-panel">0%</div>';
-  const { services, dispose } = createLocalQuestionBrowserServices({
-    document,
-    variantId: '3',
-    variantToken: 'token',
-    dialogData: { copyQuestion: null, submissions: [] },
-    submissionRenderUrls: new Map([
+  const { services, dispose } = createServices(
+    { copyQuestion: null, submissions: [] },
+    new Map([
       ['1', '/submission/1'],
       ['2', '/submission/2'],
     ]),
-    isCurrent: () => true,
-  });
+  );
   const options = { signal: new AbortController().signal };
   const pending = services.renderSubmission(
     { submissionId: '1', purpose: 'grading-result' },

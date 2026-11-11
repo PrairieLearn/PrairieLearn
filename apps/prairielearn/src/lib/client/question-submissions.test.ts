@@ -35,15 +35,7 @@ function setup(submissions: StatusMessageSubmission[]) {
     onRender,
     onError,
   });
-  return {
-    view,
-    onStatus,
-    notify,
-    unsubscribe,
-    render,
-    onRender,
-    onError,
-  };
+  return { view, onStatus, notify, unsubscribe, render, onRender, onError };
 }
 
 const queued: StatusMessageSubmission = {
