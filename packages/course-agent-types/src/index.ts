@@ -33,9 +33,29 @@ export type ConversationState = ConversationLifecycle & {
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
 
+/**
+ * The PrairieLearn pages the agent can open, built by PrairieLearn from its instructor navigation
+ * when a conversation is created. `key` uses the same vocabulary as `PageLocationSchema.page`,
+ * `params` are the names a page requires, and `file` marks pages that browse a directory's files.
+ */
+export const PageCatalogSchema = z
+  .array(
+    z.strictObject({
+      key: z.string().min(1).max(100),
+      label: z.string().min(1).max(100),
+      params: z.array(z.enum(['courseInstance', 'assessment', 'question'])),
+      file: z.boolean(),
+    }),
+  )
+  .max(200);
+
+export type PageCatalog = z.infer<typeof PageCatalogSchema>;
+
 export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
+  // Optional so the Worker can deploy before PrairieLearn starts sending it.
+  pages: PageCatalogSchema.optional(),
 });
 
 // Leave room for base64 encoding within the Durable Object's 2 MB storage-entry limit.
@@ -223,11 +243,11 @@ export const ToolCallSchema = z
 export type ToolCall = z.infer<typeof ToolCallSchema>;
 
 /**
- * The PrairieLearn page an instructor was viewing when they sent a message. `page` is a label
- * PrairieLearn chose for the kind of page. Names are the ones the agent sees in course files: a
- * course instance's directory, an assessment's `tid`, and a question's `qid` (only for this
- * course's own questions). Unknown keys are stripped, so PrairieLearn can add fields before the
- * Worker reads them.
+ * The PrairieLearn page an instructor was viewing when they sent a message. `page` is the page's
+ * navigation key, such as `assessment.settings`. Names are the ones the agent sees in course
+ * files: a course instance's directory, an assessment's `tid`, and a question's `qid` (only for
+ * this course's own questions). Unknown keys are stripped, so PrairieLearn can add fields before
+ * the Worker reads them.
  */
 export const PageLocationSchema = z.object({
   path: z.string().max(2000),
@@ -243,25 +263,30 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
 
 /**
- * A page the agent opens for the instructor, named the way course files name things. PrairieLearn
- * resolves the names to a URL; `page` is the path below the resolved base, such as `settings`.
+ * A page the agent opens for the instructor. `page` is a key from the conversation's page catalog,
+ * and the names are the ones course files use. PrairieLearn resolves them to a URL.
  */
 export const NavigationTargetSchema = z.strictObject({
+  page: z.string().min(1).max(100),
   courseInstance: z.string().min(1).max(500).optional(),
   assessment: z.string().min(1).max(500).optional(),
   question: z.string().min(1).max(500).optional(),
-  page: z
-    .string()
-    .max(200)
-    .regex(/^[a-z0-9_]+(\/[a-z0-9_]+)*$/)
-    .optional(),
+  /** For pages that browse files: a path inside the page's own directory. */
+  file: z.string().min(1).max(1000).optional(),
 });
 
 export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
 
-/** A `data-navigation` part: the agent asked the instructor's browser to change pages. */
+/**
+ * A `data-navigation` part: the agent asked the instructor's browser to change pages. `label` is
+ * the catalog's label for the page, kept so history renders without the catalog.
+ */
 export const NavigationPartSchema = z.discriminatedUnion('action', [
-  z.strictObject({ action: z.literal('open'), target: NavigationTargetSchema }),
+  z.strictObject({
+    action: z.literal('open'),
+    target: NavigationTargetSchema,
+    label: z.string().max(100),
+  }),
   z.strictObject({ action: z.literal('refresh') }),
 ]);
 

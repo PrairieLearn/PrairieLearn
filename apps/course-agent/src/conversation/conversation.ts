@@ -13,6 +13,7 @@ import {
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
+  type PageCatalog,
   type RequestChangesResult,
   RequestChangesResultSchema,
   type Review,
@@ -89,6 +90,8 @@ interface RecordData {
   review: ReviewRecord | null;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
+  /** Pages the agent can open; absent in records saved before PrairieLearn sent a catalog. */
+  pages?: PageCatalog;
 }
 
 // Destruction is a private phase because the replacement checkpoint is committed
@@ -236,7 +239,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * Set up conversation state and pin the course source and model.
    * The sandbox is created or restored when the first message arrives.
    */
-  initialize(config: CourseSource) {
+  initialize(config: CourseSource, pages?: PageCatalog) {
     if (this._record) throw new Error('Conversation is already initialized');
     // TODO: Define how existing sandboxes follow course repository/branch changes. Never
     // retarget an edited sandbox just because a reconnect supplies updated course labels.
@@ -252,6 +255,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: false,
       threadMayBeBehind: false,
       submittedMessageId: null,
+      pages,
     });
   }
 
@@ -491,6 +495,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         model: this.record.config.model,
         instructions: buildInstructions(this.record.courseContext ?? undefined, source.type),
         threadId: this.record.nativeThreadId,
+        pages: this.record.pages ?? [],
       },
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.

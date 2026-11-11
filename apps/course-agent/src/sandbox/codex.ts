@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   type NavigationPart,
   NavigationTargetSchema,
+  type PageCatalog,
   type ToolCall,
 } from '@prairielearn/course-agent-types';
 
@@ -107,6 +108,8 @@ export class CodexAppServerClient {
   private toolChars = { messageId: '', used: 0 };
   private failure: Error | null = null;
   private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
+  /** Navigation calls are checked against the conversation's catalog, also on a resumed thread. */
+  private pages: PageCatalog = [];
 
   constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
 
@@ -221,24 +224,30 @@ export class CodexAppServerClient {
       if (!this.onReview) throw new Error('Review handling is not configured');
       return await this.onReview({ ...call, arguments: {} });
     }
-    let navigation: NavigationPart;
     if (call.tool === 'refresh_page') {
-      navigation = { action: 'refresh' };
-    } else {
-      const target = NavigationTargetSchema.safeParse(call.arguments);
-      if (!target.success) {
-        return { success: false, text: `Invalid navigation target: ${target.error.message}` };
-      }
-      navigation = { action: 'open', target: target.data };
+      const navigation: NavigationPart = { action: 'refresh' };
+      // The browser acts on this part; the reply cannot confirm the page reloaded.
+      this.emit({ type: 'data-navigation', id: `navigation:${call.callId}`, data: navigation });
+      return { success: true, text: "The instructor's page is reloading." };
     }
+    const target = NavigationTargetSchema.safeParse(call.arguments);
+    if (!target.success) {
+      return { success: false, text: `Invalid navigation target: ${target.error.message}` };
+    }
+    const page = this.pages.find((entry) => entry.key === target.data.page);
+    if (!page) {
+      return { success: false, text: `Unknown page "${target.data.page}".` };
+    }
+    const missing = page.params.filter((param) => !target.data[param]);
+    if (missing.length > 0) {
+      return { success: false, text: `Page "${page.key}" also needs: ${missing.join(', ')}.` };
+    }
+    const navigation: NavigationPart = { action: 'open', target: target.data, label: page.label };
     // The browser acts on this part; the reply cannot confirm the page loaded.
     this.emit({ type: 'data-navigation', id: `navigation:${call.callId}`, data: navigation });
     return {
       success: true,
-      text:
-        navigation.action === 'refresh'
-          ? "The instructor's page is reloading."
-          : "The instructor's browser is opening the page. If the names do not match a course instance, assessment, or question, PrairieLearn shows the instructor an error instead.",
+      text: "The instructor's browser is opening the page. If the names do not match a course instance, assessment, or question, PrairieLearn shows the instructor an error instead.",
     };
   }
 
@@ -274,7 +283,13 @@ export class CodexAppServerClient {
     }
   }
 
-  async thread(config: { model: string; instructions: string; threadId: string | null }) {
+  async thread(config: {
+    model: string;
+    instructions: string;
+    threadId: string | null;
+    pages: PageCatalog;
+  }) {
+    this.pages = config.pages;
     const settings = {
       model: config.model,
       cwd: COURSE_DIR,
@@ -298,7 +313,7 @@ export class CodexAppServerClient {
             ...settings,
             dynamicTools: [
               ...(this.onReview ? [requestChangesTool] : []),
-              navigateTool,
+              ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
               refreshPageTool,
             ],
           } satisfies ThreadStartParams,
@@ -479,38 +494,49 @@ const requestChangesTool: DynamicToolSpec = {
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 };
 
-const navigateTool: DynamicToolSpec = {
-  type: 'function',
-  name: 'navigate',
-  description:
-    "Open a PrairieLearn page in the instructor's browser, replacing the page they are viewing. Name things as course files do. With no names, opens a course page. With courseInstance, opens a page of that course instance. With courseInstance and assessment, opens a page of that assessment. With question (optionally within courseInstance), opens a page of that question. `page` is the path below that base; omit it for the default page.",
-  inputSchema: {
-    type: 'object',
-    properties: {
-      courseInstance: {
-        type: 'string',
-        description: 'Course instance directory name under courseInstances/, such as Fa25.',
+/** The model learns which pages exist from this tool, so the catalog is not repeated in instructions. */
+function navigateTool(pages: PageCatalog): DynamicToolSpec {
+  const lines = pages.map(({ key, label, params, file }) => {
+    const needs = [...params, ...(file ? ['optional file'] : [])];
+    return `${key}: ${label}${needs.length > 0 ? ` (${needs.join(', ')})` : ''}`;
+  });
+  return {
+    type: 'function',
+    name: 'navigate',
+    description: [
+      "Open a PrairieLearn page in the instructor's browser, replacing the page they are viewing. Choose `page` from this list, and pass the names shown in parentheses:",
+      ...lines,
+    ].join('\n'),
+    inputSchema: {
+      type: 'object',
+      properties: {
+        page: { type: 'string', enum: pages.map((page) => page.key) },
+        courseInstance: {
+          type: 'string',
+          description:
+            'Course instance directory name under courseInstances/, such as Fa25. Optional on course and question pages, where it keeps the instructor in that course instance.',
+        },
+        assessment: {
+          type: 'string',
+          description:
+            'Assessment directory path under the course instance assessments/ directory (its tid), such as hw1.',
+        },
+        question: {
+          type: 'string',
+          description:
+            'Question directory path under questions/ (its qid), such as algebra/addition.',
+        },
+        file: {
+          type: 'string',
+          description:
+            "For pages marked optional file: a path inside that page's directory, such as question.html within the question's directory. The course page covers files outside questions/ and courseInstances/.",
+        },
       },
-      assessment: {
-        type: 'string',
-        description:
-          'Assessment directory path under the course instance assessments/ directory (its tid), such as hw1. Requires courseInstance.',
-      },
-      question: {
-        type: 'string',
-        description:
-          'Question directory path under questions/ (its qid), such as algebra/addition.',
-      },
-      page: {
-        type: 'string',
-        description:
-          'Path below the base, lowercase segments separated by slashes, such as settings or instance_admin/gradebook.',
-      },
+      required: ['page'],
+      additionalProperties: false,
     },
-    required: [],
-    additionalProperties: false,
-  },
-};
+  };
+}
 
 const refreshPageTool: DynamicToolSpec = {
   type: 'function',

@@ -15,7 +15,7 @@ import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { AssessmentNavigation, AssessmentNavigationModal } from './AssessmentNavigation.js';
-import { HeadContents, displayFriendlyPage } from './HeadContents.js';
+import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
@@ -299,15 +299,12 @@ export function PageLayout({
   const courseAgentPanel =
     sideNavEnabled && resolvedOptions.showCourseAgentPanel ? resLocals.course_agent_panel : null;
 
-  // The agent sees the page through labels PrairieLearn chooses, not the page title, which can
-  // name students. Imported questions are left out because they are not in this course's files.
+  // The agent sees the page through its nav key, not the page title, which can name students.
+  // Imported questions are left out because they are not in this course's files.
   const courseAgentPage = courseAgentPanel
     ? EncodedData(
         {
-          page: [navContext.page, navContext.subPage]
-            .filter((part) => part != null)
-            .map(displayFriendlyPage)
-            .join(' › '),
+          page: [navContext.page, navContext.subPage].filter((part) => part != null).join('.'),
           courseInstance: resLocals.course_instance?.short_name ?? undefined,
           assessment: resLocals.assessment?.tid ?? undefined,
           question:
