@@ -800,6 +800,18 @@ describe('Editing assessment questions', { concurrent: false }, () => {
       assert.include(editor.text(), '@unavailable/mixed');
       assert.include(editor.text(), 'Unavailable locally');
       assert.lengthOf(editor.find('a[href*="/question/"]'), 1);
+      for (const [qid, score] of [
+        ['@unavailable/shared-only', '5/10 pts'],
+        ['@unavailable/mixed', '4/8 pts'],
+      ]) {
+        const row = editor
+          .find('span.font-monospace')
+          .filter((_, element) => response.$(element).text() === qid)
+          .closest('[role="button"]');
+        assert.lengthOf(row, 1);
+        assert.include(row.text(), score);
+        assert.lengthOf(row.find('.bi-pen-fill, .bi-lightning-charge-fill'), 0);
+      }
     });
 
     test('handles existing question rows without retained references until they are synced again', async () => {
