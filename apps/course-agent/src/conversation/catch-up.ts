@@ -1,6 +1,10 @@
 import type { UIMessage, UIMessageChunk } from 'ai';
 
-import { type RequestChangesResult, ToolCallSchema } from '@prairielearn/course-agent-types';
+import {
+  InputRequestPartSchema,
+  type RequestChangesResult,
+  ToolCallSchema,
+} from '@prairielearn/course-agent-types';
 
 /** Keep the newest turns within a bound that leaves room for the current request. */
 const MAX_CATCH_UP_CHARS = 32_000;
@@ -134,6 +138,33 @@ function describeFileChange(data: unknown) {
   return `[Changed files: ${paths.join(', ')}.]`;
 }
 
+/** A restored thread may have lost the prompts that staff's next message answers. */
+function describeInputRequest(data: unknown) {
+  const part = InputRequestPartSchema.safeParse(data);
+  if (!part.success) return '';
+  return part.data.prompts
+    .map(({ title, options }) =>
+      options?.length ? `[Asked: ${title} (options: ${options.join('; ')})]` : `[Asked: ${title}]`,
+    )
+    .join('\n');
+}
+
+/** The text a part contributes to catch-up, or an empty string if it contributes none. */
+function describePart(part: UIMessage['parts'][number]) {
+  switch (part.type) {
+    case 'text':
+      return part.text.trim();
+    case 'data-review':
+      return '[Submitted changes for instructor review.]';
+    case 'data-input-request':
+      return describeInputRequest(part.data);
+    case 'data-tool':
+      return describeFileChange(part.data);
+    default:
+      return '';
+  }
+}
+
 /** Split chat history into the turns Codex received, each with its tag and visible text. */
 function splitTurns(history: UIMessage[]) {
   const turns: Turn[] = [];
@@ -147,14 +178,7 @@ function splitTurns(history: UIMessage[]) {
         turns.push({ tag, entries: [`PrairieLearn: ${summary}`] });
         continue;
       }
-      const text =
-        part.type === 'text'
-          ? part.text.trim()
-          : part.type === 'data-review'
-            ? '[Submitted changes for instructor review.]'
-            : part.type === 'data-tool'
-              ? describeFileChange(part.data)
-              : '';
+      const text = describePart(part);
       if (!text) continue;
       turns.at(-1)?.entries.push(`${message.role === 'user' ? 'Staff' : 'You'}: ${text}`);
     }

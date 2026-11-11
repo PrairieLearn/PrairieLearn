@@ -1,8 +1,22 @@
-import { type FileDiffMetadata, getSingularPatch } from '@pierre/diffs';
+import {
+  type FileDiffMetadata,
+  type SupportedLanguages,
+  getFiletypeFromFileName,
+  getSingularPatch,
+  preloadHighlighter,
+} from '@pierre/diffs';
 import { FileDiff, Virtualizer } from '@pierre/diffs/react';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
-import { type CSSProperties, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  type CSSProperties,
+  use,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Form, ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
 
 import type { ReviewDiffFile } from '../../lib/course-agent/review-diff.js';
@@ -71,6 +85,37 @@ function parseFile(file: ReviewDiffFile): ParsedFile {
   };
 }
 
+const highlighterLoads = new Map<string, Promise<void>>();
+
+const NOTHING_TO_HIGHLIGHT = Promise.resolve();
+
+/**
+ * Pierre renders no lines until its highlighter has loaded, so every file would mount as an empty
+ * bordered box. The virtualizer would then treat all of them as visible and highlight every file
+ * at once. Suspending until the highlighter is ready keeps the loading spinner up instead, and
+ * lets the virtualizer measure real heights.
+ */
+function loadHighlighter(parsed: ParsedFile[]) {
+  const langs = new Set<SupportedLanguages>();
+  for (const { diff } of parsed) {
+    if (!diff || diff.hunks.length === 0) continue;
+    langs.add(getFiletypeFromFileName(diff.prevName ?? diff.name));
+    langs.add(getFiletypeFromFileName(diff.name));
+  }
+  // Binary and empty files only show a notice.
+  if (langs.size === 0) return NOTHING_TO_HIGHLIGHT;
+  const key = [...langs].sort().join(',');
+  let load = highlighterLoads.get(key);
+  if (!load) {
+    // If preloading fails, render anyway and let Pierre retry and report the error.
+    load = preloadHighlighter({ themes: [THEME.light, THEME.dark], langs: [...langs] }).catch(
+      () => undefined,
+    );
+    highlighterLoads.set(key, load);
+  }
+  return load;
+}
+
 function basename(path: string) {
   return path.slice(path.lastIndexOf('/') + 1);
 }
@@ -106,6 +151,7 @@ function bootstrapThemeType() {
 export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
   const id = useId();
   const parsed = useMemo(() => files.map(parseFile), [files]);
+  use(loadHighlighter(parsed));
   const [preferSplit, setPreferSplit] = useState(true);
   const wide = useSyncExternalStore(
     subscribeWide,
