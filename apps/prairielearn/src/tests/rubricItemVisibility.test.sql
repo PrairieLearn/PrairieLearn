@@ -9,7 +9,7 @@ WITH
         starting_points
       )
     VALUES
-      (0, 0, false, 0)
+      (0, 0, FALSE, 0)
     RETURNING
       id
   )
@@ -36,9 +36,9 @@ FROM
   rubric
   CROSS JOIN (
     VALUES
-      (1, true),
-      (2, false),
-      (3, false)
+      (1, TRUE),
+      (2, FALSE),
+      (3, FALSE)
   ) AS item (number, always_show_to_students)
 ORDER BY
   item.number;
