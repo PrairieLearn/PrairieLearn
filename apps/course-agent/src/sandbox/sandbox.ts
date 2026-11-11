@@ -20,7 +20,7 @@ import { logEvent, redactSecrets } from '../monitoring.js';
 import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
 const SESSION = '/workspace/session';
-// Downloaded course data and the agent's analysis scripts. Excluded from checkpoints.
+// Downloaded course data and the agent's analysis scripts.
 const COURSE_DATA = `${SESSION}/course-data`;
 // The node user and group in the base container image both have ID 1000.
 const NODE_UID_GID = '1000:1000';
@@ -300,8 +300,7 @@ export class CourseSandbox extends DurableObject<Env> {
       `${SESSION}/home/.codex/config.toml`,
       'model_provider = "prairielearn"\nweb_search = "live"\n[model_providers.prairielearn]\nname = "PrairieLearn"\nbase_url = "http://model.internal/v1"\nwire_api = "responses"\nsupports_websockets = false\nrequires_openai_auth = false\nsupports_standalone_web_search = true\n',
     );
-    // Checkpoints exclude course data, so create its directory on every start, before the session
-    // directory is locked.
+    // Create the course data directory before the session directory is locked.
     await this.exec(['mkdir', '-p', COURSE_DATA]);
     await this.exec(['chown', '-R', NODE_UID_GID, `${SESSION}/home`, COURSE_DATA]);
     // addCourseFiles() locks a fresh workspace once its files are in place.
@@ -684,8 +683,7 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.stopProcesses();
     return this.backups.backup({
       dir: SESSION,
-      // Course data is student data; the agent can fetch it again after a restore.
-      exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json', 'course-data'],
+      exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json'],
     });
   }
 
