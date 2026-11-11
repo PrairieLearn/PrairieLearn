@@ -31,7 +31,6 @@ export const PrintPacketMetadataSchema = z.strictObject({
     .array(
       z.strictObject({
         printFormId: IdSchema,
-        formLabel: z.string().regex(/^[A-Z]$/),
         settings: PrintSettingsSchema,
       }),
     )
@@ -40,10 +39,6 @@ export const PrintPacketMetadataSchema = z.strictObject({
     .refine(
       (forms) => new Set(forms.map((form) => form.printFormId)).size === forms.length,
       'Select each print form only once.',
-    )
-    .refine(
-      (forms) => new Set(forms.map((form) => form.formLabel)).size === forms.length,
-      'Each print form must have a different form label.',
     ),
   copies: z.number().int().min(1).max(MAX_PRINT_COPIES),
   document: z.enum(['assessment', 'answer_key', 'booklet']),

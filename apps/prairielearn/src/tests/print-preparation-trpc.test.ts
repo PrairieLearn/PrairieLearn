@@ -20,7 +20,6 @@ import { getAssessmentTrpcUrl, getPrintFormUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { createPrintForm } from '../lib/print-forms.js';
 import * as printing from '../lib/printing/index.js';
 import * as printExportRender from '../lib/printing/print-export-render.js';
 import {
@@ -30,12 +29,14 @@ import {
   queuePrintExport,
   waitForPrintExportWorkers,
 } from '../lib/printing/print-exports.js';
+import { createPrintForm } from '../lib/printing/print-forms.js';
 import { PrintPacketMetadataSchema } from '../lib/printing/print-packet-schema.js';
 import { assessmentHasPrintRandomization } from '../lib/printing/print-preparation.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
+import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { selectOptionalPrintExport } from '../models/print-export.js';
 import { selectPrintFormQuestions } from '../models/print-form-question.js';
@@ -71,7 +72,7 @@ function packetInput(
   data.set(
     'metadata',
     JSON.stringify({
-      forms: [{ printFormId, formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS }],
+      forms: [{ printFormId, settings: DEFAULT_PRINT_SETTINGS }],
       copies,
       document,
     }),
@@ -214,13 +215,21 @@ describe('print preparation', { timeout: 60_000 }, () => {
         await selectOptionalPrintForm({
           printFormId: first.printFormId,
           assessmentId: assessment.id,
-          userId: '1',
         }),
       ).toMatchObject({ user_id: '1', authn_user_id: '1' });
       expect((await selectAssessmentById(assessment.id)).multiple_instance).toBe(false);
       const forms = await api.printForms.list.query();
-      expect(forms.map((form) => form.id)).toEqual([second.printFormId, first.printFormId]);
-      expect(Object.keys(forms[0]).sort()).toEqual(['assessment_id', 'created_at', 'id']);
+      expect(forms.slice(0, 2).map((form) => form.id)).toEqual([
+        second.printFormId,
+        first.printFormId,
+      ]);
+      expect(Object.keys(forms[0]).sort()).toEqual([
+        'archived_at',
+        'assessment_id',
+        'created_at',
+        'id',
+        'label',
+      ]);
       const questions = await api.printForms.questions.query(first);
       expect(questions.length).toBeGreaterThan(0);
       expect(questions[0].number).toBe(
@@ -240,26 +249,39 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const originalQuestions = await api.printForms.questions.query(first);
     const regenerated = await api.printForms.regenerate.mutate(first);
     expect(regenerated.printFormId).not.toBe(first.printFormId);
+    expect(regenerated.label).not.toBe(first.label);
     expect(await selectPrintFormQuestions(first.printFormId)).toEqual(original);
+    expect(
+      (await selectOptionalPrintForm({
+        printFormId: first.printFormId,
+        assessmentId: assessment.id,
+      }))!.archived_at,
+    ).not.toBeNull();
     expect(await api.printForms.questions.query(first)).toEqual(originalQuestions);
     expect(await api.printForms.questions.query(regenerated)).toHaveLength(
       originalQuestions.length,
     );
   });
 
-  test('does not expose or regenerate another user’s form or another assessment’s form', async () => {
+  test('shares forms across staff while keeping assessment boundaries', async () => {
     const assessment = await printAssessment();
     const otherAssessment = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'exam23-printing',
     });
     const otherUser = await getOrCreateUser({
-      uid: 'print-student@example.com',
-      name: 'Print student',
+      uid: 'print-collaborator@example.com',
+      name: 'Print collaborator',
       uin: '555555555',
-      email: 'print-student@example.com',
+      email: 'print-collaborator@example.com',
     });
     const courseInstance = await selectCourseInstanceById('1');
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid: otherUser.uid,
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
     const otherUserForm = await createPrintForm({
       assessment,
       course: await selectCourseById(courseInstance.course_id),
@@ -269,17 +291,16 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
     const api = client(assessment.id);
     expect((await api.printForms.list.query()).some((form) => form.id === otherUserForm.id)).toBe(
-      false,
+      true,
     );
-    await expect(api.printForms.questions.query({ printFormId: otherUserForm.id })).rejects.toThrow(
-      'This print form is not available.',
-    );
-    await expect(
-      api.printForms.regenerate.mutate({ printFormId: otherUserForm.id }),
-    ).rejects.toThrow('This print form is not available.');
+    expect(
+      (await api.printForms.questions.query({ printFormId: otherUserForm.id })).length,
+    ).toBeGreaterThan(0);
+    const replacement = await api.printForms.regenerate.mutate({ printFormId: otherUserForm.id });
+    expect(replacement.printFormId).not.toBe(otherUserForm.id);
     await expect(
       api.printableAssessmentExport.pdf.mutate(packetInput(otherUserForm.id)),
-    ).rejects.toThrow('A print form is not available.');
+    ).rejects.toThrow('The printable pages are incomplete.');
     const otherForm = await client(otherAssessment.id).printForms.create.mutate();
     await expect(api.printForms.questions.query(otherForm)).rejects.toThrow(
       'This print form is not available.',
@@ -408,12 +429,15 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const form = await api.printForms.create.mutate();
+    const { label } = (await selectOptionalPrintForm({
+      printFormId: form.printFormId,
+      assessmentId: assessment.id,
+    }))!;
     const data = packetInput(form.printFormId);
     const html = '<!doctype html><html data-print-status="ready"></html>';
     const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
-    search.set('form_label', 'A');
     search.set('document', 'assessment');
-    data.append('pages', new File([html], 'form-a.html'));
+    data.append('pages', new File([html], `form-${label}.html`));
     data.append(
       'snapshotIds',
       createPrintSnapshotId(
@@ -446,6 +470,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
       });
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledOnce();
+      expect(render.mock.calls[0][0]).toMatchObject({
+        snapshots: [{ formLabel: label }],
+      });
     } finally {
       render.mockRestore();
     }
@@ -456,7 +483,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'pdf',
       downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${printExportId}`,
       sizeBytes: pdf.length,
-      label: 'Form A PDF',
+      label: `Form ${label} PDF`,
       failureMessage: null,
     });
     const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${printExportId}`;
@@ -498,6 +525,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const form = await api.printForms.create.mutate();
+    const { label } = (await selectOptionalPrintForm({
+      printFormId: form.printFormId,
+      assessmentId: assessment.id,
+    }))!;
     const printUrl = getPrintFormUrl({
       courseInstanceId: '1',
       assessmentId: assessment.id,
@@ -505,14 +536,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
     const search = new URLSearchParams({
       paper_size: 'Letter',
-      form_label: 'A',
       grading_table: 'true',
     });
     const source = {
       html: '<p><strong>Queued editable question</strong></p><img data-docx-figure="1">',
       figures: [{ id: '1', width: 120, height: 60, alt: 'Queued diagram' }],
     };
-    const html = `<!doctype html><html data-print-form-id="${form.printFormId}" data-print-document="assessment" data-print-form-label="A" data-print-paper-size="Letter" data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0" data-print-max-points="6" data-print-grading-table='{"questionNumbers":["1"],"rowsPerColumn":1}'><head></head><body><div class="pagedjs_page"></div><div class="pagedjs_page"><section class="printing-question">Queued editable question</section></div></body></html>`;
+    const html = `<!doctype html><html data-print-form-id="${form.printFormId}" data-print-document="assessment" data-print-form-label="${label}" data-print-paper-size="Letter" data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0" data-print-max-points="6" data-print-grading-table='{"questionNumbers":["1"],"rowsPerColumn":1}'><head></head><body><div class="pagedjs_page"></div><div class="pagedjs_page"><section class="printing-question">Queued editable question</section></div></body></html>`;
     const snapshot = {
       html,
       source,
@@ -557,7 +587,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       expect(render.mock.calls[0][0]).toMatchObject({
         format: 'docx',
         source,
-        footerLabel: 'Form A',
+        footerLabel: `Form ${label}`,
         cover: {
           summary: [
             { term: 'Questions', value: '1' },
@@ -577,7 +607,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'docx',
       downloadUrl,
       sizeBytes: docx.length,
-      label: 'Form A Word document',
+      label: `Form ${label} Word document`,
       failureMessage: null,
     });
     const printExport = (await selectOptionalPrintExport({
@@ -727,7 +757,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const data = packetInput(form.printFormId);
     const html = '<!doctype html><html data-print-status="ready"></html>';
     const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
-    search.set('form_label', 'A');
     search.set('document', 'assessment');
     data.append(
       'snapshotIds',

@@ -27,7 +27,7 @@ import { PrintPacketError, readPrintCoverPages } from '../../lib/printing/print-
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectOptionalPrintExport } from '../../models/print-export.js';
-import { selectPrintFormsForUser } from '../../models/print-form.js';
+import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
 import { requirePrintableAssessments } from './print-forms.js';
@@ -59,18 +59,15 @@ export const printableAssessmentExportRouter = t.router({
           cause: error,
         });
       }
-      const forms = await selectPrintFormsForUser({
-        assessmentId: ctx.assessment.id,
-        userId: ctx.locals.user.id,
+      const savedForms = await selectPrintFormsForAssessment({ assessmentId: ctx.assessment.id });
+      const formsById = new Map(savedForms.map((form) => [form.id, form]));
+      const forms = metadata.forms.map((selected) => {
+        const saved = formsById.get(selected.printFormId);
+        if (!saved) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'A print form is not available.' });
+        }
+        return { ...selected, formLabel: saved.label };
       });
-      if (
-        metadata.forms.some((selected) => !forms.some((form) => form.id === selected.printFormId))
-      ) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'A print form is not available.',
-        });
-      }
       const files = z.array(z.instanceof(File)).safeParse(input.getAll('coverPages'));
       if (!files.success) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
@@ -94,7 +91,7 @@ export const printableAssessmentExportRouter = t.router({
         const covers =
           metadata.document === 'answer_key' ? [] : await readPrintCoverPages(files.data);
         // Copies cycle through the first `copies` forms; booklets also append every form's answer key.
-        const entries = metadata.forms.flatMap((form, index) => {
+        const entries = forms.flatMap((form, index) => {
           const printed = index < metadata.copies;
           const documents: PrintDocument[] = {
             assessment: printed ? ['assessment' as const] : [],
@@ -140,7 +137,7 @@ export const printableAssessmentExportRouter = t.router({
           string,
           { questionListDigest: string; assetScope: PrintAssetScope }
         >();
-        for (const form of metadata.forms) {
+        for (const form of forms) {
           const excludedQuestions = new Set(form.settings.excludedQuestions);
           await validateQuestionsForPrinting(
             form.printFormId,
@@ -173,7 +170,6 @@ export const printableAssessmentExportRouter = t.router({
           const { questionListDigest, assetScope } = formContexts.get(form.printFormId)!;
           const search = new URLSearchParams(printLayoutSearch(form.settings));
           search.set('document', printDocument);
-          search.set('form_label', form.formLabel);
           const localPreviewUrl = new URL(
             `${getPrintFormUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id, printFormId: form.printFormId })}/preview?${search}`,
             `${config.serverType}://localhost:${config.serverPort}`,

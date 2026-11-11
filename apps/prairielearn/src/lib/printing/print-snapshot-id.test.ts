@@ -10,7 +10,7 @@ const secretKey = 'print-snapshot-test-key';
 const snapshot = {
   printFormId: '123',
   authnUserId: '45',
-  search: new URLSearchParams('paper_size=Letter&form_label=A&document=assessment'),
+  search: new URLSearchParams('paper_size=Letter&include_cover=true&document=assessment'),
   questionListDigest: 'question-list-1',
   html: '<!doctype html>\n<html><head></head><body>Question 1</body></html>',
   source: { html: '<section>Question 1</section>', figures: [] },
@@ -28,7 +28,7 @@ describe('print snapshot IDs', () => {
         {
           ...snapshot,
           id,
-          search: new URLSearchParams('document=assessment&form_label=A&paper_size=Letter'),
+          search: new URLSearchParams('document=assessment&include_cover=true&paper_size=Letter'),
         },
         secretKey,
       ),

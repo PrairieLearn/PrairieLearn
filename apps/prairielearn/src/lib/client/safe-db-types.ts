@@ -156,9 +156,11 @@ export type StudentAssessmentInstance__UNSAFE = z.infer<
 
 /** Print Forms */
 export const RawStaffPrintFormSchema = RawPrintFormSchema.pick({
+  archived_at: true,
   assessment_id: true,
   created_at: true,
   id: true,
+  label: true,
 });
 export const StaffPrintFormSchema = RawStaffPrintFormSchema.brand<'StaffPrintForm'>();
 export type StaffPrintForm = z.infer<typeof StaffPrintFormSchema>;

@@ -108,7 +108,6 @@ export function applyPrintAssetRoutes(app: Express): void {
       const printForm = await selectOptionalPrintForm({
         printFormId: scope.printFormId,
         assessmentId: scope.assessmentId,
-        userId: scope.userId,
       });
       if (!printForm) throw new HttpStatusError(403, 'Print asset access denied');
       const assessment = await selectAssessmentById(scope.assessmentId);
