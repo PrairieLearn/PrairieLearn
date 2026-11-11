@@ -158,21 +158,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["a_sub"] = pl.string_from_2darray(
                 a_sub, language=format_type, digits=12, presentation_type="g"
             )
+            if submitted_raw_answer is not None:
+                html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                    submitted_raw_answer, aria_label or name
+                )
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
         elif submitted_raw_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                 submitted_raw_answer
-            )
-
-        if (
-            parse_error is None
-            and name in data["submitted_answers"]
-            and submitted_raw_answer is not None
-        ):
-            html_params["raw_input_popover"] = pl.render_raw_input_popover(
-                submitted_raw_answer, aria_label or name
             )
 
         partial_score = data["partial_scores"].get(name, {"score": None})

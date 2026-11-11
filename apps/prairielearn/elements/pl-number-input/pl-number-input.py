@@ -348,6 +348,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["submitted_answer"] = ("{:" + custom_format + "}").format(
                     submitted_answer
                 )
+            if submitted_raw_answer is not None:
+                html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                    submitted_raw_answer,
+                    aria_label or name,
+                    show_if_ascii_only=False,
+                )
 
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
@@ -357,16 +363,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 submitted_raw_answer
             )
 
-        if (
-            parse_error is None
-            and name in data["submitted_answers"]
-            and submitted_raw_answer is not None
-        ):
-            html_params["raw_input_popover"] = pl.render_raw_input_popover(
-                submitted_raw_answer,
-                aria_label or name,
-                show_if_ascii_only=False,
-            )
         # Add true answer to be able to display it in the submitted answer panel
         if show_correct_answer:
             html_params["correct_answer"] = format_true_ans(element, data, name)

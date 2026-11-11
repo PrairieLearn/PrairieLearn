@@ -198,6 +198,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error: str | None = data["format_errors"].get(name)
     missing_input = False
     a_sub = None
+    submitted_raw_answer = data["raw_submitted_answers"].get(name)
+    raw_input_popover = None
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
@@ -210,6 +212,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_trig_functions=False,
                 )
             )
+        if data["panel"] == "submission" and submitted_raw_answer is not None:
+            raw_input_popover = pl.render_raw_input_popover(
+                submitted_raw_answer, aria_label or name
+            )
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -220,7 +226,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ).strip()
 
     # Next, get some attributes we will use in multiple places
-    raw_answer_or_initial_value = data["raw_submitted_answers"].get(name)
+    raw_answer_or_initial_value = submitted_raw_answer
     if raw_answer_or_initial_value is None:
         raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
@@ -253,7 +259,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
-        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "type": bigo_type,
@@ -268,16 +273,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else None
             ),
             "missing_input": missing_input,
+            "raw_input_popover": raw_input_popover,
         }
-
-        if (
-            parse_error is None
-            and name in data["submitted_answers"]
-            and submitted_raw_answer is not None
-        ):
-            html_params["raw_input_popover"] = pl.render_raw_input_popover(
-                submitted_raw_answer, aria_label or name
-            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
