@@ -11,22 +11,29 @@ const PRINT_REQUEST_TIMEOUT_MS = 45_000;
  */
 export function startPrintRequest(res: Response) {
   const deadline = Date.now() + PRINT_REQUEST_TIMEOUT_MS;
-  const controller = new AbortController();
-  const timeout = setTimeout(
+  const disconnect = new AbortController();
+  const timeout = new AbortController();
+  const timer = setTimeout(
     () =>
-      controller.abort(
+      timeout.abort(
         new HttpStatusError(504, 'Printing took too long. Try again or select fewer questions.'),
       ),
     PRINT_REQUEST_TIMEOUT_MS,
   );
   res.once('close', () => {
-    clearTimeout(timeout);
+    clearTimeout(timer);
     if (!res.writableFinished) {
-      controller.abort(new Error('The print request was disconnected'));
+      disconnect.abort(new Error('The print request was disconnected'));
     }
   });
   return {
-    signal: controller.signal,
+    /** Stops question preparation at the deadline or when the client disconnects. */
+    signal: AbortSignal.any([disconnect.signal, timeout.signal]),
+    /**
+     * Cancels rendering when the client disconnects. Renders enforce the deadline themselves via
+     * `remainingTimeoutMs()`, so a render that hangs at the deadline can discard its browser.
+     */
+    disconnectSignal: disconnect.signal,
     remainingTimeoutMs: () => Math.max(1, deadline - Date.now()),
   };
 }

@@ -2,6 +2,8 @@ import * as https from 'node:https';
 
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
+import { HttpStatusError } from '@prairielearn/error';
+
 import { config } from '../config.js';
 
 import { createPdfOutput } from './pdf-output.js';
@@ -308,7 +310,10 @@ export class PrintRenderer {
         : setTimeout(
             () =>
               deadlineController.abort(
-                new Error(`Timed out after ${timeoutMs} ms rendering the ${output.label}`),
+                new HttpStatusError(
+                  504,
+                  `Timed out after ${timeoutMs} ms rendering the ${output.label}`,
+                ),
               ),
             remainingTimeoutMs(),
           );
@@ -335,7 +340,9 @@ export class PrintRenderer {
     const render = async () => {
       signal.throwIfAborted();
       const context = await browser.newContext({
-        ignoreHTTPSErrors: true,
+        // Local Chromium fetches assets from this server, which may use a self-signed
+        // certificate in development. Cloudflare only loads public assets from the real host.
+        ignoreHTTPSErrors: !this.cloudflare,
         serviceWorkers: 'block',
         javaScriptEnabled: runScripts,
         ...(output.deviceScaleFactor ? { deviceScaleFactor: output.deviceScaleFactor } : {}),

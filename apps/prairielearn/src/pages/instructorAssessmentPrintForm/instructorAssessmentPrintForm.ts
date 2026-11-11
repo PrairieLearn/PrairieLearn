@@ -1,5 +1,4 @@
-import { load } from 'cheerio';
-import { type RequestHandler, Router, raw } from 'express';
+import { type ErrorRequestHandler, type RequestHandler, Router, raw } from 'express';
 import mustache from 'mustache';
 import { z } from 'zod';
 
@@ -18,9 +17,9 @@ import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import {
   PrintGradingTableSchema,
   PrintIdentityFieldsSchema,
-} from '../../lib/client/print-cover.js';
-import { serializePrintDocument } from '../../lib/client/print-document.js';
-import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/print-snapshot-limits.js';
+} from '../../lib/client/printing/print-cover.js';
+import { serializePrintDocument } from '../../lib/client/printing/print-document.js';
+import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/printing/print-snapshot-limits.js';
 import { config } from '../../lib/config.js';
 import type { DocxSource } from '../../lib/printing/docx-browser.js';
 import { createDocxOutput } from '../../lib/printing/docx-output.js';
@@ -32,7 +31,6 @@ import {
   isBrowserRenderingAvailable,
   renderPrintFormQuestions,
   validatePrintDocument,
-  validateQuestionsForPrinting,
 } from '../../lib/printing/index.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
@@ -228,7 +226,7 @@ router.use('/question/:print_form_question_id(\\d+)', createPrintFormQuestionAss
 router.get(
   '/preview',
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    const { signal, remainingTimeoutMs } = startPrintRequest(res);
+    const { signal, disconnectSignal, remainingTimeoutMs } = startPrintRequest(res);
     const query = parseRequestQuery(req, DocumentQuerySchema);
     const layout = parsePrintLayout(query);
     const { document } = query;
@@ -296,7 +294,7 @@ router.get(
             .map(({ printFormQuestionId }) => printFormQuestionId),
         ),
         runScripts: true,
-        signal,
+        signal: disconnectSignal,
         timeoutMs: remainingTimeoutMs(),
       },
       {
@@ -332,7 +330,7 @@ router.post(
   '/docx',
   parseDocxBody,
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    const { signal, remainingTimeoutMs } = startPrintRequest(res);
+    const { disconnectSignal, remainingTimeoutMs } = startPrintRequest(res);
     const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
     const layout = parsePrintLayout(query);
     const { document } = query;
@@ -344,7 +342,7 @@ router.post(
       );
     }
 
-    await validateQuestionsForPrinting(
+    const printFormQuestionIds = await getPrintableFormQuestionIds(
       res.locals.print_form.id,
       layout.questionBlockSizeOverrides,
       layout.excludedQuestionNumbers,
@@ -374,22 +372,6 @@ router.post(
         gradingTable,
       });
 
-    const $ = load(snapshot.html);
-    const hasExecutableAttributes =
-      $('*').filter((_index, node) =>
-        'attribs' in node
-          ? Object.entries(node.attribs).some(
-              ([name, value]) =>
-                /^on/i.test(name) || name === 'srcdoc' || /^\s*javascript:/i.test(String(value)),
-            )
-          : false,
-      ).length > 0;
-    if (
-      $('script, iframe, object, embed, base, meta[http-equiv="refresh"]').length > 0 ||
-      hasExecutableAttributes
-    ) {
-      throw new HttpStatusError(400, 'The printable pages contain executable content.');
-    }
     const localPreviewUrl = new URL(
       `${req.baseUrl}/preview`,
       `${config.serverType}://localhost:${config.serverPort}`,
@@ -408,17 +390,13 @@ router.post(
         : undefined,
       footerLabel,
     });
-    const printFormQuestionIds = await getPrintableFormQuestionIds(
-      res.locals.print_form.id,
-      layout.excludedQuestionNumbers,
-    );
     const contents = await getPrintRenderer().render(
       {
         url: localPreviewUrl.href,
         browserOrigin: config.serverCanonicalHost ?? undefined,
         html: snapshot.html,
         assetScope: printAssetScope(res.locals, printFormQuestionIds),
-        signal,
+        signal: disconnectSignal,
         timeoutMs: remainingTimeoutMs(),
       },
       {
@@ -469,5 +447,12 @@ router.post(
     res.send(contents);
   }),
 );
+
+// A disconnected print request, e.g. a preview reloaded after a layout change, has nobody left
+// to answer, so its cancellation isn't an error worth reporting.
+router.use(((err, _req, res, next) => {
+  if (res.destroyed) return;
+  next(err);
+}) satisfies ErrorRequestHandler);
 
 export default router;

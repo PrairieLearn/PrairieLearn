@@ -8,7 +8,7 @@ import * as unzipper from 'unzipper';
 
 import type { AssetsManifest } from '@prairielearn/compiled-assets';
 
-import { serializePrintDocument } from '../../../lib/client/print-document.js';
+import { serializePrintDocument } from '../../../lib/client/printing/print-document.js';
 import type { DocxSource } from '../../../lib/printing/docx-browser.js';
 import { createDocxDocument } from '../../../lib/printing/docx-document.js';
 import { expect, test } from '../fixtures.js';

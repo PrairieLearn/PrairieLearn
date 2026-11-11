@@ -41,7 +41,11 @@ test('reports omitted questions and exports the selected Word content', async ({
   await page.goto(`${printUrl}/preview?${query}`);
   await waitForPrintablePage(page);
   const warnings = await readWarnings(page);
-  expect(warnings.map((warning) => warning.code)).toEqual(['broken_variant']);
+  expect(warnings.map((warning) => warning.code)).toEqual([
+    'broken_variant',
+    'unsupported_question_type',
+  ]);
+  expect(warnings[1].message).toContain("older question format that can't be printed");
   for (const warning of warnings) {
     expect(warning).toMatchObject({
       question_number: expect.any(String),
@@ -114,14 +118,8 @@ test('prints representative controls, editable Word content, and an ordered answ
   page,
   courseInstance,
 }) => {
-  const { printUrl } = await createPrintableForm(courseInstance, 'exam23-printing');
-  await page.goto(`${printUrl}/preview?paper_size=Letter`);
-  await waitForPrintablePage(page);
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam25-printingAutomated');
   const search = new URLSearchParams({ paper_size: 'Letter' });
-  for (const warning of await readWarnings(page)) {
-    search.append('exclude_question', warning.question_number);
-  }
-
   await page.goto(`${printUrl}/preview?${search}`);
   await waitForPrintablePage(page);
   const questions = page.locator('.pagedjs_page .printing-question');

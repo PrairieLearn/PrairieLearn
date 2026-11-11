@@ -3,9 +3,8 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { insertPrintFormQuestions } from '../models/print-form-question.js';
-import { insertPrintForm } from '../models/print-form.js';
-
+import { insertPrintFormQuestions } from '../../models/print-form-question.js';
+import { insertPrintForm } from '../../models/print-form.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
@@ -13,8 +12,8 @@ import {
   type CourseInstance,
   type PrintFormQuestion,
   QuestionSchema,
-} from './db-types.js';
-import { ensureVariant, getQuestionCourse } from './question-variant.js';
+} from '../db-types.js';
+import { ensureVariant, getQuestionCourse } from '../question-variant.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

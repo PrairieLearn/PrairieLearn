@@ -1,5 +1,7 @@
 import { Semaphore } from 'async-mutex';
 
+import { HttpStatusError } from '@prairielearn/error';
+
 interface RenderWaiter {
   queuedAt: number;
   resolve: (acquired: { queueWaitMs: number; release: () => void }) => void;
@@ -81,7 +83,10 @@ export class RenderQueue {
       if (timeoutMs > 0) {
         timeout = setTimeout(() => {
           rejectWaiter(
-            new Error(`Timed out after ${timeoutMs} ms waiting to render the ${outputLabel}`),
+            new HttpStatusError(
+              504,
+              `Timed out after ${timeoutMs} ms waiting to render the ${outputLabel}`,
+            ),
           );
         }, timeoutMs);
       }
