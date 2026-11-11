@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { useController, useForm } from 'react-hook-form';
 
@@ -360,7 +360,14 @@ export const InstructorQuestionSettingsForm = ({
     defaultValues,
   });
 
+  const [pendingAuthor, setPendingAuthor] = useState('');
+  const pendingAuthorUid = pendingAuthor.trim();
   const selectedAuthors = watch('authors');
+  // Serialize pending text before submit so Save includes it without waiting for a state update.
+  const authorsToSave =
+    pendingAuthorUid && !selectedAuthors.includes(pendingAuthorUid)
+      ? [...selectedAuthors, pendingAuthorUid]
+      : selectedAuthors;
   const authorItems = selectedAuthors.map((uid) => {
     const name = authorStaff.find((user) => user.uid === uid)?.name;
     return { id: uid, label: name ? `${name}  ${uid}` : uid, data: { uid, name } };
@@ -587,18 +594,21 @@ export const InstructorQuestionSettingsForm = ({
               </label>
               {canEdit ? (
                 <>
-                  {initialAuthors !== null && dirtyFields.authors && (
-                    <input type="hidden" name="authors" value={JSON.stringify(selectedAuthors)} />
+                  {initialAuthors !== null && (dirtyFields.authors || pendingAuthorUid) && (
+                    <input type="hidden" name="authors" value={JSON.stringify(authorsToSave)} />
                   )}
                   <TagPicker
                     id="authors"
                     aria-labelledby="authors-label"
+                    createButtonLabel="Add author"
+                    inputValue={pendingAuthor}
                     items={authorItems}
                     value={selectedAuthors}
-                    placeholder="Add an author by UID or ORCID URL"
+                    placeholder="UID or ORCID URL"
                     disabled={initialAuthors === null}
                     tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
                     renderTagContent={({ uid, name }) => <AuthorLabel uid={uid} name={name} />}
+                    onInputChange={setPendingAuthor}
                     onChange={(uids) => setValue('authors', uids, { shouldDirty: true })}
                     onCreate={(uid) =>
                       setValue('authors', [...selectedAuthors, uid], { shouldDirty: true })
@@ -1344,10 +1354,13 @@ export const InstructorQuestionSettingsForm = ({
 
       {canEdit && (
         <StickySaveBar
-          visible={isDirty}
+          visible={isDirty || !!pendingAuthorUid}
           isSaving={isSubmitting}
           formId="edit-question-settings-form"
-          onCancel={() => reset()}
+          onCancel={() => {
+            reset();
+            setPendingAuthor('');
+          }}
         />
       )}
     </div>
