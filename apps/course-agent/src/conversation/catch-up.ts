@@ -144,7 +144,7 @@ function describeInputRequest(data: unknown) {
   if (!part.success) return '';
   return part.data.prompts
     .map(({ title, options }) =>
-      options ? `[Asked: ${title} (options: ${options.join('; ')})]` : `[Asked: ${title}]`,
+      options?.length ? `[Asked: ${title} (options: ${options.join('; ')})]` : `[Asked: ${title}]`,
     )
     .join('\n');
 }
