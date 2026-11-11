@@ -267,6 +267,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     html_params["a_sub"] = sub_latex
             else:
                 html_params["a_sub"] = sub_latex
+
+            raw_submitted_answers = data["raw_submitted_answers"]
+            entry_names = [name + str(i + 1) for i in range(m * n)]
+            if any(entry_name in raw_submitted_answers for entry_name in entry_names):
+                raw_input = [
+                    [
+                        raw_submitted_answers.get(name + str(n * i + j + 1), "")
+                        for j in range(n)
+                    ]
+                    for i in range(m)
+                ]
+                html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                    raw_input, aria_label or name
+                )
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
@@ -282,20 +296,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 label_uuid=uuid,
                 data=data,
                 format_type="output-invalid",
-            )
-
-        raw_submitted_answers = data["raw_submitted_answers"]
-        entry_names = [name + str(i + 1) for i in range(m * n)]
-        if any(entry_name in raw_submitted_answers for entry_name in entry_names):
-            raw_input = [
-                [
-                    raw_submitted_answers.get(name + str(n * i + j + 1), "")
-                    for j in range(n)
-                ]
-                for i in range(m)
-            ]
-            html_params["raw_input_popover"] = pl.render_raw_input_popover(
-                raw_input, aria_label or name
             )
 
         html_params["error"] = html_params["parse_error"] or html_params.get(

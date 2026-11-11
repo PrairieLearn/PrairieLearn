@@ -19,12 +19,20 @@ test.beforeEach(async ({ page, courseInstance }) => {
   await openRawInputRenderingQuestion(page, courseInstance);
 });
 
-test('shows safe scalar diagnostics and restores literal matrix input', async ({ page }) => {
+test('shows safe raw-input diagnostics and restores literal matrix input', async ({ page }) => {
   await page.getByRole('textbox', { name: 'String value' }).fill('café\u200b<img src=x>');
   await page.getByRole('textbox', { name: 'Big O value' }).fill('n');
   await page.getByRole('textbox', { name: 'Integer value' }).fill('1');
   await page.getByRole('textbox', { name: 'Number value', exact: true }).fill('1');
   await page.getByRole('textbox', { name: 'Units value' }).fill('1 meter');
+  for (const [name, value] of [
+    ['Row 1, Column 1', '１'],
+    ['Row 1, Column 2', '2'],
+    ['Row 2, Column 1', '3'],
+    ['Row 2, Column 2', '4'],
+  ] as const) {
+    await page.getByRole('textbox', { name }).fill(value);
+  }
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
     timeout: 15_000,
@@ -34,7 +42,13 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
     '[1,\u200b 2]',
   );
 
-  for (const label of ['String value', 'Big O value', 'Units value', 'Valid matrix value']) {
+  for (const label of [
+    'String value',
+    'Big O value',
+    'Units value',
+    'Valid matrix value',
+    'Matrix grid',
+  ]) {
     await expect(
       page.getByRole('button', { name: `Answer as entered for ${label}` }),
     ).toBeVisible();
@@ -54,6 +68,27 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
   await expect(popover).toContainText('café<U+200b><img src=x>');
   await expect(popover.getByRole('img')).toHaveCount(0);
   await expect(popover).toContainText('caf<U+e9><U+200b><img src=x>');
+  await popover.getByRole('button', { name: 'Close' }).click();
+
+  const button = page.getByRole('button', { name: 'Answer as entered for Matrix grid' });
+  await button.click();
+
+  const matrixPopover = page.getByRole('dialog').filter({ hasText: '<U+ff11>' });
+  await expect(matrixPopover).toBeVisible();
+  const tables = matrixPopover.getByRole('table');
+  await expect(tables).toHaveCount(2);
+  const readableTable = tables.first();
+  await expect(readableTable.getByRole('row')).toHaveCount(2);
+  await expect(readableTable.getByRole('row').first().getByRole('cell')).toHaveCount(2);
+  await expect(readableTable.getByRole('row').last().getByRole('cell')).toHaveCount(2);
+  await expect(readableTable).toContainText('１');
+
+  const asciiTable = tables.last();
+  await expect(asciiTable).toBeVisible();
+  await expect(asciiTable.getByRole('row')).toHaveCount(2);
+  await expect(asciiTable.getByRole('row').first().getByRole('cell')).toHaveCount(2);
+  await expect(asciiTable.getByRole('row').last().getByRole('cell')).toHaveCount(2);
+  await expect(asciiTable).toContainText('<U+ff11>');
 });
 
 test('shows text and formula editor diagnostics for symbolic input', async ({ page }) => {
@@ -95,42 +130,4 @@ test('shows text and formula editor diagnostics for symbolic input', async ({ pa
     )
     .toBe(editedLatex);
   await expect(formulaPopover.locator('pre')).toHaveText(editedLatex);
-});
-
-test('preserves the shape of matrix component diagnostics', async ({ page }) => {
-  for (const [name, value] of [
-    ['Row 1, Column 1', '1\u200b'],
-    ['Row 1, Column 2', 'café'],
-    ['Row 2, Column 1', ''],
-    ['Row 2, Column 2', '4'],
-  ] as const) {
-    await page.getByRole('textbox', { name }).fill(value);
-  }
-
-  await page.getByRole('button', { name: /Save & Grade/ }).click();
-  await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
-    timeout: 15_000,
-  });
-
-  const button = page.getByRole('button', { name: 'Answer as entered for Matrix grid' });
-  await expect(button).toBeVisible();
-  await button.click();
-
-  const popover = page.getByRole('dialog').filter({ hasText: '1<U+200b>' });
-  await expect(popover).toBeVisible();
-  const tables = popover.getByRole('table');
-  await expect(tables).toHaveCount(2);
-  const readableTable = tables.first();
-  await expect(readableTable.getByRole('row')).toHaveCount(2);
-  await expect(readableTable.getByRole('row').first().getByRole('cell')).toHaveCount(2);
-  await expect(readableTable.getByRole('row').last().getByRole('cell')).toHaveCount(2);
-  await expect(readableTable).toContainText('1<U+200b>');
-  await expect(readableTable).toContainText('café');
-
-  const asciiTable = tables.last();
-  await expect(asciiTable).toBeVisible();
-  await expect(asciiTable.getByRole('row')).toHaveCount(2);
-  await expect(asciiTable.getByRole('row').first().getByRole('cell')).toHaveCount(2);
-  await expect(asciiTable.getByRole('row').last().getByRole('cell')).toHaveCount(2);
-  await expect(asciiTable).toContainText('caf<U+e9>');
 });
