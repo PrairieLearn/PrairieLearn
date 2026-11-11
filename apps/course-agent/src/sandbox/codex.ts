@@ -52,7 +52,7 @@ const ItemEvent = z.object({
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'navigate']),
+  tool: z.enum(['request_changes', 'navigate', 'refresh_page']),
   success: z.boolean().nullable(),
 });
 const DynamicCall = z.object({
@@ -60,7 +60,7 @@ const DynamicCall = z.object({
   turnId: z.string(),
   callId: z.string(),
   namespace: z.null(),
-  tool: z.enum(['request_changes', 'navigate']),
+  tool: z.enum(['request_changes', 'navigate', 'refresh_page']),
   arguments: z.unknown(),
 });
 const ItemsPage = z.object({
@@ -221,16 +221,24 @@ export class CodexAppServerClient {
       if (!this.onReview) throw new Error('Review handling is not configured');
       return await this.onReview({ ...call, arguments: {} });
     }
-    const target = NavigationTargetSchema.safeParse(call.arguments);
-    if (!target.success) {
-      return { success: false, text: `Invalid navigation target: ${target.error.message}` };
+    let navigation: NavigationPart;
+    if (call.tool === 'refresh_page') {
+      navigation = { action: 'refresh' };
+    } else {
+      const target = NavigationTargetSchema.safeParse(call.arguments);
+      if (!target.success) {
+        return { success: false, text: `Invalid navigation target: ${target.error.message}` };
+      }
+      navigation = { action: 'open', target: target.data };
     }
-    const navigation: NavigationPart = { action: 'open', target: target.data };
     // The browser acts on this part; the reply cannot confirm the page loaded.
     this.emit({ type: 'data-navigation', id: `navigation:${call.callId}`, data: navigation });
     return {
       success: true,
-      text: "The instructor's browser is opening the page. If the names do not match a course instance, assessment, or question, PrairieLearn shows the instructor an error instead.",
+      text:
+        navigation.action === 'refresh'
+          ? "The instructor's page is reloading."
+          : "The instructor's browser is opening the page. If the names do not match a course instance, assessment, or question, PrairieLearn shows the instructor an error instead.",
     };
   }
 
@@ -291,6 +299,7 @@ export class CodexAppServerClient {
             dynamicTools: [
               ...(this.onReview ? [requestChangesTool] : []),
               navigateTool,
+              refreshPageTool,
             ],
           } satisfies ThreadStartParams,
           ThreadResult,
@@ -501,4 +510,12 @@ const navigateTool: DynamicToolSpec = {
     required: [],
     additionalProperties: false,
   },
+};
+
+const refreshPageTool: DynamicToolSpec = {
+  type: 'function',
+  name: 'refresh_page',
+  description:
+    'Reload the page the instructor is viewing, for example after approved changes were saved and synced so the page shows them.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 };

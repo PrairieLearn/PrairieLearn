@@ -77,7 +77,7 @@ Each user message may carry `metadata.location` (`PageLocationSchema`): the path
 
 ## Changing the instructor's page
 
-`navigate` is a native dynamic tool like `request_changes`, registered when a thread starts (threads started before it do not have it). The DO validates its target and emits a `data-navigation` part (`NavigationPartSchema`) with ID `navigation:<call ID>`; a successful call has no `data-tool` part. Targets use course file names, never database IDs, and PrairieLearn resolves them through the `courseAgent.resolveNavigation` tRPC query, because the Worker never calls PrairieLearn. The tool reply cannot confirm that the page loaded, so the agent does not learn when a name matched nothing; the browser shows that error in the chat.
+`navigate` and `refresh_page` are native dynamic tools like `request_changes`, registered when a thread starts (threads started before them do not have them). The DO validates a `navigate` target and emits a `data-navigation` part (`NavigationPartSchema`) with ID `navigation:<call ID>`; a successful call has no `data-tool` part. Targets use course file names, never database IDs, and PrairieLearn resolves them through the `courseAgent.resolveNavigation` tRPC query, because the Worker never calls PrairieLearn. The tool reply cannot confirm that the page loaded, so the agent does not learn when a name matched nothing; the browser shows that error in the chat.
 
 The browser acts on a navigation part only while its reply is live, once per part ID. It records handled IDs in session storage, because changing pages reconnects the chat and the SDK replays the live reply. Parts in settled history only render, an opened page as a link that opens it again.
 

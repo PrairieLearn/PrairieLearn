@@ -57,6 +57,10 @@ export function useAgentNavigation({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const navigate = (id: string, navigation: NavigationPart) => {
+    if (navigation.action === 'refresh') {
+      window.location.reload();
+      return;
+    }
     queryClient
       .query({
         ...trpc.courseAgent.resolveNavigation.queryOptions(navigation.target),
@@ -109,8 +113,15 @@ export function NavigationNotice({
 }) {
   return (
     <div className="small text-muted d-flex align-items-center gap-1">
-      <i className="bi bi-box-arrow-up-right" aria-hidden="true" />
-      {error ? (
+      <i
+        className={
+          navigation.action === 'refresh' ? 'bi bi-arrow-clockwise' : 'bi bi-box-arrow-up-right'
+        }
+        aria-hidden="true"
+      />
+      {navigation.action === 'refresh' ? (
+        'Reloaded the page'
+      ) : error ? (
         <span className="text-danger">
           Could not open {describeTarget(navigation.target)}. {error}
         </span>

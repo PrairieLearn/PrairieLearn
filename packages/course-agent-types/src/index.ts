@@ -262,6 +262,7 @@ export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
 /** A `data-navigation` part: the agent asked the instructor's browser to change pages. */
 export const NavigationPartSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('open'), target: NavigationTargetSchema }),
+  z.strictObject({ action: z.literal('refresh') }),
 ]);
 
 export type NavigationPart = z.infer<typeof NavigationPartSchema>;

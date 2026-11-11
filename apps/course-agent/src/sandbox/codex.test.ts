@@ -276,6 +276,45 @@ describe('course agent turns', () => {
     ]);
   });
 
+  it('asks the browser to reload the page', async () => {
+    const { sandbox, native, commands, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    emit({
+      id: 'reload',
+      method: 'item/tool/call',
+      params: {
+        threadId: 'thread',
+        turnId: 'turn',
+        callId: 'reload',
+        namespace: null,
+        tool: 'refresh_page',
+        arguments: {},
+      },
+    });
+    const reply = await vi.waitFor(() => {
+      const frame = commands.find((command) => String(command.id) === 'reload');
+      if (!frame) throw new Error('No reply yet');
+      return (frame as unknown as { result: { success: boolean } }).result;
+    });
+    expect(reply).toMatchObject({ success: true });
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type === 'data-navigation')).toEqual([
+      { type: 'data-navigation', id: 'navigation:reload', data: { action: 'refresh' } },
+    ]);
+  });
+
   it('opens pages named as course files name them, rejecting targets PrairieLearn cannot name', async () => {
     const { sandbox, native, commands, emit } = runner();
     const accepted = Promise.withResolvers<undefined>();
