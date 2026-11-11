@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-bootstrap';
 import {
   type FieldErrors,
   type RegisterOptions,
@@ -51,6 +52,7 @@ import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableField } from './InheritableField.js';
 import { InheritableRolesField } from './InheritableRolesField.js';
+import { UnresolvedPointFields } from './UnresolvedPointFields.js';
 
 interface QuestionFormData {
   id?: string;
@@ -327,6 +329,11 @@ export function QuestionDetailPanel({
     question.maxAutoPoints != null || (isAlternative && zoneQuestionBlock.maxAutoPoints != null);
   const showAutoPointsForManual = isManualGrading && savedAutoPointsSet;
   const showMaxAutoPointsForManual = isManualGrading && savedMaxAutoPointsSet;
+  const hasUnresolvedPoints =
+    question.points != null ||
+    question.maxPoints != null ||
+    zoneQuestionBlock?.points != null ||
+    zoneQuestionBlock?.maxPoints != null;
 
   const Wrapper = editMode ? 'div' : 'dl';
 
@@ -367,6 +374,7 @@ export function QuestionDetailPanel({
                 );
               })
             : null}
+          {!questionData && <span className="font-monospace">{question.id}</span>}
         </div>
         {questionData && (
           <div className="d-flex flex-column gap-1">
@@ -409,6 +417,13 @@ export function QuestionDetailPanel({
         )}
       </div>
 
+      {!questionData && (
+        <Alert variant="warning" className="small">
+          This question is unavailable in this PrairieLearn instance and cannot be previewed. Its
+          assessment settings will be preserved when saving.
+        </Alert>
+      )}
+
       <DetailSectionHeader>Settings</DetailSectionHeader>
 
       {/* QID field — edit mode only */}
@@ -447,35 +462,40 @@ export function QuestionDetailPanel({
       )}
 
       {/* Points fields */}
+      {hasUnresolvedPoints && (
+        <UnresolvedPointFields question={question} parent={zoneQuestionBlock} />
+      )}
       <Wrapper className={clsx(!editMode && 'mb-0')}>
-        <PointsFields
-          assessmentType={assessmentType}
-          editMode={editMode}
-          idPrefix={idPrefix}
-          isAlternative={isAlternative}
-          isManualGrading={isManualGrading}
-          constantQuestionValue={constantQuestionValue}
-          autoPointsValue={autoPointsValue}
-          maxAutoPointsValue={maxAutoPointsValue}
-          manualPointsValue={manualPointsValue}
-          isAutoPointsInherited={isAutoPointsInherited}
-          isMaxAutoPointsInherited={isMaxAutoPointsInherited}
-          isManualPointsInherited={isManualPointsInherited}
-          inheritedAutoPoints={inheritedAutoPoints}
-          inheritedMaxAutoPoints={inheritedMaxAutoPoints}
-          inheritedManualPoints={inheritedManualPoints}
-          autoPointsPlaceholder={autoPointsPlaceholder}
-          register={register}
-          errors={errors}
-          setValue={setValue}
-          resetAndSave={resetAndSave}
-          showAutoPointsForManual={showAutoPointsForManual}
-          showMaxAutoPointsForManual={showMaxAutoPointsForManual}
-          showManualPointsOnlyForAutoGraded={isAutoGradedWithOnlyManualPoints}
-          onFieldOverrideChange={(field, overridden) =>
-            setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
-          }
-        />
+        {!hasUnresolvedPoints && (
+          <PointsFields
+            assessmentType={assessmentType}
+            editMode={editMode}
+            idPrefix={idPrefix}
+            isAlternative={isAlternative}
+            isManualGrading={isManualGrading}
+            constantQuestionValue={constantQuestionValue}
+            autoPointsValue={autoPointsValue}
+            maxAutoPointsValue={maxAutoPointsValue}
+            manualPointsValue={manualPointsValue}
+            isAutoPointsInherited={isAutoPointsInherited}
+            isMaxAutoPointsInherited={isMaxAutoPointsInherited}
+            isManualPointsInherited={isManualPointsInherited}
+            inheritedAutoPoints={inheritedAutoPoints}
+            inheritedMaxAutoPoints={inheritedMaxAutoPoints}
+            inheritedManualPoints={inheritedManualPoints}
+            autoPointsPlaceholder={autoPointsPlaceholder}
+            register={register}
+            errors={errors}
+            setValue={setValue}
+            resetAndSave={resetAndSave}
+            showAutoPointsForManual={showAutoPointsForManual}
+            showMaxAutoPointsForManual={showMaxAutoPointsForManual}
+            showManualPointsOnlyForAutoGraded={isAutoGradedWithOnlyManualPoints}
+            onFieldOverrideChange={(field, overridden) =>
+              setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
+            }
+          />
+        )}
 
         {/* Tries per variant (Homework only) */}
         {assessmentType === 'Homework' &&

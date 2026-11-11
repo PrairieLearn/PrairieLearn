@@ -35,6 +35,7 @@ columns
     json_max_auto_points: double precision
     json_max_points: double precision
     json_points: jsonb
+    json_qid: text
     json_tries_per_variant: integer
     last_submission_score_hist: double precision[]
     last_submission_score_variance: double precision

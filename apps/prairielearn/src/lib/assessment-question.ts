@@ -1,12 +1,25 @@
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  AssessmentQuestionStructureRowSchema,
   type StaffAssessmentQuestionRow,
   StaffAssessmentQuestionRowSchema,
   StaffAssessmentQuestionSqlSchema,
 } from './assessment-question.shared.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export async function selectAssessmentQuestionStructure({
+  assessment_id,
+}: {
+  assessment_id: string;
+}) {
+  return await sqldb.queryRows(
+    sql.select_assessment_question_structure,
+    { assessment_id },
+    AssessmentQuestionStructureRowSchema,
+  );
+}
 
 export async function selectAssessmentQuestions({
   assessment_id,

@@ -347,6 +347,7 @@ function getParamsForAssessment(
           // higher ones.
           allow_real_time_grading: alternative.allowRealTimeGrading,
           question_id: questionId,
+          json_qid: alternative.qid,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
           can_submit: alternative.canSubmit,

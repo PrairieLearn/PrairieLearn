@@ -299,6 +299,13 @@ export function TreeQuestionRow({
               onClick={(e) => e.stopPropagation()}
             />
           )}
+          {!questionData && (
+            <WarningIndicator
+              tooltipId={`unavailable-${question.trackingId}`}
+              label="Unavailable locally"
+              body="This question is unavailable in this PrairieLearn instance. Its assessment settings will be preserved when saving."
+            />
+          )}
           {hasManualGradingAutoPointsWarning && (
             <WarningIndicator
               tooltipId={`manual-auto-points-${question.trackingId}`}

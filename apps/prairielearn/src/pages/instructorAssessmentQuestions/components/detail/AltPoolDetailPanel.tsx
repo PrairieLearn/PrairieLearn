@@ -29,6 +29,7 @@ import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableRolesField } from './InheritableRolesField.js';
+import { UnresolvedPointFields } from './UnresolvedPointFields.js';
 
 interface AltPoolFormData {
   numberChoose?: number;
@@ -201,6 +202,13 @@ export function AltPoolDetailPanel({
       return effectiveManualPoints != null && effectiveAutoPoints == null;
     }) ?? false;
 
+  const hasUnresolvedPoints =
+    zoneQuestionBlock.points != null ||
+    zoneQuestionBlock.maxPoints != null ||
+    (zoneQuestionBlock.alternatives?.some(
+      (alternative) => alternative.points != null || alternative.maxPoints != null,
+    ) ??
+      false);
   const Wrapper = editMode ? 'div' : 'dl';
 
   return (
@@ -265,6 +273,8 @@ export function AltPoolDetailPanel({
 
       <DetailSectionHeader>Settings</DetailSectionHeader>
 
+      {hasUnresolvedPoints && <UnresolvedPointFields question={zoneQuestionBlock} />}
+
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
           editMode={editMode}
@@ -287,7 +297,7 @@ export function AltPoolDetailPanel({
           )}
         </FormField>
 
-        {assessmentType === 'Homework' ? (
+        {hasUnresolvedPoints ? null : assessmentType === 'Homework' ? (
           <>
             <FormField
               editMode={editMode}
@@ -402,31 +412,6 @@ export function AltPoolDetailPanel({
                 />
               )}
             </FormField>
-            <FormField
-              editMode={editMode}
-              id={`${idPrefix}-triesPerVariant`}
-              label="Tries per variant (default)"
-              viewValue={
-                zoneQuestionBlock.triesPerVariant != null
-                  ? String(zoneQuestionBlock.triesPerVariant)
-                  : undefined
-              }
-              error={errors.triesPerVariant}
-              helpText="Default number of submission attempts per variant, inherited by alternatives unless overridden."
-              hideWhenEmpty
-            >
-              {(aria) => (
-                <input
-                  type="number"
-                  className={clsx('form-control form-control-sm', aria.errorClass)}
-                  {...aria.inputProps}
-                  {...register('triesPerVariant', {
-                    setValueAs: coerceToNumber,
-                    validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
-                  })}
-                />
-              )}
-            </FormField>
           </>
         ) : (
           <>
@@ -483,6 +468,34 @@ export function AltPoolDetailPanel({
               )}
             </FormField>
           </>
+        )}
+
+        {assessmentType === 'Homework' && (
+          <FormField
+            editMode={editMode}
+            id={`${idPrefix}-triesPerVariant`}
+            label="Tries per variant (default)"
+            viewValue={
+              zoneQuestionBlock.triesPerVariant != null
+                ? String(zoneQuestionBlock.triesPerVariant)
+                : undefined
+            }
+            error={errors.triesPerVariant}
+            helpText="Default number of submission attempts per variant, inherited by alternatives unless overridden."
+            hideWhenEmpty
+          >
+            {(aria) => (
+              <input
+                type="number"
+                className={clsx('form-control form-control-sm', aria.errorClass)}
+                {...aria.inputProps}
+                {...register('triesPerVariant', {
+                  setValueAs: coerceToNumber,
+                  validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
+                })}
+              />
+            )}
+          </FormField>
         )}
 
         <FormField

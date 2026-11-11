@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { EditorQuestionMetadata } from '../../../lib/assessment-question.shared.js';
 import type {
   EditorState,
   QuestionAlternativeForm,
@@ -9,6 +10,7 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+import { serializeZonesForJson, stripTrackingIds } from './dataTransform.js';
 import { createEditorReducer } from './useAssessmentEditor.js';
 
 function tid(id: string): TrackingId {
@@ -394,6 +396,109 @@ describe('createEditorReducer', () => {
     // Should inherit from pool B (current parent), not pool A (original parent)
     expect(extracted.autoPoints).toBe(10);
     expect(extracted.manualPoints).toBe(3);
+  });
+
+  it.each([
+    { incomingPoints: { autoPoints: 5 }, poolPoints: { points: 6, maxPoints: 12 } },
+    { incomingPoints: { points: 6, maxPoints: 12 }, poolPoints: { autoPoints: 5 } },
+  ])('preserves scoring when merging legacy and modern point representations: %j', (scenario) => {
+    const standalone = makeQuestion('incoming', {
+      autoPoints: undefined,
+      id: 'incoming',
+      ...scenario.incomingPoints,
+    });
+    const pool = makeQuestion('pool', {
+      autoPoints: undefined,
+      ...scenario.poolPoints,
+      alternatives: [makeAlternative('existing', { id: '@shared/existing' })],
+    });
+    const initialState = makeState({ zones: [makeZone('z1', [standalone, pool])] });
+    const reducer = createEditorReducer(initialState);
+
+    const state = reducer(initialState, {
+      type: 'MERGE_QUESTION_INTO_ALT_POOL',
+      questionTrackingId: 'incoming',
+      toAltPoolTrackingId: 'pool',
+      beforeAlternativeTrackingId: null,
+    });
+
+    expect(serializeZonesForJson(stripTrackingIds(state.zones))[0].questions).toEqual([
+      {
+        alternatives: [
+          { id: '@shared/existing', ...scenario.poolPoints },
+          { id: 'incoming', ...scenario.incomingPoints },
+        ],
+      },
+    ]);
+  });
+
+  it.each([
+    { sourcePoints: { autoPoints: 5 }, targetPoints: { points: 6, maxPoints: 12 } },
+    { sourcePoints: { points: 6, maxPoints: 12 }, targetPoints: { autoPoints: 5 } },
+  ])('preserves inherited scoring when moving between legacy and modern pools: %j', (scenario) => {
+    const source = makeQuestion('source', {
+      autoPoints: undefined,
+      ...scenario.sourcePoints,
+      alternatives: [
+        makeAlternative('incoming', { id: '@shared/incoming' }),
+        makeAlternative('staying', { id: '@shared/staying' }),
+      ],
+    });
+    const target = makeQuestion('target', {
+      autoPoints: undefined,
+      ...scenario.targetPoints,
+      alternatives: [makeAlternative('existing', { id: '@shared/existing' })],
+    });
+    const initialState = makeState({ zones: [makeZone('z1', [source, target])] });
+    const reducer = createEditorReducer(initialState);
+
+    const state = reducer(initialState, {
+      type: 'REORDER_ALTERNATIVE',
+      alternativeTrackingId: 'incoming',
+      toAltPoolTrackingId: 'target',
+      beforeAlternativeTrackingId: null,
+    });
+
+    expect(serializeZonesForJson(stripTrackingIds(state.zones))[0].questions).toEqual([
+      {
+        ...scenario.sourcePoints,
+        alternatives: [{ id: '@shared/staying' }],
+      },
+      {
+        alternatives: [
+          { id: '@shared/existing', ...scenario.targetPoints },
+          { id: '@shared/incoming', ...scenario.sourcePoints },
+        ],
+      },
+    ]);
+  });
+
+  it('keeps legacy defaults when picking the first alternative into an empty pool', () => {
+    const pool = makeQuestion('pool', {
+      autoPoints: undefined,
+      points: 6,
+      maxPoints: 12,
+      alternatives: [],
+    });
+    const initialState = makeState({
+      zones: [makeZone('z1', [pool])],
+      selectedItem: { type: 'altPoolPicker', zoneTrackingId: 'z1', altPoolTrackingId: 'pool' },
+    });
+    const reducer = createEditorReducer(initialState);
+    const metadata = {
+      question: { qid: 'picked', grading_method: 'Internal' },
+    } as unknown as EditorQuestionMetadata;
+
+    const state = reducer(initialState, {
+      type: 'QUESTION_PICKED',
+      qid: 'picked',
+      metadata,
+      expectedSelectedItem: initialState.selectedItem,
+    });
+
+    expect(serializeZonesForJson(stripTrackingIds(state.zones))[0].questions).toEqual([
+      { points: 6, maxPoints: 12, alternatives: [{ id: 'picked' }] },
+    ]);
   });
 
   it('REMOVE_QUESTION_BY_QID: standalone, alternative, and nonexistent', () => {

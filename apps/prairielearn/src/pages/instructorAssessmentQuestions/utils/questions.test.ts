@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
+import type {
+  AssessmentQuestionStructureRow,
+  StaffAssessmentQuestionRow,
+} from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type {
   QuestionAlternativeForm,
@@ -93,14 +96,11 @@ describe('questionDisplayName', () => {
 });
 
 describe('buildHierarchicalAssessment', () => {
-  const course = { id: 'course-1' } as StaffCourse;
-
   it('builds zones with questions from flat rows', () => {
-    const rows: StaffAssessmentQuestionRow[] = [
+    const rows: AssessmentQuestionStructureRow[] = [
       {
-        question: { qid: 'q1', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: { number: 1, title: 'Zone 1' },
+        qid: 'q1',
+        zone: { id: 'z1', number: 1, title: 'Zone 1' },
         alternative_pool: {
           number: 1,
           id: 'ag1',
@@ -108,12 +108,10 @@ describe('buildHierarchicalAssessment', () => {
           number_choose: 1,
         },
         assessment_question: { number: 1 },
-        start_new_alternative_pool: true,
-      } as StaffAssessmentQuestionRow,
+      } as AssessmentQuestionStructureRow,
       {
-        question: { qid: 'q2', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: { number: 1, title: 'Zone 1' },
+        qid: 'q2',
+        zone: { id: 'z1', number: 1, title: 'Zone 1' },
         alternative_pool: {
           number: 2,
           id: 'ag2',
@@ -121,11 +119,10 @@ describe('buildHierarchicalAssessment', () => {
           number_choose: 1,
         },
         assessment_question: { number: 2 },
-        start_new_alternative_pool: true,
-      } as StaffAssessmentQuestionRow,
+      } as AssessmentQuestionStructureRow,
     ];
 
-    const result = buildHierarchicalAssessment(course, rows);
+    const result = buildHierarchicalAssessment(rows);
 
     expect(result).toHaveLength(1);
     expect(result[0].title).toBe('Zone 1');
@@ -135,48 +132,80 @@ describe('buildHierarchicalAssessment', () => {
   });
 
   it('collects alternatives within the same alternative pool', () => {
-    const rows: StaffAssessmentQuestionRow[] = [
+    const rows: AssessmentQuestionStructureRow[] = [
       {
-        question: { qid: 'alt1', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: { number: 1, title: 'Zone 1' },
+        qid: '@shared/missing',
+        zone: { id: 'z1', number: 1, title: 'Zone 1' },
         alternative_pool: {
+          id: 'ag1',
           number: 1,
           json_has_alternatives: true,
           number_choose: 1,
         },
         assessment_question: { number: 1, number_in_alternative_group: 1 },
-        start_new_alternative_pool: true,
-      } as StaffAssessmentQuestionRow,
+      } as AssessmentQuestionStructureRow,
       {
-        question: { qid: 'alt2', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: { number: 1, title: 'Zone 1' },
+        qid: 'alt2',
+        zone: { id: 'z1', number: 1, title: 'Zone 1' },
         alternative_pool: {
+          id: 'ag1',
           number: 1,
           json_has_alternatives: true,
           number_choose: 1,
         },
         assessment_question: { number: 2, number_in_alternative_group: 2 },
-        start_new_alternative_pool: false,
-      } as StaffAssessmentQuestionRow,
+      } as AssessmentQuestionStructureRow,
     ];
 
-    const result = buildHierarchicalAssessment(course, rows);
+    const result = buildHierarchicalAssessment(rows);
 
     expect(result).toHaveLength(1);
     expect(result[0].questions).toHaveLength(1);
     expect(result[0].questions[0].alternatives).toHaveLength(2);
-    expect(result[0].questions[0].alternatives![0].id).toBe('alt1');
+    expect(result[0].questions[0].alternatives![0].id).toBe('@shared/missing');
     expect(result[0].questions[0].alternatives![1].id).toBe('alt2');
   });
 
-  it('preserves zone overrides and standalone question comments', () => {
-    const rows: StaffAssessmentQuestionRow[] = [
+  it('preserves a shared-only zone before a zone with local questions', () => {
+    const rows = [
       {
-        question: { qid: 'q1', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
+        qid: '@shared/missing',
+        zone: { id: 'z1', number: 1, title: 'Shared questions', max_points: 10 },
+        alternative_pool: {
+          id: 'ag1',
+          number: 1,
+          json_has_alternatives: false,
+          json_points: 5,
+          json_max_points: 10,
+        },
+        assessment_question: { number: 1 },
+      },
+      {
+        qid: 'local',
+        zone: { id: 'z2', number: 2, title: 'Local questions' },
+        alternative_pool: { id: 'ag2', number: 2, json_has_alternatives: false },
+        assessment_question: { number: 2 },
+      },
+    ] as AssessmentQuestionStructureRow[];
+
+    const result = buildHierarchicalAssessment(rows);
+
+    expect(result.map((zone) => zone.title)).toEqual(['Shared questions', 'Local questions']);
+    expect(result[0].maxPoints).toBe(10);
+    expect(result[0].questions[0]).toMatchObject({
+      id: '@shared/missing',
+      points: 5,
+      maxPoints: 10,
+    });
+    expect(result[1].questions[0].id).toBe('local');
+  });
+
+  it('preserves zone overrides and standalone question comments', () => {
+    const rows: AssessmentQuestionStructureRow[] = [
+      {
+        qid: 'q1',
         zone: {
+          id: 'z1',
           number: 1,
           title: 'Zone 1',
           json_allow_real_time_grading: false,
@@ -192,11 +221,10 @@ describe('buildHierarchicalAssessment', () => {
           number: 1,
           json_comment: { note: 'standalone question comment' },
         },
-        start_new_alternative_pool: true,
-      } as unknown as StaffAssessmentQuestionRow,
+      } as unknown as AssessmentQuestionStructureRow,
     ];
 
-    const result = buildHierarchicalAssessment(course, rows);
+    const result = buildHierarchicalAssessment(rows);
 
     expect(result[0].allowRealTimeGrading).toBe(false);
     expect(result[0].questions[0].allowRealTimeGrading).toBe(false);

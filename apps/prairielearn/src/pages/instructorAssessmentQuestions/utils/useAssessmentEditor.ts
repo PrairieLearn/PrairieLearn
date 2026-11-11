@@ -1,6 +1,8 @@
 import { useReducer, useState } from 'react';
 
+import type { QuestionPointsJson } from '../../../schemas/infoAssessment.js';
 import {
+  type AltPoolBlockForm,
   type EditorAction,
   type EditorState,
   type QuestionAlternativeForm,
@@ -21,6 +23,55 @@ import {
 } from './dataTransform.js';
 import { sanitizeSelectedItem, selectedItemsEqual } from './selectedItem.js';
 import { findQuestionByTrackingId, isQidInAssessment } from './zoneLookup.js';
+
+function hasLegacyPointFields(question: QuestionPointsJson): boolean {
+  return question.points != null || question.maxPoints != null;
+}
+
+function hasModernPointFields(question: QuestionPointsJson): boolean {
+  return (
+    question.autoPoints != null || question.maxAutoPoints != null || question.manualPoints != null
+  );
+}
+
+function inheritPointFields(question: QuestionPointsJson, parent: QuestionPointsJson) {
+  return {
+    points: question.points ?? parent.points,
+    maxPoints: question.maxPoints ?? parent.maxPoints,
+    autoPoints: question.autoPoints ?? parent.autoPoints,
+    maxAutoPoints: question.maxAutoPoints ?? parent.maxAutoPoints,
+    manualPoints: question.manualPoints ?? parent.manualPoints,
+  };
+}
+
+/**
+ * Mixed legacy and modern defaults would make the assessment invalid on sync.
+ * Preserve each alternative's effective points without interpreting an unknown
+ * grading method by moving conflicting pool defaults onto its alternatives.
+ */
+function prepareAlternativeForPool(
+  alternative: QuestionAlternativeForm,
+  pool: AltPoolBlockForm,
+  sourcePool?: ZoneQuestionBlockForm,
+): QuestionAlternativeForm {
+  const effectivePoints = sourcePool ? inheritPointFields(alternative, sourcePool) : alternative;
+  const hasConflictingDefaults =
+    (hasLegacyPointFields(effectivePoints) && hasModernPointFields(pool)) ||
+    (hasModernPointFields(effectivePoints) && hasLegacyPointFields(pool));
+  if (!hasConflictingDefaults) return alternative;
+
+  pool.alternatives = pool.alternatives.map((existing) => ({
+    ...existing,
+    ...inheritPointFields(existing, pool),
+  }));
+  pool.points = undefined;
+  pool.maxPoints = undefined;
+  pool.autoPoints = undefined;
+  pool.maxAutoPoints = undefined;
+  pool.manualPoints = undefined;
+
+  return { ...alternative, ...effectivePoints };
+}
 
 /**
  * Finds a zone by its trackingId.
@@ -150,6 +201,8 @@ function handleQuestionPicked(
       // Empty pools start neutral; seed point defaults from the first picked question.
       const shouldInitializeAltPoolPoints =
         altPoolResult.question.alternatives?.length === 0 &&
+        altPoolResult.question.points == null &&
+        altPoolResult.question.maxPoints == null &&
         altPoolResult.question.autoPoints == null &&
         altPoolResult.question.maxAutoPoints == null &&
         altPoolResult.question.manualPoints == null;
@@ -631,7 +684,8 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        poolResult.question.alternatives.push(alternative);
+        const newAlternative = prepareAlternativeForPool(alternative, poolResult.question);
+        poolResult.question.alternatives.push(newAlternative);
 
         const newQuestionMetadata =
           questionData && alternative.id
@@ -667,6 +721,10 @@ export function createEditorReducer(initialState: EditorState) {
 
         // Remove alternative from source
         const [movedAlt] = fromResult.question.alternatives!.splice(fromResult.alternativeIndex, 1);
+        const newAlternative =
+          fromResult.question === toPoolResult.question
+            ? movedAlt
+            : prepareAlternativeForPool(movedAlt, toPoolResult.question, fromResult.question);
 
         // Find insertion point
         let insertIndex: number;
@@ -679,7 +737,7 @@ export function createEditorReducer(initialState: EditorState) {
           insertIndex = beforeIdx === -1 ? toPoolResult.question.alternatives.length : beforeIdx;
         }
 
-        toPoolResult.question.alternatives.splice(insertIndex, 0, movedAlt);
+        toPoolResult.question.alternatives.splice(insertIndex, 0, newAlternative);
 
         return {
           ...state,
@@ -763,7 +821,10 @@ export function createEditorReducer(initialState: EditorState) {
         assertStandaloneQuestion(removedQuestion);
 
         // Convert to alternative
-        const newAlt = questionBlockToAlternative(removedQuestion);
+        const newAlt = prepareAlternativeForPool(
+          questionBlockToAlternative(removedQuestion),
+          toPoolResult.question,
+        );
 
         // Find insertion point
         let insertIndex: number;

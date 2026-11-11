@@ -3,18 +3,37 @@ import * as path from 'path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import type { ComponentProps } from 'react';
+import superjson from 'superjson';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { getOriginalHash } from '../lib/editorUtil.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import type { AssessmentQuestionsEditor } from '../pages/instructorAssessmentQuestions/components/AssessmentEditor.js';
+import {
+  prepareZonesForEditor,
+  serializeZonesForJson,
+  stripTrackingIds,
+} from '../pages/instructorAssessmentQuestions/utils/dataTransform.js';
+import {
+  questionDisplayName,
+  toEditorMetadata,
+} from '../pages/instructorAssessmentQuestions/utils/questions.js';
+import type { ZoneAssessmentJsonInput } from '../schemas/infoAssessment.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { updateCourseRepository } from './helperCourse.js';
+import { syncCourse, updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
+import { syncCourseData } from './sync/util.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
+import { withConfig } from './utils/config.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 const baseDir = tmp.dirSync().name;
@@ -710,5 +729,218 @@ describe('Editing assessment questions', { concurrent: false }, () => {
     assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     const points = assessmentInfo.zones[0].questions[0].points;
     assert.ok(points === undefined || points === 0, 'Points should be omitted or 0');
+  });
+
+  describe('Unavailable shared questions', () => {
+    const syncedZones: ZoneAssessmentJsonInput[] = [
+      {
+        title: 'Shared questions',
+        maxPoints: 10,
+        tools: { calculator: { enabled: true, type: 'scientific' } },
+        questions: [
+          {
+            id: '@unavailable/shared-only',
+            points: 5,
+            maxPoints: 10,
+            comment: 'Keep this shared reference',
+          },
+        ],
+      },
+      {
+        title: 'Mixed alternatives',
+        questions: [
+          {
+            numberChoose: 1,
+            points: 6,
+            maxPoints: 12,
+            alternatives: [
+              { id: '@unavailable/mixed', points: 4, maxPoints: 8 },
+              { id: 'test/question' },
+            ],
+          },
+        ],
+      },
+    ];
+
+    async function getEditorData() {
+      const response = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
+      );
+      assert.equal(response.status, 200);
+      const props = superjson.parse<ComponentProps<typeof AssessmentQuestionsEditor>>(
+        response
+          .$('script[data-component-props][data-component="AssessmentQuestionsEditor"]')
+          .text(),
+      );
+      return { response, props };
+    }
+
+    beforeAll(async () => {
+      const assessmentInfo = await fs.readJSON(assessmentLiveInfoPath);
+      assessmentInfo.zones = syncedZones;
+      await fs.writeJSON(assessmentLiveInfoPath, assessmentInfo, { spaces: 2 });
+      const execOptions = { cwd: courseLiveDir, env: process.env };
+      await execa('git', ['add', '-A'], execOptions);
+      await execa(
+        'git',
+        ['commit', '-m', 'Add unavailable shared question references'],
+        execOptions,
+      );
+      await execa('git', ['push', 'origin', 'master'], execOptions);
+      await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
+    });
+
+    test('renders shared-only zones and mixed alternative pools without their source course', async () => {
+      const { response, props } = await getEditorData();
+
+      assert.deepEqual(serializeZonesForJson(props.jsonZones), syncedZones);
+      assert.equal(props.questionRows.length, 1);
+      const editor = response.$('div[data-component="AssessmentQuestionsEditor"]');
+      assert.include(editor.text(), '@unavailable/shared-only');
+      assert.include(editor.text(), '@unavailable/mixed');
+      assert.include(editor.text(), 'Unavailable locally');
+      assert.lengthOf(editor.find('a[href*="/question/"]'), 1);
+    });
+
+    test('handles existing question rows without retained references until they are synced again', async () => {
+      try {
+        await execute(sql.clear_question_reference, { assessment_id: '1', qid: 'test/question' });
+        const { props } = await getEditorData();
+        assert.deepEqual(serializeZonesForJson(props.jsonZones), syncedZones);
+
+        await execute(sql.clear_question_reference, {
+          assessment_id: '1',
+          qid: '@unavailable/shared-only',
+        });
+        const response = await fetchCheerio(
+          `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
+        );
+        assert.equal(response.status, 200);
+        assert.include(response.$('[role="alert"]').text(), 'Load this course from disk again');
+        assert.lengthOf(response.$('[data-component="AssessmentQuestionsEditor"]'), 0);
+      } finally {
+        await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
+      }
+
+      const { props } = await getEditorData();
+      assert.deepEqual(serializeZonesForJson(props.jsonZones), syncedZones);
+    });
+
+    test('resolves metadata for a shared reference back to the same course', async () => {
+      const questionInfoPath = path.join(
+        courseLiveDir,
+        'questions',
+        'test',
+        'question',
+        'info.json',
+      );
+      const originalAssessmentContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
+      const originalQuestionContent = await fs.readFile(questionInfoPath, 'utf8');
+      try {
+        const assessmentInfo = JSON.parse(originalAssessmentContent);
+        assessmentInfo.zones[1].questions[0].alternatives[1].id = '@same-course/test/question';
+        await fs.writeJSON(assessmentLiveInfoPath, assessmentInfo, { spaces: 2 });
+        await fs.writeJSON(questionInfoPath, {
+          ...JSON.parse(originalQuestionContent),
+          sharePublicly: true,
+        });
+        await execute(sql.update_course_sharing_name, {
+          course_id: '1',
+          sharing_name: 'same-course',
+        });
+        await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
+
+        const { response, props } = await getEditorData();
+        assert.equal(
+          props.questionRows[0].assessment_question.json_qid,
+          '@same-course/test/question',
+        );
+        const editor = response.$('div[data-component="AssessmentQuestionsEditor"]');
+        const previewLink = editor.find('a[href*="/question/"]');
+        assert.lengthOf(previewLink, 1);
+        assert.include(previewLink.text(), 'Test question');
+        const questionRow = previewLink.closest('[role="button"]');
+        assert.include(questionRow.text(), '@same-course/test/question');
+        assert.notInclude(questionRow.text(), 'Unavailable locally');
+      } finally {
+        await fs.writeFile(assessmentLiveInfoPath, originalAssessmentContent);
+        await fs.writeFile(questionInfoPath, originalQuestionContent);
+        await execute(sql.update_course_sharing_name, { course_id: '1', sharing_name: null });
+        await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
+      }
+    });
+
+    test.each([
+      {
+        name: 'unsynced edits',
+        getContents: (original: string) =>
+          JSON.stringify({
+            ...JSON.parse(original),
+            zones: [{ questions: [{ id: 'test/question', points: 99 }] }],
+          }),
+        sync: false,
+      },
+      { name: 'syntax errors', getContents: () => '{', sync: true },
+      {
+        name: 'validation failures',
+        getContents: (original: string) =>
+          JSON.stringify({ ...JSON.parse(original), zones: [{ questions: [] }] }),
+        sync: true,
+      },
+    ])('keeps the synced structure when the file has $name', async ({ getContents, sync }) => {
+      const originalContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
+      try {
+        await fs.writeFile(assessmentLiveInfoPath, getContents(originalContent));
+        if (sync) {
+          const result = await syncCourseData(courseLiveDir);
+          assert(result.status === 'complete');
+          assert.isTrue(result.hadJsonErrors);
+        }
+
+        const { props } = await getEditorData();
+        assert.deepEqual(serializeZonesForJson(props.jsonZones), syncedZones);
+      } finally {
+        await fs.writeFile(assessmentLiveInfoPath, originalContent);
+        if (sync) {
+          await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
+        }
+      }
+    });
+
+    test('preserves unavailable references and their point settings when saving another edit', async () => {
+      const { props } = await getEditorData();
+      const questionMetadata = Object.fromEntries(
+        props.questionRows.map((row) => [
+          row.assessment_question.json_qid ?? questionDisplayName(props.course, row),
+          toEditorMetadata(row),
+        ]),
+      );
+      const zones = prepareZonesForEditor(props.jsonZones, questionMetadata);
+      zones[1].title = 'Updated mixed alternatives';
+
+      const response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'save_questions',
+            __csrf_token: props.csrfToken,
+            orig_hash: props.origHash,
+            zones: JSON.stringify(stripTrackingIds(zones)),
+          }),
+        },
+      );
+      assert.equal(response.status, 200);
+      assert.equal(
+        response.url,
+        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
+      );
+
+      const updatedInfo = await fs.readJSON(assessmentLiveInfoPath);
+      assert.deepEqual(updatedInfo.zones, [
+        syncedZones[0],
+        { ...syncedZones[1], title: 'Updated mixed alternatives' },
+      ]);
+    });
   });
 });

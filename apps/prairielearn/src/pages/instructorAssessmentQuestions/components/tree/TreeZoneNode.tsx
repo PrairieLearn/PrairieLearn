@@ -319,7 +319,15 @@ function ZonePointsBadge({
   }
 
   const label = run(() => {
-    if (assessmentType === 'Exam') return `${totalPoints} pts`;
+    const hasUnresolvedPoints = zone.questions.some(
+      (question) =>
+        question.points != null ||
+        question.maxPoints != null ||
+        question.alternatives?.some(
+          (alternative) => alternative.points != null || alternative.maxPoints != null,
+        ),
+    );
+    if (assessmentType === 'Exam' || hasUnresolvedPoints) return `${totalPoints} pts`;
     const parts: string[] = [];
     if (autoPoints > 0) parts.push(`${autoPoints} auto`);
     if (manualPoints > 0) parts.push(`${manualPoints} manual`);

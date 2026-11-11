@@ -2403,6 +2403,66 @@ describe('Assessment syncing', () => {
   });
 
   describe('Test validating shared questions on sync', () => {
+    it('retains authored question references when shared questions are unavailable locally', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.zones = [
+        {
+          questions: [{ id: '@unavailable-course/standalone', points: 5 }],
+        },
+        {
+          questions: [
+            {
+              points: 5,
+              alternatives: [{ id: '@unavailable-course/alternative' }, { id: util.QUESTION_ID }],
+            },
+          ],
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['shared'] = assessment;
+
+      await withConfig({ checkSharingOnSync: false }, async () => {
+        await util.writeAndSyncCourseData(courseData);
+      });
+
+      const syncedData = await getSyncedAssessmentData('shared');
+      assert.isNull(syncedData.assessment.sync_errors);
+      assert.deepEqual(
+        syncedData.assessment_questions.map((question) => question.json_qid),
+        ['@unavailable-course/standalone', '@unavailable-course/alternative', util.QUESTION_ID],
+      );
+      assert.isNull(syncedData.assessment_questions[0].question.qid);
+      assert.isNull(syncedData.assessment_questions[1].question.qid);
+    });
+
+    it('updates authored question references only after a successful sync', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      const question = { id: util.QUESTION_ID, points: 5 };
+      assessment.zones = [{ questions: [question] }];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['renamed'] = assessment;
+      const { courseDir } = await util.writeAndSyncCourseData(courseData);
+      const original = await getSyncedAssessmentData('renamed');
+      assert.equal(original.assessment_questions[0].json_qid, util.QUESTION_ID);
+
+      const renamedQid = 'renamed-question';
+      courseData.questions[renamedQid] = courseData.questions[util.QUESTION_ID];
+      delete courseData.questions[util.QUESTION_ID];
+      question.id = renamedQid;
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      const renamed = await getSyncedAssessmentData('renamed');
+      assert.equal(renamed.assessment_questions[0].id, original.assessment_questions[0].id);
+      assert.equal(renamed.assessment_questions[0].json_qid, renamedQid);
+
+      question.id = 'missing-question';
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      const failed = await getSyncedAssessmentData('renamed');
+      assert.isNotNull(failed.assessment.sync_errors);
+      assert.equal(failed.assessment_questions[0].json_qid, renamedQid);
+    });
+
     it('records an error if a zone references a QID from another course that does not exist or we do not have permissions for', async () => {
       const courseData = util.getCourseData();
       const assessment = makeAssessment(courseData);

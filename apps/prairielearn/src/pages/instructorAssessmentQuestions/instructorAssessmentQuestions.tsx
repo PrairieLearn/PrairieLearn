@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import fs from 'fs-extra';
+import { Alert } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -11,7 +12,10 @@ import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 import { CalculatorPreviewAssets } from '../../components/CalculatorAssets.js';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
+import {
+  selectAssessmentQuestionStructure,
+  selectAssessmentQuestions,
+} from '../../lib/assessment-question.js';
 import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -80,9 +84,27 @@ router.get(
       return;
     }
 
-    const questionRows = await selectAssessmentQuestions({
-      assessment_id: res.locals.assessment.id,
-    });
+    const [questionRows, structureRows] = await Promise.all([
+      selectAssessmentQuestions({ assessment_id: pageContext.assessment.id }),
+      selectAssessmentQuestionStructure({ assessment_id: pageContext.assessment.id }),
+    ]);
+
+    if (structureRows.some((row) => row.qid == null)) {
+      res.send(
+        PageLayout({
+          resLocals: res.locals,
+          pageTitle: 'Questions',
+          navContext: { type: 'instructor', page: 'assessment', subPage: 'questions' },
+          content: (
+            <Alert variant="warning">
+              Some shared question references are unavailable. Load this course from disk again to
+              update the assessment editor.
+            </Alert>
+          ),
+        }),
+      );
+      return;
+    }
 
     const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 
@@ -102,7 +124,7 @@ router.get(
 
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
-    const jsonZones = buildHierarchicalAssessment(pageContext.course, questionRows);
+    const jsonZones = buildHierarchicalAssessment(structureRows);
 
     // Populate zone-level tool overrides from the assessment_tools table.
     const zoneToolRows = await selectZoneToolOverrides({

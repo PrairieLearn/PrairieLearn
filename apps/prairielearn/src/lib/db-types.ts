@@ -566,6 +566,7 @@ export const AssessmentQuestionSchema = z.object({
   json_max_auto_points: z.number().nullable(),
   json_max_points: z.number().nullable(),
   json_points: z.union([z.number(), z.array(z.number())]).nullable(),
+  json_qid: z.string().nullable(),
   json_tries_per_variant: z.number().nullable(),
   last_submission_score_hist: z.array(z.number()).nullable(),
   last_submission_score_variance: z.number().nullable(),
