@@ -161,6 +161,23 @@ function matchDecision(
   return { decision };
 }
 
+/**
+ * The agent refuses the browser's message until it has the denial, so a delivery that failed
+ * fails the request, and a retry delivers again.
+ */
+async function deliverDenialByMessage(
+  conversation: CourseAgentConversation,
+  row: CourseAgentReview,
+) {
+  if (row.result_delivered_at !== null) return;
+  if (!(await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result)))) {
+    throw new HttpStatusError(
+      503,
+      'The course agent could not be reached, so your message was not sent. Try again.',
+    );
+  }
+}
+
 export async function postReviewDecision({
   course: courseContext,
   conversation,
@@ -181,7 +198,11 @@ export async function postReviewDecision({
 }) {
   const key = { course_agent_conversation_id: conversation.id, agent_review_id: reviewId };
   const existing = await selectOptionalCourseAgentReview(key);
-  if (existing) return matchDecision(existing, decision, viaMessage);
+  if (existing) {
+    matchDecision(existing, decision, viaMessage);
+    if (viaMessage) await deliverDenialByMessage(conversation, existing);
+    return { decision };
+  }
   const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
   if (!review) throw new HttpStatusError(409, 'This review is no longer pending.');
   if (decision === 'denied') {
@@ -193,9 +214,16 @@ export async function postReviewDecision({
       result,
     });
     if (!row) {
-      return matchDecision((await selectOptionalCourseAgentReview(key))!, decision, viaMessage);
+      const winner = (await selectOptionalCourseAgentReview(key))!;
+      matchDecision(winner, decision, viaMessage);
+      if (viaMessage) await deliverDenialByMessage(conversation, winner);
+      return { decision };
     }
-    await deliverResult(conversation, row, result);
+    if (viaMessage) {
+      await deliverDenialByMessage(conversation, row);
+    } else {
+      await deliverResult(conversation, row, result);
+    }
     return { decision };
   }
   const course = await selectCourseById(courseContext.id);

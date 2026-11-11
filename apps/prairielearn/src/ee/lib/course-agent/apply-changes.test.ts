@@ -250,6 +250,14 @@ it('delivers a denial sent by message before the message is sent', async () => {
   expect(deliverCourseAgentReviewResult).toHaveBeenCalledOnce();
 });
 
+it('fails a denial by message the agent did not receive, and delivers it on retry', async () => {
+  vi.mocked(deliverCourseAgentReviewResult).mockRejectedValueOnce(new Error('Service unavailable'));
+  await expect(decide('denied', review.id, true)).rejects.toThrow('your message was not sent');
+  await expect(decide('denied', review.id, true)).resolves.toEqual({ decision: 'denied' });
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledTimes(2);
+  expect((await storedReview())?.result_delivered_at).toBeTruthy();
+});
+
 it('refuses a denial by message after a plain denial, whose delivery the agent is acting on', async () => {
   await decide('denied');
   await expect(decide('denied', review.id, true)).rejects.toThrow(

@@ -546,6 +546,7 @@ function Chat({
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
+        pending={deny.isPending}
         placeholder={
           replyDenies
             ? 'Explain what to change…'
