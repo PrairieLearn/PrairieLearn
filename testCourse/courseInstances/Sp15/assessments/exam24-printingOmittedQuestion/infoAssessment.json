@@ -1,7 +1,7 @@
 {
   "uuid": "2f8c82ad-a47e-467d-bffb-411231745847",
   "type": "Exam",
-  "title": "Printable assessment with a broken question",
+  "title": "Printable assessment with unprintable questions",
   "set": "Exam",
   "number": "24",
   "shuffleQuestions": false,
@@ -17,7 +17,7 @@
   ],
   "zones": [
     {
-      "title": "Questions with one broken variant",
+      "title": "Questions including a broken variant and a v2 question",
       "questions": [
         {
           "id": "addNumbers",
@@ -29,6 +29,10 @@
         },
         {
           "id": "brokenGeneration",
+          "autoPoints": [5]
+        },
+        {
+          "id": "addVectors",
           "autoPoints": [5]
         }
       ]

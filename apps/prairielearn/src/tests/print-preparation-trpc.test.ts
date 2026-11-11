@@ -20,7 +20,6 @@ import { getAssessmentTrpcUrl, getPrintFormUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { createPrintForm } from '../lib/print-forms.js';
 import * as printing from '../lib/printing/index.js';
 import * as printExportRender from '../lib/printing/print-export-render.js';
 import {
@@ -30,6 +29,7 @@ import {
   queuePrintExport,
   waitForPrintExportWorkers,
 } from '../lib/printing/print-exports.js';
+import { createPrintForm } from '../lib/printing/print-forms.js';
 import { PrintPacketMetadataSchema } from '../lib/printing/print-packet-schema.js';
 import { assessmentHasPrintRandomization } from '../lib/printing/print-preparation.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';

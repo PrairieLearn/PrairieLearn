@@ -4,12 +4,12 @@ import { z } from 'zod';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
-import { serializePrintDocument } from '../../../lib/client/print-document.js';
+import { serializePrintDocument } from '../../../lib/client/printing/print-document.js';
 import { getAssessmentTrpcUrl, getPrintFormUrl } from '../../../lib/client/url.js';
 import * as codeCaller from '../../../lib/code-caller/index.js';
 import { config } from '../../../lib/config.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
-import { createPrintForm } from '../../../lib/print-forms.js';
+import { createPrintForm } from '../../../lib/printing/print-forms.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseById } from '../../../models/course.js';

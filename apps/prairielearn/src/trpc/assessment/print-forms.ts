@@ -6,7 +6,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
-import { createPrintForm } from '../../lib/print-forms.js';
+import { createPrintForm } from '../../lib/printing/print-forms.js';
 import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
 import { selectOptionalPrintForm, selectPrintFormsForUser } from '../../models/print-form.js';
 
@@ -55,13 +55,7 @@ const ownedFormProcedure = printFormProcedure
     return next();
   });
 
-async function createForm({
-  ctx,
-  signal,
-}: {
-  ctx: ReturnType<typeof createContext>;
-  signal: AbortSignal | undefined;
-}) {
+async function createForm({ ctx }: { ctx: ReturnType<typeof createContext> }) {
   try {
     const form = await createPrintForm({
       assessment: ctx.assessment,
@@ -69,7 +63,6 @@ async function createForm({
       courseInstance: ctx.course_instance,
       userId: ctx.locals.user.id,
       authnUserId: ctx.authn_user.id,
-      signal,
     });
     return { printFormId: form.id };
   } catch (error) {

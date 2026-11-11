@@ -155,10 +155,7 @@ function getPrintExportLabel(work: PrintExportWork): string {
 }
 
 function printableFailureMessage(error: unknown, format: PrintExportWork['format']): string | null {
-  if (
-    error instanceof Error &&
-    /^Timed out after \d+ ms (waiting to render|rendering) the /.test(error.message)
-  ) {
+  if (error instanceof HttpStatusError && error.status === 504) {
     return format === 'docx'
       ? 'Rendering took too long. Try again.'
       : 'Rendering took too long. Try again, or export fewer forms at once.';
