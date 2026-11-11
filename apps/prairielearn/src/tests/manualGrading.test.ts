@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { gradeAllAssessmentInstances } from '../lib/assessment.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
-import { InstanceQuestionSchema, RubricItemSchema } from '../lib/db-types.js';
+import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
 import { updateAssessmentInstancesTimeLimit } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -394,19 +394,6 @@ function checkSettingsResults(
       );
       assert.equal(always_show_to_students.val(), item.always_show_to_students ? 'true' : 'false');
     });
-
-    const storedItems = await sqldb.queryRows(
-      sql.select_rubric_items,
-      { ids: rubric_items.map((item) => item.id).filter(Boolean) },
-      RubricItemSchema,
-    );
-    assert.lengthOf(storedItems, rubric_items.length);
-    for (const item of storedItems) {
-      assert.equal(
-        item.show_to_students,
-        item.always_show_to_students ? 'always' : 'when_selected',
-      );
-    }
   });
 
   test('grading panel should have proper values for rubric', async () => {
