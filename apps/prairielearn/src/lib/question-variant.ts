@@ -255,7 +255,9 @@ async function selectVariantForInstanceQuestion(
  * @param params.question_course - The course for the question.
  * @param params.options - Options controlling the creation.
  * @param params.options.variant_seed - The seed for the variant.
- * @param params.options.preferences - Preference overrides for a floating variant.
+ * @param params.options.preferences - Assessment question preferences for a variant that has no
+ * instance question, such as a print form's. Most callers should omit this: variants for instance
+ * questions already get these preferences from the instance question.
  * @param params.require_open - If true, only use an existing variant if it is open.
  * @param params.client_fingerprint_id - The client fingerprint for this variant.
  */
@@ -438,7 +440,9 @@ async function makeAndInsertVariant({
  * @param params.question_course - The course for the question.
  * @param params.options - Options controlling the creation.
  * @param params.options.variant_seed - The seed for the variant.
- * @param params.options.preferences - Preference overrides for a floating variant.
+ * @param params.options.preferences - Assessment question preferences for a variant that has no
+ * instance question, such as a print form's. Most callers should omit this: variants for instance
+ * questions already get these preferences from the instance question.
  * @param params.require_open - If true, only use an existing variant if it is open.
  * @param params.client_fingerprint_id - The client fingerprint for this variant. Can be null.
  */
