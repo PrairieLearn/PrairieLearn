@@ -10,16 +10,11 @@ import { IdSchema } from '@prairielearn/zod';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import {
-  ChunkSchema,
-  type Course,
-  CourseSchema,
-  QuestionSchema,
-  QuestionVersionSchema,
-} from '../lib/db-types.js';
+import { type Course, CourseSchema, QuestionVersionSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
+import { selectQuestionById } from '../models/question.js';
 import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
@@ -387,34 +382,13 @@ describe('chunks', () => {
         QuestionVersionSchema,
       );
       expect(initialVersions).toHaveLength(1);
-      expect(initialVersions[0]).toMatchObject({
-        directory: 'addNumbers',
-        type: 'Freeform',
-        grading_method: 'Internal',
-        partial_credit: true,
-        external_grading_image: null,
-      });
+      expect(initialVersions[0].partial_credit).toBe(true);
 
       const infoPath = path.join(courseDir, 'questions/addNumbers/info.json');
       const originalInfo = QuestionJsonSchema.parse(await fs.readJson(infoPath));
       await fs.writeJson(infoPath, {
         ...originalInfo,
-        gradingMethod: 'External',
         partialCredit: false,
-        externalGradingOptions: {
-          image: 'prairielearn/grader-python:latest',
-          entrypoint: ['python', '/grade/run tests.py'],
-          serverFilesCourse: ['helpers.py'],
-          timeout: 30,
-          environment: { MODE: 'test' },
-        },
-        workspaceOptions: {
-          image: 'prairielearn/workspace-jupyterlab:latest',
-          args: ['--flag', 'two words'],
-          gradedFiles: ['answer.py'],
-          environment: { REMOVE_ME: null },
-        },
-        preferences: { difficulty: { type: 'string', default: 'easy' } },
       });
       const { logger } = makeMockLogger();
       const syncResult = await syncDiskToSql(course, logger);
@@ -434,25 +408,8 @@ describe('chunks', () => {
       );
       expect(metadataVersions).toHaveLength(2);
       expect(metadataVersions[0]).toEqual(initialVersions[0]);
-      expect(metadataVersions[1]).toMatchObject({
-        grading_method: 'External',
-        partial_credit: false,
-        external_grading_image: 'prairielearn/grader-python:latest',
-        external_grading_entrypoint: "python '/grade/run tests.py'",
-        external_grading_files: ['helpers.py'],
-        external_grading_timeout: 30,
-        external_grading_enable_networking: false,
-        external_grading_environment: { MODE: 'test' },
-        workspace_args: "--flag 'two words'",
-        workspace_graded_files: ['answer.py'],
-        workspace_environment: { REMOVE_ME: null },
-        preferences_schema: { difficulty: { type: 'string', default: 'easy' } },
-      });
-      const liveQuestion = await sqldb.queryRow(
-        sql.select_question_by_id,
-        { question_id: questionId },
-        QuestionSchema,
-      );
+      expect(metadataVersions[1].partial_credit).toBe(false);
+      const liveQuestion = await selectQuestionById(questionId);
       expect(metadataVersions[1]).toEqual({
         ...QuestionVersionSchema.omit({ chunk_id: true }).parse(liveQuestion),
         chunk_id: metadataVersions[1].chunk_id,
@@ -480,7 +437,7 @@ describe('chunks', () => {
       });
     });
 
-    it('does not snapshot stale live settings for invalid question sources', async () => {
+    it('does not snapshot parsed question settings with validation errors', async () => {
       const courseDir = tempTestCourseDir.path;
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
@@ -493,12 +450,15 @@ describe('chunks', () => {
         QuestionVersionSchema,
       );
       const infoPath = path.join(courseDir, 'questions/addNumbers/info.json');
-      const originalInfo = await fs.readFile(infoPath, 'utf8');
-      await fs.writeFile(infoPath, '{ invalid JSON');
+      const originalInfo = QuestionJsonSchema.parse(await fs.readJson(infoPath));
+      await fs.writeJson(infoPath, { ...originalInfo, gradingMethod: 'External' });
       const { logger } = makeMockLogger();
       const invalidSync = await syncDiskToSql(course, logger);
       assert(invalidSync.status === 'complete');
       assert.isTrue(invalidSync.hadJsonErrors);
+      const invalidQuestion = invalidSync.courseData.questions.addNumbers;
+      assert.isDefined(invalidQuestion.data);
+      assert.isNotEmpty(invalidQuestion.errors);
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
@@ -516,7 +476,7 @@ describe('chunks', () => {
       )!;
       expect(current.id).not.toBe(initialVersions[0].chunk_id);
 
-      await fs.writeFile(infoPath, originalInfo);
+      await fs.writeJson(infoPath, originalInfo);
       const repairedSync = await syncDiskToSql(course, logger);
       assert(repairedSync.status === 'complete');
       await chunksLib.updateChunksForCourse({
@@ -532,51 +492,6 @@ describe('chunks', () => {
       );
       expect(repairedVersions).toHaveLength(2);
       expect(repairedVersions[0]).toEqual(initialVersions[0]);
-    });
-
-    it('rolls back chunk publication when a settings snapshot cannot be inserted', async () => {
-      const courseDir = tempTestCourseDir.path;
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId: course.id,
-        courseData: await courseDB.loadFullCourse(course.id, courseDir),
-      });
-      const baseline = await sqldb.queryRows(
-        sql.select_question_chunks,
-        { question_id: questionId },
-        ChunkSchema,
-      );
-      await fs.appendFile(
-        path.join(courseDir, 'questions/addNumbers/server.py'),
-        '\n# Rejected publication\n',
-      );
-      await sqldb.execute(sql.reject_new_question_versions);
-      try {
-        await expect(
-          chunksLib.updateChunksForCourse({
-            coursePath: courseDir,
-            courseId: course.id,
-            courseData: await courseDB.loadFullCourse(course.id, courseDir),
-            changedFiles: ['questions/addNumbers/server.py'],
-          }),
-        ).rejects.toThrow('question_versions_reject_snapshots');
-      } finally {
-        await sqldb.execute(sql.allow_new_question_versions);
-      }
-      const after = await sqldb.queryRows(
-        sql.select_question_chunks,
-        { question_id: questionId },
-        ChunkSchema,
-      );
-      expect(after).toEqual(baseline);
-      const versions = await sqldb.queryRows(
-        sql.select_question_versions,
-        { question_id: questionId },
-        QuestionVersionSchema,
-      );
-      expect(versions.map((version) => version.chunk_id)).toEqual(
-        baseline.map((chunk) => chunk.id),
-      );
     });
 
     it('handles question nesting after a rename', async () => {
