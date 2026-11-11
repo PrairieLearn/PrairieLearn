@@ -10,6 +10,7 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
+import { dequal } from 'dequal';
 import { Fragment, memo, useId, useRef } from 'react';
 import { Alert, Badge, Button } from 'react-bootstrap';
 import { type FieldErrors, useFormState, useWatch } from 'react-hook-form';
@@ -49,45 +50,19 @@ function countErrors(obj: unknown): number {
 const pointerSensorOptions = { activationConstraint: { distance: 6 } };
 
 /**
- * Deep equality for form data, which only contains primitives, arrays, and
- * plain objects. Much cheaper than a general-purpose deep equal, which matters
- * because it runs over every rule on every change.
- */
-function isPlainDataEqual(a: unknown, b: unknown): boolean {
-  if (Object.is(a, b)) return true;
-  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
-  if (Array.isArray(a)) {
-    if (!Array.isArray(b) || a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (!isPlainDataEqual(a[i], b[i])) return false;
-    }
-    return true;
-  }
-  if (Array.isArray(b)) return false;
-  const aRecord = a as Record<string, unknown>;
-  const bRecord = b as Record<string, unknown>;
-  const keys = Object.keys(aRecord);
-  if (keys.length !== Object.keys(bRecord).length) return false;
-  for (const key of keys) {
-    if (!Object.hasOwn(bRecord, key) || !isPlainDataEqual(aRecord[key], bRecord[key])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
  * Returns copies of `items` that keep the same identity across renders while
  * their contents are unchanged, so memoized children can skip rendering.
  * react-hook-form mutates form values and errors in place, so the live objects
  * can't be compared with what was rendered last time; each item is instead
- * compared with a snapshot taken when it was last rendered.
+ * compared with a snapshot taken when it was last rendered. This runs over
+ * every rule on every change, so it uses `dequal`, which is several times
+ * faster than `es-toolkit`'s `isEqual` on this data.
  */
 function useStableSnapshots<T>(items: T[]): T[] {
   const previousRef = useRef<T[]>([]);
   const previous = previousRef.current;
   const snapshots = items.map((item, index) =>
-    isPlainDataEqual(previous[index], item) ? previous[index] : structuredClone(item),
+    dequal(previous[index], item) ? previous[index] : structuredClone(item),
   );
   previousRef.current = snapshots;
   return snapshots;
