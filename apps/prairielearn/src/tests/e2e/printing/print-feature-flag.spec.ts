@@ -19,7 +19,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
     'exam20-assessmentTools',
   );
   const assessmentBase = `/pl/course_instance/${courseInstance.id}/instructor/assessment/${printForm.assessment_id}`;
-  const previewUrl = `${printUrl}/preview?paper_size=Letter&form_label=A`;
+  const previewUrl = `${printUrl}/preview?paper_size=Letter`;
   const preview = await page.request.get(previewUrl);
   expect(preview.status()).toBe(200);
   const user = await getConfiguredUser();
@@ -38,7 +38,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
       filename: 'test-export.pdf',
       snapshots: [
         {
-          formLabel: 'A',
+          formLabel: printForm.label,
           printDocument: 'assessment',
           localPreviewUrl: new URL(previewUrl, baseURL).href,
           html: await preview.text(),
@@ -46,7 +46,11 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
             courseInstanceId: courseInstance.id,
             assessmentId: printForm.assessment_id,
             printFormId: printForm.id,
-            printFormQuestionIds: await getPrintableFormQuestionIds(printForm.id, new Set()),
+            printFormQuestionIds: await getPrintableFormQuestionIds(
+              printForm.id,
+              new Map(),
+              new Set(),
+            ),
             authnUserId: user.id,
             userId: user.id,
           },

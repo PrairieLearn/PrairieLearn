@@ -30,6 +30,7 @@ import {
   capturePrintSnapshot,
   renderPrintSnapshot,
 } from '../../lib/client/print-snapshot.js';
+import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
 import type { StaffPrintForm } from '../../lib/client/safe-db-types.js';
 import {
   getCourseInstanceJobSequenceUrl,
@@ -109,15 +110,25 @@ function PrintPreparation({
   );
   const [selectedForm, setSelectedForm] = useQueryState('form', parseAsString);
   const [selectedForms, setSelectedForms] = useQueryState('forms', parseAsArrayOf(parseAsString));
-  const savedFormIds =
-    selectedForms ?? [selectedForm ?? initialForms.at(0)?.id].filter((id): id is string => !!id);
+  const activeForms = forms.data.filter((form) => form.archived_at === null).reverse();
+  const archivedForms = forms.data.filter((form) => form.archived_at !== null);
+  const savedFormIds = selectedForms ?? activeForms.map((form) => form.id);
   const availableFormIds = [...new Set(savedFormIds)]
-    .filter((id) => forms.data.some((form) => form.id === id))
+    .filter((id) => activeForms.some((form) => form.id === id))
     .slice(0, MAX_PRINT_FORMS);
-  const formIds = hasRandomization ? availableFormIds : availableFormIds.slice(0, 1);
+  const formIds = availableFormIds;
+  const selectedArchivedForm = archivedForms.find((form) => form.id === selectedForm);
   const formId =
-    selectedForm && formIds.includes(selectedForm) ? selectedForm : (formIds.at(0) ?? null);
-  const formLabel = String.fromCharCode(65 + Math.max(0, formIds.indexOf(formId ?? '')));
+    selectedForm && (formIds.includes(selectedForm) || selectedArchivedForm)
+      ? selectedForm
+      : (formIds.at(0) ?? null);
+  const archivedPreviewForm = archivedForms.find((form) => form.id === formId);
+  const downloadFormIds = archivedPreviewForm ? [...formIds, archivedPreviewForm.id] : formIds;
+  function formLabel(id: string) {
+    const form = forms.data.find((item) => item.id === id);
+    if (!form) throw new Error('This print form is not available.');
+    return form.label;
+  }
   const [formSettings, setFormSettings] = useState<Partial<Record<string, PrintSettings>>>({});
   const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
   const [copies, setCopies] = useState(defaultCopies);
@@ -157,7 +168,7 @@ function PrintPreparation({
   const questionSizes = watch('questionSizes');
   const excludedQuestions = watch('excludedQuestions');
   const excludedQuestionNumbers = new Set(excludedQuestions);
-  const layout = `${printLayoutSearch(settings)}&form_label=${formLabel}`;
+  const layout = printLayoutSearch(settings);
   const printBase = formId
     ? getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: formId })
     : '';
@@ -174,6 +185,13 @@ function PrintPreparation({
   );
   const regenerate = useMutation(
     trpc.printForms.regenerate.mutationOptions({
+      onSuccess: async () => {
+        await forms.refetch();
+      },
+    }),
+  );
+  const archive = useMutation(
+    trpc.printForms.archive.mutationOptions({
       onSuccess: async () => {
         await forms.refetch();
       },
@@ -202,6 +220,7 @@ function PrintPreparation({
   const busy =
     create.isPending ||
     regenerate.isPending ||
+    archive.isPending ||
     packet.isPending ||
     booklet.isPending ||
     preparingPdf !== null ||
@@ -236,7 +255,6 @@ function PrintPreparation({
     return {
       forms: ids.map((id) => ({
         printFormId: id,
-        formLabel: String.fromCharCode(65 + formIds.indexOf(id)),
         settings: settingsForForm(id, appliedSettings),
       })),
       copies: copyCount,
@@ -251,7 +269,7 @@ function PrintPreparation({
     printDocument: PrintDocument,
   ) {
     const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
-    const url = `${base}/preview?${printLayoutSearch(appliedSettings)}&form_label=${label}&document=${printDocument}`;
+    const url = `${base}/preview?${printLayoutSearch(appliedSettings)}&document=${printDocument}`;
     const cached = snapshotsRef.current.get(url);
     if (cached) return cached;
     let snapshot: PrintSnapshot;
@@ -288,14 +306,14 @@ function PrintPreparation({
       const batch = snapshotRequests.slice(index, index + SNAPSHOT_PREPARATION_BATCH_SIZE);
       const snapshots = await Promise.all(
         batch.map(({ form, printDocument }) =>
-          snapshotFor(form.printFormId, form.formLabel, form.settings, printDocument),
+          snapshotFor(form.printFormId, formLabel(form.printFormId), form.settings, printDocument),
         ),
       );
       for (const [batchIndex, snapshot] of snapshots.entries()) {
         const { form, printDocument } = batch[batchIndex];
         input.append(
           'pages',
-          new File([snapshot.html], `form-${form.formLabel}-${printDocument}.html`),
+          new File([snapshot.html], `form-${formLabel(form.printFormId)}-${printDocument}.html`),
         );
         input.append('snapshotIds', snapshot.id);
       }
@@ -369,27 +387,33 @@ function PrintPreparation({
 
   async function addForm() {
     const result = await create.mutateAsync();
-    void setSelectedForms([...formIds, result.printFormId]);
+    if (selectedForms !== null) void setSelectedForms([...formIds, result.printFormId]);
     switchForm(result.printFormId);
   }
 
   async function regenerateForm(id: string) {
     const result = await regenerate.mutateAsync({ printFormId: id });
-    void setSelectedForms(formIds.map((value) => (value === id ? result.printFormId : value)));
+    if (selectedForms !== null) {
+      void setSelectedForms(formIds.map((value) => (value === id ? result.printFormId : value)));
+    }
     switchForm(result.printFormId);
   }
 
-  function removeForm(id: string) {
+  async function archiveForm(id: string) {
+    await archive.mutateAsync({ printFormId: id });
     const nextIds = formIds.filter((value) => value !== id);
-    void setSelectedForms(nextIds);
-    if (id === formId) switchForm(nextIds[0]);
+    if (selectedForms !== null) void setSelectedForms(nextIds.length > 0 ? nextIds : null);
+    if (id === formId) {
+      const nextId = nextIds[0] ?? activeForms.find((form) => form.id !== id)?.id;
+      if (nextId) switchForm(nextId);
+      else void setSelectedForm(null);
+    }
   }
   const download = useMutation({
     mutationFn: async (id: string) => {
-      const label = String.fromCharCode(65 + formIds.indexOf(id));
       const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
       const appliedSettings = settingsForForm(id);
-      const search = `${printLayoutSearch(appliedSettings)}&form_label=${label}`;
+      const search = printLayoutSearch(appliedSettings);
       const url = `${base}/preview?${search}&document=assessment`;
       const livePreview = previewDocumentRef.current;
       const snapshot =
@@ -500,7 +524,7 @@ function PrintPreparation({
     try {
       if (!formId) {
         const result = await create.mutateAsync();
-        void setSelectedForms([result.printFormId]);
+        if (selectedForms !== null) void setSelectedForms([result.printFormId]);
         void setSelectedForm(result.printFormId);
         setFormSettings((previous) => ({ ...previous, [result.printFormId]: values }));
       } else if (printLayoutSearch(values) === printLayoutSearch(settings)) {
@@ -538,6 +562,11 @@ function PrintPreparation({
         error={getAppError<PrintFormsError['regenerate']>(regenerate.error)}
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => regenerate.reset()}
+      />
+      <AppErrorAlert
+        error={getAppError<PrintFormsError['archive']>(archive.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+        onDismiss={() => archive.reset()}
       />
       <AppErrorAlert
         error={getAppError<PrintableAssessmentExportError['pdf']>(
@@ -615,6 +644,9 @@ function PrintPreparation({
           new preview.
         </Alert>
       )}
+      {savedFormIds.some((id) => archivedForms.some((form) => form.id === id)) && (
+        <Alert variant="info">Archived forms were removed from the current selection.</Alert>
+      )}
       {reviewCount > 0 && (
         <Alert
           variant={includedOmittedCount > 0 ? 'danger' : 'warning'}
@@ -656,7 +688,7 @@ function PrintPreparation({
               className="print-preparation-controls-scroll"
               aria-label="Print settings and questions"
             >
-              {hasRandomization && (
+              {(hasRandomization || formIds.length > 0) && (
                 <Card className="mb-3">
                   <Card.Body>
                     <h2 className="h6 mb-2">Print forms</h2>
@@ -665,8 +697,8 @@ function PrintPreparation({
                       it. Copies cycle through these forms in order.
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
-                      {formIds.map((id, index) => {
-                        const label = String.fromCharCode(65 + index);
+                      {formIds.map((id) => {
+                        const label = formLabel(id);
                         return (
                           <div key={id} className="d-flex align-items-center gap-2">
                             <Button
@@ -694,7 +726,12 @@ function PrintPreparation({
                                 variant="outline-secondary"
                                 aria-label={`Regenerate Form ${label}`}
                                 disabled={
-                                  busy || isDirty || isSubmitting || download.isPending || groupWork
+                                  busy ||
+                                  isDirty ||
+                                  isSubmitting ||
+                                  download.isPending ||
+                                  groupWork ||
+                                  !hasRandomization
                                 }
                                 onClick={() => void regenerateForm(id).catch(() => {})}
                               >
@@ -705,15 +742,15 @@ function PrintPreparation({
                               type="button"
                               size="sm"
                               variant="outline-secondary"
-                              aria-label={`Remove Form ${label}`}
+                              aria-label={`Archive Form ${label}`}
                               disabled={
-                                formIds.length === 1 ||
+                                activeForms.length === 1 ||
                                 busy ||
                                 isDirty ||
                                 isSubmitting ||
                                 download.isPending
                               }
-                              onClick={() => removeForm(id)}
+                              onClick={() => void archiveForm(id).catch(() => {})}
                             >
                               <i className="bi bi-x-lg" aria-hidden="true" />
                             </Button>
@@ -732,7 +769,8 @@ function PrintPreparation({
                         isSubmitting ||
                         download.isPending ||
                         groupWork ||
-                        formIds.length >= MAX_PRINT_FORMS
+                        !hasRandomization ||
+                        activeForms.length >= MAX_ACTIVE_PRINT_FORMS
                       }
                       onClick={() => void addForm().catch(() => {})}
                     >
@@ -744,9 +782,40 @@ function PrintPreparation({
                       </p>
                     )}
                     <p className="small text-muted mt-2 mb-0">
-                      Regenerate replaces that form with new randomization. Review its questions and
-                      selections again before printing.
+                      Regenerate creates a newly labeled form and archives the original. Previous
+                      forms remain available below.
                     </p>
+                  </Card.Body>
+                </Card>
+              )}
+              {archivedForms.length > 0 && (
+                <Card className="mb-3">
+                  <Card.Body>
+                    <details>
+                      <summary className="h6 mb-0">Previous forms ({archivedForms.length})</summary>
+                      <p className="small text-muted mt-2 mb-2">
+                        Saved questions and variants remain available. Reapply the original print
+                        settings when exporting an older answer key.
+                      </p>
+                      <div className="d-flex flex-column gap-2">
+                        {archivedForms.map((form) => (
+                          <Button
+                            key={form.id}
+                            type="button"
+                            size="sm"
+                            variant={form.id === formId ? 'secondary' : 'outline-secondary'}
+                            className="text-start"
+                            disabled={busy || isDirty || isSubmitting || download.isPending}
+                            onClick={() => {
+                              switchForm(form.id);
+                              switchDocument('answer_key');
+                            }}
+                          >
+                            View Form {form.label} answer key
+                          </Button>
+                        ))}
+                      </div>
+                    </details>
                   </Card.Body>
                 </Card>
               )}
@@ -1152,21 +1221,26 @@ function PrintPreparation({
                 <div className="d-flex flex-wrap align-items-center gap-3">
                   <div className="d-flex align-items-center gap-2">
                     <h2 className="h6 mb-0">Preview</h2>
-                    {hasRandomization && (
+                    {(formIds.length > 1 || archivedPreviewForm) && (
                       <Form.Select
                         size="sm"
                         className="w-auto"
                         aria-label="Preview form"
                         value={formId ?? ''}
-                        disabled={isDirty || formIds.length < 2}
+                        disabled={isDirty || (formIds.length < 2 && !archivedPreviewForm)}
                         onChange={(event) => switchForm(event.target.value)}
                       >
-                        {formIds.length === 0 && <option value="">Form A</option>}
-                        {formIds.map((id, index) => (
+                        {formIds.length === 0 && <option value="">No current forms</option>}
+                        {formIds.map((id) => (
                           <option key={id} value={id}>
-                            Form {String.fromCharCode(65 + index)}
+                            Form {formLabel(id)}
                           </option>
                         ))}
+                        {archivedPreviewForm && (
+                          <option value={archivedPreviewForm.id}>
+                            Previous Form {archivedPreviewForm.label}
+                          </option>
+                        )}
                       </Form.Select>
                     )}
                   </div>
@@ -1258,8 +1332,10 @@ function PrintPreparation({
                           Download
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
-                          {formIds.map((id, index) => {
-                            const label = String.fromCharCode(65 + index);
+                          {downloadFormIds.map((id, index) => {
+                            const label = formLabel(id);
+                            const formName =
+                              id === archivedPreviewForm?.id ? 'Previous Form' : 'Form';
                             return (
                               <Fragment key={id}>
                                 {index > 0 && <Dropdown.Divider />}
@@ -1269,10 +1345,10 @@ function PrintPreparation({
                                     void downloadPacket([id], 1, 'assessment').catch(() => {})
                                   }
                                 >
-                                  Download Form {label} (PDF)
+                                  Download {formName} {label} (PDF)
                                 </Dropdown.Item>
                                 <Dropdown.Item onClick={() => download.mutate(id)}>
-                                  Download Form {label} Word (.docx)
+                                  Download {formName} {label} Word (.docx)
                                 </Dropdown.Item>
                                 <Dropdown.Item
                                   disabled={!renderingAvailable}
@@ -1280,7 +1356,7 @@ function PrintPreparation({
                                     void downloadPacket([id], 1, 'answer_key').catch(() => {})
                                   }
                                 >
-                                  Download Form {label} answer key (PDF)
+                                  Download {formName} {label} answer key (PDF)
                                 </Dropdown.Item>
                               </Fragment>
                             );
@@ -1338,7 +1414,7 @@ function PrintPreparation({
         show={showBookletModal}
         students={copies}
         enrolledStudents={enrolledStudents}
-        formLabels={formIds.map((_, index) => String.fromCharCode(65 + index))}
+        formLabels={formIds.map(formLabel)}
         pending={booklet.isPending || preparingPdf === 'booklet'}
         progress={preparingPdf === 'booklet' ? pdfPreparationProgress : null}
         error={

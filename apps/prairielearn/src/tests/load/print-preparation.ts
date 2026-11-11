@@ -110,7 +110,7 @@ async function captureScenario(
       }
     });
     if (scenario.export === 'form') {
-      await page.getByRole('button', { name: 'Download Form A (PDF)', exact: true }).click();
+      await page.getByRole('button', { name: /^Download Form [A-Z]+ \(PDF\)$/ }).click();
     } else {
       await page.getByRole('button', { name: 'Download booklet PDF…', exact: true }).click();
       const modal = page.getByRole('dialog', { name: 'Download booklet PDF', exact: true });
