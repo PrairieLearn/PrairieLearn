@@ -32,7 +32,7 @@ import {
   attachmentPath,
   attachmentsOf,
   attachmentsToWrite,
-  describeAttachments,
+  formatRequest,
   isImage,
   keepUploadReferences,
   uploadKey,
@@ -455,14 +455,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           }
         : {
             tag: messageTag(message!.id),
-            text: [
+            text: formatRequest(
               message!.parts
                 .flatMap((part) => (part.type === 'text' ? [part.text] : []))
                 .join('\n'),
-              describeAttachments(attachments),
-            ]
-              .filter(Boolean)
-              .join('\n\n'),
+              attachments,
+              images,
+            ),
             images: attachments.filter(({ id }) => images.has(id)).map(attachmentPath),
           }),
       // A restored or new thread may lack turns that chat history has.
