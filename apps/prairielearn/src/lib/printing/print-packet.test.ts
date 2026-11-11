@@ -180,13 +180,13 @@ describe('print packets', () => {
 });
 
 describe('print packet settings', () => {
-  const form = { printFormId: '1', formLabel: 'A', settings: DEFAULT_PRINT_SETTINGS };
+  const form = { printFormId: '1', settings: DEFAULT_PRINT_SETTINGS };
   const metadata = { forms: [form], copies: 45, document: 'assessment' };
 
-  test('rejects duplicate form IDs or labels, unknown settings, and invalid layout values', () => {
+  test('rejects duplicate form IDs, supplied labels, unknown settings, and invalid layout values', () => {
     for (const forms of [
-      [form, { ...form, formLabel: 'B' }],
-      [form, { ...form, printFormId: '2' }],
+      [{ ...form, formLabel: 'B' }],
+      [form, { ...form }],
       [{ ...form, settings: { ...form.settings, paperSize: 'Legal' } }],
       [{ ...form, settings: { ...form.settings, extra: true } }],
       [{ ...form, settings: { ...form.settings, excludedQuestions: ['1', '1'] } }],

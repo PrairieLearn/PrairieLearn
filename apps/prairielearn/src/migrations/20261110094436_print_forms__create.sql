@@ -3,10 +3,13 @@ CREATE TABLE print_forms (
   assessment_id BIGINT NOT NULL REFERENCES assessments (id) ON UPDATE CASCADE ON DELETE CASCADE,
   user_id BIGINT NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
   authn_user_id BIGINT NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  label TEXT NOT NULL CHECK (label ~ '^[A-Z]+$'),
+  archived_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (assessment_id, label)
 );
 
-CREATE INDEX print_forms_assessment_id_user_id_idx ON print_forms (assessment_id, user_id);
+CREATE INDEX print_forms_assessment_id_id_idx ON print_forms (assessment_id, id DESC);
 
 CREATE INDEX print_forms_user_id_idx ON print_forms (user_id);
 

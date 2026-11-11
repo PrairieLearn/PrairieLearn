@@ -1443,10 +1443,12 @@ export const PrintExportSchema = z.object({
 export type PrintExport = z.infer<typeof PrintExportSchema>;
 
 export const PrintFormSchema = z.object({
+  archived_at: DateFromISOString.nullable(),
   assessment_id: IdSchema,
   authn_user_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
+  label: z.string().regex(/^[A-Z]+$/),
   user_id: IdSchema,
 });
 export type PrintForm = z.infer<typeof PrintFormSchema>;

@@ -11,6 +11,7 @@ import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
 import { selectPrintFormQuestions } from '../../../models/print-form-question.js';
+import { selectOptionalPrintForm } from '../../../models/print-form.js';
 import { syncCourse } from '../../helperCourse.js';
 import { getOrCreateUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
@@ -83,6 +84,14 @@ async function preparePreview(page: Page) {
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 }
 
+async function printFormLabel(page: Page, printFormId?: string) {
+  const url = new URL(page.url());
+  const assessmentId = url.pathname.match(/\/assessment\/(\d+)\//)![1];
+  const formId = printFormId ?? url.searchParams.get('form')!;
+  const form = await selectOptionalPrintForm({ printFormId: formId, assessmentId });
+  return form!.label;
+}
+
 test('recovers when creating the first preview fails', async ({ page, courseInstance }) => {
   await page.route('**/printForms.create', (route) => route.abort('failed'), {
     times: 1,
@@ -138,7 +147,7 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
     },
     { times: 1 },
   );
-  await chooseDownload(page, 'Download Form A Word (.docx)');
+  await chooseDownload(page, `Download Form ${await printFormLabel(page)} Word (.docx)`);
   await expect(
     page.getByRole('alert').getByText('This print preview has expired or changed.'),
   ).toBeVisible();
@@ -164,7 +173,7 @@ test('shows errors while preparing PDF pages', async ({ page, courseInstance }) 
     });
   });
 
-  await chooseDownload(page, 'Download Form A answer key (PDF)');
+  await chooseDownload(page, `Download Form ${await printFormLabel(page)} answer key (PDF)`);
   await expect(page.getByText('Preparing documents 0 of 1…')).toBeVisible();
   await expect(page.getByRole('alert').getByText('Answer key preparation failed')).toBeVisible();
   await expect(downloadMenu(page)).toBeEnabled();
@@ -198,12 +207,13 @@ test('prepares an assessment and key with consistent variants and downloads', as
     .getByTitle('Printable document preview', { exact: true })
     .getAttribute('src');
   const form = previewUrl!.match(/\/print_form\/(\d+)\//)![1];
+  const label = await printFormLabel(page, form);
   const url = new URL(page.url());
   url.searchParams.set('forms', form);
   url.searchParams.set('form', form);
   await page.goto(url.href);
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(page.getByRole('button', { name: /^Form A/ })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: new RegExp(`^Form ${label}`) })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -277,7 +287,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
   const { violations } = await page.evaluate(async () => await axe.run());
   expect(violations).toEqual([]);
   const file = await downloadPreparedFile(page, async () => {
-    await chooseDownload(page, 'Download Form A answer key (PDF)');
+    await chooseDownload(page, `Download Form ${label} answer key (PDF)`);
   });
   expect(await file.failure()).toBeNull();
   const pdf = await PDFDocument.load(await fs.readFile(await file.path()));
@@ -346,10 +356,11 @@ test('prepares homework with matching student copies, answer keys, and Word expo
   await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
   await expect(question).toHaveText(questionText, { useInnerText: true });
 
+  const label = await printFormLabel(page);
   const word = await downloadPreparedFile(
     page,
     async () => {
-      await chooseDownload(page, 'Download Form A Word (.docx)');
+      await chooseDownload(page, `Download Form ${label} Word (.docx)`);
     },
     'docx',
   );
@@ -393,33 +404,45 @@ test('combines assessment copies with custom covers and appends every form’s a
     timeout: 120_000,
   });
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
+  const originalLabel = await printFormLabel(page, originalFormId);
   const originalQuestions = await selectPrintFormQuestions(originalFormId);
-  await page.getByRole('button', { name: 'Regenerate Form A', exact: true }).click();
+  await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(originalFormId);
+  const replacementId = new URL(page.url()).searchParams.get('form')!;
+  const replacementLabel = await printFormLabel(page, replacementId);
+  expect(replacementLabel).not.toBe(originalLabel);
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
-  await expect(page.getByRole('button', { name: /^Form A/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await expect(
+    page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
+  ).toHaveAttribute('aria-pressed', 'true');
   expect(await selectPrintFormQuestions(originalFormId)).toEqual(originalQuestions);
+  await page.getByText(/^Previous forms \(/).click();
+  await expect(
+    page.getByRole('button', { name: `View Form ${originalLabel} answer key` }),
+  ).toBeVisible();
 
-  const formIds = [new URL(page.url()).searchParams.get('form')!];
+  const formIds = [replacementId];
+  const labels = [replacementLabel];
   await page.getByRole('button', { name: 'Add form', exact: true }).click();
-  await expect(page.getByRole('button', { name: /^Form B/ })).toHaveAttribute(
+  await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(replacementId);
+  const newId = new URL(page.url()).searchParams.get('form')!;
+  const newLabel = await printFormLabel(page, newId);
+  await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
-  formIds.push(new URL(page.url()).searchParams.get('form')!);
+  formIds.push(newId);
+  labels.push(newLabel);
   expect(new Set(formIds).size).toBe(2);
   const pageCounts: number[] = [];
   const answerKeyPageCounts: number[] = [];
   const frame = page.frameLocator('iframe[title="Printable document preview"]');
-  for (const label of ['A', 'B']) {
+  for (const [index, label] of labels.entries()) {
     await page
       .getByRole('combobox', { name: 'Preview form', exact: true })
       .selectOption({ label: `Form ${label}` });
@@ -430,8 +453,8 @@ test('combines assessment copies with custom covers and appends every form’s a
       'aria-pressed',
       'true',
     );
-    expect(new URL(page.url()).searchParams.get('form')).toBe(formIds[['A', 'B'].indexOf(label)]);
-    if (label === 'A') {
+    expect(new URL(page.url()).searchParams.get('form')).toBe(formIds[index]);
+    if (index === 0) {
       await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
       await expect(
         page.getByRole('combobox', { name: 'Preview form', exact: true }),
@@ -476,7 +499,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   await chooseDownload(page, 'Download booklet PDF…');
   await page.getByLabel('Number of students', { exact: true }).fill(String(copies));
   await expect(
-    page.getByText('Forms A, B repeat in order, one complete copy per student.', {
+    page.getByText(`Forms ${labels.join(', ')} repeat in order, one complete copy per student.`, {
       exact: false,
     }),
   ).toBeVisible();
@@ -501,7 +524,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   });
   await page
     .getByRole('combobox', { name: 'Preview form', exact: true })
-    .selectOption({ label: 'Form A' });
+    .selectOption({ label: `Form ${replacementLabel}` });
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
@@ -509,6 +532,25 @@ test('combines assessment copies with custom covers and appends every form’s a
   await page.getByRole('button', { name: 'Remove cover extended-instructions.pdf' }).click();
   await expect(page.getByText('extended-instructions.pdf', { exact: true })).toHaveCount(0);
   await expect(downloadMenu(page)).toBeEnabled();
+
+  const printPath = new URL(page.url()).pathname;
+  await page.context().clearCookies();
+  await page.goto(printPath);
+  for (const label of labels) {
+    await expect(
+      page.getByRole('button', { name: new RegExp(`^Form ${label}(?: Previewing)?$`) }),
+    ).toBeVisible();
+  }
+  await expect(
+    page.getByRole('button', { name: new RegExp(`^Form ${originalLabel}(?: Previewing)?$`) }),
+  ).toHaveCount(0);
+  await page.getByText(/^Previous forms \(/).click();
+  await page.getByRole('button', { name: `View Form ${originalLabel} answer key` }).click();
+  await expect(page.getByRole('button', { name: 'Answer key', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 });
 
 test('distinguishes paper review flags from broken questions omitted from the document', async ({
@@ -549,16 +591,22 @@ test('distinguishes paper review flags from broken questions omitted from the do
   await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Add form', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('forms')?.split(',').length).toBe(2);
+  const secondLabel = await printFormLabel(page);
+  const firstLabel = await printFormLabel(
+    page,
+    new URL(page.url()).searchParams.get('forms')!.split(',')[0],
+  );
   await expect(page.getByText('Omitted', { exact: true }).first()).toBeVisible({
     timeout: 120_000,
   });
   await page
     .getByRole('combobox', { name: 'Preview form', exact: true })
-    .selectOption({ label: 'Form A' });
+    .selectOption({ label: `Form ${firstLabel}` });
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await chooseDownload(page, 'Download Form B Word (.docx)');
+  await chooseDownload(page, `Download Form ${secondLabel} Word (.docx)`);
   await expect(
-    page.getByText('Form B has missing or unprintable questions.', { exact: false }),
+    page.getByText(`Form ${secondLabel} has missing or unprintable questions.`, { exact: false }),
   ).toBeVisible({ timeout: 120_000 });
 });
 
@@ -590,7 +638,11 @@ test('validates a booklet count and retries a failed download', async ({
   expect(await downloaded.failure()).toBeNull();
   await expect(downloadMenu(page)).toBeEnabled();
 });
-test('limits static assessments to one form', async ({ page, courseInstance, testCoursePath }) => {
+test('keeps existing forms available when randomization is disabled', async ({
+  page,
+  courseInstance,
+  testCoursePath,
+}) => {
   const assessmentFile = `${testCoursePath}/courseInstances/Sp15/assessments/exam20-assessmentTools/infoAssessment.json`;
   const questionFile = `${testCoursePath}/questions/partialCredit3/info.json`;
   const originalAssessment = await fs.readFile(assessmentFile, 'utf8');
@@ -623,17 +675,18 @@ test('limits static assessments to one form', async ({ page, courseInstance, tes
     await syncCourse(testCoursePath);
     await page.reload();
     await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-    await expect(page.getByRole('heading', { name: 'Print forms', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Add form', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('combobox', { name: 'Preview form', exact: true })).toHaveCount(0);
-    await downloadMenu(page).click();
+    await expect(page.getByRole('heading', { name: 'Print forms', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add form', exact: true })).toBeDisabled();
     await expect(
-      page.getByRole('button', { name: 'Download Form A (PDF)', exact: true }),
-    ).toBeVisible();
-    await expect(page.getByRole('button', { name: /Download Form B/ })).toHaveCount(0);
+      page.getByRole('combobox', { name: 'Preview form', exact: true }).getByRole('option'),
+    ).toHaveCount(2);
+    await downloadMenu(page).click();
+    await expect(page.getByRole('button', { name: /^Download Form [A-Z]+ \(PDF\)$/ })).toHaveCount(
+      2,
+    );
     await expect(
       page.getByRole('button', { name: 'Download all forms (PDF)', exact: true }),
-    ).toHaveCount(0);
+    ).toBeVisible();
   } finally {
     await fs.writeFile(assessmentFile, originalAssessment);
     await fs.writeFile(questionFile, originalQuestion);

@@ -123,7 +123,7 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   const snapshot = {
     printFormId: '123',
     authnUserId: '45',
-    search: new URLSearchParams('paper_size=Letter&form_label=A&document=assessment'),
+    search: new URLSearchParams('paper_size=Letter&document=assessment'),
     questionListDigest: 'question-list-1',
     html,
     source,

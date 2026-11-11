@@ -96,10 +96,6 @@ const LayoutQuerySchema = z.strictObject({
     .enum(['true', 'false'])
     .default('true')
     .transform((value) => value === 'true'),
-  form_label: z
-    .string()
-    .regex(/^[A-Z]$/)
-    .optional(),
   identity_field: IdentityFieldsSchema,
   block_size: QuestionBlockSizeSchema.optional(),
   question_block_size: z
@@ -144,7 +140,6 @@ interface PrintLayout {
   includeCoverPage: boolean;
   includeGradingTable: boolean;
   includeHonorCode: boolean | undefined;
-  formLabel: string | undefined;
   identityFields: string[];
   blockSize: QuestionBlockSize | undefined;
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>;
@@ -157,7 +152,6 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
     includeCoverPage: query.include_cover,
     includeGradingTable: query.grading_table,
     includeHonorCode: query.include_honor_code,
-    formLabel: query.form_label,
     identityFields: query.identity_field,
     blockSize: query.block_size,
     questionBlockSizeOverrides: new Map(
@@ -214,7 +208,6 @@ router.use(
     const printForm = await selectOptionalPrintForm({
       printFormId,
       assessmentId: res.locals.assessment.id,
-      userId: res.locals.user.id,
     });
     if (!printForm) throw new HttpStatusError(404, 'Printable form not found');
     Object.assign(res.locals, { print_form: printForm });
@@ -265,7 +258,7 @@ router.get(
       includeHonorCode:
         layout.includeHonorCode ?? res.locals.assessment.require_honor_code ?? false,
       document,
-      formLabel: layout.formLabel,
+      formLabel: res.locals.print_form.label,
       identityFields: layout.identityFields,
       questionHtmls: printingResult.questionHtmls,
       omittedQuestionCount: warnings.length,
@@ -356,7 +349,7 @@ router.post(
     const footerLabel = getPrintFooterLabel({
       document,
       formId: res.locals.print_form.id,
-      formLabel: layout.formLabel,
+      formLabel: res.locals.print_form.label,
     });
     const makeCover = (
       questionCount: number,
@@ -366,7 +359,7 @@ router.post(
       buildPrintableCover({
         resLocals: res.locals,
         document,
-        formLabel: layout.formLabel,
+        formLabel: res.locals.print_form.label,
         identityFields: layout.identityFields,
         questionCount,
         maxPoints,
@@ -408,7 +401,7 @@ router.post(
       // The worker checks that the questions start after the cover.
       coverPageCount: 0,
       document,
-      formLabel: layout.formLabel,
+      formLabel: res.locals.print_form.label,
     });
     const gradingTable = root.attr('data-print-grading-table');
     const cover = layout.includeCoverPage
@@ -443,7 +436,7 @@ router.post(
         document,
         filename,
         snapshot: {
-          formLabel: layout.formLabel ?? '',
+          formLabel: res.locals.print_form.label,
           printDocument: document,
           localPreviewUrl: localPreviewUrl.href,
           html: snapshot.html,

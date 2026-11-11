@@ -8,11 +8,16 @@ import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { createPrintForm } from '../../lib/printing/print-forms.js';
 import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
-import { selectOptionalPrintForm, selectPrintFormsForUser } from '../../models/print-form.js';
+import {
+  archivePrintForm,
+  selectOptionalPrintForm,
+  selectPrintFormsForAssessment,
+} from '../../models/print-form.js';
 
 import { type createContext, requireCoursePermissionPreview, t } from './init.js';
 
 export interface PrintFormsError {
+  archive: never;
   questions: never;
   list: never;
   create: never;
@@ -40,13 +45,12 @@ const rejectGroupWork = t.middleware(async ({ ctx, next }) => {
   return next();
 });
 
-const ownedFormProcedure = printFormProcedure
+const assessmentFormProcedure = printFormProcedure
   .input(z.object({ printFormId: IdSchema }))
   .use(async ({ ctx, input, next }) => {
     const form = await selectOptionalPrintForm({
       printFormId: input.printFormId,
       assessmentId: ctx.assessment.id,
-      userId: ctx.locals.user.id,
     });
     if (!form) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is not available.' });
@@ -54,7 +58,13 @@ const ownedFormProcedure = printFormProcedure
     return next();
   });
 
-async function createForm({ ctx }: { ctx: ReturnType<typeof createContext> }) {
+async function createForm({
+  ctx,
+  replacesPrintFormId,
+}: {
+  ctx: ReturnType<typeof createContext>;
+  replacesPrintFormId?: string;
+}) {
   try {
     const form = await createPrintForm({
       assessment: ctx.assessment,
@@ -62,29 +72,49 @@ async function createForm({ ctx }: { ctx: ReturnType<typeof createContext> }) {
       courseInstance: ctx.course_instance,
       userId: ctx.locals.user.id,
       authnUserId: ctx.authn_user.id,
+      replacesPrintFormId,
     });
-    return { printFormId: form.id };
+    return { printFormId: form.id, label: form.label };
   } catch (error) {
-    if (error instanceof HttpStatusError && error.status === 400) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+    if (error instanceof HttpStatusError) {
+      if (error.status === 400) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+      }
+      if (error.status === 404) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: error.message, cause: error });
+      }
+      if (error.status === 409) {
+        throw new TRPCError({ code: 'CONFLICT', message: error.message, cause: error });
+      }
     }
     throw error;
   }
 }
 
 export const printFormsRouter = t.router({
-  questions: ownedFormProcedure.query(async ({ input }) => {
+  questions: assessmentFormProcedure.query(async ({ input }) => {
     return await inspectPrintPreparationQuestions(input.printFormId);
   }),
   list: printFormProcedure.query(async ({ ctx }) =>
     StaffPrintFormSchema.array().parse(
-      await selectPrintFormsForUser({
-        assessmentId: ctx.assessment.id,
-        userId: ctx.locals.user.id,
-      }),
+      await selectPrintFormsForAssessment({ assessmentId: ctx.assessment.id }),
     ),
   ),
-  create: printFormProcedure.use(rejectGroupWork).mutation(createForm),
-  // Regenerating keeps the original form and creates a new one.
-  regenerate: ownedFormProcedure.use(rejectGroupWork).mutation(createForm),
+  create: printFormProcedure
+    .use(rejectGroupWork)
+    .mutation(async ({ ctx }) => await createForm({ ctx })),
+  regenerate: assessmentFormProcedure
+    .use(rejectGroupWork)
+    .mutation(
+      async ({ ctx, input }) => await createForm({ ctx, replacesPrintFormId: input.printFormId }),
+    ),
+  archive: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
+    const archived = await archivePrintForm({
+      printFormId: input.printFormId,
+      assessmentId: ctx.assessment.id,
+    });
+    if (!archived) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is no longer active.' });
+    }
+  }),
 });

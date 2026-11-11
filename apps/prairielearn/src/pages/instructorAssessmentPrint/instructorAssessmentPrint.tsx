@@ -17,7 +17,7 @@ import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
 import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js';
-import { selectPrintFormsForUser } from '../../models/print-form.js';
+import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
 import { InstructorAssessmentPrint } from './instructorAssessmentPrint.html.js';
 
@@ -32,15 +32,12 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const { assessment, course_instance, authz_data, authn_user } = extractPageContext(res.locals, {
+    const { assessment, course_instance, authn_user } = extractPageContext(res.locals, {
       pageType: 'assessment',
       accessType: 'instructor',
     });
     const forms = StaffPrintFormSchema.array().parse(
-      await selectPrintFormsForUser({
-        assessmentId: assessment.id,
-        userId: authz_data.user.id,
-      }),
+      await selectPrintFormsForAssessment({ assessmentId: assessment.id }),
     );
     const studentCount = await countJoinedStudentsInCourseInstance(course_instance);
     const trpcCsrfToken = generatePrefixCsrfToken(

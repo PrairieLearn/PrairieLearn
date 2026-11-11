@@ -309,6 +309,7 @@ async function renderPrintFormQuestionsUnbounded(
         renderLocals,
         {
           urlOverrides,
+          printFormQuestionId: printableQuestion.print_form_question.id,
           includeSubmissions: false,
           showCorrectAnswer: document === 'answer_key',
           throwOnFatalError: true,
@@ -338,6 +339,7 @@ async function renderPrintFormQuestionsUnbounded(
           renderLocals,
           {
             urlOverrides,
+            printFormQuestionId: printableQuestion.print_form_question.id,
             includeSubmissions: false,
             showCorrectAnswer: true,
             throwOnFatalError: true,
