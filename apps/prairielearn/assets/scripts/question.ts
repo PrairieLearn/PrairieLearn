@@ -9,6 +9,7 @@ import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 import { createLocalQuestionBrowserServices } from '../../src/lib/client/question-browser-services.js';
 import type {
   QuestionBrowserServices,
+  QuestionBrowserServicesData,
   QuestionContentPanels,
 } from '../../src/lib/client/question-browser-services.types.js';
 import { updateQuestionPagePanels } from '../../src/lib/client/question-page-panels.js';
@@ -24,6 +25,13 @@ import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
 
 const browserServices = new WeakMap<HTMLElement, QuestionBrowserServices>();
+
+function getQuestionBrowserServicesData() {
+  const { submissionRenderUrls, ...data } = decodeData<QuestionBrowserServicesData>(
+    'question-browser-services-data',
+  );
+  return { ...data, submissionRenderUrls: new Map(submissionRenderUrls) };
+}
 
 // We use `selector-observer` throughout this file to handle the case of
 // updating the page's contents without reloading the whole page. At the
@@ -54,16 +62,7 @@ onDocumentReady(() => {
         container.dataset.questionHostingUpdate === 'true'
           ? createLocalQuestionBrowserServices({
               document: container.ownerDocument,
-              variantId: container.dataset.variantId!,
-              variantToken: container.dataset.variantToken!,
-              submissionRenderUrls: new Map(
-                Array.from(
-                  container.querySelectorAll<HTMLElement>(
-                    '.js-submission-body[data-dynamic-render-url]',
-                  ),
-                  (panel) => [panel.dataset.submissionId!, panel.dataset.dynamicRenderUrl!],
-                ),
-              ),
+              ...getQuestionBrowserServicesData(),
               isCurrent: () => container.isConnected,
             })
           : undefined;
@@ -218,13 +217,15 @@ function initializeExternalGrading({ container }: { container: HTMLElement }) {
     socket.emit(
       'init',
       { variant_id: variantId, variant_token: variantToken },
-      (msg: StatusMessage) =>
+      (msg: StatusMessage | null) => {
+        if (msg == null) return;
         handleStatusChange({
           container,
           close: () => socket.close(),
           submissions: msg.submissions,
           signal: abortController.signal,
-        }),
+        });
+      },
     );
   });
   socket.on('change:status', (msg: StatusMessage) =>

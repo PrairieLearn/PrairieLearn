@@ -9,9 +9,6 @@ export function updateQuestionPagePanels(document: Document, msg: SubmissionPane
 
     // We might be getting new markup for just the content, or legacy markup
     // for the whole panel.
-    //
-    // TODO: switch back to using a specific ID once we drop the legacy markup.
-    // Using a specific ID ensures we can find things easily via grep.
     const targetElement = document.getElementById(parsedHTML.id);
     targetElement?.replaceWith(parsedHTML);
   }

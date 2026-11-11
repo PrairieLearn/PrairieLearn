@@ -16,6 +16,7 @@ import {
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
+import { QuestionBrowserServicesData } from '../../components/QuestionBrowserServicesData.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.js';
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.js';
@@ -128,6 +129,7 @@ export function StudentInstanceQuestion({
         })
       : '',
     content: html`
+      ${questionHostingUpdate && renderState?.variant != null ? QuestionBrowserServicesData({ resLocals, questionContext }) : ''}
       ${questionHostingUpdate ? '' : regenerateAlert}
       <div class="row question-page-row">
         <div

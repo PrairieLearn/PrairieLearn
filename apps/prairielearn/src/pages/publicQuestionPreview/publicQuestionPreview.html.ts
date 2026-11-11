@@ -3,6 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionBrowserServicesData } from '../../components/QuestionBrowserServicesData.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
@@ -53,6 +54,7 @@ export function PublicQuestionPreview({
       ${unsafeHtml(resLocals.extraHeadersHtml)}
     `,
     content: html`
+      ${questionHostingUpdate ? QuestionBrowserServicesData({ resLocals, questionContext: 'public' }) : ''}
       <div class="row question-page-row">
         <div
           class="col-lg-9 col-sm-12 question-page-question"
