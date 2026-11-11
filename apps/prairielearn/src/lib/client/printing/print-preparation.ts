@@ -1,8 +1,6 @@
-import { z } from 'zod';
-
 import type { PrintSettings } from '../../printing/print-packet-schema.js';
 
-import { PrintIdentityFieldsSchema } from './print-cover.js';
+import { printIdentityFields } from './print-cover.js';
 
 export interface PrintPreparationQuestion {
   number: string;
@@ -22,19 +20,6 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   questionSizes: {},
   excludedQuestions: [],
 };
-
-function printIdentityFields(value: string): string[] {
-  return value
-    .split('\n')
-    .map((field) => field.trim())
-    .filter(Boolean);
-}
-
-export const PrintIdentityFieldsTextSchema = z
-  .string()
-  .transform(printIdentityFields)
-  .pipe(PrintIdentityFieldsSchema)
-  .transform((fields) => fields.join('\n'));
 
 export function printLayoutSearch(settings: PrintSettings): string {
   const search = new URLSearchParams({

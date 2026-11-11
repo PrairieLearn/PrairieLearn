@@ -22,3 +22,16 @@ export const PrintGradingTableSchema = z.object({
   questionNumbers: z.string().array(),
   rowsPerColumn: z.number().int().positive(),
 });
+
+export function printIdentityFields(value: string): string[] {
+  return value
+    .split('\n')
+    .map((field) => field.trim())
+    .filter(Boolean);
+}
+
+export const PrintIdentityFieldsTextSchema = z
+  .string()
+  .transform(printIdentityFields)
+  .pipe(PrintIdentityFieldsSchema)
+  .transform((fields) => fields.join('\n'));

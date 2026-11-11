@@ -12,6 +12,7 @@ import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/reac
 import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
 import { IdSchema } from '@prairielearn/zod';
 
+import { PrintIdentityFieldsTextSchema } from '../../lib/client/printing/print-cover.js';
 import {
   MAX_COVER_BYTES,
   MAX_COVER_FILES,
@@ -20,7 +21,6 @@ import {
 } from '../../lib/client/printing/print-packet.js';
 import {
   DEFAULT_PRINT_SETTINGS,
-  PrintIdentityFieldsTextSchema,
   printLayoutSearch,
 } from '../../lib/client/printing/print-preparation.js';
 import {
