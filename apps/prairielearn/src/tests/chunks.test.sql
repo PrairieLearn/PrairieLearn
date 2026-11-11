@@ -53,3 +53,11 @@ WHERE
   c.question_id = $question_id
 ORDER BY
   c.id;
+
+-- BLOCK select_chunk_creation_date
+SELECT
+  created_at::text
+FROM
+  chunks
+WHERE
+  id = $chunk_id;
