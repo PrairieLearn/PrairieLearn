@@ -29,6 +29,7 @@ import {
   getCourseInstanceTrpcUrl,
 } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
+import { EnumRubricItemShowToStudentsSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -471,7 +472,7 @@ const PostBodySchema = z.union([
           description: z.string(),
           explanation: z.string().nullable().optional(),
           grader_note: z.string().nullable().optional(),
-          always_show_to_students: z.boolean(),
+          show_to_students: EnumRubricItemShowToStudentsSchema,
         }),
       )
       .default([]),

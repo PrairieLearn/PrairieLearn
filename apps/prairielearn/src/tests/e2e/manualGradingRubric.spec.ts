@@ -92,6 +92,8 @@ test.describe('Manual grading rubric submission panel update', () => {
       'waiting for grading',
     );
 
+    const studentQuestionUrl = page.url();
+
     await page.context().clearCookies();
 
     const iqId = await sqldb.queryScalar(
@@ -118,11 +120,15 @@ test.describe('Manual grading rubric submission panel update', () => {
     await firstRow
       .getByRole('textbox', { name: 'Description' })
       .fill('Full credit for correct solution');
+    await firstRow.getByRole('radio', { name: 'Never', exact: true }).check();
 
     await page.locator('#rubric-setting').getByRole('button', { name: 'Save' }).click();
     await expect(
       page.locator('.js-main-grading-panel .js-selectable-rubric-item').first(),
     ).toBeVisible({ timeout: 10000 });
+    await expect(
+      rubricTable.getByRole('radio', { name: 'Never', exact: true }).first(),
+    ).toBeChecked();
 
     await page.locator('.js-selectable-rubric-item').first().check();
     await page.locator('form[name="manual-grading-form"] textarea').fill('Good work on this!');
@@ -153,21 +159,25 @@ test.describe('Manual grading rubric submission panel update', () => {
     });
     await expect(page.locator('body[data-e2e-no-reload="true"]')).toBeVisible();
 
-    // The submission panel should have been replaced via AJAX with updated rubric feedback.
+    const feedbackItems = page.locator(
+      '[data-testid="submission-with-feedback"] [data-testid^="rubric-item-container-"]',
+    );
+    await expect(feedbackItems).toHaveCount(1);
+    await expect(feedbackItems.getByTestId('rubric-item-description')).toHaveText('Partial credit');
+    await expect(feedbackItems.getByTestId('rubric-item-points')).toBeVisible();
+
+    await page.context().addCookies([
+      { name: 'pl2_requested_uid', value: STUDENT.uid, url: baseURL },
+      { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
+    ]);
+    await page.goto(studentQuestionUrl);
+    await expect(page.getByTestId('submission-status').first()).toContainText('100%');
+    await expect(page.getByText('Full credit for correct solution', { exact: true })).toHaveCount(
+      0,
+    );
+    await expect(page.getByText('Partial credit', { exact: true })).toBeVisible();
     await expect(
-      page
-        .locator('[data-testid="submission-with-feedback"] [data-testid^="rubric-item-container-"]')
-        .first(),
-    ).toBeVisible({ timeout: 5000 });
-    await expect(
-      page
-        .locator('[data-testid="submission-with-feedback"] [data-testid="rubric-item-points"]')
-        .first(),
-    ).toBeVisible();
-    await expect(
-      page
-        .locator('[data-testid="submission-with-feedback"] [data-testid="rubric-item-description"]')
-        .first(),
+      page.getByText('Some rubric items are hidden by the instructor.', { exact: true }),
     ).toBeVisible();
   });
 });
