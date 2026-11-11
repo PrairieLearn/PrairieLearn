@@ -21,6 +21,8 @@ import { IdSchema } from '@prairielearn/zod';
 import { getCourseCommitHash, getLockNameForCoursePath } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
 import { type CourseData } from '../sync/course-db.js';
+import { getQuestionVersionSettings } from '../sync/fromDisk/questions.js';
+import * as infofile from '../sync/infofile.js';
 
 import { downloadFromS3, makeS3ClientConfig } from './aws.js';
 import { chalk } from './chalk.js';
@@ -31,6 +33,8 @@ import {
   CourseInstanceSchema,
   CourseSchema,
   QuestionSchema,
+  type QuestionVersion,
+  QuestionVersionSchema,
 } from './db-types.js';
 import { DefaultMap } from './default-map.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
@@ -491,6 +495,7 @@ interface DiffChunksOptions {
   courseId: string;
   courseData: CourseData;
   changedFiles: string[];
+  questionSettings: Map<string, Omit<QuestionVersion, 'chunk_id'>>;
 }
 
 interface ChunksDiff {
@@ -509,8 +514,22 @@ async function diffChunks({
   courseId,
   courseData,
   changedFiles,
+  questionSettings,
 }: DiffChunksOptions): Promise<ChunksDiff> {
   const rawCourseChunks = await getAllChunksForCourse(courseId);
+  const currentQuestionVersions = await sqldb.queryRows(
+    sql.select_current_question_versions,
+    { course_id: courseId },
+    QuestionVersionSchema,
+  );
+  const questionVersionsByChunkId = new Map(
+    currentQuestionVersions.map(({ chunk_id, ...settings }) => [chunk_id, settings]),
+  );
+  const currentQuestionChunksByName = new Map(
+    rawCourseChunks
+      .filter((chunk) => chunk.type === 'question')
+      .map((chunk) => [chunk.question_name, chunk]),
+  );
 
   // Build a data structure from the result of getAllChunksForCourse so that
   // we can efficiently query to see if a given chunk exists
@@ -608,7 +627,16 @@ async function diffChunks({
 
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
-    if (!existingCourseChunks.questions.has(qid) || changedCourseChunks.questions.has(qid)) {
+    const currentChunk = currentQuestionChunksByName.get(qid);
+    const settings = questionSettings.get(qid);
+    const currentSettings = currentChunk && questionVersionsByChunkId.get(currentChunk.id);
+    // A fresh publication establishes a baseline; never attach today's settings to an old archive.
+    const settingsChanged = settings && !util.isDeepStrictEqual(settings, currentSettings);
+    if (
+      !existingCourseChunks.questions.has(qid) ||
+      changedCourseChunks.questions.has(qid) ||
+      settingsChanged
+    ) {
       updatedChunks.push({
         type: 'question',
         questionName: qid,
@@ -917,11 +945,19 @@ export async function updateChunksForCourse({
     return [];
   });
 
+  const questionSettings = new Map(
+    Object.entries(courseData.questions).flatMap(([qid, question]) => {
+      // An invalid source can retain old live settings. They do not describe its new archive.
+      if (!question.data || infofile.hasErrors(question)) return [];
+      return [[qid, getQuestionVersionSettings(qid, question.data)] as const];
+    }),
+  );
   const { updatedChunks, deletedChunks, replacedChunkIds } = await diffChunks({
     coursePath,
     courseId,
     courseData,
     changedFiles: resolvedChangedFiles,
+    questionSettings,
   });
 
   const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
@@ -940,7 +976,13 @@ export async function updateChunksForCourse({
       course_id: courseId,
       // Force this to a string; otherwise, our code in `sql-db.js` will try to
       // convert it into a Postgres `ARRAY[...]` type, which we don't want.
-      chunks: JSON.stringify(generatedChunks),
+      chunks: JSON.stringify(
+        generatedChunks.map((chunk) =>
+          chunk.type === 'question'
+            ? { ...chunk, questionSettings: questionSettings.get(chunk.questionName) }
+            : chunk,
+        ),
+      ),
       created_at: publishedAt,
       commit_hash: commitHash,
     });
