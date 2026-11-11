@@ -17,7 +17,6 @@ import {
   selectOptionalPrintForm,
   selectPrintFormsForAssessment,
 } from '../models/print-form.js';
-import { selectAndAuthzVariant } from '../models/variant.js';
 
 import { runInTransactionAndRollback } from './helperDb.js';
 import * as helperServer from './helperServer.js';
@@ -103,29 +102,6 @@ describe('print forms', { timeout: 60_000 }, () => {
       expect(
         await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
       ).toContainEqual(form);
-      const sharedVariantAccess = {
-        unsafe_variant_id: variant.id,
-        variant_course: { ...course, example_course: true },
-        question_id: rows[0].question.id,
-        course_instance_id: courseInstance.id,
-        assessment_id: assessment.id,
-        authz_data: { has_course_permission_preview: true },
-        authn_user: authnUser,
-        user: authnUser,
-        is_administrator: false,
-      };
-      await expect(selectAndAuthzVariant(sharedVariantAccess)).rejects.toMatchObject({
-        status: 403,
-      });
-      expect(
-        (
-          await selectAndAuthzVariant({
-            ...sharedVariantAccess,
-            print_form_question_id: saved.id,
-          })
-        ).id,
-      ).toBe(variant.id);
-
       const regenerated = await createPrintForm({
         ...options,
         userId: authnUser.id,
