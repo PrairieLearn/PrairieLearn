@@ -1,20 +1,20 @@
 <pl-question-panel>
     <p>
         <i>
-            This question checks a Matplotlib plot built with <code>MatplotlibSerializer</code> from the <code>plot-serializer</code> package.  The grader receives the plot as a Matplotlib figure, so the test can check its axis scales and line data directly.
+            This question checks a Matplotlib plot.  Student code saves the plot's axes in a variable, and the grader receives the whole plot as a Matplotlib figure, so the test can check its axis scales and line data directly.
         </i>
     </p>
     <p>
         Plot the function
         $$ f(x) = e^x $$
-        on the integer values of $x \in \left[0, 10\right]$, with a linear scale for the x-axis and a logarithmic scale for the y-axis.  Save the <code>MatplotlibSerializer</code> object in the variable <code>plot</code>.  Use <code>ax.plot()</code> with <code>ax.set_yscale()</code>, because <code>ax.semilogy()</code> isn't supported.
+        on the integer values of $x \in \left[0, 10\right]$, with a linear scale for the x-axis and a logarithmic scale for the y-axis.  Save the plot in the variable <code>plot</code> using <code>plt.gca()</code>.
     </p>
 
     <p>The setup code does not provide any variables.</p>
 
     <p>Your code snippet should define the following variables:</p>
     <pl-external-grader-variables params-name="names_from_user">
-        <pl-variable name="plot" type="MatplotlibSerializer">The plot as described above.</pl-variable>
+        <pl-variable name="plot" type="matplotlib.axes instance">The plot as described above.</pl-variable>
     </pl-external-grader-variables>
     <pl-file-editor
         file-name="student_code.py"

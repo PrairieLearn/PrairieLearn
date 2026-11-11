@@ -14,7 +14,8 @@ sandbox_timeout = 15
 def test_plot(sandbox: StudentFixture) -> None:
     figure = sandbox.query("plot")
     assert_true(
-        isinstance(figure, Figure), msg="plot is not a MatplotlibSerializer object"
+        isinstance(figure, Figure),
+        msg="plot should be a Matplotlib plot, such as plt.gca()",
     )
     assert_true(len(figure.axes) == 1, msg="plot should have exactly one set of axes")
     axes = figure.axes[0]
