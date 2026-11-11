@@ -289,8 +289,6 @@ async function renderPrintFormQuestionsUnbounded(
           printFormQuestionId: printableQuestion.print_form_question.id,
           includeSubmissions: false,
           showCorrectAnswer: document === 'answer_key',
-          // Every output reuses the variants saved when this form was created.
-          requireOpenVariant: false,
           throwOnFatalError: true,
           issuesLoadExtraData: false,
         },
@@ -321,7 +319,6 @@ async function renderPrintFormQuestionsUnbounded(
             printFormQuestionId: printableQuestion.print_form_question.id,
             includeSubmissions: false,
             showCorrectAnswer: true,
-            requireOpenVariant: false,
             throwOnFatalError: true,
             questionRenderContext: 'manual_grading',
             issuesLoadExtraData: false,
