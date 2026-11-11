@@ -53,7 +53,7 @@ describe('missedTurns', () => {
 
 describe('page hints in catch-up', () => {
   it('names the most specific item on the page each staff line was sent from', () => {
-    const page = { path: '/pl/course_instance/1/instructor/assessment/2', page: 'Assessment' };
+    const page = { path: '/pl/course_instance/1/instructor/assessment/2', page: 'assessment' };
     const located: UIMessage[] = [
       {
         id: 'u1',
