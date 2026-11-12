@@ -297,19 +297,22 @@ export function PageLayout({
 
   // Rendered by the course agent panel middleware (EE) when the user has access.
   const courseAgentPanel =
-    sideNavEnabled && resolvedOptions.showCourseAgentPanel ? resLocals.course_agent_panel : null;
+    sideNavEnabled && resolvedOptions.enableNavbar && resolvedOptions.showCourseAgentPanel
+      ? resLocals.course_agent_panel
+      : null;
 
   // The agent sees the page through its nav key, not the page title, which can name students.
-  // Imported questions are left out because they are not in this course's files.
+  // A shared question from another course is flagged, since its files are not in this checkout.
   const courseAgentPage = courseAgentPanel
     ? EncodedData(
         {
           page: [navContext.page, navContext.subPage].filter((part) => part != null).join('.'),
           courseInstance: resLocals.course_instance?.short_name ?? undefined,
           assessment: resLocals.assessment?.tid ?? undefined,
-          question:
-            resLocals.question && resLocals.question.course_id === resLocals.course.id
-              ? resLocals.question.qid
+          question: resLocals.question?.qid ?? undefined,
+          questionFromAnotherCourse:
+            resLocals.question && resLocals.question.course_id !== resLocals.course.id
+              ? true
               : undefined,
         } satisfies Omit<PageLocation, 'path'>,
         'course-agent-page',
@@ -412,6 +415,7 @@ export function PageLayout({
                     sideNavEnabled,
                     hideSessionControls: resolvedOptions.hideNavbarSessionControls,
                     showInstructorSupport: resolvedOptions.showInstructorSupport,
+                    courseAgentPanel,
                   })}
                 </div>`
               : ''
@@ -523,7 +527,7 @@ export function PageLayout({
               ${postContentString}
             </div>
           </div>
-          ${courseAgentPanel ?? ''}${courseAgentPage}
+          ${courseAgentPage}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

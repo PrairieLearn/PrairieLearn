@@ -92,9 +92,10 @@ math-field.force-light {
   background: var(--bs-body-bg, #fff);
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
   transform: translateY(100%);
+  /* Hide only after the closing slide finishes. */
   transition:
     transform 0.3s ease,
-    visibility 0.3s;
+    visibility 0s 0.3s;
   visibility: hidden;
   max-height: 80vh;
   min-width: min(460px, calc(100vw - 32px));
@@ -106,6 +107,9 @@ math-field.force-light {
   /* MathLive positions its fixed IME input using viewport coordinates. A transform
    * here makes them drawer-relative and causes the browser to scroll its contents away. */
   transform: none;
+  /* Show immediately on open: MathLive focuses the input shortly after `focus()`,
+   * and a still-hidden drawer would reject that focus while MathLive treats itself as focused. */
+  transition: transform 0.3s ease;
   visibility: visible;
 }
 

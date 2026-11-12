@@ -6,7 +6,7 @@ import {
 import { MessageType } from '@cloudflare/ai-chat/types';
 import type { DirectoryBackupRecord } from '@cloudflare/sandbox';
 import type { Connection, ConnectionContext } from 'agents';
-import { createUIMessageStreamResponse } from 'ai';
+import { type UIMessage, createUIMessageStreamResponse } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -19,6 +19,7 @@ import {
   type Review,
   type ReviewSnapshot,
   UserMessageMetadataSchema,
+  reviewTag,
 } from '@prairielearn/course-agent-types';
 
 import { logEvent, reportError } from '../monitoring.js';
@@ -28,16 +29,18 @@ import { SandboxTurn } from '../sandbox/turn.js';
 
 import {
   buildCatchUp,
+  denialMarker,
+  describeDenialMessage,
   describeReviewResult,
   historyBefore,
   messageTag,
   missedTurns,
   nextUserMessage,
-  reviewTag,
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
+import { generateTitle } from './title.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
 // without traffic, including idle chats and long silent turns.
@@ -88,8 +91,15 @@ interface RecordData {
    */
   threadMayBeBehind: boolean;
   review: ReviewRecord | null;
+  /**
+   * A review the instructor denied by sending a message. The next user message's turn delivers
+   * the denial with that message, which the browser sends once PrairieLearn records the denial.
+   */
+  deniedByMessage?: string | null;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
+  /** Absent in records saved before titles were generated. */
+  title?: string | null;
   /** Pages the agent can open; absent in records saved before PrairieLearn sent a catalog. */
   pages?: PageCatalog;
 }
@@ -131,6 +141,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     deadlineAt: null,
     sandboxLost: false,
     reviewId: null,
+    title: null,
   };
 
   private _record: ConversationRecord | null = null;
@@ -173,6 +184,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       deadlineAt: this.record.deadline?.at ?? null,
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
+      title: this.record.title ?? null,
     };
   }
 
@@ -255,6 +267,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: false,
       threadMayBeBehind: false,
       submittedMessageId: null,
+      title: null,
       pages,
     });
   }
@@ -406,6 +419,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
     const review = this.record.review;
     const status = this.record.lifecycle.status;
+    // Read with `review`: a denial recorded during the await settles the review it admits by.
+    const deniedReviewId = continuation ? null : (this.record.deniedByMessage ?? null);
     // deliverWaitingResult() claims the conversation before the SDK calls back for a continuation.
     const admitted = continuation
       ? review?.result && status === 'waiting_for_agent'
@@ -419,17 +434,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
+    if (message && earlier.length === 0 && !this.record.title) this.startTitle(message);
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
-    const metadata = message && UserMessageMetadataSchema.safeParse(message.metadata ?? {});
-    // The turn still runs without the page, but a newer browser's metadata should not vanish quietly.
-    if (metadata && !metadata.success) {
-      logEvent('message_metadata_invalid', {
-        conversationId: this.name,
-        paths: metadata.error.issues.map((issue) => issue.path.join('.')),
-      });
-    }
-    const location = metadata?.data?.location;
+    const location =
+      message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
+    const messageText =
+      message?.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n') ?? '';
     const input: TurnInput = {
       ...(continuation && review?.result
         ? {
@@ -439,7 +450,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           }
         : {
             tag: messageTag(message!.id),
-            text: message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n'),
+            text: deniedReviewId ? describeDenialMessage(messageText) : messageText,
             ...(location ? { page: describePageLocation(location) } : {}),
           }),
       // A restored or new thread may lack turns that chat history has.
@@ -478,8 +489,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         await this.scheduleDeadline('turn');
         if (startup) {
           log('turn_sandbox_prepare_requested');
-          await this.sandbox.prepare(this.record.config, this.record.checkpoint);
-          log('turn_sandbox_prepare_finished');
+          const started = await this.sandbox.prepare(this.record.config, this.record.checkpoint);
+          log('turn_sandbox_prepare_finished', started);
         }
         if (continuation && review) await this.advanceLocalBaseline(review);
       },
@@ -504,7 +515,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
       onReady: () => this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' } }),
       onAccepted: (nativeTurnId) => {
-        this.setRecord({ ...this.record, nativeThreadId, threadMayBeBehind: false });
+        // The agent now has the denial, so a later message must not deliver it again.
+        if (deniedReviewId) native.emit(denialMarker(deniedReviewId));
+        this.setRecord({
+          ...this.record,
+          nativeThreadId,
+          threadMayBeBehind: false,
+          deniedByMessage: deniedReviewId ? null : this.record.deniedByMessage,
+        });
         if (nativeTurnId) this.stash({ nativeTurnId });
         if (continuation && review?.result) {
           // The agent now has the result: mark the delivery in chat history, so an attempt that
@@ -547,6 +565,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       })
       .finally(() => options.abortSignal?.removeEventListener('abort', abort));
     return createUIMessageStreamResponse({ stream: execution.stream });
+  }
+
+  /** Runs alongside sandbox startup, so the title adds no latency to the first turn. */
+  private startTitle(message: UIMessage) {
+    const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n');
+    if (!text.trim()) return;
+    void this.keepAliveWhile(async () => {
+      const title = await generateTitle({
+        apiKey: this.env.OPENAI_API_KEY,
+        model: this.record.config.model,
+        message: text,
+      });
+      if (title) this.setRecord({ ...this.record, title });
+    }).catch((error: unknown) => this.reportError(error));
   }
 
   /** SDK completion hook: release the SDK half of the active operation. */
@@ -728,7 +760,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.native?.emit({ type: 'data-review', id, data: { reviewId: id } });
     return {
       success: true,
-      text: 'Submitted the changes for instructor review. Later edits are not included. The decision arrives in a later message.',
+      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. If you have not yet described the changes for staff, do so briefly now. Then end your turn without making further edits.',
     };
   }
 
@@ -778,6 +810,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         JSON.stringify(RequestChangesResultSchema.parse(review.result)) ===
         JSON.stringify(RequestChangesResultSchema.parse(result))
       );
+    }
+    if (result.viaMessage) {
+      // The browser sends the message next; its turn delivers the denial instead of a turn here.
+      this.settleReview(reviewId);
+      this.setRecord({ ...this.record, deniedByMessage: reviewId });
+      return true;
     }
     this.setRecord({ ...this.record, review: { ...review, result } });
     return true;

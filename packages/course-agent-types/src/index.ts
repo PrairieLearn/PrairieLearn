@@ -29,9 +29,17 @@ export type ConversationState = ConversationLifecycle & {
   sandboxLost: boolean;
   /** A review whose outcome the agent has not yet received. New messages wait for it. */
   reviewId: string | null;
+  /** Generated from the first message; PrairieLearn shows its own fallback until then. */
+  title: string | null;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
+
+/**
+ * The agent's working directory, a checkout of the course. The agent links to course files by
+ * their absolute paths under it.
+ */
+export const COURSE_DIR = '/workspace/session/course';
 
 /**
  * The PrairieLearn pages the agent can open, built by PrairieLearn from its instructor navigation
@@ -83,6 +91,9 @@ const ReviewPathSchema = z
 
 const ReviewContentsSchema = z.base64().max(4 * Math.ceil(MAX_REVIEW_FILE_BYTES / 3));
 
+/** Tags the chat-history marker where the agent's turn that received a review result begins. */
+export const reviewTag = (reviewId: string) => `review:${reviewId}`;
+
 /**
  * The save and sync outcomes are separate: files may be saved even if syncing fails. Both are
  * `unknown` when PrairieLearn lost the save job before it recorded how far it got, so the files
@@ -108,6 +119,11 @@ export const RequestChangesResultSchema = z
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
       z.strictObject({ status: z.literal('unknown') }),
     ]),
+    /**
+     * The instructor denied by sending a chat message. The agent receives the denial with that
+     * message's turn rather than in a turn of its own.
+     */
+    viaMessage: z.literal(true).optional(),
   })
   .refine((result) => {
     if (result.decision === 'denied') {
@@ -115,6 +131,7 @@ export const RequestChangesResultSchema = z
         result.publication.status === 'not_attempted' && result.sync.status === 'not_attempted'
       );
     }
+    if (result.viaMessage) return false;
     switch (result.publication.status) {
       case 'published':
       case 'saved_locally':
@@ -245,9 +262,11 @@ export type ToolCall = z.infer<typeof ToolCallSchema>;
 /**
  * The PrairieLearn page an instructor was viewing when they sent a message. `page` is the page's
  * navigation key, such as `assessment.settings`. Names are the ones the agent sees in course
- * files: a course instance's directory, an assessment's `tid`, and a question's `qid` (only for
- * this course's own questions). Unknown keys are stripped, so PrairieLearn can add fields before
- * the Worker reads them.
+ * files: a course instance's directory, an assessment's `tid`, and a question's `qid`.
+ * `questionFromAnotherCourse` marks a shared question used from another course, whose files are
+ * not in this checkout.
+ *
+ * Unknown keys are stripped, so PrairieLearn can add fields before the Worker reads them.
  */
 export const PageLocationSchema = z.object({
   path: z.string().max(2000),
@@ -255,12 +274,32 @@ export const PageLocationSchema = z.object({
   courseInstance: z.string().max(500).optional(),
   assessment: z.string().max(500).optional(),
   question: z.string().max(500).optional(),
+  questionFromAnotherCourse: z.boolean().optional(),
 });
 
 export type PageLocation = z.infer<typeof PageLocationSchema>;
 
 /** Metadata the browser attaches to a user message. */
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
+
+/**
+ * Input the agent requested from staff with Codex's `request_user_input_async`, in a
+ * `data-input-request` part keyed by the Codex item ID. The tool returns at once; staff's next
+ * message is the answer, so the part holds no answer and is never rewritten.
+ */
+export const InputRequestPartSchema = z.object({
+  v: z.literal(1),
+  itemId: z.string(),
+  prompts: z.array(
+    z.object({
+      title: z.string(),
+      /** Suggested answers, recommended first. The instructor can always write their own. */
+      options: z.array(z.string()).nullable(),
+    }),
+  ),
+});
+
+export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;
 
 /**
  * A page the agent opens for the instructor. `page` is a key from the conversation's page catalog,
