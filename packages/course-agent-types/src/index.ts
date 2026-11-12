@@ -245,6 +245,7 @@ export type ToolCall = z.infer<typeof ToolCallSchema>;
  * files: a course instance's directory, an assessment's `tid`, and a question's `qid`.
  * `questionFromAnotherCourse` marks a shared question used from another course, whose files are
  * not in this checkout.
+ *
  * Unknown keys are stripped, so PrairieLearn can add fields before the Worker reads them.
  */
 export const PageLocationSchema = z.object({

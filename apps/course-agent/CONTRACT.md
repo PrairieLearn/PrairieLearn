@@ -73,7 +73,7 @@ History keeps a bounded copy: command text up to 2,000 characters, output up to 
 
 ## Page location
 
-Each user message may carry `metadata.location` (`PageLocationSchema`): the page the instructor was viewing, named by its path, navigation key, and course items, never its title, which can name students. The browser supplies it, so the turn passes it to Codex as `untrusted` `additionalContext` rather than in the message text. Catch-up labels each replayed staff line with its page instead.
+Each user message may carry `metadata.location` (`PageLocationSchema`): the page the instructor was viewing, named by its path, navigation key, and course items, never its title, which can name students. The browser supplies it, so the turn passes it to Codex as `untrusted` `additionalContext` rather than in the message text. Catch-up replays text, so it labels each replayed staff line with its page.
 
 ## Input requests
 
