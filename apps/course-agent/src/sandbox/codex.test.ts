@@ -50,8 +50,12 @@ function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox);
-  return { sandbox, native, commands, emit, disconnect: () => socket.close() };
+  const sendFiles = vi.fn(async (paths: string[]) => ({
+    success: true,
+    text: `Sent ${paths.join(', ')}.`,
+  }));
+  const native = new CodexAppServerClient(sandbox, sendFiles);
+  return { sandbox, native, sendFiles, commands, emit, disconnect: () => socket.close() };
 }
 
 const thread = { model: 'test', instructions: 'Edit course', threadId: null };
@@ -274,6 +278,59 @@ describe('course agent turns', () => {
       { id: 'tool:stuck', data: { status: 'running' } },
       { id: 'tool:stuck', data: { status: 'interrupted' } },
     ]);
+  });
+
+  it('tells the agent why a send_files call failed instead of failing the turn', async () => {
+    const { sandbox, native, sendFiles, commands, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const call = (id: number, args: unknown) =>
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: `call-${id}`,
+          namespace: null,
+          tool: 'send_files',
+          arguments: args,
+        },
+      });
+    const reply = (id: number) =>
+      vi.waitFor(() => {
+        const frame = commands.find((command) => command.id === id && !command.method);
+        expect(frame).toBeDefined();
+        return (frame as unknown as { result: unknown }).result;
+      });
+
+    call(101, { paths: ['grades.csv'] });
+    expect(await reply(101)).toEqual({
+      success: true,
+      contentItems: [{ type: 'inputText', text: 'Sent grades.csv.' }],
+    });
+
+    call(102, { path: 'grades.csv' });
+    expect(await reply(102)).toMatchObject({ success: false });
+    expect(sendFiles).toHaveBeenCalledTimes(1);
+
+    sendFiles.mockRejectedValueOnce(new Error('Storage is unavailable'));
+    call(103, { paths: ['grades.csv'] });
+    expect(await reply(103)).toEqual({
+      success: false,
+      contentItems: [{ type: 'inputText', text: 'Storage is unavailable' }],
+    });
+
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    expect(await turn.finished).toMatchObject({ stopped: false });
   });
 
   it('shows input the agent requests as an input request part', async () => {

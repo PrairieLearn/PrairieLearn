@@ -24,6 +24,7 @@ const router = Router({ mergeParams: true });
 const ParamsSchema = z.object({ course_id: IdSchema, conversation_id: IdSchema });
 const ChatQuerySchema = z.object({ csrfToken: z.string().optional() });
 const UploadParamsSchema = z.object({ upload_id: z.uuid() });
+const SentFileParamsSchema = z.object({ file_id: z.uuid() });
 
 /**
  * Saves any bytes Node already received after an upgrade request until the proxy takes over.
@@ -184,6 +185,16 @@ router.get(
 router.post(
   '/conversations/:conversation_id/uploads/:upload_id/thumbnail',
   proxyUpload('/thumbnail'),
+);
+
+// A file the agent sent downloads under the same rules as an upload.
+router.get(
+  '/conversations/:conversation_id/sent-files/:file_id',
+  typedAsyncHandler<'course'>(async (req, res, next) => {
+    const { file_id } = parseRequestParams(req, SentFileParamsSchema);
+    await prepareConversationProxyRequest(req, res, `/sent-files/${file_id}`);
+    await uploadProxy(req, res, next);
+  }),
 );
 
 // Return saved message history as JSON.

@@ -20,6 +20,13 @@ export const uploadKey = (conversationId: string, uploadId: string) =>
 /** One level below the uploads, so a delimited listing of the uploads leaves thumbnails out. */
 export const thumbnailKey = (conversationId: string, uploadId: string) =>
   `${uploadPrefix(conversationId)}thumbnails/${uploadId}`;
+/**
+ * Files the agent sent to the instructor. They are also one level below the uploads: they have
+ * their own cap and are never copied into a sandbox, but expire with the same lifecycle rule.
+ */
+export const sentFilePrefix = (conversationId: string) => `${uploadPrefix(conversationId)}sent/`;
+export const sentFileKey = (conversationId: string, fileId: string) =>
+  `${sentFilePrefix(conversationId)}${fileId}`;
 
 interface UploadTotals {
   count: number;
@@ -113,15 +120,20 @@ export function attachmentsToWrite(
 /** Under the 255-byte filename limit, with room for a short extension. */
 const MAX_NAME_BYTES = 200;
 
-/** Each upload gets its own directory, so files with the same name don't collide. */
-export function attachmentPath({ id, filename }: Attachment) {
+/** A file's name without directories or control characters, safe as a single path segment. */
+export function safeFilename(filename: string) {
   const name = truncateName(
     [...(filename.split(/[/\\]/).at(-1) ?? '')]
       .filter((character) => character.charCodeAt(0) >= 32 && character !== '\u007f')
       .join('')
       .trim(),
   );
-  return `${UPLOADS_DIR}/${id}/${name === '' || name === '.' || name === '..' ? 'file' : name}`;
+  return name === '' || name === '.' || name === '..' ? 'file' : name;
+}
+
+/** Each upload gets its own directory, so files with the same name don't collide. */
+export function attachmentPath({ id, filename }: Attachment) {
+  return `${UPLOADS_DIR}/${id}/${safeFilename(filename)}`;
 }
 
 /** Shorten a name to fit `MAX_NAME_BYTES` of UTF-8, keeping its extension for the model. */

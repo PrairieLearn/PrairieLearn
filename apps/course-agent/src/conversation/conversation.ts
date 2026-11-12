@@ -13,16 +13,18 @@ import {
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
+  MAX_ATTACHMENT_BYTES,
   type RequestChangesResult,
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  type SentFilePart,
   UserMessageMetadataSchema,
   reviewTag,
 } from '@prairielearn/course-agent-types';
 
 import { logEvent, reportError } from '../monitoring.js';
-import { CodexAppServerClient, type TurnInput } from '../sandbox/codex.js';
+import { CodexAppServerClient, type ToolReply, type TurnInput } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
@@ -36,6 +38,9 @@ import {
   formatRequest,
   imageType,
   keepUploadReferences,
+  safeFilename,
+  sentFileKey,
+  sentFilePrefix,
   uploadKey,
   uploadPrefix,
 } from './attachments.js';
@@ -167,6 +172,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       prefix: uploadPrefix(this.name),
       delimiter: '/',
     });
+    return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
+  });
+  /** Sent files have the same cap as uploads, counted apart so neither crowds out the other. */
+  private readonly sentFileQuota = new UploadQuota(async () => {
+    const { objects } = await this.env.CHECKPOINTS.list({ prefix: sentFilePrefix(this.name) });
     return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
   });
 
@@ -506,7 +516,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
     });
     log('turn_started', { startup });
-    const native = (this.native ??= new CodexAppServerClient(this.sandbox));
+    const native = (this.native ??= new CodexAppServerClient(this.sandbox, (paths) =>
+      this.sendFiles(paths),
+    ));
     let nativeThreadId = this.record.nativeThreadId;
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
@@ -823,6 +835,72 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return {
       success: true,
       text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. If you have not yet described the changes for staff, do so briefly now. Then end your turn without making further edits.',
+    };
+  }
+
+  /**
+   * Serves `send_files`: stores the files where the instructor can download them and shows them
+   * in the reply. A call sends every file or none, so the agent never has to work out which
+   * arrived.
+   */
+  private async sendFiles(paths: string[]): Promise<ToolReply> {
+    const turn = this.active;
+    const stats = await this.sandbox.statFiles(paths);
+    const sizes: number[] = [];
+    const problems: string[] = [];
+    for (const [index, path] of paths.entries()) {
+      const stat = stats[index];
+      if ('problem' in stat) {
+        problems.push(`${path}: ${stat.problem}`);
+      } else if (stat.size === 0) {
+        problems.push(`${path}: empty file`);
+      } else if (stat.size > MAX_ATTACHMENT_BYTES) {
+        problems.push(`${path}: larger than ${MAX_ATTACHMENT_BYTES / 1024 / 1024} MB`);
+      } else {
+        sizes.push(stat.size);
+      }
+    }
+    if (problems.length > 0) {
+      return { success: false, text: `No files were sent. ${problems.join('; ')}.` };
+    }
+
+    const reserved: number[] = [];
+    const release = () => Promise.all(reserved.map((size) => this.sentFileQuota.release(size)));
+    for (const size of sizes) {
+      if (!(await this.sentFileQuota.reserve(size))) {
+        await release();
+        return {
+          success: false,
+          text: 'No files were sent. This conversation has reached its limit for sent files.',
+        };
+      }
+      reserved.push(size);
+    }
+    const files: SentFilePart[] = paths.map((path, index) => ({
+      id: crypto.randomUUID(),
+      filename: safeFilename(path),
+      size: sizes[index],
+    }));
+    try {
+      await Promise.all(
+        files.map(({ id, size }, index) =>
+          this.sandbox.storeFile(paths[index], size, sentFileKey(this.name, id)),
+        ),
+      );
+    } catch (error) {
+      await release();
+      throw error;
+    }
+    // A turn that stopped or failed while the files were stored can no longer show them.
+    if (!turn || this.active !== turn || turn.stop || !this.native?.streaming) {
+      return { success: false, text: 'The turn ended before the files were sent.' };
+    }
+    for (const file of files) {
+      this.native.emit({ type: 'data-file', id: `file:${file.id}`, data: file });
+    }
+    return {
+      success: true,
+      text: `Sent ${files.map(({ filename }) => filename).join(', ')}. The instructor sees them in the chat and can download them; do not repeat their contents in your message.`,
     };
   }
 

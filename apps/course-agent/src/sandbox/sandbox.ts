@@ -10,6 +10,7 @@ import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import { z } from 'zod';
 
 import {
+  COURSE_DIR,
   MAX_REVIEW_BYTES,
   MAX_REVIEW_FILE_BYTES,
   type ReviewSnapshot,
@@ -32,6 +33,7 @@ const CODEX_CONFIG = '/etc/course-agent/codex-config.toml';
 // The image's unprivileged user. Checkpoints record file ownership by ID, so the ID must not change.
 const AGENT_USER = 'agent';
 const AGENT_UID_GID = '1000:1000';
+const AGENT_FILE_OPTIONS = { cwd: COURSE_DIR, user: AGENT_UID_GID };
 const NATIVE_PORT = 4500;
 // Local reviews diff against this ref, which tracks the contents PrairieLearn has saved.
 const LOCAL_SAVED_REF = 'refs/prairielearn/saved';
@@ -398,6 +400,33 @@ export class CourseSandbox extends DurableObject<Env> {
       }),
     );
     await this.exec(['chmod', '-R', 'a+rX,go-w', UPLOADS_DIR]);
+  }
+
+  /**
+   * The size of each file the agent wants to send, or why it can't be sent. Paths resolve like the
+   * agent's own commands: relative to the course, with the agent's permissions, so the tool reads
+   * nothing its shell can't. Problems are returned because error classes don't survive RPC.
+   */
+  async statFiles(paths: string[]): Promise<({ size: number } | { problem: string })[]> {
+    const files = new Files(this.container);
+    return await Promise.all(
+      paths.map(async (path) => {
+        try {
+          const info = await files.stat(path, AGENT_FILE_OPTIONS);
+          return info.type === 'file' ? { size: Number(info.size) } : { problem: 'not a file' };
+        } catch (error) {
+          if (!SandboxFileError.is(error)) throw error;
+          return { problem: error.code === 'ENOENT' ? 'no such file' : error.code };
+        }
+      }),
+    );
+  }
+
+  /** Copy a file of the size `statFiles()` reported into the bucket; R2 needs the length. */
+  async storeFile(path: string, size: number, key: string) {
+    const file = await new Files(this.container).readFile(path, AGENT_FILE_OPTIONS);
+    // A file that changed size since it was measured fails here instead of being cut short.
+    await this.env.CHECKPOINTS.put(key, file.body!.pipeThrough(new FixedLengthStream(size)));
   }
 
   /**

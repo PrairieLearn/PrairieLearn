@@ -9,7 +9,7 @@ import {
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
 
-import { imageType, thumbnailKey, uploadKey } from '../conversation/attachments.js';
+import { imageType, sentFileKey, thumbnailKey, uploadKey } from '../conversation/attachments.js';
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
@@ -149,6 +149,20 @@ conversations.get('/:id/uploads/:uploadId/thumbnail', async (c) => {
   return new Response(thumbnail.body, {
     headers: {
       'Content-Type': thumbnail.httpMetadata!.contentType!,
+      'Cache-Control': CACHE_CONTROL,
+    },
+  });
+});
+
+// A file the agent sent with `send_files`. Like an upload, it is served as a download.
+conversations.get('/:id/sent-files/:fileId', async (c) => {
+  if (!UUID_PATTERN.test(c.req.param('fileId'))) return c.notFound();
+  const file = await c.env.CHECKPOINTS.get(sentFileKey(c.req.param('id'), c.req.param('fileId')));
+  if (!file) return c.notFound();
+  return new Response(file.body, {
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(file.size),
       'Cache-Control': CACHE_CONTROL,
     },
   });

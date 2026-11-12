@@ -184,6 +184,13 @@ describe('Course agent access and conversation privacy', () => {
       expect(ids).toContain(own.id);
       expect(ids).not.toContain(other.id);
       expect((await fetch(historyUrl(other.id))).status).toBe(404);
+      expect(
+        (
+          await fetch(
+            `${siteUrl}/pl/course/1/course_agent/conversations/${other.id}/sent-files/${crypto.randomUUID()}`,
+          )
+        ).status,
+      ).toBe(404);
       await expect(
         client.courseAgent.resume.mutate({ conversationId: other.id }),
       ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
@@ -212,6 +219,14 @@ describe('Course agent access and conversation privacy', () => {
       expect(download.headers.get('Content-Type')).toBe('application/octet-stream');
       expect(download.headers.get('Content-Disposition')).toBe('attachment');
       expect(download.headers.get('Content-Security-Policy')).toContain('sandbox');
+
+      const fromAgent = await fetch(
+        `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/sent-files/${crypto.randomUUID()}`,
+      );
+      expect(fromAgent.status).toBe(200);
+      expect(fromAgent.headers.get('Content-Type')).toBe('application/octet-stream');
+      expect(fromAgent.headers.get('Content-Disposition')).toBe('attachment');
+      expect(fromAgent.headers.get('Content-Security-Policy')).toContain('sandbox');
 
       const preview = await fetch(`${uploadUrl}/thumbnail`);
       expect(preview.headers.get('Content-Type')).toBe('image/png');
