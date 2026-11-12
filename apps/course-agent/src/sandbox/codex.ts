@@ -6,6 +6,10 @@ import {
   COURSE_DIR,
   CourseDataQuerySchema,
   type InputRequestPart,
+  type NavigationPart,
+  type NavigationTarget,
+  NavigationTargetSchema,
+  type PageCatalog,
   type ToolCall,
 } from '@prairielearn/course-agent-types';
 
@@ -48,10 +52,13 @@ const ItemEvent = z.object({
   turnId: z.string(),
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
-/** `request_changes` shows as a review card; only a failed call needs its own entry. */
-const ReviewToolItem = z.object({
+/**
+ * `request_changes` shows as a review card and navigation as its own part; only a failed call
+ * needs a tool entry.
+ */
+const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.literal('request_changes'),
+  tool: z.enum(['request_changes', 'navigate']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -137,10 +144,14 @@ export class CodexAppServerClient {
   private toolChars = { messageId: '', used: 0 };
   private failure: Error | null = null;
   private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
+  /** Navigation calls are checked against the conversation's catalog, also on a resumed thread. */
+  private pages: PageCatalog = [];
 
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
     private courseData: CourseDataTools,
+    /** Resolves a navigation target to its URL, failing with a message for the agent. */
+    private resolveNavigation: (target: NavigationTarget) => Promise<string>,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -287,9 +298,30 @@ export class CodexAppServerClient {
         }
         return await this.onReview({ ...call.data, arguments: {} });
       }
+      case 'navigate':
+        return await this.navigate(call.data.callId, call.data.arguments);
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
+  }
+
+  private async navigate(callId: string, args: unknown): Promise<ToolReply> {
+    const target = NavigationTargetSchema.safeParse(args);
+    if (!target.success) return invalidArguments(target.error);
+    const page = this.pages.find((entry) => entry.key === target.data.page);
+    if (!page) return { success: false, text: `Unknown page "${target.data.page}".` };
+    return await replyWithError(async () => {
+      const url = await this.resolveNavigation(target.data);
+      const navigation: NavigationPart = {
+        action: 'open',
+        target: target.data,
+        label: page.label,
+        url,
+      };
+      // The browser acts on this part; the reply cannot confirm the page loaded.
+      this.emit({ type: 'data-navigation', id: `navigation:${callId}`, data: navigation });
+      return { success: true, text: "The instructor's browser is opening the page." };
+    });
   }
 
   private fail(error: Error) {
@@ -324,7 +356,13 @@ export class CodexAppServerClient {
     }
   }
 
-  async thread(config: { model: string; instructions: string; threadId: string | null }) {
+  async thread(config: {
+    model: string;
+    instructions: string;
+    threadId: string | null;
+    pages: PageCatalog;
+  }) {
+    this.pages = config.pages;
     const settings = {
       model: config.model,
       cwd: COURSE_DIR,
@@ -350,6 +388,7 @@ export class CodexAppServerClient {
               ...(this.onReview ? [requestChangesTool] : []),
               listCourseDatasetsTool,
               courseDataTool,
+              ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
             ],
           } satisfies ThreadStartParams,
           ThreadResult,
@@ -460,8 +499,8 @@ export class CodexAppServerClient {
     if (params.threadId !== this.threadId || (this.turnId && params.turnId !== this.turnId)) {
       return;
     }
-    const review = ReviewToolItem.safeParse(params.item);
-    if (review.success && (phase === 'started' || review.data.success !== false)) return;
+    const card = CardToolItem.safeParse(params.item);
+    if (card.success && (phase === 'started' || card.data.success !== false)) return;
     const call = toolCallFromItem(phase, params.item);
     if (!call) return;
     const id = `tool:${params.item.id}`;
@@ -526,7 +565,7 @@ function invalidArguments(error: z.ZodError): ToolReply {
   return { success: false, text: `Invalid arguments: ${z.prettifyError(error)}` };
 }
 
-/** A failed course data request is reported to the model rather than failing the turn. */
+/** A failed PrairieLearn request is reported to the model rather than failing the turn. */
 async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply> {
   try {
     return await call();
@@ -565,3 +604,34 @@ const requestChangesTool = {
     'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 } satisfies DynamicToolSpec;
+
+/** The model learns which pages exist from this tool, so the catalog is not repeated in instructions. */
+function navigateTool(pages: PageCatalog): DynamicToolSpec {
+  const lines = pages.map(({ key, label, params, file }) => {
+    const needs = [...params, ...(file ? ['optional file'] : [])];
+    return `${key}: ${label}${needs.length > 0 ? ` (${needs.join(', ')})` : ''}`;
+  });
+  return {
+    type: 'function',
+    name: 'navigate',
+    description: [
+      "Open a PrairieLearn page in the instructor's browser, replacing the page they are viewing. Pages, with the names each requires:",
+      ...lines,
+    ].join('\n'),
+    inputSchema: {
+      type: 'object',
+      properties: {
+        page: { type: 'string', enum: pages.map((page) => page.key) },
+        courseInstance: { type: 'string', description: 'Directory name under courseInstances/.' },
+        assessment: {
+          type: 'string',
+          description: "Directory path under the course instance's assessments/.",
+        },
+        question: { type: 'string', description: 'Directory path under questions/.' },
+        file: { type: 'string', description: "Path inside the page's own directory." },
+      },
+      required: ['page'],
+      additionalProperties: false,
+    },
+  };
+}

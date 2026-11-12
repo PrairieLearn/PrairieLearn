@@ -79,6 +79,14 @@ Each user message may carry `metadata.location` (`PageLocationSchema`): the page
 
 The agent asks staff for decisions or missing information with Codex's `request_user_input_async` tool, which returns at once and completes an unstreamed agent message carrying the prompts. The Worker shows it as a `data-input-request` part matching `InputRequestPartSchema`. Nothing waits for an answer: staff's next message is the answer, whether sent from the input request card or typed, and it is submitted like any other message. The part is never rewritten, and catch-up includes the prompts so a restored thread knows what the next message answers.
 
+## Changing the instructor's page
+
+PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conversation: one entry per tab of its instructor navigation, with the page's key (the same vocabulary as the page location), its label, the names it requires, and whether it browses files. The catalog is in the JSON body for GitHub conversations and in the `X-PL-Pages` header for local ones, whose body is the course archive. The DO stores it for the conversation's life. A conversation created without one has no `navigate` tool.
+
+`navigate` is a native dynamic tool like `request_changes`, registered when a thread starts (threads started before it do not have it) with the catalog's keys as the `page` enum and its labels in the description. Targets use course file names, never database IDs. The DO resolves a target with `POST /pl/api/v1/course/:course_id/agent_navigation`, authenticated like course data requests, so PrairieLearn looks the names up as the conversation's user. A page or name PrairieLearn does not know fails the tool call with PrairieLearn's message, and nothing reaches the browser. Otherwise the DO emits a `data-navigation` part (`NavigationPartSchema`) with ID `navigation:<call ID>` carrying the resolved URL; a successful call has no `data-tool` part. The tool reply cannot confirm that the page loaded.
+
+The browser acts on a navigation part only while its reply is live, once per part ID. It records handled IDs in session storage, because changing pages reconnects the chat and the SDK replays the live reply. Parts in settled history only render, an opened page as a link that opens it again.
+
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:

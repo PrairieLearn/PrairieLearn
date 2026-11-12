@@ -78,7 +78,7 @@ async function readCapped(response: Response) {
   return { text: text + decoder.decode(), bytes };
 }
 
-async function errorMessage(response: Response) {
+export async function errorMessage(response: Response) {
   const body = await response.text();
   let json: unknown = null;
   try {
@@ -99,7 +99,7 @@ function describeFilter(filter: NonNullable<CourseDataRequest['filters']>[number
   return `${filter.column} in [${shown.join(',')},…] (${filter.value.length} values)`;
 }
 
-interface CourseDataContext {
+export interface CourseDataContext {
   plUrl: string;
   serviceToken: string;
   conversationId: string;
@@ -118,7 +118,7 @@ const UNAVAILABLE: ToolReply = {
  * PrairieLearn identifies the user and course from the conversation, so the model chooses only
  * which rows to read.
  */
-function authHeaders({ serviceToken, conversationId }: CourseDataContext) {
+export function authHeaders({ serviceToken, conversationId }: CourseDataContext) {
   return {
     Authorization: `Bearer ${serviceToken}`,
     'X-Course-Agent-Conversation': conversationId,

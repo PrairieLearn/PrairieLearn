@@ -13,6 +13,7 @@ import {
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
+  type PageCatalog,
   type RequestChangesResult,
   RequestChangesResultSchema,
   type Review,
@@ -40,6 +41,7 @@ import {
 } from './catch-up.js';
 import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
+import { resolveNavigation } from './navigation.js';
 import { generateTitle } from './title.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
@@ -102,6 +104,8 @@ interface RecordData {
   submittedMessageId?: string | null;
   /** Absent in records saved before titles were generated. */
   title?: string | null;
+  /** Pages the agent can open; absent in records saved before PrairieLearn sent a catalog. */
+  pages?: PageCatalog;
 }
 
 // Destruction is a private phase because the replacement checkpoint is committed
@@ -260,7 +264,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * Set up conversation state and pin the course source and model.
    * The sandbox is created or restored when the first message arrives.
    */
-  initialize(config: CourseSource) {
+  initialize(config: CourseSource, pages?: PageCatalog) {
     if (this._record) throw new Error('Conversation is already initialized');
     // TODO: Define how existing sandboxes follow course repository/branch changes. Never
     // retarget an edited sandbox just because a reconnect supplies updated course labels.
@@ -277,6 +281,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       threadMayBeBehind: false,
       submittedMessageId: null,
       title: null,
+      pages,
     });
   }
 
@@ -485,11 +490,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
     });
     log('turn_started', { startup });
-    const native = (this.native ??= new CodexAppServerClient(this.sandbox, {
-      list: () => listCourseDatasets(this.courseDataContext()),
-      get: (request) =>
-        getCourseData({ ...this.courseDataContext(), sandbox: this.sandbox, request }),
-    }));
+    const native = (this.native ??= new CodexAppServerClient(
+      this.sandbox,
+      {
+        list: () => listCourseDatasets(this.courseDataContext()),
+        get: (request) =>
+          getCourseData({ ...this.courseDataContext(), sandbox: this.sandbox, request }),
+      },
+      (target) => resolveNavigation(this.courseDataContext(), target),
+    ));
     let nativeThreadId = this.record.nativeThreadId;
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
@@ -518,6 +527,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         model: this.record.config.model,
         instructions: buildInstructions(this.record.courseContext ?? undefined, source.type),
         threadId: this.record.nativeThreadId,
+        pages: this.record.pages ?? [],
       },
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.

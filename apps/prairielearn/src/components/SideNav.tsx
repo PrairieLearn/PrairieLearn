@@ -33,7 +33,7 @@ interface SideNavTabInfo {
   renderCondition?: (resLocals: UntypedResLocals) => boolean;
 }
 
-const sideNavPagesTabs = {
+export const sideNavPagesTabs = {
   course_admin: [
     {
       activePages: ['course_admin'],

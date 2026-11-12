@@ -36,6 +36,7 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
+import { NavigationNotice, navigationOf, useAgentNavigation } from './Navigation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -432,6 +433,7 @@ function Chat({
   const inputRequestOpen =
     latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  useAgentNavigation({ message: messages.at(-1), live: responseActive });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
@@ -728,6 +730,10 @@ function Message({
         return <TextPart key={key} part={part} urlTransform={linkTransform} />;
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+      const found = navigationOf(part);
+      if (found) {
+        return <NavigationNotice key={key} navigation={found.navigation} />;
+      }
       if (part.type === 'data-input-request') {
         const request = InputRequestPartSchema.safeParse(part.data).data;
         if (!request) return null;

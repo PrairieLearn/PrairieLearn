@@ -4,6 +4,8 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import * as Sentry from '@prairielearn/sentry';
 
+import { isEnterprise } from '../../lib/license.js';
+
 const router = Router();
 
 /**
@@ -106,6 +108,21 @@ router.use(
   '/course/:course_id(\\d+)/data',
   authzHasCourseOwner,
   (await import('./endpoints/courseData/index.js')).default,
+);
+// Resolves a page the course agent named to its URL, so the agent learns when a name is wrong.
+// The license is checked per request, like authnToken does, because it can be set after this
+// module loads.
+router.use(
+  '/course/:course_id(\\d+)/agent_navigation',
+  authzHasCourseOwner,
+  asyncHandler(async (req, res, next) => {
+    if (!isEnterprise()) {
+      next();
+      return;
+    }
+    const { default: navigation } = await import('../../ee/routers/courseAgentNavigation.js');
+    navigation(req, res, next);
+  }),
 );
 router.use(
   '/course/:course_id(\\d+)/sync',

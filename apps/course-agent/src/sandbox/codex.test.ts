@@ -60,11 +60,26 @@ function runner({
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox, courseData);
+  const native = new CodexAppServerClient(sandbox, courseData, async (target) => {
+    if (target.assessment !== 'hw1') throw new Error(`No assessment named "${target.assessment}".`);
+    return '/pl/course_instance/1/instructor/assessment/2/settings';
+  });
   return { sandbox, native, commands, emit, disconnect: () => socket.close() };
 }
 
-const thread = { model: 'test', instructions: 'Edit course', threadId: null };
+const thread = {
+  model: 'test',
+  instructions: 'Edit course',
+  threadId: null,
+  pages: [
+    {
+      key: 'assessment.settings',
+      label: 'Settings',
+      params: ['courseInstance' as const, 'assessment' as const],
+      file: false,
+    },
+  ],
+};
 
 function options(onAccepted: () => void, threadId: string | null = null) {
   return {
@@ -298,7 +313,11 @@ describe('course agent turns', () => {
     await native.connect();
     await native.thread(thread);
     expect(commands.find((command) => command.method === 'thread/start')?.params).toMatchObject({
-      dynamicTools: [{ name: 'list_course_datasets' }, { name: 'get_course_data' }],
+      dynamicTools: [
+        { name: 'list_course_datasets' },
+        { name: 'get_course_data' },
+        { name: 'navigate' },
+      ],
     });
     const call = (id: number, tool: string, args: unknown) =>
       emit({
@@ -385,6 +404,75 @@ describe('course agent turns', () => {
         type: 'data-input-request',
         id: 'input-request:ask',
         data: { v: 1, itemId: 'ask', prompts },
+      },
+    ]);
+  });
+
+  it('opens catalog pages at the URL PrairieLearn resolves, reporting failures to the agent', async () => {
+    const { sandbox, native, commands, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const call = async (id: string, args: unknown) => {
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: id,
+          namespace: null,
+          tool: 'navigate',
+          arguments: args,
+        },
+      });
+      return await vi.waitFor(() => {
+        const frame = commands.find((command) => String(command.id) === id);
+        if (!frame) throw new Error('No reply yet');
+        return (frame as unknown as { result: { success: boolean } }).result;
+      });
+    };
+    const target = { page: 'assessment.settings', courseInstance: 'Fa25', assessment: 'hw1' };
+    expect(await call('open', target)).toMatchObject({ success: true });
+    expect(await call('unknown', { page: 'assessment.nope' })).toMatchObject({ success: false });
+    expect(await call('wrong', { ...target, assessment: 'hw99' })).toMatchObject({
+      success: false,
+      contentItems: [{ text: 'No assessment named "hw99".' }],
+    });
+    const start = commands.find((command) => command.method === 'thread/start');
+    expect(start).toMatchObject({
+      params: {
+        dynamicTools: [
+          { name: 'list_course_datasets' },
+          { name: 'get_course_data' },
+          {
+            name: 'navigate',
+            inputSchema: { properties: { page: { enum: ['assessment.settings'] } } },
+          },
+        ],
+      },
+    });
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type === 'data-navigation')).toEqual([
+      {
+        type: 'data-navigation',
+        id: 'navigation:open',
+        data: {
+          action: 'open',
+          target,
+          label: 'Settings',
+          url: '/pl/course_instance/1/instructor/assessment/2/settings',
+        },
       },
     ]);
   });

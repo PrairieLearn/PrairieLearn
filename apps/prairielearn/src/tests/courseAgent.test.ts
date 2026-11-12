@@ -14,6 +14,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { withResolvers } from '@prairielearn/utils';
 
+import { buildPageCatalog } from '../ee/lib/course-agent/pages.js';
 import {
   insertCourseAgentConversation,
   selectOptionalCourseAgentConversation,
@@ -217,7 +218,11 @@ describe('Course agent access and conversation privacy', () => {
     expect(serviceRequests).toEqual([
       {
         path: '/conversations',
-        body: { repository: 'PrairieLearn/test-course', branch: 'pilot-edits' },
+        body: {
+          repository: 'PrairieLearn/test-course',
+          branch: 'pilot-edits',
+          pages: buildPageCatalog(),
+        },
         authorization: 'Bearer test-token',
       },
     ]);
@@ -249,6 +254,49 @@ describe('Course agent access and conversation privacy', () => {
       }),
     );
     expect(serviceRequests).toEqual([]);
+  });
+
+  // The catalog reuses the navigation's untyped URL builders, so load what they produce.
+  test('resolves every catalog page for the course agent, and explains a wrong name', async () => {
+    const { agent_conversation_id } = await createConversation(owner);
+    const resolve = (target: Record<string, string>) =>
+      fetch(`${siteUrl}/pl/api/v1/course/1/agent_navigation`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-token',
+          'X-Course-Agent-Conversation': agent_conversation_id,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(target),
+      });
+    const names = {
+      courseInstance: 'Sp15',
+      assessment: 'hw1-automaticTestSuite',
+      question: 'addNumbers',
+    };
+    const files: Record<string, string> = {
+      'course_admin.file_view': 'infoCourse.json',
+      'instance_admin.file_view': 'infoCourseInstance.json',
+      'assessment.file_view': 'infoAssessment.json',
+      'question.file_view': 'question.html',
+    };
+    const missing: string[] = [];
+    for (const page of buildPageCatalog()) {
+      const response = await resolve({
+        page: page.key,
+        ...Object.fromEntries(page.params.map((param) => [param, names[param]])),
+        ...(page.file ? { file: files[page.key] } : {}),
+      });
+      const { url } = (await response.json()) as { url: string };
+      const { status } = await withUser(owner, () => fetch(`${siteUrl}${url}`));
+      if (status === 404 || status >= 500) missing.push(`${page.key}: ${status}`);
+    }
+    // Billing answers 404 unless the institution has it enabled.
+    expect(missing).toEqual(['instance_admin.billing: 404']);
+
+    const wrong = await resolve({ ...names, page: 'assessment.settings', assessment: 'hw99' });
+    expect(wrong.status).toBe(404);
+    expect(await wrong.json()).toMatchObject({ message: 'No assessment named "hw99".' });
   });
 
   test('initializes from current local files and course-only Git history in dev mode', async () => {

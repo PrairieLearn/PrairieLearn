@@ -18,7 +18,8 @@ function isServiceToken(authorization: string) {
 /**
  * Authenticates an API request the course agent service makes for a conversation. The service
  * token proves the request comes from the service; the conversation identifies the user, whose
- * normal permissions then apply. The request may only read its conversation's course data, so a
+ * normal permissions then apply. The request may only reach its conversation's course data and
+ * navigation routes, so a
  * model in the sandbox cannot reach other courses or other API routes.
  *
  * Returns null for a request that is not from the service.
@@ -39,10 +40,12 @@ export async function authenticateCourseAgentRequest({
     ? await selectOptionalCourseAgentConversationByAgentConversationId(parsedId.data)
     : null;
   if (!conversation) return { error: 'Invalid course agent conversation' };
-  // Must match where api/v1/index.ts mounts the course data router.
-  const dataPath = `/course/${conversation.course_id}/data`;
-  if (path !== dataPath && !path.startsWith(`${dataPath}/`)) {
-    return { error: 'The course agent may only read its own course data' };
+  // Must match where api/v1/index.ts mounts the routers the course agent calls.
+  const allowed = ['data', 'agent_navigation'].map(
+    (route) => `/course/${conversation.course_id}/${route}`,
+  );
+  if (!allowed.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+    return { error: "The course agent may only use its own course's data and navigation" };
   }
   return { user: await selectUserById(conversation.user_id) };
 }
