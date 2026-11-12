@@ -154,7 +154,7 @@ afterEach(async () => {
   });
 });
 
-function decide(decision: 'approved' | 'denied', reviewId = review.id, feedback?: string) {
+function decide(decision: 'approved' | 'denied', reviewId = review.id, viaMessage?: boolean) {
   return postReviewDecision({
     course,
     conversation,
@@ -162,7 +162,7 @@ function decide(decision: 'approved' | 'denied', reviewId = review.id, feedback?
     authzData: { has_course_permission_edit: true, authn_user: { id: user.id } },
     reviewId,
     decision,
-    feedback,
+    viaMessage,
   });
 }
 
@@ -232,15 +232,13 @@ it('denies an unreadable review without starting a save job', async () => {
   expect(prepareJob).not.toHaveBeenCalled();
 });
 
-it('delivers a message sent in place of a decision as the denial', async () => {
-  await expect(decide('denied', review.id, 'Use three midterms')).resolves.toEqual({
-    decision: 'denied',
-  });
+it('delivers a denial sent by message before the message is sent', async () => {
+  await expect(decide('denied', review.id, true)).resolves.toEqual({ decision: 'denied' });
   const result = {
     decision: 'denied',
     publication: { status: 'not_attempted' },
     sync: { status: 'not_attempted' },
-    feedback: 'Use three midterms',
+    viaMessage: true,
   };
   expect(deliverCourseAgentReviewResult).toHaveBeenCalledExactlyOnceWith(
     conversation.agent_conversation_id,
@@ -248,23 +246,40 @@ it('delivers a message sent in place of a decision as the denial', async () => {
     result,
   );
   expect(await getReview(course, conversation, review.id)).toEqual({ status: 'decided', result });
-  await expect(decide('denied', review.id, 'Use three midterms')).resolves.toEqual({
-    decision: 'denied',
-  });
-  // A different later message must not be dropped silently into the recorded denial.
-  await expect(decide('denied', review.id, 'Also fix the dates')).rejects.toThrow(
+  await expect(decide('denied', review.id, true)).resolves.toEqual({ decision: 'denied' });
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledOnce();
+});
+
+it('fails a denial by message the agent did not receive, and delivers it on retry', async () => {
+  vi.mocked(deliverCourseAgentReviewResult).mockRejectedValueOnce(new Error('Service unavailable'));
+  await expect(decide('denied', review.id, true)).rejects.toThrow('your message was not sent');
+  await expect(decide('denied', review.id, true)).resolves.toEqual({ decision: 'denied' });
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledTimes(2);
+  expect((await storedReview())?.result_delivered_at).toBeTruthy();
+});
+
+it('refuses a denial by message after a plain denial, whose delivery the agent is acting on', async () => {
+  await decide('denied');
+  await expect(decide('denied', review.id, true)).rejects.toThrow(
     'already denied, so your message was not sent',
   );
-  expect(deliverCourseAgentReviewResult).toHaveBeenCalledOnce();
 });
 
 it('keeps an approval and refuses a message sent after it', async () => {
   await withConfig({ fileEditorUseGit: true }, async () => {
     await decide('approved');
-    await expect(decide('denied', review.id, 'Wait, use three midterms')).rejects.toThrow(
+    await expect(decide('denied', review.id, true)).rejects.toThrow(
       'already approved, so your message was not sent',
     );
     expect(prepareJob).toHaveBeenCalledOnce();
+  });
+});
+
+it('refuses an approval after a denial by message', async () => {
+  await withConfig({ fileEditorUseGit: true }, async () => {
+    await decide('denied', review.id, true);
+    await expect(decide('approved')).rejects.toThrow('already has a different decision');
+    expect(prepareJob).not.toHaveBeenCalled();
   });
 });
 

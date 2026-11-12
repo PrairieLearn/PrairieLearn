@@ -41,7 +41,7 @@ function getQuestion() {
     title: 'Test question',
     topic: 'Test',
     tags: ['test'],
-    authors: [{ name: 'John Doe', email: 'doe@example.org', orcid: '0000-0000-0000-0001' }],
+    authors: ['doe@example.org', 'https://orcid.org/0000-0002-1825-0097'],
     type: 'v3',
   } satisfies QuestionJsonInput;
 }
@@ -169,23 +169,6 @@ describe('course database', () => {
         assert.isFalse(infofile.hasWarnings(result['question2']));
         assert.equal(result['question1'].data?.uuid, question1.uuid);
         assert.equal(result['question2'].data?.uuid, question2.uuid);
-      });
-    });
-
-    it('normalizes authors and attaches conversion warnings with the nested question ID', async () => {
-      await withTempDirectory(async (dir) => {
-        const qid = 'nested/question';
-        const legacyAuthor = { name: 'Name only' };
-        await writeQuestion(dir, qid, {
-          ...getQuestion(),
-          authors: [' Author ', { email: 'Author' }, legacyAuthor],
-        });
-        const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
-        assert.isEmpty(result[qid].errors);
-        assert.deepEqual(result[qid].data!.authors, ['Author']);
-        assert.deepEqual(result[qid].warnings, [
-          `Question "${qid}": Legacy author ${JSON.stringify(legacyAuthor)} cannot be converted to a UID because it has no usable email. Replace this entry with the author's UID in info.json.`,
-        ]);
       });
     });
 

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Alert, Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldPath,
@@ -109,8 +108,7 @@ function AfterLastDeadlineInput({
     : ('defaultRule.afterLastDeadline.credit' as const);
   const idPrefix = isOverride ? `overrides-${overrideIndex}` : 'defaultRule';
 
-  // Field paths that affect credit validation — used for both display
-  // reactivity (useWatch) and validation re-triggering (deps).
+  // Field paths that affect the displayed last-deadline text and default credit.
   const creditDeps: FieldPath<AccessControlFormData>[] = isOverride
     ? [
         'defaultRule.due',
@@ -121,12 +119,11 @@ function AfterLastDeadlineInput({
       ]
     : ['defaultRule.due', 'defaultRule.lateDeadlines'];
 
-  const { register, getValues, trigger } = useFormContext<AccessControlFormData>();
+  const { register, getValues } = useFormContext<AccessControlFormData>();
   const { errors } = useFormState();
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
 
-  // Watch dep fields so this component re-renders when they change,
-  // keeping display values (last-deadline text) up to date.
+  // Watch these fields so this component re-renders when they change.
   useWatch<AccessControlFormData>({ name: creditDeps });
   const {
     dueDate,
@@ -135,17 +132,8 @@ function AfterLastDeadlineInput({
   } = resolveConstraints(getValues(), overrideIndex);
 
   const mode = getMode(value);
-
-  // Re-validate the credit field when its preceding-credit inputs change.
-  // RHF's `deps` on register triggers the other direction, so we drive this
-  // explicitly. Use primitives (not object refs) so the effect is stable.
   const precedingCredit =
     lateDeadlines.at(-1)?.credit ?? (dueDate != null ? effectiveDueCredit : undefined);
-  useEffect(() => {
-    if (mode !== 'no_submissions') {
-      void trigger(creditFieldPath);
-    }
-  }, [trigger, creditFieldPath, mode, precedingCredit]);
 
   // For overrides we can't fully reason about the effective deadlines (override
   // stacking may produce a different set), so we fall back to a generic label.
@@ -237,10 +225,7 @@ function AfterLastDeadlineInput({
                 placeholder="0"
                 isInvalid={!!creditError}
                 disabled={!ruleEditable}
-                {...register(creditFieldPath, {
-                  valueAsNumber: true,
-                  deps: creditDeps,
-                })}
+                {...register(creditFieldPath, { valueAsNumber: true })}
               />
               <InputGroup.Text>%</InputGroup.Text>
             </InputGroup>
