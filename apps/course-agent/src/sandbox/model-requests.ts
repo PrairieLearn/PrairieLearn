@@ -97,7 +97,13 @@ export function prepareSearchRequest(
 ): { forward: Record<string, unknown>; operations: number } | { refusal: string } {
   const commands = SearchCommandsSchema.safeParse(body.commands);
   if (!commands.success) return { refusal: SEARCH_REFUSAL };
-  const { response_length: _length, ...operations } = commands.data;
+  const { response_length: _length, ...commandLists } = commands.data;
+  const operations = Object.values(commandLists).reduce(
+    (total, list) => total + (list?.length ?? 0),
+    0,
+  );
+  // A request without commands would reach the provider without being charged.
+  if (operations === 0) return { refusal: SEARCH_REFUSAL };
   // Only the fields Codex sends are forwarded, so the request cannot opt into other billing.
   const { id, model, input, max_output_tokens } = body;
   return {
@@ -109,6 +115,6 @@ export function prepareSearchRequest(
       commands: commands.data,
       settings: SEARCH_SETTINGS,
     },
-    operations: Object.values(operations).reduce((total, list) => total + (list?.length ?? 0), 0),
+    operations,
   };
 }

@@ -190,6 +190,8 @@ interface RecordData {
   deniedByMessage?: string | null;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
+  /** User messages refused by the usage limit, sent to Codex with the next admitted message. */
+  unsentMessageIds?: string[];
   /** Absent in records saved before titles were generated. */
   title?: string | null;
 }
@@ -850,7 +852,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const message = continuation
       ? null
       : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
-    const earlier = historyBefore(this.messages, message);
+    const unsentIds = continuation ? [] : (this.record.unsentMessageIds ?? []);
+    const unsent = this.messages.filter(({ id }) => unsentIds.includes(id));
+    const earlier = historyBefore(this.messages, message).filter(
+      ({ id }) => !unsentIds.includes(id),
+    );
     const checkedSandboxId = this.record.sandboxId;
     const [running] = await Promise.all([
       checkedSandboxId === null || this.env.CourseSandbox.getByName(checkedSandboxId).isRunning(),
@@ -870,17 +876,18 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       ? review?.result && status === 'waiting_for_agent'
       : !review && (status === 'offline' || status === 'waiting_for_user');
     const refused = !admitted || this.active || this.recovering || this.sandboxShutdown;
-    if (refused || (message && this.budget.limitedUntil)) {
+    if (refused) {
       // The SDK has already saved the message. Count it as handled, or the next submit would
-      // send this refused prompt in place of the user's next one; catch-up tells the agent.
-      if (message) {
-        this.setRecord({
-          ...this.record,
-          submittedMessageId: message.id,
-          threadMayBeBehind: true,
-        });
-      }
-      if (refused) throw new Error('The course agent sandbox is not ready.');
+      // send this refused prompt in place of the user's next one.
+      if (message) this.setRecord({ ...this.record, submittedMessageId: message.id });
+      throw new Error('The course agent sandbox is not ready.');
+    }
+    if (message && this.budget.limitedUntil) {
+      this.setRecord({
+        ...this.record,
+        submittedMessageId: message.id,
+        unsentMessageIds: [...unsentIds, message.id],
+      });
       // The usage limit notice explains the refusal; an empty reply adds nothing to history.
       return createUIMessageStreamResponse({
         stream: new ReadableStream({ start: (c) => c.close() }),
@@ -889,17 +896,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
-    // A first message refused by the usage limit leaves no reply, so the next one is titled.
-    if (message && !earlier.some((entry) => entry.role === 'assistant') && !this.record.title) {
-      this.startTitle(message);
-    }
+    if (message && earlier.length === 0 && !this.record.title) this.startTitle(unsent[0] ?? message);
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const delivered = continuation && review?.result ? review : null;
     const location =
       message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
-    const messageText =
-      message?.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n') ?? '';
+    const messageText = [...unsent, ...(message ? [message] : [])]
+      .map((entry) => entry.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n'))
+      .join('\n\n');
     const input: TurnInput = {
       ...(delivered?.result
         ? {
@@ -934,6 +939,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
       // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
+      unsentMessageIds: continuation ? this.record.unsentMessageIds : [],
     });
     log('turn_started', { startup });
     const native = (this.native ??= new CodexAppServerClient(this.sandbox));

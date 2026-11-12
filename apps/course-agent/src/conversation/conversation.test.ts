@@ -427,8 +427,13 @@ it('stops at the hourly limit, and Resume after the reset clears it without cont
   expect(vi.mocked(SandboxTurn).mock.calls).toHaveLength(turns + 1);
 });
 
-it('refuses a message before booting a sandbox when the user is already limited', async () => {
-  stubFetch({ usage: async () => decision({ status: 'limited', retryAt: expiresAt }) });
+it('refuses a message while limited and sends it with the next message after Resume', async () => {
+  freezeTime();
+  const usage = vi
+    .fn()
+    .mockResolvedValueOnce(decision({ status: 'limited', retryAt: expiresAt }))
+    .mockImplementation(async () => decision());
+  stubFetch({ usage });
   const { conversation, sandbox } = fixture();
   await conversation.onStart();
   await conversation.persistMessages([
@@ -443,6 +448,19 @@ it('refuses a message before booting a sandbox when the user is already limited'
     reason: 'usage_limit',
     retryAt: expiresAt,
   });
+  vi.setSystemTime('2026-10-27T04:01:00Z');
+  expect(await conversation.resume()).toBe(true);
+  await conversation.persistMessages([
+    ...conversation.messages,
+    { id: 'second', role: 'user', parts: [{ type: 'text', text: 'Continue' }] },
+  ]);
+  await conversation.onChatMessage(undefined, { requestId: 'second' });
+  const { input } = vi.mocked(SandboxTurn).mock.calls[0][2];
+  expect(input.text).toBe('Edit this question\n\nContinue');
+  expect(input.catchUp).toBeUndefined();
+  expect(generateTitle).toHaveBeenCalledWith(
+    expect.objectContaining({ message: 'Edit this question' }),
+  );
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {

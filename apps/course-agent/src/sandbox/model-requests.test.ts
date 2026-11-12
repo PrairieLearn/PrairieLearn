@@ -71,10 +71,12 @@ describe('prepareSearchRequest', () => {
     });
   });
 
-  it('refuses commands it does not know', () => {
+  it('refuses commands it does not know, and requests without any', () => {
     for (const commands of [
       { search_query: [{ q: 'x' }], submit_form: [{ ref_id: 'turn0view0' }] },
       { open: { ref_id: 'https://example.com' } },
+      { response_length: 'short' },
+      {},
       undefined,
     ]) {
       expect(prepareSearchRequest({ ...request, commands })).toEqual({ refusal: SEARCH_REFUSAL });
