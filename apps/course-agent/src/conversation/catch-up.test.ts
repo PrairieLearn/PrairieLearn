@@ -1,7 +1,13 @@
 import type { UIMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
 
-import { buildCatchUp, historyBefore, missedTurns, nextUserMessage } from './catch-up.js';
+import {
+  buildCatchUp,
+  describeReviewResult,
+  historyBefore,
+  missedTurns,
+  nextUserMessage,
+} from './catch-up.js';
 
 // Deliveries are continuations, so both reviews' turns append to the same assistant message.
 const history: UIMessage[] = [
@@ -171,5 +177,40 @@ describe('nextUserMessage', () => {
     expect(historyBefore(queued, queued[1]).map(({ id }) => id)).toEqual(['u1', 'a1']);
     // Records saved before submissions were tracked fall back to the newest user message.
     expect(nextUserMessage(queued, null)?.id).toBe('u3');
+  });
+});
+
+describe('describeReviewResult', () => {
+  const denied = {
+    decision: 'denied',
+    publication: { status: 'not_attempted' },
+    sync: { status: 'not_attempted' },
+  } as const;
+
+  it('tells the agent to ask what to change after a denial without a message', () => {
+    expect(describeReviewResult(denied, 'github')).toContain(
+      'Do not revise or resubmit on your own.',
+    );
+  });
+});
+
+describe('denial by message', () => {
+  it('describes the message that denied a review before it in catch-up', () => {
+    const denial: UIMessage[] = [
+      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Use three midterms' }] },
+      {
+        id: 'a1',
+        role: 'assistant',
+        parts: [
+          { type: 'data-denial', id: 'denial:r1', data: { reviewId: 'r1' } },
+          { type: 'text', text: 'Switching to three midterms.' },
+        ],
+      },
+    ];
+    expect(missedTurns(denial, undefined)).toEqual([
+      'PrairieLearn: The instructor denied the submitted changes by sending this message.',
+      'Staff: Use three midterms',
+      'You: Switching to three midterms.',
+    ]);
   });
 });

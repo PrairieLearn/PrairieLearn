@@ -75,6 +75,10 @@ History keeps a bounded copy: command text up to 2,000 characters, output up to 
 
 Each user message may carry `metadata.location` (`PageLocationSchema`): the path of the PrairieLearn page the instructor was viewing, the page's navigation key such as `assessment.settings` (never the page title, which can name students), and the course instance, assessment, and question names PrairieLearn rendered for that page. A question imported from another course is left out, since its files are not in the checkout. The browser supplies the location, so the turn passes it to Codex as `untrusted` `additionalContext` under `prairielearn_page`: the model sees it as user-role context ahead of the message, the message text stays verbatim, and Codex skips resending an unchanged page. Unknown location fields are stripped; metadata that fails to parse is logged as `message_metadata_invalid` and the message is sent without it. Catch-up keeps a compact hint instead, naming the most specific item on each replayed staff line's page.
 
+## Input requests
+
+The agent asks staff for decisions or missing information with Codex's `request_user_input_async` tool, which returns at once and completes an unstreamed agent message carrying the prompts. The Worker shows it as a `data-input-request` part matching `InputRequestPartSchema`. Nothing waits for an answer: staff's next message is the answer, whether sent from the input request card or typed, and it is submitted like any other message. The part is never rewritten, and catch-up includes the prompts so a restored thread knows what the next message answers.
+
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:

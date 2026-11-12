@@ -297,7 +297,9 @@ export function PageLayout({
 
   // Rendered by the course agent panel middleware (EE) when the user has access.
   const courseAgentPanel =
-    sideNavEnabled && resolvedOptions.showCourseAgentPanel ? resLocals.course_agent_panel : null;
+    sideNavEnabled && resolvedOptions.enableNavbar && resolvedOptions.showCourseAgentPanel
+      ? resLocals.course_agent_panel
+      : null;
 
   // The agent sees the page through its nav key, not the page title, which can name students.
   // Imported questions are left out because they are not in this course's files.
@@ -412,6 +414,7 @@ export function PageLayout({
                     sideNavEnabled,
                     hideSessionControls: resolvedOptions.hideNavbarSessionControls,
                     showInstructorSupport: resolvedOptions.showInstructorSupport,
+                    courseAgentPanel,
                   })}
                 </div>`
               : ''
@@ -523,7 +526,7 @@ export function PageLayout({
               ${postContentString}
             </div>
           </div>
-          ${courseAgentPanel ?? ''}${courseAgentPage}
+          ${courseAgentPage}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

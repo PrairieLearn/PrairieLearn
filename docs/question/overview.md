@@ -124,7 +124,7 @@ Any question that is marked with `"shareSourcePublicly": true` will be considere
 
 ### Question Authorship
 
-List the UIDs or ORCID URLs of the people who contributed to this question in `authors`:
+List the UIDs or ORCID URLs of the people who contributed to this question in `authors` (at most 100 entries):
 
 ```json
 {
@@ -138,7 +138,7 @@ Use the full ORCID URL in the form `https://orcid.org/0000-0002-1825-0097`. It i
 
 Authors can also be added and removed on the question's **Settings** page, including using **Add myself**. Names are shown only for current course staff; other authors are displayed by UID. Editing authors and saving settings writes the identifier array to `info.json` through the normal course file editor.
 
-The old object format (`name`, `email`, `orcid`, and `originCourse`) is deprecated but remains accepted during the transition. Legacy `email` values are treated as UIDs, and `orcid` values become full ORCID URLs. Both are kept when present. Entries without either identifier produce a sync warning and must be updated manually. Sync does not modify the source file or delete the legacy database records. Editing authors and saving replaces legacy entries with the displayed identifier array, so review any warnings first.
+The old object format (`name`, `email`, `orcid`, and `originCourse`) is no longer supported. Replace legacy objects with UID strings or full ORCID URLs in `info.json`; they are not converted automatically during sync.
 
 ### Question Dependencies
 
