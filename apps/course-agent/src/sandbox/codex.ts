@@ -58,7 +58,7 @@ const ItemEvent = z.object({
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'navigate']),
+  tool: z.enum(['request_changes', 'navigate', 'refresh_page']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -300,6 +300,16 @@ export class CodexAppServerClient {
       }
       case 'navigate':
         return await this.navigate(call.data.callId, call.data.arguments);
+      case refreshPageTool.name: {
+        const navigation: NavigationPart = { action: 'refresh' };
+        // The browser acts on this part; the reply cannot confirm the page reloaded.
+        this.emit({
+          type: 'data-navigation',
+          id: `navigation:${call.data.callId}`,
+          data: navigation,
+        });
+        return { success: true, text: "The instructor's page is reloading." };
+      }
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
@@ -389,6 +399,7 @@ export class CodexAppServerClient {
               listCourseDatasetsTool,
               courseDataTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
+              refreshPageTool,
             ],
           } satisfies ThreadStartParams,
           ThreadResult,
@@ -635,3 +646,11 @@ function navigateTool(pages: PageCatalog): DynamicToolSpec {
     },
   };
 }
+
+const refreshPageTool = {
+  type: 'function',
+  name: 'refresh_page',
+  description:
+    'Reload the page the instructor is viewing, for example after approved changes were saved and synced so the page shows them.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+} satisfies DynamicToolSpec;

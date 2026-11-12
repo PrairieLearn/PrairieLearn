@@ -49,7 +49,8 @@ export function useAgentNavigation({
     for (const part of message.parts) {
       const found = navigationOf(part);
       if (found && claim(found.id)) {
-        window.location.assign(found.navigation.url);
+        if (found.navigation.action === 'refresh') window.location.reload();
+        else window.location.assign(found.navigation.url);
         // Anything after a page change belongs to the next page load.
         return;
       }
@@ -57,7 +58,7 @@ export function useAgentNavigation({
   });
 }
 
-function describeTarget({ target, label }: NavigationPart) {
+function describeTarget({ target, label }: Extract<NavigationPart, { action: 'open' }>) {
   const subject =
     target.file ??
     (target.assessment
@@ -73,8 +74,17 @@ function describeTarget({ target, label }: NavigationPart) {
 export function NavigationNotice({ navigation }: { navigation: NavigationPart }) {
   return (
     <div className="small text-muted d-flex align-items-center gap-1">
-      <i className="bi bi-box-arrow-up-right" aria-hidden="true" />
-      Opened <a href={navigation.url}>{describeTarget(navigation)}</a>
+      {navigation.action === 'refresh' ? (
+        <>
+          <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+          Reloaded the page
+        </>
+      ) : (
+        <>
+          <i className="bi bi-box-arrow-up-right" aria-hidden="true" />
+          Opened <a href={navigation.url}>{describeTarget(navigation)}</a>
+        </>
+      )}
     </div>
   );
 }

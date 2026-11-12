@@ -328,6 +328,7 @@ export const NavigationPartSchema = z.discriminatedUnion('action', [
     label: z.string().max(100),
     url: z.string().max(4000),
   }),
+  z.strictObject({ action: z.literal('refresh') }),
 ]);
 
 export type NavigationPart = z.infer<typeof NavigationPartSchema>;
