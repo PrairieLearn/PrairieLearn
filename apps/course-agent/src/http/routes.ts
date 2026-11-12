@@ -4,11 +4,12 @@ import { Hono } from 'hono';
 import {
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
+  MAX_THUMBNAIL_BYTES,
   RequestChangesResultSchema,
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
 
-import { uploadKey } from '../conversation/attachments.js';
+import { imageType, thumbnailKey, uploadKey } from '../conversation/attachments.js';
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
@@ -66,6 +67,19 @@ conversations.use('/:id/*', async (c, next) => {
   if (!UUID_PATTERN.test(c.req.param('id')!)) return c.notFound();
   await next();
 });
+conversations.use('/:id/uploads/:uploadId/*', async (c, next) => {
+  if (!UUID_PATTERN.test(c.req.param('uploadId')!)) return c.notFound();
+  await next();
+});
+
+/** A request body's declared size, if it is 1 to `max` bytes. R2 requires a known length. */
+function bodySize(request: Request, max: number) {
+  const size = Number(request.headers.get('Content-Length'));
+  return request.body && Number.isSafeInteger(size) && size >= 1 && size <= max ? size : null;
+}
+
+// Uploads and thumbnails never change. PrairieLearn decides how they may display.
+const CACHE_CONTROL = 'private, max-age=86400';
 
 conversations.post('/:id/resume', async (c) => {
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
@@ -82,12 +96,9 @@ conversations.post('/:id/resume', async (c) => {
 });
 
 // The browser uploads each attachment before sending the message that refers to it by ID.
-// R2 requires a known length, which the Content-Length check also bounds.
 conversations.post('/:id/uploads', async (c) => {
-  const size = Number(c.req.header('Content-Length'));
-  if (!c.req.raw.body || !Number.isSafeInteger(size) || size < 1 || size > MAX_ATTACHMENT_BYTES) {
-    return c.text(`Expected a file of 1 to ${MAX_ATTACHMENT_BYTES} bytes`, 400);
-  }
+  const size = bodySize(c.req.raw, MAX_ATTACHMENT_BYTES);
+  if (size === null) return c.text(`Expected a file of 1 to ${MAX_ATTACHMENT_BYTES} bytes`, 400);
   // The conversation's Durable Object reserves room, so concurrent uploads can't overshoot the cap.
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
   if (!(await conversation.reserveUpload(size))) {
@@ -101,6 +112,46 @@ conversations.post('/:id/uploads', async (c) => {
     throw error;
   }
   return c.json({ id }, 201);
+});
+
+conversations.get('/:id/uploads/:uploadId', async (c) => {
+  const upload = await c.env.CHECKPOINTS.get(uploadKey(c.req.param('id'), c.req.param('uploadId')));
+  if (!upload) return c.notFound();
+  return new Response(upload.body, {
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(upload.size),
+      'Cache-Control': CACHE_CONTROL,
+    },
+  });
+});
+
+// The browser makes an image's preview, since Workers can't resize images without a paid service.
+// Only an existing upload gets one, so thumbnails can't fill the bucket past the upload cap.
+conversations.post('/:id/uploads/:uploadId/thumbnail', async (c) => {
+  if (bodySize(c.req.raw, MAX_THUMBNAIL_BYTES) === null) {
+    return c.text(`Expected a thumbnail of 1 to ${MAX_THUMBNAIL_BYTES} bytes`, 400);
+  }
+  const { id, uploadId } = c.req.param();
+  if (!(await c.env.CHECKPOINTS.head(uploadKey(id, uploadId)))) return c.notFound();
+  const bytes = new Uint8Array(await c.req.arrayBuffer());
+  const contentType = imageType(bytes);
+  if (!contentType) return c.text('Expected a PNG, JPEG, GIF, or WebP thumbnail', 415);
+  await c.env.CHECKPOINTS.put(thumbnailKey(id, uploadId), bytes, { httpMetadata: { contentType } });
+  return c.body(null, 204);
+});
+
+conversations.get('/:id/uploads/:uploadId/thumbnail', async (c) => {
+  const thumbnail = await c.env.CHECKPOINTS.get(
+    thumbnailKey(c.req.param('id'), c.req.param('uploadId')),
+  );
+  if (!thumbnail) return c.notFound();
+  return new Response(thumbnail.body, {
+    headers: {
+      'Content-Type': thumbnail.httpMetadata!.contentType!,
+      'Cache-Control': CACHE_CONTROL,
+    },
+  });
 });
 
 conversations.get('/:id/reviews/:reviewId', async (c) => {

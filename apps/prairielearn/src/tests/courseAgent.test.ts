@@ -33,6 +33,7 @@ import { getOrCreateUser, withUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 function createClient(user: User) {
   return createCourseTrpcClient({
@@ -76,6 +77,11 @@ describe('Course agent access and conversation privacy', () => {
             : null,
       authorization: request.headers.authorization,
     });
+    if (request.url!.endsWith('/thumbnail')) {
+      response.setHeader('Content-Type', 'image/png');
+      response.end(PNG);
+      return;
+    }
     response.setHeader('Content-Type', 'application/json');
     const creating = request.url === '/conversations' || request.url === '/conversations/local';
     response.statusCode = creating ? 201 : 200;
@@ -194,6 +200,24 @@ describe('Course agent access and conversation privacy', () => {
     expect(serviceRequests.map((request) => request.path)).toEqual([
       `/conversations/${own.agent_conversation_id}/resume`,
     ]);
+  });
+
+  test('downloads a sent file, and displays an image preview', async () => {
+    const conversation = await createConversation(owner);
+    const uploadUrl = `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/uploads/${crypto.randomUUID()}`;
+    await withUser(owner, async () => {
+      // The fake service answers with JSON, which PrairieLearn must not serve as a page.
+      const download = await fetch(uploadUrl);
+      expect(download.status).toBe(200);
+      expect(download.headers.get('Content-Type')).toBe('application/octet-stream');
+      expect(download.headers.get('Content-Disposition')).toBe('attachment');
+      expect(download.headers.get('Content-Security-Policy')).toContain('sandbox');
+
+      const preview = await fetch(`${uploadUrl}/thumbnail`);
+      expect(preview.headers.get('Content-Type')).toBe('image/png');
+      expect(preview.headers.get('Content-Disposition')).toBe('inline');
+      expect(Buffer.from(await preview.arrayBuffer())).toEqual(PNG);
+    });
   });
 
   test('binds creation to the authorized course repository and branch', async () => {

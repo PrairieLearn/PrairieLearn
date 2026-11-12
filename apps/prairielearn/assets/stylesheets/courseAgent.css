@@ -81,6 +81,15 @@
   height: 1.25rem;
 }
 
+.course-agent-attachment-download {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.course-agent-attachment:is(:hover, :focus-within) .course-agent-attachment-download {
+  opacity: 1;
+}
+
 /* Touch screens have no hover, so they always show the remove button. */
 @media (hover: hover) {
   .course-agent-attachment:not(:hover, :focus-within) .course-agent-attachment-remove {

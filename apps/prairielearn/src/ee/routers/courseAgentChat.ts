@@ -23,6 +23,7 @@ const CHAT_UPGRADE_PATH = /^\/pl\/course\/\d+\/course_agent\/conversations\/\d+(
 const router = Router({ mergeParams: true });
 const ParamsSchema = z.object({ course_id: IdSchema, conversation_id: IdSchema });
 const ChatQuerySchema = z.object({ csrfToken: z.string().optional() });
+const UploadParamsSchema = z.object({ upload_id: z.uuid() });
 
 /**
  * Saves any bytes Node already received after an upgrade request until the proxy takes over.
@@ -30,22 +31,43 @@ const ChatQuerySchema = z.object({ csrfToken: z.string().optional() });
  */
 const upgradeHeads = new WeakMap<IncomingMessage, Buffer>();
 
-const proxy = createProxyMiddleware<Request, Response>({
-  // Upgrades are forwarded explicitly, after the Express authorization chain.
-  ws: false,
-  changeOrigin: true,
-  router: () => new URL(config.courseAgentServiceUrl!).origin,
-  on: {
-    error: (err, _req, res) => {
-      logger.error('Course agent proxy failed', err);
-      if ('writeHead' in res) {
-        res.writeHead(502, { 'Content-Type': 'text/plain' });
-        res.end('The course agent is unavailable.');
-      } else {
-        res.destroy();
-      }
+function createProxy(onResponse?: (response: IncomingMessage) => void) {
+  return createProxyMiddleware<Request, Response>({
+    // Upgrades are forwarded explicitly, after the Express authorization chain.
+    ws: false,
+    changeOrigin: true,
+    router: () => new URL(config.courseAgentServiceUrl!).origin,
+    on: {
+      proxyRes: onResponse,
+      error: (err, _req, res) => {
+        logger.error('Course agent proxy failed', err);
+        if ('writeHead' in res) {
+          res.writeHead(502, { 'Content-Type': 'text/plain' });
+          res.end('The course agent is unavailable.');
+        } else {
+          res.destroy();
+        }
+      },
     },
-  },
+  });
+}
+
+const proxy = createProxy();
+
+const INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+
+/**
+ * Uploaded files are served from PrairieLearn's origin, so none may render as a page here,
+ * whatever the agent service sends: an image may display, and anything else downloads.
+ */
+const uploadProxy = createProxy((response) => {
+  const type = response.headers['content-type'];
+  const image = type !== undefined && INLINE_IMAGE_TYPES.has(type);
+  response.headers['content-type'] = image ? type : 'application/octet-stream';
+  response.headers['content-disposition'] = image ? 'inline' : 'attachment';
+  response.headers['content-security-policy'] =
+    "default-src 'none'; frame-ancestors 'none'; sandbox";
+  response.headers['x-content-type-options'] = 'nosniff';
 });
 
 /** Send upgrades through the same session/authentication/RBAC chain as HTTP. */
@@ -142,6 +164,26 @@ router.post(
     await prepareConversationProxyRequest(req, res, '/uploads');
     await proxy(req, res, next);
   }),
+);
+
+/** Forward a request about one upload, after checking its ID so it can't change the path. */
+function proxyUpload(servicePathSuffix: '' | '/thumbnail') {
+  return typedAsyncHandler<'course'>(async (req, res, next) => {
+    const { upload_id } = parseRequestParams(req, UploadParamsSchema);
+    await prepareConversationProxyRequest(req, res, `/uploads/${upload_id}${servicePathSuffix}`);
+    await uploadProxy(req, res, next);
+  });
+}
+
+router.get('/conversations/:conversation_id/uploads/:upload_id', proxyUpload(''));
+router.get(
+  '/conversations/:conversation_id/uploads/:upload_id/thumbnail',
+  proxyUpload('/thumbnail'),
+);
+// The agent service enforces the thumbnail's size and type, like an upload's size.
+router.post(
+  '/conversations/:conversation_id/uploads/:upload_id/thumbnail',
+  proxyUpload('/thumbnail'),
 );
 
 // Return saved message history as JSON.
