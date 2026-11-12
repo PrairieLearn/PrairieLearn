@@ -492,9 +492,9 @@ function Chat({
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
+              navigationErrors={navigation.errors}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={send}
-              navigationErrors={navigation.errors}
               onNavigate={navigation.navigate}
             />
           ))}
