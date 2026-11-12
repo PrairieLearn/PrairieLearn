@@ -44,6 +44,7 @@
     },
     "authors": {
       "description": "Author UIDs or full ORCID URLs. UIDs need not identify an existing account or be a routable email.",
+      "maxItems": 100,
       "type": "array",
       "items": {
         "type": "string",

@@ -1,7 +1,6 @@
 -- BLOCK select_question_copy_adoption
--- UNION deduplicates source/descendant pairs, including the initial source,
--- so self-references and cycles terminate without a depth limit. Keep deleted
--- rows in the traversal: they can connect a source to later copies.
+-- Stop after 20 copy links, also bounding self-references and cycles. Keep
+-- deleted rows in the traversal: they can connect a source to later copies.
 -- Carry course IDs through the traversal to avoid rejoining questions for counts.
 WITH RECURSIVE
   lineage AS (
@@ -9,7 +8,8 @@ WITH RECURSIVE
       q.id AS source_question_id,
       q.course_id AS source_course_id,
       q.id AS question_id,
-      q.course_id
+      q.course_id,
+      0 AS depth
     FROM
       questions AS q
     WHERE
@@ -19,10 +19,13 @@ WITH RECURSIVE
       lineage.source_question_id,
       lineage.source_course_id,
       descendant.id,
-      descendant.course_id
+      descendant.course_id,
+      lineage.depth + 1
     FROM
       lineage
       JOIN questions AS descendant ON descendant.copied_from_question_id = lineage.question_id
+    WHERE
+      lineage.depth < 20
   )
 SELECT
   lineage.source_question_id AS question_id,

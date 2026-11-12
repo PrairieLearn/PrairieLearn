@@ -4,6 +4,7 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { getCourseQuestionAuthorshipReport } from '../lib/question-authorship-report.js';
 import { selectCourseById } from '../models/course.js';
+import { selectQuestionCopyAdoption } from '../models/question.js';
 
 import * as helperDb from './helperDb.js';
 
@@ -15,8 +16,15 @@ describe('Question authorship report', () => {
     await execute(sql.insert_institution);
     await execute(sql.insert_courses);
     await execute(sql.insert_questions);
+    await execute(sql.insert_long_chain);
   });
   afterAll(helperDb.after);
+
+  it('includes copies 20 links away but excludes the 21st link', async () => {
+    assert.deepEqual(await selectQuestionCopyAdoption(['100']), [
+      { question_id: '100', downstream_course_count: 1, downstream_institution_count: 1 },
+    ]);
+  });
 
   it('deduplicates downstream courses and institutions through deleted links and cycles', async () => {
     const course = await selectCourseById('1');

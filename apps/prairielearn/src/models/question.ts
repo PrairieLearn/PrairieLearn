@@ -17,7 +17,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Counts distinct external courses and their institutions reachable through
- * recorded copy links for each source question. Includes soft-deleted questions
+ * up to 20 recorded copy links for each source question. Includes soft-deleted questions
  * and courses. This is declared copy adoption, not current usage or a complete
  * historical count.
  */

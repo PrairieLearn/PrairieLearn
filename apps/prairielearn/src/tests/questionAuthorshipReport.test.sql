@@ -43,3 +43,22 @@ VALUES
   (3, 2, 'duplicate', '{}', 1, NULL),
   (4, 3, 'indirect', '{}', 2, now()),
   (5, 1, 'self', ARRAY['author'], 5, NULL);
+
+-- BLOCK insert_long_chain
+-- Only links 20 and 21 leave the source course, so the counts test the boundary.
+INSERT INTO
+  questions (id, course_id, qid, copied_from_question_id)
+SELECT
+  100 + depth,
+  CASE
+    WHEN depth < 20 THEN 1
+    WHEN depth = 20 THEN 2
+    ELSE 3
+  END,
+  'depth-' || depth,
+  CASE
+    WHEN depth = 0 THEN NULL
+    ELSE 99 + depth
+  END
+FROM
+  generate_series(0, 21) AS depth;
