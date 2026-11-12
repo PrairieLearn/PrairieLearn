@@ -29,7 +29,7 @@ export function DefaultDateControlForm({
   isExam: boolean;
 }) {
   const ruleEditable = useAccessControlRuleEditable();
-  const { clearErrors, register, setValue, getValues } = useFormContext<AccessControlFormData>();
+  const { register, setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
     name: 'defaultRule.dateControlEnabled',
@@ -75,19 +75,6 @@ export function DefaultDateControlForm({
                     shouldValidate: true,
                   });
                 }
-              } else {
-                // Date-control fields are inactive while this section is off.
-                // Clear any existing sub-field errors before the editors
-                // unmount so hidden inputs cannot keep Save disabled.
-                clearErrors([
-                  'defaultRule.release',
-                  'defaultRule.due',
-                  'defaultRule.earlyDeadlines',
-                  'defaultRule.lateDeadlines',
-                  'defaultRule.afterLastDeadline',
-                  'defaultRule.durationMinutes',
-                  'defaultRule.password',
-                ]);
               }
             },
           })}

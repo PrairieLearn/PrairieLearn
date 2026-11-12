@@ -29,14 +29,21 @@ export interface DraftAttachment {
   status: AttachmentStatus;
 }
 
-function statusOf(file: File, position: number): AttachmentStatus {
+function statusOf(file: File): AttachmentStatus {
   const invalid = (problem: string) => ({ kind: 'invalid', problem }) as const;
-  if (position >= MAX_ATTACHMENTS_PER_MESSAGE) {
-    return invalid(`Over ${MAX_ATTACHMENTS_PER_MESSAGE} files`);
-  }
   if (file.size > MAX_ATTACHMENT_BYTES) return invalid(`Over ${MAX_ATTACHMENT_SIZE}`);
   if (file.size === 0) return invalid('Empty file');
   return { kind: 'ready' };
+}
+
+/** Why an attachment can't be sent. The file limit depends on position, so removing one clears it. */
+function invalidProblem({ status }: DraftAttachment, position: number) {
+  if (position >= MAX_ATTACHMENTS_PER_MESSAGE) return `Over ${MAX_ATTACHMENTS_PER_MESSAGE} files`;
+  return status.kind === 'invalid' ? status.problem : null;
+}
+
+export function hasInvalidAttachment(attachments: DraftAttachment[]) {
+  return attachments.some((attachment, position) => invalidProblem(attachment, position) !== null);
 }
 
 /** Draft attachments for one composer. */
@@ -51,10 +58,10 @@ export function useDraftAttachments(initial: DraftAttachment[] = []) {
   return {
     attachments,
     add: (files: File[]) => {
-      const added = files.map((file, index) => ({
+      const added = files.map((file) => ({
         key: crypto.randomUUID(),
         file,
-        status: statusOf(file, attachments.length + index),
+        status: statusOf(file),
       }));
       setAttachments((current) => [...current, ...added]);
     },
@@ -208,10 +215,11 @@ function AttachmentTile({
   );
 }
 
-function draftProblem({ status }: DraftAttachment) {
-  if (status.kind === 'invalid') return status.problem;
-  if (status.kind === 'failed') return 'Upload failed';
-  return null;
+function draftProblem(attachment: DraftAttachment, position: number) {
+  return (
+    invalidProblem(attachment, position) ??
+    (attachment.status.kind === 'failed' ? 'Upload failed' : null)
+  );
 }
 
 export function DraftAttachmentList({
@@ -226,12 +234,12 @@ export function DraftAttachmentList({
   if (attachments.length === 0) return null;
   return (
     <ul className="list-unstyled d-flex flex-wrap gap-2 m-0 px-2 pt-2" aria-label="Attachments">
-      {attachments.map((attachment) => (
+      {attachments.map((attachment, position) => (
         <AttachmentTile
           key={attachment.key}
           filename={attachment.file.name}
           label={typeLabel(attachment.file.type, attachment.file.name)}
-          problem={draftProblem(attachment)}
+          problem={draftProblem(attachment, position)}
           percent={attachment.status.kind === 'uploading' ? attachment.status.percent : null}
           onRemove={sending ? undefined : () => onRemove(attachment.key)}
         />

@@ -73,11 +73,11 @@ The agent can search the web and read pages through Codex's `web.run` tool, for 
 
 ## Attachment retention
 
-Attachments are stored in the checkpoint bucket under `uploads/` and kept until a bucket lifecycle rule expires them. Add the rule to each deployed environment's bucket, choosing the retention period for that environment:
+Attachments and their thumbnails are stored in the checkpoint bucket under `uploads/`. A bucket lifecycle rule deletes them 30 days after upload, whether or not the conversation is still in use, and R2 removes an expired object within about a day. The conversation keeps the message, but a sandbox started after that no longer has the file.
 
-```sh
-wrangler r2 bucket lifecycle add <bucket> expire-uploads uploads/ --expire-days <days>
-```
+The Worker does not create the rule. PrairieLearn's deployed environments define it in Terraform alongside the bucket, so a bucket created any other way keeps attachments until it is given one.
+
+Only the uploaded files expire. A sandbox checkpoint holds the agent's workspace and thread history, so anything the agent copied or printed from an attachment lasts as long as the checkpoint.
 
 ## Deployment environments and monitoring
 

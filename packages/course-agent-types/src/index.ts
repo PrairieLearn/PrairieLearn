@@ -262,6 +262,29 @@ export function attachmentIdOf(url: string) {
 }
 
 /**
+ * The PrairieLearn page an instructor was viewing when they sent a message. `page` is the page's
+ * navigation key, such as `assessment.settings`. Names are the ones the agent sees in course
+ * files: a course instance's directory, an assessment's `tid`, and a question's `qid`.
+ * `questionFromAnotherCourse` marks a shared question used from another course, whose files are
+ * not in this checkout.
+ *
+ * Unknown keys are stripped, so PrairieLearn can add fields before the Worker reads them.
+ */
+export const PageLocationSchema = z.object({
+  path: z.string().max(2000),
+  page: z.string().max(500),
+  courseInstance: z.string().max(500).optional(),
+  assessment: z.string().max(500).optional(),
+  question: z.string().max(500).optional(),
+  questionFromAnotherCourse: z.boolean().optional(),
+});
+
+export type PageLocation = z.infer<typeof PageLocationSchema>;
+
+/** Metadata the browser attaches to a user message. */
+export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
+
+/**
  * Input the agent requested from staff with Codex's `request_user_input_async`, in a
  * `data-input-request` part keyed by the Codex item ID. The tool returns at once; staff's next
  * message is the answer, so the part holds no answer and is never rewritten.

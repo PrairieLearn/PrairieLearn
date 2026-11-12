@@ -18,7 +18,7 @@ RUN apt-get update \
   && git config --system user.name "PrairieLearn" \
   && git config --system user.email "course-agent@prairielearn.com" \
   && useradd --uid 1000 --user-group --shell /bin/bash agent \
-  && mkdir -p /workspace \
+  && mkdir -p /workspace /uploads \
   && chown agent:agent /workspace
 COPY --from=codex /opt/codex /opt/codex
 RUN ln -s /opt/codex/bin/codex-app-server /usr/local/bin/codex-app-server
