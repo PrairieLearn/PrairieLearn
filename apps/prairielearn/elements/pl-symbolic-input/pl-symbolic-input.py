@@ -1415,7 +1415,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     result = data["test_type"]
-    a_tru = ""
+    a_tru_sympy: sympy.Basic | str = ""
     a_tru_str = ""
 
     if result in ["correct", "incorrect"]:
@@ -1465,10 +1465,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "incorrect":
         offset = random.randint(1, 100)
         for _ in range(2):
-            if isinstance(a_tru, sympy.Expr):
+            if isinstance(a_tru_sympy, sympy.Expr):
                 candidate = f"({a_tru_str}) + {offset:d}"
-                candidate_sympy = a_tru + sympy.Integer(offset)
-                if _sympy_values_equal(candidate_sympy, a_tru):
+                candidate_sympy = a_tru_sympy + sympy.Integer(offset)
+                if _sympy_values_equal(candidate_sympy, a_tru_sympy):
                     candidate = f"{offset:d}"
                     candidate_sympy = sympy.Integer(offset)
             elif "all" in allowed_types or "expression" in allowed_types:
@@ -1483,7 +1483,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             else:
                 raise AssertionError(f"Unexpected allowed types: {allowed_types}")
 
-            if a_tru == "" or not _sympy_values_equal(candidate_sympy, a_tru):
+            if a_tru_sympy == "" or not _sympy_values_equal(
+                candidate_sympy, a_tru_sympy
+            ):
                 break
             offset += 1
         else:
