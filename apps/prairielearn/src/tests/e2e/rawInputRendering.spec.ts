@@ -57,6 +57,16 @@ test('shows safe scalar diagnostics and restores literal matrix input', async ({
 });
 
 test('shows text and formula editor diagnostics for symbolic input', async ({ page }) => {
+  const editedLatex = 'x+1';
+  const formulaEditor = page.getByLabel('Symbolic formula value');
+  await formulaEditor.evaluate((element, value) => {
+    (element as HTMLElement & { value: string }).value = value;
+    element.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+  }, editedLatex);
+  await expect(page.locator('#symbolic-input-latex-symbolic_formula_value')).toHaveValue(
+    editedLatex,
+  );
+
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
     timeout: 15_000,
@@ -77,6 +87,14 @@ test('shows text and formula editor diagnostics for symbolic input', async ({ pa
 
   const formulaPopover = page.getByRole('dialog').filter({ hasText: 'Formula editor input:' });
   await expect(formulaPopover).toBeVisible();
-  await expect(formulaPopover.locator('math-field')).toHaveCount(1);
-  await expect(formulaPopover.locator('pre')).toHaveText('x');
+  const formulaPreview = formulaPopover.locator('math-field');
+  await expect(formulaPreview).toHaveCount(1);
+  await expect
+    .poll(() =>
+      formulaPreview.evaluate((element) =>
+        (element as HTMLElement & { getValue(format: string): string }).getValue('latex'),
+      ),
+    )
+    .toBe(editedLatex);
+  await expect(formulaPopover.locator('pre')).toHaveText(editedLatex);
 });
