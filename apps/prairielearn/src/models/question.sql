@@ -23,7 +23,18 @@ WITH RECURSIVE
       lineage.depth + 1
     FROM
       lineage
-      JOIN questions AS descendant ON descendant.copied_from_question_id = lineage.question_id
+      CROSS JOIN LATERAL (
+        SELECT
+          d.id,
+          d.course_id
+        FROM
+          questions AS d
+        WHERE
+          d.copied_from_question_id = lineage.question_id
+          -- OFFSET 0 prevents flattening this lookup into a join with full scans at each depth.
+        OFFSET
+          0
+      ) AS descendant
     WHERE
       lineage.depth < 20
   )

@@ -124,11 +124,3 @@ If every assessment in a course instance is shared, the course instance can also
 
 1. Ensure that all assessments in the course instance have `"shareSourcePublicly": true`.
 2. Add `"shareSourcePublicly": true` to the `infoCourseInstance.json` file of the course instance that you would like to be publicly shared.
-
-## Copy adoption counts
-
-Copy adoption is the number of distinct external courses with a recorded direct or indirect copy of a question, following at most 20 copy links from each question. For A → B → C, A's question counts B and C. Multiple copies in one course count once, and the authoring course is excluded. Institutions are counted once across those courses, including the authoring institution when another course there has a copy.
-
-Counts use `copiedFrom` links resolved during sync and include deleted questions and courses. Missing or unresolved links and manual copies without metadata are not counted; editing or removing provenance can change the results. These counts exclude by-reference sharing and student activity, so they do not measure current usage or a complete copy history.
-
-Reports require course Previewer permission or higher and expose downstream counts only, without downstream course or institution names, identifiers, staff, students, or content.
