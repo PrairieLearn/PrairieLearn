@@ -51,31 +51,15 @@ You can edit or remove this field. It records the declared source of a copy; it 
 
 Copy adoption is the number of distinct external courses with a recorded direct
 or indirect copy of a question. For A → B → C, A's question counts B and C. Multiple
-copies in B count once, and copies in A do not count toward A's external adoption.
-This metric excludes by-reference sharing and student activity.
+copies in one course count once, and the authoring course is excluded. Institutions
+are counted once across those courses, including the authoring institution when
+another course there has a copy.
 
-Institution counts are the number of distinct institutions associated with those
-same downstream courses. Multiple courses at one institution count once. Another
-course at the authoring institution contributes to both counts; the authoring
-course itself contributes to neither.
-
-Counts follow the database links resolved from `copiedFrom` during sync, including
-soft-deleted questions and courses. Deleted intermediate copies still connect the
-source to later copies. Self-references and cycles do not add duplicate results.
-These are counts of retained copy relationships, not current usage or an immutable
-history: editing or removing provenance can change them.
-
-Course authorship reports group questions by their stored author identifiers,
-including locally credited adaptations and deleted questions. A question with
-multiple authors appears under each author. Names are resolved only for current
-staff of the reporting course; other identifiers are displayed as declared.
-Different identifiers are not automatically combined into one person.
-
-A question's provenance can be absent, resolved, or declared but unresolved. Absent
-provenance does not prove that a question is original. Unresolved links cannot
-contribute to upstream adoption counts until resolved by a later sync. Manual
-copies without metadata, removed links, and copies on other servers cannot be
-reconstructed. Consequently, a zero count does not prove that no copies exist.
+Counts use `copiedFrom` links resolved during sync and include deleted questions
+and courses. Missing or unresolved links and manual copies without metadata are
+not counted; editing or removing provenance can change the results. These counts
+exclude by-reference sharing and student activity, so they do not measure current
+usage or a complete copy history.
 
 Reports require course Previewer permission or higher and expose downstream counts
 only, without downstream course or institution names, identifiers, staff, students,
