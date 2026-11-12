@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { type ReactNode, useId, useState } from 'react';
 import type { UrlTransform } from 'react-markdown';
 
-import { MemoizedMarkdown } from './MemoizedMarkdown.js';
+import { ChatMarkdown } from './ChatMarkdown.js';
 
 /** A chevron and summary that show or hide the details beneath them. */
 export function Disclosure({
@@ -66,7 +66,7 @@ export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
       }}
     >
       <div className="markdown-body reasoning-body p-1 pt-0">
-        <MemoizedMarkdown content={part.text} isStreaming={isStreaming} />
+        <ChatMarkdown content={part.text} isStreaming={isStreaming} />
       </div>
     </Disclosure>
   );
@@ -81,7 +81,7 @@ export function TextPart({
 }) {
   return (
     <div className="markdown-body">
-      <MemoizedMarkdown
+      <ChatMarkdown
         content={part.text}
         urlTransform={urlTransform}
         isStreaming={part.state === 'streaming'}
