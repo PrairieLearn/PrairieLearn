@@ -218,6 +218,7 @@ export async function generatePrompt({
           'Always provide an instructor-facing justification of the grading decision in `explanation`.',
           'Always return the `feedback` field. Provide student-facing feedback only when the Instructor grading guidelines explicitly request it; otherwise, return `feedback` as an empty string ("").',
           'When feedback is requested, follow the specified conditions, content, length, and format. If the conditions for providing feedback are not met, return `feedback` as an empty string ("").',
+          'When deciding whether to provide feedback and what it should contain, assume the student will not see the rubric item selections. Do not omit requested feedback because the rubric item selections already identify an error; make the feedback understandable on its own.',
           'A request to explain grading decisions or apply rubric items does not by itself request student-facing feedback.',
           'Address the student as "you" in feedback. Keep instructor-facing grading justification in `explanation`; do not copy it into `feedback` unless explicitly requested.',
         ]
