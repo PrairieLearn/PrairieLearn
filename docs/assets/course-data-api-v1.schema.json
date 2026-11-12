@@ -5,7 +5,7 @@
     "type": "object",
     "properties": {
       "filters": {
-        "description": "Conditions that every row must meet, such as assessment_id eq \"12\".",
+        "description": "Conditions that every row must meet.",
         "type": "array",
         "items": {
           "type": "object",

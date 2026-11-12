@@ -298,7 +298,7 @@ export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: 
         }),
       )
       .optional()
-      .describe('Conditions that every row must meet, such as assessment_id eq "12".'),
+      .describe('Conditions that every row must meet.'),
     select: z.array(column).optional().describe('Columns to include. Omit for all columns.'),
     order: z
       .array(z.strictObject({ column, direction: z.enum(['asc', 'desc']) }))
