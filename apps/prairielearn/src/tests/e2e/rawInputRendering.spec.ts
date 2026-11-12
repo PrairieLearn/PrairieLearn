@@ -63,9 +63,7 @@ test('shows text and formula editor diagnostics for symbolic input', async ({ pa
     (element as HTMLElement & { value: string }).value = value;
     element.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
   }, editedLatex);
-  await expect(page.locator('#symbolic-input-latex-symbolic_formula_value')).toHaveValue(
-    editedLatex,
-  );
+  await expect(page.locator('input[name="symbolic_formula_value-latex"]')).toHaveValue(editedLatex);
 
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
