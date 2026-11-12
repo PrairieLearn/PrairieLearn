@@ -3,10 +3,10 @@
 -- so self-references and cycles terminate without a depth limit. Keep deleted
 -- rows in the traversal: they can connect a source to later copies.
 WITH RECURSIVE
-  lineage (source_question_id, question_id) AS (
+  lineage AS (
     SELECT
-      q.id,
-      q.id
+      q.id AS source_question_id,
+      q.id AS question_id
     FROM
       questions AS q
     WHERE
