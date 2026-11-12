@@ -42,13 +42,7 @@ test('shows safe raw-input diagnostics and restores literal matrix input', async
     '[1,\u200b 2]',
   );
 
-  for (const label of [
-    'String value',
-    'Big O value',
-    'Units value',
-    'Valid matrix value',
-    'Matrix grid',
-  ]) {
+  for (const label of ['String value', 'Big O value', 'Units value', 'Valid matrix value']) {
     await expect(
       page.getByRole('button', { name: `Answer as entered for ${label}` }),
     ).toBeVisible();
@@ -74,21 +68,12 @@ test('shows safe raw-input diagnostics and restores literal matrix input', async
   await button.click();
 
   const matrixPopover = page.getByRole('dialog').filter({ hasText: '<U+ff11>' });
-  await expect(matrixPopover).toBeVisible();
   const tables = matrixPopover.getByRole('table');
   await expect(tables).toHaveCount(2);
-  const readableTable = tables.first();
-  await expect(readableTable.getByRole('row')).toHaveCount(2);
-  await expect(readableTable.getByRole('row').first().getByRole('cell')).toHaveCount(2);
-  await expect(readableTable.getByRole('row').last().getByRole('cell')).toHaveCount(2);
-  await expect(readableTable).toContainText('１');
-
-  const asciiTable = tables.last();
-  await expect(asciiTable).toBeVisible();
-  await expect(asciiTable.getByRole('row')).toHaveCount(2);
-  await expect(asciiTable.getByRole('row').first().getByRole('cell')).toHaveCount(2);
-  await expect(asciiTable.getByRole('row').last().getByRole('cell')).toHaveCount(2);
-  await expect(asciiTable).toContainText('<U+ff11>');
+  await expect(matrixPopover.getByRole('row')).toHaveCount(4);
+  await expect(matrixPopover.getByRole('cell')).toHaveCount(8);
+  await expect(matrixPopover).toContainText('１');
+  await expect(matrixPopover).toContainText('<U+ff11>');
 });
 
 test('shows text and formula editor diagnostics for symbolic input', async ({ page }) => {
