@@ -1905,6 +1905,20 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
     return -1
 
 
+def _contains_unsupported_tuple(value: sympy.Basic) -> bool:
+    if isinstance(value, sympy.Tuple):
+        return True
+
+    if isinstance(value, (sympy.Sum, sympy.Product, sympy.Integral)):
+        return _contains_unsupported_tuple(value.function) or any(
+            _contains_unsupported_tuple(limit_value)
+            for limit in value.args[1:]
+            for limit_value in limit.args
+        )
+
+    return any(_contains_unsupported_tuple(arg) for arg in value.args)
+
+
 def sympy_to_json(
     a: sympy.Expr | sympy.Set | sympy.Tuple,
     *,
@@ -1919,9 +1933,9 @@ def sympy_to_json(
 
     Raises:
         HasSetNotationError: If the expression is a set and `allow_sets` is `False`.
-        ValueError: If the expression contains a SymPy tuple.
+        ValueError: If the expression contains an unsupported SymPy tuple value.
     """
-    if a.has(sympy.Tuple):
+    if _contains_unsupported_tuple(a):
         raise ValueError(
             "SymPy Tuple values are not supported by PrairieLearn serialization. Use separate inputs for point coordinates."
         )

@@ -782,6 +782,19 @@ class TestSympy:
         with pytest.raises(ValueError, match="SymPy Tuple values are not supported"):
             psu.sympy_to_json(sympy.FiniteSet(sympy.Tuple(1, 2)), allow_sets=True)
 
+    @pytest.mark.parametrize(
+        "sympy_expr",
+        [
+            sympy.Sum(sympy.Symbol("x"), (sympy.Symbol("x"), 1, 2)),
+            sympy.Product(sympy.Symbol("x"), (sympy.Symbol("x"), 1, 2)),
+            sympy.Integral(sympy.Symbol("x"), (sympy.Symbol("x"), 1, 2)),
+        ],
+    )
+    def test_big_operator_json_conversion_allows_structural_tuples(
+        self, sympy_expr: sympy.Expr
+    ) -> None:
+        assert psu.sympy_to_json(sympy_expr)["_value"] == str(sympy_expr)
+
     def test_unsimplified_set_json_conversion_preserves_operation(self) -> None:
         constant = sympy.Add(sympy.E, sympy.I, evaluate=False)
         expression = sympy.Complement(

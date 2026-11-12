@@ -354,10 +354,10 @@
   /**
    * Initialize a <math-field> element with custom settings for <pl-big-operator-input>
    *
-   * @param {string} name Name of the element to look up the tag
+   * @param {string} uuid Unique DOM ID suffix for this rendered element
    */
-  window.PLBigOperatorInput = function (name) {
-    const mf = document.getElementById('big-operator-input-' + name);
+  window.PLBigOperatorInput = function (uuid) {
+    const mf = document.getElementById('big-operator-input-' + uuid);
 
     // Always keep basic right-click items and append to other menu items
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
@@ -608,7 +608,7 @@
     mf.addEventListener('focus', updateKeyboardLayout);
     mf.addEventListener('selection-change', updateKeyboardLayout);
 
-    const initialLatex = $('#big-operator-input-latex-' + name).val();
+    const initialLatex = $('#big-operator-input-latex-' + uuid).val();
 
     setUpBigOperatorInputMacros(mf);
 
@@ -625,8 +625,8 @@
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
       const latex = mf.getValue('latex');
-      $('#big-operator-input-sub-' + name).val(mf.getValue('plain-text'));
-      $('#big-operator-input-latex-' + name).val(latex.trim() === '' ? '' : latex);
+      $('#big-operator-input-sub-' + uuid).val(mf.getValue('plain-text'));
+      $('#big-operator-input-latex-' + uuid).val(latex.trim() === '' ? '' : latex);
     };
 
     updateSubmissionData();
