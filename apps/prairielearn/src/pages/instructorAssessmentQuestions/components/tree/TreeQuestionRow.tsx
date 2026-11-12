@@ -20,6 +20,7 @@ import type {
 import {
   compactPoints,
   computeQuestionTotalPoints,
+  hasUnavailableQuestions,
   questionHasTitle,
   toAssessmentForPicker,
 } from '../../utils/questions.js';
@@ -40,70 +41,30 @@ export function PointsBadge({
 }): ReactElement | null {
   const tooltipId = useId();
   const forceMax = question.forceMaxPoints ?? zoneQuestionBlock.forceMaxPoints;
-  const points = question.points ?? zoneQuestionBlock.points;
-  const maxPoints = question.maxPoints ?? zoneQuestionBlock.maxPoints;
   const autoPoints = question.autoPoints ?? zoneQuestionBlock.autoPoints;
-  const maxAutoPoints = question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints;
   const manualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
-  const hasSplitPoints = autoPoints != null || maxAutoPoints != null || manualPoints != null;
-  const hasLegacyPoints = !hasSplitPoints && (points != null || maxPoints != null);
-
-  if (
-    !hasLegacyPoints &&
-    autoPoints == null &&
-    manualPoints == null &&
-    (assessmentType === 'Exam' || maxAutoPoints == null)
-  ) {
-    return null;
-  }
-
-  if (forceMax) {
-    const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
-    return (
-      <OverlayTrigger
-        placement="top"
-        tooltip={{
-          props: { id: tooltipId },
-          body: `Force max points: student receives ${total} pts on regrade`,
-        }}
-      >
-        <span className="text-muted small text-nowrap ms-2">
-          <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
-          {total}
-        </span>
-      </OverlayTrigger>
-    );
-  }
-
-  if (hasLegacyPoints) {
-    const pointValues = points == null ? undefined : Array.isArray(points) ? points : [points];
-    const tooltipParts: string[] = [];
-    if (pointValues != null) {
-      tooltipParts.push(`Configured points: ${pointValues.join(', ')} pts`);
-    }
-    if (maxPoints != null) {
-      tooltipParts.push(`Configured max points: ${maxPoints} pts`);
-    }
-    const label = run(() => {
-      if (pointValues == null) return `${maxPoints} pts max`;
-      const pointText = compactPoints(pointValues);
-      if (assessmentType === 'Homework' && maxPoints != null && points !== maxPoints) {
-        return `${pointText}/${maxPoints} pts`;
-      }
-      return `${pointText} pts`;
-    });
-
-    return (
-      <OverlayTrigger
-        placement="top"
-        tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}
-      >
-        <span className="text-muted small text-nowrap ms-2">{label}</span>
-      </OverlayTrigger>
-    );
-  }
 
   if (assessmentType === 'Exam') {
+    if (autoPoints == null && manualPoints == null) return null;
+
+    if (forceMax) {
+      const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
+      return (
+        <OverlayTrigger
+          placement="top"
+          tooltip={{
+            props: { id: tooltipId },
+            body: `Force max points: student receives ${total} pts on regrade`,
+          }}
+        >
+          <span className="text-muted small text-nowrap ms-2">
+            <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
+            {total}
+          </span>
+        </OverlayTrigger>
+      );
+    }
+
     const compactParts: ReactElement[] = [];
     const tooltipParts: string[] = [];
 
@@ -148,10 +109,28 @@ export function PointsBadge({
 
   // Homework
   const initPoints = Array.isArray(autoPoints) ? autoPoints[0] : autoPoints;
-  const effectiveMaxAutoPoints = maxAutoPoints ?? autoPoints;
-  const maxAuto = Array.isArray(effectiveMaxAutoPoints)
-    ? effectiveMaxAutoPoints[0]
-    : effectiveMaxAutoPoints;
+  const maxAutoPoints = question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints ?? autoPoints;
+  const maxAuto = Array.isArray(maxAutoPoints) ? maxAutoPoints[0] : maxAutoPoints;
+
+  if (initPoints == null && maxAuto == null && manualPoints == null) return null;
+
+  if (forceMax) {
+    const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
+    return (
+      <OverlayTrigger
+        placement="top"
+        tooltip={{
+          props: { id: tooltipId },
+          body: `Force max points: student receives ${total} pts on regrade`,
+        }}
+      >
+        <span className="text-muted small text-nowrap ms-2">
+          <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
+          {total}
+        </span>
+      </OverlayTrigger>
+    );
+  }
 
   const compactParts: ReactElement[] = [];
   const tooltipParts: string[] = [];
@@ -286,7 +265,11 @@ export function TreeQuestionRow({
       <DragHandle
         attributes={draggableAttributes}
         listeners={draggableListeners}
-        disabled={!editMode}
+        disabled={
+          !editMode ||
+          !questionData ||
+          (isAlternative && hasUnavailableQuestions(zoneQuestionBlock, state.questionMetadata))
+        }
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">

@@ -97,8 +97,8 @@ router.get(
           navContext: { type: 'instructor', page: 'assessment', subPage: 'questions' },
           content: (
             <Alert variant="warning">
-              Some shared question references are unavailable. Load this course from disk again to
-              update the assessment editor.
+              Some questions in this assessment could not be resolved. Fix any sync errors for this
+              assessment and sync the course again.
             </Alert>
           ),
         }),

@@ -1,8 +1,6 @@
 import { useReducer, useState } from 'react';
 
-import type { QuestionPointsJson } from '../../../schemas/infoAssessment.js';
 import {
-  type AltPoolBlockForm,
   type EditorAction,
   type EditorState,
   type QuestionAlternativeForm,
@@ -19,63 +17,10 @@ import {
   createAlternativeWithTrackingId,
   createQuestionWithTrackingId,
   getDefaultPointFieldsForNewQuestion,
-  normalizeQuestionBlockPoints,
   questionBlockToAlternative,
 } from './dataTransform.js';
 import { sanitizeSelectedItem, selectedItemsEqual } from './selectedItem.js';
 import { findQuestionByTrackingId, isQidInAssessment } from './zoneLookup.js';
-
-function hasLegacyPointFields(question: QuestionPointsJson): boolean {
-  return question.points != null || question.maxPoints != null;
-}
-
-function hasModernPointFields(question: QuestionPointsJson): boolean {
-  return (
-    question.autoPoints != null || question.maxAutoPoints != null || question.manualPoints != null
-  );
-}
-
-function inheritPointFields(question: QuestionPointsJson, parent: QuestionPointsJson) {
-  return {
-    points: question.points ?? parent.points,
-    maxPoints: question.maxPoints ?? parent.maxPoints,
-    autoPoints: question.autoPoints ?? parent.autoPoints,
-    maxAutoPoints: question.maxAutoPoints ?? parent.maxAutoPoints,
-    manualPoints: question.manualPoints ?? parent.manualPoints,
-  };
-}
-
-/**
- * Mixed legacy and modern defaults would make the assessment invalid on sync.
- * Preserve each alternative's effective points without interpreting an unknown
- * grading method by moving conflicting pool defaults onto its alternatives.
- */
-function prepareAlternativeForPool(
-  alternative: QuestionAlternativeForm,
-  pool: AltPoolBlockForm,
-  sourcePool?: ZoneQuestionBlockForm,
-): QuestionAlternativeForm {
-  const effectivePoints = sourcePool ? inheritPointFields(alternative, sourcePool) : alternative;
-  if (!hasLegacyPointFields(pool) && !hasModernPointFields(pool)) {
-    return { ...alternative, ...effectivePoints };
-  }
-  const hasConflictingDefaults =
-    (hasLegacyPointFields(effectivePoints) && hasModernPointFields(pool)) ||
-    (hasModernPointFields(effectivePoints) && hasLegacyPointFields(pool));
-  if (!hasConflictingDefaults) return alternative;
-
-  pool.alternatives = pool.alternatives.map((existing) => ({
-    ...existing,
-    ...inheritPointFields(existing, pool),
-  }));
-  pool.points = undefined;
-  pool.maxPoints = undefined;
-  pool.autoPoints = undefined;
-  pool.maxAutoPoints = undefined;
-  pool.manualPoints = undefined;
-
-  return { ...alternative, ...effectivePoints };
-}
 
 /**
  * Finds a zone by its trackingId.
@@ -201,16 +146,23 @@ function handleQuestionPicked(
       // Adding to existing alt pool
       const altPoolResult = findQuestionByTrackingId(newZones, selectedItem.altPoolTrackingId);
       if (!altPoolResult) return state;
-      const pool = altPoolResult.question;
-      if (!pool.alternatives) return state;
-      const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
-      if (!hasLegacyPointFields(pool) && !hasModernPointFields(pool)) {
+
+      // Empty pools start neutral; seed point defaults from the first picked question.
+      const shouldInitializeAltPoolPoints =
+        altPoolResult.question.alternatives?.length === 0 &&
+        altPoolResult.question.autoPoints == null &&
+        altPoolResult.question.maxAutoPoints == null &&
+        altPoolResult.question.manualPoints == null;
+
+      if (shouldInitializeAltPoolPoints) {
         const pointFields = getDefaultPointFieldsForNewQuestion(gradingMethod);
-        // A nonempty pool may have distributed its defaults to preserve legacy
-        // points, so new defaults must only apply to the picked alternative.
-        Object.assign(pool.alternatives.length === 0 ? pool : newAlt, pointFields);
+        Object.assign(altPoolResult.question, pointFields);
       }
-      pool.alternatives.push(newAlt);
+
+      if (!altPoolResult.question.alternatives) return state;
+
+      const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
+      altPoolResult.question.alternatives.push(newAlt);
       newQuestionMetadata[qid] = metadata;
     } else {
       // Creating new alt pool: first question picked creates the pool
@@ -679,8 +631,7 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        const newAlternative = prepareAlternativeForPool(alternative, poolResult.question);
-        poolResult.question.alternatives.push(newAlternative);
+        poolResult.question.alternatives.push(alternative);
 
         const newQuestionMetadata =
           questionData && alternative.id
@@ -716,10 +667,6 @@ export function createEditorReducer(initialState: EditorState) {
 
         // Remove alternative from source
         const [movedAlt] = fromResult.question.alternatives!.splice(fromResult.alternativeIndex, 1);
-        const newAlternative =
-          fromResult.question === toPoolResult.question
-            ? movedAlt
-            : prepareAlternativeForPool(movedAlt, toPoolResult.question, fromResult.question);
 
         // Find insertion point
         let insertIndex: number;
@@ -732,7 +679,7 @@ export function createEditorReducer(initialState: EditorState) {
           insertIndex = beforeIdx === -1 ? toPoolResult.question.alternatives.length : beforeIdx;
         }
 
-        toPoolResult.question.alternatives.splice(insertIndex, 0, newAlternative);
+        toPoolResult.question.alternatives.splice(insertIndex, 0, movedAlt);
 
         return {
           ...state,
@@ -816,10 +763,7 @@ export function createEditorReducer(initialState: EditorState) {
         assertStandaloneQuestion(removedQuestion);
 
         // Convert to alternative
-        const newAlt = prepareAlternativeForPool(
-          questionBlockToAlternative(removedQuestion),
-          toPoolResult.question,
-        );
+        const newAlt = questionBlockToAlternative(removedQuestion);
 
         // Find insertion point
         let insertIndex: number;
@@ -911,23 +855,7 @@ export function createEditorReducer(initialState: EditorState) {
   // autosave-driven zone changes don't produce a new object reference when
   // the selection is logically unchanged.
   return function editorReducer(state: EditorState, action: EditorAction): EditorState {
-    let nextState = coreReducer(state, action);
-
-    if (nextState.zones !== state.zones || nextState.questionMetadata !== state.questionMetadata) {
-      // Replacing or removing an unavailable question can make preserved legacy
-      // points editable again. Normalize before modern form values are merged.
-      const zones = nextState.zones.map((zone) => {
-        const questions = zone.questions.map((question) =>
-          normalizeQuestionBlockPoints(question, nextState.questionMetadata),
-        );
-        return questions.some((question, index) => question !== zone.questions[index])
-          ? { ...zone, questions }
-          : zone;
-      });
-      if (zones.some((zone, index) => zone !== nextState.zones[index])) {
-        nextState = { ...nextState, zones };
-      }
-    }
+    const nextState = coreReducer(state, action);
 
     if (nextState.zones !== state.zones && nextState.selectedItem != null) {
       const sanitized = sanitizeSelectedItem(nextState.selectedItem, nextState.zones);

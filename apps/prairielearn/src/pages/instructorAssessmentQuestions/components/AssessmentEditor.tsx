@@ -56,6 +56,7 @@ import type { AssessmentAdvancedDefaults } from '../utils/formHelpers.js';
 import { buildPropsMap, computeChangeTracking } from '../utils/modifiedTracking.js';
 import {
   buildQuestionMetadata,
+  hasUnavailableQuestions,
   normalizeQuestionPoints,
   questionDisplayName,
   toEditorMetadata,
@@ -335,8 +336,23 @@ function AssessmentEditorInner({
     return qidToZones;
   }, [zones]);
 
+  const readOnlyQids = useMemo(() => {
+    const qids = new Set<string>();
+    for (const zone of zones) {
+      for (const question of zone.questions) {
+        if (!hasUnavailableQuestions(question, questionMetadata)) continue;
+        if (question.alternatives) {
+          for (const alternative of question.alternatives) qids.add(alternative.id);
+        } else {
+          qids.add(question.id);
+        }
+      }
+    }
+    return qids;
+  }, [zones, questionMetadata]);
+
   const disabledQids = useMemo(() => {
-    const disabled = new Set<string>();
+    const disabled = new Set(readOnlyQids);
     if (selectedItem?.type === 'picker') {
       const returnTo = selectedItem.returnToSelection;
       if (returnTo?.type === 'alternative') {
@@ -371,7 +387,7 @@ function AssessmentEditorInner({
       }
     }
     return disabled;
-  }, [selectedItem, zones]);
+  }, [selectedItem, zones, readOnlyQids]);
 
   const currentChangeQid = useMemo(() => {
     if (selectedItem?.type !== 'picker' || !selectedItem.returnToSelection) return undefined;
@@ -467,6 +483,7 @@ function AssessmentEditorInner({
   };
 
   const handleQuestionPicked = async (qid: string) => {
+    if (readOnlyQids.has(qid)) return;
     try {
       const questionData = await questionByQidMutation.mutateAsync(qid);
       dispatch({
@@ -555,6 +572,7 @@ function AssessmentEditorInner({
   };
 
   const handleRemoveQuestionByQid = (qid: string) => {
+    if (readOnlyQids.has(qid)) return;
     dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
@@ -653,6 +671,7 @@ function AssessmentEditorInner({
       // Only handle within-pool reorder here; cross-pool is handled in handleDragOver
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
       const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+      if (hasUnavailableQuestions(fromBlock, questionMetadata)) return;
       if (fromBlock.trackingId !== toBlock.trackingId) return;
       if (fromPos.alternativeIndex === toPos.alternativeIndex) return;
 
@@ -674,6 +693,8 @@ function AssessmentEditorInner({
     // Merge standalone question into alt pool via merge zone
     if (over.data.current?.type === 'merge-zone') {
       const altPoolTrackingId = over.data.current.altPoolTrackingId as string;
+      const target = findAltPoolByTrackingId(zones, altPoolTrackingId);
+      if (target && hasUnavailableQuestions(target.altPool, questionMetadata)) return;
       dispatch({
         type: 'MERGE_QUESTION_INTO_ALT_POOL',
         questionTrackingId: activeIdStr,
@@ -733,6 +754,7 @@ function AssessmentEditorInner({
       // dnd-kit's active.data.current.type stays frozen as 'alternative', so guard here.
       if (fromPos.alternativeIndex == null) return;
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
+      if (hasUnavailableQuestions(fromBlock, questionMetadata)) return;
 
       // Alternative dragged over empty zone drop target → extract to zone
       const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
@@ -754,6 +776,7 @@ function AssessmentEditorInner({
       if (overType === 'alternative' && toPos.alternativeIndex != null) {
         // Alternative dragged over alternative in different pool → cross-pool move
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+        if (hasUnavailableQuestions(toBlock, questionMetadata)) return;
         if (fromBlock.trackingId !== toBlock.trackingId) {
           dispatch({
             type: 'REORDER_ALTERNATIVE',
@@ -1160,6 +1183,7 @@ function AssessmentEditorInner({
                   courseQuestionsLoading={courseQuestionsQuery.isLoading}
                   questionsInAssessment={questionsInAssessment}
                   disabledQids={disabledQids}
+                  readOnlyQids={readOnlyQids}
                   currentChangeQid={currentChangeQid}
                   currentAssessmentId={assessment.id}
                   isPickingQuestion={questionByQidMutation.isPending}

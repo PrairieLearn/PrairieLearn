@@ -328,23 +328,13 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[1].alternatives![0].maxPoints).toBeUndefined();
   });
 
-  it('keeps existing modern point values and removes known legacy fields', () => {
+  it('does not normalize when autoPoints is already set', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
         canSubmit: [],
         canView: [],
-        questions: [
-          {
-            id: 'q1',
-            autoPoints: 7,
-            maxAutoPoints: 12,
-            points: 5,
-            maxPoints: 10,
-            canSubmit: [],
-            canView: [],
-          },
-        ],
+        questions: [{ id: 'q1', autoPoints: 7, points: 5, canSubmit: [], canView: [] }],
       },
     ];
 
@@ -355,9 +345,27 @@ describe('prepareZonesForEditor normalization', () => {
     const result = prepareZonesForEditor(zones, metadata);
 
     expect(result[0].questions[0].autoPoints).toBe(7);
-    expect(result[0].questions[0].maxAutoPoints).toBe(12);
+    expect(result[0].questions[0].points).toBe(5);
+  });
+
+  it('normalizes points to autoPoints for Exam assessments', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', points: 5, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const metadata = {
+      q1: { question: { grading_method: 'Internal' } },
+    } as unknown as QuestionMetadataMap;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].autoPoints).toBe(5);
     expect(result[0].questions[0].points).toBeUndefined();
-    expect(result[0].questions[0].maxPoints).toBeUndefined();
   });
 
   it('normalizes points to manualPoints for Manual grading questions', () => {
@@ -610,26 +618,29 @@ describe('prepareZonesForEditor normalization', () => {
     expect(pool.pointsDistributedInfoBanner).toBe(true);
   });
 
-  it('preserves unavailable questions and pools through preparation and saving', () => {
+  it('preserves unknown legacy point fields through preparation and saving', () => {
     const originalZones = [
       {
         questions: [
-          { id: '@shared/question', points: [5, 3, 1], maxPoints: 10 },
+          { id: '@shared/question', points: 5, maxPoints: 10 },
           {
             numberChoose: 1,
             points: 10,
             maxPoints: 20,
             alternatives: [
-              { id: '@shared/alt1', points: 2 },
-              { id: '@shared/alt2', maxPoints: 8 },
+              { id: 'manual', points: 2 },
+              { id: '@shared/missing', points: 3, maxPoints: 8 },
             ],
           },
         ],
       },
     ];
     const zones = originalZones.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
+    const metadata = {
+      manual: { question: { grading_method: 'Manual' } },
+    } as unknown as QuestionMetadataMap;
 
-    const prepared = prepareZonesForEditor(zones, {});
+    const prepared = prepareZonesForEditor(zones, metadata);
     const saved = serializeZonesForJson(stripTrackingIds(prepared));
 
     expect(saved).toEqual(originalZones);
@@ -727,7 +738,7 @@ describe('prepareZonesForEditor normalization', () => {
             maxPoints: 20,
             canSubmit: [],
             canView: [],
-            alternatives: [{ id: 'alt1', points: 4 }],
+            alternatives: [{ id: 'alt1' }],
           },
         ],
       },
@@ -740,63 +751,9 @@ describe('prepareZonesForEditor normalization', () => {
     const result = prepareZonesForEditor(zones, metadata);
 
     expect(result[0].questions[0].manualPoints).toBe(20);
-    expect(result[0].questions[0].alternatives![0].manualPoints).toBe(20);
     expect(result[0].questions[0].maxPoints).toBeUndefined();
     expect(result[0].questions[0].autoPoints).toBeUndefined();
   });
-
-  it.each([
-    {
-      name: 'with pool defaults',
-      poolPoints: { points: 10, maxPoints: 20 },
-      expectedManualPoints: { points: 2 },
-    },
-    {
-      name: 'without pool defaults',
-      poolPoints: {},
-      expectedManualPoints: { manualPoints: 2 },
-    },
-  ])(
-    'handles manual and unavailable alternatives $name',
-    ({ poolPoints, expectedManualPoints }) => {
-      const originalZones = [
-        {
-          questions: [
-            {
-              numberChoose: 1,
-              ...poolPoints,
-              alternatives: [
-                { id: 'manual', points: 2 },
-                { id: '@shared/missing', points: 3, maxPoints: 8 },
-              ],
-            },
-          ],
-        },
-      ];
-      const zones = originalZones.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
-      const metadata = {
-        manual: { question: { grading_method: 'Manual' } },
-      } as unknown as QuestionMetadataMap;
-
-      const prepared = prepareZonesForEditor(zones, metadata);
-      const saved = serializeZonesForJson(stripTrackingIds(prepared));
-
-      expect(saved).toEqual([
-        {
-          questions: [
-            {
-              numberChoose: 1,
-              ...poolPoints,
-              alternatives: [
-                { id: 'manual', ...expectedManualPoints },
-                { id: '@shared/missing', points: 3, maxPoints: 8 },
-              ],
-            },
-          ],
-        },
-      ]);
-    },
-  );
 });
 
 describe('serializeZonesForJson preferences', () => {

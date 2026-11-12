@@ -2,6 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import { hasUnavailableQuestions } from '../../utils/questions.js';
 
 import { TreeQuestionRow } from './TreeQuestionRow.js';
 import { makeDraggableStyle } from './dragUtils.js';
@@ -30,7 +31,7 @@ export function SortableAlternativeRow({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: alternative.trackingId,
     data: { type: 'alternative', parentTrackingId: zoneQuestionBlock.trackingId },
-    disabled: !state.editMode,
+    disabled: !state.editMode || hasUnavailableQuestions(zoneQuestionBlock, state.questionMetadata),
   });
 
   const draggableStyle = makeDraggableStyle({ isDragging, transform, transition });

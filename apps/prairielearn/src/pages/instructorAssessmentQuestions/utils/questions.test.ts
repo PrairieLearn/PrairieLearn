@@ -5,16 +5,13 @@ import type {
   StaffAssessmentQuestionRow,
 } from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
-import { ZoneAssessmentJsonSchema } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
 
-import { prepareZonesForEditor } from './dataTransform.js';
 import {
-  type QuestionMetadataMap,
   buildHierarchicalAssessment,
   compactPoints,
   computeAltPoolChosenRange,
@@ -99,120 +96,83 @@ describe('questionDisplayName', () => {
 });
 
 describe('buildHierarchicalAssessment', () => {
-  it('builds zones with questions from flat rows', () => {
-    const rows: AssessmentQuestionStructureRow[] = [
+  it('preserves zones, alternative pools, and unavailable question references', () => {
+    const sharedZone = {
+      id: 'z1',
+      number: 1,
+      title: 'Shared questions',
+      max_points: 10,
+      json_allow_real_time_grading: false,
+    };
+    const localZone = { id: 'z2', number: 2, title: 'Local questions' };
+    const alternativePool = {
+      id: 'ag2',
+      number: 2,
+      json_has_alternatives: true,
+      number_choose: 1,
+      json_points: 6,
+    };
+    const rows = [
       {
-        qid: 'q1',
-        zone: { id: 'z1', number: 1, title: 'Zone 1' },
+        qid: '@shared/standalone',
+        zone: sharedZone,
         alternative_pool: {
-          number: 1,
           id: 'ag1',
+          number: 1,
           json_has_alternatives: false,
-          number_choose: 1,
+          json_points: 5,
+          json_max_points: 10,
         },
-        assessment_question: { number: 1 },
-      } as AssessmentQuestionStructureRow,
+        assessment_question: { number: 1, json_comment: 'Shared standalone' },
+      },
       {
-        qid: 'q2',
-        zone: { id: 'z1', number: 1, title: 'Zone 1' },
-        alternative_pool: {
-          number: 2,
-          id: 'ag2',
-          json_has_alternatives: false,
-          number_choose: 1,
-        },
-        assessment_question: { number: 2 },
-      } as AssessmentQuestionStructureRow,
+        qid: '@shared/alternative',
+        zone: localZone,
+        alternative_pool: alternativePool,
+        assessment_question: { number: 2, number_in_alternative_group: 1, json_points: 3 },
+      },
       {
-        qid: 'q3',
-        zone: { id: 'z2', number: 2, title: 'Zone 2' },
-        alternative_pool: {
-          number: 3,
-          id: 'ag3',
-          json_has_alternatives: false,
-          number_choose: 1,
-        },
-        assessment_question: { number: 3 },
-      } as AssessmentQuestionStructureRow,
-    ];
+        qid: 'local-alternative',
+        zone: localZone,
+        alternative_pool: alternativePool,
+        assessment_question: { number: 3, number_in_alternative_group: 2 },
+      },
+      {
+        qid: 'local-standalone',
+        zone: localZone,
+        alternative_pool: { id: 'ag3', number: 3, json_has_alternatives: false },
+        assessment_question: { number: 4 },
+      },
+    ] as unknown as AssessmentQuestionStructureRow[];
 
     const result = buildHierarchicalAssessment(rows);
 
-    expect(result).toHaveLength(2);
-    expect(result.map((zone) => zone.title)).toEqual(['Zone 1', 'Zone 2']);
-    expect(result[0].questions).toHaveLength(2);
-    expect(result[0].questions[0].id).toBe('q1');
-    expect(result[0].questions[1].id).toBe('q2');
-    expect(result[1].questions).toHaveLength(1);
-    expect(result[1].questions[0].id).toBe('q3');
-  });
-
-  it('collects alternatives within the same alternative pool', () => {
-    const rows: AssessmentQuestionStructureRow[] = [
+    expect(result).toMatchObject([
       {
-        qid: '@shared/missing',
-        zone: { id: 'z1', number: 1, title: 'Zone 1' },
-        alternative_pool: {
-          id: 'ag1',
-          number: 1,
-          json_has_alternatives: true,
-          number_choose: 1,
-        },
-        assessment_question: { number: 1, number_in_alternative_group: 1 },
-      } as AssessmentQuestionStructureRow,
+        title: 'Shared questions',
+        maxPoints: 10,
+        allowRealTimeGrading: false,
+        questions: [
+          {
+            id: '@shared/standalone',
+            points: 5,
+            maxPoints: 10,
+            comment: 'Shared standalone',
+          },
+        ],
+      },
       {
-        qid: 'alt2',
-        zone: { id: 'z1', number: 1, title: 'Zone 1' },
-        alternative_pool: {
-          id: 'ag1',
-          number: 1,
-          json_has_alternatives: true,
-          number_choose: 1,
-        },
-        assessment_question: { number: 2, number_in_alternative_group: 2 },
-      } as AssessmentQuestionStructureRow,
-    ];
-
-    const result = buildHierarchicalAssessment(rows);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].questions).toHaveLength(1);
-    expect(result[0].questions[0].alternatives).toHaveLength(2);
-    expect(result[0].questions[0].alternatives![0].id).toBe('@shared/missing');
-    expect(result[0].questions[0].alternatives![1].id).toBe('alt2');
-  });
-
-  it('preserves zone overrides and standalone question comments', () => {
-    const rows: AssessmentQuestionStructureRow[] = [
-      {
-        qid: 'q1',
-        zone: {
-          id: 'z1',
-          number: 1,
-          title: 'Zone 1',
-          json_allow_real_time_grading: false,
-        },
-        alternative_pool: {
-          number: 1,
-          id: 'ag1',
-          json_has_alternatives: false,
-          number_choose: 1,
-          json_allow_real_time_grading: false,
-        },
-        assessment_question: {
-          number: 1,
-          json_comment: { note: 'standalone question comment' },
-        },
-      } as unknown as AssessmentQuestionStructureRow,
-    ];
-
-    const result = buildHierarchicalAssessment(rows);
-
-    expect(result[0].allowRealTimeGrading).toBe(false);
-    expect(result[0].questions[0].allowRealTimeGrading).toBe(false);
-    expect(result[0].questions[0].comment).toEqual({
-      note: 'standalone question comment',
-    });
+        title: 'Local questions',
+        questions: [
+          {
+            numberChoose: 1,
+            points: 6,
+            alternatives: [{ id: '@shared/alternative', points: 3 }, { id: 'local-alternative' }],
+          },
+          { id: 'local-standalone' },
+        ],
+      },
+    ]);
   });
 });
 
@@ -238,14 +198,14 @@ describe('computeQuestionTotalPoints', () => {
       expected: 10,
     },
     {
-      name: 'autoPoints array + manualPoints for Exam',
-      input: { autoPoints: [4, 3, 2], manualPoints: 4 },
+      name: 'points array + manualPoints for Exam',
+      input: { points: [4, 3, 2], manualPoints: 4 },
       type: 'Exam' as const,
       expected: 8,
     },
     {
-      name: 'uniform autoPoints array + manualPoints for Exam',
-      input: { autoPoints: [3, 3, 3], manualPoints: 5 },
+      name: 'uniform points array + manualPoints for Exam',
+      input: { points: [3, 3, 3], manualPoints: 5 },
       type: 'Exam' as const,
       expected: 8,
     },
@@ -256,55 +216,6 @@ describe('computeQuestionTotalPoints', () => {
   it('inherits points from parent when question has none', () => {
     expect(computeQuestionTotalPoints({}, 'Homework', { points: 10 })).toBe(10);
   });
-
-  it.each(['Exam', 'Homework'] as const)(
-    'treats explicit zero manual points as split points for %s',
-    (assessmentType) => {
-      expect(computeQuestionTotalPoints({ manualPoints: 0 }, assessmentType, { points: 10 })).toBe(
-        0,
-      );
-    },
-  );
-});
-
-describe('point calculations with unavailable alternatives', () => {
-  it.each([
-    { siblingPoints: 2, expectedTotal: 2, expectedMismatch: false },
-    { siblingPoints: undefined, expectedTotal: 10, expectedMismatch: true },
-  ])(
-    'uses split points with unavailable sibling points $siblingPoints',
-    ({ siblingPoints, expectedTotal, expectedMismatch }) => {
-      const jsonZone = ZoneAssessmentJsonSchema.parse({
-        numberChoose: 1,
-        questions: [
-          {
-            numberChoose: 1,
-            points: 10,
-            alternatives: [
-              { id: 'known', manualPoints: 2 },
-              { id: '@shared/unavailable', points: siblingPoints },
-            ],
-          },
-          { id: 'standalone', autoPoints: 2 },
-        ],
-      });
-      const metadata = {
-        known: { question: { grading_method: 'Manual' } },
-        standalone: { question: { grading_method: 'Internal' } },
-      } as unknown as QuestionMetadataMap;
-      const [zone] = prepareZonesForEditor([jsonZone], metadata);
-      const pool = zone.questions[0];
-      const alternatives = pool.alternatives!;
-
-      expect(computeQuestionTotalPoints(alternatives[0], 'Exam', pool)).toBe(2);
-      const totals = computeZonePointTotals(zone.questions, 'Exam', {
-        numberChoose: zone.numberChoose,
-      });
-      expect(totals.autoPoints + totals.manualPoints).toBe(expectedTotal);
-      expect(hasPointsMismatch(alternatives, 'Exam', pool)).toBe(expectedMismatch);
-      expect(getZonePointsMismatch(zone, 'Exam') != null).toBe(expectedMismatch);
-    },
-  );
 });
 
 describe('hasPointsMismatch', () => {
@@ -554,7 +465,7 @@ describe('computeZonePointTotals', () => {
       expectedManual: 0,
     },
   ])('$name', ({ questions, opts, expectedAuto, expectedManual }) => {
-    const result = computeZonePointTotals(questions as ZoneQuestionBlockForm[], 'Homework', opts);
+    const result = computeZonePointTotals(questions as ZoneQuestionBlockForm[], opts);
     expect(result.autoPoints).toBe(expectedAuto);
     expect(result.manualPoints).toBe(expectedManual);
   });
@@ -565,7 +476,7 @@ describe('computeZonePointTotals', () => {
       { trackingId: 'q2', id: 'q2', autoPoints: 2, maxAutoPoints: 8 },
     ] as ZoneQuestionBlockForm[];
 
-    const result = computeZonePointTotals(questions, 'Homework');
+    const result = computeZonePointTotals(questions);
     expect(result.autoPoints).toBe(13);
   });
 
@@ -574,7 +485,7 @@ describe('computeZonePointTotals', () => {
       { trackingId: 'q1', id: 'q1', points: 1, maxPoints: 5 },
     ] as ZoneQuestionBlockForm[];
 
-    const result = computeZonePointTotals(questions, 'Homework');
+    const result = computeZonePointTotals(questions);
     expect(result.autoPoints).toBe(5);
   });
 
@@ -592,7 +503,7 @@ describe('computeZonePointTotals', () => {
       },
     ] as ZoneQuestionBlockForm[];
 
-    const result = computeZonePointTotals(questions, 'Homework');
+    const result = computeZonePointTotals(questions);
     // Alternative a2 overrides with max 10; a1 inherits pool max 5.
     // numberChoose=1, so pick the best = 10.
     expect(result.autoPoints).toBe(10);

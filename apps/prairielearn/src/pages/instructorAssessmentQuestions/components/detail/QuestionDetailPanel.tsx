@@ -52,7 +52,6 @@ import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableField } from './InheritableField.js';
 import { InheritableRolesField } from './InheritableRolesField.js';
-import { UnresolvedPointFields } from './UnresolvedPointFields.js';
 
 interface QuestionFormData {
   id?: string;
@@ -94,12 +93,12 @@ export function QuestionDetailPanel({
     question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
     alternativeTrackingId?: string,
   ) => void;
-  onPickQuestion: (currentSelection: SelectedItem) => void;
+  onPickQuestion?: (currentSelection: SelectedItem) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
   const {
-    editMode,
+    editMode: canEdit,
     hasCourseInstancePermissionEdit,
     assessmentType,
     constantQuestionValue,
@@ -112,6 +111,7 @@ export function QuestionDetailPanel({
     assessmentCanSubmit,
     groupsPageUrl,
   } = state;
+  const editMode = canEdit && questionData != null;
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
   const hasTitle = questionHasTitle(questionData);
@@ -329,7 +329,7 @@ export function QuestionDetailPanel({
     question.maxAutoPoints != null || (isAlternative && zoneQuestionBlock.maxAutoPoints != null);
   const showAutoPointsForManual = isManualGrading && savedAutoPointsSet;
   const showMaxAutoPointsForManual = isManualGrading && savedMaxAutoPointsSet;
-  const hasUnresolvedPoints =
+  const hasLegacyPoints =
     question.points != null ||
     question.maxPoints != null ||
     zoneQuestionBlock?.points != null ||
@@ -427,7 +427,7 @@ export function QuestionDetailPanel({
       <DetailSectionHeader>Settings</DetailSectionHeader>
 
       {/* QID field — edit mode only */}
-      {editMode && (
+      {editMode && onPickQuestion && (
         <div className="mb-3">
           <label htmlFor={`${idPrefix}-id`} className="form-label">
             QID
@@ -462,11 +462,13 @@ export function QuestionDetailPanel({
       )}
 
       {/* Points fields */}
-      {hasUnresolvedPoints && (
-        <UnresolvedPointFields question={question} parent={zoneQuestionBlock} />
+      {hasLegacyPoints && questionData && (
+        <p className="text-muted small">
+          Point settings are read-only while grading information is unavailable locally.
+        </p>
       )}
       <Wrapper className={clsx(!editMode && 'mb-0')}>
-        {!hasUnresolvedPoints && (
+        {!hasLegacyPoints && (
           <PointsFields
             assessmentType={assessmentType}
             editMode={editMode}

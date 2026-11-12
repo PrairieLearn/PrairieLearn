@@ -308,7 +308,7 @@ function ZonePointsBadge({
   assessmentType: EnumAssessmentType;
   tooltipId: string;
 }) {
-  const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions, assessmentType, {
+  const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions, {
     bestQuestions: zone.bestQuestions,
     numberChoose: zone.numberChoose,
   });
@@ -319,15 +319,7 @@ function ZonePointsBadge({
   }
 
   const label = run(() => {
-    const hasUnresolvedPoints = zone.questions.some(
-      (question) =>
-        question.points != null ||
-        question.maxPoints != null ||
-        question.alternatives?.some(
-          (alternative) => alternative.points != null || alternative.maxPoints != null,
-        ),
-    );
-    if (assessmentType === 'Exam' || hasUnresolvedPoints) return `${totalPoints} pts`;
+    if (assessmentType === 'Exam') return `${totalPoints} pts`;
     const parts: string[] = [];
     if (autoPoints > 0) parts.push(`${autoPoints} auto`);
     if (manualPoints > 0) parts.push(`${manualPoints} manual`);

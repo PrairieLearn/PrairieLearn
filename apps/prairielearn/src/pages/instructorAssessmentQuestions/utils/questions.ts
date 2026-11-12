@@ -39,6 +39,16 @@ export function questionHasTitle(questionData: EditorQuestionMetadata | null): b
   return (questionData?.question.title?.trim().length ?? 0) > 0;
 }
 
+export function hasUnavailableQuestions(
+  question: ZoneQuestionBlockForm,
+  questionMetadata: QuestionMetadataMap,
+): boolean {
+  if (question.alternatives) {
+    return question.alternatives.some((alternative) => !questionMetadata[alternative.id]);
+  }
+  return !questionMetadata[question.id];
+}
+
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
@@ -222,25 +232,44 @@ export function computeZoneQuestionCount(questions: ZoneQuestionBlockForm[]): nu
 
 export function computeZonePointTotals(
   questions: ZoneQuestionBlockForm[],
-  assessmentType: EnumAssessmentType,
   opts?: { bestQuestions?: number; numberChoose?: number },
 ): {
   autoPoints: number;
   manualPoints: number;
 } {
+  // Compute per-block point contributions.
+  // For Homework questions with max-point caps (maxAutoPoints/maxPoints),
+  // the cap represents the maximum achievable score and should be used
+  // instead of the initial autoPoints value.
   const blockPoints = questions.map((q) => {
     if (q.alternatives) {
-      const resolved = q.alternatives.map((alt) => resolveQuestionPoints(alt, assessmentType, q));
+      // Resolve each alternative's effective points (alternative-level ?? pool-level)
+      const resolved = q.alternatives.map((alt) => ({
+        auto: firstPoints(
+          alt.maxAutoPoints ??
+            alt.maxPoints ??
+            q.maxAutoPoints ??
+            q.maxPoints ??
+            alt.autoPoints ??
+            alt.points ??
+            q.autoPoints ??
+            q.points,
+        ),
+        manual: alt.manualPoints ?? q.manualPoints ?? 0,
+      }));
       // Sort by total descending and take the best numberChoose alternatives
-      resolved.sort((a, b) => b.autoPoints + b.manualPoints - (a.autoPoints + a.manualPoints));
+      resolved.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
       const count = Math.min(q.numberChoose ?? resolved.length, resolved.length);
       const selected = resolved.slice(0, count);
       return {
-        autoPoints: selected.reduce((sum, r) => sum + r.autoPoints, 0),
-        manualPoints: selected.reduce((sum, r) => sum + r.manualPoints, 0),
+        auto: selected.reduce((sum, r) => sum + r.auto, 0),
+        manual: selected.reduce((sum, r) => sum + r.manual, 0),
       };
     }
-    return resolveQuestionPoints(q, assessmentType);
+    return {
+      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.autoPoints ?? q.points),
+      manual: q.manualPoints ?? 0,
+    };
   });
 
   // If the zone uses bestQuestions or numberChoose, only the best N blocks count.
@@ -250,41 +279,13 @@ export function computeZonePointTotals(
       ? Math.min(opts.bestQuestions, opts.numberChoose)
       : (opts?.bestQuestions ?? opts?.numberChoose);
   if (zoneChoose != null && zoneChoose < blockPoints.length) {
-    blockPoints.sort((a, b) => b.autoPoints + b.manualPoints - (a.autoPoints + a.manualPoints));
+    blockPoints.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
     blockPoints.length = zoneChoose;
   }
 
   return {
-    autoPoints: blockPoints.reduce((sum, b) => sum + b.autoPoints, 0),
-    manualPoints: blockPoints.reduce((sum, b) => sum + b.manualPoints, 0),
-  };
-}
-
-function resolveQuestionPoints(
-  question: QuestionPointsJson,
-  assessmentType: EnumAssessmentType,
-  parent?: QuestionPointsJson,
-): { autoPoints: number; manualPoints: number } {
-  const points = question.points ?? parent?.points;
-  const autoPoints = question.autoPoints ?? parent?.autoPoints;
-  const maxAutoPoints = question.maxAutoPoints ?? parent?.maxAutoPoints;
-  const maxPoints = question.maxPoints ?? parent?.maxPoints;
-  const manualPoints = question.manualPoints ?? parent?.manualPoints;
-
-  // Sync chooses the point format after inheritance. Any split field, including
-  // an explicit zero, overrides legacy points.
-  const hasSplitPoints = autoPoints != null || maxAutoPoints != null || manualPoints != null;
-  const effectiveAutoPoints = (hasSplitPoints ? autoPoints : points) ?? 0;
-  const maximumAutoPoints =
-    assessmentType === 'Exam'
-      ? Math.max(
-          ...(Array.isArray(effectiveAutoPoints) ? effectiveAutoPoints : [effectiveAutoPoints]),
-        )
-      : firstPoints(maxAutoPoints ?? maxPoints ?? effectiveAutoPoints);
-
-  return {
-    autoPoints: maximumAutoPoints,
-    manualPoints: hasSplitPoints ? (manualPoints ?? 0) : 0,
+    autoPoints: blockPoints.reduce((sum, b) => sum + b.auto, 0),
+    manualPoints: blockPoints.reduce((sum, b) => sum + b.manual, 0),
   };
 }
 
@@ -297,8 +298,20 @@ export function computeQuestionTotalPoints(
   assessmentType: EnumAssessmentType,
   parent?: QuestionPointsJson,
 ): number {
-  const { autoPoints, manualPoints } = resolveQuestionPoints(question, assessmentType, parent);
-  return autoPoints + manualPoints;
+  const points = question.points ?? parent?.points;
+  const autoPoints = question.autoPoints ?? parent?.autoPoints;
+  const maxAutoPoints = question.maxAutoPoints ?? parent?.maxAutoPoints;
+  const maxPoints = question.maxPoints ?? parent?.maxPoints;
+  const manualPoints = question.manualPoints ?? parent?.manualPoints ?? 0;
+
+  if (assessmentType === 'Homework') {
+    const auto = maxAutoPoints ?? maxPoints ?? autoPoints ?? points ?? 0;
+    return firstPoints(auto) + firstPoints(manualPoints);
+  }
+
+  // Exam: first element of points array is the max
+  const auto = points ?? autoPoints ?? 0;
+  return firstPoints(auto) + firstPoints(manualPoints);
 }
 
 /**

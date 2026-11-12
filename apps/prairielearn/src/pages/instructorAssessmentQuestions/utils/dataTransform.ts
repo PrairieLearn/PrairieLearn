@@ -5,7 +5,6 @@ import type {
   ZoneAssessmentJson,
   ZoneAssessmentJsonInput,
   ZoneQuestionBlockJson,
-  ZoneQuestionBlockJsonInput,
 } from '../../../schemas/infoAssessment.js';
 import type {
   AltPoolBlockForm,
@@ -29,7 +28,7 @@ function createTrackingId(): TrackingId {
  * Normalizes legacy `points`/`maxPoints` fields for the editor.
  * - For manually-graded questions: `maxPoints` or `points` → `manualPoints`
  * - For known auto-graded questions: `points` → `autoPoints`, `maxPoints` → `maxAutoPoints`
- * Keeps existing modern values and removes the corresponding legacy fields.
+ * Only converts when the modern field isn't already set.
  */
 function normalizeQuestionPoints<T extends QuestionPointsJson>(
   obj: T,
@@ -60,12 +59,12 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
     delete result.maxPoints;
     return result;
   }
-  if (result.points != null) {
-    result.autoPoints ??= result.points;
+  if (result.points != null && result.autoPoints == null) {
+    result.autoPoints = result.points;
     delete result.points;
   }
-  if (result.maxPoints != null) {
-    result.maxAutoPoints ??= result.maxPoints;
+  if (result.maxPoints != null && result.maxAutoPoints == null) {
+    result.maxAutoPoints = result.maxPoints;
     delete result.maxPoints;
   }
   return result;
@@ -74,15 +73,15 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
 /**
  * Returns the effective grading method for an alt pool by examining its alternatives.
  *
- * Pool defaults require every alternative's grading method to be known.
- * Alternatives can normalize independently when the pool has no point defaults.
+ * A pool with unavailable alternatives keeps its authored point fields because
+ * interpreting legacy points requires knowing every alternative's grading method.
  */
 function getAltPoolGradingMethod(
   alternatives: QuestionAlternativeJson[],
   getGradingMethod: (id?: string) => string | null | undefined,
 ): 'manual' | 'auto' | 'mixed' | 'unknown' {
   const methods = alternatives.map((alt) => getGradingMethod(alt.id));
-  if (methods.length === 0 || methods.some((method) => method == null)) return 'unknown';
+  if (methods.some((method) => method == null)) return 'unknown';
   const hasManual = methods.includes('Manual');
   const hasNonManual = methods.some((m) => m != null && m !== 'Manual');
 
@@ -92,7 +91,7 @@ function getAltPoolGradingMethod(
 }
 
 /** Returns true when a question block uses only legacy point fields. */
-function hasLegacyPoints(question: QuestionPointsJson): boolean {
+function hasLegacyPoints(question: ZoneQuestionBlockJson): boolean {
   return (
     (question.points != null || question.maxPoints != null) &&
     question.autoPoints == null &&
@@ -110,7 +109,7 @@ function firstPointValue(points: QuestionPointsJson['points']): number | undefin
  * Materializes pool-level legacy `points`/`maxPoints` onto a single alternative
  * while preserving any point fields the alternative already defines.
  */
-function normalizeInheritedAlternativePoints(
+function normalizeMixedPoolAlternativePoints(
   alternative: QuestionAlternativeJson,
   poolPoints: QuestionPointsJson['points'],
   poolMaxPoints: QuestionPointsJson['maxPoints'],
@@ -155,84 +154,25 @@ function normalizeInheritedAlternativePoints(
  * alternative as needed, then normalizes per-alternative based on grading
  * method. Clears points from the pool.
  */
-function pushPointsToAlternatives<T extends ZoneQuestionBlockJsonInput>(
-  question: T,
+function pushPointsToAlternatives(
+  question: ZoneQuestionBlockJson,
   getGradingMethod: (id?: string) => string | null | undefined,
-): T {
-  const { points, maxPoints } = question;
+): AltPoolBlockForm {
+  const { points, maxPoints, ...poolRest } = question;
   return {
-    ...question,
-    points: undefined,
-    maxPoints: undefined,
+    ...poolRest,
     pointsDistributedInfoBanner: true,
-    alternatives: (question.alternatives ?? []).map((alt) =>
-      normalizeInheritedAlternativePoints(
+    trackingId: createTrackingId(),
+    alternatives: (question.alternatives ?? []).map((alt) => ({
+      ...normalizeMixedPoolAlternativePoints(
         alt,
         points,
         maxPoints,
         getGradingMethod(alt.id) === 'Manual',
       ),
-    ),
-  };
-}
-
-/**
- * Normalizes legacy point fields once grading is known, retaining editor IDs.
- */
-export function normalizeQuestionBlockPoints<T extends ZoneQuestionBlockJsonInput>(
-  question: T,
-  questionMetadata: QuestionMetadataMap,
-): T {
-  if (
-    question.points == null &&
-    question.maxPoints == null &&
-    !question.alternatives?.some((alt) => alt.points != null || alt.maxPoints != null)
-  ) {
-    return question;
-  }
-
-  const getGradingMethod = (id?: string) =>
-    id ? questionMetadata[id]?.question.grading_method : undefined;
-  // Pool defaults depend on every alternative's grading method.
-  const altPoolGradingMethod =
-    question.alternatives && !question.id
-      ? getAltPoolGradingMethod(question.alternatives, getGradingMethod)
-      : undefined;
-  const gradingMethod = getGradingMethod(question.id);
-  const poolHasPointFields =
-    question.points != null ||
-    question.maxPoints != null ||
-    question.autoPoints != null ||
-    question.maxAutoPoints != null ||
-    question.manualPoints != null;
-  if (
-    (altPoolGradingMethod === 'unknown' && poolHasPointFields) ||
-    (altPoolGradingMethod == null && gradingMethod == null)
-  ) {
-    return question;
-  }
-
-  if (altPoolGradingMethod === 'mixed' && hasLegacyPoints(question)) {
-    return pushPointsToAlternatives(question, getGradingMethod);
-  }
-
-  return {
-    ...normalizeQuestionPoints(
-      question,
-      altPoolGradingMethod != null ? altPoolGradingMethod === 'manual' : gradingMethod === 'Manual',
-    ),
-    alternatives: question.alternatives?.map((alt) => {
-      const alternativeGradingMethod = getGradingMethod(alt.id);
-      return altPoolGradingMethod === 'manual' &&
-        hasLegacyPoints(question) &&
-        (alt.points != null || alt.maxPoints != null)
-        ? normalizeInheritedAlternativePoints(alt, question.points, question.maxPoints, true)
-        : normalizeQuestionPoints(
-            alt,
-            alternativeGradingMethod == null ? undefined : alternativeGradingMethod === 'Manual',
-          );
-    }),
-  };
+      trackingId: createTrackingId(),
+    })),
+  } as AltPoolBlockForm;
 }
 
 /**
@@ -244,6 +184,13 @@ export function prepareZonesForEditor(
   zones: ZoneAssessmentJson[],
   questionMetadata: QuestionMetadataMap,
 ): ZoneAssessmentForm[] {
+  const getGradingMethod = (id?: string) =>
+    id ? questionMetadata[id]?.question.grading_method : undefined;
+  const isManuallyGraded = (id?: string) => {
+    const gradingMethod = getGradingMethod(id);
+    return gradingMethod == null ? undefined : gradingMethod === 'Manual';
+  };
+
   // Cast needed for TypeScript spread inference with union types
   return zones.map((zone) => ({
     ...zone,
@@ -255,14 +202,32 @@ export function prepareZonesForEditor(
     canView: isEmptyArray(zone.canView) ? undefined : zone.canView,
     canSubmit: isEmptyArray(zone.canSubmit) ? undefined : zone.canSubmit,
     questions: zone.questions.map((question) => {
-      const normalized = normalizeQuestionBlockPoints(question, questionMetadata);
+      // Alt pools have no `id`, so we can't look up a grading method directly.
+      // Determine it from the alternatives' grading methods instead.
+      const altPoolGradingMethod =
+        question.alternatives && !question.id
+          ? getAltPoolGradingMethod(question.alternatives, getGradingMethod)
+          : undefined;
+
+      if (altPoolGradingMethod === 'mixed' && hasLegacyPoints(question)) {
+        return pushPointsToAlternatives(question, getGradingMethod);
+      }
+
+      const isManualGrading =
+        altPoolGradingMethod != null && altPoolGradingMethod !== 'unknown'
+          ? altPoolGradingMethod === 'manual'
+          : isManuallyGraded(question.id);
+
       return {
-        ...normalized,
+        ...normalizeQuestionPoints(question, isManualGrading),
         canView: isEmptyArray(question.canView) ? undefined : question.canView,
         canSubmit: isEmptyArray(question.canSubmit) ? undefined : question.canSubmit,
         trackingId: createTrackingId(),
-        alternatives: normalized.alternatives?.map((alt) => ({
-          ...alt,
+        alternatives: question.alternatives?.map((alt) => ({
+          ...normalizeQuestionPoints(
+            alt,
+            altPoolGradingMethod === 'unknown' ? undefined : isManuallyGraded(alt.id),
+          ),
           trackingId: createTrackingId(),
         })),
       };

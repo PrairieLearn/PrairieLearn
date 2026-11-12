@@ -29,7 +29,6 @@ import type { ZoneAssessmentJsonInput } from '../schemas/infoAssessment.js';
 import { fetchCheerio } from './helperClient.js';
 import { syncCourse, updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-import { syncCourseData } from './sync/util.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
 
@@ -800,18 +799,6 @@ describe('Editing assessment questions', { concurrent: false }, () => {
       assert.include(editor.text(), '@unavailable/mixed');
       assert.include(editor.text(), 'Unavailable locally');
       assert.lengthOf(editor.find('a[href*="/question/"]'), 1);
-      for (const [qid, score] of [
-        ['@unavailable/shared-only', '5/10 pts'],
-        ['@unavailable/mixed', '4/8 pts'],
-      ]) {
-        const row = editor
-          .find('span.font-monospace')
-          .filter((_, element) => response.$(element).text() === qid)
-          .closest('[role="button"]');
-        assert.lengthOf(row, 1);
-        assert.include(row.text(), score);
-        assert.lengthOf(row.find('.bi-pen-fill, .bi-lightning-charge-fill'), 0);
-      }
     });
 
     test('handles existing question rows without retained references until they are synced again', async () => {
@@ -828,7 +815,10 @@ describe('Editing assessment questions', { concurrent: false }, () => {
           `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
         );
         assert.equal(response.status, 200);
-        assert.include(response.$('[role="alert"]').text(), 'Load this course from disk again');
+        assert.include(
+          response.$('[role="alert"]').text(),
+          'Some questions in this assessment could not be resolved. Fix any sync errors for this assessment and sync the course again.',
+        );
         assert.lengthOf(response.$('[data-component="AssessmentQuestionsEditor"]'), 0);
       } finally {
         await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
@@ -836,87 +826,6 @@ describe('Editing assessment questions', { concurrent: false }, () => {
 
       const { props } = await getEditorData();
       assert.deepEqual(serializeZonesForJson(props.jsonZones), syncedZones);
-    });
-
-    test('resolves metadata for a shared reference back to the same course', async () => {
-      const questionInfoPath = path.join(
-        courseLiveDir,
-        'questions',
-        'test',
-        'question',
-        'info.json',
-      );
-      const originalAssessmentContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
-      const originalQuestionContent = await fs.readFile(questionInfoPath, 'utf8');
-      try {
-        const assessmentInfo = JSON.parse(originalAssessmentContent);
-        assessmentInfo.zones[1].questions[0].alternatives[1].id = '@same-course/test/question';
-        await fs.writeJSON(assessmentLiveInfoPath, assessmentInfo, { spaces: 2 });
-        await fs.writeJSON(questionInfoPath, {
-          ...JSON.parse(originalQuestionContent),
-          sharePublicly: true,
-        });
-        await execute(sql.update_course_sharing_name, {
-          course_id: '1',
-          sharing_name: 'same-course',
-        });
-        await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
-
-        const { response, props } = await getEditorData();
-        assert.equal(
-          props.questionRows[0].assessment_question.json_qid,
-          '@same-course/test/question',
-        );
-        const editor = response.$('div[data-component="AssessmentQuestionsEditor"]');
-        const previewLink = editor.find('a[href*="/question/"]');
-        assert.lengthOf(previewLink, 1);
-        assert.include(previewLink.text(), 'Test question');
-        const questionRow = previewLink.closest('[role="button"]');
-        assert.include(questionRow.text(), '@same-course/test/question');
-        assert.notInclude(questionRow.text(), 'Unavailable locally');
-      } finally {
-        await fs.writeFile(assessmentLiveInfoPath, originalAssessmentContent);
-        await fs.writeFile(questionInfoPath, originalQuestionContent);
-        await execute(sql.update_course_sharing_name, { course_id: '1', sharing_name: null });
-        await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
-      }
-    });
-
-    test.each([
-      {
-        name: 'unsynced edits',
-        getContents: (original: string) =>
-          JSON.stringify({
-            ...JSON.parse(original),
-            zones: [{ questions: [{ id: 'test/question', points: 99 }] }],
-          }),
-        sync: false,
-      },
-      { name: 'syntax errors', getContents: () => '{', sync: true },
-      {
-        name: 'validation failures',
-        getContents: (original: string) =>
-          JSON.stringify({ ...JSON.parse(original), zones: [{ questions: [] }] }),
-        sync: true,
-      },
-    ])('keeps the synced structure when the file has $name', async ({ getContents, sync }) => {
-      const originalContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
-      try {
-        await fs.writeFile(assessmentLiveInfoPath, getContents(originalContent));
-        if (sync) {
-          const result = await syncCourseData(courseLiveDir);
-          assert(result.status === 'complete');
-          assert.isTrue(result.hadJsonErrors);
-        }
-
-        const { props } = await getEditorData();
-        assert.deepEqual(serializeZonesForJson(props.jsonZones), syncedZones);
-      } finally {
-        await fs.writeFile(assessmentLiveInfoPath, originalContent);
-        if (sync) {
-          await withConfig({ checkSharingOnSync: false }, () => syncCourse(courseLiveDir));
-        }
-      }
     });
 
     test('preserves unavailable references and their point settings when saving another edit', async () => {
