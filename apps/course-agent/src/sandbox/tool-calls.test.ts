@@ -66,4 +66,12 @@ describe('tool call history parts', () => {
     });
     expect(toolCallFromItem('completed', { type: 'agentMessage' })).toBeNull();
   });
+
+  it('shows context compaction as its own row', () => {
+    expect(toolCallFromItem('started', { type: 'contextCompaction', id: 'c' })).toEqual({
+      v: 1,
+      kind: 'compaction',
+      status: 'running',
+    });
+  });
 });
