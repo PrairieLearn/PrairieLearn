@@ -2,11 +2,14 @@
 -- UNION deduplicates source/descendant pairs, including the initial source,
 -- so self-references and cycles terminate without a depth limit. Keep deleted
 -- rows in the traversal: they can connect a source to later copies.
+-- Carry course IDs through the traversal to avoid rejoining questions for counts.
 WITH RECURSIVE
   lineage AS (
     SELECT
       q.id AS source_question_id,
-      q.id AS question_id
+      q.course_id AS source_course_id,
+      q.id AS question_id,
+      q.course_id
     FROM
       questions AS q
     WHERE
@@ -14,28 +17,28 @@ WITH RECURSIVE
     UNION
     SELECT
       lineage.source_question_id,
-      descendant.id
+      lineage.source_course_id,
+      descendant.id,
+      descendant.course_id
     FROM
       lineage
       JOIN questions AS descendant ON descendant.copied_from_question_id = lineage.question_id
   )
 SELECT
-  source.id AS question_id,
-  count(DISTINCT descendant.course_id) FILTER (
+  lineage.source_question_id AS question_id,
+  count(DISTINCT lineage.course_id) FILTER (
     WHERE
-      descendant.course_id != source.course_id
+      lineage.course_id != lineage.source_course_id
   )::int AS downstream_course_count,
   count(DISTINCT course.institution_id) FILTER (
     WHERE
-      descendant.course_id != source.course_id
+      lineage.course_id != lineage.source_course_id
   )::int AS downstream_institution_count
 FROM
   lineage
-  JOIN questions AS source ON source.id = lineage.source_question_id
-  JOIN questions AS descendant ON descendant.id = lineage.question_id
-  JOIN courses AS course ON course.id = descendant.course_id
+  JOIN courses AS course ON course.id = lineage.course_id
 GROUP BY
-  source.id;
+  lineage.source_question_id;
 
 -- BLOCK select_question_by_id
 SELECT
