@@ -57,7 +57,7 @@ describe('Editing question settings', { concurrent: false }, () => {
     assert.equal(questionInfo.title, 'Test question');
   });
 
-  test('converts legacy authors on save and resolves names only for course staff', async () => {
+  test('saves authors and resolves names only for course staff', async () => {
     const staff = await getOrCreateUser({
       uid: 'author-staff',
       name: 'Visible Staff Name',
@@ -77,12 +77,12 @@ describe('Editing question settings', { concurrent: false }, () => {
       authn_user_id: '1',
     });
     const info = await fs.readJSON(questionLiveInfoPath);
-    info.authors = [{ name: 'Old name', email: staff.uid }, 'author-nonstaff', 'author-unknown'];
+    info.authors = [staff.uid, 'author-nonstaff', 'author-unknown'];
     await fs.writeJSON(
       path.join(courseRepo.courseOriginDir, 'questions/test/question/info.json'),
       info,
     );
-    await commitOriginAndSync(courseRepo, 'Add legacy authors');
+    await commitOriginAndSync(courseRepo, 'Add authors');
     const url = `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`;
     const settings = await fetchCheerio(url);
     assert.equal(settings.status, 200);
