@@ -31,6 +31,10 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 
 
+def _matrix_entry_name(name: str, row: int, column: int, column_count: int) -> str:
+    return f"{name}{column_count * row + column + 1}"
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
@@ -269,11 +273,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["a_sub"] = sub_latex
 
             raw_submitted_answers = data["raw_submitted_answers"]
-            entry_names = [name + str(i + 1) for i in range(m * n)]
+            entry_names = [
+                _matrix_entry_name(name, i, j, n) for i in range(m) for j in range(n)
+            ]
             if any(entry_name in raw_submitted_answers for entry_name in entry_names):
                 raw_input = [
                     [
-                        raw_submitted_answers.get(name + str(n * i + j + 1), "")
+                        raw_submitted_answers.get(_matrix_entry_name(name, i, j, n), "")
                         for j in range(n)
                     ]
                     for i in range(m)
@@ -388,7 +394,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     invalid_format = False
     for i in range(m):
         for j in range(n):
-            each_entry_name = name + str(n * i + j + 1)
+            each_entry_name = _matrix_entry_name(name, i, j, n)
             a_sub = data["submitted_answers"].get(each_entry_name, None)
             if allow_blank and a_sub is not None and a_sub.strip() == "":
                 a_sub = blank_value
@@ -457,7 +463,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     feedback = {}
     for i in range(m):
         for j in range(n):
-            each_entry_name = name + str(n * i + j + 1)
+            each_entry_name = _matrix_entry_name(name, i, j, n)
             a_sub = data["submitted_answers"].get(each_entry_name, None)
             # Get submitted answer (if it does not exist, score is zero)
             if a_sub is None:
@@ -531,7 +537,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     feedback = {}
     for i in range(m):
         for j in range(n):
-            each_entry_name = name + str(n * i + j + 1)
+            each_entry_name = _matrix_entry_name(name, i, j, n)
 
             if result == "correct":
                 data["raw_submitted_answers"][each_entry_name] = str(a_tru[i, j])
@@ -600,7 +606,7 @@ def create_table_for_html_display(
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         # First row of array
         for j in range(n):
-            each_entry_name = name + str(j + 1)
+            each_entry_name = _matrix_entry_name(name, 0, j, n)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, ""
             )
@@ -621,7 +627,7 @@ def create_table_for_html_display(
         for i in range(1, m):
             display_array += " <tr>"
             for j in range(n):
-                each_entry_name = name + str(n * i + j + 1)
+                each_entry_name = _matrix_entry_name(name, i, j, n)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, ""
                 )
@@ -668,7 +674,7 @@ def create_table_for_html_display(
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         # First row of array
         for j in range(n):
-            each_entry_name = name + str(j + 1)
+            each_entry_name = _matrix_entry_name(name, 0, j, n)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, ""
             )
@@ -701,7 +707,7 @@ def create_table_for_html_display(
         for i in range(1, m):
             display_array += " <tr>"
             for j in range(n):
-                each_entry_name = name + str(n * i + j + 1)
+                each_entry_name = _matrix_entry_name(name, i, j, n)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, ""
                 )
@@ -740,7 +746,7 @@ def create_table_for_html_display(
         )
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         for j in range(n):
-            each_entry_name = name + str(j + 1)
+            each_entry_name = _matrix_entry_name(name, 0, j, n)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, None
             )
@@ -758,7 +764,7 @@ def create_table_for_html_display(
         for i in range(1, m):
             display_array += " <tr>"
             for j in range(n):
-                each_entry_name = name + str(n * i + j + 1)
+                each_entry_name = _matrix_entry_name(name, i, j, n)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, None
                 )
