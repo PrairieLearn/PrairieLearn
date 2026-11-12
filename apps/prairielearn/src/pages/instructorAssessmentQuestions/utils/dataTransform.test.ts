@@ -328,13 +328,23 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[1].alternatives![0].maxPoints).toBeUndefined();
   });
 
-  it('does not normalize when autoPoints is already set', () => {
+  it('keeps existing modern point values and removes known legacy fields', () => {
     const zones: ZoneAssessmentJson[] = [
       {
         lockpoint: false,
         canSubmit: [],
         canView: [],
-        questions: [{ id: 'q1', autoPoints: 7, points: 5, canSubmit: [], canView: [] }],
+        questions: [
+          {
+            id: 'q1',
+            autoPoints: 7,
+            maxAutoPoints: 12,
+            points: 5,
+            maxPoints: 10,
+            canSubmit: [],
+            canView: [],
+          },
+        ],
       },
     ];
 
@@ -345,7 +355,9 @@ describe('prepareZonesForEditor normalization', () => {
     const result = prepareZonesForEditor(zones, metadata);
 
     expect(result[0].questions[0].autoPoints).toBe(7);
-    expect(result[0].questions[0].points).toBe(5);
+    expect(result[0].questions[0].maxAutoPoints).toBe(12);
+    expect(result[0].questions[0].points).toBeUndefined();
+    expect(result[0].questions[0].maxPoints).toBeUndefined();
   });
 
   it('normalizes points to manualPoints for Manual grading questions', () => {
@@ -715,7 +727,7 @@ describe('prepareZonesForEditor normalization', () => {
             maxPoints: 20,
             canSubmit: [],
             canView: [],
-            alternatives: [{ id: 'alt1' }],
+            alternatives: [{ id: 'alt1', points: 4 }],
           },
         ],
       },
@@ -728,6 +740,7 @@ describe('prepareZonesForEditor normalization', () => {
     const result = prepareZonesForEditor(zones, metadata);
 
     expect(result[0].questions[0].manualPoints).toBe(20);
+    expect(result[0].questions[0].alternatives![0].manualPoints).toBe(20);
     expect(result[0].questions[0].maxPoints).toBeUndefined();
     expect(result[0].questions[0].autoPoints).toBeUndefined();
   });

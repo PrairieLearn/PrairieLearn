@@ -19,6 +19,7 @@ import {
   createAlternativeWithTrackingId,
   createQuestionWithTrackingId,
   getDefaultPointFieldsForNewQuestion,
+  normalizeQuestionBlockPoints,
   questionBlockToAlternative,
 } from './dataTransform.js';
 import { sanitizeSelectedItem, selectedItemsEqual } from './selectedItem.js';
@@ -910,7 +911,23 @@ export function createEditorReducer(initialState: EditorState) {
   // autosave-driven zone changes don't produce a new object reference when
   // the selection is logically unchanged.
   return function editorReducer(state: EditorState, action: EditorAction): EditorState {
-    const nextState = coreReducer(state, action);
+    let nextState = coreReducer(state, action);
+
+    if (nextState.zones !== state.zones || nextState.questionMetadata !== state.questionMetadata) {
+      // Replacing or removing an unavailable question can make preserved legacy
+      // points editable again. Normalize before modern form values are merged.
+      const zones = nextState.zones.map((zone) => {
+        const questions = zone.questions.map((question) =>
+          normalizeQuestionBlockPoints(question, nextState.questionMetadata),
+        );
+        return questions.some((question, index) => question !== zone.questions[index])
+          ? { ...zone, questions }
+          : zone;
+      });
+      if (zones.some((zone, index) => zone !== nextState.zones[index])) {
+        nextState = { ...nextState, zones };
+      }
+    }
 
     if (nextState.zones !== state.zones && nextState.selectedItem != null) {
       const sanitized = sanitizeSelectedItem(nextState.selectedItem, nextState.zones);

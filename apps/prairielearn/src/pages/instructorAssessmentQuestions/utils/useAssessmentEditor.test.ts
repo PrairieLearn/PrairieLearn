@@ -558,7 +558,7 @@ describe('createEditorReducer', () => {
     ]);
   });
 
-  it('keeps legacy defaults when picking the first alternative into an empty pool', () => {
+  it('uses existing point defaults when the first picked alternative resolves grading', () => {
     const pool = makeQuestion('pool', {
       autoPoints: undefined,
       points: 6,
@@ -582,9 +582,91 @@ describe('createEditorReducer', () => {
     });
 
     expect(serializeZonesForJson(stripTrackingIds(state.zones))[0].questions).toEqual([
-      { points: 6, maxPoints: 12, alternatives: [{ id: 'picked' }] },
+      { autoPoints: 6, maxAutoPoints: 12, alternatives: [{ id: 'picked' }] },
     ]);
   });
+
+  it.each([
+    {
+      gradingMethod: 'Internal',
+      expected: {
+        autoPoints: 6,
+        maxAutoPoints: 12,
+        alternatives: [{ id: 'known' }, { id: 'picked', autoPoints: 4 }],
+      },
+    },
+    {
+      gradingMethod: 'Manual',
+      expected: {
+        alternatives: [
+          { id: 'known', autoPoints: 6, maxAutoPoints: 12 },
+          { id: 'picked', manualPoints: 12 },
+        ],
+      },
+    },
+  ])(
+    'normalizes preserved pool points when the last unknown alternative becomes $gradingMethod',
+    ({ gradingMethod, expected }) => {
+      const pool = makeQuestion('pool', {
+        autoPoints: undefined,
+        points: 6,
+        maxPoints: 12,
+        alternatives: [
+          makeAlternative('known', { id: 'known' }),
+          makeAlternative('missing', { id: '@unavailable/question', points: 4 }),
+        ],
+      });
+      const initialState = makeState({
+        zones: [makeZone('z1', [pool])],
+        questionMetadata: {
+          known: { question: { grading_method: 'Internal' } } as unknown as EditorQuestionMetadata,
+        },
+        selectedItem: {
+          type: 'picker',
+          zoneTrackingId: 'z1',
+          returnToSelection: {
+            type: 'alternative',
+            questionTrackingId: 'pool',
+            alternativeTrackingId: 'missing',
+          },
+        },
+      });
+      const reducer = createEditorReducer(initialState);
+
+      let state = reducer(initialState, {
+        type: 'UPDATE_QUESTION',
+        questionTrackingId: 'pool',
+        question: { comment: 'Preserve my points' },
+      });
+      expect(serializeZonesForJson(stripTrackingIds(state.zones))[0].questions[0]).toEqual({
+        points: 6,
+        maxPoints: 12,
+        comment: 'Preserve my points',
+        alternatives: [{ id: 'known' }, { id: '@unavailable/question', points: 4 }],
+      });
+
+      state = reducer(state, {
+        type: 'QUESTION_PICKED',
+        qid: 'picked',
+        metadata: {
+          question: { grading_method: gradingMethod },
+        } as unknown as EditorQuestionMetadata,
+        expectedSelectedItem: initialState.selectedItem,
+      });
+
+      const normalized = state.zones[0].questions[0];
+      expect(state.zones[0].trackingId).toBe(tid('z1'));
+      expect(normalized.trackingId).toBe(tid('pool'));
+      expect(normalized.alternatives!.map((alt) => alt.trackingId)).toEqual([
+        tid('known'),
+        tid('missing'),
+      ]);
+      expect(serializeZonesForJson(stripTrackingIds(state.zones))[0].questions[0]).toEqual({
+        ...expected,
+        comment: 'Preserve my points',
+      });
+    },
+  );
 
   it('REMOVE_QUESTION_BY_QID: standalone, alternative, and nonexistent', () => {
     const alt = makeAlternative('a1', { id: 'alt-qid' });
