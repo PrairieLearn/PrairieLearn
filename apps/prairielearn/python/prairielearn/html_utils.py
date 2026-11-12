@@ -506,12 +506,12 @@ def _render_raw_input_template(template_name: str, data: dict[str, object]) -> s
 
 
 def _render_raw_input_value(value: str, formatter: Callable[[str], str]) -> str:
-    return _render_raw_input_template(
-        "raw_input_value.mustache",
-        {
-            "empty": value == "",
-            "value": formatter(value),
-        },
+    if value == "":
+        return '<span class="text-body-secondary">(nothing entered)</span>'
+
+    return (
+        '<pre class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere">'
+        f"{html.escape(formatter(value))}</pre>"
     )
 
 
