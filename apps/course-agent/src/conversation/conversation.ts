@@ -433,16 +433,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (message && earlier.length === 0 && !this.record.title) this.startTitle(message);
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
-    const metadata = message && UserMessageMetadataSchema.safeParse(message.metadata ?? {});
-    // The turn still runs without the page, but metadata that fails the schema should not vanish
-    // quietly.
-    if (metadata && !metadata.success) {
-      logEvent('message_metadata_invalid', {
-        conversationId: this.name,
-        paths: metadata.error.issues.map((issue) => issue.path.join('.')),
-      });
-    }
-    const location = metadata?.data?.location;
+    const location =
+      message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
     const messageText =
       message?.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n') ?? '';
     const input: TurnInput = {

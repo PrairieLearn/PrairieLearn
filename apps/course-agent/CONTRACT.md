@@ -73,7 +73,7 @@ History keeps a bounded copy: command text up to 2,000 characters, output up to 
 
 ## Page location
 
-Each user message may carry `metadata.location` (`PageLocationSchema`): the path of the PrairieLearn page the instructor was viewing, the page's navigation key such as `assessment.settings` (never the page title, which can name students), and the course instance, assessment, and question names PrairieLearn rendered for that page. A shared question used from another course is flagged with `questionFromAnotherCourse`, since its files are not in the checkout. The browser supplies the location, so the turn passes it to Codex as `untrusted` `additionalContext` under `prairielearn_page`: the model sees it as user-role context ahead of the message, the message text stays verbatim, and Codex skips resending an unchanged page. Unknown location fields are stripped; metadata that fails to parse is logged as `message_metadata_invalid` and the message is sent without it. Catch-up keeps a compact hint instead, naming each replayed staff line's page by its navigation key along with the most specific item on it.
+Each user message may carry `metadata.location` (`PageLocationSchema`): the page the instructor was viewing, named by its path, navigation key, and course items, never its title, which can name students. The browser supplies it, so the turn passes it to Codex as `untrusted` `additionalContext` rather than in the message text. Catch-up labels each replayed staff line with its page instead.
 
 ## Input requests
 
