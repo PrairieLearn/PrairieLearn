@@ -42,6 +42,7 @@ import {
   DraftAttachmentList,
   FileDropArea,
   SentAttachments,
+  hasInvalidAttachment,
   revokePreviews,
   uploadDraftAttachments,
   useDraftAttachments,
@@ -52,6 +53,7 @@ import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
+import { currentPageLocation } from './pageLocation.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -413,23 +415,41 @@ function Chat({
 
   const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
   const { setStatus, setAttachments } = drafts;
-  const { reset: resetDeny } = deny;
+  const { reset: resetDeny, mutateAsync: denyAsync } = deny;
   const offline = lifecycle?.status === 'offline';
-  /** Upload the attachments, then send. A failed upload keeps the draft for another try. */
+  /**
+   * Upload the attachments, deny the review if the message replies to one, then send. A failed
+   * upload or a refused denial keeps the draft for another try.
+   */
   const send = useCallback(
-    async (text: string, attachments: DraftAttachment[]) => {
+    async (text: string, attachments: DraftAttachment[], deniedReviewId?: string) => {
       setSending(true);
       const files = await uploadDraftAttachments(attachments, {
         url: uploadsUrl,
         csrfToken: chatCsrfToken,
         setStatus,
       });
+      // Denying only after the uploads succeed means a failed upload can't leave the review denied
+      // without its message. PrairieLearn has delivered the denial when this resolves, so the
+      // message's turn follows it. On a conflict the review shows the decision that won.
+      const denied =
+        files && deniedReviewId
+          ? await denyAsync({
+              conversationId,
+              reviewId: deniedReviewId,
+              decision: 'denied',
+              viaMessage: true,
+            }).then(
+              () => true,
+              () => false,
+            )
+          : true;
       setSending(false);
-      if (!files) return false;
+      if (!files || !denied) return false;
       if (offline) setAwaitingStart(true);
       // A refused denial's error no longer applies once the message goes out normally.
       resetDeny();
-      void sendMessage({ text, files });
+      void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
       // An answer chosen on an input request leaves the composer's attachments alone.
       if (attachments.length > 0) {
         revokePreviews(attachments);
@@ -437,7 +457,16 @@ function Chat({
       }
       return true;
     },
-    [uploadsUrl, chatCsrfToken, setStatus, setAttachments, resetDeny, sendMessage, offline],
+    [
+      uploadsUrl,
+      chatCsrfToken,
+      setStatus,
+      setAttachments,
+      resetDeny,
+      denyAsync,
+      sendMessage,
+      offline,
+    ],
   );
 
   const initialMessageSentRef = useRef(false);
@@ -506,32 +535,16 @@ function Chat({
     event?.preventDefault();
     const text = draft.trim();
     if (!text || responseActive || !connected || sending || deny.isPending) return;
-    if (replyDenies) {
-      // The denial is recorded before its message goes out, so an upload failing after it would
-      // leave the review denied without the message; attachments can't go with a denial.
-      if (drafts.attachments.length > 0) return;
-      // PrairieLearn has delivered the denial when this succeeds, so the message's turn follows
-      // it. On a conflict the draft stays, and the review shows the decision that won.
-      deny.mutate(
-        { conversationId, reviewId: lifecycle.reviewId!, decision: 'denied', viaMessage: true },
-        {
-          onSuccess: () => {
-            void send(text, []).then((sent) => {
-              if (sent) setDraft('');
-            });
-          },
-        },
-      );
-      return;
-    }
-    if (!canSend) return;
-    void send(text, drafts.attachments).then((sent) => {
-      if (sent) setDraft('');
-    });
+    if (!replyDenies && !canSend) return;
+    void send(text, drafts.attachments, replyDenies ? lifecycle.reviewId! : undefined).then(
+      (sent) => {
+        if (sent) setDraft('');
+      },
+    );
   };
 
   return (
-    <FileDropArea enabled={!replyDenies && !sending} onDrop={drafts.add}>
+    <FileDropArea enabled={!sending} onDrop={drafts.add}>
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
@@ -616,12 +629,7 @@ function Chat({
       </div>
       <Composer
         draft={draft}
-        disabled={
-          !connected ||
-          !(readyToSend || replyDenies) ||
-          deny.isPending ||
-          (replyDenies && drafts.attachments.length > 0)
-        }
+        disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
         placeholder={
           replyDenies
             ? 'Explain what to change…'
@@ -630,7 +638,6 @@ function Chat({
               : undefined
         }
         sendLabel={replyDenies ? 'Deny and send' : undefined}
-        canAttach={!replyDenies}
         pending={sending || deny.isPending}
         attachments={drafts.attachments}
         stopDisabled={!connected || !canStop}
@@ -654,7 +661,6 @@ function Composer({
   placeholder = 'Ask the course agent…',
   sendLabel = 'Send',
   pending = false,
-  canAttach = true,
   attachments,
   onAttach,
   onRemoveAttachment,
@@ -670,8 +676,6 @@ function Composer({
   sendLabel?: string;
   /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
-  /** Whether files can be added; existing attachments can still be removed. */
-  canAttach?: boolean;
   attachments: DraftAttachment[];
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
@@ -689,17 +693,16 @@ function Composer({
     textarea.style.height = 'auto';
     if (textarea.scrollHeight) textarea.style.height = `${textarea.scrollHeight}px`;
   }, [draft]);
-  const hasInvalidAttachment = attachments.some((a) => a.status.kind === 'invalid');
+  const invalidAttachment = hasInvalidAttachment(attachments);
   const submit = (event: SyntheticEvent) => {
     event.preventDefault();
-    if (!hasInvalidAttachment) onSubmit(event);
+    if (!invalidAttachment) onSubmit(event);
   };
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       submit(event);
     }
   };
-  const attachable = canAttach && !pending;
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
@@ -723,7 +726,7 @@ function Composer({
           onChange={(event) => onDraftChange(event.target.value)}
           onKeyDown={onKeyDown}
           onPaste={(event) => {
-            if (!attachable || event.clipboardData.files.length === 0) return;
+            if (pending || event.clipboardData.files.length === 0) return;
             // Copied cells and rich text carry an image of themselves beside their text; paste the text.
             if (
               event.clipboardData.getData('text/plain') &&
@@ -751,7 +754,7 @@ function Composer({
             size="sm"
             className="course-agent-icon-button"
             aria-label="Attach files"
-            disabled={!attachable}
+            disabled={pending}
             onClick={() => fileInputRef.current?.click()}
           >
             <i className="bi bi-plus-lg" aria-hidden="true" />
@@ -773,7 +776,7 @@ function Composer({
                 type="submit"
                 size="sm"
                 aria-label={sendLabel}
-                disabled={!draft.trim() || disabled || pending || hasInvalidAttachment}
+                disabled={!draft.trim() || disabled || pending || invalidAttachment}
               >
                 {pending ? (
                   <Spinner animation="border" size="sm" aria-hidden="true" />

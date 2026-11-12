@@ -111,6 +111,7 @@ async function prepareConversationProxyRequest(
   // Forward this path and query to the configured Cloudflare service.
   req.url = url.pathname + url.search;
   delete req.headers.cookie;
+  delete req.headers['x-csrf-token'];
   req.headers.authorization = headers.Authorization;
   req.headers['x-pl-user-id'] = authn_user.id;
   req.headers['x-pl-course-context'] = encodeURIComponent(

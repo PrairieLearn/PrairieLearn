@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
 import { Form } from 'react-bootstrap';
-import { useController, useFormContext, useWatch } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -96,11 +95,6 @@ function ReleaseDateInput({
 }
 
 export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: string }) {
-  const { trigger } = useFormContext<AccessControlFormData>();
-  const dateControlEnabled = useWatch<AccessControlFormData, 'defaultRule.dateControlEnabled'>({
-    name: 'defaultRule.dateControlEnabled',
-  });
-
   const {
     field: dateField,
     fieldState: { error },
@@ -112,12 +106,6 @@ export function DefaultReleaseDateField({ displayTimezone }: { displayTimezone: 
     AccessControlFormData,
     'defaultRule.release.released'
   >({ name: 'defaultRule.release.released' });
-
-  // Re-validate the release date when date control or the release mode changes
-  // because errors for both settings are stored on the date field.
-  useEffect(() => {
-    void trigger('defaultRule.release.date');
-  }, [dateControlEnabled, releasedField.value, trigger]);
 
   return (
     <div>
@@ -142,7 +130,6 @@ export function OverrideReleaseDateField({
   index: number;
   displayTimezone: string;
 }) {
-  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleValue = useWatch<AccessControlFormData, 'defaultRule.release.date'>({
     name: 'defaultRule.release.date',
   });
@@ -160,12 +147,6 @@ export function OverrideReleaseDateField({
   >({
     name: `overrides.${index}.release.released`,
   });
-
-  // Re-validate the release date when the release mode changes because the
-  // cross-field error is stored on the date field.
-  useEffect(() => {
-    void trigger(`overrides.${index}.release.date`);
-  }, [index, releasedField.value, trigger]);
 
   const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'release');
 
