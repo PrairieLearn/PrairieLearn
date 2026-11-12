@@ -118,24 +118,27 @@ function uploadFile(url: string, csrfToken: string, file: File, onProgress: (p: 
 }
 
 /**
- * A small WebP of an image for its tile in chat history, or null if the browser can't decode it
- * (HEIC in most browsers, or a corrupt file). Browsers without WebP encoding produce a PNG.
+ * A small WebP of an image for its tile in chat history, or null if the browser can't make one:
+ * it can't decode the image (HEIC in most browsers, or a corrupt file) or lacks `OffscreenCanvas`.
+ * Browsers without WebP encoding produce a PNG.
  */
 async function makeThumbnail(file: File) {
-  let bitmap: ImageBitmap;
+  let bitmap: ImageBitmap | undefined;
+  // The preview is optional, so no failure here may reject and hold up the message.
   try {
     bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, THUMBNAIL_PIXELS / Math.max(bitmap.width, bitmap.height));
+    const canvas = new OffscreenCanvas(
+      Math.max(1, Math.round(bitmap.width * scale)),
+      Math.max(1, Math.round(bitmap.height * scale)),
+    );
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return await canvas.convertToBlob({ type: 'image/webp', quality: 0.8 });
   } catch {
     return null;
+  } finally {
+    bitmap?.close();
   }
-  const scale = Math.min(1, THUMBNAIL_PIXELS / Math.max(bitmap.width, bitmap.height));
-  const canvas = new OffscreenCanvas(
-    Math.max(1, Math.round(bitmap.width * scale)),
-    Math.max(1, Math.round(bitmap.height * scale)),
-  );
-  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  return await canvas.convertToBlob({ type: 'image/webp', quality: 0.8 });
 }
 
 /** A preview is optional, so a failed one leaves a file tile in its place. */
