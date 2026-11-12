@@ -71,6 +71,10 @@ Each Codex tool call (a command, a file change, or any other tool: MCP and dynam
 
 History keeps a bounded copy: command text up to 2,000 characters, output up to 4,000 (its start and end), arguments up to 1,000, each diff up to 4,000, and 50 files per change. Paths in the course checkout are stored relative to the course root. Once a message's tool calls exceed 300,000 characters, later calls in it keep their labels but no output, diffs, or arguments, so the message stays well within a Durable Object row; Codex's own thread keeps the full record. A successful `request_changes` call has no part, because its review card shows it; a failed one does, so the instructor sees why. Catch-up omits tool calls except a one-line list of the files each completed change touched.
 
+## Page location
+
+Each user message may carry `metadata.location` (`PageLocationSchema`): the page the instructor was viewing, named by its path, navigation key, and course items, never its title, which can name students. The browser supplies it, so the turn passes it to Codex as `untrusted` `additionalContext` rather than in the message text. Catch-up replays text, so it labels each replayed staff line with its page.
+
 ## Input requests
 
 The agent asks staff for decisions or missing information with Codex's `request_user_input_async` tool, which returns at once and completes an unstreamed agent message carrying the prompts. The Worker shows it as a `data-input-request` part matching `InputRequestPartSchema`. Nothing waits for an answer: staff's next message is the answer, whether sent from the input request card or typed, and it is submitted like any other message. The part is never rewritten, and catch-up includes the prompts so a restored thread knows what the next message answers.

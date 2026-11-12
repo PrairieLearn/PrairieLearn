@@ -43,44 +43,12 @@
       "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken')."
     },
     "authors": {
-      "default": [],
+      "description": "Author UIDs or full ORCID URLs. UIDs need not identify an existing account or be a routable email.",
+      "maxItems": 100,
       "type": "array",
       "items": {
-        "anyOf": [
-          {
-            "type": "string",
-            "minLength": 1,
-            "description": "A user UID, which need not identify an existing account or be a routable email."
-          },
-          {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "minLength": 3,
-                "maxLength": 255,
-                "description": "A human-readable name of a question author."
-              },
-              "email": {
-                "type": "string",
-                "maxLength": 255,
-                "description": "An email address to contact a question author."
-              },
-              "orcid": {
-                "type": "string",
-                "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$",
-                "description": "An ORCID identifier that uniquely identifies an individual question author."
-              },
-              "originCourse": {
-                "type": "string",
-                "description": "The sharing name of a course whose staff is a question author."
-              }
-            },
-            "additionalProperties": false,
-            "description": "Deprecated structured author metadata. Replace with a UID string; legacy email values are treated as UIDs during the transition.",
-            "deprecated": true
-          }
-        ]
+        "type": "string",
+        "minLength": 1
       }
     },
     "clientFiles": {

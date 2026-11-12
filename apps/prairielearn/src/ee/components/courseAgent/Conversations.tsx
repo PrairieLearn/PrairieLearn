@@ -50,6 +50,7 @@ import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
+import { currentPageLocation } from './pageLocation.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -444,7 +445,7 @@ function Chat({
       if (offline) setAwaitingStart(true);
       // A refused denial's error no longer applies once the message goes out normally.
       resetDeny();
-      void sendMessage({ text, files });
+      void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
       // An answer chosen on an input request leaves the composer's attachments alone.
       if (attachments.length > 0) setAttachments([]);
       return true;
