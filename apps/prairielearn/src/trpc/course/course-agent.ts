@@ -15,10 +15,12 @@ import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
+import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
+  updateCourseAgentConversationTitle,
 } from '../../ee/models/course-agent-conversation.js';
 import {
   CourseAgentConversationUsageSchema,
@@ -56,11 +58,19 @@ export const courseAgentRouter = t.router({
     }),
   postReviewDecision: courseAgentProcedure
     .input(
-      z.object({
-        conversationId: IdSchema,
-        reviewId: z.uuid(),
-        decision: z.enum(['approved', 'denied']),
-      }),
+      z.discriminatedUnion('decision', [
+        z.object({
+          conversationId: IdSchema,
+          reviewId: z.uuid(),
+          decision: z.literal('approved'),
+        }),
+        z.object({
+          conversationId: IdSchema,
+          reviewId: z.uuid(),
+          decision: z.literal('denied'),
+          viaMessage: z.boolean().optional(),
+        }),
+      ]),
     )
     .mutation(async ({ ctx, input }) => {
       const conversation = await selectOptionalCourseAgentConversation({
@@ -139,14 +149,31 @@ export const courseAgentRouter = t.router({
           return createCourseAgentConversation(binding.data);
         }
       });
-      const title = input.text.replaceAll(/\s+/g, ' ');
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,
         user_id: ctx.locals.authn_user.id,
         agent_conversation_id: agentConversationId,
-        title: title.length > 80 ? `${title.slice(0, 77)}...` : title,
+        title: formatCourseAgentConversationTitle(input.text),
       });
       return StaffCourseAgentConversationSchema.parse(conversation);
+    }),
+
+  // The agent service generates a title from the first message and publishes it to the
+  // conversation's owner, whose browser saves it here.
+  setTitle: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, title: z.string().trim().min(1).max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      const updated = await updateCourseAgentConversationTitle({
+        conversation,
+        title: input.title,
+      });
+      return StaffCourseAgentConversationSchema.parse(updated);
     }),
 });
 
@@ -157,4 +184,5 @@ export interface CourseAgentError {
   Resume: never;
   GetReview: never;
   PostReviewDecision: never;
+  SetTitle: never;
 }

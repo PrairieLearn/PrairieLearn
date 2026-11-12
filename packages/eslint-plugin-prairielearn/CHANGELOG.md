@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 4.4.3
+
+### Patch Changes
+
+- f5afff0: Align TypeScript ESLint dependencies with the types pulled in by the JSDoc plugin update to fix incompatible rule and rule tester types during builds.
+
 ## 4.4.2
 
 ### Patch Changes

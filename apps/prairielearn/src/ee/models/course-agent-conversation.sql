@@ -40,3 +40,12 @@ FROM
 WHERE
   agent_conversation_id = $agent_conversation_id
 FOR UPDATE;
+
+-- BLOCK update_course_agent_conversation_title
+UPDATE course_agent_conversations
+SET
+  title = $title
+WHERE
+  id = $id
+RETURNING
+  *;

@@ -299,6 +299,12 @@ describe('Course agent access and conversation privacy', () => {
       expect(await client.courseAgent.resume.mutate({ conversationId: own.id })).toEqual({
         recovered: true,
       });
+      await expect(
+        client.courseAgent.setTitle.mutate({ conversationId: other.id, title: 'Renamed' }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      expect(
+        await client.courseAgent.setTitle.mutate({ conversationId: own.id, title: 'Renamed' }),
+      ).toMatchObject({ id: own.id, title: 'Renamed' });
     });
     expect(serviceRequests.map((request) => request.path)).toEqual([
       `/conversations/${own.agent_conversation_id}/resume`,

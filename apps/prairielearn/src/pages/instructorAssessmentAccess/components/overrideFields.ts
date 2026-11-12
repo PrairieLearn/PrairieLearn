@@ -1,33 +1,17 @@
-import type { FieldPath } from 'react-hook-form';
-
 import type { AccessControlFormData, OverridableFieldName } from './types.js';
 
-/**
- * Form-state paths owned by each overridable field, relative to
- * `overrides.${index}`. The first entry is the field itself; subsequent
- * entries are sub-fields that can hold their own validation errors. Keeping
- * these in one place lets us clear, re-trigger, or check editability for
- * every relevant path when an override is toggled on or off — see
- * `getOverrideFieldPaths` and `isFormFieldPathEditable`.
- */
-const OVERRIDE_FIELD_PATH_SUFFIXES: Record<OverridableFieldName, readonly string[]> = {
-  release: ['release', 'release.date', 'release.released'],
-  due: ['due', 'due.date', 'due.credit'],
-  earlyDeadlines: ['earlyDeadlines'],
-  lateDeadlines: ['lateDeadlines'],
-  afterLastDeadline: ['afterLastDeadline', 'afterLastDeadline.credit'],
-  durationMinutes: ['durationMinutes'],
-  password: ['password'],
-  questionVisibility: [
-    'questionVisibility',
-    'questionVisibility.visibleFromDate',
-    'questionVisibility.visibleUntilDate',
-  ],
-  scoreVisibility: ['scoreVisibility', 'scoreVisibility.visibleFromDate'],
-};
-
-const OVERRIDE_FIELD_NAMES = new Set<OverridableFieldName>(
-  Object.keys(OVERRIDE_FIELD_PATH_SUFFIXES) as OverridableFieldName[],
+const OVERRIDE_FIELD_NAMES = new Set(
+  Object.keys({
+    release: true,
+    due: true,
+    earlyDeadlines: true,
+    lateDeadlines: true,
+    afterLastDeadline: true,
+    durationMinutes: true,
+    password: true,
+    questionVisibility: true,
+    scoreVisibility: true,
+  } satisfies Record<OverridableFieldName, true>) as OverridableFieldName[],
 );
 
 /**
@@ -42,21 +26,6 @@ export function isOverrideFieldActive(
   fieldName: OverridableFieldName,
 ): boolean {
   return formValues.overrides[index]?.overriddenFields.includes(fieldName) ?? false;
-}
-
-/**
- * All form paths owned by the given override field, for use with
- * `trigger(...)` and `clearErrors(...)`. Use this when toggling an override
- * on/off so that errors on the field and any of its sub-fields are
- * re-evaluated atomically.
- */
-export function getOverrideFieldPaths(
-  index: number,
-  fieldName: OverridableFieldName,
-): FieldPath<AccessControlFormData>[] {
-  return OVERRIDE_FIELD_PATH_SUFFIXES[fieldName].map(
-    (suffix) => `overrides.${index}.${suffix}` as FieldPath<AccessControlFormData>,
-  );
 }
 
 function getOverrideFieldFromPath(

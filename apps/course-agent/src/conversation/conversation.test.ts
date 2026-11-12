@@ -27,6 +27,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
       deadlineAt: null,
       sandboxLost: false,
       reviewId: null,
+      title: null,
     };
 
     constructor(
@@ -65,6 +66,9 @@ vi.mock('@cloudflare/ai-chat', () => ({
   },
 }));
 vi.mock('../monitoring.js', () => ({ logEvent: vi.fn(), reportError: vi.fn() }));
+
+// Title generation calls the provider directly; model requests here are the agent's own.
+vi.mock('./title.js', () => ({ generateTitle: vi.fn(async () => null) }));
 const { reportError } = await import('../monitoring.js');
 vi.mock('../sandbox/turn.js', () => ({
   SandboxTurn: vi.fn(
