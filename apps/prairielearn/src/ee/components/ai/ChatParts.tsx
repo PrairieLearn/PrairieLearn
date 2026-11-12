@@ -66,7 +66,7 @@ export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
       }}
     >
       <div className="markdown-body reasoning-body p-1 pt-0">
-        <MemoizedMarkdown content={part.text} />
+        <MemoizedMarkdown content={part.text} isStreaming={isStreaming} />
       </div>
     </Disclosure>
   );
@@ -81,7 +81,11 @@ export function TextPart({
 }) {
   return (
     <div className="markdown-body">
-      <MemoizedMarkdown content={part.text} urlTransform={urlTransform} />
+      <MemoizedMarkdown
+        content={part.text}
+        urlTransform={urlTransform}
+        isStreaming={part.state === 'streaming'}
+      />
     </div>
   );
 }
