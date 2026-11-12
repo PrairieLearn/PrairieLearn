@@ -189,12 +189,46 @@ export function makeWorkspaceSandboxMiddleware({
       next();
     }),
   );
-  workspaceSessionAuthorizationRouter.use(date, authn);
-  workspaceSessionAuthorizationRouter.use((req, res, next) => {
+  const authorizationChecks = Router({ mergeParams: true });
+  authorizationChecks.use(date, authn);
+  authorizationChecks.use((req, res, next) => {
     const authorization = getWorkspaceSession(res).public_question_endpoint
       ? publicWorkspaceAuthorization
       : privateWorkspaceAuthorization;
     authorization(req, res, next);
+  });
+  workspaceSessionAuthorizationRouter.use((req, res, next) => {
+    // Express deprecates one redirect overload; we wrap the method without calling that overload.
+    /* oxlint-disable typescript/no-deprecated */
+    const originalSend = res.send;
+    const originalRedirect = res.redirect.bind(res);
+    const restoreResponse = () => {
+      res.send = originalSend;
+      res.redirect = originalRedirect;
+    };
+    // These middlewares either call next() on success or respond with a main-site login,
+    // password, or denial page. Those pages cannot be served from the workspace host.
+    // Limit interception to this chain so container responses and redirects are unaffected.
+    const sendFailure = () => {
+      const status = res.statusCode === 403 ? 403 : 401;
+      restoreResponse();
+      res.removeHeader('HX-Redirect');
+      sendAuthorizationExpired(res, status);
+      return res;
+    };
+    res.send = sendFailure;
+    res.redirect = () => {
+      sendFailure();
+    };
+    /* oxlint-enable typescript/no-deprecated */
+    authorizationChecks(req, res, (err) => {
+      restoreResponse();
+      if (isClientError(err) && (err.status === 401 || err.status === 403)) {
+        sendAuthorizationExpired(res, err.status);
+        return;
+      }
+      next(err);
+    });
   });
   workspaceSessionAuthorizationRouter.use(
     asyncHandler(async (_req, res, next) => {
@@ -224,7 +258,7 @@ export function makeWorkspaceSandboxMiddleware({
     res.set({
       ...responseHeaders,
       'Cache-Control': 'no-store',
-      'Content-Security-Policy': `frame-ancestors ${getTrustedPrairieLearnOrigin()};`,
+      'Content-Security-Policy': `frame-ancestors 'self' ${getTrustedPrairieLearnOrigin()};`,
     });
     if (workspaceHost.type === 'invalid-sandbox-host') {
       res.status(404).send('Not Found');
@@ -300,7 +334,8 @@ export function makeWorkspaceSandboxMiddleware({
       removeResponseHeaders: ['X-Frame-Options', 'Service-Worker-Allowed'],
       responseHeaders,
       appendResponseHeaders: {
-        'Content-Security-Policy': `frame-ancestors ${getTrustedPrairieLearnOrigin()};`,
+        // IDEs can nest same-workspace frames beneath the trusted PrairieLearn page.
+        'Content-Security-Policy': `frame-ancestors 'self' ${getTrustedPrairieLearnOrigin()};`,
         Vary: 'Origin, Sec-Fetch-Site, Sec-Fetch-Mode, Sec-Fetch-Dest',
       },
     }),

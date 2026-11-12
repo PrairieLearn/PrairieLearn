@@ -9,6 +9,7 @@ import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { withResolvers } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { PostgresSessionStore } from '../lib/session-store.js';
 import {
   generateWorkspaceSandboxBootstrapToken,
   getWorkspaceSandboxHostname,
@@ -23,6 +24,7 @@ import { makeWorkspaceSandboxMiddleware } from './workspaceSandbox.js';
 const sql = loadSqlEquiv(import.meta.url);
 let workspaceId: string;
 const sandboxConfig = {
+  devMode: false,
   secretKey: ['workspace-sandbox-test-secret'] as [string],
   serverCanonicalHost: 'https://us.prairielearn.test',
   workspaceHostMode: 'cross-origin' as const,
@@ -143,6 +145,25 @@ describe('workspace sandbox middleware', () => {
           reason: 'unauthorized',
         });
         assert.isNull(getWorkspaceSandboxSession(otherWorkspaceRequest, '999999'));
+
+        const sessionStore = new PostgresSessionStore();
+        await sessionStore.set('session-123', {}, new Date(Date.now() + 60_000));
+        const sessionCookie = cookies.find((cookie) =>
+          cookie.startsWith('__Host-pl_workspace_session='),
+        );
+        assert.isDefined(sessionCookie);
+        const reauthorization = await request({
+          baseUrl,
+          path: `/pl/workspace/${workspaceId}/container/`,
+          host: hostname,
+          headers: {
+            'Sec-Fetch-Site': 'same-origin',
+            Cookie: sessionCookie.split(';')[0],
+          },
+        });
+        assert.equal(reauthorization.status, 401);
+        assert.include(reauthorization.body, 'prairielearn:workspace-authorization-expired');
+        assert.isUndefined(reauthorization.headers.location);
 
         const expiredToken = await generateWorkspaceSandboxBootstrapToken({
           authorizationCookies: {},

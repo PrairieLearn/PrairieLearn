@@ -75,7 +75,7 @@ describe('workspace proxy', () => {
               assert.equal(response.headers['cache-control'], 'private, max-age=3600');
               assert.equal(
                 response.headers['content-security-policy'],
-                "default-src 'self';, img-src 'self';, frame-ancestors https://us.prairielearn.test;",
+                "default-src 'self';, img-src 'self';, frame-ancestors 'self' https://us.prairielearn.test;",
               );
               assert.isUndefined(response.headers['service-worker-allowed']);
               assert.include(response.headers.vary, 'Accept-Encoding');
