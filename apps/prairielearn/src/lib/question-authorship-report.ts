@@ -9,6 +9,7 @@ import {
   QuestionAuthorshipReportQuestionSchema,
   QuestionAuthorshipReportSchema,
 } from './client/question-authorship-report.js';
+import type { Course } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -22,11 +23,11 @@ const AuthoredQuestionRowSchema = QuestionAuthorshipReportQuestionSchema.omit({
 
 /** Caller must authorize report access to the course before calling. */
 export async function getCourseQuestionAuthorshipReport(
-  course_id: string,
+  course: Course,
 ): Promise<QuestionAuthorshipReport> {
   const rows = await queryRows(
     sql.select_authored_questions,
-    { course_id },
+    { course_id: course.id },
     AuthoredQuestionRowSchema,
   );
   const questionIds = [...new Set(rows.map((row) => row.id))];

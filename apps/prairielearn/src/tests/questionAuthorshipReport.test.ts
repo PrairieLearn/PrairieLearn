@@ -3,6 +3,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { getCourseQuestionAuthorshipReport } from '../lib/question-authorship-report.js';
+import { selectCourseById } from '../models/course.js';
 
 import * as helperDb from './helperDb.js';
 
@@ -18,7 +19,8 @@ describe('Question authorship report', () => {
   afterAll(helperDb.after);
 
   it('deduplicates downstream courses and institutions through deleted links and cycles', async () => {
-    const report = await getCourseQuestionAuthorshipReport('1');
+    const course = await selectCourseById('1');
+    const report = await getCourseQuestionAuthorshipReport(course);
     // Each question is represented as [QID, course count, institution count].
     assert.deepEqual(
       report.map(({ uid, questions }) => ({
