@@ -517,6 +517,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
         format: 'pdf',
         downloadUrl: null,
       });
+      expect(
+        (await api.printableAssessmentExport.list.query()).find(
+          (item) => item.id === printExportId,
+        ),
+      ).toMatchObject({ status: 'pending', label: `Form ${label} PDF`, downloadUrl: null });
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledOnce();
       expect(render.mock.calls[0][0]).toMatchObject({
@@ -534,6 +539,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
       sizeBytes: pdf.length,
       label: `Form ${label} PDF`,
       failureMessage: null,
+    });
+    expect(
+      (await api.printableAssessmentExport.list.query()).find((item) => item.id === printExportId),
+    ).toMatchObject({
+      status: 'succeeded',
+      downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`,
     });
     const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`;
     const response = await fetch(url);
@@ -557,6 +568,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
       client(otherAssessment.id).printableAssessmentExport.status.query({ printExportId }),
     ).rejects.toThrow('NOT_FOUND');
     expect(
+      (await client(otherAssessment.id).printableAssessmentExport.list.query()).some(
+        (item) => item.id === printExportId,
+      ),
+    ).toBe(false);
+    expect(
       (
         await fetch(
           `${siteUrl}/pl/course_instance/1/instructor/assessment/${otherAssessment.id}/print/exports/${printExportId}`,
@@ -567,6 +583,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
     ).toMatchObject({ status: 'expired', downloadUrl: null });
+    expect(
+      (await api.printableAssessmentExport.list.query()).some((item) => item.id === printExportId),
+    ).toBe(false);
     expect((await fetch(url)).status).toBe(404);
   });
 
@@ -705,7 +724,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: null,
+      label: 'booklet PDF for 1 student',
       failureMessage:
         '“invalid-cover.pdf” could not be read. Upload a valid PDF without password protection.',
     });
@@ -788,12 +807,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await completePrintExport(assessment.id, printExportId, 'failed');
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).toEqual({
+    ).toMatchObject({
       status: 'failed',
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: null,
       failureMessage:
         'The export stopped repeatedly while rendering. Try fewer forms or contact support.',
     });

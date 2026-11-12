@@ -17,6 +17,7 @@ columns
 
 indexes
     print_exports_pkey: PRIMARY KEY (id) USING btree (id)
+    print_exports_assessment_id_authn_user_id_created_at_id_idx: USING btree (assessment_id, authn_user_id, created_at DESC, id DESC)
     print_exports_pending_idx: USING btree (id) WHERE status = 'pending'::text
 
 check constraints

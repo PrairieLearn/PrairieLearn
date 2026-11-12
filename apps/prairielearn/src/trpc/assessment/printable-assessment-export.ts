@@ -25,13 +25,17 @@ import { PrintPacketMetadataSchema } from '../../lib/printing/print-packet-schem
 import { PrintPacketError, readPrintCoverPages } from '../../lib/printing/print-packet.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { selectOptionalPrintExport } from '../../models/print-export.js';
+import {
+  selectOptionalPrintExport,
+  selectRecentPrintExportsForAssessment,
+} from '../../models/print-export.js';
 import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
 import { requirePrintableAssessments } from './print-forms.js';
 
 export interface PrintableAssessmentExportError {
+  list: never;
   pdf: never;
   status: never;
 }
@@ -244,6 +248,30 @@ export const printableAssessmentExportRouter = t.router({
           cause: error,
         });
       }
+    }),
+  list: t.procedure
+    .use(requireCoursePermissionPreview)
+    .use(requirePrintableAssessments)
+    .query(async ({ ctx }) => {
+      const baseUrl = getAssessmentUrl({
+        courseInstanceId: ctx.course_instance.id,
+        assessmentId: ctx.assessment.id,
+      });
+      const exports = await selectRecentPrintExportsForAssessment({
+        assessmentId: ctx.assessment.id,
+        authnUserId: ctx.authn_user.id,
+      });
+      return exports.map((printExport) => ({
+        id: printExport.id,
+        createdAt: printExport.created_at,
+        status: printExport.status,
+        format: printExport.format,
+        downloadUrl:
+          printExport.status === 'succeeded' ? `${baseUrl}/print/exports/${printExport.id}` : null,
+        sizeBytes: printExport.size_bytes,
+        label: printExport.label ?? printExport.filename,
+        failureMessage: printExport.failure_message,
+      }));
     }),
   status: t.procedure
     .use(requireCoursePermissionPreview)

@@ -12,6 +12,7 @@ import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/reac
 import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
 import { IdSchema } from '@prairielearn/zod';
 
+import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { PrintIdentityFieldsTextSchema } from '../../lib/client/printing/print-cover.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
 import {
@@ -54,6 +55,7 @@ const SNAPSHOT_PREPARATION_BATCH_SIZE = 3;
 interface PrintPreparationProps {
   assessmentId: string;
   courseInstanceId: string;
+  displayTimezone: string;
   hasRandomization: boolean;
   groupWork: boolean;
   requireHonorCode: boolean;
@@ -90,6 +92,7 @@ InstructorAssessmentPrint.displayName = 'InstructorAssessmentPrint';
 function PrintPreparation({
   assessmentId,
   courseInstanceId,
+  displayTimezone,
   hasRandomization,
   groupWork,
   requireHonorCode,
@@ -200,17 +203,25 @@ function PrintPreparation({
   );
   const packet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
   const booklet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
+  const recentExports = useQuery(
+    trpc.printableAssessmentExport.list.queryOptions(undefined, {
+      refetchInterval: (query) =>
+        query.state.data?.some((item) => item.status === 'pending') ? 2_000 : false,
+    }),
+  );
+  const listedExport = recentExports.data?.find((item) => item.id === exportId);
   const exportStatus = useQuery(
     trpc.printableAssessmentExport.status.queryOptions(
-      exportId === null ? skipToken : { printExportId: exportId },
+      exportId === null || listedExport ? skipToken : { printExportId: exportId },
       {
         refetchInterval: (query) => (query.state.data?.status === 'pending' ? 2_000 : false),
       },
     ),
   );
-  const exportNeedsNewPreview = exportStatus.data?.failureMessage === STALE_PRINT_SNAPSHOT_MESSAGE;
-  const exportPending =
-    exportId !== null && (exportStatus.isPending || exportStatus.data?.status === 'pending');
+  const exportNeedsNewPreview =
+    exportId !== null &&
+    (listedExport ? listedExport.failureMessage : exportStatus.data?.failureMessage) ===
+      STALE_PRINT_SNAPSHOT_MESSAGE;
   const busy =
     create.isPending ||
     regenerate.isPending ||
@@ -341,6 +352,7 @@ function PrintPreparation({
 
   function receiveExport(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
     void setExportId(result.printExportId);
+    void recentExports.refetch();
   }
 
   async function downloadPacket(
@@ -479,7 +491,6 @@ function PrintPreparation({
     omitted.size === 0 &&
     !snapshotStale &&
     !exportNeedsNewPreview &&
-    !exportPending &&
     !download.isPending &&
     !busy;
 
@@ -579,7 +590,50 @@ function PrintPreparation({
           setPdfPreparationError(null);
         }}
       />
-      {exportId && (
+      <AppErrorAlert
+        error={getAppError<PrintableAssessmentExportError['list']>(recentExports.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+      />
+      {recentExports.data && recentExports.data.length > 0 && (
+        <section aria-label="Recent exports" className="mb-3">
+          <Card>
+            <Card.Body>
+              <h2 className="h6 mb-2">Recent exports</h2>
+              <p className="small text-muted">
+                Files are available for 24 hours. You can start another export while one is
+                preparing.
+              </p>
+              <ol className="mb-0 ps-3">
+                {recentExports.data.map((item) => (
+                  <li key={item.id} className="mb-2">
+                    {item.status === 'succeeded' ? (
+                      <a href={item.downloadUrl ?? undefined}>
+                        Download {item.label}
+                        {item.sizeBytes !== null &&
+                          ` (${filesize(item.sizeBytes, { base: 10, round: 1 })})`}
+                      </a>
+                    ) : (
+                      <span>{item.label}</span>
+                    )}
+                    <span className="small text-muted ms-2">
+                      <FriendlyDate date={item.createdAt} timezone={displayTimezone} />
+                    </span>
+                    {item.status === 'pending' && (
+                      <span className="small text-muted ms-2">Preparing…</span>
+                    )}
+                    {item.status === 'failed' && (
+                      <span className="small text-danger ms-2">
+                        {item.failureMessage ?? 'The file could not be prepared.'}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </Card.Body>
+          </Card>
+        </section>
+      )}
+      {exportId && !listedExport && !recentExports.isPending && (
         <Alert
           variant={
             exportStatus.data?.status === 'failed' || exportStatus.isError ? 'danger' : 'info'
@@ -601,7 +655,7 @@ function PrintPreparation({
           ) : (
             'Preparing your file in the background. You can return to this page to download it within 24 hours.'
           )}
-          {!exportPending && (
+          {exportStatus.data?.status !== 'pending' && !exportStatus.isPending && (
             <Button
               variant="link"
               size="sm"

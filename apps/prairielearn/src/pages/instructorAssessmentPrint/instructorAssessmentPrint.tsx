@@ -73,6 +73,7 @@ router.get(
               hasRandomization={await assessmentHasPrintRandomization(assessment.id)}
               groupWork={assessment.team_work}
               requireHonorCode={!!assessment.require_honor_code}
+              displayTimezone={course_instance.display_timezone}
               forms={forms}
               enrolledStudents={studentCount}
               defaultCopies={Math.min(MAX_PRINT_COPIES, Math.max(1, studentCount))}

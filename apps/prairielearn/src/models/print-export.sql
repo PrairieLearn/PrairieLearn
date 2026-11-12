@@ -6,6 +6,7 @@ INSERT INTO
     authn_user_id,
     format,
     filename,
+    label,
     input_key
   )
 VALUES
@@ -15,6 +16,7 @@ VALUES
     $authn_user_id,
     $format,
     $filename,
+    $label,
     $input_key
   )
 RETURNING
@@ -30,6 +32,28 @@ WHERE
   id = $id
   AND assessment_id = $assessment_id
   AND authn_user_id = $authn_user_id;
+
+-- BLOCK select_recent_print_exports_for_assessment
+SELECT
+  id,
+  created_at,
+  status,
+  format,
+  filename,
+  label,
+  size_bytes,
+  failure_message
+FROM
+  print_exports
+WHERE
+  assessment_id = $assessment_id
+  AND authn_user_id = $authn_user_id
+  AND created_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+ORDER BY
+  created_at DESC,
+  id DESC
+LIMIT
+  10;
 
 -- BLOCK fail_stale_print_exports
 UPDATE print_exports
@@ -77,7 +101,7 @@ SET
   finished_at = CURRENT_TIMESTAMP,
   output_key = $output_key,
   size_bytes = $size_bytes,
-  label = $label,
+  label = COALESCE($label, label),
   failure_message = $failure_message
 WHERE
   id = $id

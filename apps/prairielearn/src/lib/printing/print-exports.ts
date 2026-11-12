@@ -191,6 +191,7 @@ export async function queuePrintExport({
       authnUserId: owner.authnUserId,
       format: work.format,
       filename: work.filename,
+      label: getPrintExportLabel(work),
       inputKey,
     });
   } catch (error) {

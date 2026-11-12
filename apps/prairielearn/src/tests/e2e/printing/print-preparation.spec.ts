@@ -54,7 +54,7 @@ async function downloadPreparedFile(
     await expect.poll(() => new URL(page.url()).searchParams.get('export')).toBe(printExportId);
     await page.reload();
   }
-  const link = page.getByRole('link', { name: /^Download / });
+  const link = page.locator(`a[href$="/exports/${printExportId}"]`);
   await expect(link).toHaveAttribute('href', new RegExp(`/exports/${printExportId}$`), {
     timeout: 120_000,
   });
@@ -91,6 +91,41 @@ async function printFormLabel(page: Page, printFormId?: string) {
   const form = await selectOptionalPrintForm({ printFormId: formId, assessmentId });
   return form!.label;
 }
+
+test('keeps multiple export links after another file is queued and the page reloads', async ({
+  page,
+  courseInstance,
+}) => {
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
+  const label = await printFormLabel(page);
+
+  async function queuePdf(item: string) {
+    const submitted = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname.endsWith('/printableAssessmentExport.pdf'),
+    );
+    await chooseDownload(page, item);
+    const response = await submitted;
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    return z.object({ printExportId: z.string() }).parse(body.result.data.json).printExportId;
+  }
+
+  const copyId = await queuePdf(`Download Form ${label} (PDF)`);
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  const keyId = await queuePdf(`Download Form ${label} answer key (PDF)`);
+  const recentExports = page.getByRole('region', { name: 'Recent exports' });
+  const copyLink = recentExports.locator(`a[href$="/exports/${copyId}"]`);
+  const keyLink = recentExports.locator(`a[href$="/exports/${keyId}"]`);
+  await expect(copyLink).toBeVisible({ timeout: 120_000 });
+  await expect(keyLink).toBeVisible({ timeout: 120_000 });
+
+  await page.reload();
+  await expect(copyLink).toBeVisible({ timeout: 120_000 });
+  await expect(keyLink).toBeVisible({ timeout: 120_000 });
+});
 
 test('recovers when creating the first preview fails', async ({ page, courseInstance }) => {
   await page.route('**/printForms.create', (route) => route.abort('failed'), {
