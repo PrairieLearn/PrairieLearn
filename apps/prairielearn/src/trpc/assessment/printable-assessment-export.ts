@@ -206,7 +206,8 @@ export const printableAssessmentExportRouter = t.router({
           answer_key: 'answer_keys',
           booklet: 'booklet',
         }[metadata.document];
-        const filename = `${prefix}${documentName}_${metadata.copies}_copies.pdf`;
+        const formName = forms.length === 1 ? `form_${forms[0].formLabel}_` : '';
+        const filename = `${prefix}${formName}${documentName}_${metadata.copies}_copies.pdf`;
         const work: PrintExportWork = {
           format: 'pdf',
           document: metadata.document,

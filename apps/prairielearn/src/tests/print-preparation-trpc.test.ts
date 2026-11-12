@@ -554,6 +554,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       assessmentId: assessment.id,
       authnUserId: '1',
     }))!;
+    expect(printExport.filename).toMatch(new RegExp(`_form_${label}_assessment_1_copies\\.pdf$`));
     expect(response.headers.get('content-disposition')).toBe(
       `attachment; filename="${printExport.filename}"`,
     );
@@ -684,6 +685,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       authnUserId: '1',
     }))!;
     expect(printExport.output_key).toMatch(/\.docx$/);
+    expect(printExport.filename).toMatch(new RegExp(`_form_${label}_letter\\.docx$`));
     const download = await fetch(`${siteUrl}${downloadUrl}`);
     expect(download.status).toBe(200);
     expect(download.headers.get('content-type')).toBe(
