@@ -303,7 +303,7 @@ export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;
 
 /**
  * A page the agent opens for the instructor. `page` is a key from the conversation's page catalog,
- * and the names are the ones course files use. PrairieLearn resolves them to a URL.
+ * and the names are the ones course files use.
  */
 export const NavigationTargetSchema = z.strictObject({
   page: z.string().min(1).max(100),
@@ -317,15 +317,61 @@ export const NavigationTargetSchema = z.strictObject({
 export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
 
 /**
- * A `data-navigation` part: the agent asked the instructor's browser to change pages. `label` is
- * the catalog's label for the page, kept so history renders without the catalog.
+ * A `data-navigation` part: the agent asked the instructor's browser to change pages. PrairieLearn
+ * resolved `target` to `url` before the part was written, and `label` is the catalog's label for
+ * the page, so history renders without either lookup.
  */
 export const NavigationPartSchema = z.discriminatedUnion('action', [
   z.strictObject({
     action: z.literal('open'),
     target: NavigationTargetSchema,
     label: z.string().max(100),
+    url: z.string().max(4000),
   }),
 ]);
 
 export type NavigationPart = z.infer<typeof NavigationPartSchema>;
+
+/** Operators that compare a column with one value. */
+export const COURSE_DATA_COMPARISONS = ['eq', 'lt', 'lte', 'gt', 'gte'] as const;
+
+/** The most values an `in` filter takes; a longer list is better filtered after downloading. */
+export const COURSE_DATA_MAX_IN_VALUES = 1000;
+
+const CourseDataValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+
+/**
+ * A request for rows of one course dataset. PrairieLearn validates it with `column` limited to the
+ * dataset's columns; the course agent uses it with any column name as its tool's arguments.
+ */
+export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: Column) {
+  return z.strictObject({
+    filters: z
+      .array(
+        z.discriminatedUnion('op', [
+          z.strictObject({
+            column,
+            op: z.enum(COURSE_DATA_COMPARISONS),
+            value: CourseDataValueSchema,
+          }),
+          z.strictObject({
+            column,
+            op: z.literal('in'),
+            value: z.array(CourseDataValueSchema).min(1).max(COURSE_DATA_MAX_IN_VALUES),
+          }),
+        ]),
+      )
+      .optional()
+      .describe('Conditions that every row must meet.'),
+    select: z.array(column).optional().describe('Columns to include. Omit for all columns.'),
+    order: z
+      .array(z.strictObject({ column, direction: z.enum(['asc', 'desc']) }))
+      .optional()
+      .describe('Sort order, most significant first.'),
+    limit: z.number().int().positive().optional().describe('Maximum number of rows.'),
+  });
+}
+
+export const CourseDataQuerySchema = courseDataQuerySchema(z.string());
+
+export type CourseDataQuery = z.infer<typeof CourseDataQuerySchema>;

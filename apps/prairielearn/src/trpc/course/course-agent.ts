@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { CreateConversationInput, NavigationTargetSchema } from '@prairielearn/course-agent-types';
+import { CreateConversationInput } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -15,7 +15,7 @@ import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
-import { agentPageUrl, buildPageCatalog, findAgentPage } from '../../ee/lib/course-agent/pages.js';
+import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
 import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
 import {
   insertCourseAgentConversation,
@@ -26,9 +26,6 @@ import {
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
-import { selectOptionalAssessmentByTid } from '../../models/assessment.js';
-import { selectOptionalCourseInstanceByShortName } from '../../models/course-instances.js';
-import { selectOptionalQuestionByQid } from '../../models/question.js';
 
 import { requireCoursePermissionOwn, t } from './init.js';
 
@@ -106,60 +103,6 @@ export const courseAgentRouter = t.router({
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
       return resumeConversation(conversation);
-    }),
-
-  /** The URL of a catalog page, with its names resolved the way course files name things. */
-  resolveNavigation: courseAgentProcedure
-    .input(NavigationTargetSchema)
-    .output(z.strictObject({ url: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const notFound = (message: string) => new TRPCError({ code: 'NOT_FOUND', message });
-      const page = findAgentPage(input.page);
-      if (!page) throw notFound(`No page named "${input.page}".`);
-      const missing = page.params.filter((param) => !input[param]);
-      if (missing.length > 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `This page also needs: ${missing.join(', ')}.`,
-        });
-      }
-
-      const course_instance = input.courseInstance
-        ? await selectOptionalCourseInstanceByShortName({
-            course: ctx.course,
-            shortName: input.courseInstance,
-          })
-        : null;
-      if (input.courseInstance && !course_instance) {
-        throw notFound(`No course instance named "${input.courseInstance}".`);
-      }
-      // Names a page does not use are ignored, so only its own params are looked up.
-      const assessment =
-        page.params.includes('assessment') && course_instance
-          ? await selectOptionalAssessmentByTid({
-              course_instance_id: course_instance.id,
-              tid: input.assessment!,
-            })
-          : null;
-      if (page.params.includes('assessment') && !assessment) {
-        throw notFound(`No assessment named "${input.assessment}".`);
-      }
-      const question = page.params.includes('question')
-        ? await selectOptionalQuestionByQid({ qid: input.question!, course_id: ctx.course.id })
-        : null;
-      if (page.params.includes('question') && !question) {
-        throw notFound(`No question named "${input.question}".`);
-      }
-      return {
-        url: agentPageUrl({
-          key: page.key,
-          course: ctx.course,
-          course_instance,
-          assessment,
-          question,
-          file: input.file ?? null,
-        }),
-      };
     }),
 
   // Record only conversations whose Cloudflare startup succeeded.

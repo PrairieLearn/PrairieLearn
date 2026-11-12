@@ -20,7 +20,6 @@ import { z } from 'zod';
 import {
   type ConversationState,
   InputRequestPartSchema,
-  type NavigationPart,
   type ToolCall,
   ToolCallSchema,
   reviewTag,
@@ -434,7 +433,7 @@ function Chat({
   const inputRequestOpen =
     latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
-  const navigation = useAgentNavigation({ message: messages.at(-1), live: responseActive });
+  useAgentNavigation({ message: messages.at(-1), live: responseActive });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
@@ -492,10 +491,8 @@ function Chat({
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
-              navigationErrors={navigation.errors}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={send}
-              onNavigate={navigation.navigate}
             />
           ))}
           {showInitialText && <UserMessage text={initialText} />}
@@ -667,8 +664,6 @@ function Message({
   answered,
   canAnswer,
   onAnswer,
-  navigationErrors,
-  onNavigate,
 }: {
   message: UIMessage;
   /** Staff have sent a message since this one, which answers any input it requests. */
@@ -683,8 +678,6 @@ function Message({
   linkTransform: UrlTransform;
   /** Opening a tool call must not scroll it out from under the pointer. */
   onToolCallExpand: () => void;
-  navigationErrors: Record<string, string>;
-  onNavigate: (id: string, navigation: NavigationPart) => void;
 }) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
@@ -739,14 +732,7 @@ function Message({
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
       const found = navigationOf(part);
       if (found) {
-        return (
-          <NavigationNotice
-            key={key}
-            navigation={found.navigation}
-            error={navigationErrors[found.id]}
-            onOpen={() => onNavigate(found.id, found.navigation)}
-          />
-        );
+        return <NavigationNotice key={key} navigation={found.navigation} />;
       }
       if (part.type === 'data-input-request') {
         const request = InputRequestPartSchema.safeParse(part.data).data;

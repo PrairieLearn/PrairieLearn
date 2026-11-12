@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler } from 'express';
 import status from 'http-status';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
 export default (function (err, req, res, _next) {
@@ -11,9 +12,12 @@ export default (function (err, req, res, _next) {
     url: req.originalUrl,
     response_id: res.locals.response_id,
   });
-  res.status(statusCode).send({
-    // oxlint-disable-next-line typescript/no-unnecessary-condition
-    message: status[statusCode as keyof typeof status] ?? 'Unknown status code',
-    status: statusCode,
-  });
+  // Messages of client errors we raise explain how to fix the request; other errors may expose
+  // internals, so they get only the status text.
+  const message =
+    err instanceof HttpStatusError && statusCode < 500
+      ? err.message
+      : // oxlint-disable-next-line typescript/no-unnecessary-condition
+        (status[statusCode as keyof typeof status] ?? 'Unknown status code');
+  res.status(statusCode).send({ message, status: statusCode });
 }) satisfies ErrorRequestHandler;

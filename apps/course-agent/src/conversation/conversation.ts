@@ -39,7 +39,9 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
+import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
+import { resolveNavigation } from './navigation.js';
 import { generateTitle } from './title.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
@@ -47,6 +49,8 @@ import { generateTitle } from './title.js';
 const KEEPALIVE_SECONDS = 25;
 
 const CourseContextSchema = z.object({
+  // Optional while a PrairieLearn deployment that does not send it may still connect.
+  courseId: z.string().regex(/^\d+$/).optional(),
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
 });
@@ -156,6 +160,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     reportError(error, {
       'course_agent.lifecycle': this._record?.lifecycle.status ?? 'uninitialized',
     });
+  }
+
+  private courseDataContext() {
+    return {
+      plUrl: this.env.PL_URL,
+      serviceToken: this.env.PL_SERVICE_TOKEN,
+      conversationId: this.name,
+      courseId: this.record.courseContext?.courseId,
+    };
   }
 
   override onError(...args: [error: unknown] | [connection: Connection, error: unknown]) {
@@ -477,7 +490,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
     });
     log('turn_started', { startup });
-    const native = (this.native ??= new CodexAppServerClient(this.sandbox));
+    const native = (this.native ??= new CodexAppServerClient(
+      this.sandbox,
+      {
+        list: () => listCourseDatasets(this.courseDataContext()),
+        get: (request) =>
+          getCourseData({ ...this.courseDataContext(), sandbox: this.sandbox, request }),
+      },
+      (target) => resolveNavigation(this.courseDataContext(), target),
+    ));
     let nativeThreadId = this.record.nativeThreadId;
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
