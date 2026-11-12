@@ -234,6 +234,8 @@ export const ToolCallSchema = z
         output: ClipSchema.nullable(),
         error: z.string().nullable(),
       }),
+      /** Codex summarized earlier history to free context; the summary is not shown. */
+      z.object({ kind: z.literal('compaction') }),
     ]),
   );
 
