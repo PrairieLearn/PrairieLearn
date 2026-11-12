@@ -150,9 +150,9 @@
     "brotli": 1736
   },
   "stylesheets/courseAgent.css": {
-    "raw": 1899,
-    "gzip": 709,
-    "brotli": 585
+    "raw": 2910,
+    "gzip": 1016,
+    "brotli": 824
   },
   "stylesheets/exam-printing.css": {
     "raw": 15386,
@@ -227,12 +227,12 @@
   "../src/ee/components/courseAgent/ReviewDiff.tsx": {
     "raw": 481650,
     "gzip": 144914,
-    "brotli": 126665
+    "brotli": 126587
   },
   "../src/ee/components/courseAgent/CourseAgentChat.tsx": {
-    "raw": 1777823,
-    "gzip": 501642,
-    "brotli": 431795
+    "raw": 1789660,
+    "gzip": 506196,
+    "brotli": 435855
   },
   "../../../node_modules/.pnpm/@zip.js+zip.js@2.18.2/node_modules/@zip.js/zip.js/lib/core/zip-reader.js": {
     "raw": 64596,
@@ -2431,7 +2431,7 @@
   },
   "scripts/esm-bundles/hydrated-components/CourseAgentPanel.ts": {
     "raw": 393086,
-    "gzip": 130739,
+    "gzip": 130738,
     "brotli": 114441
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
