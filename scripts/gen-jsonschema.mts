@@ -9,6 +9,7 @@ import path from 'path';
 import { z } from 'zod';
 
 import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
+import { courseDataSchema } from '../apps/prairielearn/src/api/v1/endpoints/courseData/datasets.js';
 import {
   ConfigSchema as EnvSpecificPrairieLearnConfigSchema,
   STANDARD_COURSE_DIRS,
@@ -91,6 +92,11 @@ const targets: [filePath: string, schema: unknown][] = [
     schema,
   ]),
   ...Object.entries(configSchemas),
+  // Committed so that any change to the course data API contract shows up in review.
+  [
+    path.resolve(import.meta.dirname, '../docs/assets/course-data-api-v1.schema.json'),
+    courseDataSchema(),
+  ],
 ];
 
 if (check) {

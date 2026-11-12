@@ -2,9 +2,15 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import { COURSE_DIR, type InputRequestPart, type ToolCall } from '@prairielearn/course-agent-types';
+import {
+  COURSE_DIR,
+  CourseDataQuerySchema,
+  type InputRequestPart,
+  type ToolCall,
+} from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { JsonValue } from '../../generated/types/serde_json/JsonValue.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
 import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
 import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
@@ -48,14 +54,27 @@ const ReviewToolItem = z.object({
   tool: z.literal('request_changes'),
   success: z.boolean().nullable(),
 });
-const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
+/** A dynamic tool call from Codex; each tool validates its own arguments. */
+const DynamicToolCall = z.object({
   threadId: z.string(),
   turnId: z.string(),
   callId: z.string(),
   namespace: z.null(),
-  tool: z.literal('request_changes'),
-  arguments: z.strictObject({}),
+  tool: z.string(),
+  arguments: z.unknown(),
 });
+const RequestChangesArguments = z.strictObject({});
+const ListCourseDatasetsArguments = z.strictObject({});
+const CourseDataArguments = CourseDataQuerySchema.extend({
+  dataset: z.string().describe('Dataset to download, from list_course_datasets.'),
+});
+export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
+
+/** Serves the course data tools; replies go to the model. */
+export interface CourseDataTools {
+  list(): Promise<ToolReply>;
+  get(request: CourseDataRequest): Promise<ToolReply>;
+}
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
  * prompts are shown only through this item. Codex calls them questions.
@@ -119,7 +138,10 @@ export class CodexAppServerClient {
   private failure: Error | null = null;
   private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
 
-  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
+  constructor(
+    private sandbox: DurableObjectStub<CourseSandbox>,
+    private courseData: CourseDataTools,
+  ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
     if (this.controller) throw new Error('An SDK response is already open');
@@ -168,9 +190,7 @@ export class CodexAppServerClient {
         }
       });
     rpc.onRequest('item/tool/call', async (value: unknown) => {
-      const call = this.parseReviewCall(value);
-      if (!this.onReview) throw new Error('Review handling is not configured');
-      const reply = await this.onReview(call);
+      const reply = await this.callTool(value);
       return {
         success: reply.success,
         contentItems: [{ type: 'inputText', text: reply.text }],
@@ -245,12 +265,31 @@ export class CodexAppServerClient {
     return this.rpc;
   }
 
-  private parseReviewCall(value: unknown): DynamicToolCallParams {
-    const parsed = RequestChangesCall.safeParse(value);
-    if (!parsed.success || parsed.data.threadId !== this.threadId) {
-      throw new Error('Invalid request_changes call');
+  private async callTool(value: unknown): Promise<ToolReply> {
+    const call = DynamicToolCall.safeParse(value);
+    if (!call.success || call.data.threadId !== this.threadId) {
+      throw new Error('Invalid dynamic tool call');
     }
-    return parsed.data;
+    switch (call.data.tool) {
+      case listCourseDatasetsTool.name: {
+        const request = ListCourseDatasetsArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseData.list());
+      }
+      case courseDataTool.name: {
+        const request = CourseDataArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseData.get(request.data));
+      }
+      case requestChangesTool.name: {
+        if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
+          throw new Error('Invalid request_changes call');
+        }
+        return await this.onReview({ ...call.data, arguments: {} });
+      }
+      default:
+        throw new Error(`Unknown tool: ${call.data.tool}`);
+    }
   }
 
   private fail(error: Error) {
@@ -307,7 +346,11 @@ export class CodexAppServerClient {
           'thread/start',
           {
             ...settings,
-            dynamicTools: this.onReview ? [requestChangesTool] : [],
+            dynamicTools: [
+              ...(this.onReview ? [requestChangesTool] : []),
+              listCourseDatasetsTool,
+              courseDataTool,
+            ],
           } satisfies ThreadStartParams,
           ThreadResult,
         );
@@ -478,10 +521,47 @@ export class CodexAppServerClient {
   }
 }
 
-const requestChangesTool: DynamicToolSpec = {
+/** Invalid arguments are the model's mistake, so it gets the reason and can retry. */
+function invalidArguments(error: z.ZodError): ToolReply {
+  return { success: false, text: `Invalid arguments: ${z.prettifyError(error)}` };
+}
+
+/** A failed course data request is reported to the model rather than failing the turn. */
+async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply> {
+  try {
+    return await call();
+  } catch (error) {
+    return { success: false, text: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/** Codex's tool input schema, generated from the Zod schema that validates the arguments. */
+function toolInputSchema(schema: z.ZodType) {
+  // Zod types its output with a non-enumerable `~standard` property that serialization drops.
+  const { $schema: _schema, ...inputSchema } = z.toJSONSchema(schema);
+  return inputSchema as JsonValue;
+}
+
+const listCourseDatasetsTool = {
+  type: 'function',
+  name: 'list_course_datasets',
+  description:
+    "List the datasets of this course's PrairieLearn data that get_course_data can download, with each column's type and meaning.",
+  inputSchema: toolInputSchema(ListCourseDatasetsArguments),
+} satisfies DynamicToolSpec;
+
+const courseDataTool = {
+  type: 'function',
+  name: 'get_course_data',
+  description:
+    "Download rows of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. The reply gives the file's path, row count, and columns.",
+  inputSchema: toolInputSchema(CourseDataArguments),
+} satisfies DynamicToolSpec;
+
+const requestChangesTool = {
   type: 'function',
   name: 'request_changes',
   description:
     'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
-};
+} satisfies DynamicToolSpec;
