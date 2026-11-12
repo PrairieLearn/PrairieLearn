@@ -95,43 +95,42 @@ interface CourseDataContext {
   courseId: string | undefined;
 }
 
-/**
- * Calls PrairieLearn's course data API. PrairieLearn identifies the user and course from the
- * conversation, so the model chooses only which rows to read.
- */
-async function fetchCourseData(
-  { plUrl, serviceToken, conversationId, courseId }: CourseDataContext,
-  path: string,
-  init: RequestInit = {},
-) {
-  if (!courseId) return null;
-  return await fetch(new URL(`/pl/api/v1/course/${courseId}/data${path}`, plUrl), {
-    ...init,
-    headers: {
-      ...init.headers,
-      Authorization: `Bearer ${serviceToken}`,
-      'X-Course-Agent-Conversation': conversationId,
-    },
-    signal: AbortSignal.timeout(120_000),
-  });
-}
+// Longer than PrairieLearn's 60-second statement timeout, so a slow query fails with its reason.
+const REQUEST_TIMEOUT_MS = 120_000;
 
 const UNAVAILABLE: ToolReply = {
   success: false,
   text: 'Course data is unavailable. Reload the PrairieLearn page.',
 };
 
-/** Serves `list_course_datasets`. */
+/**
+ * PrairieLearn identifies the user and course from the conversation, so the model chooses only
+ * which rows to read.
+ */
+function authHeaders({ serviceToken, conversationId }: CourseDataContext) {
+  return {
+    Authorization: `Bearer ${serviceToken}`,
+    'X-Course-Agent-Conversation': conversationId,
+  };
+}
+
+/** Serves `list_course_datasets` from `GET /pl/api/v1/course/:course_id/data`. */
 export async function listCourseDatasets(context: CourseDataContext): Promise<ToolReply> {
-  const response = await fetchCourseData(context, '');
-  if (!response) return UNAVAILABLE;
+  if (!context.courseId) return UNAVAILABLE;
+  const response = await fetch(
+    new URL(`/pl/api/v1/course/${context.courseId}/data`, context.plUrl),
+    { headers: authHeaders(context), signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+  );
   if (!response.ok) {
     return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
   }
   return { success: true, text: describeSchema(SchemaResponse.parse(await response.json())) };
 }
 
-/** Serves `get_course_data`: saves the rows in the sandbox and describes the file. */
+/**
+ * Serves `get_course_data` from `POST /pl/api/v1/course/:course_id/data/:dataset`: saves the rows
+ * in the sandbox and describes the file.
+ */
 export async function getCourseData({
   sandbox,
   request,
@@ -140,14 +139,21 @@ export async function getCourseData({
   sandbox: DurableObjectStub<CourseSandbox>;
   request: CourseDataRequest;
 }): Promise<ToolReply> {
+  if (!context.courseId) return UNAVAILABLE;
   const { dataset, ...query } = request;
   const started = Date.now();
-  const response = await fetchCourseData(context, `/${encodeURIComponent(dataset)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(query),
-  });
-  if (!response) return UNAVAILABLE;
+  const response = await fetch(
+    new URL(
+      `/pl/api/v1/course/${context.courseId}/data/${encodeURIComponent(dataset)}`,
+      context.plUrl,
+    ),
+    {
+      method: 'POST',
+      headers: { ...authHeaders(context), 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    },
+  );
   if (!response.ok) {
     return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
   }
