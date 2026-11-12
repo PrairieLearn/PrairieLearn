@@ -16,10 +16,8 @@ import { type Question, QuestionSchema } from '../lib/db-types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Counts distinct external courses and their institutions reachable through
- * up to 20 recorded copy links for each source question. Includes soft-deleted questions
- * and courses. This is declared copy adoption, not current usage or a complete
- * historical count.
+ * Counts distinct external courses and institutions within 20 copy links.
+ * Includes soft-deleted questions and courses.
  */
 export async function selectQuestionCopyAdoption(question_ids: string[]) {
   return await queryRows(

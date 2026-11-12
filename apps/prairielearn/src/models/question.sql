@@ -14,7 +14,7 @@ WITH RECURSIVE
       questions AS q
     WHERE
       q.id = ANY ($question_ids::bigint[])
-    UNION
+    UNION ALL
     SELECT
       lineage.source_question_id,
       lineage.source_course_id,
