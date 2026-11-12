@@ -896,7 +896,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
-    if (message && earlier.length === 0 && !this.record.title) this.startTitle(unsent[0] ?? message);
+    if (message && earlier.length === 0 && !this.record.title) {
+      this.startTitle(unsent[0] ?? message);
+    }
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const delivered = continuation && review?.result ? review : null;
