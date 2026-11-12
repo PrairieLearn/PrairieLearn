@@ -47,6 +47,34 @@ If you copy a question that was itself copied, the new copy points to the questi
 
 You can edit or remove this field. It records the declared source of a copy; it does not verify authorship or grant access to the source question. It does not change the sharing-name syntax used to reference shared questions in assessments.
 
+### Copy adoption counts
+
+Copy adoption is the number of distinct external courses with a recorded direct
+or indirect copy of a question. For A → B → C, A's question counts B and C. Multiple
+copies in B count once, and copies in A do not count toward A's external adoption.
+This metric excludes by-reference sharing and student activity.
+
+Counts follow the database links resolved from `copiedFrom` during sync, including
+soft-deleted questions and courses. Deleted intermediate copies still connect the
+source to later copies. Self-references and cycles do not add duplicate results.
+These are counts of retained copy relationships, not current usage or an immutable
+history: editing or removing provenance can change them.
+
+Course authorship reports group questions by their stored author identifiers,
+including locally credited adaptations and deleted questions. A question with
+multiple authors appears under each author. Names are resolved only for current
+staff of the reporting course; other identifiers are displayed as declared.
+Different identifiers are not automatically combined into one person.
+
+A question's provenance can be absent, resolved, or declared but unresolved. Absent
+provenance does not prove that a question is original. Unresolved links cannot
+contribute to upstream adoption counts until resolved by a later sync. Manual
+copies without metadata, removed links, and copies on other servers cannot be
+reconstructed. Consequently, a zero count does not prove that no copies exist.
+
+Reports require course Previewer permission or higher and expose downstream counts
+only, without downstream course names, identifiers, staff, students, or content.
+
 ## Sharing questions
 
 !!! info

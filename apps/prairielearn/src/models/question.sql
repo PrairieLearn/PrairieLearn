@@ -1,3 +1,37 @@
+-- BLOCK select_question_copy_adoption
+-- UNION deduplicates source/descendant pairs, including the initial source,
+-- so self-references and cycles terminate without a depth limit. Keep deleted
+-- rows in the traversal: they can connect a source to later copies.
+WITH RECURSIVE
+  lineage (source_question_id, question_id) AS (
+    SELECT
+      q.id,
+      q.id
+    FROM
+      questions AS q
+    WHERE
+      q.id = ANY ($question_ids::bigint[])
+    UNION
+    SELECT
+      lineage.source_question_id,
+      descendant.id
+    FROM
+      lineage
+      JOIN questions AS descendant ON descendant.copied_from_question_id = lineage.question_id
+  )
+SELECT
+  source.id AS question_id,
+  count(DISTINCT descendant.course_id) FILTER (
+    WHERE
+      descendant.course_id != source.course_id
+  )::int AS downstream_course_count
+FROM
+  lineage
+  JOIN questions AS source ON source.id = lineage.source_question_id
+  JOIN questions AS descendant ON descendant.id = lineage.question_id
+GROUP BY
+  source.id;
+
 -- BLOCK select_question_by_id
 SELECT
   *

@@ -15,6 +15,22 @@ import { type Question, QuestionSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * Counts distinct external courses reachable through recorded copy links for
+ * each source question. Includes soft-deleted questions and courses. This is
+ * declared copy adoption, not current usage or a complete historical count.
+ */
+export async function selectQuestionCopyAdoption(question_ids: string[]) {
+  return await queryRows(
+    sql.select_question_copy_adoption,
+    { question_ids },
+    z.object({
+      question_id: IdSchema,
+      downstream_course_count: z.number().int().nonnegative(),
+    }),
+  );
+}
+
 export async function selectQuestionById(question_id: string): Promise<Question> {
   return await queryRow(sql.select_question_by_id, { question_id }, QuestionSchema);
 }
