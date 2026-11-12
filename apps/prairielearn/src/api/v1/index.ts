@@ -109,14 +109,21 @@ router.use(
   authzHasCourseOwner,
   (await import('./endpoints/courseData/index.js')).default,
 );
-if (isEnterprise()) {
-  // Resolves a page the course agent named to its URL, so the agent learns when a name is wrong.
-  router.use(
-    '/course/:course_id(\\d+)/agent_navigation',
-    authzHasCourseOwner,
-    (await import('../../ee/routers/courseAgentNavigation.js')).default,
-  );
-}
+// Resolves a page the course agent named to its URL, so the agent learns when a name is wrong.
+// The license is checked per request, like authnToken does, because it can be set after this
+// module loads.
+router.use(
+  '/course/:course_id(\\d+)/agent_navigation',
+  authzHasCourseOwner,
+  asyncHandler(async (req, res, next) => {
+    if (!isEnterprise()) {
+      next();
+      return;
+    }
+    const { default: navigation } = await import('../../ee/routers/courseAgentNavigation.js');
+    navigation(req, res, next);
+  }),
+);
 router.use(
   '/course/:course_id(\\d+)/sync',
   (await import('./endpoints/courseSync/index.js')).default,
