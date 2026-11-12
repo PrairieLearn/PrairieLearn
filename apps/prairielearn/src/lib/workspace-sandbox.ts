@@ -139,7 +139,7 @@ function getWorkspaceSandboxBaseDomain(): string {
   return config.workspaceSandboxBaseDomain.toLowerCase();
 }
 
-export function classifyWorkspaceSandboxHost(hostname: string): WorkspaceSandboxHost {
+function classifyWorkspaceSandboxHost(hostname: string): WorkspaceSandboxHost {
   if (config.workspaceSandboxBaseDomain == null) return { type: 'not-sandbox' };
 
   const baseDomain = getWorkspaceSandboxBaseDomain();
