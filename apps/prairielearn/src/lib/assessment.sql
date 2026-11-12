@@ -124,7 +124,7 @@ WHERE
       inserted_assessment_instance
   );
 
--- BLOCK insert_instance_questions
+-- BLOCK select_assessment_question_ids_for_instance
 WITH
   existing_instance_questions AS (
     SELECT
@@ -231,7 +231,14 @@ WITH
         OR z_row_number <= z.number_choose
       )
       AND q.deleted_at IS NULL
-  ),
+  )
+SELECT
+  aq.id
+FROM
+  z_chosen_assessment_questions AS aq;
+
+-- BLOCK insert_instance_questions
+WITH
   inserted_instance_questions AS (
     INSERT INTO
       instance_questions AS iq (
@@ -254,7 +261,9 @@ WITH
       0,
       0 -- These points are updated manually because their default value is set to NULL for migration purposes
     FROM
-      z_chosen_assessment_questions AS aq
+      assessment_questions AS aq
+    WHERE
+      aq.id = ANY ($assessment_question_ids::bigint[])
     ON CONFLICT (assessment_question_id, assessment_instance_id) DO NOTHING
     RETURNING
       iq.*

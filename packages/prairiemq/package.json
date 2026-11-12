@@ -1,0 +1,40 @@
+{
+  "name": "@prairielearn/prairiemq",
+  "version": "1.0.0",
+  "description": "Redis-backed job queue with fair scheduling and per-group concurrency limits.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/prairiemq"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "!dist/**/*.test.*"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@prairielearn/utils": "workspace:^",
+    "ioredis": "^6.0.0"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.5",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
