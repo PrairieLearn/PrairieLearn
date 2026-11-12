@@ -8,12 +8,14 @@ import {
   Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
+import { html } from '@prairielearn/html';
 import * as Sentry from '@prairielearn/sentry';
 import { loadExistingSession } from '@prairielearn/session';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { config, setLocalsFromConfig } from '../lib/config.js';
-import { idsEqual } from '../lib/id.js';
 import { PostgresSessionStore } from '../lib/session-store.js';
 import { extendSessionExpirationIfNeeded } from '../lib/session.js';
 import {
@@ -29,9 +31,9 @@ import {
   getWorkspaceSandboxCookieMaxAgeMilliseconds,
   getWorkspaceSandboxSession,
   getWorkspaceSandboxSessionCookieMaxAgeMilliseconds,
+  redeemWorkspaceSandboxBootstrapToken,
   validateWorkspaceSandboxAccess,
   validateWorkspaceSandboxWebSocketAccess,
-  verifyWorkspaceSandboxBootstrapJwt,
 } from '../lib/workspace-sandbox.js';
 
 import authn from './authn.js';
@@ -44,10 +46,10 @@ const WORKSPACE_SANDBOX_AUTHORIZATION_EXPIRED_MESSAGE =
 
 const CONTAINER_PATH_REGEX = /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/;
 
+const BootstrapBodySchema = z.object({ token: z.string().min(1).max(256) });
+
 function getWorkspaceSandboxResponseHeaders(): Record<string, string> {
   return {
-    'Cache-Control': 'no-store',
-    'Content-Security-Policy': `frame-ancestors ${getTrustedPrairieLearnOrigin()};`,
     // The RStudio workspace proxy uses referrers to preserve HTTPS when rewriting redirects.
     // https://docs.posit.co/ide/server-pro/admin/access_and_security/running_with_a_proxy.html
     'Referrer-Policy': 'same-origin',
@@ -130,7 +132,7 @@ function checkWorkspaceAuthorizationCookie(req: Request, res: Response, next: Ne
       ? validateWorkspaceSandboxWebSocketAccess(req, req.params.workspace_id)
       : validateWorkspaceSandboxAccess(req, req.params.workspace_id);
   if (!access.authorized && access.reason !== 'unauthorized') {
-    res.status(404).send('Not Found');
+    res.sendStatus(access.reason === 'invalid-origin' ? 403 : 404);
     return;
   }
 
@@ -181,7 +183,8 @@ export function makeWorkspaceSandboxMiddleware({
       }
 
       req.session = session;
-      Object.assign(req.cookies, sandboxSession.authorization_cookies);
+      // Only the trusted page's snapshot may influence reauthorization, not cookies set by an IDE.
+      req.cookies = { ...sandboxSession.authorization_cookies };
       res.locals.workspaceSandboxSession = sandboxSession;
       next();
     }),
@@ -218,7 +221,11 @@ export function makeWorkspaceSandboxMiddleware({
     const workspaceHost = classifyWorkspaceSandboxRequestHost(req);
     if (workspaceHost.type === 'not-sandbox') return next('router');
 
-    res.set(responseHeaders);
+    res.set({
+      ...responseHeaders,
+      'Cache-Control': 'no-store',
+      'Content-Security-Policy': `frame-ancestors ${getTrustedPrairieLearnOrigin()};`,
+    });
     if (workspaceHost.type === 'invalid-sandbox-host') {
       res.status(404).send('Not Found');
       return;
@@ -231,18 +238,20 @@ export function makeWorkspaceSandboxMiddleware({
 
   router.post(
     '/bootstrap',
-    bodyParser.urlencoded({ extended: false, limit: '1kb' }),
-    asyncHandler(async (req, res) => {
-      const workspaceHost = getWorkspaceHost(res);
-      const jwt = req.body?.jwt;
-      if (typeof jwt !== 'string') {
-        sendAuthorizationExpired(res, 403);
+    (req, res, next) => {
+      if (req.headers.origin !== getTrustedPrairieLearnOrigin()) {
+        res.sendStatus(403);
         return;
       }
-
-      const payload = await verifyWorkspaceSandboxBootstrapJwt(jwt);
-      if (payload == null || !idsEqual(payload.workspace_id, workspaceHost.workspaceId)) {
-        sendAuthorizationExpired(res, 403);
+      next();
+    },
+    bodyParser.urlencoded({ extended: false, limit: '8kb' }),
+    asyncHandler(async (req, res) => {
+      const workspaceHost = getWorkspaceHost(res);
+      const { token } = parseRequestBody(req, BootstrapBodySchema);
+      const payload = await redeemWorkspaceSandboxBootstrapToken(token, workspaceHost.workspaceId);
+      if (payload == null) {
+        sendAuthorizationExpired(res);
         return;
       }
 
@@ -253,22 +262,47 @@ export function makeWorkspaceSandboxMiddleware({
         workspace_id: payload.workspace_id,
       });
       setWorkspaceAuthorizationCookie(res, payload.workspace_id);
-      res.redirect(303, `/pl/workspace/${payload.workspace_id}/container/`);
+      // Loading a document here makes the next navigation originate from the workspace host.
+      // An HTTP redirect retains the cross-site request chain and would require an exception
+      // that unrelated cross-site navigations could also use.
+      res.type('html').send(
+        html`
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>Opening workspace</title>
+            </head>
+            <body>
+              <script>
+                window.location.replace('/pl/workspace/${payload.workspace_id}/container/');
+              </script>
+            </body>
+          </html>
+        `.toString(),
+      );
     }),
   );
 
   router.use(
     '/pl/workspace/:workspace_id(\\d+)/container',
     workspaceAuthorizationRouter,
-    (req, _res, next) => {
+    (req, res, next) => {
       onProxyRequest?.(req);
+      // Container assets retain their own cache policy; PL-generated responses remain no-store.
+      res.removeHeader('Cache-Control');
       next();
     },
     makeWorkspaceProxyMiddleware(CONTAINER_PATH_REGEX, {
       cookieDomainRewrite: '',
       rewriteContainerCookiesForCrossOrigin: true,
-      removeResponseHeaders: ['X-Frame-Options'],
+      // Keep container service workers scoped below /container/, away from /bootstrap.
+      removeResponseHeaders: ['X-Frame-Options', 'Service-Worker-Allowed'],
       responseHeaders,
+      appendResponseHeaders: {
+        'Content-Security-Policy': `frame-ancestors ${getTrustedPrairieLearnOrigin()};`,
+        Vary: 'Origin, Sec-Fetch-Site, Sec-Fetch-Mode, Sec-Fetch-Dest',
+      },
     }),
   );
 
@@ -287,8 +321,13 @@ export function makeWorkspaceSandboxMiddleware({
       return;
     }
 
+    res.set('Cache-Control', 'no-store');
     if (isClientError(err)) {
-      sendAuthorizationExpired(res);
+      if (err.status === 401) {
+        sendAuthorizationExpired(res);
+      } else {
+        res.sendStatus(err.status);
+      }
       return;
     }
 

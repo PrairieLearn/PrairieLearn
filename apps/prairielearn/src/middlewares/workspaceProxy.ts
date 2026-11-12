@@ -142,6 +142,7 @@ function getRequestPath(req: Request): string {
 
 interface WorkspaceProxyOptions {
   responseHeaders?: Record<string, string>;
+  appendResponseHeaders?: Record<string, string>;
   removeResponseHeaders?: string[];
   cookieDomainRewrite?: string;
   rewriteContainerCookiesForCrossOrigin?: boolean;
@@ -244,6 +245,26 @@ function makeProxy(containerPathRegex: RegExp, options: WorkspaceProxyOptions) {
         for (const [header, value] of Object.entries(options.responseHeaders ?? {})) {
           proxyRes.headers[header.toLowerCase()] = value;
         }
+        for (const [header, value] of Object.entries(options.appendResponseHeaders ?? {})) {
+          const name = header.toLowerCase();
+          let existing = [proxyRes.headers[name] ?? ''].flat().join(', ');
+          if (name === 'content-security-policy') {
+            // Jupyter's frame-ancestors 'self' would still block the trusted parent if we only
+            // appended our policy. Replace framing restrictions in every policy, keeping the rest.
+            existing = existing
+              .split(',')
+              .map((policy) =>
+                policy
+                  .trim()
+                  .split(';')
+                  .filter((directive) => !/^\s*frame-ancestors(?:\s|$)/i.test(directive))
+                  .join(';'),
+              )
+              .filter((policy) => policy.trim() !== '')
+              .join(', ');
+          }
+          proxyRes.headers[name] = existing ? `${existing}, ${value}` : value;
+        }
 
         const existingCookies = normalizeSetCookieHeader(res.getHeader('set-cookie'));
         const containerCookies = normalizeSetCookieHeader(proxyRes.headers['set-cookie']);
@@ -270,6 +291,7 @@ function makeProxy(containerPathRegex: RegExp, options: WorkspaceProxyOptions) {
           // Check to make sure we weren't already in the middle of sending a
           // response before replying with our own error.
           if (!res.headersSent) {
+            res.setHeader('Cache-Control', 'no-store');
             res.status(getStatusCode(err));
           }
 

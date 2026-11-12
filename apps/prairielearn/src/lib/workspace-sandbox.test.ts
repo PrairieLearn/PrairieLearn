@@ -3,12 +3,8 @@ import { assert, describe, it, vi } from 'vitest';
 import { withConfig } from '../tests/utils/config.js';
 
 import {
-  classifyWorkspaceSandboxHost,
   generateWorkspaceSandboxCookie,
-  generateWorkspaceSandboxSessionCookie,
   getWorkspaceSandboxHostname,
-  getWorkspaceSandboxOrigin,
-  getWorkspaceSandboxSession,
   validateWorkspaceSandboxAccess,
   validateWorkspaceSandboxWebSocketAccess,
 } from './workspace-sandbox.js';
@@ -17,33 +13,13 @@ const workspaceId = '123';
 
 const sandboxConfig = {
   secretKey: ['workspace-sandbox-test-secret'] as [string],
-  sessionStoreExpireSeconds: 30 * 24 * 60 * 60,
+  serverCanonicalHost: 'https://us.prairielearn.test',
   workspaceAuthzCookieMaxAgeMilliseconds: 60 * 1000,
   workspaceHostMode: 'cross-origin' as const,
-  workspaceLaunchedTimeoutSec: 12 * 60 * 60,
   workspaceSandboxBaseDomain: 'us.prairielearn-user-content.com',
 };
 
 describe('workspace sandbox', () => {
-  it('maps workspace IDs to sandbox hosts independently of the configured host mode', async () => {
-    await withConfig(sandboxConfig, () => {
-      const hostname = getWorkspaceSandboxHostname({ workspaceId });
-      assert.equal(hostname, 'w123.us.prairielearn-user-content.com');
-      assert.equal(getWorkspaceSandboxOrigin({ workspaceId }), `https://${hostname}`);
-      assert.deepEqual(classifyWorkspaceSandboxHost(hostname), {
-        type: 'workspace',
-        workspaceId,
-      });
-    });
-
-    await withConfig({ ...sandboxConfig, workspaceHostMode: 'same-origin' }, () => {
-      assert.deepEqual(classifyWorkspaceSandboxHost('w123.us.prairielearn-user-content.com'), {
-        type: 'workspace',
-        workspaceId,
-      });
-    });
-  });
-
   it('validates workspace cookies and binds them to the requested workspace', async () => {
     await withConfig(sandboxConfig, () => {
       const issuedAt = Date.UTC(2026, 9, 9);
@@ -54,6 +30,7 @@ describe('workspace sandbox', () => {
           {
             headers: {
               host: hostname,
+              'sec-fetch-site': 'same-origin',
               cookie: `__Host-pl_workspace_authz=${value}`,
             },
           },
@@ -80,6 +57,7 @@ describe('workspace sandbox', () => {
           {
             headers: {
               host: hostname,
+              'sec-fetch-site': 'same-origin',
               cookie: `__Host-pl_workspace_authz=${currentCookie}`,
             },
           },
@@ -87,67 +65,10 @@ describe('workspace sandbox', () => {
         ),
         { authorized: false, reason: 'workspace-mismatch' },
       );
-      const otherWorkspaceCookie = generateWorkspaceSandboxCookie({ workspaceId: '999999' });
-      assert.deepEqual(
-        validateWorkspaceSandboxAccess(
-          {
-            headers: {
-              host: hostname,
-              cookie: `__Host-pl_workspace_authz=${otherWorkspaceCookie}`,
-            },
-          },
-          workspaceId,
-        ),
-        { authorized: false, reason: 'unauthorized' },
-      );
     });
   });
 
-  it('binds a sandbox session cookie to its workspace host', async () => {
-    await withConfig(sandboxConfig, () => {
-      const hostname = getWorkspaceSandboxHostname({ workspaceId });
-      const authorizationCookies = { pl2_assessmentpw: 'signed-password' };
-      const sessionCookie = generateWorkspaceSandboxSessionCookie({
-        authorizationCookies,
-        publicQuestionEndpoint: false,
-        sessionId: 'session-123',
-        workspaceId,
-      });
-
-      assert.deepEqual(
-        getWorkspaceSandboxSession(
-          {
-            headers: {
-              host: hostname,
-              cookie: `__Host-pl_workspace_session=${sessionCookie}`,
-            },
-          },
-          workspaceId,
-        ),
-        {
-          authorization_cookies: authorizationCookies,
-          public_question_endpoint: false,
-          purpose: 'workspace-sandbox-session',
-          session_id: 'session-123',
-          version: 1,
-          workspace_id: workspaceId,
-        },
-      );
-      assert.isNull(
-        getWorkspaceSandboxSession(
-          {
-            headers: {
-              host: getWorkspaceSandboxHostname({ workspaceId: '999999' }),
-              cookie: `__Host-pl_workspace_session=${sessionCookie}`,
-            },
-          },
-          '999999',
-        ),
-      );
-    });
-  });
-
-  it('requires websocket requests to originate from their workspace host', async () => {
+  it('requires HTTP, navigation, and websocket requests to originate from the workspace', async () => {
     await withConfig(sandboxConfig, () => {
       const hostname = getWorkspaceSandboxHostname({ workspaceId });
       const currentCookie = generateWorkspaceSandboxCookie({ workspaceId });
@@ -155,6 +76,41 @@ describe('workspace sandbox', () => {
         cookie: `__Host-pl_workspace_authz=${currentCookie}`,
         host: hostname,
       };
+
+      assert.isTrue(
+        validateWorkspaceSandboxAccess(
+          { method: 'POST', headers: { ...headers, origin: `https://${hostname}` } },
+          workspaceId,
+        ).authorized,
+      );
+      for (const requestHeaders of [
+        { origin: 'https://w999999.us.prairielearn-user-content.com' },
+        { 'sec-fetch-site': 'same-site' },
+      ]) {
+        assert.deepEqual(
+          validateWorkspaceSandboxAccess(
+            { method: 'POST', headers: { ...headers, ...requestHeaders } },
+            workspaceId,
+          ),
+          { authorized: false, reason: 'invalid-origin' },
+        );
+      }
+      const navigation = {
+        ...headers,
+        'sec-fetch-site': 'cross-site',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-dest': 'iframe',
+      };
+      assert.isTrue(
+        validateWorkspaceSandboxAccess(
+          { method: 'GET', headers: { ...navigation, 'sec-fetch-site': 'same-origin' } },
+          workspaceId,
+        ).authorized,
+      );
+      assert.deepEqual(
+        validateWorkspaceSandboxAccess({ method: 'GET', headers: navigation }, workspaceId),
+        { authorized: false, reason: 'invalid-origin' },
+      );
 
       assert.isTrue(
         validateWorkspaceSandboxWebSocketAccess(

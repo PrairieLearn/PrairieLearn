@@ -1,19 +1,27 @@
 import http from 'node:http';
+import { text } from 'node:stream/consumers';
 
 import express from 'express';
-import { assert, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { withServer } from '@prairielearn/express-test-utils';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { withResolvers } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
-  generateWorkspaceSandboxBootstrapJwt,
+  generateWorkspaceSandboxBootstrapToken,
   getWorkspaceSandboxHostname,
+  getWorkspaceSandboxSession,
+  validateWorkspaceSandboxAccess,
 } from '../lib/workspace-sandbox.js';
+import * as helperDb from '../tests/helperDb.js';
 import { withConfig } from '../tests/utils/config.js';
 
 import { makeWorkspaceSandboxMiddleware } from './workspaceSandbox.js';
 
-const workspaceId = '123';
+const sql = loadSqlEquiv(import.meta.url);
+let workspaceId: string;
 const sandboxConfig = {
   secretKey: ['workspace-sandbox-test-secret'] as [string],
   serverCanonicalHost: 'https://us.prairielearn.test',
@@ -21,136 +29,141 @@ const sandboxConfig = {
   workspaceSandboxBaseDomain: 'us.prairielearn-user-content.test',
 };
 
-function createApp() {
-  const app = express();
-  app.use(makeWorkspaceSandboxMiddleware());
-  app.get('/main', (_req, res) => res.send('main'));
-  return app;
-}
-
 async function request({
   baseUrl,
   path,
   host,
   method = 'GET',
   body,
+  headers,
 }: {
   baseUrl: string;
   path: string;
-  host?: string;
+  host: string;
   method?: string;
   body?: URLSearchParams;
+  headers?: http.OutgoingHttpHeaders;
 }) {
-  const url = new URL(baseUrl);
   const bodyString = body?.toString();
-  return await new Promise<{
-    body: string;
-    headers: http.IncomingHttpHeaders;
-    status: number;
-  }>((resolve, reject) => {
-    const req = http.request(
-      {
-        hostname: url.hostname,
-        port: url.port,
-        path,
-        method,
-        headers: {
-          ...(host == null ? {} : { Host: host }),
-          ...(bodyString == null
-            ? {}
-            : {
-                'Content-Length': Buffer.byteLength(bodyString),
-                'Content-Type': 'application/x-www-form-urlencoded',
-              }),
-        },
+  const received = withResolvers<http.IncomingMessage>();
+  const req = http.request(
+    new URL(path, baseUrl),
+    {
+      method,
+      headers: {
+        ...headers,
+        Host: host,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(bodyString ?? ''),
       },
-      (res) => {
-        let responseBody = '';
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => (responseBody += chunk));
-        res.on('end', () => {
-          resolve({ body: responseBody, headers: res.headers, status: res.statusCode ?? 0 });
-        });
-      },
-    );
-    req.on('error', reject);
-    req.end(bodyString);
-  });
+    },
+    received.resolve,
+  );
+  req.on('error', received.reject);
+  req.end(bodyString);
+  const response = await received.promise;
+  assert.isDefined(response.statusCode);
+  return { status: response.statusCode, headers: response.headers, body: await text(response) };
 }
 
 describe('workspace sandbox middleware', () => {
-  it('accepts a bootstrap JWT and establishes sandbox authorization', async () => {
+  beforeAll(async () => {
+    await helperDb.before();
+    workspaceId = await queryScalar(sql.insert_workspace, IdSchema);
+  });
+  afterAll(helperDb.after);
+
+  it('redeems a bootstrap token once, on its workspace host, to establish authorization', async () => {
     await withConfig(sandboxConfig, async () => {
-      const jwt = await generateWorkspaceSandboxBootstrapJwt({
-        authorizationCookies: {},
+      const token = await generateWorkspaceSandboxBootstrapToken({
+        authorizationCookies: { pl2_assessmentpw: 'signed-password' },
         publicQuestionEndpoint: false,
         sessionId: 'session-123',
         workspaceId,
       });
       const hostname = getWorkspaceSandboxHostname({ workspaceId });
 
-      await withServer(createApp(), async ({ url: baseUrl }) => {
-        const response = await request({
-          baseUrl,
-          path: '/bootstrap',
-          host: hostname,
-          method: 'POST',
-          body: new URLSearchParams({ jwt }),
-        });
-        assert.equal(response.status, 303);
-        assert.equal(response.headers.location, `/pl/workspace/${workspaceId}/container/`);
-
-        const setCookie = response.headers['set-cookie']?.join('; ');
-        assert.isDefined(setCookie);
-        assert.include(setCookie, '__Host-pl_workspace_authz=');
-        assert.include(setCookie, '__Host-pl_workspace_session=');
-        assert.include(setCookie, 'HttpOnly');
-        assert.include(setCookie, 'Secure');
-        assert.include(setCookie, 'Partitioned');
-        assert.include(setCookie, 'SameSite=None');
-        assert.notInclude(setCookie, 'Domain=');
-
-        const otherWorkspaceJwt = await generateWorkspaceSandboxBootstrapJwt({
-          authorizationCookies: {},
-          publicQuestionEndpoint: false,
-          sessionId: 'session-123',
-          workspaceId: '999999',
-        });
-        const mismatchedWorkspaceResponse = await request({
-          baseUrl,
-          path: '/bootstrap',
-          host: hostname,
-          method: 'POST',
-          body: new URLSearchParams({ jwt: otherWorkspaceJwt }),
-        });
-        assert.equal(mismatchedWorkspaceResponse.status, 403);
-      });
-    });
-  });
-
-  it('protects sandbox hosts without intercepting unrelated hosts', async () => {
-    await withConfig(sandboxConfig, async () => {
-      const hostname = getWorkspaceSandboxHostname({ workspaceId });
-
-      await withServer(createApp(), async ({ url: baseUrl }) => {
+      const app = express().use(makeWorkspaceSandboxMiddleware());
+      await withServer(app, async ({ url: baseUrl }) => {
         const unauthorizedResponse = await request({
           baseUrl,
           path: `/pl/workspace/${workspaceId}/container/`,
           host: hostname,
+          headers: { 'Sec-Fetch-Site': 'same-origin' },
         });
         assert.equal(unauthorizedResponse.status, 401);
-        assert.include(unauthorizedResponse.body, 'prairielearn:workspace-authorization-expired');
 
-        const invalidHostResponse = await request({
+        const bootstrapRequest = {
           baseUrl,
-          path: '/main',
-          host: `unknown.${sandboxConfig.workspaceSandboxBaseDomain}`,
+          path: '/bootstrap',
+          host: hostname,
+          method: 'POST',
+          headers: { Origin: sandboxConfig.serverCanonicalHost },
+          body: new URLSearchParams({ token }),
+        };
+        const wrongOrigin = await request({
+          ...bootstrapRequest,
+          headers: { Origin: 'https://w999999.us.prairielearn-user-content.test' },
         });
-        assert.equal(invalidHostResponse.status, 404);
+        assert.equal(wrongOrigin.status, 403);
+        const wrongWorkspace = await request({
+          ...bootstrapRequest,
+          host: getWorkspaceSandboxHostname({ workspaceId: '999999' }),
+        });
+        assert.equal(wrongWorkspace.status, 401);
 
-        const mainResponse = await request({ baseUrl, path: '/main' });
-        assert.equal(mainResponse.status, 200);
-        assert.equal(mainResponse.body, 'main');
+        const responses = await Promise.all([request(bootstrapRequest), request(bootstrapRequest)]);
+        responses.sort((a, b) => a.status - b.status);
+        const [response, replay] = responses;
+        assert.equal(response.status, 200);
+        assert.equal(replay.status, 401);
+        assert.isUndefined(replay.headers['set-cookie']);
+        const cookies = response.headers['set-cookie'];
+        assert.isDefined(cookies);
+        const workspaceRequest = {
+          headers: {
+            host: hostname,
+            'sec-fetch-site': 'same-origin',
+            cookie: cookies.map((cookie) => cookie.split(';')[0]).join('; '),
+          },
+        };
+        assert.isTrue(validateWorkspaceSandboxAccess(workspaceRequest, workspaceId).authorized);
+        const session = getWorkspaceSandboxSession(workspaceRequest, workspaceId);
+        assert.isNotNull(session);
+        assert.equal(session.session_id, 'session-123');
+        assert.deepEqual(session.authorization_cookies, { pl2_assessmentpw: 'signed-password' });
+        const otherWorkspaceRequest = {
+          headers: {
+            ...workspaceRequest.headers,
+            host: getWorkspaceSandboxHostname({ workspaceId: '999999' }),
+          },
+        };
+        assert.deepEqual(validateWorkspaceSandboxAccess(otherWorkspaceRequest, '999999'), {
+          authorized: false,
+          reason: 'unauthorized',
+        });
+        assert.isNull(getWorkspaceSandboxSession(otherWorkspaceRequest, '999999'));
+
+        const expiredToken = await generateWorkspaceSandboxBootstrapToken({
+          authorizationCookies: {},
+          publicQuestionEndpoint: false,
+          sessionId: 'session-123',
+          workspaceId,
+        });
+        await execute(sql.expire_bootstrap_tokens);
+        const expiredResponse = await request({
+          ...bootstrapRequest,
+          body: new URLSearchParams({ token: expiredToken }),
+        });
+        assert.equal(expiredResponse.status, 401);
+        assert.isUndefined(expiredResponse.headers['set-cookie']);
+
+        const oversizedResponse = await request({
+          ...bootstrapRequest,
+          body: new URLSearchParams({ token: 'a'.repeat(9 * 1024) }),
+        });
+        assert.equal(oversizedResponse.status, 413);
+        assert.notInclude(oversizedResponse.body, 'workspace-authorization-expired');
       });
     });
   });

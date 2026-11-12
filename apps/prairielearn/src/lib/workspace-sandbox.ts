@@ -1,8 +1,7 @@
-import { createSecretKey } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 
 import cookie from 'cookie';
-import * as jose from 'jose';
 import { z } from 'zod';
 
 import {
@@ -12,17 +11,16 @@ import {
 } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
+import {
+  consumeWorkspaceBootstrapToken,
+  insertWorkspaceBootstrapToken,
+} from '../models/workspace-bootstrap-token.js';
+
 import { config } from './config.js';
 import { features } from './features/index.js';
 import { idsEqual } from './id.js';
-import { jwtVerifyWithKeyRing } from './jwt.js';
-import { getActiveKey } from './key-ring.js';
 
 const WORKSPACE_SANDBOX_AUTHORIZATION_COOKIE_PURPOSE = 'workspace-sandbox-authorization';
-const WORKSPACE_SANDBOX_BOOTSTRAP_JWT_AUDIENCE = 'workspace-sandbox';
-const WORKSPACE_SANDBOX_BOOTSTRAP_JWT_ISSUER = 'PrairieLearn';
-const WORKSPACE_SANDBOX_BOOTSTRAP_JWT_LIFETIME = '1m';
-const WORKSPACE_SANDBOX_BOOTSTRAP_JWT_PURPOSE = 'workspace-bootstrap';
 const WORKSPACE_SANDBOX_SESSION_COOKIE_PURPOSE = 'workspace-sandbox-session';
 
 const WORKSPACE_AUTHORIZATION_COOKIE_NAMES = [
@@ -40,14 +38,6 @@ const WORKSPACE_AUTHORIZATION_COOKIE_NAMES = [
 ] as const;
 
 const WorkspaceAuthorizationCookiesSchema = z.record(z.string(), z.string());
-
-const WorkspaceSandboxBootstrapJwtSchema = z.object({
-  authorization_cookies: WorkspaceAuthorizationCookiesSchema,
-  public_question_endpoint: z.boolean(),
-  purpose: z.literal(WORKSPACE_SANDBOX_BOOTSTRAP_JWT_PURPOSE),
-  session_id: z.string().min(1),
-  workspace_id: IdSchema,
-});
 
 export const WORKSPACE_SANDBOX_COOKIE_NAME = '__Host-pl_workspace_authz';
 export const WORKSPACE_SANDBOX_SESSION_COOKIE_NAME = '__Host-pl_workspace_session';
@@ -189,11 +179,20 @@ export function classifyWorkspaceSandboxRequestHost(
 }
 
 export function validateWorkspaceSandboxAccess(
-  req: Pick<IncomingMessage, 'headers'>,
+  req: Pick<IncomingMessage, 'headers' | 'method'>,
   expectedWorkspaceId: string,
 ): WorkspaceSandboxAccessResult {
   const hostAccess = validateWorkspaceSandboxHost(req, expectedWorkspaceId);
   if (!hostAccess.authorized) return hostAccess;
+
+  const origin = req.headers.origin;
+  const fetchSite = req.headers['sec-fetch-site'];
+  if (
+    origin !== getWorkspaceSandboxOrigin(hostAccess.workspaceHost) &&
+    !(origin == null && fetchSite === 'same-origin')
+  ) {
+    return { authorized: false, reason: 'invalid-origin' };
+  }
 
   if (!hasValidWorkspaceSandboxCookie(req, hostAccess.workspaceHost.workspaceId)) {
     return { authorized: false, reason: 'unauthorized' };
@@ -333,7 +332,7 @@ export function getWorkspaceSandboxSession(
   return result.data;
 }
 
-export async function generateWorkspaceSandboxBootstrapJwt({
+export async function generateWorkspaceSandboxBootstrapToken({
   workspaceId,
   sessionId,
   publicQuestionEndpoint,
@@ -344,34 +343,20 @@ export async function generateWorkspaceSandboxBootstrapJwt({
   publicQuestionEndpoint: boolean;
   authorizationCookies: Record<string, string>;
 }): Promise<string> {
-  const payload = WorkspaceSandboxBootstrapJwtSchema.parse({
+  const token = randomBytes(32).toString('base64url');
+  await insertWorkspaceBootstrapToken({
     authorization_cookies: authorizationCookies,
     public_question_endpoint: publicQuestionEndpoint,
-    purpose: WORKSPACE_SANDBOX_BOOTSTRAP_JWT_PURPOSE,
     session_id: sessionId,
-    workspace_id: workspaceId,
+    workspace_id: IdSchema.parse(workspaceId),
+    token_hash: createHash('sha256').update(token).digest('hex'),
   });
-  const key = createSecretKey(getActiveKey(config.secretKey), 'utf-8');
-
-  return await new jose.SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setAudience(WORKSPACE_SANDBOX_BOOTSTRAP_JWT_AUDIENCE)
-    .setIssuer(WORKSPACE_SANDBOX_BOOTSTRAP_JWT_ISSUER)
-    .setIssuedAt()
-    .setExpirationTime(WORKSPACE_SANDBOX_BOOTSTRAP_JWT_LIFETIME)
-    .sign(key);
+  return token;
 }
 
-export async function verifyWorkspaceSandboxBootstrapJwt(jwt: string) {
-  try {
-    const { payload } = await jwtVerifyWithKeyRing(jwt, config.secretKey, {
-      algorithms: ['HS256'],
-      audience: WORKSPACE_SANDBOX_BOOTSTRAP_JWT_AUDIENCE,
-      issuer: WORKSPACE_SANDBOX_BOOTSTRAP_JWT_ISSUER,
-    });
-    const result = WorkspaceSandboxBootstrapJwtSchema.safeParse(payload);
-    return result.success ? result.data : null;
-  } catch {
-    return null;
-  }
+export async function redeemWorkspaceSandboxBootstrapToken(token: string, workspaceId: string) {
+  return await consumeWorkspaceBootstrapToken({
+    token_hash: createHash('sha256').update(token).digest('hex'),
+    workspace_id: IdSchema.parse(workspaceId),
+  });
 }

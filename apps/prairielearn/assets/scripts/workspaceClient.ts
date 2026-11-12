@@ -140,11 +140,11 @@ onDocumentReady(function () {
     form.target = workspaceFrame.name;
     form.hidden = true;
 
-    const jwtInput = document.createElement('input');
-    jwtInput.name = 'jwt';
-    jwtInput.type = 'hidden';
-    jwtInput.value = authorizationResponse.jwt;
-    form.append(jwtInput);
+    const tokenInput = document.createElement('input');
+    tokenInput.name = 'token';
+    tokenInput.type = 'hidden';
+    tokenInput.value = authorizationResponse.token;
+    form.append(tokenInput);
 
     document.body.append(form);
     form.submit();

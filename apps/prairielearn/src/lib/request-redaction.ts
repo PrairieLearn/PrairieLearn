@@ -6,9 +6,9 @@ export function redactSensitiveRequestBody(path: string, body: unknown): unknown
     body != null &&
     typeof body === 'object' &&
     !Array.isArray(body) &&
-    Object.hasOwn(body, 'jwt')
+    Object.hasOwn(body, 'token')
   ) {
-    return { ...body, jwt: REDACTED };
+    return { ...body, token: REDACTED };
   }
   return body;
 }

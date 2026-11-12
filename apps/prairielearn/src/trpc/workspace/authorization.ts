@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 
 import {
   areWorkspaceSpecificHostsEnabled,
-  generateWorkspaceSandboxBootstrapJwt,
+  generateWorkspaceSandboxBootstrapToken,
   getWorkspaceSandboxAuthorizationCookies,
   getWorkspaceSandboxOrigin,
 } from '../../lib/workspace-sandbox.js';
@@ -33,7 +33,7 @@ const issueMutation = workspaceProcedure
     });
     return {
       bootstrapUrl: `${sandboxOrigin}/bootstrap`,
-      jwt: await generateWorkspaceSandboxBootstrapJwt({
+      token: await generateWorkspaceSandboxBootstrapToken({
         authorizationCookies: getWorkspaceSandboxAuthorizationCookies(ctx.authorizationCookies),
         publicQuestionEndpoint: ctx.publicQuestionEndpoint,
         sessionId: ctx.sessionId,
