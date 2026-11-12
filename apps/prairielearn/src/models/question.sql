@@ -24,11 +24,16 @@ SELECT
   count(DISTINCT descendant.course_id) FILTER (
     WHERE
       descendant.course_id != source.course_id
-  )::int AS downstream_course_count
+  )::int AS downstream_course_count,
+  count(DISTINCT course.institution_id) FILTER (
+    WHERE
+      descendant.course_id != source.course_id
+  )::int AS downstream_institution_count
 FROM
   lineage
   JOIN questions AS source ON source.id = lineage.source_question_id
   JOIN questions AS descendant ON descendant.id = lineage.question_id
+  JOIN courses AS course ON course.id = descendant.course_id
 GROUP BY
   source.id;
 

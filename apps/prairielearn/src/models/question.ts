@@ -16,9 +16,10 @@ import { type Question, QuestionSchema } from '../lib/db-types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Counts distinct external courses reachable through recorded copy links for
- * each source question. Includes soft-deleted questions and courses. This is
- * declared copy adoption, not current usage or a complete historical count.
+ * Counts distinct external courses and their institutions reachable through
+ * recorded copy links for each source question. Includes soft-deleted questions
+ * and courses. This is declared copy adoption, not current usage or a complete
+ * historical count.
  */
 export async function selectQuestionCopyAdoption(question_ids: string[]) {
   return await queryRows(
@@ -27,6 +28,7 @@ export async function selectQuestionCopyAdoption(question_ids: string[]) {
     z.object({
       question_id: IdSchema,
       downstream_course_count: z.number().int().nonnegative(),
+      downstream_institution_count: z.number().int().nonnegative(),
     }),
   );
 }

@@ -23,8 +23,8 @@ const sql = loadSqlEquiv(import.meta.url);
 const courseId = '1';
 const siteUrl = `http://localhost:${config.serverPort}`;
 
-async function insertCourse(name: string) {
-  return await queryScalar(sql.insert_course, { name }, IdSchema);
+async function insertCourse(name: string, institution_id = '1') {
+  return await queryScalar(sql.insert_course, { name, institution_id }, IdSchema);
 }
 
 async function insertQuestion({
@@ -76,11 +76,21 @@ describe('Question authorship reports', () => {
   });
   afterAll(helperServer.after);
 
-  it('counts branching and indirect copies once per external course, for multiple sources', async () => {
+  it('deduplicates external courses and institutions across branching and indirect copies', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      const b = await insertCourse('B');
-      const c = await insertCourse('C');
-      const d = await insertCourse('D');
+      const institutionB = await queryScalar(
+        sql.insert_institution,
+        { name: 'Institution B' },
+        IdSchema,
+      );
+      const institutionD = await queryScalar(
+        sql.insert_institution,
+        { name: 'Institution D' },
+        IdSchema,
+      );
+      const b = await insertCourse('B', institutionB);
+      const c = await insertCourse('C', institutionB);
+      const d = await insertCourse('D', institutionD);
       const root = await insertQuestion({ qid: 'root' });
       const b1 = await insertQuestion({ course_id: b, qid: 'b1', source_id: root });
       await insertQuestion({ course_id: b, qid: 'b2', source_id: root });
@@ -89,8 +99,8 @@ describe('Question authorship reports', () => {
       await insertQuestion({ course_id: d, qid: 'd1', source_id: local });
       const adoption = await selectQuestionCopyAdoption([root, c1]);
       assert.sameDeepMembers(adoption, [
-        { question_id: root, downstream_course_count: 3 },
-        { question_id: c1, downstream_course_count: 2 },
+        { question_id: root, downstream_course_count: 3, downstream_institution_count: 2 },
+        { question_id: c1, downstream_course_count: 2, downstream_institution_count: 2 },
       ]);
     });
   });
@@ -108,8 +118,8 @@ describe('Question authorship reports', () => {
       await insertQuestion({ course_id: b, qid: 'self-copy', source_id: self });
 
       assert.sameDeepMembers(await selectQuestionCopyAdoption([root, self]), [
-        { question_id: root, downstream_course_count: 2 },
-        { question_id: self, downstream_course_count: 1 },
+        { question_id: root, downstream_course_count: 2, downstream_institution_count: 1 },
+        { question_id: self, downstream_course_count: 1, downstream_institution_count: 1 },
       ]);
     });
   });
@@ -232,6 +242,7 @@ describe('Question authorship reports', () => {
         draft: false,
         provenance_status: 'absent' as const,
         downstream_course_count: 1,
+        downstream_institution_count: 1,
       };
       assert.deepEqual(report, [
         {
@@ -247,6 +258,7 @@ describe('Question authorship reports', () => {
               draft: false,
               provenance_status: 'absent',
               downstream_course_count: 0,
+              downstream_institution_count: 0,
             },
           ],
         },

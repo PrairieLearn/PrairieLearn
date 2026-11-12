@@ -54,6 +54,11 @@ or indirect copy of a question. For A → B → C, A's question counts B and C. 
 copies in B count once, and copies in A do not count toward A's external adoption.
 This metric excludes by-reference sharing and student activity.
 
+Institution counts are the number of distinct institutions associated with those
+same downstream courses. Multiple courses at one institution count once. Another
+course at the authoring institution contributes to both counts; the authoring
+course itself contributes to neither.
+
 Counts follow the database links resolved from `copiedFrom` during sync, including
 soft-deleted questions and courses. Deleted intermediate copies still connect the
 source to later copies. Self-references and cycles do not add duplicate results.
@@ -73,7 +78,8 @@ copies without metadata, removed links, and copies on other servers cannot be
 reconstructed. Consequently, a zero count does not prove that no copies exist.
 
 Reports require course Previewer permission or higher and expose downstream counts
-only, without downstream course names, identifiers, staff, students, or content.
+only, without downstream course or institution names, identifiers, staff, students,
+or content.
 
 ## Sharing questions
 

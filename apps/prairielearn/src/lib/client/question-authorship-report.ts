@@ -11,10 +11,11 @@ export const QuestionAuthorshipReportQuestionSchema = StaffQuestionSchema.pick({
 }).extend({
   provenance_status: z.enum(['absent', 'resolved', 'unresolved']),
   downstream_course_count: z.number().int().nonnegative(),
+  downstream_institution_count: z.number().int().nonnegative(),
 });
 
 // Counts are the only downstream information exposed to clients. In
-// particular, do not include downstream question/course IDs or metadata.
+// particular, do not include downstream question/course/institution IDs or metadata.
 export const QuestionAuthorshipReportSchema = z.array(
   z.object({
     uid: StaffUserSchema.shape.uid,

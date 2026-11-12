@@ -5,9 +5,29 @@ SET
 
 -- BLOCK insert_course
 INSERT INTO
-  courses (short_name, title, path, display_timezone)
+  courses (
+    short_name,
+    title,
+    path,
+    display_timezone,
+    institution_id
+  )
 VALUES
-  ($name, $name, '/copy-report/' || $name, 'UTC')
+  (
+    $name,
+    $name,
+    '/copy-report/' || $name,
+    'UTC',
+    $institution_id
+  )
+RETURNING
+  id;
+
+-- BLOCK insert_institution
+INSERT INTO
+  institutions (short_name, long_name)
+VALUES
+  ($name, $name)
 RETURNING
   id;
 
