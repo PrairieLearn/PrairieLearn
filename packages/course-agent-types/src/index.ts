@@ -239,6 +239,28 @@ export const ToolCallSchema = z
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
 
+// Each attachment is uploaded on its own before the message that references it is sent.
+export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
+// A sandbox copies in every earlier attachment when it starts, so a conversation's total is capped.
+export const MAX_CONVERSATION_ATTACHMENT_BYTES = 200 * 1024 * 1024;
+export const MAX_CONVERSATION_ATTACHMENTS = 100;
+
+export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
+
+// Conversation and upload IDs are lowercase UUIDs that the Worker generates.
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+export const UUID_PATTERN = new RegExp(`^${UUID}$`);
+const ATTACHMENT_URL = new RegExp(`^upload:(${UUID})$`);
+
+/** A message's file part points at its upload with this URL rather than carrying the contents. */
+export const attachmentUrl = (uploadId: string) => `upload:${uploadId}`;
+
+/** The upload a file part's URL points at, or null for any other URL, such as a data URL. */
+export function attachmentIdOf(url: string) {
+  return ATTACHMENT_URL.exec(url)?.[1] ?? null;
+}
+
 /**
  * The PrairieLearn page an instructor was viewing when they sent a message. `page` is the page's
  * navigation key, such as `assessment.settings`. Names are the ones the agent sees in course
