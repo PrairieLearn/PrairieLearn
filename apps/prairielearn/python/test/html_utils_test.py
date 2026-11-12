@@ -87,7 +87,9 @@ def test_render_raw_input_popover_escapes_content_for_html_attribute() -> None:
 
 def test_render_raw_input_grid_popover_preserves_grid_shape() -> None:
     popover = html.unescape(
-        pl.render_raw_input_popover([["1", "2\u200b"], ["café", ""]], "matrix answer")
+        pl.render_raw_input_popover(
+            [["1", "2\u200b"], ["café", "<img src=x>"]], "matrix answer"
+        )
     )
 
     assert 'aria-label="Answer as entered for matrix answer"' in popover
@@ -96,5 +98,7 @@ def test_render_raw_input_grid_popover_preserves_grid_shape() -> None:
     assert "2&lt;U+200b&gt;" in popover
     assert "café" in popover
     assert "caf&lt;U+e9&gt;" in popover
+    assert "&lt;img src=x&gt;" in popover
+    assert "<img src=x>" not in popover
     assert popover.index("Invisible characters") < popover.index("<table")
     assert popover.index("</table>") < popover.index("special characters")

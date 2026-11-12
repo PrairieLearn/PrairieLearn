@@ -9,8 +9,10 @@ import html
 import re
 from collections.abc import Callable, Sequence
 from enum import Enum
+from pathlib import Path
 from typing import Any, overload
 
+import chevron
 import lxml.html
 
 from prairielearn.colors import PLColor
@@ -77,6 +79,8 @@ _PL_BOOLEAN_FALSE = frozenset({
     "N",
     "NO",
 })
+
+_RAW_INPUT_TEMPLATE_DIRECTORY = Path(__file__).parent / "internal"
 
 
 def is_boolean_value(value: str) -> bool:
@@ -494,59 +498,54 @@ def _escape_non_ascii_string(string: str) -> str:
     )
 
 
-def _render_raw_input_value(value: str, formatter: Callable[[str], str]) -> str:
-    if value == "":
-        return '<span class="text-body-secondary">(nothing entered)</span>'
+def _render_raw_input_template(template_name: str, data: dict[str, object]) -> str:
+    with (_RAW_INPUT_TEMPLATE_DIRECTORY / template_name).open(
+        encoding="utf-8"
+    ) as template:
+        return chevron.render(template, data).strip()
 
-    return (
-        '<pre class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere">'
-        f"{html.escape(formatter(value))}</pre>"
+
+def _render_raw_input_value(value: str, formatter: Callable[[str], str]) -> str:
+    return _render_raw_input_template(
+        "raw_input_value.mustache",
+        {
+            "empty": value == "",
+            "value": formatter(value),
+        },
     )
 
 
 def _render_raw_input_grid(
     values: Sequence[Sequence[str]], formatter: Callable[[str], str]
 ) -> str:
-    rows = "".join(
-        "<tr>"
-        + "".join(
-            '<td><code style="white-space: pre-wrap; overflow-wrap: anywhere">'
-            f"{html.escape(formatter(value))}</code></td>"
-            for value in row
-        )
-        + "</tr>"
-        for row in values
-    )
-    return (
-        '<div class="table-responsive">'
-        '<table class="table table-sm table-bordered mb-0"><tbody>'
-        f"{rows}</tbody></table></div>"
+    return _render_raw_input_template(
+        "raw_input_grid.mustache",
+        {
+            "rows": [
+                {"cells": [{"value": formatter(value)} for value in row]}
+                for row in values
+            ]
+        },
     )
 
 
 def _render_raw_input_diagnostics(
     readable: str, ascii_only: str, raw_values: Sequence[str]
 ) -> str:
-    sections = []
-
-    if any(escape_unicode_string(value) != value for value in raw_values):
-        sections.append(
-            '<p class="mb-1">Invisible characters appear like '
-            "<code>&lt;U+200b&gt;</code>.</p>"
-        )
-
-    sections.append(readable)
-
-    if any(
-        _escape_non_ascii_string(value) != escape_unicode_string(value)
-        for value in raw_values
-    ):
-        sections.extend((
-            '<p class="mb-1 mt-2">With all special characters shown as codes:</p>',
-            ascii_only,
-        ))
-
-    return "".join(sections)
+    return _render_raw_input_template(
+        "raw_input_diagnostics.mustache",
+        {
+            "show_invisible_characters": any(
+                escape_unicode_string(value) != value for value in raw_values
+            ),
+            "readable": readable,
+            "show_ascii_only": any(
+                _escape_non_ascii_string(value) != escape_unicode_string(value)
+                for value in raw_values
+            ),
+            "ascii_only": ascii_only,
+        },
+    )
 
 
 def render_raw_input_popover(
@@ -582,17 +581,12 @@ def render_raw_input_popover(
     if not show_if_ascii_only and all(value.isascii() for value in raw_values):
         return ""
 
-    title = html.escape(f"Answer as entered for {input_label}", quote=True)
-    return (
-        '<button type="button" '
-        'class="ms-1 btn btn-sm btn-secondary small border" '
-        'data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" '
-        'data-bs-custom-class="popover-wide popover-scrollable" '
-        'data-bs-title="Answer as entered" '
-        f'aria-label="{title}" '
-        f'data-bs-content="{html.escape(content, quote=True)}">'
-        '<i class="fas fa-question-circle" aria-hidden="true"></i>'
-        "</button>"
+    return _render_raw_input_template(
+        "raw_input_popover.mustache",
+        {
+            "title": f"Answer as entered for {input_label}",
+            "content": content,
+        },
     )
 
 
