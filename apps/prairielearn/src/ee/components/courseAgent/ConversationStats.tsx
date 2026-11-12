@@ -46,14 +46,16 @@ export function ConversationStats({
             <dd>{usage?.input_tokens.toLocaleString() ?? 'Loading'}</dd>
             <dt>Cached input tokens</dt>
             <dd>{usage?.input_tokens_cache_read.toLocaleString() ?? 'Loading'}</dd>
+            <dt>Cache write tokens</dt>
+            <dd>{usage?.input_tokens_cache_write.toLocaleString() ?? 'Loading'}</dd>
             <dt>Output tokens</dt>
             <dd>{usage?.output_tokens.toLocaleString() ?? 'Loading'}</dd>
             <dt>Reasoning tokens</dt>
             <dd>{usage?.output_tokens_reasoning.toLocaleString() ?? 'Loading'}</dd>
-            <dt>Model cost</dt>
-            <dd className="mb-0">
-              {usage ? currencyFormat.format(usage.cost_milli_dollars / 1000) : 'Loading'}
-            </dd>
+            <dt>Web searches</dt>
+            <dd>{usage?.web_search_calls.toLocaleString() ?? 'Loading'}</dd>
+            <dt>Cost</dt>
+            <dd className="mb-0">{usage ? currencyFormat.format(usage.cost) : 'Loading'}</dd>
           </dl>
         </Dropdown.Menu>
       )}

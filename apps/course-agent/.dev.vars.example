@@ -1,7 +1,7 @@
 # Local development only. Copy to .dev.vars, which is gitignored.
 PL_SERVICE_TOKEN=replace-with-a-random-token-of-at-least-32-characters
 OPENAI_API_KEY=replace-with-your-openai-api-key
-# Usage reports and credit refills go to this PrairieLearn origin.
+# Usage reports go to this PrairieLearn origin.
 PL_SERVICE_URL=http://localhost:3000
 # Only needed for GitHub-backed conversations.
 GITHUB_READ_TOKEN=

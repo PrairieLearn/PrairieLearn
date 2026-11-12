@@ -737,17 +737,19 @@ export const CourseAgentReviewSchema = z.object({
 export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
 
 export const CourseAgentUsageReportSchema = z.object({
-  cost_milli_dollars: z.coerce.number(),
+  cost: z.number(),
   course_agent_conversation_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
   input_tokens: z.coerce.number(),
   input_tokens_cache_read: z.coerce.number(),
+  input_tokens_cache_write: z.coerce.number(),
   model: z.string(),
   output_tokens: z.coerce.number(),
   output_tokens_reasoning: z.coerce.number(),
   report_id: z.string(),
   user_id: IdSchema,
+  web_search_calls: z.coerce.number(),
 });
 export type CourseAgentUsageReport = z.infer<typeof CourseAgentUsageReportSchema>;
 

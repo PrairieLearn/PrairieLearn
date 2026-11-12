@@ -657,6 +657,13 @@ export const ConfigSchema = z.object({
    */
   aiQuestionGenerationRateLimitDollars: z.number().default(1),
   /**
+   * The hourly spending limit for the course agent, in US dollars. This is applied per user,
+   * across courses and conversations.
+   */
+  courseAgentRateLimitDollars: z.number().default(50),
+  /** What the course agent is charged for each web search command, in US dollars. */
+  courseAgentWebSearchCallCostDollars: z.number().default(0.01),
+  /**
    * OpenAI credentials for administrator tasks like AI-assisted course request review.
    */
   administratorOpenAiApiKey: z.string().nullable().default(null),

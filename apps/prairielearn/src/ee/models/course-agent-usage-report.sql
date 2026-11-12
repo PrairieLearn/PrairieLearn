@@ -7,9 +7,11 @@ INSERT INTO
     model,
     input_tokens,
     input_tokens_cache_read,
+    input_tokens_cache_write,
     output_tokens,
     output_tokens_reasoning,
-    cost_milli_dollars
+    web_search_calls,
+    cost
   )
 VALUES
   (
@@ -19,26 +21,17 @@ VALUES
     $model,
     $input_tokens,
     $input_tokens_cache_read,
+    $input_tokens_cache_write,
     $output_tokens,
     $output_tokens_reasoning,
-    $cost_milli_dollars
+    $web_search_calls,
+    $cost
   )
-ON CONFLICT (course_agent_conversation_id, report_id) DO NOTHING
-RETURNING
-  id;
-
--- BLOCK select_usage_report
-SELECT
-  *
-FROM
-  course_agent_usage_reports
-WHERE
-  course_agent_conversation_id = $course_agent_conversation_id
-  AND report_id = $report_id;
+ON CONFLICT (course_agent_conversation_id, report_id) DO NOTHING;
 
 -- BLOCK select_user_cost_since
 SELECT
-  coalesce(sum(cost_milli_dollars), 0)
+  coalesce(sum(cost), 0)
 FROM
   course_agent_usage_reports
 WHERE
@@ -49,9 +42,11 @@ WHERE
 SELECT
   coalesce(sum(input_tokens), 0) AS input_tokens,
   coalesce(sum(input_tokens_cache_read), 0) AS input_tokens_cache_read,
+  coalesce(sum(input_tokens_cache_write), 0) AS input_tokens_cache_write,
   coalesce(sum(output_tokens), 0) AS output_tokens,
   coalesce(sum(output_tokens_reasoning), 0) AS output_tokens_reasoning,
-  coalesce(sum(cost_milli_dollars), 0) AS cost_milli_dollars
+  coalesce(sum(web_search_calls), 0) AS web_search_calls,
+  coalesce(sum(cost), 0) AS cost
 FROM
   course_agent_usage_reports
 WHERE

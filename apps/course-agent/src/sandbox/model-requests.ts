@@ -27,7 +27,25 @@ function toolsRefusal(tools: unknown, allowed: Set<string>): string | null {
  * Why a `/v1/responses` body is refused, or null if it may be forwarded. Tools can be declared in
  * `tools` or, as Codex does for models using Responses Lite, in `additional_tools` input items.
  */
-export function modelRequestRefusal(body: { tools?: unknown; input?: unknown }): string | null {
+export function modelRequestRefusal(body: {
+  tools?: unknown;
+  input?: unknown;
+  background?: unknown;
+  service_tier?: unknown;
+  prompt?: unknown;
+}): string | null {
+  // A stored prompt can declare tools that the checks below never see.
+  if (body.prompt !== undefined) return 'Stored prompts are not available';
+  // Usage is priced at standard rates when the response finishes. A background request finishes
+  // after its response returns, and other service tiers bill at other rates.
+  if (body.background !== undefined && body.background !== false) {
+    return 'Background requests are not available';
+  }
+  if (
+    ![undefined, null, 'auto', 'default'].includes(body.service_tier as string | null | undefined)
+  ) {
+    return 'Only the default service tier is available';
+  }
   const declared = [
     ...(body.tools === undefined ? [] : [body.tools]),
     ...(Array.isArray(body.input) ? (body.input as { type?: unknown; tools?: unknown }[]) : [])
@@ -80,8 +98,17 @@ export function prepareSearchRequest(
   const commands = SearchCommandsSchema.safeParse(body.commands);
   if (!commands.success) return { refusal: SEARCH_REFUSAL };
   const { response_length: _length, ...operations } = commands.data;
+  // Only the fields Codex sends are forwarded, so the request cannot opt into other billing.
+  const { id, model, input, max_output_tokens } = body;
   return {
-    forward: { ...body, commands: commands.data, settings: SEARCH_SETTINGS },
+    forward: {
+      id,
+      model,
+      input,
+      max_output_tokens,
+      commands: commands.data,
+      settings: SEARCH_SETTINGS,
+    },
     operations: Object.values(operations).reduce((total, list) => total + (list?.length ?? 0), 0),
   };
 }

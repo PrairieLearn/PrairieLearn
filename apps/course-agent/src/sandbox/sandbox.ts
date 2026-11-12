@@ -124,8 +124,6 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
   }
 }
 
-const OPENAI_API = 'https://api.openai.com';
-
 /**
  * Only the conversation's pinned model and web browsing are available; the API key stays outside
  * the container. OpenAI runs searches and reads pages, so the container never connects to other
@@ -145,16 +143,8 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
     return new Response('Forbidden', { status: 403 });
   }
 
-  private openai(path: string, body: unknown) {
-    return fetch(`${OPENAI_API}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      redirect: 'manual',
-    });
+  private get conversation() {
+    return this.env.Conversation.getByName(this.ctx.props.conversationId);
   }
 
   private async responses(request: Request) {
@@ -168,25 +158,14 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
     const refusal = modelRequestRefusal(body);
     if (refusal) return new Response(refusal, { status: 403 });
-    // PrairieLearn prices each request at standard rates once its response finishes. A
-    // background request finishes after its response returns, and other service tiers bill at
-    // other rates, so either would let the agent spend more than its usage records.
-    if (
-      (body.background !== undefined && body.background !== false) ||
-      (body.service_tier !== undefined &&
-        body.service_tier !== null &&
-        body.service_tier !== 'auto' &&
-        body.service_tier !== 'default')
-    ) {
-      return new Response('Forbidden', { status: 403 });
-    }
     // Later requests in a turn end with tool output; only the role is read, never the content.
     const firstOfTurn = body.input?.at(-1)?.role === 'user';
     const started = Date.now();
     if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
-    const response = await this.env.Conversation.getByName(
-      this.ctx.props.conversationId,
-    ).proxyModelRequest(JSON.stringify(body), this.ctx.props.executionId);
+    const response = await this.conversation.proxyModelRequest(
+      JSON.stringify(body),
+      this.ctx.props.executionId,
+    );
     if (firstOfTurn) {
       logEvent('model_response_started', {
         sandboxId: this.ctx.props.sandboxId,
@@ -206,8 +185,11 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
       return Response.json({ output: prepared.refusal });
     }
     const started = Date.now();
-    const response = await this.openai('/v1/alpha/search', prepared.forward);
-    // OpenAI bills hosted search per call; the response carries no usage to meter.
+    const response = await this.conversation.proxySearchRequest(
+      JSON.stringify(prepared.forward),
+      prepared.operations,
+      this.ctx.props.executionId,
+    );
     logEvent('web_search', {
       sandboxId: this.ctx.props.sandboxId,
       operations: prepared.operations,
@@ -320,7 +302,7 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /**
    * Route the model through the conversation for this turn. Each turn gets a new execution ID, so
-   * a request left over from an earlier turn cannot spend credit.
+   * a request made after its turn ends is refused until the next turn starts.
    */
   async authorizeModel(config: { model: string; conversationId: string; executionId: string }) {
     await this.container.interceptOutboundHttp(

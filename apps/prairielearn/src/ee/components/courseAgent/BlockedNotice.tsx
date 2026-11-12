@@ -5,9 +5,7 @@ import type { ConversationState } from '@prairielearn/course-agent-types';
 import { formatIntervalMinutes } from '@prairielearn/formatter';
 
 const blockedMessage = {
-  budget_exhausted: 'Hourly AI usage limit reached.',
-  access_revoked:
-    'You no longer have access to run the course agent in this course. If your access is restored, Resume to continue.',
+  usage_limit: "You've reached the hourly AI usage limit.",
   startup_failed:
     'The course agent could not start. Resume to clear the incomplete setup, then send a new message.',
   runtime_failed:
@@ -27,22 +25,27 @@ export function BlockedNotice({
   onResume: () => void;
 }) {
   const [now, setNow] = useState(Date.now);
-  const retryAt = state.reason === 'budget_exhausted' ? state.retryAt : undefined;
+  const retryAt = state.reason === 'usage_limit' ? state.retryAt : undefined;
   // Derive the countdown from the persisted deadline so refreshes and background tabs stay accurate.
   useEffect(() => {
     if (!retryAt) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const timer = window.setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= Date.parse(retryAt)) window.clearInterval(timer);
+    }, 1000);
     return () => window.clearInterval(timer);
   }, [retryAt]);
   const remaining = retryAt ? Math.max(0, Date.parse(retryAt) - now) : 0;
   return (
     <Alert variant="warning">
       <p>
-        {blockedMessage[state.reason]}{' '}
+        {retryAt && remaining === 0
+          ? 'The hourly AI usage limit has reset. Resume, then send a message to continue.'
+          : blockedMessage[state.reason]}
         {retryAt &&
-          (remaining > 0
-            ? `You can retry in ${formatIntervalMinutes(remaining)}.`
-            : 'You can now retry.')}
+          remaining > 0 &&
+          ` It resets in ${formatIntervalMinutes(remaining)}; then you can resume and send a message to continue.`}
       </p>
       <Button
         variant="outline-dark"

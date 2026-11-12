@@ -9,10 +9,12 @@ CREATE TABLE IF NOT EXISTS course_agent_usage_reports (
   model text NOT NULL,
   input_tokens bigint NOT NULL CHECK (input_tokens >= 0),
   input_tokens_cache_read bigint NOT NULL CHECK (input_tokens_cache_read >= 0),
+  input_tokens_cache_write bigint NOT NULL CHECK (input_tokens_cache_write >= 0),
   output_tokens bigint NOT NULL CHECK (output_tokens >= 0),
   output_tokens_reasoning bigint NOT NULL CHECK (output_tokens_reasoning >= 0),
-  -- Priced by PrairieLearn when the report is recorded.
-  cost_milli_dollars bigint NOT NULL CHECK (cost_milli_dollars >= 0),
+  web_search_calls bigint NOT NULL CHECK (web_search_calls >= 0),
+  -- Raw provider cost in US dollars, priced by PrairieLearn when the report is recorded.
+  cost double precision NOT NULL CHECK (cost >= 0),
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT course_agent_usage_reports_conversation_report_key UNIQUE (course_agent_conversation_id, report_id)
 );

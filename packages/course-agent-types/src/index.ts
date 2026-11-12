@@ -15,18 +15,14 @@ export type ConversationLifecycle =
   | { status: 'stopping' }
   // Creating a replacement checkpoint or destroying its container; new input is not admitted.
   | { status: 'suspending' }
-  // Resume continues a task paused for credit; other failures repair the sandbox without replaying input.
+  // An operation failed or was interrupted. Explicit Resume repairs the sandbox without replaying input.
   | {
       status: 'blocked';
-      reason:
-        | 'startup_failed'
-        | 'runtime_failed'
-        | 'checkpoint_failed'
-        | 'cleanup_failed'
-        | 'budget_exhausted'
-        | 'access_revoked';
-      retryAt?: string;
-    };
+      reason: 'startup_failed' | 'runtime_failed' | 'checkpoint_failed' | 'cleanup_failed';
+    }
+  // The user reached the hourly usage limit. Resume clears it once retryAt passes; it does not
+  // continue an interrupted task.
+  | { status: 'blocked'; reason: 'usage_limit'; retryAt: string };
 
 /**
  * Public sandbox lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.

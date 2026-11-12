@@ -47,13 +47,14 @@ const ReviewPartSchema = z.object({ reviewId: z.string() });
 const TurnPartSchema = z.object({ tag: z.string() });
 
 /**
- * Instructors decide a review while the sandbox is at rest. A credit block only pauses the agent's
- * inference, so the decision is still saved and delivered once Resume renews credit.
+ * Instructors decide a review while the sandbox is at rest. The usage limit only pauses the agent's
+ * inference, so the decision is still saved and delivered once Resume clears the limit.
  */
 function reviewDecidable(state: ConversationState) {
-  if (state.status === 'waiting_for_user' || state.status === 'offline') return true;
   return (
-    state.status === 'blocked' && ['budget_exhausted', 'access_revoked'].includes(state.reason)
+    state.status === 'waiting_for_user' ||
+    state.status === 'offline' ||
+    (state.status === 'blocked' && state.reason === 'usage_limit')
   );
 }
 
@@ -536,7 +537,7 @@ function Chat({
               Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
             </Alert>
           )}
-          {error && lifecycle?.status !== 'blocked' && (
+          {error && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
             </Alert>

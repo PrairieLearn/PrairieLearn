@@ -17,12 +17,13 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  type Usage,
   UsageDecisionSchema,
   type UsageReport,
-  type UsageTokens,
-  UsageTokensSchema,
+  UsageSchema,
   addUsage,
   emptyUsage,
+  isEmptyUsage,
   reviewTag,
 } from '@prairielearn/course-agent-types';
 
@@ -40,7 +41,6 @@ import {
   messageTag,
   missedTurns,
   nextUserMessage,
-  resumeTag,
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
@@ -51,81 +51,89 @@ import { generateTitle } from './title.js';
 // without traffic, including idle chats and long silent turns.
 const KEEPALIVE_SECONDS = 25;
 
-interface BudgetBlock {
-  reason: Extract<BlockedReason, 'budget_exhausted' | 'access_revoked'>;
-  retryAt?: string;
-  /** Set when the block stopped a running turn, so Resume continues that task. */
-  interrupted?: boolean;
-}
-
 export interface BudgetState {
   /** Usage PrairieLearn has not recorded, excluding a report that is being sent. */
-  unreported: UsageTokens;
+  unreported: Usage;
   /** The report being sent. A retry resends it unchanged, so PrairieLearn records it once. */
   pending: UsageReport | null;
-  /** The provider request whose usage is not yet known, and what to charge if it never is. */
-  running: { requestId: string; estimate: UsageTokens } | null;
-  /** Gates new inference and turns; the sandbox lifecycle, including idle expiry, continues. */
-  blocked: BudgetBlock | null;
+  /**
+   * Set when the user reached the hourly usage limit. It gates new inference and turns until
+   * Resume clears it after this time; the sandbox lifecycle, including idle expiry, continues.
+   */
+  limitedUntil: string | null;
 }
 
-// A provider request that ends without final usage, such as a dropped stream or a restart, is
+// A provider request that ends without final usage, such as a dropped stream or a Stop, is
 // charged its size at about four characters per token plus a generous reply.
 const ESTIMATED_CHARACTERS_PER_TOKEN = 4;
 const ESTIMATED_OUTPUT_TOKENS = 16_000;
 
-// Model requests wait for PrairieLearn only when its last decision is older than this, which in
+// Requests wait for PrairieLearn only when its last decision is older than this, which in
 // practice means once per turn. A limit reached mid-turn takes effect at the next request after
-// a background report, so spending can overshoot the limit by about one request.
+// a report, so spending can overshoot it by up to about USAGE_FLUSH_SECONDS of usage.
 const DECISION_TTL_MS = 60_000;
-// Once the decision is this old, a finished request refreshes it in the background, so the
-// decision stays current without a report per request.
-const DECISION_REFRESH_MS = 30_000;
+// Unsent usage is reported this long after it is recorded, which also keeps the decision fresh
+// while the agent works.
+const USAGE_FLUSH_SECONDS = 30;
+const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
+// Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
+// within one decision.
+const MAX_PROVIDER_REQUESTS = 4;
 
-const RESUME_AFTER_CREDIT_TEXT =
-  'Credit is available again. Continue the interrupted task from the current workspace and thread. Inspect any partial edits and continue from where you left off.';
+const OPENAI_API = 'https://api.openai.com';
 
+type Admission = 'allowed' | 'limited' | 'unavailable' | 'stopped';
+
+// Web request failures end a Codex turn, so a search that is not admitted returns text instead.
+const SEARCH_NOT_ADMITTED: Record<Exclude<Admission, 'allowed'>, string> = {
+  limited: 'Web search is unavailable: the hourly usage limit was reached.',
+  unavailable: 'Web search is temporarily unavailable. Try again shortly.',
+  stopped: 'Web search is unavailable because this task was stopped.',
+};
+const SEARCH_BUSY = 'Too many requests are running. Wait for them to finish and try again.';
+
+const Count = z.number().int().nonnegative();
 const ModelEventSchema = z.looseObject({
   type: z.string(),
   response: z
     .looseObject({
       usage: z
         .looseObject({
-          input_tokens: z.number().int().nonnegative(),
-          output_tokens: z.number().int().nonnegative(),
+          input_tokens: Count,
+          output_tokens: Count,
           input_tokens_details: z
-            .looseObject({ cached_tokens: z.number().int().nonnegative().optional() })
-            .optional(),
-          output_tokens_details: z
-            .looseObject({ reasoning_tokens: z.number().int().nonnegative().optional() })
-            .optional(),
+            .looseObject({
+              cached_tokens: Count.nullish(),
+              cache_write_tokens: Count.nullish(),
+            })
+            .nullish(),
+          output_tokens_details: z.looseObject({ reasoning_tokens: Count.nullish() }).nullish(),
         })
-        .nullable()
-        .optional(),
+        .nullish(),
     })
-    .optional(),
+    .nullish(),
 });
 
-function requestUsage(event: z.infer<typeof ModelEventSchema>): UsageTokens | null {
+function requestUsage(event: z.infer<typeof ModelEventSchema>): Usage | null {
   const usage = event.response?.usage;
   if (!usage) return null;
-  return UsageTokensSchema.parse({
+  return UsageSchema.parse({
+    ...emptyUsage(),
     inputTokens: usage.input_tokens,
     cachedInputTokens: usage.input_tokens_details?.cached_tokens ?? 0,
+    cacheWriteInputTokens: usage.input_tokens_details?.cache_write_tokens ?? 0,
     outputTokens: usage.output_tokens,
     reasoningTokens: usage.output_tokens_details?.reasoning_tokens ?? 0,
   });
 }
 
-function estimateUsage(body: string): UsageTokens {
+function estimateUsage(body: string): Usage {
   return {
     ...emptyUsage(),
     inputTokens: Math.ceil(body.length / ESTIMATED_CHARACTERS_PER_TOKEN),
     outputTokens: ESTIMATED_OUTPUT_TOKENS,
   };
 }
-
-const isEmptyUsage = (usage: UsageTokens) => usage.inputTokens === 0 && usage.outputTokens === 0;
 
 const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
@@ -195,7 +203,7 @@ type ConversationRecord = RecordData &
   );
 
 interface ActiveTurn {
-  /** Authorizes this turn's model requests; a later turn's ID rejects requests from earlier ones. */
+  /** Authorizes this turn's model requests; requests made outside a turn are refused. */
   executionId: string;
   requestId: string;
   startedAt: number;
@@ -207,6 +215,8 @@ interface ActiveTurn {
   shutdown: boolean;
   /** The review whose result this turn delivers, if it is a delivery turn. */
   deliveringReviewId: string | null;
+  /** Set once the turn's provider requests are aborted, so no new one starts. */
+  finishing: boolean;
 }
 
 const reviewFileKey = (reviewId: string, index: number) => `review-file:${reviewId}:${index}`;
@@ -228,8 +238,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private budget: BudgetState = {
     unreported: emptyUsage(),
     pending: null,
-    running: null,
-    blocked: null,
+    limitedUntil: null,
   };
 
   /** Shared by concurrent callers so that only one report is in flight. */
@@ -239,11 +248,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** When PrairieLearn last allowed inference; in memory, so a restarted object checks first. */
   private allowedAt: number | null = null;
 
-  /** Stop waits for confirmed usage before releasing execution. */
-  private modelRequest: {
-    requestId: string;
-    settled: PromiseWithResolvers<undefined>;
-  } | null = null;
+  /**
+   * The turn's provider requests and what to charge if their usage never arrives. Turn completion
+   * aborts them and waits for their usage. They are in memory only: a request running when the
+   * object restarts goes unrecorded, which deferred deploys make rare.
+   */
+  private readonly providerRequests = new Map<
+    string,
+    { estimate: Usage; abort: AbortController; settled: PromiseWithResolvers<undefined> }
+  >();
 
   private _record: ConversationRecord | null = null;
   // Process connections and completion promises exist only in this DO instance.
@@ -285,10 +298,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       reviewId: this.record.review?.id ?? null,
       title: this.record.title ?? null,
     };
-    // A credit block is shown once the sandbox is at rest; in-flight states still show progress.
-    if (this.budget.blocked && ['offline', 'waiting_for_user'].includes(lifecycle.status)) {
-      const { reason, retryAt } = this.budget.blocked;
-      return { status: 'blocked', reason, retryAt, deadlineAt: null, ...common };
+    // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
+    const retryAt = this.budget.limitedUntil;
+    if (retryAt && ['offline', 'waiting_for_user'].includes(lifecycle.status)) {
+      return { status: 'blocked', reason: 'usage_limit', retryAt, deadlineAt: null, ...common };
     }
     return {
       ...(lifecycle.status === 'destroying' ? { status: 'suspending' as const } : lifecycle),
@@ -319,8 +332,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // A new object has no saved conversation yet. Leave the private record null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this._record) return;
-    // A provider request that was running when the object restarted is charged its estimate.
-    if (this.budget.running) this.recordModelUsage(this.budget.running.requestId, null);
+    if (this.budget.pending || !isEmptyUsage(this.budget.unreported)) this.scheduleFlush(0);
     this.setState(this.publicState);
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
     // reconstructing an in-flight operation. The remaining states need explicit recovery.
@@ -425,7 +437,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return { continue: false };
   }
 
-  private block(reason: BlockedReason) {
+  private block(reason: Exclude<BlockedReason, 'usage_limit'>) {
     // Callers report the underlying error separately.
     logEvent('conversation_blocked', {
       conversationId: this.name,
@@ -499,42 +511,71 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
   }
 
-  private finishModelRequest(requestId: string) {
-    if (this.modelRequest?.requestId !== requestId) return;
-    this.modelRequest.settled.resolve(undefined);
-    this.modelRequest = null;
+  /** Start tracking a provider request, or return null if too many are running. */
+  private startProviderRequest(estimate: Usage) {
+    if (this.providerRequests.size >= MAX_PROVIDER_REQUESTS) return null;
+    const requestId = crypto.randomUUID();
+    const abort = new AbortController();
+    this.providerRequests.set(requestId, {
+      estimate,
+      abort,
+      settled: Promise.withResolvers<undefined>(),
+    });
+    return { requestId, signal: abort.signal };
   }
 
-  /** Unknown usage is charged its estimate rather than blocking the conversation. */
-  private recordModelUsage(requestId: string, usage: UsageTokens | null) {
-    const running = this.budget.running;
-    if (running?.requestId !== requestId) return;
-    if (!usage) logEvent('model_usage_estimated', { conversationId: this.name });
-    this.saveBudget({
-      ...this.budget,
-      unreported: addUsage(this.budget.unreported, usage ?? running.estimate),
-      running: null,
-    });
-    this.finishModelRequest(requestId);
-    if (!this.budget.blocked && !this.decisionFresh(DECISION_REFRESH_MS)) {
-      void this.keepAliveWhile(() => this.reportUsage()).catch((error: unknown) =>
-        this.reportError(error),
-      );
+  /** Record a provider request's usage once; unknown usage is charged its estimate. */
+  private finishProviderRequest(requestId: string, usage: Usage | null) {
+    const request = this.providerRequests.get(requestId);
+    if (!request) return;
+    this.providerRequests.delete(requestId);
+    if (!usage) logEvent('provider_usage_estimated', { conversationId: this.name });
+    this.recordUsage(usage ?? request.estimate);
+    request.settled.resolve(undefined);
+  }
+
+  private recordUsage(usage: Usage) {
+    this.saveBudget({ ...this.budget, unreported: addUsage(this.budget.unreported, usage) });
+    this.scheduleFlush(USAGE_FLUSH_SECONDS);
+  }
+
+  /**
+   * Unsent usage always has a flush scheduled. Retries get a distinct payload: an idempotent
+   * insert from inside a running callback would match that callback's own row, which is deleted
+   * when it returns.
+   */
+  private scheduleFlush(delaySeconds: number, attempt = 0) {
+    void this.schedule(delaySeconds, 'flushUsage', attempt ? { attempt } : undefined, {
+      idempotent: true,
+    }).catch((error: unknown) => this.reportError(error));
+  }
+
+  /**
+   * Report all unsent usage, including usage recorded while a report was in flight, retrying with
+   * backoff while PrairieLearn is unreachable.
+   */
+  async flushUsage(retry?: { attempt: number }) {
+    while (this.budget.pending || !isEmptyUsage(this.budget.unreported)) {
+      if (!(await this.reportUsage())) {
+        const attempt = (retry?.attempt ?? 0) + 1;
+        this.scheduleFlush(
+          Math.min(USAGE_FLUSH_SECONDS * 2 ** attempt, MAX_FLUSH_RETRY_SECONDS),
+          attempt,
+        );
+        return;
+      }
     }
   }
 
-  private decisionFresh(maxAgeMs: number) {
-    return this.allowedAt !== null && Date.now() - this.allowedAt < maxAgeMs;
+  private decisionFresh() {
+    return this.allowedAt !== null && Date.now() - this.allowedAt < DECISION_TTL_MS;
   }
 
   private saveBudget(next: BudgetState) {
+    const limitChanged = next.limitedUntil !== this.budget.limitedUntil;
     this.ctx.storage.kv.put('budget', next);
     this.budget = next;
-    if (this._record) this.setState(this.publicState);
-  }
-
-  private blockBudget(block: BudgetBlock) {
-    this.saveBudget({ ...this.budget, blocked: block });
+    if (limitChanged && this._record) this.setState(this.publicState);
   }
 
   /**
@@ -584,16 +625,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       logEvent('usage_report_unavailable', { conversationId: this.name, status: response.status });
       return false;
     }
-    if (response.status === 404) {
-      this.blockBudget({ reason: 'access_revoked' });
-      return true;
-    }
     const decision = response.ok
       ? UsageDecisionSchema.safeParse(await response.json().catch(() => null))
       : null;
     if (!decision?.success) {
-      // A rejected report is a configuration fault, such as a rotated token or an unpriced
-      // model. Keep the report pending so the conversation recovers once it is fixed.
+      // A rejected report is a configuration or deployment fault, such as a rotated token, an
+      // unpriced model or a PrairieLearn without this route. Keep the report pending so the
+      // conversation recovers once it is fixed.
       if (this.rejectedReportId !== report.reportId) {
         this.rejectedReportId = report.reportId;
         this.reportError(new Error(`Usage report was rejected with ${response.status}`));
@@ -601,89 +639,100 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       logEvent('usage_report_rejected', { conversationId: this.name, status: response.status });
       return false;
     }
+    // Only Resume clears the limit, so an allowed decision leaves an existing one in place.
     this.saveBudget({
       ...this.budget,
       pending: null,
-      blocked:
-        decision.data.status === 'allowed'
-          ? this.budget.blocked
-          : decision.data.reason === 'hourly_limit'
-            ? { reason: 'budget_exhausted', retryAt: decision.data.retryAt }
-            : { reason: 'access_revoked' },
+      limitedUntil:
+        decision.data.status === 'limited' ? decision.data.retryAt : this.budget.limitedUntil,
     });
     this.allowedAt = decision.data.status === 'allowed' ? Date.now() : null;
     return true;
   }
 
-  private async forwardModelResponse(response: Response, requestId: string): Promise<Response> {
+  /**
+   * Admit a model or search request from the current turn, asking PrairieLearn first when its
+   * last decision is stale.
+   */
+  private async admit(executionId: string): Promise<Admission> {
+    const reached =
+      this.budget.limitedUntil || this.decisionFresh() ? true : await this.reportUsage();
+    if (this.budget.limitedUntil) {
+      this.interruptForUsageLimit();
+      return 'limited';
+    }
+    if (!reached) return 'unavailable';
+    if (
+      this.active?.executionId !== executionId ||
+      this.active.finishing ||
+      this.record.lifecycle.status === 'stopping' ||
+      this.sandboxShutdown
+    ) {
+      return 'stopped';
+    }
+    return 'allowed';
+  }
+
+  private forwardModelResponse(
+    response: Response,
+    requestId: string,
+    signal: AbortSignal,
+  ): Response {
     if (!response.ok) {
       // The provider does not bill a request it rejected or failed to serve.
-      this.recordModelUsage(requestId, emptyUsage());
+      this.finishProviderRequest(requestId, emptyUsage());
       return response;
     }
-    if (!response.headers.get('Content-Type')?.includes('text/event-stream')) {
-      const value: unknown = await response.json();
-      const event = ModelEventSchema.parse({ type: 'response.completed', response: value });
-      this.recordModelUsage(requestId, requestUsage(event));
-      return Response.json(value);
-    }
-    if (!response.body) throw new Error('Provider returned no response stream');
-    const reader = parseJsonEventStream({
-      stream: response.body,
-      schema: ModelEventSchema,
-    }).getReader();
-    let downstream!: ReadableStreamDefaultController<Uint8Array>;
-    let cancelled = false;
-    let settled = false;
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        downstream = controller;
-      },
-      cancel() {
-        cancelled = true;
-      },
-    });
+    if (!response.body) throw new Error('Provider returned no response body');
+    // The caller gets the provider's bytes unchanged; a copy is read for the final usage.
+    const [forwarded, metered] = response.body.tee();
+    const streamed = response.headers.get('Content-Type')?.includes('text/event-stream');
     void this.keepAliveWhile(async () => {
       try {
+        if (!streamed) {
+          const event = ModelEventSchema.parse({
+            type: 'response.completed',
+            response: await new Response(metered).json(),
+          });
+          this.finishProviderRequest(requestId, requestUsage(event));
+          return;
+        }
+        const reader = parseJsonEventStream({
+          stream: metered,
+          schema: ModelEventSchema,
+        }).getReader();
         for (;;) {
           const chunk = await reader.read();
           if (chunk.done) break;
-          if (!chunk.value.success) throw new Error('Invalid provider stream');
-          const event = chunk.value.value;
           if (
-            ['response.completed', 'response.incomplete', 'response.failed'].includes(event.type) &&
-            !settled
+            chunk.value.success &&
+            ['response.completed', 'response.incomplete', 'response.failed'].includes(
+              chunk.value.value.type,
+            )
           ) {
-            const usage = requestUsage(event);
-            if (usage) {
-              this.recordModelUsage(requestId, usage);
-              settled = true;
-            }
-          }
-          if (!cancelled) {
-            downstream.enqueue(
-              encoder.encode(
-                `event: ${event.type}\ndata: ${JSON.stringify(chunk.value.rawValue)}\n\n`,
-              ),
-            );
+            // A failed response that reports no usage was not billed.
+            const usage =
+              requestUsage(chunk.value.value) ??
+              (chunk.value.value.type === 'response.failed' ? emptyUsage() : null);
+            if (usage) this.finishProviderRequest(requestId, usage);
           }
         }
-        if (!cancelled) downstream.close();
-      } catch (error) {
-        if (!cancelled) downstream.error(error);
       } finally {
-        reader.releaseLock();
-        if (!settled) this.recordModelUsage(requestId, null);
+        // Charges the estimate unless the usage was recorded above.
+        this.finishProviderRequest(requestId, null);
       }
-    }).catch((error: unknown) => this.reportError(error));
+    }).catch((error: unknown) => {
+      // Turn completion aborts requests nothing reads anymore; that is not a failure.
+      if (!signal.aborted) this.reportError(error);
+    });
     const headers = new Headers(response.headers);
+    // fetch() decoded the body, so the provider's length and encoding no longer apply.
     headers.delete('Content-Length');
     headers.delete('Content-Encoding');
-    return new Response(stream, { headers, status: response.status });
+    return new Response(forwarded, { headers, status: response.status });
   }
 
-  private interruptForBudget() {
+  private interruptForUsageLimit() {
     const active = this.active;
     if (!active) return;
     // Let the provider-facing error return before interrupting its waiting native caller.
@@ -693,67 +742,83 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }).catch((error: unknown) => this.reportError(error));
   }
 
+  private openai(path: string, body: string, signal?: AbortSignal) {
+    return fetch(`${OPENAI_API}${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+      redirect: 'manual',
+      signal,
+    });
+  }
+
   /** The sandbox's model outbound binding calls this; only the current turn may use the model. */
   async proxyModelRequest(body: string, executionId: string): Promise<Response> {
-    if (!this.active || this.active.executionId !== executionId) {
+    if (this.active?.executionId !== executionId) {
       return new Response('Forbidden', { status: 403 });
     }
-    if (this.modelRequest) {
-      return new Response('A model request is already running', { status: 409 });
-    }
-    const requestId = crypto.randomUUID();
-    this.modelRequest = { requestId, settled: Promise.withResolvers<undefined>() };
-    try {
-      const reached =
-        this.budget.blocked || this.decisionFresh(DECISION_TTL_MS)
-          ? true
-          : await this.reportUsage();
-      if (this.budget.blocked) {
-        this.finishModelRequest(requestId);
-        if (!this.budget.blocked.interrupted) {
-          this.saveBudget({
-            ...this.budget,
-            blocked: { ...this.budget.blocked, interrupted: true },
-          });
-        }
-        this.interruptForBudget();
+    const admission = await this.admit(executionId);
+    const request = admission === 'allowed' ? this.startProviderRequest(estimateUsage(body)) : null;
+    if (!request) {
+      if (admission === 'limited') {
         return Response.json(
           {
             error: {
-              code: 'course_agent_budget_exhausted',
-              message: 'The course agent cannot use the model right now.',
+              code: 'course_agent_usage_limit',
+              message: 'The hourly AI usage limit was reached.',
             },
           },
           { status: 429 },
         );
       }
-      if (!reached) {
-        this.finishModelRequest(requestId);
+      if (admission === 'unavailable') {
         // Codex retries server errors, and its retry resends the pending report.
         return new Response('Usage could not be recorded', { status: 503 });
       }
-      if (
-        this.active?.executionId !== executionId ||
-        this.record.lifecycle.status === 'stopping' ||
-        this.sandboxShutdown
-      ) {
-        this.finishModelRequest(requestId);
-        return new Response('Execution stopped', { status: 409 });
-      }
-      this.saveBudget({ ...this.budget, running: { requestId, estimate: estimateUsage(body) } });
-      const response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body,
-        redirect: 'manual',
-      });
-      return await this.forwardModelResponse(response, requestId);
+      if (admission === 'stopped') return new Response('Execution stopped', { status: 409 });
+      return new Response('Too many model requests are running', { status: 429 });
+    }
+    try {
+      const response = await this.openai('/v1/responses', body, request.signal);
+      return this.forwardModelResponse(response, request.requestId, request.signal);
     } catch (error) {
-      this.recordModelUsage(requestId, null);
-      this.finishModelRequest(requestId);
+      // An aborted request may have been billed; one that failed to connect was not.
+      this.finishProviderRequest(request.requestId, request.signal.aborted ? null : emptyUsage());
+      if (request.signal.aborted) return new Response('Execution stopped', { status: 409 });
+      throw error;
+    }
+  }
+
+  /**
+   * The sandbox's model outbound binding calls this for a validated web request. Each command is
+   * charged as one web search call, since the provider reports no usage for them.
+   */
+  async proxySearchRequest(
+    body: string,
+    operations: number,
+    executionId: string,
+  ): Promise<Response> {
+    if (this.active?.executionId !== executionId) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    const admission = await this.admit(executionId);
+    const usage = { ...emptyUsage(), webSearchCalls: operations };
+    const request = admission === 'allowed' ? this.startProviderRequest(usage) : null;
+    if (!request) {
+      return Response.json({
+        output: admission === 'allowed' ? SEARCH_BUSY : SEARCH_NOT_ADMITTED[admission],
+      });
+    }
+    try {
+      const response = await this.openai('/v1/alpha/search', body, request.signal);
+      this.finishProviderRequest(request.requestId, response.ok ? usage : emptyUsage());
+      return response;
+    } catch (error) {
+      this.finishProviderRequest(request.requestId, request.signal.aborted ? usage : emptyUsage());
+      if (request.signal.aborted) return Response.json({ output: SEARCH_NOT_ADMITTED.stopped });
       throw error;
     }
   }
@@ -773,13 +838,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /**
    * SDK inbound-message hook: admit one input and return its sandbox output stream. An SDK
-   * continuation delivers the saved review result or resumes a task paused for credit; a user
-   * message is submitted as written.
+   * continuation delivers the saved review result; a user message is submitted as written.
    */
   override async onChatMessage(_onFinish: unknown, options?: OnChatMessageOptions) {
     if (!options) throw new Error('Missing SDK chat options');
     const continuation = options.continuation === true;
-    const resumeAfterCredit = continuation && options.body?.resumeAfterCredit === true;
     // Capture input before any await lets another connection append to history.
     const message = continuation
       ? null
@@ -795,11 +858,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const deniedReviewId = continuation ? null : (this.record.deniedByMessage ?? null);
     // deliverWaitingResult() claims the conversation before the SDK calls back for a continuation.
     const admitted = continuation
-      ? (resumeAfterCredit || review?.result) && status === 'waiting_for_agent'
+      ? review?.result && status === 'waiting_for_agent'
       : !review && (status === 'offline' || status === 'waiting_for_user');
     if (
       !admitted ||
-      this.budget.blocked ||
+      this.budget.limitedUntil ||
       this.active ||
       this.recovering ||
       this.sandboxShutdown
@@ -815,7 +878,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (message && earlier.length === 0 && !this.record.title) this.startTitle(message);
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
-    const delivered = continuation && !resumeAfterCredit && review?.result ? review : null;
+    const delivered = continuation && review?.result ? review : null;
     const messageText =
       message?.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n') ?? '';
     const input: TurnInput = {
@@ -825,12 +888,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             once: true,
             text: describeReviewResult(delivered.result, source.type),
           }
-        : resumeAfterCredit
-          ? { tag: resumeTag(crypto.randomUUID()), text: RESUME_AFTER_CREDIT_TEXT }
-          : {
-              tag: messageTag(message!.id),
-              text: deniedReviewId ? describeDenialMessage(messageText) : messageText,
-            }),
+        : {
+            tag: messageTag(message!.id),
+            text: deniedReviewId ? describeDenialMessage(messageText) : messageText,
+          }),
       // A restored or new thread may lack turns that chat history has.
       ...((startup || this.record.threadMayBeBehind) && earlier.length > 0
         ? { catchUp: (latestTag) => buildCatchUp(missedTurns(earlier, latestTag), source.type) }
@@ -912,13 +973,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           // fails first leaves no marker, and drop the snapshot so new messages are admitted.
           native.emit(turnMarker(input.tag, summarizeReview(delivered.result)));
           this.settleReview(delivered.id);
-        } else if (resumeAfterCredit) {
-          native.emit(
-            turnMarker(
-              input.tag,
-              'Credit became available again, so you continued the paused task.',
-            ),
-          );
         }
       },
       log,
@@ -933,6 +987,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       stop: null,
       shutdown: false,
       deliveringReviewId: delivered?.id ?? null,
+      finishing: false,
     };
     this.active = active;
     const abort = () => {
@@ -998,16 +1053,17 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
     }
     await active.sdkFinished.promise;
-    // Stop terminates native work, but admitted inference finishes accounting before reuse.
-    // Aborting the provider stream here would discard its final usage.
-    if (this.modelRequest) await this.modelRequest.settled.promise;
-    // Report the turn's last request now, so Stats and the hourly limit include it. This also
-    // runs while blocked: a request can finish after the decision that blocked the turn.
-    if (!isEmptyUsage(this.budget.unreported)) {
-      void this.keepAliveWhile(() => this.reportUsage()).catch((error: unknown) =>
-        this.reportError(error),
-      );
-    }
+    // Nothing reads a provider request that is still running after Stop, so abort it rather than
+    // pay for the rest of its output; it is charged its estimate.
+    active.finishing = true;
+    const requests = [...this.providerRequests.values()];
+    for (const request of requests) request.abort.abort();
+    await Promise.all(requests.map((request) => request.settled.promise));
+    // Report the turn's remaining usage now, so Stats and the hourly limit include it. This also
+    // runs when limited: a request can finish after the decision that limited the turn.
+    void this.keepAliveWhile(() => this.flushUsage()).catch((error: unknown) =>
+      this.reportError(error),
+    );
     if (this.active !== active) return;
     try {
       await active.stop;
@@ -1028,10 +1084,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Resume repairs a blocked sandbox, renews credit if inference was paused for it, then delivers a
-   * waiting review result, even one that waits for Resume, or continues the paused task. It never
-   * repeats an interrupted prompt. Automatic recovery passes explicit: false so it only repairs; a
-   * result that does not wait for Resume is still delivered afterwards.
+   * Resume repairs a blocked sandbox, clears an expired usage limit, then delivers a waiting review
+   * result, even one that waits for Resume. It never repeats an interrupted prompt. Automatic
+   * recovery passes explicit: false so it only repairs; a result that does not wait for Resume is
+   * still delivered afterwards.
    */
   async resume({ explicit = true }: { explicit?: boolean } = {}): Promise<boolean> {
     // A waiting result is delivered when the current turn ends, or is being delivered now (for
@@ -1059,69 +1115,24 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       } finally {
         this.recovering = false;
       }
-    } else if (!this.record.review?.result && !this.budget.blocked) {
+    } else if (!this.record.review?.result && !this.budget.limitedUntil) {
       return false;
     }
-    if (this.budget.blocked) {
+    const limitedUntil = this.budget.limitedUntil;
+    if (limitedUntil) {
+      // Automatic recovery leaves the limit for the user to clear.
       if (!explicit) return true;
-      // A block that arrived after a turn finished has no task to continue.
-      const interrupted = this.budget.blocked.interrupted === true;
-      this.recovering = true;
-      try {
-        if (!(await this.renewCredit())) return false;
-      } finally {
-        this.recovering = false;
-      }
-      if (!this.record.review?.result) {
-        if (interrupted) this.continueAfterCredit();
-        return true;
-      }
+      // A repaired sandbox counts as resumed even though the limit still applies.
+      if (Date.parse(limitedUntil) > Date.now()) return lifecycle.status === 'blocked';
+      // The next model request asks PrairieLearn again, so a limit that still applies returns.
+      this.saveBudget({ ...this.budget, limitedUntil: null });
     }
-    // Saving the record schedules the delivery, now that credit allows it.
+    // Saving the record schedules the delivery, now that the usage limit allows it.
     const review = this.record.review;
     if (explicit && review?.result) {
       this.setRecord({ ...this.record, review: { ...review, waitsForResume: false } });
     }
     return true;
-  }
-
-  /** Clear a credit block whose cause can be retried and confirm with PrairieLearn. */
-  private async renewCredit() {
-    const blocked = this.budget.blocked;
-    if (!blocked) return false;
-    if (blocked.retryAt && Date.parse(blocked.retryAt) > Date.now()) return false;
-    this.saveBudget({ ...this.budget, blocked: null });
-    if (!(await this.reportUsage())) {
-      // PrairieLearn did not answer, so nothing has changed.
-      this.saveBudget({ ...this.budget, blocked });
-      return false;
-    }
-    if (this.budget.blocked) {
-      // Denied again: keep whether a turn is still waiting to continue.
-      this.saveBudget({
-        ...this.budget,
-        blocked: { ...this.budget.blocked, interrupted: blocked.interrupted },
-      });
-      return false;
-    }
-    return true;
-  }
-
-  /** Like review delivery, the continuation claims the conversation before the SDK calls back. */
-  private continueAfterCredit() {
-    const status = this.record.lifecycle.status;
-    if (this.active || this.recovering || this.sandboxShutdown) return;
-    if (status !== 'offline' && status !== 'waiting_for_user') return;
-    this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' }, deadline: null });
-    void this.keepAliveWhile(async () => {
-      const outcome = await this.continueLastTurn({ resumeAfterCredit: true });
-      if (outcome.status !== 'completed' && outcome.status !== 'aborted') {
-        throw new Error(`Resuming after credit was ${outcome.status}`);
-      }
-    }).catch((error: unknown) => {
-      this.reportError(error);
-      if (this.record.lifecycle.status !== 'blocked' && !this.active) this.block('runtime_failed');
-    });
   }
 
   /** Discard interrupted setup while retaining the last committed checkpoint. */
@@ -1287,8 +1298,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const status = this.record.lifecycle.status;
     if (!review?.result || this.active || this.recovering || this.sandboxShutdown) return;
     if (status !== 'offline' && status !== 'waiting_for_user') return;
-    // Resume delivers the result once credit is renewed.
-    if (this.budget.blocked) return;
+    // Resume delivers the result once it clears the usage limit.
+    if (this.budget.limitedUntil) return;
     if (review.waitsForResume) return;
     this.setRecord({
       ...this.record,

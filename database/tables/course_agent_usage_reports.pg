@@ -1,15 +1,17 @@
 columns
-    cost_milli_dollars: bigint not null
+    cost: double precision not null
     course_agent_conversation_id: bigint not null
     created_at: timestamp with time zone not null default now()
     id: bigint not null default nextval('course_agent_usage_reports_id_seq'::regclass)
     input_tokens: bigint not null
     input_tokens_cache_read: bigint not null
+    input_tokens_cache_write: bigint not null
     model: text not null
     output_tokens: bigint not null
     output_tokens_reasoning: bigint not null
     report_id: uuid not null
     user_id: bigint not null
+    web_search_calls: bigint not null
 
 indexes
     course_agent_usage_reports_pkey: PRIMARY KEY (id) USING btree (id)
@@ -17,11 +19,13 @@ indexes
     course_agent_usage_reports_user_id_created_at_idx: USING btree (user_id, created_at)
 
 check constraints
-    course_agent_usage_reports_cost_milli_dollars_check: CHECK (cost_milli_dollars >= 0)
+    course_agent_usage_reports_cost_check: CHECK (cost >= 0::double precision)
     course_agent_usage_reports_input_tokens_cache_read_check: CHECK (input_tokens_cache_read >= 0)
+    course_agent_usage_reports_input_tokens_cache_write_check: CHECK (input_tokens_cache_write >= 0)
     course_agent_usage_reports_input_tokens_check: CHECK (input_tokens >= 0)
     course_agent_usage_reports_output_tokens_check: CHECK (output_tokens >= 0)
     course_agent_usage_reports_output_tokens_reasoning_check: CHECK (output_tokens_reasoning >= 0)
+    course_agent_usage_reports_web_search_calls_check: CHECK (web_search_calls >= 0)
 
 foreign-key constraints
     course_agent_usage_reports_course_agent_conversation_id_fkey: FOREIGN KEY (course_agent_conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

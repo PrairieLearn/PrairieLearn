@@ -41,7 +41,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
       this.state = state;
     }
 
-    schedule = vi.fn();
+    schedule = vi.fn(async () => ({}));
     stash = vi.fn();
     persistMessages = vi.fn(async (messages: UIMessage[]) => {
       this.messages = structuredClone(messages);
@@ -165,11 +165,14 @@ function modelResponse(inputTokens = 10_000, outputTokens = 2_000) {
 }
 
 /** Route PrairieLearn usage reports and provider requests to separate handlers. */
-function stubFetch(handlers: { usage: () => Promise<Response>; model?: () => Promise<Response> }) {
-  const fetch = vi.fn(async (url: string | URL, _options: RequestInit) =>
+function stubFetch(handlers: {
+  usage: () => Promise<Response>;
+  model?: (options: RequestInit) => Promise<Response>;
+}) {
+  const fetch = vi.fn(async (url: string | URL, options: RequestInit) =>
     String(url).endsWith('/usage')
       ? await handlers.usage()
-      : await (handlers.model ?? (async () => modelResponse()))(),
+      : await (handlers.model ?? (async () => modelResponse()))(options),
   );
   vi.stubGlobal('fetch', fetch);
   return {
@@ -202,7 +205,21 @@ async function runningConversation(saved?: Map<string, unknown>) {
   const { executionId } = sandbox.authorizeModel.mock.calls.at(-1)![0];
   return {
     ...state,
-    request: () => conversation.proxyModelRequest('{}', executionId),
+    /** Waits until the response is read and its usage recorded, as Codex's next request would. */
+    request: async () => {
+      const unreported = JSON.stringify(budget(state.saved)?.unreported ?? emptyUsage());
+      const response = await conversation.proxyModelRequest('{}', executionId);
+      if (!response.ok) return response;
+      const text = await response.text();
+      await vi.waitFor(() => {
+        if (JSON.stringify(budget(state.saved).unreported) === unreported) {
+          throw new Error('Usage is not recorded yet');
+        }
+      });
+      return new Response(text, { status: response.status, headers: response.headers });
+    },
+    startRequest: () => conversation.proxyModelRequest('{}', executionId),
+    search: (operations: number) => conversation.proxySearchRequest('{}', operations, executionId),
     finish: async () => {
       sdk.finishTurn();
       await sdk.completeResponse('initial');
@@ -232,18 +249,19 @@ it('checks with PrairieLearn once per decision window rather than before every r
   expect((await state.request()).status).toBe(200);
   expect((await state.request()).status).toBe(200);
   expect(reports()).toHaveLength(1);
-  // Once the decision is 30 s old, a finished request refreshes it in the background.
-  vi.setSystemTime('2026-10-27T03:10:31Z');
+  // Recorded usage schedules a flush, which also refreshes the decision.
+  expect(state.conversation.schedule).toHaveBeenCalledWith(30, 'flushUsage', undefined, {
+    idempotent: true,
+  });
+  vi.setSystemTime('2026-10-27T03:10:30Z');
+  await state.conversation.flushUsage();
+  vi.setSystemTime('2026-10-27T03:11:01Z');
   expect((await state.request()).status).toBe(200);
-  await vi.waitFor(() => expect(reports()).toHaveLength(2));
   await state.finish();
-  expect(reports()).toEqual([
-    { reportId: expect.any(String), model: 'test', usage: emptyUsage() },
-    {
-      reportId: expect.any(String),
-      model: 'test',
-      usage: { ...emptyUsage(), inputTokens: 30_000, outputTokens: 6_000 },
-    },
+  expect(reports().map(({ usage }) => usage)).toEqual([
+    emptyUsage(),
+    { ...emptyUsage(), inputTokens: 20_000, outputTokens: 4_000 },
+    reportedUsage,
   ]);
   expect(budget(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
 });
@@ -262,20 +280,76 @@ it.each([
   expect((await state.request()).status).toBe(503);
   expect((await state.request()).status).toBe(200);
   expect(reports()[0]).toEqual(reports()[1]);
-  expect(budget(state.saved)).toMatchObject({ pending: null, blocked: null });
+  expect(budget(state.saved)).toMatchObject({ pending: null, limitedUntil: null });
   await state.finish();
 });
 
-it('Stop waits for the running request to finish accounting before reuse', async () => {
-  const { conversation, saved, sandbox } = fixture();
-  let provider!: ReadableStreamDefaultController<Uint8Array>;
+it('passes the provider stream through unchanged and records its final usage', async () => {
+  const body = [
+    'data: {"type":"response.output_text.delta","delta":"Hi"}',
+    'data: not json',
+    'data: ' +
+      JSON.stringify({
+        type: 'response.completed',
+        response: {
+          usage: {
+            input_tokens: 10_000,
+            input_tokens_details: { cached_tokens: 6_000, cache_write_tokens: 3_000 },
+            output_tokens: 2_000,
+            output_tokens_details: { reasoning_tokens: 500 },
+          },
+        },
+      }),
+    '',
+  ].join('\n\n');
   const { reports } = stubFetch({
     usage: async () => decision(),
-    model: async () =>
+    model: async () => new Response(body, { headers: { 'Content-Type': 'text/event-stream' } }),
+  });
+  const state = await runningConversation();
+  expect(await (await state.request()).text()).toBe(body);
+  await state.finish();
+  expect(reports().at(-1)?.usage).toEqual({
+    ...emptyUsage(),
+    inputTokens: 10_000,
+    cachedInputTokens: 6_000,
+    cacheWriteInputTokens: 3_000,
+    outputTokens: 2_000,
+    reasoningTokens: 500,
+  });
+});
+
+it('charges web search commands and refuses them as text once limited', async () => {
+  freezeTime();
+  const usage = vi
+    .fn()
+    .mockResolvedValueOnce(decision())
+    .mockResolvedValueOnce(decision({ status: 'limited', retryAt: expiresAt }));
+  const { reports } = stubFetch({
+    usage,
+    model: async () => Response.json({ output: 'Results' }),
+  });
+  const state = await runningConversation();
+  expect(await (await state.search(3)).json()).toEqual({ output: 'Results' });
+  expect(budget(state.saved).unreported).toEqual({ ...emptyUsage(), webSearchCalls: 3 });
+  vi.setSystemTime('2026-10-27T03:11:01Z');
+  // A failed web request would end the turn, so a refusal is a result the agent can read.
+  const refused = await state.search(1);
+  expect(refused.status).toBe(200);
+  expect(await refused.json()).toEqual({ output: expect.stringContaining('usage limit') });
+  expect(reports()[1].usage).toEqual({ ...emptyUsage(), webSearchCalls: 3 });
+  expect(budget(state.saved).unreported).toEqual(emptyUsage());
+});
+
+it('Stop aborts the running request and charges its estimate', async () => {
+  const { conversation, saved, sandbox } = fixture();
+  const { reports } = stubFetch({
+    usage: async () => decision(),
+    model: async ({ signal }) =>
       new Response(
         new ReadableStream<Uint8Array>({
           start(controller) {
-            provider = controller;
+            signal!.addEventListener('abort', () => controller.error(signal!.reason));
           },
         }),
         { headers: { 'Content-Type': 'text/event-stream' } },
@@ -290,76 +364,62 @@ it('Stop waits for the running request to finish accounting before reuse', async
   await options.prepare();
   options.onReady();
   const { executionId } = sandbox.authorizeModel.mock.calls[0][0];
-  const response = await conversation.proxyModelRequest('{}', executionId);
+  await conversation.proxyModelRequest('{}', executionId);
   stop.abort();
   await sdk.completeResponse('initial');
   expect(vi.mocked(SandboxTurn).mock.results[0].value.stop).toHaveBeenCalledOnce();
-  await response.body!.cancel();
-  expect((await conversation.proxyModelRequest('{}', executionId)).status).toBe(409);
-  expect((saved.get('conversation') as { lifecycle: ConversationState }).lifecycle.status).toBe(
-    'stopping',
-  );
-  provider.enqueue(
-    new TextEncoder().encode(
-      'data: ' +
-        JSON.stringify({
-          type: 'response.completed',
-          response: { usage: { input_tokens: 10_000, output_tokens: 2_000 } },
-        }) +
-        '\n\n',
-    ),
-  );
-  provider.close();
   await vi.waitFor(() => {
     expect((saved.get('conversation') as { lifecycle: ConversationState }).lifecycle.status).toBe(
       'waiting_for_user',
     );
   });
   await vi.waitFor(() => expect(reports()).toHaveLength(2));
-  expect(reports()[1].usage).toEqual(reportedUsage);
+  expect(reports()[1].usage).toEqual({ ...emptyUsage(), inputTokens: 1, outputTokens: 16_000 });
+  expect(reportError).not.toHaveBeenCalled();
 });
 
-it('pauses at the hourly limit, and Resume after the reset continues the task', async () => {
+it('stops at the hourly limit, and Resume after the reset clears it without continuing', async () => {
   freezeTime();
   const usage = vi
     .fn()
     .mockResolvedValueOnce(decision())
-    .mockResolvedValueOnce(
-      decision({ status: 'denied', reason: 'hourly_limit', retryAt: expiresAt }),
-    )
+    .mockResolvedValueOnce(decision({ status: 'limited', retryAt: expiresAt }))
     .mockImplementation(async () => decision());
   stubFetch({ usage });
   const state = await runningConversation();
   expect((await state.request()).status).toBe(200);
-  // Past the decision window, the next request checks again and is denied.
+  // Past the decision window, the next request checks again and is limited.
   vi.setSystemTime('2026-10-27T03:11:01Z');
   expect((await state.request()).status).toBe(429);
+  expect(vi.mocked(SandboxTurn).mock.results.at(-1)!.value.stop).toHaveBeenCalledOnce();
   await state.finish();
   const restored = fixture(state.saved).conversation;
-  await restored.persistMessages([
-    ...state.conversation.messages,
-    { id: 'partial', role: 'assistant', parts: [{ type: 'text', text: 'Question 1 is done.' }] },
-  ]);
   await restored.onStart();
   expect(restored.state).toMatchObject({
     status: 'blocked',
-    reason: 'budget_exhausted',
+    reason: 'usage_limit',
     retryAt: expiresAt,
   });
+  // New messages wait for the limit to be cleared.
+  await restored.persistMessages([
+    { id: 'early', role: 'user', parts: [{ type: 'text', text: 'Continue' }] },
+  ]);
+  await expect(restored.onChatMessage(undefined, { requestId: 'early' })).rejects.toThrow();
   expect(await restored.resume()).toBe(false);
-  expect(usage).toHaveBeenCalledTimes(2);
   vi.setSystemTime('2026-10-27T04:01:00Z');
+  const turns = vi.mocked(SandboxTurn).mock.calls.length;
   expect(await restored.resume()).toBe(true);
-  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
-  expect(options.startup).toBe(false);
-  expect(options.thread.threadId).toBe('native-thread');
-  expect(options.input.text).toContain('Continue the interrupted task');
-  expect(restored.messages.at(-1)?.id).toBe('partial');
-  expect(restored.state.status).toBe('waiting_for_agent');
-  expect(budget(state.saved)).toMatchObject({ pending: null, blocked: null });
+  expect(vi.mocked(SandboxTurn).mock.calls).toHaveLength(turns);
+  expect(restored.state.status).toBe('waiting_for_user');
+  await restored.persistMessages([
+    ...restored.messages,
+    { id: 'continue', role: 'user', parts: [{ type: 'text', text: 'Continue' }] },
+  ]);
+  await restored.onChatMessage(undefined, { requestId: 'continue' });
+  expect(vi.mocked(SandboxTurn).mock.calls).toHaveLength(turns + 1);
 });
 
-it('saves a review result without credit and delivers it once Resume renews credit', async () => {
+it('saves a review result while limited and delivers it once Resume clears the limit', async () => {
   freezeTime();
   stubFetch({ usage: async () => decision() });
   const { saved } = fixture();
@@ -382,13 +442,12 @@ it('saves a review result without credit and delivers it once Resume renews cred
   saved.set('budget', {
     unreported: emptyUsage(),
     pending: null,
-    running: null,
-    blocked: { reason: 'budget_exhausted', retryAt: expiresAt },
+    limitedUntil: expiresAt,
   } satisfies BudgetState);
   const { conversation } = fixture(saved);
   await conversation.onStart();
   expect(conversation.recordReviewResult('review', deniedResult)).toBe(true);
-  // Delivery runs as a scheduled callback; while credit is blocked it starts no turn.
+  // Delivery runs as a scheduled callback; while limited it starts no turn.
   await conversation.deliverWaitingResult();
   expect(SandboxTurn).not.toHaveBeenCalled();
   expect(conversation.state).toMatchObject({ status: 'blocked', reviewId: 'review' });
@@ -404,37 +463,41 @@ it('saves a review result without credit and delivers it once Resume renews cred
   await conversation.deliverWaitingResult();
   const options = vi.mocked(SandboxTurn).mock.calls[0][2];
   expect(options.input.text).toContain('The instructor denied the submitted changes.');
-  expect(budget(saved)).toMatchObject({ pending: null, blocked: null });
+  expect(budget(saved)).toMatchObject({ pending: null, limitedUntil: null });
 });
 
-it('charges the estimate when final usage never arrives instead of blocking', async () => {
-  const model = vi
-    .fn()
-    .mockResolvedValueOnce(
+it('charges the estimate when final usage never arrives', async () => {
+  stubFetch({
+    usage: async () => decision(),
+    model: async () =>
       new Response('data: {"type":"response.output_text.delta","delta":"Hi"}\n\n', {
         headers: { 'Content-Type': 'text/event-stream' },
       }),
-    )
-    .mockResolvedValueOnce(
-      new Response(new ReadableStream(), { headers: { 'Content-Type': 'text/event-stream' } }),
-    );
-  const { reports } = stubFetch({ usage: async () => decision(), model });
+  });
   const state = await runningConversation();
-  await (await state.request()).text();
+  await state.request();
   expect(budget(state.saved)).toMatchObject({
-    blocked: null,
+    limitedUntil: null,
     unreported: { inputTokens: 1, outputTokens: 16_000 },
   });
-  // The object restarts while the next request's stream is still open; the restarted object
-  // charges that request's estimate too and reports both, having no recent decision.
-  await state.request();
+  // A restarted object schedules the unsent usage to be reported.
   const restored = fixture(state.saved).conversation;
   await restored.onStart();
-  await vi.waitFor(() => expect(reports()).toHaveLength(2));
-  expect(reports()[1].usage).toMatchObject({ inputTokens: 2, outputTokens: 32_000 });
-  await vi.waitFor(() =>
-    expect(budget(state.saved)).toMatchObject({ running: null, blocked: null, pending: null }),
-  );
+  expect(restored.schedule).toHaveBeenCalledWith(0, 'flushUsage', undefined, { idempotent: true });
+});
+
+it('refuses more provider requests than Codex runs at once', async () => {
+  stubFetch({
+    usage: async () => decision(),
+    model: async () =>
+      new Response(new ReadableStream(), { headers: { 'Content-Type': 'text/event-stream' } }),
+  });
+  const state = await runningConversation();
+  for (let i = 0; i < 4; i++) expect((await state.startRequest()).status).toBe(200);
+  expect((await state.startRequest()).status).toBe(429);
+  expect(await (await state.search(1)).json()).toEqual({
+    output: expect.stringContaining('Too many requests'),
+  });
 });
 
 it('retries a rejected report without blocking, reporting the rejection once', async () => {
@@ -449,14 +512,14 @@ it('retries a rejected report without blocking, reporting the rejection once', a
   expect((await state.request()).status).toBe(503);
   expect((await state.request()).status).toBe(503);
   expect(reportError).toHaveBeenCalledOnce();
-  expect(budget(state.saved).blocked).toBeNull();
+  expect(budget(state.saved).limitedUntil).toBeNull();
   // Once the fault is fixed, the same report is accepted and inference continues.
   expect((await state.request()).status).toBe(200);
   expect(new Set(reports().map(({ reportId }) => reportId)).size).toBe(1);
   await state.finish();
 });
 
-it('records a request that finishes after the decision that blocked the turn', async () => {
+it('records a request that finishes after the decision that limited the turn', async () => {
   freezeTime();
   const refresh = Promise.withResolvers<Response>();
   const usage = vi
@@ -467,45 +530,60 @@ it('records a request that finishes after the decision that blocked the turn', a
   const { reports } = stubFetch({ usage });
   const state = await runningConversation();
   expect((await state.request()).status).toBe(200);
-  // The decision is old enough that this request's completion refreshes it in the background.
-  vi.setSystemTime('2026-10-27T03:10:31Z');
+  const flushed = state.conversation.flushUsage();
+  // The next request starts while that flush is still waiting for PrairieLearn.
   expect((await state.request()).status).toBe(200);
-  // The next request starts while that refresh is still waiting for PrairieLearn.
-  expect((await state.request()).status).toBe(200);
-  refresh.resolve(decision({ status: 'denied', reason: 'hourly_limit', retryAt: expiresAt }));
-  await vi.waitFor(() => expect(budget(state.saved).blocked).not.toBeNull());
+  refresh.resolve(decision({ status: 'limited', retryAt: expiresAt }));
+  await flushed;
+  expect(budget(state.saved).limitedUntil).toBe(expiresAt);
   await state.finish();
   await vi.waitFor(() => expect(reports()).toHaveLength(3));
   expect(reports()[2].usage).toEqual(reportedUsage);
-  expect(budget(state.saved)).toMatchObject({
-    unreported: emptyUsage(),
-    blocked: { reason: 'budget_exhausted' },
-  });
+  expect(budget(state.saved)).toMatchObject({ unreported: emptyUsage(), limitedUntil: expiresAt });
 });
 
-it('does not continue a finished turn when the limit is reached at its end', async () => {
-  freezeTime();
+it('reports usage recorded while a flush is in flight before the flush ends', async () => {
+  const gate = Promise.withResolvers<Response>();
   const usage = vi
     .fn()
     .mockResolvedValueOnce(decision())
-    .mockResolvedValueOnce(
-      decision({ status: 'denied', reason: 'hourly_limit', retryAt: expiresAt }),
-    )
+    .mockReturnValueOnce(gate.promise)
     .mockImplementation(async () => decision());
-  stubFetch({ usage });
+  const { reports } = stubFetch({ usage });
   const state = await runningConversation();
   expect((await state.request()).status).toBe(200);
-  // The turn-end report is the one that crosses the limit.
+  const flushed = state.conversation.flushUsage();
+  expect((await state.request()).status).toBe(200);
+  await state.finish();
+  gate.resolve(decision());
+  await flushed;
+  expect(reports().map((report) => report.usage)).toEqual([
+    emptyUsage(),
+    reportedUsage,
+    reportedUsage,
+  ]);
+  expect(budget(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
+});
+
+it('retries the turn-end report with backoff when PrairieLearn is unreachable', async () => {
+  const usage = vi
+    .fn()
+    .mockResolvedValueOnce(decision())
+    .mockRejectedValueOnce(new Error('PL unavailable'))
+    .mockImplementation(async () => decision());
+  const { reports } = stubFetch({ usage });
+  const state = await runningConversation();
+  expect((await state.request()).status).toBe(200);
   await state.finish();
   await vi.waitFor(() =>
-    expect(state.conversation.state).toMatchObject({
-      status: 'blocked',
-      reason: 'budget_exhausted',
-    }),
+    expect(state.conversation.schedule).toHaveBeenCalledWith(
+      60,
+      'flushUsage',
+      { attempt: 1 },
+      { idempotent: true },
+    ),
   );
-  vi.setSystemTime('2026-10-27T04:01:00Z');
-  const turns = vi.mocked(SandboxTurn).mock.calls.length;
-  expect(await state.conversation.resume()).toBe(true);
-  expect(vi.mocked(SandboxTurn).mock.calls).toHaveLength(turns);
-  expect(state.conversation.state.status).toBe('waiting_for_user');
+  await state.conversation.flushUsage({ attempt: 1 });
+  expect(reports()[2]).toEqual(reports()[1]);
+  expect(budget(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
 });

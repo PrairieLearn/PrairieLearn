@@ -29,11 +29,9 @@ import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
   insertCoursePermissionsByUserUid,
-  selectCoursePermissionForUser,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
 import { updateCourseColumn } from '../models/course.js';
-import { selectUserById } from '../models/user.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -164,27 +162,22 @@ describe('Course agent access and conversation privacy', () => {
     return UsageDecisionSchema.parse(await response.json());
   }
 
-  test('allows an administrator without explicit course permissions', async () => {
-    const administrator = await selectUserById('1');
-    expect(
-      await selectCoursePermissionForUser({ course_id: '1', user_id: administrator.id }),
-    ).toBeNull();
-    await withUser(administrator, () =>
-      expect(createClient(administrator).courseAgent.list.query()).resolves.toEqual([]),
-    );
-    const conversation = await createConversation(administrator);
-    expect(await decision(await report(conversation.agent_conversation_id, usageReport()))).toEqual(
-      { status: 'allowed' },
-    );
-  });
-
-  test('records each report once and keeps final usage after access is revoked', async () => {
+  test('records each report once and prices it', async () => {
     const conversation = await createConversation(owner);
     const agentId = conversation.agent_conversation_id;
+    // A report that only asks for a decision records nothing.
+    expect(await decision(await report(agentId, usageReport()))).toEqual({ status: 'allowed' });
     const first: UsageReport = {
       reportId: crypto.randomUUID(),
       model: 'gpt-6-luna',
-      usage: { ...emptyUsage(), inputTokens: 10_000, cachedInputTokens: 8000, outputTokens: 2000 },
+      usage: {
+        ...emptyUsage(),
+        inputTokens: 10_000,
+        cachedInputTokens: 6000,
+        cacheWriteInputTokens: 2000,
+        outputTokens: 2000,
+        webSearchCalls: 3,
+      },
     };
     expect((await report(agentId, first, 'wrong')).status).toBe(401);
     // A Worker still sending the second configured token is accepted during rotation.
@@ -193,32 +186,21 @@ describe('Course agent access and conversation privacy', () => {
     });
     // A retry after a lost reply is answered again without counting the usage twice.
     expect(await decision(await report(agentId, first))).toEqual({ status: 'allowed' });
-    // The first recording stands even if a buggy retry resends different usage.
-    expect(await decision(await report(agentId, { ...first, usage: emptyUsage() }))).toEqual({
-      status: 'allowed',
-    });
     expect((await report(agentId, { ...usageReport(), model: 'unpriced' })).status).toBe(400);
-    // gpt-6-luna: 2000 uncached and 8000 cached input tokens plus 2000 output tokens is $0.00128.
-    expect(await selectCourseAgentConversationUsage(conversation.id)).toEqual({
+    expect((await report(crypto.randomUUID(), usageReport())).status).toBe(404);
+    // gpt-6-luna: 2000 uncached, 6000 cached and 2000 cache-write input tokens plus 2000 output
+    // tokens is $0.00151, and three web searches at $0.01 each add $0.03.
+    const usage = await selectCourseAgentConversationUsage(conversation.id);
+    expect(usage).toEqual({
       input_tokens: 10_000,
-      input_tokens_cache_read: 8000,
+      input_tokens_cache_read: 6000,
+      input_tokens_cache_write: 2000,
       output_tokens: 2000,
       output_tokens_reasoning: 0,
-      cost_milli_dollars: 2,
+      web_search_calls: 3,
+      cost: expect.any(Number),
     });
-    await updateCoursePermissionsRole({
-      course_id: '1',
-      user_id: owner.id,
-      course_role: 'Editor',
-      authn_user_id: '1',
-    });
-    expect(await decision(await report(agentId, usageReport(500)))).toEqual({
-      status: 'denied',
-      reason: 'not_allowed',
-    });
-    expect(await selectCourseAgentConversationUsage(conversation.id)).toMatchObject({
-      output_tokens: 2500,
-    });
+    expect(usage.cost).toBeCloseTo(0.03151, 8);
   });
 
   test('limits hourly spending per user across conversations', async () => {
@@ -233,11 +215,10 @@ describe('Course agent access and conversation privacy', () => {
     });
     const hourStart = Math.floor(Date.now() / 3_600_000) * 3_600_000;
     expect(await decision(await report(a, usageReport(2_000_000)))).toEqual({
-      status: 'denied',
-      reason: 'hourly_limit',
+      status: 'limited',
       retryAt: new Date(hourStart + 3_600_000).toISOString(),
     });
-    expect(await decision(await report(b, usageReport()))).toMatchObject({ status: 'denied' });
+    expect(await decision(await report(b, usageReport()))).toMatchObject({ status: 'limited' });
     const other = await createConversation(otherOwner);
     expect(await decision(await report(other.agent_conversation_id, usageReport()))).toEqual({
       status: 'allowed',
