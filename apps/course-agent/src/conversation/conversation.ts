@@ -21,6 +21,7 @@ import {
   UsageDecisionSchema,
   type UsageReport,
   UsageSchema,
+  UserMessageMetadataSchema,
   addUsage,
   emptyUsage,
   isEmptyUsage,
@@ -44,7 +45,7 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
-import { buildInstructions } from './instructions.js';
+import { buildInstructions, describePageLocation } from './instructions.js';
 import { generateTitle } from './title.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
@@ -883,6 +884,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const delivered = continuation && review?.result ? review : null;
+    const location =
+      message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
     const messageText =
       message?.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n') ?? '';
     const input: TurnInput = {
@@ -895,6 +898,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         : {
             tag: messageTag(message!.id),
             text: deniedReviewId ? describeDenialMessage(messageText) : messageText,
+            ...(location ? { page: describePageLocation(location) } : {}),
           }),
       // A restored or new thread may lack turns that chat history has.
       ...((startup || this.record.threadMayBeBehind) && earlier.length > 0

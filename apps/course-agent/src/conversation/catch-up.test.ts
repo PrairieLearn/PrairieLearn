@@ -57,6 +57,53 @@ describe('missedTurns', () => {
   });
 });
 
+describe('page hints in catch-up', () => {
+  it('names the page and most specific item each staff line was sent from', () => {
+    const page = { path: '/pl/course_instance/1/instructor/assessment/2', page: 'assessment' };
+    const located: UIMessage[] = [
+      {
+        id: 'u1',
+        role: 'user',
+        metadata: { location: { ...page, courseInstance: 'Fa25', assessment: 'hw1' } },
+        parts: [{ type: 'text', text: 'Shorten this assessment' }],
+      },
+      {
+        id: 'u2',
+        role: 'user',
+        metadata: {
+          location: {
+            ...page,
+            courseInstance: 'Fa25',
+            question: 'algebra/add',
+            questionFromAnotherCourse: true,
+          },
+        },
+        parts: [{ type: 'text', text: 'Fix this question' }],
+      },
+      {
+        id: 'u3',
+        role: 'user',
+        metadata: {
+          location: { path: '/pl/course/1/course_admin/settings', page: 'course_admin.settings' },
+        },
+        parts: [{ type: 'text', text: 'Rename the course here' }],
+      },
+      {
+        id: 'u4',
+        role: 'user',
+        metadata: { location: 'bad' },
+        parts: [{ type: 'text', text: 'Hi' }],
+      },
+    ];
+    expect(missedTurns(located, undefined)).toEqual([
+      'Staff (on page "assessment", assessment "hw1"): Shorten this assessment',
+      'Staff (on page "assessment", question "algebra/add" shared from another course): Fix this question',
+      'Staff (on page "course_admin.settings"): Rename the course here',
+      'Staff: Hi',
+    ]);
+  });
+});
+
 describe('tool calls in catch-up', () => {
   it('records changed files in one line and leaves other calls out', () => {
     const diff = { text: '', omitted: 0 };
