@@ -78,5 +78,5 @@ test('shows text and formula editor diagnostics for symbolic input', async ({ pa
   const formulaPopover = page.getByRole('dialog').filter({ hasText: 'Formula editor input:' });
   await expect(formulaPopover).toBeVisible();
   await expect(formulaPopover.locator('math-field')).toHaveCount(1);
-  await expect(formulaPopover).toContainText('x');
+  await expect(formulaPopover.locator('pre')).toHaveText('x');
 });
