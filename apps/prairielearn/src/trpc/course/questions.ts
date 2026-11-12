@@ -11,7 +11,6 @@ import {
   MAX_BULK_QUESTION_SELECTION,
   SafeQuestionsPageDataSchema,
 } from '../../components/QuestionsTable.shared.js';
-import { QuestionAuthorshipReportSchema } from '../../lib/client/question-authorship-report.js';
 import { config } from '../../lib/config.js';
 import type { Assessment, CourseInstance, Question } from '../../lib/db-types.js';
 import { getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
@@ -25,7 +24,6 @@ import {
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { collectAssessmentQids, removeQidsFromAssessment } from '../../lib/infoAssessment-edits.js';
-import { getCourseQuestionAuthorshipReport } from '../../lib/question-authorship-report.js';
 import {
   qidsToRemoveForQuestions,
   selectQuestionsBlockingDeletion,
@@ -73,14 +71,8 @@ const list = t.procedure.use(requireCoursePermissionPreview).query(async ({ ctx 
   return rawQuestions.map((q) => SafeQuestionsPageDataSchema.parse(q));
 });
 
-const authorshipReport = t.procedure
-  .use(requireCoursePermissionPreview)
-  .output(QuestionAuthorshipReportSchema)
-  .query(async ({ ctx }) => getCourseQuestionAuthorshipReport(ctx.course.id));
-
 export interface QuestionsError {
   List: never;
-  AuthorshipReport: never;
   ListAssessments: never;
   PreviewDeletion: never;
   AddToAssessment: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
@@ -760,7 +752,6 @@ const deleteQuestions = t.procedure
 
 export const questionsRouter = t.router({
   list,
-  authorshipReport,
   listAssessments,
   addToAssessment,
   removeFromAssessment,
