@@ -497,33 +497,20 @@ function navigateTool(pages: PageCatalog): DynamicToolSpec {
     type: 'function',
     name: 'navigate',
     description: [
-      "Open a PrairieLearn page in the instructor's browser, replacing the page they are viewing. Choose `page` from this list, and pass the names shown in parentheses:",
+      "Open a PrairieLearn page in the instructor's browser, replacing the page they are viewing. Pages, with the names each requires:",
       ...lines,
     ].join('\n'),
     inputSchema: {
       type: 'object',
       properties: {
         page: { type: 'string', enum: pages.map((page) => page.key) },
-        courseInstance: {
-          type: 'string',
-          description:
-            'Course instance directory name under courseInstances/, such as Fa25. Optional on course and question pages, where it keeps the instructor in that course instance.',
-        },
+        courseInstance: { type: 'string', description: 'Directory name under courseInstances/.' },
         assessment: {
           type: 'string',
-          description:
-            'Assessment directory path under the course instance assessments/ directory (its tid), such as hw1.',
+          description: "Directory path under the course instance's assessments/.",
         },
-        question: {
-          type: 'string',
-          description:
-            'Question directory path under questions/ (its qid), such as algebra/addition.',
-        },
-        file: {
-          type: 'string',
-          description:
-            "For pages marked optional file: a path inside that page's directory, such as question.html within the question's directory. The course page covers files outside questions/ and courseInstances/.",
-        },
+        question: { type: 'string', description: 'Directory path under questions/.' },
+        file: { type: 'string', description: "Path inside the page's own directory." },
       },
       required: ['page'],
       additionalProperties: false,
