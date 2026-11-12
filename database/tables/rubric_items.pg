@@ -9,6 +9,7 @@ columns
     number: integer not null
     points: double precision not null
     rubric_id: bigint not null
+    show_to_students: enum_rubric_item_show_to_students not null default 'always'::enum_rubric_item_show_to_students
 
 indexes
     rubric_items_pkey: PRIMARY KEY (id) USING btree (id)

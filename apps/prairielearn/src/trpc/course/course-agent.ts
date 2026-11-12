@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { CreateConversationInput, ReviewFeedbackSchema } from '@prairielearn/course-agent-types';
+import { CreateConversationInput } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -64,7 +64,7 @@ export const courseAgentRouter = t.router({
           conversationId: IdSchema,
           reviewId: z.uuid(),
           decision: z.literal('denied'),
-          feedback: ReviewFeedbackSchema.optional(),
+          viaMessage: z.boolean().optional(),
         }),
       ]),
     )

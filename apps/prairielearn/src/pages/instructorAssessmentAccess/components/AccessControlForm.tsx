@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Form } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
@@ -138,8 +138,34 @@ export function AccessControlForm({
     setValue,
     watch,
     reset,
+    subscribe,
+    trigger,
     formState: { isDirty, isValid },
   } = methods;
+
+  // Re-validate the whole form after every value change. With a resolver,
+  // react-hook-form only updates the displayed error for the field that
+  // changed, while `isValid` reflects the whole form. Cross-field errors and
+  // errors nested under object-valued controllers (e.g. question visibility
+  // dates) would otherwise disable Save without being shown anywhere. The
+  // trigger is deferred because react-hook-form finishes processing the
+  // change after notifying subscribers, and would overwrite the errors from a
+  // synchronous trigger.
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = subscribe({
+      formState: { values: true },
+      callback: () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => void trigger(), 0);
+      },
+    });
+    void trigger();
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, [subscribe, trigger]);
 
   const {
     append: appendOverride,
