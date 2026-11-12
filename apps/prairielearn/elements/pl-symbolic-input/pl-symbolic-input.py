@@ -328,9 +328,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
-    raw_submitted_answer = submitted_raw_answer
-    if raw_submitted_answer is None:
-        raw_submitted_answer = initial_value
     if (
         raw_submitted_answer_latex is None
         and initial_value is not None
@@ -357,6 +354,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if data["panel"] == "question":
         editable = data["editable"]
+        raw_answer_or_initial_value = submitted_raw_answer
+        if raw_answer_or_initial_value is None:
+            raw_answer_or_initial_value = initial_value
 
         html_params = {
             "question": True,
@@ -375,7 +375,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "allow_sets": allow_sets,
             "imaginary_unit": imaginary_unit,
             "log_as_ln": display_log_as_ln,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "parse_error": parse_error,
             display.value: True,
