@@ -56,6 +56,8 @@ export async function generateTitle({
       input: [...message].slice(0, MAX_TITLE_INPUT_LENGTH).join(''),
       // Reasoning roughly quadruples latency without improving these titles.
       reasoning: { effort: 'none' },
+      // A title is a few words; the cap bounds the cost of this unmetered request.
+      max_output_tokens: 100,
       store: false,
     }),
     signal: AbortSignal.timeout(15_000),

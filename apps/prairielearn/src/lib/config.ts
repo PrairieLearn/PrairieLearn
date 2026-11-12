@@ -690,7 +690,8 @@ export const ConfigSchema = z.object({
    */
   courseAgentServiceUrl: z.string().nullable().default(null),
   /**
-   * Bearer token that authenticates PrairieLearn to the course agent service.
+   * Bearer token that authenticates PrairieLearn to the course agent service,
+   * and the service to PrairieLearn when it reports usage.
    * Must match the Cloudflare Worker's PL_SERVICE_TOKEN secret, or
    * PL_SERVICE_TOKEN in its .dev.vars file for local development. Multiple
    * tokens are supported to allow for rotation; the first token is sent to

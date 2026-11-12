@@ -16,6 +16,8 @@ import { type BudgetState, Conversation } from './conversation.js';
 const sdk = vi.hoisted(() => ({
   finishTurn: () => {},
   completeResponse: (_requestId: string) => Promise.resolve(),
+  /** The SDK's own gap before it calls back with a continuation. */
+  continuationCallback: () => Promise.resolve(),
 }));
 
 vi.mock('@cloudflare/ai-chat', () => ({
@@ -48,6 +50,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
     });
 
     continueLastTurn = vi.fn(async (body?: Record<string, unknown>) => {
+      await sdk.continuationCallback();
       await this.onChatMessage(undefined, { requestId: 'continuation', continuation: true, body });
       return { status: 'completed' };
     });
@@ -106,6 +109,7 @@ const deniedResult = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sdk.continuationCallback = () => Promise.resolve();
   vi.stubGlobal('scheduler', { wait: async () => {} });
 });
 
@@ -487,6 +491,56 @@ it('saves a review result while limited and delivers it once Resume clears the l
   const options = vi.mocked(SandboxTurn).mock.calls[0][2];
   expect(options.input.text).toContain('The instructor denied the submitted changes.');
   expect(budget(saved)).toMatchObject({ pending: null, limitedUntil: null });
+});
+
+it('runs a review delivery that races a new limit, and stops it at its first model request', async () => {
+  freezeTime();
+  stubFetch({ usage: async () => decision({ status: 'limited', retryAt: expiresAt }) });
+  const { saved } = fixture();
+  saved.set('conversation', {
+    ...(saved.get('conversation') as object),
+    review: {
+      id: 'review',
+      snapshot: {
+        type: 'github',
+        repository: 'PrairieLearn/course',
+        branch: 'master',
+        baseCommit: 'a'.repeat(40),
+        additions: [],
+        deletions: [{ path: 'question.html' }],
+      },
+      result: null,
+      waitsForResume: false,
+    },
+  });
+  saved.set('budget', {
+    unreported: reportedUsage,
+    pending: null,
+    limitedUntil: null,
+  } satisfies BudgetState);
+  const { conversation, sandbox } = fixture(saved);
+  await conversation.onStart();
+  expect(conversation.recordReviewResult('review', deniedResult)).toBe(true);
+  // The delivery claims the conversation, then a report comes back limited before the SDK calls
+  // back with the continuation.
+  const callback = Promise.withResolvers<undefined>();
+  sdk.continuationCallback = () => callback.promise;
+  await conversation.deliverWaitingResult();
+  await conversation.flushUsage();
+  expect(budget(saved).limitedUntil).toBe(expiresAt);
+  callback.resolve(undefined);
+  await vi.waitFor(() => expect(SandboxTurn).toHaveBeenCalledOnce());
+  const options = vi.mocked(SandboxTurn).mock.calls[0][2];
+  await options.prepare();
+  options.onThread('native-thread');
+  options.onReady();
+  options.onAccepted('native-turn');
+  const { executionId } = sandbox.authorizeModel.mock.calls.at(-1)![0];
+  expect((await conversation.proxyModelRequest('{}', executionId)).status).toBe(429);
+  await sdk.completeResponse('continuation');
+  await vi.waitFor(() =>
+    expect(conversation.state).toMatchObject({ status: 'blocked', reason: 'usage_limit' }),
+  );
 });
 
 it('charges the estimate when final usage never arrives', async () => {

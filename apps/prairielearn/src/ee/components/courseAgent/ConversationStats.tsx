@@ -23,11 +23,13 @@ export function ConversationStats({
   const [show, setShow] = useState(false);
   const trpc = useTRPC();
   // Usage is recorded every 30 seconds or so while the agent works, so refresh while open.
-  const usage = useQuery({
+  const usageQuery = useQuery({
     ...trpc.courseAgent.usage.queryOptions({ conversationId }),
     enabled: show,
     refetchInterval: show ? 5_000 : false,
-  }).data;
+  });
+  const usage = usageQuery.data;
+  const missing = usageQuery.isError ? 'Unavailable' : 'Loading';
   return (
     <Dropdown drop="up" show={show} autoClose="outside" onToggle={setShow}>
       <Dropdown.Toggle variant="outline-secondary" size="sm">
@@ -43,19 +45,19 @@ export function ConversationStats({
               <DeadlineCountdown key={state?.deadlineAt} deadlineAt={state?.deadlineAt ?? null} />
             </dd>
             <dt>Input tokens</dt>
-            <dd>{usage?.input_tokens.toLocaleString() ?? 'Loading'}</dd>
+            <dd>{usage?.input_tokens.toLocaleString() ?? missing}</dd>
             <dt>Cached input tokens</dt>
-            <dd>{usage?.input_tokens_cache_read.toLocaleString() ?? 'Loading'}</dd>
+            <dd>{usage?.input_tokens_cache_read.toLocaleString() ?? missing}</dd>
             <dt>Cache write tokens</dt>
-            <dd>{usage?.input_tokens_cache_write.toLocaleString() ?? 'Loading'}</dd>
+            <dd>{usage?.input_tokens_cache_write.toLocaleString() ?? missing}</dd>
             <dt>Output tokens</dt>
-            <dd>{usage?.output_tokens.toLocaleString() ?? 'Loading'}</dd>
+            <dd>{usage?.output_tokens.toLocaleString() ?? missing}</dd>
             <dt>Reasoning tokens</dt>
-            <dd>{usage?.output_tokens_reasoning.toLocaleString() ?? 'Loading'}</dd>
+            <dd>{usage?.output_tokens_reasoning.toLocaleString() ?? missing}</dd>
             <dt>Web searches</dt>
-            <dd>{usage?.web_search_calls.toLocaleString() ?? 'Loading'}</dd>
+            <dd>{usage?.web_search_calls.toLocaleString() ?? missing}</dd>
             <dt>Cost</dt>
-            <dd className="mb-0">{usage ? currencyFormat.format(usage.cost) : 'Loading'}</dd>
+            <dd className="mb-0">{usage ? currencyFormat.format(usage.cost) : missing}</dd>
           </dl>
         </Dropdown.Menu>
       )}

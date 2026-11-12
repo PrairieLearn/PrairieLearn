@@ -62,6 +62,8 @@ export interface BudgetState {
    * Resume clears it after this time; the sandbox lifecycle, including idle expiry, continues.
    */
   limitedUntil: string | null;
+  /** The pending report PrairieLearn rejected, so a rejection reaches Sentry once. */
+  rejectedReportId?: string | null;
 }
 
 // A provider request that ends without final usage, such as a dropped stream or a Stop, is
@@ -244,8 +246,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Shared by concurrent callers so that only one report is in flight. */
   private reporting: Promise<boolean> | null = null;
-  /** A rejected report is sent to Sentry once, not on every retry. */
-  private rejectedReportId: string | null = null;
   /** When PrairieLearn last allowed inference; in memory, so a restarted object checks first. */
   private allowedAt: number | null = null;
 
@@ -536,6 +536,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   private recordUsage(usage: Usage) {
+    if (isEmptyUsage(usage)) return;
     this.saveBudget({ ...this.budget, unreported: addUsage(this.budget.unreported, usage) });
     this.scheduleFlush(USAGE_FLUSH_SECONDS);
   }
@@ -568,8 +569,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
   }
 
-  private decisionFresh() {
-    return this.allowedAt !== null && Date.now() - this.allowedAt < DECISION_TTL_MS;
+  /** Ask PrairieLearn for a decision unless the current one is still known. */
+  private checkUsageLimit(): Promise<boolean> | true {
+    const fresh = this.allowedAt !== null && Date.now() - this.allowedAt < DECISION_TTL_MS;
+    return this.budget.limitedUntil || fresh ? true : this.reportUsage();
   }
 
   private saveBudget(next: BudgetState) {
@@ -633,8 +636,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       // A rejected report is a configuration or deployment fault, such as a rotated token, an
       // unpriced model or a PrairieLearn without this route. Keep the report pending so the
       // conversation recovers once it is fixed.
-      if (this.rejectedReportId !== report.reportId) {
-        this.rejectedReportId = report.reportId;
+      if (this.budget.rejectedReportId !== report.reportId) {
+        this.saveBudget({ ...this.budget, rejectedReportId: report.reportId });
         this.reportError(new Error(`Usage report was rejected with ${response.status}`));
       }
       logEvent('usage_report_rejected', { conversationId: this.name, status: response.status });
@@ -656,8 +659,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * last decision is stale.
    */
   private async admit(executionId: string): Promise<Admission> {
-    const reached =
-      this.budget.limitedUntil || this.decisionFresh() ? true : await this.reportUsage();
+    const reached = await this.checkUsageLimit();
     if (this.budget.limitedUntil) {
       this.interruptForUsageLimit();
       return 'limited';
@@ -854,8 +856,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       checkedSandboxId === null || this.env.CourseSandbox.getByName(checkedSandboxId).isRunning(),
       // Check the usage limit before a message boots a sandbox or generates a title. The first
       // model request then finds the decision fresh. If PrairieLearn is unreachable, that request
-      // reports the failure instead. Continuations are checked before they are scheduled.
-      continuation || this.budget.limitedUntil || this.decisionFresh() ? null : this.reportUsage(),
+      // reports the failure instead. Continuations are checked before they are scheduled, and
+      // one that races a new limit is stopped by its first model request.
+      continuation || this.checkUsageLimit(),
     ]);
     const lost = !running;
     const review = this.record.review;
@@ -867,10 +870,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       ? review?.result && status === 'waiting_for_agent'
       : !review && (status === 'offline' || status === 'waiting_for_user');
     const refused = !admitted || this.active || this.recovering || this.sandboxShutdown;
-    if (refused || this.budget.limitedUntil) {
+    if (refused || (message && this.budget.limitedUntil)) {
       // The SDK has already saved the message. Count it as handled, or the next submit would
-      // send this refused prompt in place of the user's next one.
-      if (message) this.setRecord({ ...this.record, submittedMessageId: message.id });
+      // send this refused prompt in place of the user's next one; catch-up tells the agent.
+      if (message) {
+        this.setRecord({
+          ...this.record,
+          submittedMessageId: message.id,
+          threadMayBeBehind: true,
+        });
+      }
       if (refused) throw new Error('The course agent sandbox is not ready.');
       // The usage limit notice explains the refusal; an empty reply adds nothing to history.
       return createUIMessageStreamResponse({
@@ -880,7 +889,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
-    if (message && earlier.length === 0 && !this.record.title) this.startTitle(message);
+    // A first message refused by the usage limit leaves no reply, so the next one is titled.
+    if (message && !earlier.some((entry) => entry.role === 'assistant') && !this.record.title) {
+      this.startTitle(message);
+    }
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const delivered = continuation && review?.result ? review : null;
