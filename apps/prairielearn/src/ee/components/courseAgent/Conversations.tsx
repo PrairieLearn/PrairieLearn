@@ -40,6 +40,7 @@ import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
+import { currentPageLocation } from './pageLocation.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -386,7 +387,7 @@ function Chat({
   useEffect(() => {
     if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
     initialMessageSentRef.current = true;
-    void sendMessage({ text: initialMessage });
+    void sendMessage({ text: initialMessage, metadata: { location: currentPageLocation() } });
     onInitialMessageSent();
   }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
 
@@ -440,7 +441,7 @@ function Chat({
     if (lifecycle?.status === 'offline') setAwaitingStart(true);
     // A refused denial's error no longer applies once the message goes out normally.
     deny.reset();
-    void sendMessage({ text });
+    void sendMessage({ text, metadata: { location: currentPageLocation() } });
   };
 
   const submit = (event?: SyntheticEvent) => {
