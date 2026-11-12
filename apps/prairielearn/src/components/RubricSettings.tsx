@@ -14,7 +14,7 @@ import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
-  rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number' | 'points'> & {
+  rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number' | 'points' | 'show_to_students'> & {
     id?: string;
     points: number | null;
   };

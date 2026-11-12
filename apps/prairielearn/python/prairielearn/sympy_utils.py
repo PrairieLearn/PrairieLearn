@@ -773,6 +773,57 @@ def ast_check_str(
     _ast_check_str(expr, locals_for_eval, allow_sets=allow_sets)
 
 
+def _validate_ast_structure(
+    expression_ast: ast.Expression,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_extra_symbols: bool,
+) -> None:
+    """Validate nodes that SymPy evaluation could remove from the result."""
+    valid_symbols = set().union(
+        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
+    )
+    invalid_symbols: set[str] = set()
+    float_value: float | None = None
+    for node in ast.walk(expression_ast):
+        if (
+            not isinstance(node, ast.Call)
+            or not isinstance(node.func, ast.Name)
+            or len(node.args) != 1
+            or not isinstance(node.args[0], ast.Constant)
+        ):
+            continue
+
+        value = node.args[0].value
+        if (
+            node.func.id == "Symbol"
+            and not allow_extra_symbols
+            and isinstance(value, str)
+            and value not in valid_symbols
+        ):
+            invalid_symbols.add(value)
+        if (
+            node.func.id == "Float"
+            and float_value is None
+            and isinstance(value, (int, float, str))
+        ):
+            try:
+                float_value = float(value)
+            except ValueError:
+                continue
+
+    if invalid_symbols:
+        # Evaluated SymPy expressions order symbols canonically before sympy_check
+        # traverses them. Preserve which invalid symbol existing errors identify.
+        invalid_symbol = max(
+            invalid_symbols,
+            key=lambda symbol: sympy.default_sort_key(sympy.Symbol(symbol)),
+        )
+        raise HasInvalidSymbolError(invalid_symbol)
+    if float_value is not None:
+        raise HasFloatError(float_value)
+
+
 class _SetOperationTransformer(ast.NodeTransformer):
     """Rewrite only binary operations validated as set operations."""
 
@@ -1200,6 +1251,11 @@ def _evaluate_with_source(
             allow_sets=allow_sets,
             resolved_names=resolved_names,
         )
+        _validate_ast_structure(
+            expression_ast,
+            locals_for_eval,
+            allow_extra_symbols=allow_extra_symbols,
+        )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
         index = _find_type_error_offset(
             normalized_expr, char_offsets, exc.as_type_error()
@@ -1519,7 +1575,7 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
 
 
 def sympy_to_json(
-    a: sympy.Expr | sympy.Set,
+    a: sympy.Expr | sympy.Set | sympy.Tuple,
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
@@ -1532,7 +1588,13 @@ def sympy_to_json(
 
     Raises:
         HasSetNotationError: If the expression is a set and `allow_sets` is `False`.
+        ValueError: If the expression contains a SymPy tuple.
     """
+    if a.has(sympy.Tuple):
+        raise ValueError(
+            "SymPy Tuple values are not supported by PrairieLearn serialization. Use separate inputs for point coordinates."
+        )
+
     if isinstance(a, sympy.Set) and not allow_sets:
         raise HasSetNotationError
 

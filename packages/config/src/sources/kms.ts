@@ -125,7 +125,7 @@ export function makeKmsConfigSource(): ConfigSource {
 
           // We don't care about sharing configs between clients here; this
           // client is only used once, typically at application startup.
-          // eslint-disable-next-line @prairielearn/aws-client-shared-config
+          // oxlint-disable-next-line @prairielearn/aws-client-shared-config
           kmsClient = new KMSClient({ region });
         }
         return kmsClient;

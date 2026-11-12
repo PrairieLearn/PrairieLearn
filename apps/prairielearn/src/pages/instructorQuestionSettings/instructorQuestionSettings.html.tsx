@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { useController, useForm } from 'react-hook-form';
 
@@ -37,6 +37,53 @@ import type {
   QuestionSettingsFormValues,
   SelectedAssessments,
 } from './instructorQuestionSettings.types.js';
+
+function AuthorLabel({ uid, name }: { uid: string; name?: string | null }) {
+  if (/^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(uid)) {
+    return (
+      <a href={uid} target="_blank" rel="noopener noreferrer">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 32 32"
+          fill="none"
+          width="16"
+          height="16"
+          role="img"
+          aria-label="ORCID iD"
+          className="me-1"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M29.474 16c0 7.442-6.032 13.474-13.474 13.474S2.526 23.442 2.526 16 8.558 2.526 16 2.526 29.474 8.558 29.474 16Z"
+            fill="#fff"
+          />
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M32 16c0 8.837-7.163 16-16 16S0 24.837 0 16 7.163 0 16 0s16 7.163 16 16ZM16 29.474c7.442 0 13.474-6.032 13.474-13.474S23.442 2.526 16 2.526 2.526 8.558 2.526 16 8.558 29.474 16 29.474Z"
+            fill="#7FAA26"
+          />
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M18.22 10.973h-4.547v11.6h4.569c3.8 0 6.133-2.82 6.133-5.8 0-1.365-.469-2.815-1.478-3.925-1.013-1.115-2.557-1.875-4.676-1.875Zm-.177 9.732h-2.347v-7.864h2.264c1.521 0 2.603.46 3.304 1.167.703.709 1.046 1.688 1.046 2.765 0 .654-.2 1.641-.83 2.46-.621.808-1.677 1.473-3.437 1.473Zm-.083-8.073c3.13 0 4.558 1.898 4.558 4.141 0-2.243-1.429-4.141-4.558-4.141h-2.472 2.472Zm6.205 4.017.001.124c0 2.869-2.242 5.591-5.924 5.591h-4.36V11.182v11.182h4.36c3.682 0 5.924-2.722 5.924-5.591l-.001-.124ZM9.5 11.005v11.588h2.024V11.005H9.5Zm1.815.208v11.172-11.172H9.71h1.606ZM10.512 10.15c.7 0 1.262-.575 1.262-1.263 0-.687-.561-1.262-1.262-1.262-.7 0-1.262.563-1.262 1.262 0 .688.561 1.262 1.262 1.262Zm.614-.408a1.044 1.044 0 0 0 0 0Z"
+            fill="#7FAA26"
+          />
+        </svg>
+        {uid}
+      </a>
+    );
+  }
+  return name ? (
+    <>
+      <span className="text-body">{name}</span>{' '}
+      <span className="text-secondary fw-normal">{uid}</span>
+    </>
+  ) : (
+    <span className="text-body">{uid}</span>
+  );
+}
 
 function ImageRegistryHelp({ id }: { id: string }) {
   return (
@@ -190,6 +237,9 @@ function SharingMessageText({ message }: { message: SharingMessage }) {
 }
 
 export const InstructorQuestionSettingsForm = ({
+  authorStaff,
+  initialAuthors,
+  currentUid,
   question,
   topic,
   courseInstance,
@@ -208,6 +258,9 @@ export const InstructorQuestionSettingsForm = ({
   sharing,
   questionTest,
 }: {
+  authorStaff: { uid: string; name: string | null }[];
+  initialAuthors: string[] | null;
+  currentUid: string;
   question: StaffQuestion;
   courseInstance?: StaffCourseInstance | null;
   assessmentsWithQuestion: SelectedAssessments[];
@@ -250,6 +303,7 @@ export const InstructorQuestionSettingsForm = ({
   );
 
   const defaultValues: QuestionSettingsFormValues = {
+    authors: initialAuthors ?? [],
     qid: question.qid ?? '',
     title: question.title ?? '',
     topic: topic.name,
@@ -300,12 +354,24 @@ export const InstructorQuestionSettingsForm = ({
     clearErrors,
     control,
     reset,
-    formState: { errors, isDirty, isSubmitting },
+    formState: { errors, isDirty, dirtyFields, isSubmitting },
   } = useForm<QuestionSettingsFormValues>({
     mode: 'onChange',
     defaultValues,
   });
 
+  const [pendingAuthor, setPendingAuthor] = useState('');
+  const pendingAuthorUid = pendingAuthor.trim();
+  const selectedAuthors = watch('authors');
+  // Serialize pending text before submit so Save includes it without waiting for a state update.
+  const authorsToSave =
+    pendingAuthorUid && !selectedAuthors.includes(pendingAuthorUid)
+      ? [...selectedAuthors, pendingAuthorUid]
+      : selectedAuthors;
+  const authorItems = selectedAuthors.map((uid) => {
+    const name = authorStaff.find((user) => user.uid === uid)?.name;
+    return { id: uid, label: name ? `${name}  ${uid}` : uid, data: { uid, name } };
+  });
   const selectedTopic = watch('topic');
   const selectedTags = watch('tags');
   const selectedGradingMethod = watch('grading_method');
@@ -518,6 +584,73 @@ export const InstructorQuestionSettingsForm = ({
                       <TagBadge tag={tag} />
                     </span>
                   ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" id="authors-label" htmlFor="authors">
+                Authors
+              </label>
+              {canEdit ? (
+                <>
+                  {initialAuthors !== null && (dirtyFields.authors || pendingAuthorUid) && (
+                    <input type="hidden" name="authors" value={JSON.stringify(authorsToSave)} />
+                  )}
+                  <TagPicker
+                    id="authors"
+                    aria-labelledby="authors-label"
+                    createButtonLabel="Add author"
+                    inputValue={pendingAuthor}
+                    items={authorItems}
+                    value={selectedAuthors}
+                    placeholder="UID or ORCID URL"
+                    disabled={initialAuthors === null}
+                    tagClassName={() => 'badge color-gray1 fw-normal text-wrap text-break'}
+                    renderTagContent={({ uid, name }) => <AuthorLabel uid={uid} name={name} />}
+                    onInputChange={setPendingAuthor}
+                    onChange={(uids) => setValue('authors', uids, { shouldDirty: true })}
+                    onCreate={(uid) =>
+                      setValue('authors', [...selectedAuthors, uid], { shouldDirty: true })
+                    }
+                  />
+                </>
+              ) : (
+                <div>
+                  {authorItems.map((author) => (
+                    <span key={author.id} className="me-1">
+                      <span className="badge color-gray1 fw-normal text-wrap text-break">
+                        <AuthorLabel uid={author.data.uid} name={author.data.name} />
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <small className="form-text text-muted">
+                Credit the people who wrote this question by their UID or ORCID URL. Names are shown
+                for current course staff.{' '}
+                {canEdit &&
+                  initialAuthors !== null &&
+                  !selectedAuthors.includes(currentUid.trim()) && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm p-0 border-0 align-baseline"
+                        onClick={() => {
+                          setValue('authors', [...selectedAuthors, currentUid.trim()], {
+                            shouldDirty: true,
+                          });
+                        }}
+                      >
+                        Add myself
+                      </button>
+                      .
+                    </>
+                  )}
+              </small>
+              {canEdit && initialAuthors === null && (
+                <div className="form-text text-danger">
+                  Authors could not be loaded from info.json. Fix the file before editing authors.
                 </div>
               )}
             </div>
@@ -1221,10 +1354,13 @@ export const InstructorQuestionSettingsForm = ({
 
       {canEdit && (
         <StickySaveBar
-          visible={isDirty}
+          visible={isDirty || !!pendingAuthorUid}
           isSaving={isSubmitting}
           formId="edit-question-settings-form"
-          onCancel={() => reset()}
+          onCancel={() => {
+            reset();
+            setPendingAuthor('');
+          }}
         />
       )}
     </div>

@@ -487,6 +487,57 @@ def test_unevaluated_real_subexpression_ignores_false_complex_assumption(
 
 
 @pytest.mark.parametrize("simplify_expression", [True, False])
+@pytest.mark.parametrize(
+    ("a_sub", "expected_error"),
+    [
+        ("m*0", 'invalid symbol "m"'),
+        ("0*1.5", "floating-point number 1.5"),
+    ],
+)
+def test_structural_errors_reach_element_output(
+    a_sub: str, expected_error: str, *, simplify_expression: bool
+) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": a_sub},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(42))},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert expected_error in data["format_errors"]["test"]
+    assert data["submitted_answers"]["test"] is None
+
+
+@pytest.mark.parametrize(
+    ("simplify_expression", "expected"),
+    [
+        (True, "0"),
+        (False, "-x + x"),
+    ],
+)
+def test_valid_cancellation_preserves_element_simplification_setting(
+    *, simplify_expression: bool, expected: str
+) -> None:
+    element_html = build_element_html(
+        'variables="x"',
+        f'display-simplified-expression="{str(simplify_expression).lower()}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "x-x"},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(0))},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert data["submitted_answers"]["test"]["_value"] == expected
+
+
+@pytest.mark.parametrize("simplify_expression", [True, False])
 def test_adjacent_decimal_points_report_source(*, simplify_expression: bool) -> None:
     element_html = build_element_html(
         'variables="x"',
@@ -620,6 +671,83 @@ def test_interval_endpoints_support_trig_and_arithmetic_expressions(
 
     symbolic_input.grade(element_html, data)
     assert data["partial_scores"]["test"]["score"] == 1
+
+
+@pytest.mark.parametrize(
+    ("correct_answer", "attributes", "formula_editor"),
+    [
+        pytest.param(
+            psu.sympy_to_json(2 + 3 * sympy.I),
+            ['allow-complex="true"', 'imaginary-unit-for-display="j"'],
+            False,
+            id="complex-j",
+        ),
+        pytest.param(
+            psu.sympy_to_json(sympy.EmptySet, allow_sets=True),
+            ['allow-sets="true"'],
+            False,
+            id="empty-set",
+        ),
+        pytest.param(
+            psu.sympy_to_json(sympy.FiniteSet(sympy.E, sympy.pi), allow_sets=True),
+            ['allow-sets="true"'],
+            True,
+            id="finite-set",
+        ),
+        pytest.param(
+            psu.sympy_to_json(
+                sympy.Union(
+                    sympy.Interval.open(-sympy.oo, 0),
+                    sympy.Interval(sympy.E, sympy.oo),
+                ),
+                allow_sets=True,
+            ),
+            ['allow-sets="true"'],
+            False,
+            id="interval-union",
+        ),
+    ],
+)
+def test_generated_submission_can_be_parsed_and_graded(
+    correct_answer: Any, attributes: list[str], *, formula_editor: bool
+) -> None:
+    element_html = build_element_html(
+        *attributes,
+        f'formula-editor="{str(formula_editor).lower()}"',
+    )
+    data = make_question_data(correct_answers={"test": correct_answer})
+    data["test_type"] = "correct"
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.test(element_html, data)
+
+    raw_answer = data["raw_submitted_answers"]["test"]
+    assert isinstance(raw_answer, str)
+    assert "_Exp1" not in raw_answer
+    assert "_ImaginaryUnit" not in raw_answer
+
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_grade_preserves_parse_error_for_invalid_submission() -> None:
+    element_html = build_element_html('variables="x"')
+    data = make_question_data(
+        submitted_answers={"test": "x +* 1"},
+        correct_answers={"test": psu.sympy_to_json(sympy.Integer(1))},
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    format_error = data["format_errors"]["test"]
+
+    symbolic_input.grade(element_html, data)
+
+    assert data["format_errors"]["test"] == format_error
 
 
 def test_interval_correct_answer_renders(

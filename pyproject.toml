@@ -16,7 +16,7 @@ dependencies = [
   "lxml==6.1.3",
   "matplotlib==3.11.2",
   "networkx==3.7",
-  "nltk==3.10.3",
+  "nltk==3.10.4",
   "numpy==2.4.6",
   "openpyxl==3.1.5",
   "pandas==2.3.3",
@@ -106,17 +106,17 @@ select = ["ALL"]
 
 ignore = [
   # These rules provide little value to us
-  "EM",  # flake8-errmsg
-  "EXE",  # flake8-executable
-  "FIX",  # flake8-fixme
-  "S",  # flake8-bandit (security rules)
-  "TD",  # flake8-todos
-  "PTH",  # flake8-use-pathlib
+  "EM", # flake8-errmsg
+  "EXE", # flake8-executable
+  "FIX", # flake8-fixme
+  "S", # flake8-bandit (security rules)
+  "TD", # flake8-todos
+  "PTH", # flake8-use-pathlib
   "blind-except",
   "missing-trailing-comma",
   "missing-copyright-notice",
   "complex-structure",
-  "commented-out-code",  # too many false positives
+  "commented-out-code", # too many false positives
   "line-too-long",
   "implicit-namespace-package",
   "print",
@@ -129,16 +129,16 @@ ignore = [
   "undocumented-public-init",
   "incorrect-blank-line-before-class",
   "multi-line-summary-first-line",
-  "missing-blank-line-after-summary",  # we use a multi-line description instead of summaries sometimes
+  "missing-blank-line-after-summary", # we use a multi-line description instead of summaries sometimes
   "missing-trailing-period",
   "missing-terminal-punctuation",
   "docstring-missing-yields",
   "read-whole-file",
   "write-whole-file",
-  "reimplemented-operator",  # confusing
-  "reimplemented-starmap",  # confusing
+  "reimplemented-operator", # confusing
+  "reimplemented-starmap", # confusing
   "explicit-string-concatenation",
-  "numpy-legacy-random",  # we use `np.random.*` in many places
+  "numpy-legacy-random", # we use `np.random.*` in many places
   "import-outside-top-level",
   "compare-to-empty-string",
   "too-many-nested-blocks",
@@ -149,7 +149,7 @@ ignore = [
   "too-many-statements",
   "too-many-boolean-expressions",
   "too-many-positional-arguments",
-  "literal-membership",  # pyright doesn't understand assert_never with sets
+  "literal-membership", # pyright doesn't understand assert_never with sets
   "magic-value-comparison",
   "no-self-use",
   "too-many-statements-in-try-clause",
@@ -159,9 +159,9 @@ ignore = [
   "superfluous-else-return",
   "if-else-block-instead-of-if-exp",
   "runtime-cast-value",
-  "try-consider-else",  # returns in try blocks
+  "try-consider-else", # returns in try blocks
   "raise-within-try",
-  "raise-vanilla-args",  # long messages in raise statements
+  "raise-vanilla-args", # long messages in raise statements
 
   # These rules need to be enabled
   # TODO: D103,D104 (https://github.com/astral-sh/ruff/issues/12434)
@@ -174,11 +174,7 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"!apps/prairielearn/elements/**" = [
-  "banned-api",
-  "import-private-name",
-  "private-member-access",
-]
+"!apps/prairielearn/elements/**" = ["banned-api", "import-private-name", "private-member-access"]
 "apps/prairielearn/elements/**/*_test.py" = [
   "banned-api",
   "import-private-name",
@@ -289,9 +285,9 @@ include = [
   "./scripts",
 ]
 ignore = [
-  "./apps/prairielearn/elements/pl-drawing",  # requires refactor
-  "./apps/prairielearn/elements/pl-prairiedraw-figure",  # deprecated
-  "./exampleCourse/questions/**/tests",  # autograder tests, use different dependencies
+  "./apps/prairielearn/elements/pl-drawing", # requires refactor
+  "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
+  "./exampleCourse/questions/**/tests", # autograder tests, use different dependencies
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.13"
