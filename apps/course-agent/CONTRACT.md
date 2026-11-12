@@ -137,6 +137,16 @@ A message refers to each attachment with a `file` part whose URL is `upload:<id>
 - Staff can download a sent attachment, and see a preview of an image, through PrairieLearn, which serves both from its own origin. PrairieLearn's proxy decides how they display, whatever the Worker sends: only a PNG, JPEG, GIF, or WebP displays, anything else downloads as `application/octet-stream`, and every response carries a sandboxing Content-Security-Policy and `nosniff`. The Worker serves uploads as `application/octet-stream`.
 - The browser makes each image's preview (at most 256 pixels on its longer side, shown in its tile) and stores it at `uploads/<conversation>/thumbnails/<id>` after the upload succeeds; Workers can't resize images without Cloudflare Images. Only an existing upload can get a preview. The Worker stores a preview of at most 512 KB only if its bytes are one of those image types, recording that type, and previews don't count toward the conversation's cap.
 
+## Sent files
+
+The agent gives the instructor a file with the `send_files` tool, which takes sandbox paths.
+
+- The sandbox measures and reads each file with the agent's own permissions, relative to the course directory, so the tool reads nothing the agent's shell can't. Only a regular file of 1 byte to 20 MB can be sent.
+- A call sends every file or none. Any file that can't be sent fails the call with the reason for each, and the agent can correct it in the same turn.
+- Files are stored under `uploads/<conversation>/sent/<id>`, so the lifecycle rule that expires uploads expires them too. The level below the uploads keeps them out of the upload count; they have their own cap of 100 files and 200 MB, so neither the agent nor the instructor can use up the other's room. They are never copied into a sandbox.
+- Each file is a `data-file` part in the reply, holding its ID, name, and size, at the point where the agent sent it. A successful call has no tool call entry; a failed one does. Catch-up names sent files.
+- Staff download a sent file through PrairieLearn under the rules for uploads: always as `application/octet-stream`, with the sandboxing Content-Security-Policy and `nosniff`.
+
 ## Local course sources
 
 In PrairieLearn development mode, the owner-scoped creation route archives the authorized course directory and uploads it to the service-authenticated `POST /conversations/local` endpoint. The Worker chooses the R2 key; neither the browser nor the agent supplies a host path. The source and model are pinned at creation. Local sandboxes have no repository outbound route and require no GitHub token.

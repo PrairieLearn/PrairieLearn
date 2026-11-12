@@ -3,6 +3,7 @@ import type { UIMessage, UIMessageChunk } from 'ai';
 import {
   InputRequestPartSchema,
   type RequestChangesResult,
+  SentFilePartSchema,
   ToolCallSchema,
   UserMessageMetadataSchema,
 } from '@prairielearn/course-agent-types';
@@ -189,6 +190,10 @@ function describePart(part: UIMessage['parts'][number]) {
       return describeInputRequest(part.data);
     case 'data-tool':
       return describeFileChange(part.data);
+    case 'data-file': {
+      const file = SentFilePartSchema.safeParse(part.data);
+      return file.success ? `[Sent the instructor the file ${file.data.filename}.]` : '';
+    }
     case 'file': {
       const attachment = attachmentOf(part);
       return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';

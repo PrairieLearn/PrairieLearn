@@ -2,9 +2,15 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import { COURSE_DIR, type InputRequestPart, type ToolCall } from '@prairielearn/course-agent-types';
+import {
+  COURSE_DIR,
+  type InputRequestPart,
+  MAX_SENT_FILES_PER_CALL,
+  type ToolCall,
+} from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { JsonValue } from '../../generated/types/serde_json/JsonValue.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
 import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
 import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
@@ -42,19 +48,31 @@ const ItemEvent = z.object({
   turnId: z.string(),
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
-/** `request_changes` shows as a review card; only a failed call needs its own entry. */
-const ReviewToolItem = z.object({
+/**
+ * `request_changes` shows as a review card and `send_files` as the files themselves; only a
+ * failed call needs its own entry.
+ */
+const SelfDisplayingToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.literal('request_changes'),
+  tool: z.enum(['request_changes', 'send_files']),
   success: z.boolean().nullable(),
 });
-const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
+/** A dynamic tool call from Codex; each tool validates its own arguments. */
+const DynamicToolCall = z.object({
   threadId: z.string(),
   turnId: z.string(),
   callId: z.string(),
   namespace: z.null(),
-  tool: z.literal('request_changes'),
-  arguments: z.strictObject({}),
+  tool: z.string(),
+  arguments: z.unknown(),
+});
+const RequestChangesArguments = z.strictObject({});
+const SendFilesArguments = z.strictObject({
+  paths: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(MAX_SENT_FILES_PER_CALL)
+    .describe('Paths of the files to send, absolute or relative to the course directory.'),
 });
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
@@ -121,7 +139,10 @@ export class CodexAppServerClient {
   private failure: Error | null = null;
   private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
 
-  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
+  constructor(
+    private sandbox: DurableObjectStub<CourseSandbox>,
+    private sendFiles: (paths: string[]) => Promise<ToolReply>,
+  ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
     if (this.controller) throw new Error('An SDK response is already open');
@@ -170,9 +191,7 @@ export class CodexAppServerClient {
         }
       });
     rpc.onRequest('item/tool/call', async (value: unknown) => {
-      const call = this.parseReviewCall(value);
-      if (!this.onReview) throw new Error('Review handling is not configured');
-      const reply = await this.onReview(call);
+      const reply = await this.callTool(value);
       return {
         success: reply.success,
         contentItems: [{ type: 'inputText', text: reply.text }],
@@ -247,12 +266,26 @@ export class CodexAppServerClient {
     return this.rpc;
   }
 
-  private parseReviewCall(value: unknown): DynamicToolCallParams {
-    const parsed = RequestChangesCall.safeParse(value);
-    if (!parsed.success || parsed.data.threadId !== this.threadId) {
-      throw new Error('Invalid request_changes call');
+  private async callTool(value: unknown): Promise<ToolReply> {
+    const call = DynamicToolCall.safeParse(value);
+    if (!call.success || call.data.threadId !== this.threadId) {
+      throw new Error('Invalid dynamic tool call');
     }
-    return parsed.data;
+    switch (call.data.tool) {
+      case sendFilesTool.name: {
+        const request = SendFilesArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.sendFiles(request.data.paths));
+      }
+      case requestChangesTool.name: {
+        if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
+          throw new Error('Invalid request_changes call');
+        }
+        return await this.onReview({ ...call.data, arguments: {} });
+      }
+      default:
+        throw new Error(`Unknown tool: ${call.data.tool}`);
+    }
   }
 
   private fail(error: Error) {
@@ -309,7 +342,7 @@ export class CodexAppServerClient {
           'thread/start',
           {
             ...settings,
-            dynamicTools: this.onReview ? [requestChangesTool] : [],
+            dynamicTools: [...(this.onReview ? [requestChangesTool] : []), sendFilesTool],
           } satisfies ThreadStartParams,
           ThreadResult,
         );
@@ -420,8 +453,10 @@ export class CodexAppServerClient {
     if (params.threadId !== this.threadId || (this.turnId && params.turnId !== this.turnId)) {
       return;
     }
-    const review = ReviewToolItem.safeParse(params.item);
-    if (review.success && (phase === 'started' || review.data.success !== false)) return;
+    const selfDisplaying = SelfDisplayingToolItem.safeParse(params.item);
+    if (selfDisplaying.success && (phase === 'started' || selfDisplaying.data.success !== false)) {
+      return;
+    }
     const call = toolCallFromItem(phase, params.item);
     if (!call) return;
     const id = `tool:${params.item.id}`;
@@ -481,10 +516,39 @@ export class CodexAppServerClient {
   }
 }
 
-const requestChangesTool: DynamicToolSpec = {
+/** Invalid arguments are the model's mistake, so it gets the reason and can retry. */
+function invalidArguments(error: z.ZodError): ToolReply {
+  return { success: false, text: `Invalid arguments: ${z.prettifyError(error)}` };
+}
+
+/** A failed send is reported to the model rather than failing the turn. */
+async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply> {
+  try {
+    return await call();
+  } catch (error) {
+    return { success: false, text: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/** Codex's tool input schema, generated from the Zod schema that validates the arguments. */
+function toolInputSchema(schema: z.ZodType) {
+  // Zod types its output with a non-enumerable `~standard` property that serialization drops.
+  const { $schema: _schema, ...inputSchema } = z.toJSONSchema(schema);
+  return inputSchema as JsonValue;
+}
+
+const sendFilesTool = {
+  type: 'function',
+  name: 'send_files',
+  description:
+    'Send files from the sandbox to the instructor, who can download them from the chat. Either every file is sent or none is; the reply says why a file could not be sent.',
+  inputSchema: toolInputSchema(SendFilesArguments),
+} satisfies DynamicToolSpec;
+
+const requestChangesTool = {
   type: 'function',
   name: 'request_changes',
   description:
     'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
-};
+} satisfies DynamicToolSpec;

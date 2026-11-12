@@ -7,6 +7,7 @@ import { Button } from 'react-bootstrap';
 import {
   MAX_ATTACHMENTS_PER_MESSAGE,
   MAX_ATTACHMENT_BYTES,
+  type SentFilePart,
   THUMBNAIL_PIXELS,
   UploadedAttachmentSchema,
   attachmentIdOf,
@@ -365,6 +366,28 @@ export function SentAttachments({
           label={typeLabel(part.mediaType, part.filename ?? '')}
           previewUrl={part.mediaType.startsWith('image/') ? `${url}/thumbnail` : null}
           downloadUrl={url}
+        />
+      ))}
+    </ul>
+  );
+}
+
+/** Files the agent sent, shown where it sent them in its reply. Each one downloads when clicked. */
+export function AgentFiles({
+  files,
+  sentFilesUrl,
+}: {
+  files: SentFilePart[];
+  sentFilesUrl: string;
+}) {
+  return (
+    <ul className="list-unstyled d-flex flex-wrap gap-2 m-0" aria-label="Files from the agent">
+      {files.map((file) => (
+        <AttachmentTile
+          key={file.id}
+          filename={file.filename}
+          label={typeLabel('', file.filename)}
+          downloadUrl={`${sentFilesUrl}/${file.id}`}
         />
       ))}
     </ul>

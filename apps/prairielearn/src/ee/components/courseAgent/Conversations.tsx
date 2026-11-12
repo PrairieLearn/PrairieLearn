@@ -23,6 +23,8 @@ import { z } from 'zod';
 import {
   type ConversationState,
   InputRequestPartSchema,
+  type SentFilePart,
+  SentFilePartSchema,
   type ToolCall,
   ToolCallSchema,
   reviewTag,
@@ -38,6 +40,7 @@ import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import {
+  AgentFiles,
   type DraftAttachment,
   DraftAttachmentList,
   FileDropArea,
@@ -563,6 +566,7 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               uploadsUrl={uploadsUrl}
+              sentFilesUrl={`/pl/course/${courseId}/course_agent/conversations/${conversationId}/sent-files`}
               awaitingReviewId={awaitingReviewId}
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
@@ -809,11 +813,17 @@ function toolCallOf(part: UIMessage['parts'][number]) {
   return ToolCallSchema.safeParse(part.data).data ?? null;
 }
 
+function sentFileOf(part: UIMessage['parts'][number]) {
+  if (part.type !== 'data-file') return null;
+  return SentFilePartSchema.safeParse(part.data).data ?? null;
+}
+
 function Message({
   message,
   live,
   conversationId,
   uploadsUrl,
+  sentFilesUrl,
   awaitingReviewId,
   linkTransform,
   onToolCallExpand,
@@ -830,6 +840,7 @@ function Message({
   live: boolean;
   conversationId: string;
   uploadsUrl: string;
+  sentFilesUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
   linkTransform: UrlTransform;
@@ -845,14 +856,28 @@ function Message({
       </div>
     );
   }
-  // Consecutive tool calls render together so runs of the same kind can be grouped.
-  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
+  // Consecutive tool calls render together so runs of the same kind can be grouped, and
+  // consecutive sent files share a row.
+  type Segment = { key: string } & (
+    | { calls: ToolCall[] }
+    | { files: SentFilePart[] }
+    | { part: UIMessage['parts'][number] }
+  );
   const segments: Segment[] = [];
   message.parts.forEach((part, index) => {
     const call = toolCallOf(part);
+    const file = sentFileOf(part);
     const last = segments.at(-1);
-    if (call && last && 'calls' in last) last.calls.push(call);
-    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
+    if (call && last && 'calls' in last) {
+      last.calls.push(call);
+    } else if (file && last && 'files' in last) {
+      last.files.push(file);
+    } else {
+      segments.push({
+        key: `part-${index}`,
+        ...(call ? { calls: [call] } : file ? { files: [file] } : { part }),
+      });
+    }
   });
   // A review ends the agent's turn even though the agent usually writes more after submitting it,
   // so its card goes at the end of that turn: where the agent's turn that receives the result
@@ -885,6 +910,9 @@ function Message({
             onExpand={onToolCallExpand}
           />
         );
+      }
+      if ('files' in segment) {
+        return <AgentFiles key={segment.key} files={segment.files} sentFilesUrl={sentFilesUrl} />;
       }
       const { key, part } = segment;
       if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) return null;
