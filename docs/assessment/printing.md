@@ -2,7 +2,7 @@
 
 With course preview permission, you can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. You can also preview and download answer keys.
 
-For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its own question selection, randomized values, and matching answer key. Creating or regenerating a print form does not start or change a student attempt. Printable forms are not currently supported for group assessments.
+For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its applied paper size, spacing, question selection, cover options, randomized values, and matching answer key. Forms are shared with course staff who have preview permission. Creating or regenerating a print form does not start or change a student attempt. Printable forms are not currently supported for group assessments.
 
 ## Prepare an assessment
 
@@ -10,7 +10,7 @@ For assessments with randomization, you can prepare several versions, called _fo
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
 3. Choose what to include on the [cover page](#cover-pages), then select **Create preview**.
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
-5. Select **Update preview** to apply your changes. Check the **Student copy** and **Answer key** above the preview.
+5. Select **Update preview** to save your changes to this form. Check the **Student copy** and **Answer key** above the preview.
 6. When you are satisfied with the assessment, open **Download** and [choose a file](#download-files).
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
@@ -30,11 +30,11 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. You can prepare up to 26 forms, labeled A through Z. Assessments without randomization use a single form.
+If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 active forms. Labels continue beyond Z when forms are regenerated. Assessments without randomization use a single form.
 
 Select a form to review it and choose its questions and spacing. Apply any changes with **Update preview** before switching to another form.
 
-To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding letter). Review the new questions, selections, spacing, and answer key before downloading that form again.
+To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding letter). The new form inherits the old form's paper and cover settings. Question exclusions and individual spacing reset because the new form may have different questions. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for answer keys.
 
 ## Cover pages
 

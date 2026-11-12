@@ -124,7 +124,6 @@ function PrintPreparation({
     if (!form) throw new Error('This print form is not available.');
     return form.label;
   }
-  const [formSettings, setFormSettings] = useState<Partial<Record<string, PrintSettings>>>({});
   const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
   const [copies, setCopies] = useState(defaultCopies);
   const [showBookletModal, setShowBookletModal] = useState(false);
@@ -132,7 +131,7 @@ function PrintPreparation({
   const validForm = forms.data.some((form) => form.id === formId);
   const [document, setDocument] = useState<PrintDocument>('assessment');
   const defaultSettings = { ...DEFAULT_PRINT_SETTINGS, includeHonorCode: requireHonorCode };
-  const [settings, setSettings] = useState<PrintSettings>(defaultSettings);
+  const settings = forms.data.find((form) => form.id === formId)?.settings ?? defaultSettings;
   const [selectedQuestion, setSelectedQuestion] = useState<{ number: string } | null>(null);
   const [reviewOnly, setReviewOnly] = useState(false);
   const [preview, setPreview] = useState<{ url: string; state: PreviewState } | null>(null);
@@ -158,7 +157,7 @@ function PrintPreparation({
     watch,
     setValue,
     formState: { errors, isDirty, isSubmitting },
-  } = useForm<PrintSettings>({ defaultValues: defaultSettings });
+  } = useForm<PrintSettings>({ defaultValues: settings, values: settings });
   const includeCoverPage = watch('includeCoverPage');
   const questionSizes = watch('questionSizes');
   const excludedQuestions = watch('excludedQuestions');
@@ -192,6 +191,13 @@ function PrintPreparation({
       },
     }),
   );
+  const updateSettings = useMutation(
+    trpc.printForms.updateSettings.mutationOptions({
+      onSuccess: async () => {
+        await forms.refetch();
+      },
+    }),
+  );
   const packet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
   const booklet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
   const exportStatus = useQuery(
@@ -209,6 +215,7 @@ function PrintPreparation({
     create.isPending ||
     regenerate.isPending ||
     archive.isPending ||
+    updateSettings.isPending ||
     packet.isPending ||
     booklet.isPending ||
     preparingPdf !== null ||
@@ -222,15 +229,12 @@ function PrintPreparation({
   }
 
   function settingsForForm(id: string, appliedSettings = settings): PrintSettings {
+    const form = forms.data.find((item) => item.id === id);
+    if (!form) throw new Error('This print form is not available.');
+    const formSettings = id === formId ? appliedSettings : (form.settings ?? defaultSettings);
     return {
-      ...appliedSettings,
-      identityFields: appliedSettings.includeCoverPage ? appliedSettings.identityFields : '',
-      questionSizes:
-        id === formId ? appliedSettings.questionSizes : (formSettings[id]?.questionSizes ?? {}),
-      excludedQuestions:
-        id === formId
-          ? appliedSettings.excludedQuestions
-          : (formSettings[id]?.excludedQuestions ?? []),
+      ...formSettings,
+      identityFields: formSettings.includeCoverPage ? formSettings.identityFields : '',
     };
   }
 
@@ -362,21 +366,22 @@ function PrintPreparation({
     setPreview(null);
   }
 
-  function switchForm(id: string) {
-    if (id === formId) return;
+  function switchForm(id: string, nextSettings?: PrintSettings) {
+    if (id === formId && !nextSettings) return;
 
     void setSelectedForm(id);
-    const next = { ...settingsForForm(id), identityFields: settings.identityFields };
-    setSettings(next);
+    const next =
+      nextSettings ?? forms.data.find((form) => form.id === id)?.settings ?? defaultSettings;
     reset(next);
     setSelectedQuestion(null);
     setPreview(null);
   }
 
   async function addForm() {
-    const result = await create.mutateAsync();
+    const nextSettings = { ...settings, questionSizes: {}, excludedQuestions: [] };
+    const result = await create.mutateAsync({ settings: nextSettings });
     if (selectedForms !== null) void setSelectedForms([...formIds, result.printFormId]);
-    switchForm(result.printFormId);
+    switchForm(result.printFormId, result.settings);
   }
 
   async function regenerateForm(id: string) {
@@ -384,7 +389,7 @@ function PrintPreparation({
     if (selectedForms !== null) {
       void setSelectedForms(formIds.map((value) => (value === id ? result.printFormId : value)));
     }
-    switchForm(result.printFormId);
+    switchForm(result.printFormId, result.settings);
   }
 
   async function archiveForm(id: string) {
@@ -495,6 +500,7 @@ function PrintPreparation({
   }
 
   async function applySettings(values: PrintSettings) {
+    if (archivedPreviewForm) return;
     values = {
       ...values,
       identityFields: values.includeCoverPage
@@ -511,15 +517,17 @@ function PrintPreparation({
     setPdfPreparationError(null);
     try {
       if (!formId) {
-        const result = await create.mutateAsync();
+        const result = await create.mutateAsync({ settings: values });
         if (selectedForms !== null) void setSelectedForms([result.printFormId]);
         void setSelectedForm(result.printFormId);
-        setFormSettings((previous) => ({ ...previous, [result.printFormId]: values }));
-      } else if (printLayoutSearch(values) === printLayoutSearch(settings)) {
-        await questions.refetch();
+        values = result.settings;
+      } else {
+        const updated = await updateSettings.mutateAsync({ printFormId: formId, settings: values });
+        values = updated.settings ?? values;
+        if (printLayoutSearch(values) === printLayoutSearch(settings)) {
+          await questions.refetch();
+        }
       }
-      if (formId) setFormSettings((previous) => ({ ...previous, [formId]: values }));
-      setSettings(values);
       reset(values);
       setRetry((value) => value + 1);
     } catch (error) {
@@ -555,6 +563,11 @@ function PrintPreparation({
         error={getAppError<PrintFormsError['archive']>(archive.error)}
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => archive.reset()}
+      />
+      <AppErrorAlert
+        error={getAppError<PrintFormsError['updateSettings']>(updateSettings.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+        onDismiss={() => updateSettings.reset()}
       />
       <AppErrorAlert
         error={getAppError<PrintableAssessmentExportError['pdf']>(
@@ -668,8 +681,8 @@ function PrintPreparation({
                   <Card.Body>
                     <h2 className="h6 mb-2">Print forms</h2>
                     <p className="small text-muted">
-                      Each form saves its own questions and randomization. Select a form to preview
-                      it. Copies cycle through these forms in order.
+                      Each form saves its own questions, randomization, and print settings. Select a
+                      form to preview it. Copies cycle through these forms in order.
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
                       {formIds.map((id) => {
@@ -769,8 +782,8 @@ function PrintPreparation({
                     <details>
                       <summary className="h6 mb-0">Previous forms ({archivedForms.length})</summary>
                       <p className="small text-muted mt-2 mb-2">
-                        Saved questions and variants remain available. Reapply the original print
-                        settings when exporting an older answer key.
+                        Saved questions, variants, and print settings remain available. Previous
+                        forms’ saved settings cannot be edited.
                       </p>
                       <div className="d-flex flex-column gap-2">
                         {archivedForms.map((form) => (
@@ -794,13 +807,19 @@ function PrintPreparation({
                   </Card.Body>
                 </Card>
               )}
+              {archivedPreviewForm?.settings === null && (
+                <Alert variant="warning" className="small mb-3">
+                  This older form has no saved print settings. Default settings are shown.
+                </Alert>
+              )}
               <Card className="mb-3">
                 <Card.Body>
                   <h2 className="h6 mb-3">Paper and layout</h2>
                   <Form.Group controlId="print-paper-size" className="mb-3">
                     <Form.Label>Paper size</Form.Label>
                     <Form.Select
-                      defaultValue={DEFAULT_PRINT_SETTINGS.paperSize}
+                      defaultValue={settings.paperSize}
+                      disabled={!!archivedPreviewForm}
                       {...register('paperSize')}
                     >
                       <option value="Letter">US Letter · 8.5 × 11 in</option>
@@ -810,7 +829,8 @@ function PrintPreparation({
                   <Form.Group controlId="print-block-size">
                     <Form.Label>Space per question</Form.Label>
                     <Form.Select
-                      defaultValue={DEFAULT_PRINT_SETTINGS.blockSize}
+                      defaultValue={settings.blockSize}
+                      disabled={!!archivedPreviewForm}
                       {...register('blockSize')}
                     >
                       {Object.entries(BLOCK_SIZE_LABELS).map(([value, label]) => (
@@ -833,7 +853,8 @@ function PrintPreparation({
                     type="checkbox"
                     className="mb-3"
                     label="Include default cover page"
-                    defaultChecked={DEFAULT_PRINT_SETTINGS.includeCoverPage}
+                    defaultChecked={settings.includeCoverPage}
+                    disabled={!!archivedPreviewForm}
                     {...register('includeCoverPage')}
                   />
                   {includeCoverPage && (
@@ -842,7 +863,8 @@ function PrintPreparation({
                       <Form.Control
                         as="textarea"
                         rows={2}
-                        defaultValue={DEFAULT_PRINT_SETTINGS.identityFields}
+                        defaultValue={settings.identityFields}
+                        disabled={!!archivedPreviewForm}
                         aria-describedby="print-identity-help"
                         aria-invalid={!!errors.identityFields}
                         aria-errormessage={
@@ -870,7 +892,8 @@ function PrintPreparation({
                       id="print-grading-table"
                       className="mt-3"
                       label="Include grading table"
-                      defaultChecked={DEFAULT_PRINT_SETTINGS.includeGradingTable}
+                      defaultChecked={settings.includeGradingTable}
+                      disabled={!!archivedPreviewForm}
                       {...register('includeGradingTable')}
                     />
                   )}
@@ -880,7 +903,8 @@ function PrintPreparation({
                         id="print-honor-code"
                         label="Include academic integrity pledge"
                         aria-describedby="print-honor-code-help"
-                        defaultChecked={defaultSettings.includeHonorCode}
+                        defaultChecked={settings.includeHonorCode}
+                        disabled={!!archivedPreviewForm}
                         {...register('includeHonorCode')}
                       />
                       <Form.Text id="print-honor-code-help">
@@ -1050,6 +1074,7 @@ function PrintPreparation({
                             className="print-preparation-question-include"
                             aria-label={`Include question ${question.number}`}
                             checked={!excluded}
+                            disabled={!!archivedPreviewForm}
                             onChange={(event) => {
                               setValue(
                                 'excludedQuestions',
@@ -1111,7 +1136,7 @@ function PrintPreparation({
                             <Form.Label className="small mb-0">Spacing</Form.Label>
                             <Form.Select
                               size="sm"
-                              disabled={!!error || excluded}
+                              disabled={!!archivedPreviewForm || !!error || excluded}
                               aria-label={`Spacing for question ${question.number}`}
                               value={questionSizes[question.number] ?? ''}
                               onChange={(event) => {
@@ -1171,6 +1196,7 @@ function PrintPreparation({
                 disabled={
                   isSubmitting ||
                   busy ||
+                  !!archivedPreviewForm ||
                   noQuestionsSelected ||
                   (!!formId && !isDirty && !previewHasError) ||
                   (groupWork && !formId)

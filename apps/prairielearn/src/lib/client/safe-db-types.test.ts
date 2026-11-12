@@ -279,6 +279,7 @@ const minimalStaffPrintForm: z.input<typeof StaffPrintFormSchema> = {
   created_at: new Date(),
   id: '10',
   label: 'A',
+  settings: null,
 };
 
 const minimalStudentAssessmentInstanceAuthzResult: z.input<

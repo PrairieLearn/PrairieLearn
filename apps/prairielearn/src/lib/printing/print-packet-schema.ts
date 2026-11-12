@@ -9,7 +9,7 @@ import { PAPER_SIZES } from './paper-size.js';
 import { QUESTION_BLOCK_SIZES } from './question-block-size.js';
 
 const QuestionNumberSchema = z.string().min(1);
-const PrintSettingsSchema = z.strictObject({
+export const PrintSettingsSchema = z.strictObject({
   paperSize: z.enum(PAPER_SIZES),
   includeCoverPage: z.boolean().default(true),
   includeGradingTable: z.boolean().default(false),

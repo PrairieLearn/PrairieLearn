@@ -269,6 +269,14 @@ test('prepares an assessment and key with consistent variants and downloads', as
     questionTwo,
     { useInnerText: true },
   );
+  await page.reload();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await expect(page.getByLabel('Paper size')).toHaveValue('A4');
+  await expect(page.getByLabel('Spacing for question 1', { exact: true })).toHaveValue('full');
+  await expect(
+    page.getByRole('checkbox', { name: 'Include question 1', exact: true }),
+  ).not.toBeChecked();
+  await expect(frame.locator(':root')).toHaveAttribute('data-print-question-count', '1');
   await page.getByRole('checkbox', { name: 'Include question 2', exact: true }).uncheck();
   await expect(
     page.getByText('Select at least one question to prepare an assessment.'),
@@ -589,9 +597,19 @@ test('distinguishes paper review flags from broken questions omitted from the do
     timeout: 120_000,
   });
   await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
+  await page.reload();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  for (const label of omittedLabels) {
+    await expect(page.getByRole('checkbox', { name: label, exact: true })).not.toBeChecked();
+  }
+  await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Add form', exact: true }).click();
-  await expect.poll(() => new URL(page.url()).searchParams.get('forms')?.split(',').length).toBe(2);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('forms')?.split(',').length, {
+      timeout: 120_000,
+    })
+    .toBe(2);
   const secondLabel = await printFormLabel(page);
   const firstLabel = await printFormLabel(
     page,

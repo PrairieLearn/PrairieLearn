@@ -7,10 +7,12 @@ import {
   queryRow,
   queryRows,
   queryScalar,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { PrintFormSchema } from '../lib/db-types.js';
+import type { PrintSettings } from '../lib/printing/print-packet-schema.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -19,17 +21,48 @@ export async function insertPrintForm({
   userId,
   authnUserId,
   label,
+  settings,
 }: {
   assessmentId: string;
   userId: string;
   authnUserId: string;
   label: string;
+  settings: PrintSettings;
 }) {
   return await queryRow(
     sql.insert_print_form,
-    { assessment_id: assessmentId, user_id: userId, authn_user_id: authnUserId, label },
+    {
+      assessment_id: assessmentId,
+      user_id: userId,
+      authn_user_id: authnUserId,
+      label,
+      settings: JSON.stringify(settings),
+    },
     PrintFormSchema,
   );
+}
+
+export async function updatePrintFormSettings({
+  printFormId,
+  assessmentId,
+  settings,
+}: {
+  printFormId: string;
+  assessmentId: string;
+  settings: PrintSettings;
+}) {
+  return await runInTransactionAsync(async () => {
+    await lockAssessmentForPrintForms(assessmentId);
+    return await queryOptionalRow(
+      sql.update_print_form_settings,
+      {
+        print_form_id: printFormId,
+        assessment_id: assessmentId,
+        settings: JSON.stringify(settings),
+      },
+      PrintFormSchema,
+    );
+  });
 }
 
 export async function lockAssessmentForPrintForms(assessmentId: string): Promise<void> {

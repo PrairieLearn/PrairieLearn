@@ -12,6 +12,7 @@ import {
   selectLatestPrintFormLabel,
 } from '../../models/print-form.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../client/printing/print-form-limits.js';
+import { DEFAULT_PRINT_SETTINGS } from '../client/printing/print-preparation.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
@@ -22,6 +23,8 @@ import {
   QuestionSchema,
 } from '../db-types.js';
 import { ensureVariant, getQuestionCourse } from '../question-variant.js';
+
+import type { PrintSettings } from './print-packet-schema.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -59,6 +62,7 @@ export async function createPrintForm({
   userId,
   authnUserId,
   replacesPrintFormId,
+  settings,
 }: {
   assessment: Assessment;
   course: Course;
@@ -66,6 +70,7 @@ export async function createPrintForm({
   userId: string;
   authnUserId: string;
   replacesPrintFormId?: string;
+  settings?: PrintSettings;
 }) {
   assertCanCreatePrintForm(
     await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
@@ -110,12 +115,26 @@ export async function createPrintForm({
 
   return await runInTransactionAsync(async () => {
     await lockAssessmentForPrintForms(assessment.id);
-    assertCanCreatePrintForm(
-      await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
-      replacesPrintFormId,
-    );
+    const activeForms = await selectActivePrintFormsForAssessment({ assessmentId: assessment.id });
+    assertCanCreatePrintForm(activeForms, replacesPrintFormId);
+    const defaultSettings = {
+      ...DEFAULT_PRINT_SETTINGS,
+      includeHonorCode: !!assessment.require_honor_code,
+    };
+    const sourceSettings = replacesPrintFormId
+      ? (activeForms.find((form) => form.id === replacesPrintFormId)?.settings ?? defaultSettings)
+      : null;
+    const formSettings = sourceSettings
+      ? { ...sourceSettings, questionSizes: {}, excludedQuestions: [] }
+      : (settings ?? defaultSettings);
     const label = nextPrintFormLabel(await selectLatestPrintFormLabel(assessment.id));
-    const form = await insertPrintForm({ assessmentId: assessment.id, userId, authnUserId, label });
+    const form = await insertPrintForm({
+      assessmentId: assessment.id,
+      userId,
+      authnUserId,
+      label,
+      settings: formSettings,
+    });
     await insertPrintFormQuestions({ printFormId: form.id, questions });
     if (replacesPrintFormId) {
       const archived = await archivePrintForm({

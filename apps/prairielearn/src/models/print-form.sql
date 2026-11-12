@@ -1,8 +1,31 @@
 -- BLOCK insert_print_form
 INSERT INTO
-  print_forms (assessment_id, user_id, authn_user_id, label)
+  print_forms (
+    assessment_id,
+    user_id,
+    authn_user_id,
+    label,
+    settings
+  )
 VALUES
-  ($assessment_id, $user_id, $authn_user_id, $label)
+  (
+    $assessment_id,
+    $user_id,
+    $authn_user_id,
+    $label,
+    $settings::jsonb
+  )
+RETURNING
+  *;
+
+-- BLOCK update_print_form_settings
+UPDATE print_forms
+SET
+  settings = $settings::jsonb
+WHERE
+  id = $print_form_id
+  AND assessment_id = $assessment_id
+  AND archived_at IS NULL
 RETURNING
   *;
 
