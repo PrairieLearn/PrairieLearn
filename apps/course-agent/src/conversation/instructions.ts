@@ -37,7 +37,8 @@ export function describePageLocation(location: PageLocation) {
   const names = [
     location.courseInstance && `course instance ${JSON.stringify(location.courseInstance)}`,
     location.assessment && `assessment ${JSON.stringify(location.assessment)}`,
-    location.question && `question ${JSON.stringify(location.question)}`,
+    location.question &&
+      `question ${JSON.stringify(location.question)}${location.questionFromAnotherCourse ? ' shared from another course, so its files are not in this checkout' : ''}`,
   ].filter(Boolean);
   // Some pages have no nav key, and an empty quoted key would only be noise.
   const page = location.page ? ` ${JSON.stringify(location.page)}` : '';

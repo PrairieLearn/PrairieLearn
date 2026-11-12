@@ -242,9 +242,10 @@ export type ToolCall = z.infer<typeof ToolCallSchema>;
 /**
  * The PrairieLearn page an instructor was viewing when they sent a message. `page` is the page's
  * navigation key, such as `assessment.settings`. Names are the ones the agent sees in course
- * files: a course instance's directory, an assessment's `tid`, and a question's `qid` (only for
- * this course's own questions). Unknown keys are stripped, so PrairieLearn can add fields before
- * the Worker reads them.
+ * files: a course instance's directory, an assessment's `tid`, and a question's `qid`.
+ * `questionFromAnotherCourse` marks a shared question used from another course, whose files are
+ * not in this checkout.
+ * Unknown keys are stripped, so PrairieLearn can add fields before the Worker reads them.
  */
 export const PageLocationSchema = z.object({
   path: z.string().max(2000),
@@ -252,6 +253,7 @@ export const PageLocationSchema = z.object({
   courseInstance: z.string().max(500).optional(),
   assessment: z.string().max(500).optional(),
   question: z.string().max(500).optional(),
+  questionFromAnotherCourse: z.boolean().optional(),
 });
 
 export type PageLocation = z.infer<typeof PageLocationSchema>;

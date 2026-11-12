@@ -28,6 +28,19 @@ describe('describePageLocation', () => {
     );
   });
 
+  it('says when a question is shared from another course', () => {
+    expect(
+      describePageLocation({
+        path: '/pl/course_instance/1/instructor/question/2/preview',
+        page: 'question.preview',
+        question: 'algebra/add',
+        questionFromAnotherCourse: true,
+      }),
+    ).toBe(
+      'The instructor is viewing the PrairieLearn page "question.preview" at "/pl/course_instance/1/instructor/question/2/preview" (question "algebra/add" shared from another course, so its files are not in this checkout).',
+    );
+  });
+
   it('leaves out an empty page key', () => {
     expect(describePageLocation({ path: '/pl/course/1/course_admin', page: '' })).toBe(
       'The instructor is viewing the PrairieLearn page at "/pl/course/1/course_admin".',

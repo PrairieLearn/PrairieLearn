@@ -148,21 +148,21 @@ function describeFileChange(data: unknown) {
 }
 
 /**
- * A replayed staff line names the most specific item on the page it was sent from, or the page
- * itself if it has none, so "this question" or "here" in an earlier message keeps its referent.
+ * A replayed staff line names the page it was sent from and the most specific item on it, so
+ * "this question" or "here" in an earlier message keeps its referent.
  */
 function staffSpeaker(metadata: unknown) {
   const location = UserMessageMetadataSchema.safeParse(metadata ?? {}).data?.location;
-  const [kind, name] = location?.question
-    ? ['question', location.question]
-    : location?.assessment
-      ? ['assessment', location.assessment]
-      : location?.courseInstance
-        ? ['course instance', location.courseInstance]
-        : location?.page
-          ? ['page', location.page]
-          : [];
-  return kind ? `Staff (on ${kind} ${JSON.stringify(name)})` : 'Staff';
+  if (!location) return 'Staff';
+  const item = location.question
+    ? `question ${JSON.stringify(location.question)}${location.questionFromAnotherCourse ? ' shared from another course' : ''}`
+    : location.assessment
+      ? `assessment ${JSON.stringify(location.assessment)}`
+      : location.courseInstance
+        ? `course instance ${JSON.stringify(location.courseInstance)}`
+        : null;
+  const hint = [location.page && `page ${JSON.stringify(location.page)}`, item].filter(Boolean);
+  return hint.length > 0 ? `Staff (on ${hint.join(', ')})` : 'Staff';
 }
 
 /** A restored thread may have lost the prompts that staff's next message answers. */

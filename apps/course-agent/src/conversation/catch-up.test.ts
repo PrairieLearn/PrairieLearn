@@ -58,7 +58,7 @@ describe('missedTurns', () => {
 });
 
 describe('page hints in catch-up', () => {
-  it('names the most specific item, or else the page, each staff line was sent from', () => {
+  it('names the page and most specific item each staff line was sent from', () => {
     const page = { path: '/pl/course_instance/1/instructor/assessment/2', page: 'assessment' };
     const located: UIMessage[] = [
       {
@@ -70,7 +70,14 @@ describe('page hints in catch-up', () => {
       {
         id: 'u2',
         role: 'user',
-        metadata: { location: { ...page, courseInstance: 'Fa25', question: 'algebra/add' } },
+        metadata: {
+          location: {
+            ...page,
+            courseInstance: 'Fa25',
+            question: 'algebra/add',
+            questionFromAnotherCourse: true,
+          },
+        },
         parts: [{ type: 'text', text: 'Fix this question' }],
       },
       {
@@ -89,8 +96,8 @@ describe('page hints in catch-up', () => {
       },
     ];
     expect(missedTurns(located, undefined)).toEqual([
-      'Staff (on assessment "hw1"): Shorten this assessment',
-      'Staff (on question "algebra/add"): Fix this question',
+      'Staff (on page "assessment", assessment "hw1"): Shorten this assessment',
+      'Staff (on page "assessment", question "algebra/add" shared from another course): Fix this question',
       'Staff (on page "course_admin.settings"): Rename the course here',
       'Staff: Hi',
     ]);
