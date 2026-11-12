@@ -233,7 +233,7 @@ export function DraftAttachmentList({
 }) {
   if (attachments.length === 0) return null;
   return (
-    <ul className="list-unstyled d-flex flex-wrap gap-2 m-0 mb-2" aria-label="Attachments">
+    <ul className="list-unstyled d-flex flex-wrap gap-2 m-0 px-2 pt-2" aria-label="Attachments">
       {attachments.map((attachment, position) => (
         <AttachmentTile
           key={attachment.key}

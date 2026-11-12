@@ -29,6 +29,16 @@
   overflow-wrap: anywhere;
 }
 
+.course-agent-composer:focus-within {
+  border-color: var(--bs-primary) !important;
+}
+
+.course-agent-composer-input {
+  max-height: 12rem;
+  overflow-y: auto;
+  resize: none;
+}
+
 .btn.course-agent-icon-button {
   --bs-btn-color: var(--bs-secondary-color);
   --bs-btn-hover-color: var(--bs-body-color);
@@ -69,6 +79,13 @@
   right: -0.5rem;
   width: 1.25rem;
   height: 1.25rem;
+}
+
+/* Touch screens have no hover, so they always show the remove button. */
+@media (hover: hover) {
+  .course-agent-attachment:not(:hover, :focus-within) .course-agent-attachment-remove {
+    opacity: 0;
+  }
 }
 
 .course-agent-drop-target {
