@@ -8,21 +8,47 @@
         "description": "Conditions that every row must meet.",
         "type": "array",
         "items": {
-          "type": "object",
-          "properties": {
-            "column": {
-              "type": "string"
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "column": {
+                  "type": "string"
+                },
+                "op": {
+                  "type": "string",
+                  "enum": ["eq", "lt", "lte", "gt", "gte"]
+                },
+                "value": {
+                  "type": ["string", "number", "boolean"]
+                }
+              },
+              "required": ["column", "op", "value"],
+              "additionalProperties": false
             },
-            "op": {
-              "type": "string",
-              "enum": ["eq", "lt", "lte", "gt", "gte"]
-            },
-            "value": {
-              "type": ["string", "number", "boolean"]
+            {
+              "type": "object",
+              "properties": {
+                "column": {
+                  "type": "string"
+                },
+                "op": {
+                  "type": "string",
+                  "const": "in"
+                },
+                "value": {
+                  "minItems": 1,
+                  "maxItems": 1000,
+                  "type": "array",
+                  "items": {
+                    "type": ["string", "number", "boolean"]
+                  }
+                }
+              },
+              "required": ["column", "op", "value"],
+              "additionalProperties": false
             }
-          },
-          "required": ["column", "op", "value"],
-          "additionalProperties": false
+          ]
         }
       },
       "select": {

@@ -113,19 +113,39 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
       { filters: [{ column: 'score', op: 'lt', value: 0 }] },
     );
     assert.isEmpty(none);
+
+    const listed = await getRows(
+      `${apiUrl}/submissions`,
+      { 'Private-Token': token },
+      {
+        filters: [
+          { column: 'id', op: 'in', value: [submission.id, '0'] },
+          { column: 'mode', op: 'in', value: [submission.mode, 'SEB'] },
+        ],
+        select: ['id'],
+      },
+    );
+    assert.deepEqual(listed, [{ id: submission.id }]);
   });
 
   test('invalid requests explain what is allowed', async function () {
     const cases = [
       ['/missing', {}, 404, 'Unknown dataset "missing"'],
       ['/submissions', { filters: [{ column: 'nope', op: 'eq', value: 1 }] }, 400, '"score"'],
-      ['/submissions', { filters: [{ column: 'score', op: 'like', value: 1 }] }, 400, '"gte"'],
+      ['/submissions', { filters: [{ column: 'score', op: 'like', value: 1 }] }, 400, "'in'"],
       ['/submissions', { order: [{ column: 'score; DROP', direction: 'asc' }] }, 400, '"score"'],
       [
         '/submissions',
         { filters: [{ column: 'score', op: 'lt', value: 'abc' }] },
         400,
         'invalid input syntax',
+      ],
+      ['/submissions', { filters: [{ column: 'id', op: 'in', value: [] }] }, 400, '>=1'],
+      [
+        '/submissions',
+        { filters: [{ column: 'mode', op: 'in', value: ['Exam', 'exam'] }] },
+        400,
+        'invalid input value for enum',
       ],
     ] as const;
     for (const [path, body, status, message] of cases) {

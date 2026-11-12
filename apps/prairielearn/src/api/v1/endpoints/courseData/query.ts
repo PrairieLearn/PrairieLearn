@@ -1,4 +1,4 @@
-import type { COURSE_DATA_OPERATORS, CourseDataQuery } from '@prairielearn/course-agent-types';
+import type { COURSE_DATA_COMPARISONS, CourseDataQuery } from '@prairielearn/course-agent-types';
 import { escapeIdentifier } from '@prairielearn/postgres';
 
 const OPERATORS = {
@@ -7,14 +7,14 @@ const OPERATORS = {
   lte: '<=',
   gt: '>',
   gte: '>=',
-} satisfies Record<(typeof COURSE_DATA_OPERATORS)[number], string>;
+} satisfies Record<(typeof COURSE_DATA_COMPARISONS)[number], string>;
 
 /**
  * Wraps a dataset's query from datasets.sql to filter, sort, and limit its rows. This is the one
  * place the API assembles SQL in TypeScript, because Postgres cannot take a column name as a
  * parameter. `query` must already be validated against the dataset's request schema, so every
  * column is one of the dataset's own; operators and directions come from fixed lists, and every
- * value and the limit are parameters.
+ * value, `in` list, and the limit are parameters.
  */
 export function selectCourseDatasetRowsQuery(
   datasetQuery: string,
@@ -23,7 +23,10 @@ export function selectCourseDatasetRowsQuery(
   const params: Record<string, unknown> = { limit: query.limit ?? null };
   const conditions = (query.filters ?? []).map((filter, i) => {
     params[`filter_${i}`] = filter.value;
-    return `${escapeIdentifier(filter.column)} ${OPERATORS[filter.op]} $filter_${i}`;
+    const column = escapeIdentifier(filter.column);
+    // Postgres reads an `in` list as an array of the column's type, so it needs no casts.
+    if (filter.op === 'in') return `${column} = ANY($filter_${i})`;
+    return `${column} ${OPERATORS[filter.op]} $filter_${i}`;
   });
   const ordering = (query.order ?? []).map(
     (term) => `${escapeIdentifier(term.column)} ${term.direction === 'desc' ? 'DESC' : 'ASC'}`,

@@ -65,7 +65,10 @@ describe('course data tools', () => {
       sandbox: { writeCourseData } as unknown as DurableObjectStub<CourseSandbox>,
       request: {
         dataset: 'submissions',
-        filters: [{ column: 'score', op: 'lt', value: 0.5 }],
+        filters: [
+          { column: 'score', op: 'lt', value: 0.5 },
+          { column: 'question_id', op: 'in', value: ['1', '2', '3', '4', '5', '6', '7'] },
+        ],
         select: ['id', 'score'],
       },
     });
@@ -75,7 +78,10 @@ describe('course data tools', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
-          filters: [{ column: 'score', op: 'lt', value: 0.5 }],
+          filters: [
+            { column: 'score', op: 'lt', value: 0.5 },
+            { column: 'question_id', op: 'in', value: ['1', '2', '3', '4', '5', '6', '7'] },
+          ],
           select: ['id', 'score'],
         }),
       }),
@@ -86,7 +92,7 @@ describe('course data tools', () => {
     );
     expect(reply).toEqual({
       success: true,
-      text: 'Wrote 2 rows (0.0 MB) to /workspace/session/course-data/submissions-1.jsonl. Filters: score lt 0.5. The file holds only matching rows. Columns: id, score.',
+      text: 'Wrote 2 rows (0.0 MB) to /workspace/session/course-data/submissions-1.jsonl. Filters: score lt 0.5 AND question_id in ["1","2","3","4","5",…] (7 values). The file holds only matching rows. Columns: id, score.',
     });
   });
 });

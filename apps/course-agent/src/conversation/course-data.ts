@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { COURSE_DATA_MAX_IN_VALUES } from '@prairielearn/course-agent-types';
+
 import { logEvent } from '../monitoring.js';
 import type { CourseDataRequest, ToolReply } from '../sandbox/codex.js';
 import type { CourseSandbox } from '../sandbox/sandbox.js';
@@ -47,7 +49,7 @@ function describeColumn(name: string, property: z.infer<typeof ColumnSchema>) {
 
 function describeSchema(schema: z.infer<typeof SchemaResponse>) {
   return [
-    `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC. Any column can be filtered (eq, lt, lte, gt, gte), selected, or sorted on.`,
+    `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC. Any column can be filtered (eq, lt, lte, gt, gte, or in with a list of up to ${COURSE_DATA_MAX_IN_VALUES} values), selected, or sorted on.`,
     ...Object.entries(schema.datasets).flatMap(([name, dataset]) => [
       '',
       `${name}: ${dataset.description}`,
@@ -86,6 +88,15 @@ async function errorMessage(response: Response) {
   }
   const parsed = z.object({ message: z.string() }).safeParse(json);
   return parsed.success ? parsed.data.message : response.statusText;
+}
+
+/** A filter as the model and logs see it; a long `in` list shows its first values and its size. */
+function describeFilter(filter: NonNullable<CourseDataRequest['filters']>[number]) {
+  if (filter.op !== 'in' || filter.value.length <= 5) {
+    return `${filter.column} ${filter.op} ${JSON.stringify(filter.value)}`;
+  }
+  const shown = filter.value.slice(0, 5).map((value) => JSON.stringify(value));
+  return `${filter.column} in [${shown.join(',')},…] (${filter.value.length} values)`;
 }
 
 interface CourseDataContext {
@@ -168,9 +179,7 @@ export async function getCourseData({
   // Each row ends with a newline, so count them rather than splitting a copy of the whole body.
   let rows = 0;
   for (let i = body.text.indexOf('\n'); i !== -1; i = body.text.indexOf('\n', i + 1)) rows++;
-  const filters = (query.filters ?? []).map(
-    (filter) => `${filter.column} ${filter.op} ${JSON.stringify(filter.value)}`,
-  );
+  const filters = (query.filters ?? []).map(describeFilter);
   const path = await sandbox.writeCourseData(dataset, body.text);
   logEvent('course_data_fetched', {
     conversationId: context.conversationId,

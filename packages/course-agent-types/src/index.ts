@@ -281,7 +281,13 @@ export const InputRequestPartSchema = z.object({
 
 export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;
 
-export const COURSE_DATA_OPERATORS = ['eq', 'lt', 'lte', 'gt', 'gte'] as const;
+/** Operators that compare a column with one value. */
+export const COURSE_DATA_COMPARISONS = ['eq', 'lt', 'lte', 'gt', 'gte'] as const;
+
+/** The most values an `in` filter takes; a longer list is better filtered after downloading. */
+export const COURSE_DATA_MAX_IN_VALUES = 1000;
+
+const CourseDataValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
 /**
  * A request for rows of one course dataset. PrairieLearn validates it with `column` limited to the
@@ -291,11 +297,18 @@ export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: 
   return z.strictObject({
     filters: z
       .array(
-        z.strictObject({
-          column,
-          op: z.enum(COURSE_DATA_OPERATORS),
-          value: z.union([z.string(), z.number(), z.boolean()]),
-        }),
+        z.discriminatedUnion('op', [
+          z.strictObject({
+            column,
+            op: z.enum(COURSE_DATA_COMPARISONS),
+            value: CourseDataValueSchema,
+          }),
+          z.strictObject({
+            column,
+            op: z.literal('in'),
+            value: z.array(CourseDataValueSchema).min(1).max(COURSE_DATA_MAX_IN_VALUES),
+          }),
+        ]),
       )
       .optional()
       .describe('Conditions that every row must meet.'),
