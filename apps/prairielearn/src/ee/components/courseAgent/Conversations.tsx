@@ -460,6 +460,7 @@ function Chat({
     [
       uploadsUrl,
       chatCsrfToken,
+      conversationId,
       setStatus,
       setAttachments,
       resetDeny,
