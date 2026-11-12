@@ -114,7 +114,7 @@ def test_fib_7(sandbox: StudentFixture) -> None:
 | `sandbox.query_setup("x")`                     | The value of the variable `x` in the setup code.                                                                                                     |
 | `sandbox.get_accumulated_stdout()`             | Everything the student's code has printed.                                                                                                           |
 
-If the student didn't define a name, `query` and `query_function` raise an error that fails the test with a message saying so. Values sent back from student code have to be serializable: numbers, strings, `None`, lists, dicts, numpy arrays, pandas DataFrames, and plots built with [`plot-serializer`](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md#testing-matplotlib-plots).
+If the student didn't define a name, `query` and `query_function` raise an error that fails the test with a message saying so. Values sent back from student code have to be serializable: numbers, strings, `None`, lists, dicts, numpy arrays, pandas DataFrames, and matplotlib plots.
 
 ### Checking answers
 
@@ -123,6 +123,7 @@ The `pytest_prairielearn_grader.assertions` module has helpers that give student
 - `assert_equal(value, expected, description=...)` compares a value, and `assert_approx_equal(...)` compares a number with a tolerance.
 - `assert_fn_equal(sandbox, "f", args=..., expected=...)` and `assert_fn_approx_equal(...)` call a student function and compare its return value.
 - `assert_true(condition, msg=...)` and `assert_false(...)` show only your message.
+- `assert_plot_equal(plot, expected)` compares a student's matplotlib plot with a reference plot. See [Plots](#plots).
 
 The comparison helpers show students the expected value. For test cases whose answer should stay hidden, use `assert_true` with a message that doesn't include it. Avoid bare `assert` statements and assertions such as `numpy.testing.assert_allclose`, because their messages also show the expected value. For example, to check a numpy array:
 
@@ -147,7 +148,35 @@ def test_multi_step(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
     feedback.set_score(1.0)
 ```
 
-`feedback.set_score_final()` sets a score that stands even if the test fails afterwards, and `feedback.add_message()` adds a message for the student.
+`feedback.set_score_final()` sets a score that stands even if the test fails afterwards, `feedback.add_message()` adds a message for the student, and `feedback.add_image()` shows an image, such as the student's plot, with the test's results.
+
+### Plots
+
+Student code draws a plot with matplotlib as usual and saves its axes or figure in a variable, such as `plot = plt.gca()`, or returns it from a function. The test receives a matplotlib `Figure`. This example is from the [`demo/autograder/python/plots`][demo/autograder/python/plots] question:
+
+```python title="tests/test_student.py"
+def reference_plot() -> Figure:
+    figure = Figure()
+    axes = figure.subplots()
+    x = np.arange(0, 11)
+    axes.semilogy(x, np.exp(x))
+    return figure
+
+
+@pytest.mark.output(level=GradingOutputLevel.Friendly)
+@pytest.mark.grading_data(name="plot", points=1)
+def test_plot(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    plot = sandbox.query("plot")
+    if isinstance(plot, Figure):
+        feedback.add_image(plot, label="Your plot")
+    assert_plot_equal(plot, reference_plot())
+```
+
+- **Comparing.** `assert_plot_equal` checks the number of subplots, the axis scales, and the data in each line, scatter plot and bar plot. Keyword arguments also check labels, titles, legends, limits and styles. For other checks, such as a label containing a word, use the `Figure` directly or [matplotcheck](https://matplotcheck2.readthedocs.io/en/latest/).
+- **Showing the plot.** `feedback.add_image` shows the plot under the test in the results. Call it before the checks, because a failed check ends the test.
+- **Image and timeout.** Use the `:latest` image, which includes matplotlib, and set a longer `sandbox_timeout`, such as 15 seconds, because importing matplotlib can take most of the 1 second default.
+
+Only some plot types can be sent to the test. See [Testing Matplotlib Plots](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md#testing-matplotlib-plots) for what's supported.
 
 ### Other fixtures
 
@@ -197,7 +226,7 @@ autograder_config = ConfigObject(
 | `sandbox_timeout`                                           | Seconds allowed for the setup code and student code to start. The default is 1, so increase it when student code imports large libraries. |
 | `student_code_pattern`                                      | The file name, or glob pattern, of the student's file.                                                                                    |
 | `output_level`                                              | The default output level for all tests, such as `"friendly"`.                                                                             |
-| `import_whitelist`, `import_blacklist`, `builtin_whitelist` | Which modules and builtins student code can use. `os`, `sys`, `subprocess`, `pathlib` and `shutil` are blocked by default.                |
+| `import_whitelist`, `import_blacklist`, `builtin_whitelist` | Which modules, functions and builtins student code can use. `os`, `sys`, `subprocess`, `pathlib` and `shutil` are blocked by default.     |
 | `names_for_user`, `starting_vars`                           | Variables to give student code, when they don't come from `pl-external-grader-variables`.                                                 |
 | `helper_modules`                                            | Modules in `tests/` that setup code, leading code and student code can import.                                                            |
 | `data_files`                                                | Files in `tests/` that setup code, leading code and student code can read by relative path.                                               |
@@ -208,20 +237,17 @@ See the [quick start guide](https://github.com/PrairieLearn/grader-python-v2/blo
 
 ## Disallowing library functions
 
-To stop students from using a library function, replace it in the setup code:
+To stop students from using a library function, add it to `import_blacklist` in the `ConfigObject`:
 
-```python title="tests/setup_code.py"
-import numpy.linalg as la
-
-
-def not_allowed(*args, **kwargs):
-    raise RuntimeError("Usage of this function is not allowed in this question.")
-
-
-la.inv = not_allowed
+```python title="tests/test_student.py"
+autograder_config = ConfigObject(
+    import_blacklist=["os", "sys", "subprocess", "pathlib", "shutil", "numpy.linalg.inv"],
+)
 ```
 
-Python is a highly dynamic language, so students with enough knowledge of Python can get around this. For stronger guarantees about which functions are used, check submissions with [manual grading](../manualGrading/index.md).
+Setting `import_blacklist` replaces the default list, so keep its entries. The grader replaces the function with one that raises an error, however student code reaches it, so `np.linalg.inv(A)` and `from numpy.linalg import inv` both fail. Setup code can't call it either. See [Blocking Functions](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md#blocking-functions).
+
+Python is a highly dynamic language, so students with enough knowledge of Python can get around this, for example through a library's internal modules. For stronger guarantees about which functions are used, check submissions with [manual grading](../manualGrading/index.md).
 
 ## Workspaces and notebooks
 
@@ -257,8 +283,10 @@ Put in `params` whatever the question's `server.py` and elements would set, such
 - [demo/autograder/python/square]: setup code and `query_setup`.
 - [demo/autograder/python/pandas]: checking a DataFrame.
 - [demo/autograder/python/randomFunctionName]: parameters from `server.py` and handling timeouts.
+- [demo/autograder/python/plots]: comparing a plot with `assert_plot_equal` and showing it with `feedback.add_image`.
 
 [demo/autograder/codeeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
+[demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
 [demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
 [demo/autograder/python/randomfunctionname]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/randomFunctionName
 [demo/autograder/python/square]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/square

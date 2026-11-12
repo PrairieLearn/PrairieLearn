@@ -70,7 +70,9 @@ The HTML inside the inner `pl-variable` tag is used as the description. If the t
 - [demo/autograder/codeEditor]
 - [demo/autograder/python/square]
 - [demo/autograder/python/pandas]
+- [demo/autograder/python/plots]
 
 [demo/autograder/codeeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
 [demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
+[demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
 [demo/autograder/python/square]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/square
