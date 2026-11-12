@@ -4,7 +4,6 @@ import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/reac
 import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
 import {
-  Fragment,
   type KeyboardEvent,
   type ReactNode,
   type SyntheticEvent,
@@ -37,10 +36,11 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
-import { RequestChangesCard, ReviewFeedback } from './RequestChangesCard.js';
+import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
+import { currentPageLocation } from './pageLocation.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -360,21 +360,23 @@ function Chat({
     ...trpc.courseAgent.getReview.queryOptions(reviewInput),
     retry: false,
   });
-  // A message sent while a review awaits a decision denies it, and the agent receives the message.
-  const replyDenies = pendingReview && agentIdle && review.data?.status === 'pending';
+  // A message sent while a review awaits a decision denies it, and the agent receives the denial
+  // with the message. A denial by message the agent has not received can be sent again.
+  const replyDenies =
+    pendingReview &&
+    agentIdle &&
+    (review.data?.status === 'pending' ||
+      (review.data?.status === 'decided' && review.data.result?.viaMessage === true));
   const deny = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
-    // Keep anything typed while the denial was in flight.
-    onSuccess: (_, variables) => {
-      const sent = variables.decision === 'denied' ? variables.feedback : undefined;
-      setDraft((current) => (current.trim() === sent ? '' : current));
-    },
     // On a conflict the draft stays, and the review shows the decision that won.
-    onSettled: (_, __, { conversationId, reviewId }) =>
-      queryClient.invalidateQueries({
+    // Not awaited: the message is sent once the denial is delivered, not after the refetch.
+    onSettled: (_, __, { conversationId, reviewId }) => {
+      void queryClient.invalidateQueries({
         queryKey: trpc.courseAgent.getReview.queryKey({ conversationId, reviewId }),
-      }),
+      });
+    },
   });
   const denyError = getAppError<CourseAgentError['PostReviewDecision']>(deny.error);
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
@@ -385,7 +387,7 @@ function Chat({
   useEffect(() => {
     if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
     initialMessageSentRef.current = true;
-    void sendMessage({ text: initialMessage });
+    void sendMessage({ text: initialMessage, metadata: { location: currentPageLocation() } });
     onInitialMessageSent();
   }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
 
@@ -439,7 +441,7 @@ function Chat({
     if (lifecycle?.status === 'offline') setAwaitingStart(true);
     // A refused denial's error no longer applies once the message goes out normally.
     deny.reset();
-    void sendMessage({ text });
+    void sendMessage({ text, metadata: { location: currentPageLocation() } });
   };
 
   const submit = (event?: SyntheticEvent) => {
@@ -447,12 +449,17 @@ function Chat({
     const text = draft.trim();
     if (!text || responseActive || !connected || deny.isPending) return;
     if (replyDenies) {
-      deny.mutate({
-        conversationId,
-        reviewId: lifecycle.reviewId!,
-        decision: 'denied',
-        feedback: text,
-      });
+      // PrairieLearn has delivered the denial when this succeeds, so the message's turn follows
+      // it. On a conflict the draft stays, and the review shows the decision that won.
+      deny.mutate(
+        { conversationId, reviewId: lifecycle.reviewId!, decision: 'denied', viaMessage: true },
+        {
+          onSuccess: () => {
+            send(text);
+            setDraft('');
+          },
+        },
+      );
       return;
     }
     if (!canSend) return;
@@ -492,14 +499,11 @@ function Chat({
           {historyReady &&
             lifecycle?.reviewId &&
             !reviewInHistory(messages, lifecycle.reviewId) && (
-              <>
-                <RequestChangesCard
-                  conversationId={conversationId}
-                  reviewId={lifecycle.reviewId}
-                  canResume={awaitingReviewId === lifecycle.reviewId}
-                />
-                <ReviewFeedback conversationId={conversationId} reviewId={lifecycle.reviewId} />
-              </>
+              <RequestChangesCard
+                conversationId={conversationId}
+                reviewId={lifecycle.reviewId}
+                canResume={awaitingReviewId === lifecycle.reviewId}
+              />
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
           {lifecycle?.status === 'blocked' && (
@@ -549,6 +553,7 @@ function Chat({
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
+        pending={deny.isPending}
         placeholder={
           replyDenies
             ? 'Explain what to change…'
@@ -687,7 +692,7 @@ function Message({
   });
   // A review ends the agent's turn even though the agent usually writes more after submitting it,
   // so its card goes at the end of that turn: where the agent's turn that receives the result
-  // begins, or the end of the message until then. A message that denied the review follows it.
+  // begins, or the end of the message until then.
   const reviewIds = message.parts.flatMap((part) =>
     part.type === 'data-review' ? [ReviewPartSchema.parse(part.data).reviewId] : [],
   );
@@ -698,14 +703,12 @@ function Message({
   );
   // One key per review, in one list, so the card keeps its state when the marker arrives.
   const reviewEnd = (reviewId: string) => (
-    <Fragment key={`review-${reviewId}`}>
-      <RequestChangesCard
-        conversationId={conversationId}
-        reviewId={reviewId}
-        canResume={awaitingReviewId === reviewId}
-      />
-      <ReviewFeedback conversationId={conversationId} reviewId={reviewId} />
-    </Fragment>
+    <RequestChangesCard
+      key={`review-${reviewId}`}
+      conversationId={conversationId}
+      reviewId={reviewId}
+      canResume={awaitingReviewId === reviewId}
+    />
   );
   const rendered = [
     ...segments.map((segment) => {

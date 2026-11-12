@@ -229,6 +229,7 @@ export class CourseSandbox extends DurableObject<Env> {
   private get backups() {
     return new DirectoryBackup(this.container, this.ctx.exports.DirectoryBackupGateway, {
       binding: 'CHECKPOINTS',
+      prefix: 'checkpoints/',
     });
   }
 

@@ -74,8 +74,6 @@ const ReviewContentsSchema = z.base64().max(4 * Math.ceil(MAX_REVIEW_FILE_BYTES 
 /** Tags the chat-history marker where the agent's turn that received a review result begins. */
 export const reviewTag = (reviewId: string) => `review:${reviewId}`;
 
-export const ReviewFeedbackSchema = z.string().trim().min(1).max(20_000);
-
 /**
  * The save and sync outcomes are separate: files may be saved even if syncing fails. Both are
  * `unknown` when PrairieLearn lost the save job before it recorded how far it got, so the files
@@ -101,8 +99,11 @@ export const RequestChangesResultSchema = z
       z.strictObject({ status: z.literal('failed'), error: z.string() }),
       z.strictObject({ status: z.literal('unknown') }),
     ]),
-    /** A denial's message from the instructor, sent in place of a chat message. */
-    feedback: ReviewFeedbackSchema.optional(),
+    /**
+     * The instructor denied by sending a chat message. The agent receives the denial with that
+     * message's turn rather than in a turn of its own.
+     */
+    viaMessage: z.literal(true).optional(),
   })
   .refine((result) => {
     if (result.decision === 'denied') {
@@ -110,7 +111,7 @@ export const RequestChangesResultSchema = z
         result.publication.status === 'not_attempted' && result.sync.status === 'not_attempted'
       );
     }
-    if (result.feedback !== undefined) return false;
+    if (result.viaMessage) return false;
     switch (result.publication.status) {
       case 'published':
       case 'saved_locally':
@@ -237,6 +238,29 @@ export const ToolCallSchema = z
   );
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
+
+/**
+ * The PrairieLearn page an instructor was viewing when they sent a message. `page` is the page's
+ * navigation key, such as `assessment.settings`. Names are the ones the agent sees in course
+ * files: a course instance's directory, an assessment's `tid`, and a question's `qid`.
+ * `questionFromAnotherCourse` marks a shared question used from another course, whose files are
+ * not in this checkout.
+ *
+ * Unknown keys are stripped, so PrairieLearn can add fields before the Worker reads them.
+ */
+export const PageLocationSchema = z.object({
+  path: z.string().max(2000),
+  page: z.string().max(500),
+  courseInstance: z.string().max(500).optional(),
+  assessment: z.string().max(500).optional(),
+  question: z.string().max(500).optional(),
+  questionFromAnotherCourse: z.boolean().optional(),
+});
+
+export type PageLocation = z.infer<typeof PageLocationSchema>;
+
+/** Metadata the browser attaches to a user message. */
+export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
 
 /**
  * Input the agent requested from staff with Codex's `request_user_input_async`, in a

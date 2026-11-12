@@ -17,6 +17,7 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  UserMessageMetadataSchema,
   reviewTag,
 } from '@prairielearn/course-agent-types';
 
@@ -27,6 +28,8 @@ import { SandboxTurn } from '../sandbox/turn.js';
 
 import {
   buildCatchUp,
+  denialMarker,
+  describeDenialMessage,
   describeReviewResult,
   historyBefore,
   messageTag,
@@ -36,7 +39,7 @@ import {
   turnMarker,
 } from './catch-up.js';
 import { getCourseData, listCourseDatasets } from './course-data.js';
-import { buildInstructions } from './instructions.js';
+import { buildInstructions, describePageLocation } from './instructions.js';
 import { generateTitle } from './title.js';
 
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
@@ -90,6 +93,11 @@ interface RecordData {
    */
   threadMayBeBehind: boolean;
   review: ReviewRecord | null;
+  /**
+   * A review the instructor denied by sending a message. The next user message's turn delivers
+   * the denial with that message, which the browser sends once PrairieLearn records the denial.
+   */
+  deniedByMessage?: string | null;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
   /** Absent in records saved before titles were generated. */
@@ -419,6 +427,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
     const review = this.record.review;
     const status = this.record.lifecycle.status;
+    // Read with `review`: a denial recorded during the await settles the review it admits by.
+    const deniedReviewId = continuation ? null : (this.record.deniedByMessage ?? null);
     // deliverWaitingResult() claims the conversation before the SDK calls back for a continuation.
     const admitted = continuation
       ? review?.result && status === 'waiting_for_agent'
@@ -435,6 +445,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (message && earlier.length === 0 && !this.record.title) this.startTitle(message);
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
+    const location =
+      message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
+    const messageText =
+      message?.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n') ?? '';
     const input: TurnInput = {
       ...(continuation && review?.result
         ? {
@@ -444,7 +458,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           }
         : {
             tag: messageTag(message!.id),
-            text: message!.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n'),
+            text: deniedReviewId ? describeDenialMessage(messageText) : messageText,
+            ...(location ? { page: describePageLocation(location) } : {}),
           }),
       // A restored or new thread may lack turns that chat history has.
       ...((startup || this.record.threadMayBeBehind) && earlier.length > 0
@@ -511,7 +526,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
       onReady: () => this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_agent' } }),
       onAccepted: (nativeTurnId) => {
-        this.setRecord({ ...this.record, nativeThreadId, threadMayBeBehind: false });
+        // The agent now has the denial, so a later message must not deliver it again.
+        if (deniedReviewId) native.emit(denialMarker(deniedReviewId));
+        this.setRecord({
+          ...this.record,
+          nativeThreadId,
+          threadMayBeBehind: false,
+          deniedByMessage: deniedReviewId ? null : this.record.deniedByMessage,
+        });
         if (nativeTurnId) this.stash({ nativeTurnId });
         if (continuation && review?.result) {
           // The agent now has the result: mark the delivery in chat history, so an attempt that
@@ -799,6 +821,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         JSON.stringify(RequestChangesResultSchema.parse(review.result)) ===
         JSON.stringify(RequestChangesResultSchema.parse(result))
       );
+    }
+    if (result.viaMessage) {
+      // The browser sends the message next; its turn delivers the denial instead of a turn here.
+      this.settleReview(reviewId);
+      this.setRecord({ ...this.record, deniedByMessage: reviewId });
+      return true;
     }
     this.setRecord({ ...this.record, review: { ...review, result } });
     return true;

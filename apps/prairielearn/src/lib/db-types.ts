@@ -118,6 +118,9 @@ export const EnumQuestionTypeSchema = z.enum([
 ]);
 export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 
+export const EnumRubricItemShowToStudentsSchema = z.enum(['always', 'when_selected', 'never']);
+export type EnumRubricItemShowToStudents = z.infer<typeof EnumRubricItemShowToStudentsSchema>;
+
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
@@ -688,15 +691,6 @@ export const AuthnProviderSchema = z.object({
   name: z.enum(['Shibboleth', 'Google', 'Azure', 'LTI', 'SAML', 'LTI 1.3']).nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
-
-export const AuthorSchema = z.object({
-  author_name: z.string().nullable(),
-  email: z.string().nullable(),
-  id: IdSchema,
-  orcid: z.string().nullable(),
-  origin_course: IdSchema.nullable(),
-});
-export type Author = z.infer<typeof AuthorSchema>;
 
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
@@ -1443,12 +1437,6 @@ export const QueryRunSchema = z.object({
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
-export const QuestionAuthorSchema = z.object({
-  author_id: IdSchema,
-  id: IdSchema,
-  question_id: IdSchema,
-});
-
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   chunk_id: z.string(),
   doc_path: z.string(),
@@ -1558,6 +1546,7 @@ export const RubricItemSchema = z.object({
   number: z.number(),
   points: z.number(),
   rubric_id: IdSchema,
+  show_to_students: EnumRubricItemShowToStudentsSchema,
 });
 export type RubricItem = z.infer<typeof RubricItemSchema>;
 
@@ -1849,7 +1838,6 @@ export const TableNames = [
   'audit_events',
   'audit_logs',
   'authn_providers',
-  'authors',
   'batched_migration_jobs',
   'batched_migrations',
   'chunks',
@@ -1907,7 +1895,6 @@ export const TableNames = [
   'courses',
   'plan_grants',
   'query_runs',
-  'question_authors',
   'question_generation_context_embeddings',
   'question_score_logs',
   'question_tags',
