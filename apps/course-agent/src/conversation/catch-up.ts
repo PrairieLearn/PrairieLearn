@@ -148,8 +148,8 @@ function describeFileChange(data: unknown) {
 }
 
 /**
- * A replayed staff line names the most specific item on the page it was sent from, so "this
- * question" in an earlier message keeps its referent.
+ * A replayed staff line names the most specific item on the page it was sent from, or the page
+ * itself if it has none, so "this question" or "here" in an earlier message keeps its referent.
  */
 function staffSpeaker(metadata: unknown) {
   const location = UserMessageMetadataSchema.safeParse(metadata ?? {}).data?.location;
@@ -159,7 +159,9 @@ function staffSpeaker(metadata: unknown) {
       ? ['assessment', location.assessment]
       : location?.courseInstance
         ? ['course instance', location.courseInstance]
-        : [];
+        : location?.page
+          ? ['page', location.page]
+          : [];
   return kind ? `Staff (on ${kind} ${JSON.stringify(name)})` : 'Staff';
 }
 

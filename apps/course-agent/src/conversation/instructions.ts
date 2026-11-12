@@ -39,5 +39,7 @@ export function describePageLocation(location: PageLocation) {
     location.assessment && `assessment ${JSON.stringify(location.assessment)}`,
     location.question && `question ${JSON.stringify(location.question)}`,
   ].filter(Boolean);
-  return `The instructor is viewing the PrairieLearn page ${JSON.stringify(location.page)} at ${JSON.stringify(location.path)}${names.length > 0 ? ` (${names.join(', ')})` : ''}.`;
+  // Some pages have no nav key, and an empty quoted key would only be noise.
+  const page = location.page ? ` ${JSON.stringify(location.page)}` : '';
+  return `The instructor is viewing the PrairieLearn page${page} at ${JSON.stringify(location.path)}${names.length > 0 ? ` (${names.join(', ')})` : ''}.`;
 }

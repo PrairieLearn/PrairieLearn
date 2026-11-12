@@ -434,7 +434,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const metadata = message && UserMessageMetadataSchema.safeParse(message.metadata ?? {});
-    // The turn still runs without the page, but a newer browser's metadata should not vanish quietly.
+    // The turn still runs without the page, but metadata that fails the schema should not vanish
+    // quietly.
     if (metadata && !metadata.success) {
       logEvent('message_metadata_invalid', {
         conversationId: this.name,

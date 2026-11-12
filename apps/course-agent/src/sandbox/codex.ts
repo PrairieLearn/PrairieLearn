@@ -88,7 +88,8 @@ export interface TurnInput {
   once?: boolean;
   /**
    * The page the instructor was viewing. Codex shows it to the model as untrusted context ahead
-   * of the text, keeps the text verbatim, and skips resending an unchanged page.
+   * of the text, keeps the text verbatim, and skips resending an unchanged page. Compaction
+   * drops that page until it changes: https://github.com/openai/codex/issues/38269
    */
   page?: string;
   /** Text to prepend given the thread's latest tag (undefined for a thread started this turn). */
