@@ -1,5 +1,3 @@
-import { Alert } from 'react-bootstrap';
-
 import type { QuestionPointsJson } from '../../../../schemas/infoAssessment.js';
 import { formatPoints } from '../../utils/formHelpers.js';
 
@@ -20,10 +18,9 @@ export function UnresolvedPointFields({
 
   return (
     <div>
-      <Alert variant="info" className="small">
-        Point settings are read-only because a question’s grading method is unavailable locally.
-        These settings will be preserved when saving.
-      </Alert>
+      <p className="text-muted small">
+        Point settings are read-only while a question’s grading method is unavailable locally.
+      </p>
       <dl>
         {fields.map(([label, value]) =>
           value == null ? null : (
