@@ -62,3 +62,14 @@ SELECT
   END
 FROM
   generate_series(0, 21) AS depth;
+
+-- BLOCK insert_paged_questions
+INSERT INTO
+  questions (id, course_id, qid, authors)
+SELECT
+  200 + i,
+  1,
+  'page-' || lpad(i::text, 3, '0'),
+  ARRAY['paging-author']
+FROM
+  generate_series(1, 51) AS i;

@@ -1,6 +1,5 @@
--- BLOCK select_authored_questions
--- Include deleted questions and locally credited adaptations. The stored
--- author identifier is the grouping key, even when a staff name is available.
+-- BLOCK select_authors
+-- Resolve names using the same course staff roster as the author picker.
 WITH
   staff AS (
     SELECT
@@ -11,9 +10,26 @@ WITH
       course_permissions AS cp
       JOIN users AS u ON u.id = cp.user_id
   )
-SELECT DISTINCT
-  author.uid AS author_uid,
+SELECT
+  author.uid,
   coalesce(staff.name, author.uid) AS display_name,
+  count(DISTINCT q.id)::int AS question_count
+FROM
+  questions AS q
+  CROSS JOIN LATERAL unnest(q.authors) AS author (uid)
+  LEFT JOIN staff ON staff.course_id = q.course_id
+  AND staff.uid = author.uid
+WHERE
+  q.course_id = $course_id
+GROUP BY
+  author.uid,
+  staff.name
+ORDER BY
+  author.uid;
+
+-- BLOCK select_authored_questions
+-- Deleted questions and locally credited adaptations remain part of the report.
+SELECT
   q.id,
   q.qid,
   q.title,
@@ -26,12 +42,13 @@ SELECT DISTINCT
   END AS provenance_status
 FROM
   questions AS q
-  CROSS JOIN LATERAL unnest(q.authors) AS author (uid)
-  LEFT JOIN staff ON staff.course_id = q.course_id
-  AND staff.uid = author.uid
 WHERE
   q.course_id = $course_id
+  AND $author_uid = ANY (q.authors)
 ORDER BY
-  author.uid,
   q.qid NULLS LAST,
-  q.id;
+  q.id
+LIMIT
+  $limit
+OFFSET
+  $offset;

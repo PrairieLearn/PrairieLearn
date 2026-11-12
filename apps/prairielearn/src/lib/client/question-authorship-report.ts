@@ -14,14 +14,19 @@ export const QuestionAuthorshipReportQuestionSchema = StaffQuestionSchema.pick({
   downstream_institution_count: z.number().int().nonnegative(),
 });
 
-// Counts are the only downstream information exposed to clients. In
-// particular, do not include downstream question/course/institution IDs or metadata.
-export const QuestionAuthorshipReportSchema = z.array(
-  z.object({
-    uid: StaffUserSchema.shape.uid,
-    display_name: z.string(),
-    questions: z.array(QuestionAuthorshipReportQuestionSchema),
-  }),
-);
+const QuestionAuthorshipReportAuthorSchema = z.object({
+  uid: StaffUserSchema.shape.uid,
+  display_name: z.string(),
+  question_count: z.number().int().nonnegative(),
+});
+
+// Downstream courses and institutions are exposed only as counts.
+export const QuestionAuthorshipReportSchema = z.object({
+  authors: z.array(QuestionAuthorshipReportAuthorSchema),
+  author: QuestionAuthorshipReportAuthorSchema.nullable(),
+  questions: z.array(QuestionAuthorshipReportQuestionSchema),
+  page: z.number().int().positive(),
+  page_size: z.number().int().positive(),
+});
 
 export type QuestionAuthorshipReport = z.infer<typeof QuestionAuthorshipReportSchema>;

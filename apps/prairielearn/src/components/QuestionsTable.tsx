@@ -351,9 +351,18 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   });
 
   const headerButtons =
-    selectionToolbar || addQuestionButtons ? (
+    selectionToolbar || addQuestionButtons || !isPublic ? (
       <>
         {selectionToolbar}
+        {!isPublic && (
+          <a
+            className="btn btn-outline-secondary"
+            href={`${urlPrefix}/course_admin/questions/authorship`}
+          >
+            <i className="bi bi-person-lines-fill me-2" aria-hidden="true" />
+            Authorship
+          </a>
+        )}
         {addQuestionButtons}
       </>
     ) : undefined;

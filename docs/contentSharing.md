@@ -124,3 +124,11 @@ If every assessment in a course instance is shared, the course instance can also
 
 1. Ensure that all assessments in the course instance have `"shareSourcePublicly": true`.
 2. Add `"shareSourcePublicly": true` to the `infoCourseInstance.json` file of the course instance that you would like to be publicly shared.
+
+## Copy adoption counts
+
+On the course **Questions** page, select **Authorship** and choose an author to see their credited questions. Multiple-author questions appear under each credited author. Authors are shown by their current course-staff name when available, otherwise by their recorded identifier. The report requires course Previewer permission or higher.
+
+Copy adoption counts distinct external courses and institutions with a recorded direct or indirect copy. For A → B → C, A's question counts B and C. Multiple copies in one course count once, and the authoring course is excluded. Institutions are counted once across those courses, including the authoring institution when another course there has a copy. Only counts are shown; downstream names and other details are not disclosed.
+
+Traversal follows at most 20 copy links and includes deleted questions and courses. Missing or unresolved links and manual copies without metadata are excluded, so the counts may be incomplete. Source status describes whether a question has no recorded source, a linked source, or a declared source that could not be resolved. Metadata can be edited, so source status does not verify original authorship. These counts exclude by-reference sharing and student activity.

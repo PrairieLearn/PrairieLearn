@@ -17,6 +17,7 @@ describe('Question authorship report', () => {
     await execute(sql.insert_courses);
     await execute(sql.insert_questions);
     await execute(sql.insert_long_chain);
+    await execute(sql.insert_paged_questions);
   });
   afterAll(helperDb.after);
 
@@ -29,26 +30,41 @@ describe('Question authorship report', () => {
   it('deduplicates downstream courses and institutions through deleted links and cycles', async () => {
     const course = await selectCourseById('1');
     const report = await getCourseQuestionAuthorshipReport(course);
-    // Each question is represented as [QID, course count, institution count].
     assert.deepEqual(
-      report.map(({ uid, questions }) => ({
-        uid,
-        questions: questions.map((q) => [
-          q.qid,
-          q.downstream_course_count,
-          q.downstream_institution_count,
-        ]),
-      })),
+      report.authors.map(({ uid, question_count }) => [uid, question_count]),
       [
-        {
-          uid: 'author',
-          questions: [
-            ['root', 2, 1],
-            ['self', 0, 0],
-          ],
-        },
-        { uid: 'external', questions: [['root', 2, 1]] },
+        ['author', 2],
+        ['external', 1],
+        ['paging-author', 51],
       ],
     );
+    assert.deepEqual(
+      report.questions.map((q) => [
+        q.qid,
+        q.downstream_course_count,
+        q.downstream_institution_count,
+      ]),
+      [
+        ['root', 2, 1],
+        ['self', 0, 0],
+      ],
+    );
+    const external = await getCourseQuestionAuthorshipReport(course, { authorUid: 'external' });
+    assert.deepEqual(external.questions, [report.questions[0]]);
+  });
+
+  it('fetches only the selected author and page of questions', async () => {
+    const course = await selectCourseById('1');
+    const first = await getCourseQuestionAuthorshipReport(course, { authorUid: 'paging-author' });
+    const last = await getCourseQuestionAuthorshipReport(course, {
+      authorUid: 'paging-author',
+      page: 2,
+    });
+    assert.lengthOf(first.questions, 50);
+    assert.deepEqual(
+      last.questions.map((q) => q.qid),
+      ['page-051'],
+    );
+    assert.equal(last.author?.question_count, 51);
   });
 });
