@@ -74,8 +74,8 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
 /**
  * Returns the effective grading method for an alt pool by examining its alternatives.
  *
- * A pool with unavailable alternatives keeps its authored point fields because
- * interpreting legacy points requires knowing every alternative's grading method.
+ * Pool defaults require every alternative's grading method to be known.
+ * Alternatives can normalize independently when the pool has no point defaults.
  */
 function getAltPoolGradingMethod(
   alternatives: QuestionAlternativeJson[],
@@ -193,14 +193,20 @@ export function normalizeQuestionBlockPoints<T extends ZoneQuestionBlockJsonInpu
 
   const getGradingMethod = (id?: string) =>
     id ? questionMetadata[id]?.question.grading_method : undefined;
-  // Pools have no QID; every alternative's grading method must be available.
+  // Pool defaults depend on every alternative's grading method.
   const altPoolGradingMethod =
     question.alternatives && !question.id
       ? getAltPoolGradingMethod(question.alternatives, getGradingMethod)
       : undefined;
   const gradingMethod = getGradingMethod(question.id);
+  const poolHasPointFields =
+    question.points != null ||
+    question.maxPoints != null ||
+    question.autoPoints != null ||
+    question.maxAutoPoints != null ||
+    question.manualPoints != null;
   if (
-    altPoolGradingMethod === 'unknown' ||
+    (altPoolGradingMethod === 'unknown' && poolHasPointFields) ||
     (altPoolGradingMethod == null && gradingMethod == null)
   ) {
     return question;
@@ -215,13 +221,17 @@ export function normalizeQuestionBlockPoints<T extends ZoneQuestionBlockJsonInpu
       question,
       altPoolGradingMethod != null ? altPoolGradingMethod === 'manual' : gradingMethod === 'Manual',
     ),
-    alternatives: question.alternatives?.map((alt) =>
-      altPoolGradingMethod === 'manual' &&
-      hasLegacyPoints(question) &&
-      (alt.points != null || alt.maxPoints != null)
+    alternatives: question.alternatives?.map((alt) => {
+      const alternativeGradingMethod = getGradingMethod(alt.id);
+      return altPoolGradingMethod === 'manual' &&
+        hasLegacyPoints(question) &&
+        (alt.points != null || alt.maxPoints != null)
         ? normalizeInheritedAlternativePoints(alt, question.points, question.maxPoints, true)
-        : normalizeQuestionPoints(alt, getGradingMethod(alt.id) === 'Manual'),
-    ),
+        : normalizeQuestionPoints(
+            alt,
+            alternativeGradingMethod == null ? undefined : alternativeGradingMethod === 'Manual',
+          );
+    }),
   };
 }
 
