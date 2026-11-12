@@ -144,6 +144,20 @@
   <pl-symbolic-input formula-editor="true" allowed-types="interval" aria-label="Set notation expression" answers-name="interval_notation" correct-answer="(-infty, -1/2] U [1/2, infty)"></pl-symbolic-input>
 </pl-card>
 
+<pl-card header="An example using an ordered tuple as a point (&lt;code&gt;allowed-types=&quot;tuple&quot;&lt;/code&gt;)">
+  <pl-question-panel>
+    <p>Enter the point whose coordinates are $x + 1$, $y - 1$, and $\pi$.</p>
+  </pl-question-panel>
+  <pl-symbolic-input
+    formula-editor="true"
+    allowed-types="tuple"
+    aria-label="Point coordinates"
+    answers-name="point"
+    variables="x,y"
+    label="$P = $"
+  ></pl-symbolic-input>
+</pl-card>
+
 <pl-card header="An example in which set notation is allowed (&lt;code&gt;allowed-types=&quot;finite-set&quot;&lt;/code&gt;)">
   <pl-question-panel>
       <p>For which values of $\theta \in [0, 2\pi)$ does $\sin(\theta) = \cos(\theta)$? Express your answer as a set.</p>

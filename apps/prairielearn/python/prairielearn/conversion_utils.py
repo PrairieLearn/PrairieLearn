@@ -78,6 +78,8 @@ _JSONPythonType = (
     | np.number[Any]
     | npt.NDArray[Any]
     | sympy.Expr
+    | sympy.Set
+    | sympy.Tuple
     | sympy.Matrix
     | sympy.ImmutableMatrix
     | pd.DataFrame
@@ -195,6 +197,8 @@ def to_json(
             }
     elif isinstance(v, sympy.Set):
         return sympy_to_json(v, allow_sets=True)
+    elif isinstance(v, sympy.Tuple):
+        return sympy_to_json(v)
     elif isinstance(v, sympy.Expr):
         return sympy_to_json(v)
     elif isinstance(v, (sympy.Matrix, sympy.ImmutableMatrix)):

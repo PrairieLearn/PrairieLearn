@@ -44,3 +44,8 @@ def generate(data):
     outer_expr = x + sympy.Abs(inner_expr)
     nested_abs_expr = sympy.Abs(outer_expr)
     data["correct_answers"]["nested_abs"] = pl.to_json(nested_abs_expr)
+
+    point_x, point_y = sympy.symbols("x y")
+    data["correct_answers"]["point"] = pl.to_json(
+        sympy.Tuple(point_x + 1, point_y - 1, sympy.pi)
+    )

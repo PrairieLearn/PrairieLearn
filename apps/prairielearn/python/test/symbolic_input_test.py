@@ -178,6 +178,18 @@ def test_normalize_formula_editor_output_with_set_names(
     )
 
 
+def test_normalize_formula_editor_output_with_tuple_constructor() -> None:
+    assert (
+        psu.normalize_formula_editor_output(
+            "T u p l e (1,2)",
+            [],
+            allow_trig_functions=False,
+            allow_tuples=True,
+        )
+        == "Tuple (1,2)"
+    )
+
+
 @pytest.mark.parametrize(
     ("submission", "latex", "expected"),
     [

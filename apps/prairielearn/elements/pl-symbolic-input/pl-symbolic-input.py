@@ -1,6 +1,7 @@
 import html
 import pathlib
 import random
+from collections.abc import Callable
 from enum import Enum
 from functools import lru_cache
 from sys import get_int_max_str_digits
@@ -46,6 +47,7 @@ FORMAT_HELP_BY_ALLOWED_TYPE: dict[psu.AllowedSympyType, tuple[str, tuple[str, ..
     "expression": ("symbolic expressions", ("1/2 + pi",)),
     "finite-set": ("finite sets", ("{ 0, pi/2, 3pi/2, 2pi }",)),
     "interval": ("intervals", ("[0, +oo)",)),
+    "tuple": ("ordered tuples", ("(1/2, pi, x + 1)",)),
     "set": (
         "sets (including finite sets and intervals)",
         (
@@ -115,16 +117,85 @@ def _allows_sets(allowed_types: set[psu.AllowedSympyType]) -> bool:
     return not allowed_types.isdisjoint({"all", "set", "finite-set", "interval"})
 
 
+def _allows_tuples(allowed_types: set[psu.AllowedSympyType]) -> bool:
+    return not allowed_types.isdisjoint({"all", "set", "tuple"})
+
+
+def _allows_intervals(allowed_types: set[psu.AllowedSympyType]) -> bool:
+    return not allowed_types.isdisjoint({"all", "set", "interval"})
+
+
 def _get_blank_value(
     element: lxml.html.HtmlElement,
     allowed_types: set[psu.AllowedSympyType],
+    *,
+    allow_blank: bool,
 ) -> str:
-    default = (
-        EXPRESSION_BLANK_VALUE_DEFAULT
-        if not allowed_types.isdisjoint({"all", "expression"})
-        else SET_BLANK_VALUE_DEFAULT
+    if pl.has_attrib(element, "blank-value"):
+        return pl.get_string_attrib(element, "blank-value")
+    if not allowed_types.isdisjoint({"all", "expression"}):
+        default = EXPRESSION_BLANK_VALUE_DEFAULT
+    elif _allows_sets(allowed_types):
+        default = SET_BLANK_VALUE_DEFAULT
+    elif allow_blank:
+        raise ValueError(
+            "The 'blank-value' attribute is required when only tuples are allowed."
+        )
+    else:
+        return ""
+    return default
+
+
+def _prefer_tuples(
+    answer: str | psu.SympyJson | None,
+    variables: list[str],
+    custom_functions: list[str],
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    allow_tuples: bool,
+    allow_intervals: bool,
+    allow_trig_functions: bool,
+    simplify_expression: bool,
+) -> bool:
+    if not allow_tuples:
+        return False
+    if not allow_intervals:
+        return True
+    if answer is None or answer == "":
+        return False
+
+    try:
+        if isinstance(answer, str):
+            parsed_answer = psu.convert_string_to_sympy(
+                answer,
+                variables,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_tuples=allow_tuples,
+                allow_trig_functions=allow_trig_functions,
+                custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
+            )
+        else:
+            parsed_answer = psu.json_to_sympy(
+                answer,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig_functions,
+                simplify_expression=simplify_expression,
+            )
+    except (psu.BaseSympyError, ValueError):
+        return False
+
+    contains_tuple = any(
+        isinstance(node, sympy.Tuple) for node in sympy.preorder_traversal(parsed_answer)
     )
-    return pl.get_string_attrib(element, "blank-value", default)
+    contains_interval = any(
+        isinstance(node, sympy.Interval)
+        for node in sympy.preorder_traversal(parsed_answer)
+    )
+    return contains_tuple and not contains_interval
 
 
 def _serialize_and_validate_sympy(
@@ -184,8 +255,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = _allows_sets(allowed_types)
+    allow_tuples = _allows_tuples(allowed_types)
+    allow_intervals = _allows_intervals(allowed_types)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = _get_blank_value(element, allowed_types)
+    blank_value = _get_blank_value(
+        element, allowed_types, allow_blank=allow_blank
+    )
     simplify_expression = pl.get_boolean_attrib(
         element,
         "display-simplified-expression",
@@ -198,6 +273,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
     )
 
     pl.check_answers_names(data, name)
@@ -220,6 +296,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     variables = _get_variables_with_fallback(element, data, name)
 
     a_true = data["correct_answers"].get(name)
+    prefer_tuples = _prefer_tuples(
+        a_true,
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        allow_intervals=allow_intervals,
+        allow_trig_functions=allow_trig,
+        simplify_expression=simplify_expression,
+    )
     if a_true is not None and a_true != "":
         try:
             if isinstance(a_true, str):
@@ -228,6 +315,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     variables,
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
+                    allow_tuples=allow_tuples,
+                    prefer_tuples=prefer_tuples,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -275,6 +364,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             allow_hidden=True,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_tuples=allow_tuples,
+            prefer_tuples=prefer_tuples,
             allow_trig_functions=allow_trig,
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
@@ -315,6 +406,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 variables,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_tuples=allow_tuples,
+                prefer_tuples=prefer_tuples,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 simplify_expression=simplify_expression,
@@ -374,8 +467,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = _allows_sets(allowed_types)
+    allow_tuples = _allows_tuples(allowed_types)
+    allow_intervals = _allows_intervals(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
+    )
+    prefer_tuples = _prefer_tuples(
+        data["correct_answers"].get(name),
+        _get_variables_with_fallback(element, data, name),
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        allow_intervals=allow_intervals,
+        allow_trig_functions=allow_trig,
+        simplify_expression=simplify_expression,
     )
     display_log_as_ln = pl.get_boolean_attrib(
         element, "display-log-as-ln", DISPLAY_LOG_AS_LN_DEFAULT
@@ -387,12 +493,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     operators: list[str] = list(psu.STANDARD_OPERATORS)
     if allow_sets:
         operators.extend(psu.SET_NOTATION_OPERATORS)
+    if allow_tuples and not allow_sets:
+        operators.extend(psu.TUPLE_NOTATION_OPERATORS)
     operators.extend(custom_functions)
     operators.extend(
         sorted(
             psu.get_builtin_callable_functions(
                 allow_trig_functions=allow_trig,
                 allow_sets=allow_sets,
+                allow_tuples=allow_tuples,
                 include_helpers=False,
             )
         )
@@ -402,7 +511,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     format_help_types = allowed_types - {"all"}
     if "all" in allowed_types:
-        format_help_types.update({"expression", "set"})
+        format_help_types.update({"expression", "set", "tuple"})
     if "set" in format_help_types:
         format_help_types.difference_update({"finite-set", "interval"})
 
@@ -456,6 +565,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     variables,
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
+                    allow_tuples=allow_tuples,
+                    prefer_tuples=prefer_tuples,
                     custom_functions=custom_functions,
                     allow_trig_functions=allow_trig,
                     simplify_expression=simplify_expression,
@@ -511,6 +622,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 _get_variables_with_fallback(element, data, name),
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_tuples=allow_tuples,
+                prefer_tuples=prefer_tuples,
                 custom_functions=custom_functions,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
@@ -610,6 +723,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         variables,
                         allow_complex=allow_complex,
                         allow_sets=allow_sets,
+                        allow_tuples=allow_tuples,
+                        prefer_tuples=prefer_tuples,
                         allow_trig_functions=allow_trig,
                         custom_functions=custom_functions,
                         simplify_expression=simplify_expression,
@@ -666,11 +781,27 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = _allows_sets(allowed_types)
+    allow_tuples = _allows_tuples(allowed_types)
+    allow_intervals = _allows_intervals(allowed_types)
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
+    a_tru = data["correct_answers"].get(name)
+    prefer_tuples = _prefer_tuples(
+        a_tru,
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        allow_intervals=allow_intervals,
+        allow_trig_functions=allow_trig,
+        simplify_expression=simplify_expression,
+    )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = _get_blank_value(element, allowed_types)
+    blank_value = _get_blank_value(
+        element, allowed_types, allow_blank=allow_blank
+    )
 
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
@@ -686,6 +817,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             variables,
             latex=data["raw_submitted_answers"].get(name + "-latex"),
             allow_sets=allow_sets,
+            allow_tuples=allow_tuples,
             allow_trig_functions=allow_trig,
             custom_functions=custom_functions,
         )
@@ -708,7 +840,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Retrieve variable assumptions encoded in correct answer
     assumptions_dict = None
-    a_tru = data["correct_answers"].get(name, {})
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
@@ -718,6 +849,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        prefer_tuples=prefer_tuples,
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
@@ -793,6 +926,11 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
                 and compare(left.start, right.start)
                 and compare(left.end, right.end)
             )
+        if isinstance(left, sympy.Tuple) and isinstance(right, sympy.Tuple):
+            return len(left) == len(right) and all(
+                compare(left_arg, right_arg)
+                for left_arg, right_arg in zip(left, right, strict=True)
+            )
         if isinstance(left, sympy.Complement) and isinstance(right, sympy.Complement):
             return len(left.args) == len(right.args) and all(
                 compare(left_arg, right_arg)
@@ -806,6 +944,15 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
         return False
 
     return compare(a, b)
+
+
+def _apply_simplification(
+    value: psu.SympyValue, simplification: object
+) -> psu.SympyValue:
+    simplify = cast(Callable[[sympy.Basic], sympy.Basic], simplification)
+    if isinstance(value, sympy.Tuple):
+        return sympy.Tuple(*(simplify(coordinate) for coordinate in value))
+    return cast(psu.SympyValue, simplify(value))
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -822,6 +969,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = _allows_sets(allowed_types)
+    allow_tuples = _allows_tuples(allowed_types)
+    allow_intervals = _allows_intervals(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -840,6 +989,17 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     a_tru = data["correct_answers"].get(name, None)
     if a_tru is None:
         return
+    prefer_tuples = _prefer_tuples(
+        a_tru,
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        allow_intervals=allow_intervals,
+        allow_trig_functions=allow_trig,
+        simplify_expression=simplify_expression,
+    )
 
     def grade_function(a_sub: str | psu.SympyJson) -> tuple[bool, None]:
         # Special case: submitted answer or correct answer is the empty string
@@ -859,6 +1019,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 variables,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_tuples=allow_tuples,
+                prefer_tuples=prefer_tuples,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 simplify_expression=simplify_expression,
@@ -879,6 +1041,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 variables,
                 allow_complex=allow_complex,
                 allow_sets=allow_sets,
+                allow_tuples=allow_tuples,
+                prefer_tuples=prefer_tuples,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 assumptions=a_tru_sympy.assumptions0,
@@ -895,11 +1059,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         for simplification in additional_simplifications:
             simp_f = SYMPY_ADDITIONAL_SIMPLIFICATIONS[simplification]
-            a_sub_sympy = simp_f(a_sub_sympy)
-            a_tru_sympy = simp_f(a_tru_sympy)
-            # Make the type checker happy
-            assert isinstance(a_sub_sympy, sympy.Expr)
-            assert isinstance(a_tru_sympy, sympy.Expr)
+            a_sub_sympy = _apply_simplification(a_sub_sympy, simp_f)
+            a_tru_sympy = _apply_simplification(a_tru_sympy, simp_f)
 
         return _sympy_values_equal(a_tru_sympy, a_sub_sympy), None
 
@@ -947,6 +1108,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     )
     allowed_types = _get_allowed_types(element)
     allow_sets = _allows_sets(allowed_types)
+    allow_tuples = _allows_tuples(allowed_types)
+    allow_intervals = _allows_intervals(allowed_types)
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
@@ -964,6 +1127,17 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         # Get raw correct answer
         a_tru = data["correct_answers"][name]
+        prefer_tuples = _prefer_tuples(
+            a_tru,
+            variables,
+            custom_functions,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_tuples=allow_tuples,
+            allow_intervals=allow_intervals,
+            allow_trig_functions=allow_trig,
+            simplify_expression=simplify_expression,
+        )
 
         # Parse correct answer based on type
         if isinstance(a_tru, str):
@@ -973,6 +1147,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     variables,
                     allow_complex=allow_complex,
                     allow_sets=allow_sets,
+                    allow_tuples=allow_tuples,
+                    prefer_tuples=prefer_tuples,
                     allow_trig_functions=allow_trig,
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
@@ -996,7 +1172,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         else:
             correct_answers = [a_tru_str]
             # Arithmetic-style variants below don't apply to sets/intervals.
-            if not allow_sets:
+            if not allow_sets and not allow_tuples:
                 correct_answers.append(f"{a_tru_str} + 0")
                 if allow_complex:
                     correct_answers.append(f"2j + {a_tru_str} - 3j + j")
@@ -1015,6 +1191,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 if _sympy_values_equal(candidate_sympy, a_tru):
                     candidate = f"{offset:d}"
                     candidate_sympy = sympy.Integer(offset)
+            elif isinstance(a_tru, sympy.Tuple):
+                coordinates = list(a_tru)
+                coordinates[-1] += sympy.Integer(offset)
+                candidate_sympy = sympy.Tuple(*coordinates)
+                candidate = str(candidate_sympy)
             elif "all" in allowed_types or "expression" in allowed_types:
                 candidate = f"{offset:d}"
                 candidate_sympy = sympy.Integer(offset)

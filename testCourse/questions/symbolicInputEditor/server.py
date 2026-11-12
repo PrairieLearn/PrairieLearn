@@ -32,6 +32,7 @@ def generate(data):
 
     ans = the(y) + beef(y)
     data["correct_answers"]["custom_function_2"] = pl.to_json(ans)
+    data["correct_answers"]["point"] = pl.to_json(sympy.Tuple(1, 2))
 
     # Nested absolute value expression: |x+|-x+1+2+3+4||
     inner_expr = -x + 1 + 2 + 3 + 4

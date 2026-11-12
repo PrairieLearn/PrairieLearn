@@ -15,7 +15,7 @@ from collections import deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from functools import lru_cache, wraps
+from functools import lru_cache
 from io import StringIO
 from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
 from types import CodeType
@@ -41,6 +41,7 @@ from prairielearn.misc_utils import full_unidecode
 __all__ = [
     "SET_NOTATION_OPERATORS",
     "STANDARD_OPERATORS",
+    "TUPLE_NOTATION_OPERATORS",
     "SYMPY_PARSE_ERROR_WITHOUT_LOCATION",
     "ASTSympyType",
     "ASTWhiteListT",
@@ -97,6 +98,7 @@ __all__ = [
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+TUPLE_NOTATION_OPERATORS = ("( , )",)
 SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
     "Your answer has a syntax error. "
     "This issue might be caused by mismatched parentheses or some other misplaced symbol."
@@ -149,7 +151,7 @@ class SympyJson(TypedDict):
     _custom_functions: NotRequired[list[str]]
 
 
-type SympyValue = sympy.Expr | sympy.Set
+type SympyValue = sympy.Expr | sympy.Set | sympy.Tuple
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,7 +167,9 @@ class SympyParseFailure:
 type SympyParseResult[T: SympyValue = SympyValue] = (
     SympyParseSuccess[T] | SympyParseFailure
 )
-type _SympyValueType = Literal["expression", "set", "finite-set", "interval"]
+type _SympyValueType = Literal[
+    "expression", "set", "finite-set", "interval", "tuple"
+]
 type _UsedSympyType = _SympyValueType | Literal["empty-set"]
 type AllowedSympyType = Literal["all"] | _SympyValueType
 
@@ -173,6 +177,8 @@ type AllowedSympyType = Literal["all"] | _SympyValueType
 def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
+    if isinstance(expr, sympy.Tuple):
+        return {"tuple"}
     # SymPy may represent the full real line as either of these equal values.
     if expr is sympy.S.Reals:
         expr = sympy.Interval(-sympy.oo, sympy.oo)
@@ -183,7 +189,7 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if isinstance(expr, sympy.Set) and expr.is_finite_set:
         required_types: set[_UsedSympyType] = {"finite-set"}
         for arg in expr.args:
-            if isinstance(arg, sympy.Set):
+            if isinstance(arg, (sympy.Set, sympy.Tuple)):
                 required_types.update(_used_sympy_types(arg))
         return required_types
     if isinstance(expr, sympy.Union):
@@ -347,7 +353,12 @@ class _Constants:
         "Complement": sympy.Complement,
     })
 
+    tuple_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "Tuple": sympy.Tuple,
+    })
+
     serialized_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
+        "_pl_Tuple": sympy.Tuple,
         "Range": sympy.Range,
     })
 
@@ -415,6 +426,10 @@ class _SympyJsonStrPrinter(StrPrinter):
         left = "(" if i.left_open else "["
         right = ")" if i.right_open else "]"
         return f"{left}{start}, {end}{right}"
+
+    def _print_Tuple(self, expr: sympy.Tuple) -> str:  # ruff: ignore[invalid-function-name]
+        args = ", ".join(self.doprint(arg) for arg in expr.args)
+        return f"_pl_Tuple({args})"
 
 
 # Safe evaluation of user input to convert from string to sympy expression.
@@ -541,6 +556,7 @@ class HasInvalidVariableError(BaseSympyError):
 class ASTSympyType(Enum):
     SCALAR = "number"
     SET = "set"
+    TUPLE = "tuple"
     BOOL = "true/false"
     STRING = "text"
 
@@ -647,6 +663,7 @@ class CheckAST(ast.NodeVisitor):
         functions: SympyFunctionMapT,
         *,
         allow_sets: bool = False,
+        allow_tuples: bool = False,
         resolved_names: Mapping[str, Any] | None = None,
     ) -> None:
         self.whitelist = whitelist
@@ -657,6 +674,7 @@ class CheckAST(ast.NodeVisitor):
         self.__set_operations = set()
         self.__type_cache = {}
         self.allow_sets = allow_sets
+        self.allow_tuples = allow_tuples
 
     def visit(self, node: ast.AST) -> ASTSympyType | None:
         if not isinstance(node, self.whitelist):
@@ -746,6 +764,8 @@ class CheckAST(ast.NodeVisitor):
             value = self.resolved_names.get(node.id, self.variables.get(node.id))
             if self.allow_sets and isinstance(value, sympy.Set):
                 return self._set_type(node, ASTSympyType.SET)
+            if self.allow_tuples and isinstance(value, sympy.Tuple):
+                return self._set_type(node, ASTSympyType.TUPLE)
             if isinstance(value, (sympy.Expr, complex)):
                 return self._set_type(node, ASTSympyType.SCALAR)
 
@@ -780,8 +800,13 @@ class CheckAST(ast.NodeVisitor):
                     self.__set_operations.add(node)
                 return self._set_type(node, inferred_type)
             case fn if (
-                self.allow_sets
-                and fn in _Constants.serialized_functions
+                self.allow_tuples
+                and fn in _Constants.tuple_functions
+                and resolved_function == _Constants.tuple_functions[fn]
+            ):
+                return self._set_type(node, self._infer_tuple_function_type(name, args))
+            case fn if (
+                fn in _Constants.serialized_functions
                 and resolved_function == _Constants.serialized_functions[fn]
             ):
                 return self._set_type(
@@ -798,7 +823,7 @@ class CheckAST(ast.NodeVisitor):
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> ASTSympyType | None:
         operand_type = self._get_type(node.operand)
-        if operand_type == ASTSympyType.SET:
+        if operand_type in {ASTSympyType.SET, ASTSympyType.TUPLE}:
             err_node = self.get_parent_with_location(node)
             raise HasInvalidExpressionError(err_node.col_offset)
         return self._set_type(node, operand_type)
@@ -866,10 +891,20 @@ class CheckAST(ast.NodeVisitor):
             case _:
                 return None
 
+    def _infer_tuple_function_type(
+        self, name: str, args: list[ast.expr]
+    ) -> ASTSympyType:
+        if len(args) < 2:
+            raise HasFunctionArityError(name, len(args), "2+")
+        self._enforce_signature(name, args, len(args) * [ASTSympyType.SCALAR])
+        return ASTSympyType.TUPLE
+
     def _infer_serialized_function_type(
         self, name: str, args: list[ast.expr]
     ) -> ASTSympyType | None:
         match name:
+            case "_pl_Tuple":
+                return self._infer_tuple_function_type("Tuple", args)
             case "Range":
                 self._enforce_signature(name, args, 3 * [ASTSympyType.SCALAR])
                 return ASTSympyType.SET
@@ -906,6 +941,7 @@ def _ast_check_str(
     locals_for_eval: LocalsForEval,
     *,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
     resolved_names: Mapping[str, Any] | None = None,
 ) -> tuple[ast.Expression, frozenset[ast.BinOp | ast.Call]]:
     """Check an expression and return its parsed AST and validated set operations."""
@@ -953,18 +989,28 @@ def _ast_check_str(
         locals_for_eval["variables"],
         locals_for_eval["helpers"] | locals_for_eval["functions"],
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
         resolved_names=resolved_names,
     )._check_expression(expr)
 
 
 def ast_check_str(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_sets: bool = False
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_sets: bool = False,
+    allow_tuples: bool = False,
 ) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
     This prevents the user from executing arbitrary code through `eval_expr`.
     """
-    _ast_check_str(expr, locals_for_eval, allow_sets=allow_sets)
+    _ast_check_str(
+        expr,
+        locals_for_eval,
+        allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+    )
 
 
 def _validate_ast_structure(
@@ -1165,6 +1211,8 @@ def evaluate(
     *,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
+    allow_tuples: Literal[False] = False,
+    prefer_tuples: bool = False,
 ) -> sympy.Expr: ...
 
 
@@ -1174,7 +1222,9 @@ def evaluate(
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool = False,
-    allow_sets: bool,
+    allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
 ) -> SympyValue: ...
 
 
@@ -1184,6 +1234,8 @@ def evaluate(
     *,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
 ) -> SympyValue:
     """Evaluate a SymPy expression string with a given set of locals, and return only the result.
 
@@ -1195,6 +1247,8 @@ def evaluate(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        prefer_tuples=prefer_tuples,
     )[0]
 
 
@@ -1324,6 +1378,8 @@ def _evaluate_with_source(
     *,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
@@ -1415,23 +1471,29 @@ def _evaluate_with_source(
     # Keep mutations made during one parse from affecting later parses.
     global_dict = dict(_SYMPY_GLOBALS)
 
-    transformations = (
-        *sympy_parser.standard_transformations,
-        sympy_parser.implicit_multiplication_application,
-    )
+    transformations: tuple[TRANS, ...]
     if allow_sets:
         transformations = (
             _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
             _set_literal_transformation,
             _set_operation_transformation,
-            _interval_transformation,
-            *transformations,
+            _make_delimited_literal_transformation(
+                allow_intervals=True,
+                allow_tuples=allow_tuples,
+                prefer_tuples=prefer_tuples,
+            ),
+            *sympy_parser.standard_transformations,
+            sympy_parser.implicit_multiplication_application,
         )
     else:
-        # check for open intervals
         transformations = (
-            _err_on_transform(_interval_transformation, HasSetNotationError),
-            *transformations,
+            _make_delimited_literal_transformation(
+                allow_intervals=False,
+                allow_tuples=allow_tuples,
+                prefer_tuples=prefer_tuples,
+            ),
+            *sympy_parser.standard_transformations,
+            sympy_parser.implicit_multiplication_application,
         )
 
     try:
@@ -1476,6 +1538,7 @@ def _evaluate_with_source(
             code,
             parsed_locals_to_eval,
             allow_sets=allow_sets,
+            allow_tuples=allow_tuples,
             resolved_names=resolved_names,
         )
         _validate_ast_structure(
@@ -1550,6 +1613,8 @@ def evaluate_with_source(
     *,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
+    allow_tuples: Literal[False] = False,
+    prefer_tuples: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]: ...
@@ -1561,7 +1626,9 @@ def evaluate_with_source(
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool = False,
-    allow_sets: bool,
+    allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]: ...
@@ -1573,6 +1640,8 @@ def evaluate_with_source(
     *,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
 ) -> tuple[SympyValue, str | CodeType]:
@@ -1582,6 +1651,8 @@ def evaluate_with_source(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        prefer_tuples=prefer_tuples,
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
     )
@@ -1595,6 +1666,8 @@ def convert_string_to_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
+    allow_tuples: Literal[False] = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -1610,7 +1683,9 @@ def convert_string_to_sympy(
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
-    allow_sets: bool,
+    allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -1626,6 +1701,8 @@ def convert_string_to_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -1664,6 +1741,8 @@ def convert_string_to_sympy(
         variables=variables,
         allow_hidden=allow_hidden,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        prefer_tuples=prefer_tuples,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
@@ -1680,6 +1759,8 @@ def _convert_string_to_sympy_with_source(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -1718,6 +1799,7 @@ def _convert_string_to_sympy_with_source(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
         allow_trig_functions=allow_trig_functions,
     )
 
@@ -1752,8 +1834,10 @@ def _convert_string_to_sympy_with_source(
 
     if allow_sets:
         locals_for_eval["functions"].update(const.set_functions)
-        if allow_serialized_functions:
-            locals_for_eval["functions"].update(const.serialized_functions)
+    if allow_tuples:
+        locals_for_eval["functions"].update(const.tuple_functions)
+    if allow_serialized_functions:
+        locals_for_eval["functions"].update(const.serialized_functions)
 
     for name, (is_var, raw_name) in valid_names.items():
         if is_var:
@@ -1768,6 +1852,8 @@ def _convert_string_to_sympy_with_source(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        prefer_tuples=prefer_tuples,
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
         resolved_name_overrides=resolved_name_overrides,
@@ -1782,6 +1868,8 @@ def convert_string_to_sympy_with_source(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: Literal[False] = False,
+    allow_tuples: Literal[False] = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -1797,7 +1885,9 @@ def convert_string_to_sympy_with_source(
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
-    allow_sets: bool,
+    allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -1813,6 +1903,8 @@ def convert_string_to_sympy_with_source(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
@@ -1826,6 +1918,8 @@ def convert_string_to_sympy_with_source(
         allow_hidden=allow_hidden,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        prefer_tuples=prefer_tuples,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
         custom_functions=custom_functions,
@@ -1893,7 +1987,7 @@ def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> in
 
 
 def sympy_to_json(
-    a: sympy.Expr | sympy.Set,
+    a: SympyValue,
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
@@ -1945,28 +2039,6 @@ def sympy_to_json(
         "_assumptions": assumptions_dict,
         "_custom_functions": custom_functions,
     }
-
-
-@overload
-def json_to_sympy(
-    sympy_expr_dict: SympyJson,
-    *,
-    allow_sets: Literal[False] = False,
-    allow_complex: bool = True,
-    allow_trig_functions: bool = True,
-    simplify_expression: bool = True,
-) -> sympy.Expr: ...
-
-
-@overload
-def json_to_sympy(
-    sympy_expr_dict: SympyJson,
-    *,
-    allow_sets: bool,
-    allow_complex: bool = True,
-    allow_trig_functions: bool = True,
-    simplify_expression: bool = True,
-) -> SympyValue: ...
 
 
 def json_to_sympy(
@@ -2062,6 +2134,8 @@ def try_parse_string_as_sympy(
     allow_complex: bool = False,
     allow_hidden: bool = False,
     allow_sets: Literal[False] = False,
+    allow_tuples: Literal[False] = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
@@ -2078,7 +2152,9 @@ def try_parse_string_as_sympy(
     *,
     allow_complex: bool = False,
     allow_hidden: bool = False,
-    allow_sets: bool,
+    allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
@@ -2095,6 +2171,8 @@ def try_parse_string_as_sympy(
     allow_complex: bool = False,
     allow_hidden: bool = False,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     # Retained for backwards compatibility with existing callers.
@@ -2125,7 +2203,7 @@ def try_parse_string_as_sympy(
     expr = normalized_expr
 
     if allowed_types is None:
-        allowed_types = {"all"} if allow_sets else {"expression"}
+        allowed_types = {"all"} if allow_sets or allow_tuples else {"expression"}
 
     try:
         expr_parsed = convert_string_to_sympy(
@@ -2134,6 +2212,8 @@ def try_parse_string_as_sympy(
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
             allow_sets=allow_sets,
+            allow_tuples=allow_tuples,
+            prefer_tuples=prefer_tuples,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
             simplify_expression=simplify_expression,
@@ -2499,6 +2579,7 @@ def _build_formula_editor_tokens(
     *,
     allow_trig_functions: bool,
     allow_sets: bool,
+    allow_tuples: bool,
 ) -> list[str]:
     tokens = (
         list(STANDARD_OPERATORS)
@@ -2506,6 +2587,7 @@ def _build_formula_editor_tokens(
             get_builtin_functions(
                 allow_trig_functions=allow_trig_functions,
                 allow_sets=allow_sets,
+                allow_tuples=allow_tuples,
             )
         )
         + list(custom_functions)
@@ -2525,6 +2607,7 @@ def normalize_formula_editor_output(
     variables: Iterable[str] | None,
     *,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: Sequence[str] = (),
 ) -> str: ...
@@ -2537,6 +2620,7 @@ def normalize_formula_editor_output(
     *,
     latex: str | None,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: Sequence[str] = (),
 ) -> str | None: ...
@@ -2548,6 +2632,7 @@ def normalize_formula_editor_output(
     *,
     latex: str | None = None,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: Sequence[str] = (),
 ) -> str | None:
@@ -2568,6 +2653,7 @@ def normalize_formula_editor_output(
         custom_function_names,
         allow_trig_functions=allow_trig_functions,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
     )
     function_names = frozenset(
         greek_unicode_transform(name)
@@ -2575,6 +2661,7 @@ def normalize_formula_editor_output(
             get_builtin_callable_functions(
                 allow_trig_functions=allow_trig_functions,
                 allow_sets=allow_sets,
+                allow_tuples=allow_tuples,
             )
             | set(custom_function_names)
         )
@@ -2592,6 +2679,8 @@ def validate_string_as_sympy(
     variables: Iterable[str] | None,
     *,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
+    prefer_tuples: bool = False,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
@@ -2611,6 +2700,8 @@ def validate_string_as_sympy(
         variables,
         allow_hidden=allow_hidden,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
+        prefer_tuples=prefer_tuples,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         custom_functions=custom_functions,
@@ -2665,8 +2756,13 @@ def _set_literal_transformation(
     return out
 
 
-def _try_rewrite_interval_literal(
-    tokens: list[TOKEN], start_index: int
+def _try_rewrite_delimited_literal(
+    tokens: list[TOKEN],
+    start_index: int,
+    *,
+    allow_intervals: bool,
+    allow_tuples: bool,
+    prefer_tuples: bool,
 ) -> tuple[tuple[TOKEN, ...] | None, int]:
     _, start_text = tokens[start_index]
     if start_text not in ("(", "["):
@@ -2696,16 +2792,48 @@ def _try_rewrite_interval_literal(
     def _contains_set_notation(tokens: list[TOKEN]) -> bool:
         return any((typ == NAME and text in set_fn_names) for typ, text in tokens)
 
-    # consume until the first top-level comma or closing bracket.
-    closed, left_side, mid_index, _comma = _seek_comma_or_closer(start_index + 1)
-    if closed:
+    operands: list[list[TOKEN]] = []
+    separator_count = 0
+    next_index = start_index + 1
+    while True:
+        closed, operand, delimiter_index, (_, end_text) = _seek_comma_or_closer(
+            next_index
+        )
+        operands.append(operand)
+        if closed:
+            end_index = delimiter_index
+            break
+        separator_count += 1
+        next_index = delimiter_index + 1
+
+    if separator_count == 0:
         return None, start_index
 
-    # consume until the matching top-level closing bracket.
-    closed, right_side, end_index, (_, end_text) = _seek_comma_or_closer(mid_index + 1)
-    if not closed:
+    is_parenthesized = start_text == "(" and end_text == ")"
+    should_rewrite_as_tuple = (
+        is_parenthesized
+        and allow_tuples
+        and (
+            prefer_tuples
+            or not allow_intervals
+            or separator_count != 1
+            or any(not operand for operand in operands)
+        )
+    )
+    if should_rewrite_as_tuple:
+        return (
+            (NAME, "Tuple"),
+            (OP, "("),
+            *tokens[start_index + 1 : end_index],
+            (OP, ")"),
+        ), end_index
+
+    if not allow_intervals:
+        raise HasSetNotationError
+    if separator_count != 1:
         raise TokenError("interval contains more than one separator")
 
+    left_side, right_side = operands
     if _contains_set_notation(left_side) or _contains_set_notation(right_side):
         raise TokenError("interval endpoints cannot contain set notation")
 
@@ -2723,46 +2851,41 @@ def _try_rewrite_interval_literal(
     ), end_index
 
 
-def _err_on_transform(trans: TRANS, exc: type[BaseSympyError]) -> TRANS:
-    @wraps(trans)
-    def _raise_on_transform(
-        in_tokens: list[TOKEN], local_dict: DICT, global_dict: DICT
+def _make_delimited_literal_transformation(
+    *, allow_intervals: bool, allow_tuples: bool, prefer_tuples: bool
+) -> TRANS:
+    """Build a transform for mathematical interval and tuple literals."""
+
+    def _delimited_literal_transformation(
+        tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
     ) -> list[TOKEN]:
-        out_tokens = trans(in_tokens, local_dict, global_dict)
-        if out_tokens != in_tokens:
-            raise exc()
-        return out_tokens
+        if not tokens:
+            return tokens
+        result = []
+        prev = None
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            if not prev or prev[0] != NAME:
+                rewritten_tokens, end_index = _try_rewrite_delimited_literal(
+                    tokens,
+                    i,
+                    allow_intervals=allow_intervals,
+                    allow_tuples=allow_tuples,
+                    prefer_tuples=prefer_tuples,
+                )
+                if rewritten_tokens is not None:
+                    result.extend(rewritten_tokens)
+                    prev = tokens[end_index]
+                    i = end_index + 1
+                    continue
 
-    return _raise_on_transform
+            result.append(token)
+            prev = token
+            i += 1
+        return result
 
-
-def _interval_transformation(
-    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
-) -> list[TOKEN]:
-    """A SymPy token transformation that interprets mathematical intervals like `(-inf, 0]` or `[pi/2, pi]`
-
-    Returns:
-        A transformed sequence of SymPy tokens.
-    """
-    if not tokens:
-        return tokens
-    result = []
-    prev = None
-    i = 0
-    while i < len(tokens):
-        token = tokens[i]
-        if not prev or prev[0] != NAME:
-            rewritten_tokens, end_index = _try_rewrite_interval_literal(tokens, i)
-            if rewritten_tokens is not None:
-                result.extend(rewritten_tokens)
-                prev = tokens[end_index]
-                i = end_index + 1
-                continue
-
-        result.append(token)
-        prev = token
-        i += 1
-    return result
+    return _delimited_literal_transformation
 
 
 def _split_mangled_binop(binops: Sequence[str], text: str) -> tuple[str, str] | None:
@@ -2843,6 +2966,7 @@ def get_builtin_callable_functions(
     *,
     allow_trig_functions: bool = True,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
     include_helpers: bool = True,
 ) -> set[str]:
     """Return the set of built-in callable function names.
@@ -2863,11 +2987,16 @@ def get_builtin_callable_functions(
         names.update(const.trig_functions)
     if allow_sets:
         names.update(const.set_functions)
+    if allow_tuples:
+        names.update(const.tuple_functions)
     return names
 
 
 def get_builtin_functions(
-    *, allow_trig_functions: bool = True, allow_sets: bool = False
+    *,
+    allow_trig_functions: bool = True,
+    allow_sets: bool = False,
+    allow_tuples: bool = False,
 ) -> set[str]:
     """Return the set of built-in function and operator names.
 
@@ -2882,6 +3011,7 @@ def get_builtin_functions(
     names = get_builtin_callable_functions(
         allow_trig_functions=allow_trig_functions,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
     )
     if allow_sets:
         names |= const.set_operators.keys()
@@ -2896,6 +3026,7 @@ def _build_name_conflict_data(
     allow_hidden: bool,
     allow_trig_functions: bool,
     allow_sets: bool,
+    allow_tuples: bool,
 ) -> tuple[list[str], list[str], dict[str, tuple[bool, str]]]:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
@@ -2916,6 +3047,7 @@ def _build_name_conflict_data(
     builtins = get_builtin_functions(
         allow_trig_functions=allow_trig_functions,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
     ) | get_builtin_constants(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
@@ -2960,6 +3092,7 @@ def validate_names_for_conflicts(
     allow_hidden_variables: bool = True,
     allow_trig_functions: bool = True,
     allow_sets: bool = False,
+    allow_tuples: bool = False,
 ) -> None:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
@@ -2981,6 +3114,7 @@ def validate_names_for_conflicts(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden_variables,
         allow_sets=allow_sets,
+        allow_tuples=allow_tuples,
         allow_trig_functions=allow_trig_functions,
     )
     conflicts = v_conflicts + f_conflicts

@@ -340,6 +340,63 @@ class TestSympy:
             custom_functions=self.FUNCTION_NAMES,
         )
 
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    @pytest.mark.parametrize(
+        ("text", "prefer_tuples", "expected"),
+        [
+            ("(1, m)", True, sympy.Tuple(1, M)),
+            ("(1, m)", False, sympy.Interval.open(1, M)),
+            ("(1, m, n)", False, sympy.Tuple(1, M, N)),
+            ("Tuple(1, m)", False, sympy.Tuple(1, M)),
+        ],
+    )
+    def test_tuple_string_conversion(
+        self,
+        text: str,
+        prefer_tuples: bool,
+        expected: sympy.Basic,
+        *,
+        simplify_expression: bool,
+    ) -> None:
+        assert (
+            psu.convert_string_to_sympy(
+                text,
+                self.SYMBOL_NAMES,
+                allow_sets=True,
+                allow_tuples=True,
+                prefer_tuples=prefer_tuples,
+                simplify_expression=simplify_expression,
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize("text", ["Tuple()", "Tuple(1)", "(1,)"])
+    def test_tuple_requires_at_least_two_coordinates(self, text: str) -> None:
+        with pytest.raises(psu.HasFunctionArityError):
+            psu.convert_string_to_sympy(
+                text,
+                allow_tuples=True,
+                prefer_tuples=True,
+            )
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Tuple(1, Tuple(2, 3))",
+            "Tuple(1, {2})",
+            "sin((1, 2))",
+            "(1, 2) + 1",
+        ],
+    )
+    def test_tuple_coordinates_and_uses_must_be_scalar(self, text: str) -> None:
+        with pytest.raises((psu.HasArgumentTypeError, psu.HasInvalidExpressionError)):
+            psu.convert_string_to_sympy(
+                text,
+                allow_sets=True,
+                allow_tuples=True,
+                prefer_tuples=True,
+            )
+
     @pytest.mark.parametrize(
         ("a_sub", "operation_type", "evaluated_result"),
         [
@@ -585,6 +642,18 @@ class TestSympy:
         assert psu.check_sympy_types(value, allowed_types) == psu.SympyParseFailure(
             f"Your answer uses {missing_types}, which this input does not accept. "
             f"Allowed types: {', '.join(sorted(allowed_types))}."
+        )
+
+    def test_tuple_type_classification(self) -> None:
+        point = sympy.Tuple(1, 2)
+        points = sympy.FiniteSet(point, sympy.Tuple(3, 4))
+
+        assert psu.check_sympy_types(point, {"tuple"}) is None
+        assert psu.check_sympy_types(points, {"finite-set", "tuple"}) is None
+        assert psu.check_sympy_types(points, {"all"}) is None
+        assert psu.check_sympy_types(points, {"finite-set"}) == psu.SympyParseFailure(
+            "Your answer uses tuple, which this input does not accept. "
+            "Allowed types: finite-set."
         )
 
     def test_type_validation_preserves_unsimplified_expression(self) -> None:
@@ -860,6 +929,20 @@ class TestSympy:
     def test_sets_json_conversion_requires_sets_enabled(self) -> None:
         with pytest.raises(psu.HasSetNotationError):
             psu.sympy_to_json(sympy.Interval(0, 1))
+
+    def test_tuple_json_conversion_uses_unambiguous_internal_syntax(self) -> None:
+        point = sympy.Tuple(sympy.Symbol("x") + 1, 2)
+        encoded = psu.sympy_to_json(point)
+
+        assert encoded["_value"] == "_pl_Tuple(x + 1, 2)"
+        assert psu.json_to_sympy(encoded) == point
+        assert pl.from_json(pl.to_json(point)) == point
+
+    def test_set_of_tuples_json_conversion(self) -> None:
+        points = sympy.FiniteSet(sympy.Tuple(1, 2), sympy.Tuple(3, 4))
+        encoded = psu.sympy_to_json(points, allow_sets=True)
+
+        assert psu.json_to_sympy(encoded, allow_sets=True) == points
 
     def test_range_type_classification(self) -> None:
         assert psu.check_sympy_types(sympy.Range(0, 3), {"finite-set"}) is None

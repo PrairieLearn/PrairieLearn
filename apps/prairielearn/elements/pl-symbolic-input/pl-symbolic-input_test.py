@@ -110,6 +110,120 @@ def test_parse_rejects_disallowed_value_types() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("allowed_types", "correct_answer", "expected_type"),
+    [
+        ("tuple", "(1, 2)", sympy.Tuple),
+        ("all", "(1, 2)", sympy.Interval),
+    ],
+)
+def test_parenthesized_pair_uses_configured_type_context(
+    allowed_types: str,
+    correct_answer: str,
+    expected_type: type[sympy.Basic],
+) -> None:
+    element_html = build_element_html(
+        f'allowed-types="{allowed_types}"',
+        f'correct-answer="{correct_answer}"',
+    )
+    data = make_question_data(submitted_answers={"test": "(1, 2)"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    parsed = psu.json_to_sympy(
+        data["submitted_answers"]["test"], allow_sets=allowed_types == "all"
+    )
+    assert isinstance(parsed, expected_type)
+
+
+def test_programmatic_tuple_correct_answer_disambiguates_all() -> None:
+    correct_answer = psu.sympy_to_json(sympy.Tuple(1, 2))
+    element_html = build_element_html('allowed-types="all"')
+    data = make_question_data(
+        submitted_answers={"test": "(1, 2)"},
+        correct_answers={"test": correct_answer},
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.Tuple(1, 2)
+
+
+@pytest.mark.parametrize(
+    ("submission", "expected_score"),
+    [
+        ("(1 + x, y*y)", 1),
+        ("(y^2, x + 1)", 0),
+        ("(x + 1, y^2, 0)", 0),
+    ],
+)
+def test_tuple_grading_is_ordered_and_componentwise(
+    submission: str, expected_score: int
+) -> None:
+    x, y = sympy.symbols("x y")
+    element_html = build_element_html(
+        'allowed-types="tuple"',
+        'variables="x,y"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": submission},
+        correct_answers={"test": psu.sympy_to_json(sympy.Tuple(x + 1, y**2))},
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    assert data["format_errors"] == {}
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == expected_score
+
+
+def test_set_of_tuples_grades_as_unordered_points() -> None:
+    element_html = build_element_html(
+        'allowed-types="finite-set, tuple"',
+        'correct-answer="{(1, 2), (3, 4)}"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "{(3, 4), (1, 2)}"},
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_tuple_only_blank_answer_requires_explicit_value() -> None:
+    element_html = build_element_html(
+        'allowed-types="tuple"',
+        'allow-blank="true"',
+        'correct-answer="(1, 2)"',
+    )
+
+    with pytest.raises(ValueError, match="'blank-value'.*required"):
+        symbolic_input.prepare(element_html, make_question_data())
+
+
+def test_tuple_additional_simplifications_apply_per_coordinate() -> None:
+    element_html = build_element_html(
+        'allowed-types="tuple"',
+        'variables="x"',
+        'display-simplified-expression="false"',
+        'additional-simplifications="expand"',
+        'correct-answer="(x^2 + 2*x + 1, x)"',
+    )
+    data = make_question_data(submitted_answers={"test": "((x + 1)^2, x + 0)"})
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+    symbolic_input.grade(element_html, data)
+
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
 def test_prepare_rejects_allow_sets_with_allowed_types() -> None:
     element_html = build_element_html(
         'allow-sets="true"',

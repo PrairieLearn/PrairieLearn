@@ -168,6 +168,18 @@ test.describe('pl-symbolic-input formula editor', () => {
       await page.getByLabel(/operatorname\{ln\}/).click();
     });
   });
+
+  test('submits, grades, and restores an ordered tuple', async ({ page }) => {
+    const formulaEditor = page.getByLabel('Point coordinates');
+    await fillFormulaEditor(formulaEditor, '(1,2)');
+
+    await expect(page.locator('input[name="point"]')).toHaveValue('(1,2)');
+    await page.getByRole('button', { name: /Save & Grade/ }).click();
+
+    await expect(page.getByText('100%', { exact: true })).toBeVisible();
+    await expect(formulaEditor).toBeVisible();
+    await expect(page.locator('input[name="point"]')).toHaveValue('(1,2)');
+  });
 });
 
 test.describe('pl-symbolic-input unicode multiplication keys', () => {

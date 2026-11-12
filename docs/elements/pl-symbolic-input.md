@@ -34,11 +34,11 @@ def generate(data):
 | `additional-simplifications`    | string                  | -                       | Simplifications that should be applied during grading before using SymPy's built-in equality checker. Using this attribute can prevent rare cases of non-convergence during grading. See [the non-convergence section](#non-convergence-in-grading) for more details before using this attribute.                                               |
 | `allow-blank`                   | boolean                 | false                   | Whether an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                                                      |
 | `allow-complex`                 | boolean                 | false                   | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                                                                                                                                                        |
-| `allowed-types`                 | string                  | `expression`            | Comma-separated types accepted from a submitted or correct answer: `expression`, `set`, `finite-set`, or `interval`. `set` accepts any set-valued answer, while `finite-set` and `interval` restrict which sets are accepted. Use `all` to accept every type. [See below for classification details and examples](#allowed-answer-types).       |
+| `allowed-types`                 | string                  | `expression`            | Comma-separated types accepted from a submitted or correct answer: `expression`, `set`, `finite-set`, `interval`, or `tuple`. `set` accepts any set-valued answer, while `finite-set` and `interval` restrict which sets are accepted. Use `all` to accept every type. [See below for classification details and examples](#allowed-answer-types). |
 | `allow-trig-functions`          | boolean                 | true                    | Whether trigonometric functions (`cos`, `atanh`, ...) are allowed.                                                                                                                                                                                                                                                                              |
 | `answers-name`                  | string                  | —                       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. If the correct answer is set in `server.py` as a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`. |
 | `aria-label`                    | string                  | —                       | An accessible label for the input.                                                                                                                                                                                                                                                                                                              |
-| `blank-value`                   | string                  | `0` or `{}`             | Value to use as the answer when the input is left blank. Only applied if `allow-blank` is `true`. The default is `0` when expressions are allowed and `{}` when only set types are allowed. Must be `""` (empty string) or follow the same format as an expected user input (e.g., same variables, etc.).                                       |
+| `blank-value`                   | string                  | `0` or `{}`             | Value to use as the answer when the input is left blank. Only applied if `allow-blank` is `true`. The default is `0` when expressions are allowed and `{}` when only set types are allowed. It is required when only tuples are allowed, since no tuple arity can be assumed. Must be `""` (empty string) or follow the same format as an expected user input. |
 | `correct-answer`                | string                  | See description         | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. A blank correct answer (`correct-answer=""`) is only valid when `allow-blank="true"` and `blank-value=""`.                                                                                                                                                     |
 | `custom-functions`              | string                  | —                       | A comma-delimited list of custom functions that can be used in the symbolic expression.                                                                                                                                                                                                                                                         |
 | `display`                       | `"block"` or `"inline"` | `"inline"`              | How to display the input field.                                                                                                                                                                                                                                                                                                                 |
@@ -79,6 +79,28 @@ If `allowed-types` includes `set`, `finite-set`, or `interval`, or is set to `al
 Names listed in the `variables` attribute are scalar symbols, not named sets,
 even when `allow-sets="true"`; sets must be constructed with set notation.
 
+### Tuple notation
+
+If `allowed-types` includes `tuple` or `all`, ordered tuples of two or more scalar
+symbolic expressions can be entered with parentheses, such as `(1, 2)` or
+`(x + 1, sin(y), pi)`. Tuples may also be members of finite sets; for example,
+`allowed-types="finite-set, tuple"` accepts `{(1, 2), (3, 4)}`. Tuple coordinates
+cannot themselves be sets or tuples.
+
+The two-item form `(a, b)` is also standard notation for an open interval. When
+both tuples and intervals are accepted, PrairieLearn uses the correct answer's
+type to interpret this syntax. A programmatic `sympy.Tuple` correct answer makes
+`(a, b)` a tuple, while an interval correct answer keeps the existing interval
+interpretation. If the correct answer does not resolve the ambiguity, `(a, b)`
+is treated as an interval for backward compatibility. `Tuple(a, b)` and
+`Interval(a, b)` are the explicit, unambiguous forms.
+
+Programmatic tuple correct answers should use `sympy.Tuple` and `pl.to_json`:
+
+```python
+data["correct_answers"]["point"] = pl.to_json(sympy.Tuple(x, y))
+```
+
 ### Allowed answer types
 
 The `allowed-types` attribute restricts submitted and correct answers based on their type after SymPy simplification:
@@ -89,7 +111,8 @@ The `allowed-types` attribute restricts submitted and correct answers based on t
 | `set`        | Any set, including finite sets, intervals, and set operations.               | `{1, 2}`, `[1, 2]`, `[1, 2] - {2}`             |
 | `finite-set` | Finite sets and set operations that simplify to a finite set.                | `{1, 2}`, `{1, 2} U {3, 4}`, `{0, 2} & [2, 4]` |
 | `interval`   | Intervals and unions or intersections whose nested values are all intervals. | `[1, 2]`, `[1, 2] U [3, 4]`, `[0, 2] & [1, 4]` |
-| `all`        | Every supported value type.                                                  | `x + 1`, `{1, 2}`, `[1, 2]`                    |
+| `tuple`      | Ordered tuples containing two or more scalar symbolic expressions.           | `(1, 2)`, `(x, sin(y), pi)`                    |
+| `all`        | Every supported value type.                                                  | `x + 1`, `{1, 2}`, `[1, 2]`, `(1, 2, 3)`       |
 
 The empty set (`{}`) is accepted by `set`, `finite-set`, and `interval`. Multiple types can be combined as a comma-separated list. For example, `allowed-types="finite-set, interval"` accepts finite sets, intervals, and set operations such as unions, intersections, and differences containing both.
 
