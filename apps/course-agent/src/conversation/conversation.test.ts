@@ -70,6 +70,7 @@ vi.mock('../monitoring.js', () => ({ logEvent: vi.fn(), reportError: vi.fn() }))
 // Title generation calls the provider directly; model requests here are the agent's own.
 vi.mock('./title.js', () => ({ generateTitle: vi.fn(async () => null) }));
 const { reportError } = await import('../monitoring.js');
+const { generateTitle } = await import('./title.js');
 vi.mock('../sandbox/turn.js', () => ({
   SandboxTurn: vi.fn(
     class {
@@ -270,16 +271,19 @@ it.each([
   { failure: 'network error', response: () => Promise.reject(new Error('PL unavailable')) },
   { failure: '5xx response', response: async () => new Response('Down', { status: 503 }) },
 ])('resends the same report after a $failure', async ({ response }) => {
+  freezeTime();
   const usage = vi
     .fn()
+    .mockResolvedValueOnce(decision())
     .mockImplementationOnce(response)
     .mockImplementation(async () => decision());
   const { reports } = stubFetch({ usage });
   const state = await runningConversation();
+  vi.setSystemTime('2026-10-27T03:11:01Z');
   // Codex retries the 503, and the retry resends the pending report unchanged.
   expect((await state.request()).status).toBe(503);
   expect((await state.request()).status).toBe(200);
-  expect(reports()[0]).toEqual(reports()[1]);
+  expect(reports()[1]).toEqual(reports()[2]);
   expect(budget(state.saved)).toMatchObject({ pending: null, limitedUntil: null });
   await state.finish();
 });
@@ -404,7 +408,7 @@ it('stops at the hourly limit, and Resume after the reset clears it without cont
   await restored.persistMessages([
     { id: 'early', role: 'user', parts: [{ type: 'text', text: 'Continue' }] },
   ]);
-  await expect(restored.onChatMessage(undefined, { requestId: 'early' })).rejects.toThrow();
+  await restored.onChatMessage(undefined, { requestId: 'early' });
   expect(await restored.resume()).toBe(false);
   vi.setSystemTime('2026-10-27T04:01:00Z');
   const turns = vi.mocked(SandboxTurn).mock.calls.length;
@@ -417,6 +421,24 @@ it('stops at the hourly limit, and Resume after the reset clears it without cont
   ]);
   await restored.onChatMessage(undefined, { requestId: 'continue' });
   expect(vi.mocked(SandboxTurn).mock.calls).toHaveLength(turns + 1);
+});
+
+it('refuses a message before booting a sandbox when the user is already limited', async () => {
+  stubFetch({ usage: async () => decision({ status: 'limited', retryAt: expiresAt }) });
+  const { conversation, sandbox } = fixture();
+  await conversation.onStart();
+  await conversation.persistMessages([
+    { id: 'first', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
+  ]);
+  await conversation.onChatMessage(undefined, { requestId: 'first' });
+  expect(SandboxTurn).not.toHaveBeenCalled();
+  expect(sandbox.prepare).not.toHaveBeenCalled();
+  expect(generateTitle).not.toHaveBeenCalled();
+  expect(conversation.state).toMatchObject({
+    status: 'blocked',
+    reason: 'usage_limit',
+    retryAt: expiresAt,
+  });
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {
@@ -461,6 +483,7 @@ it('saves a review result while limited and delivers it once Resume clears the l
     expect.anything(),
   );
   await conversation.deliverWaitingResult();
+  await vi.waitFor(() => expect(SandboxTurn).toHaveBeenCalledOnce());
   const options = vi.mocked(SandboxTurn).mock.calls[0][2];
   expect(options.input.text).toContain('The instructor denied the submitted changes.');
   expect(budget(saved)).toMatchObject({ pending: null, limitedUntil: null });
@@ -501,13 +524,16 @@ it('refuses more provider requests than Codex runs at once', async () => {
 });
 
 it('retries a rejected report without blocking, reporting the rejection once', async () => {
+  freezeTime();
   const usage = vi
     .fn()
+    .mockResolvedValueOnce(decision())
     .mockResolvedValueOnce(Response.json({ message: 'Unauthorized' }, { status: 401 }))
     .mockResolvedValueOnce(Response.json({ message: 'Unauthorized' }, { status: 401 }))
     .mockImplementation(async () => decision());
   const { reports } = stubFetch({ usage });
   const state = await runningConversation();
+  vi.setSystemTime('2026-10-27T03:11:01Z');
   // A configuration fault such as a rotated token fails the request so Codex retries it.
   expect((await state.request()).status).toBe(503);
   expect((await state.request()).status).toBe(503);
@@ -515,7 +541,13 @@ it('retries a rejected report without blocking, reporting the rejection once', a
   expect(budget(state.saved).limitedUntil).toBeNull();
   // Once the fault is fixed, the same report is accepted and inference continues.
   expect((await state.request()).status).toBe(200);
-  expect(new Set(reports().map(({ reportId }) => reportId)).size).toBe(1);
+  expect(
+    new Set(
+      reports()
+        .slice(1)
+        .map(({ reportId }) => reportId),
+    ).size,
+  ).toBe(1);
   await state.finish();
 });
 

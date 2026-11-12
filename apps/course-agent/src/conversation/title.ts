@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 // The model is asked for well under this, so the cap is only a backstop.
 export const MAX_TITLE_LENGTH = 60;
+// The start of a message is enough to title it. Title requests are not metered, so this also
+// bounds what a huge first message costs.
+export const MAX_TITLE_INPUT_LENGTH = 2000;
 
 const INSTRUCTIONS = [
   'Write a short title for a conversation with the PrairieLearn course agent, based on its first user message.',
@@ -49,7 +52,8 @@ export async function generateTitle({
     body: JSON.stringify({
       model,
       instructions: INSTRUCTIONS,
-      input: message,
+      // Capped by code point, so a surrogate pair is never split.
+      input: [...message].slice(0, MAX_TITLE_INPUT_LENGTH).join(''),
       // Reasoning roughly quadruples latency without improving these titles.
       reasoning: { effort: 'none' },
       store: false,

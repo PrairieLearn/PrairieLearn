@@ -849,9 +849,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
     const earlier = historyBefore(this.messages, message);
     const checkedSandboxId = this.record.sandboxId;
-    const lost =
-      checkedSandboxId !== null &&
-      !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
+    const [running] = await Promise.all([
+      checkedSandboxId === null || this.env.CourseSandbox.getByName(checkedSandboxId).isRunning(),
+      // Check the usage limit before a message boots a sandbox or generates a title. The first
+      // model request then finds the decision fresh. If PrairieLearn is unreachable, that request
+      // reports the failure instead. Continuations are checked before they are scheduled.
+      continuation || this.budget.limitedUntil || this.decisionFresh() ? null : this.reportUsage(),
+    ]);
+    const lost = !running;
     const review = this.record.review;
     const status = this.record.lifecycle.status;
     // Read with `review`: a denial recorded during the await settles the review it admits by.
@@ -860,17 +865,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const admitted = continuation
       ? review?.result && status === 'waiting_for_agent'
       : !review && (status === 'offline' || status === 'waiting_for_user');
-    if (
-      !admitted ||
-      this.budget.limitedUntil ||
-      this.active ||
-      this.recovering ||
-      this.sandboxShutdown
-    ) {
+    const refused = !admitted || this.active || this.recovering || this.sandboxShutdown;
+    if (refused || this.budget.limitedUntil) {
       // The SDK has already saved the message. Count it as handled, or the next submit would
       // send this refused prompt in place of the user's next one.
       if (message) this.setRecord({ ...this.record, submittedMessageId: message.id });
-      throw new Error('The course agent sandbox is not ready.');
+      if (refused) throw new Error('The course agent sandbox is not ready.');
+      // The usage limit notice explains the refusal; an empty reply adds nothing to history.
+      return createUIMessageStreamResponse({
+        stream: new ReadableStream({ start: (c) => c.close() }),
+      });
     }
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
