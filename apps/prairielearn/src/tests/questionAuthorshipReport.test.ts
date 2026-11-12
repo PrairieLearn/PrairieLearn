@@ -4,7 +4,6 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { getCourseQuestionAuthorshipReport } from '../lib/question-authorship-report.js';
 
-import * as helperCourse from './helperCourse.js';
 import * as helperDb from './helperDb.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -12,10 +11,9 @@ const sql = loadSqlEquiv(import.meta.url);
 describe('Question authorship report', () => {
   beforeAll(async () => {
     await helperDb.before();
-    await helperCourse.syncCourse();
-    await execute(sql.set_authors, { author_uid: 'author' });
-    await execute(sql.insert_copies);
-    await execute(sql.connect_copies);
+    await execute(sql.insert_institution);
+    await execute(sql.insert_courses);
+    await execute(sql.insert_questions);
   });
   afterAll(helperDb.after);
 
@@ -35,11 +33,11 @@ describe('Question authorship report', () => {
         {
           uid: 'author',
           questions: [
-            ['addNumbers', 2, 1],
-            ['addVectors', 0, 0],
+            ['root', 2, 1],
+            ['self', 0, 0],
           ],
         },
-        { uid: 'external', questions: [['addNumbers', 2, 1]] },
+        { uid: 'external', questions: [['root', 2, 1]] },
       ],
     );
   });
