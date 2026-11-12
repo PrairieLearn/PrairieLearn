@@ -35,9 +35,8 @@
 {{/question}}
 
 {{#submission}}
-{{#error}}
 <span>
-
+{{#error}}
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
@@ -80,9 +79,6 @@
         </a>
     </span>
 {{/missing_input}}
-
-</span>
-
 {{/error}}
 {{^error}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
@@ -91,6 +87,8 @@
 {{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/error}}
+{{{raw_input_popover}}}
+</span>
 {{/submission}}
 
 {{#answer}}

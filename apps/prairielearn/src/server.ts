@@ -170,6 +170,9 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
+  // Print assets carry a short-lived job credential instead of an instructor session.
+  (await import('./lib/printing/print-asset-routes.js')).applyPrintAssetRoutes(app);
+
   const sessionMiddleware = createSessionMiddleware({
     secret: config.secretKey,
     store: new PostgresSessionStore(),
@@ -769,8 +772,12 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
 
   if (isEnterprise()) {
-    // The course agent chat proxy, and the panel that PageLayout renders on
-    // instructor pages. Both run after the instructor chains above.
+    // The course agent's file links, its chat proxy, and the panel that PageLayout
+    // renders on instructor pages. All run after the instructor chains above.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent/file',
+      (await import('./ee/routers/courseAgentFile.js')).default,
+    );
     app.use(
       '/pl/course/:course_id(\\d+)/course_agent',
       (await import('./ee/routers/courseAgentChat.js')).default,

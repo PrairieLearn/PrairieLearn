@@ -77,6 +77,17 @@ export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
+export const EnumInstanceQuestionStatusSchema = z.enum([
+  'complete',
+  'unanswered',
+  'saved',
+  'correct',
+  'incorrect',
+  'grading',
+  'invalid',
+]);
+export type EnumInstanceQuestionStatus = z.infer<typeof EnumInstanceQuestionStatusSchema>;
+
 export const EnumJobStatusSchema = z.enum(['Running', 'Stopping', 'Stopped', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
@@ -106,6 +117,9 @@ export const EnumQuestionTypeSchema = z.enum([
   'Freeform',
 ]);
 export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
+
+export const EnumRubricItemShowToStudentsSchema = z.enum(['always', 'when_selected', 'never']);
+export type EnumRubricItemShowToStudents = z.infer<typeof EnumRubricItemShowToStudentsSchema>;
 
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
@@ -678,15 +692,6 @@ export const AuthnProviderSchema = z.object({
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
-export const AuthorSchema = z.object({
-  author_name: z.string().nullable(),
-  email: z.string().nullable(),
-  id: IdSchema,
-  orcid: z.string().nullable(),
-  origin_course: IdSchema.nullable(),
-});
-export type Author = z.infer<typeof AuthorSchema>;
-
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
 
@@ -701,8 +706,9 @@ export const ChunkSchema = z.object({
   question_id: IdSchema.nullable(),
   size_compressed: z.coerce.number().nullable(),
   size_uncompressed: z.coerce.number().nullable(),
+  superseded_at: DateFromISOString.nullable(),
   type: EnumChunkTypeSchema,
-  uuid: z.string(), // TODO: should this be a UUID?
+  uuid: z.string(),
 });
 export type Chunk = z.infer<typeof ChunkSchema>;
 
@@ -1155,9 +1161,7 @@ export const InstanceQuestionSchema = z.object({
   some_nonzero_submission: z.boolean().nullable(),
   some_perfect_submission: z.boolean().nullable(),
   some_submission: z.boolean().nullable(),
-  status: z
-    .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
-    .nullable(),
+  status: EnumInstanceQuestionStatusSchema.nullable(),
   submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
   variants_points_list: z.array(z.number().nullable()),
@@ -1433,12 +1437,6 @@ export const QueryRunSchema = z.object({
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
-export const QuestionAuthorSchema = z.object({
-  author_id: IdSchema,
-  id: IdSchema,
-  question_id: IdSchema,
-});
-
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   chunk_id: z.string(),
   doc_path: z.string(),
@@ -1548,6 +1546,7 @@ export const RubricItemSchema = z.object({
   number: z.number(),
   points: z.number(),
   rubric_id: IdSchema,
+  show_to_students: EnumRubricItemShowToStudentsSchema,
 });
 export type RubricItem = z.infer<typeof RubricItemSchema>;
 
@@ -1839,7 +1838,6 @@ export const TableNames = [
   'audit_events',
   'audit_logs',
   'authn_providers',
-  'authors',
   'batched_migration_jobs',
   'batched_migrations',
   'chunks',
@@ -1897,7 +1895,6 @@ export const TableNames = [
   'courses',
   'plan_grants',
   'query_runs',
-  'question_authors',
   'question_generation_context_embeddings',
   'question_score_logs',
   'question_tags',

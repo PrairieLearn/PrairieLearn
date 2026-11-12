@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 
-import type { PageCatalog } from '@prairielearn/course-agent-types';
+import type { NavigationTarget, PageCatalog } from '@prairielearn/course-agent-types';
+import { HttpStatusError } from '@prairielearn/error';
 
 import type { NavPage } from '../../../components/Navbar.types.js';
 import { sideNavPagesTabs } from '../../../components/SideNav.js';
@@ -8,6 +9,9 @@ import type { Assessment, Course, CourseInstance, Question } from '../../../lib/
 import { getNavPageTabs } from '../../../lib/navPageTabs.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { encodePath } from '../../../lib/uri-util.js';
+import { selectOptionalAssessmentByTid } from '../../../models/assessment.js';
+import { selectOptionalCourseInstanceByShortName } from '../../../models/course-instances.js';
+import { selectOptionalQuestionByQid } from '../../../models/question.js';
 
 type PageParam = PageCatalog[number]['params'][number];
 
@@ -79,10 +83,6 @@ export function buildPageCatalog(): PageCatalog {
   return [...agentPages().values()].map((page) => page.entry);
 }
 
-export function findAgentPage(key: string) {
-  return agentPages().get(key)?.entry;
-}
-
 interface PageRows {
   course: Pick<Course, 'id'>;
   course_instance: Pick<CourseInstance, 'id' | 'short_name'> | null;
@@ -103,14 +103,8 @@ const FILE_ROOTS: Record<Group, (rows: PageRows) => string> = {
   question: ({ question }) => `questions/${question?.qid}`,
 };
 
-/** The URL of a catalog page, built by the same function that builds its navigation link. */
-export function agentPageUrl({
-  key,
-  file,
-  ...rows
-}: PageRows & { key: string; file: string | null }) {
-  const page = agentPages().get(key);
-  if (!page) throw new Error(`Unknown course agent page: ${key}`);
+/** Builds a page's URL with the same function that builds its navigation link. */
+function pageUrl(page: AgentPage, file: string | undefined, rows: PageRows) {
   const urlPrefix = rows.course_instance
     ? `/pl/course_instance/${rows.course_instance.id}/instructor`
     : `/pl/course/${rows.course.id}`;
@@ -119,4 +113,43 @@ export function agentPageUrl({
   const filePath =
     page.entry.file && file ? `/${encodePath(path.join(FILE_ROOTS[page.group](rows), file))}` : '';
   return `${urlPrefix}${urlSuffix}${filePath}`;
+}
+
+/**
+ * The URL of the page the agent named, with its names resolved the way course files name things.
+ * The messages tell the agent what to correct.
+ */
+export async function resolveAgentPageUrl(course: Pick<Course, 'id'>, target: NavigationTarget) {
+  const page = agentPages().get(target.page);
+  if (!page) throw new HttpStatusError(404, `No page named "${target.page}".`);
+  const { params } = page.entry;
+  const missing = params.filter((param) => !target[param]);
+  if (missing.length > 0) {
+    throw new HttpStatusError(400, `Page "${target.page}" also needs: ${missing.join(', ')}.`);
+  }
+
+  const course_instance = target.courseInstance
+    ? await selectOptionalCourseInstanceByShortName({ course, shortName: target.courseInstance })
+    : null;
+  if (target.courseInstance && !course_instance) {
+    throw new HttpStatusError(404, `No course instance named "${target.courseInstance}".`);
+  }
+  // Names a page does not use are ignored, so only its own params are looked up.
+  const assessment =
+    params.includes('assessment') && course_instance
+      ? await selectOptionalAssessmentByTid({
+          course_instance_id: course_instance.id,
+          tid: target.assessment!,
+        })
+      : null;
+  if (params.includes('assessment') && !assessment) {
+    throw new HttpStatusError(404, `No assessment named "${target.assessment}".`);
+  }
+  const question = params.includes('question')
+    ? await selectOptionalQuestionByQid({ qid: target.question!, course_id: course.id })
+    : null;
+  if (params.includes('question') && !question) {
+    throw new HttpStatusError(404, `No question named "${target.question}".`);
+  }
+  return pageUrl(page, target.file, { course, course_instance, assessment, question });
 }

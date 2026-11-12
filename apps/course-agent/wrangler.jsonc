@@ -10,8 +10,11 @@
     "OPENAI_MODEL": "gpt-6-luna",
     "AGENT_TURN_SECONDS": "18000",
     "USER_IDLE_SECONDS": "600",
+    // A Cloudflare instance type: lite or standard-1 through standard-4.
+    "SANDBOX_INSTANCE_TYPE": "standard-2",
     "SENTRY_ENVIRONMENT": "development",
-    "DEBUG_RUNNER_OUTPUT": "false"
+    // PrairieLearn origin for the course data API. Deployed environments set it as a secret.
+    "PL_URL": "http://localhost:3000"
   },
   "version_metadata": {
     "binding": "VERSION_METADATA"
@@ -78,13 +81,12 @@
         "OPENAI_MODEL": "gpt-6-luna",
         "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
-        "SENTRY_ENVIRONMENT": "staging",
-        // Temporary: forwards Codex runner output to diagnose staging sandbox startup. Codex output
-        // can be sensitive; remove once startup is fixed and never enable it in production.
-        "DEBUG_RUNNER_OUTPUT": "true"
+        // A Cloudflare instance type: lite or standard-1 through standard-4.
+        "SANDBOX_INSTANCE_TYPE": "standard-2",
+        "SENTRY_ENVIRONMENT": "staging"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_URL"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
@@ -128,11 +130,12 @@
         "OPENAI_MODEL": "gpt-6-luna",
         "AGENT_TURN_SECONDS": "18000",
         "USER_IDLE_SECONDS": "600",
-        "SENTRY_ENVIRONMENT": "production",
-        "DEBUG_RUNNER_OUTPUT": "false"
+        // A Cloudflare instance type: lite or standard-1 through standard-4.
+        "SANDBOX_INSTANCE_TYPE": "standard-2",
+        "SENTRY_ENVIRONMENT": "production"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_URL"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },

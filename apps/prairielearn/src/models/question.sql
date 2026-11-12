@@ -1,3 +1,59 @@
+-- BLOCK select_question_copy_adoption
+-- Stop after 20 copy links, also bounding self-references and cycles. Keep
+-- deleted rows in the traversal: they can connect a source to later copies.
+-- Carry course IDs through the traversal to avoid rejoining questions for counts.
+WITH RECURSIVE
+  lineage AS (
+    SELECT
+      q.id AS source_question_id,
+      q.course_id AS source_course_id,
+      q.id AS question_id,
+      q.course_id,
+      0 AS depth
+    FROM
+      questions AS q
+    WHERE
+      q.id = ANY ($question_ids::bigint[])
+    UNION ALL
+    SELECT
+      lineage.source_question_id,
+      lineage.source_course_id,
+      descendant.id,
+      descendant.course_id,
+      lineage.depth + 1
+    FROM
+      lineage
+      CROSS JOIN LATERAL (
+        SELECT
+          d.id,
+          d.course_id
+        FROM
+          questions AS d
+        WHERE
+          d.copied_from_question_id = lineage.question_id
+          -- OFFSET 0 prevents flattening this lookup into a join with full scans at each depth.
+        OFFSET
+          0
+      ) AS descendant
+    WHERE
+      lineage.depth < 20
+  )
+SELECT
+  lineage.source_question_id AS question_id,
+  count(DISTINCT lineage.course_id) FILTER (
+    WHERE
+      lineage.course_id != lineage.source_course_id
+  )::int AS downstream_course_count,
+  count(DISTINCT course.institution_id) FILTER (
+    WHERE
+      lineage.course_id != lineage.source_course_id
+  )::int AS downstream_institution_count
+FROM
+  lineage
+  JOIN courses AS course ON course.id = lineage.course_id
+GROUP BY
+  lineage.source_question_id;
+
 -- BLOCK select_question_by_id
 SELECT
   *

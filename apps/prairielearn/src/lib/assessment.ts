@@ -153,6 +153,29 @@ export async function makeAssessmentInstance({
 }
 
 /**
+ * Randomly selects the assessment questions an instance of the assessment should
+ * contain, honoring each alternative group's and zone's `number_choose`. Questions
+ * already in the given assessment instance are kept in preference to others.
+ *
+ * @param params.assessment_id - The assessment to select questions from.
+ * @param params.assessment_instance_id - The instance whose existing questions take priority, if any.
+ * @returns The IDs of the selected assessment questions.
+ */
+export async function selectAssessmentQuestionIdsForInstance({
+  assessment_id,
+  assessment_instance_id,
+}: {
+  assessment_id: string;
+  assessment_instance_id: string | null;
+}): Promise<string[]> {
+  return await sqldb.queryScalars(
+    sql.select_assessment_question_ids_for_instance,
+    { assessment_id, assessment_instance_id },
+    IdSchema,
+  );
+}
+
+/**
  * Add new questions to the assessment instance and regrade it if necessary.
  *
  * @param assessment_instance_id - The assessment instance to grade.
@@ -180,9 +203,13 @@ export async function updateAssessmentInstance(
     }
 
     // Insert any new questions not previously in the assessment instance
+    const assessmentQuestionIds = await selectAssessmentQuestionIdsForInstance({
+      assessment_id: assessmentInstance.assessment_id,
+      assessment_instance_id,
+    });
     const newInstanceQuestionIds = await sqldb.queryScalars(
       sql.insert_instance_questions,
-      { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
+      { assessment_instance_id, assessment_question_ids: assessmentQuestionIds, authn_user_id },
       IdSchema,
     );
 
