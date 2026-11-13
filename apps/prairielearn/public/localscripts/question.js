@@ -30,8 +30,7 @@ $(function () {
     });
   };
 
-  var submit = function (event, action) {
-    var questionContainer = $(event.target).parents('.question-container');
+  var getPostData = function (questionContainer) {
     var client = clients[questionContainer.attr('id')];
 
     var questionData = null;
@@ -42,12 +41,16 @@ $(function () {
     var clientContainer = questionContainer.find('.question-body');
     var submittedAnswer = client.getSubmittedAnswer(clientContainer, questionData);
 
-    var postData = {
+    return JSON.stringify({
       submittedAnswer: submittedAnswer,
       variant: questionData.variant,
       type: 'score',
-    };
-    questionContainer.find('form.question-form input.postData').val(JSON.stringify(postData));
+    });
+  };
+
+  var submit = function (event, action) {
+    var questionContainer = $(event.target).parents('.question-container');
+    questionContainer.find('form.question-form input.postData').val(getPostData(questionContainer));
     questionContainer.find('form.question-form input.__action').val(action);
     questionContainer.find('form.question-form').submit();
   };
@@ -64,6 +67,17 @@ $(function () {
     initialize($(questionContainer), function (err) {
       if (err) return console.log(err);
       render($(questionContainer));
+      $(questionContainer)
+        .find('form.question-form')
+        .each(function (i, form) {
+          form.addEventListener('formdata', function (event) {
+            event.formData.set('postData', getPostData($(questionContainer)));
+          });
+          // Set the attribute so deferred initialization updates the form's clean baseline.
+          $(form)
+            .find('input.postData')
+            .attr('value', getPostData($(questionContainer)));
+        });
       $(questionContainer).find('.question-grade').click(grade);
       $(questionContainer).find('.question-save').click(save);
     });
