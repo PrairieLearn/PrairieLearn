@@ -13,7 +13,7 @@
     // A Cloudflare instance type: lite or standard-1 through standard-4.
     "SANDBOX_INSTANCE_TYPE": "standard-2",
     "SENTRY_ENVIRONMENT": "development",
-    // PrairieLearn origin for the course data API. Deployed environments set it as a secret.
+    // PrairieLearn origin for the Worker's API requests. Deployed environments set it as a secret.
     "PL_URL": "http://localhost:3000"
   },
   "version_metadata": {

@@ -1,6 +1,6 @@
 import { NavigationPartSchema, type NavigationTarget } from '@prairielearn/course-agent-types';
 
-import { type CourseDataContext, authHeaders, errorMessage } from './course-data.js';
+import { type PrairieLearnContext, authHeaders, errorMessage } from './prairielearn.js';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -9,7 +9,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
  * `POST /pl/api/v1/course/:course_id/agent_navigation`. A wrong name fails with PrairieLearn's
  * message, so the agent can correct it before the instructor's browser moves.
  */
-export async function resolveNavigation(context: CourseDataContext, target: NavigationTarget) {
+export async function resolveNavigation(context: PrairieLearnContext, target: NavigationTarget) {
   if (!context.courseId) {
     throw new Error('Navigation is unavailable. Reload the PrairieLearn page.');
   }

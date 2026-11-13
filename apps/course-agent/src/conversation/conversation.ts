@@ -52,7 +52,6 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
-import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
 import { resolveNavigation } from './navigation.js';
 import { generateTitle } from './title.js';
@@ -179,7 +178,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
   }
 
-  private courseDataContext() {
+  private prairieLearnContext() {
     return {
       plUrl: this.env.PL_URL,
       serviceToken: this.env.PL_SERVICE_TOKEN,
@@ -519,14 +518,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
     });
     log('turn_started', { startup });
-    const native = (this.native ??= new CodexAppServerClient(
-      this.sandbox,
-      {
-        list: () => listCourseDatasets(this.courseDataContext()),
-        get: (request) =>
-          getCourseData({ ...this.courseDataContext(), sandbox: this.sandbox, request }),
-      },
-      (target) => resolveNavigation(this.courseDataContext(), target),
+    const native = (this.native ??= new CodexAppServerClient(this.sandbox, (target) =>
+      resolveNavigation(this.prairieLearnContext(), target),
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const execution = new SandboxTurn(this.sandbox, native, {

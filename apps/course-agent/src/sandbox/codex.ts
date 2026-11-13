@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 import {
   COURSE_DIR,
-  CourseDataQuerySchema,
   type InputRequestPart,
   type NavigationPart,
   type NavigationTarget,
@@ -71,17 +70,6 @@ const DynamicToolCall = z.object({
   arguments: z.unknown(),
 });
 const RequestChangesArguments = z.strictObject({});
-const ListCourseDatasetsArguments = z.strictObject({});
-const CourseDataArguments = CourseDataQuerySchema.extend({
-  dataset: z.string().describe('Dataset to download, from list_course_datasets.'),
-});
-export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
-
-/** Serves the course data tools; replies go to the model. */
-export interface CourseDataTools {
-  list(): Promise<ToolReply>;
-  get(request: CourseDataRequest): Promise<ToolReply>;
-}
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
  * prompts are shown only through this item. Codex calls them questions.
@@ -149,7 +137,6 @@ export class CodexAppServerClient {
 
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
-    private courseData: CourseDataTools,
     /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
     private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
   ) {}
@@ -282,16 +269,6 @@ export class CodexAppServerClient {
       throw new Error('Invalid dynamic tool call');
     }
     switch (call.data.tool) {
-      case listCourseDatasetsTool.name: {
-        const request = ListCourseDatasetsArguments.safeParse(call.data.arguments);
-        if (!request.success) return invalidArguments(request.error);
-        return await replyWithError(() => this.courseData.list());
-      }
-      case courseDataTool.name: {
-        const request = CourseDataArguments.safeParse(call.data.arguments);
-        if (!request.success) return invalidArguments(request.error);
-        return await replyWithError(() => this.courseData.get(request.data));
-      }
       case requestChangesTool.name: {
         if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
           throw new Error('Invalid request_changes call');
@@ -384,8 +361,6 @@ export class CodexAppServerClient {
             ...settings,
             dynamicTools: [
               ...(this.onReview ? [requestChangesTool] : []),
-              listCourseDatasetsTool,
-              courseDataTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
             ],
           } satisfies ThreadStartParams,
@@ -572,29 +547,6 @@ async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply
     return { success: false, text: error instanceof Error ? error.message : String(error) };
   }
 }
-
-/** Codex's tool input schema, generated from the Zod schema that validates the arguments. */
-function toolInputSchema(schema: z.ZodType) {
-  // Zod types its output with a non-enumerable `~standard` property that serialization drops.
-  const { $schema: _schema, ...inputSchema } = z.toJSONSchema(schema);
-  return inputSchema as JsonValue;
-}
-
-const listCourseDatasetsTool = {
-  type: 'function',
-  name: 'list_course_datasets',
-  description:
-    "List the datasets of this course's PrairieLearn data that get_course_data can download, with each column's type and meaning.",
-  inputSchema: toolInputSchema(ListCourseDatasetsArguments),
-} satisfies DynamicToolSpec;
-
-const courseDataTool = {
-  type: 'function',
-  name: 'get_course_data',
-  description:
-    "Download rows of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. The reply gives the file's path, row count, and columns.",
-  inputSchema: toolInputSchema(CourseDataArguments),
-} satisfies DynamicToolSpec;
 
 const requestChangesTool = {
   type: 'function',

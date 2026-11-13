@@ -261,14 +261,17 @@ describe('Course agent access and conversation privacy', () => {
   // what they produce: a page offered to the agent must exist for this course.
   test('resolves every catalog page for the course agent, and explains a wrong name', async () => {
     const { agent_conversation_id } = await createConversation(owner);
-    const resolve = (target: { page: string; params: Record<string, string> }) =>
-      fetch(`${siteUrl}/pl/api/v1/course/1/agent_navigation`, {
+    const credentials = {
+      Authorization: 'Bearer test-token',
+      'X-Course-Agent-Conversation': agent_conversation_id,
+    };
+    const resolve = (
+      target: { page: string; params: Record<string, string> },
+      { headers = credentials, path = '/course/1/agent_navigation' } = {},
+    ) =>
+      fetch(`${siteUrl}/pl/api/v1${path}`, {
         method: 'POST',
-        headers: {
-          Authorization: 'Bearer test-token',
-          'X-Course-Agent-Conversation': agent_conversation_id,
-          'Content-Type': 'application/json',
-        },
+        headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify(target),
       });
     const names: Record<string, string> = {
@@ -306,6 +309,18 @@ describe('Course agent access and conversation privacy', () => {
     });
     expect(wrong.status).toBe(404);
     expect(await wrong.json()).toMatchObject({ message: 'No assessment named "hw99".' });
+
+    // The service's credentials reach only the conversation's course's navigation.
+    const settings = { page: 'course.settings', params: {} };
+    const refused = await Promise.all([
+      resolve(settings, { headers: { ...credentials, Authorization: 'Bearer wrong' } }),
+      resolve(settings, {
+        headers: { ...credentials, 'X-Course-Agent-Conversation': crypto.randomUUID() },
+      }),
+      resolve(settings, { path: '/course/2/agent_navigation' }),
+      resolve(settings, { path: '/course/1/sync' }),
+    ]);
+    expect(refused.map((response) => response.status)).toEqual([401, 403, 403, 403]);
   });
 
   test('initializes from current local files and course-only Git history in dev mode', async () => {

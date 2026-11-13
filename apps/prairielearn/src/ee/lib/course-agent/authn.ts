@@ -20,8 +20,8 @@ function isServiceToken(authorization: string) {
  * token proves the request comes from the service; the conversation identifies the user, whose
  * normal permissions then apply, including administrator access, so an administrator who can use
  * the agent in a course can also use its tools there. The request may only reach its
- * conversation's course data and navigation routes, so a model in the sandbox cannot reach other
- * courses or other API routes.
+ * conversation's course's navigation route, so a model in the sandbox cannot reach other courses
+ * or other API routes.
  *
  * Returns null for a request that is not from the service.
  */
@@ -41,12 +41,10 @@ export async function authenticateCourseAgentRequest({
     ? await selectOptionalCourseAgentConversationByAgentConversationId(parsedId.data)
     : null;
   if (!conversation) return { error: 'Invalid course agent conversation' };
-  // Must match where api/v1/index.ts mounts the routers the course agent calls.
-  const allowed = ['data', 'agent_navigation'].map(
-    (route) => `/course/${conversation.course_id}/${route}`,
-  );
-  if (!allowed.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
-    return { error: "The course agent may only use its own course's data and navigation" };
+  // Must match where api/v1/index.ts mounts the router the course agent calls.
+  const allowed = `/course/${conversation.course_id}/agent_navigation`;
+  if (path !== allowed && !path.startsWith(`${allowed}/`)) {
+    return { error: "The course agent may only use its own course's navigation" };
   }
   const [user, is_administrator] = await Promise.all([
     selectUserById(conversation.user_id),
