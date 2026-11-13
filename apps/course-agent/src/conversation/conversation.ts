@@ -65,7 +65,7 @@ import { generateTitle } from './title.js';
 // without traffic, including idle chats and long silent turns.
 const KEEPALIVE_SECONDS = 25;
 
-export interface BudgetState {
+export interface MeteringState {
   /** Usage PrairieLearn has not recorded, excluding a report that is being sent. */
   unreported: Usage;
   /** The report being sent. A retry resends it unchanged, so PrairieLearn records it once. */
@@ -75,14 +75,15 @@ export interface BudgetState {
    * Resume clears it after this time; the sandbox lifecycle, including idle expiry, continues.
    */
   limitedUntil: string | null;
-  /** The pending report PrairieLearn rejected, so a rejection reaches Sentry once. */
-  rejectedReportId?: string | null;
 }
 
 // A provider request that ends without final usage, such as a dropped stream or a Stop, is
 // charged its size at about four characters per token plus a generous reply.
 const ESTIMATED_CHARACTERS_PER_TOKEN = 4;
 const ESTIMATED_OUTPUT_TOKENS = 16_000;
+// Inline images inflate a request's size far beyond its tokens, so the input estimate is capped
+// near the model's context window.
+const MAX_ESTIMATED_INPUT_TOKENS = 400_000;
 
 // Requests wait for PrairieLearn only when its last decision is older than this, which in
 // practice means once per turn. A limit reached mid-turn takes effect at the next request after
@@ -146,7 +147,10 @@ function requestUsage(event: z.infer<typeof ModelEventSchema>): Usage | null {
 function estimateUsage(body: string): Usage {
   return {
     ...emptyUsage(),
-    inputTokens: Math.ceil(body.length / ESTIMATED_CHARACTERS_PER_TOKEN),
+    inputTokens: Math.min(
+      Math.ceil(body.length / ESTIMATED_CHARACTERS_PER_TOKEN),
+      MAX_ESTIMATED_INPUT_TOKENS,
+    ),
     outputTokens: ESTIMATED_OUTPUT_TOKENS,
   };
 }
@@ -253,7 +257,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     title: null,
   };
 
-  private budget: BudgetState = {
+  private metering: MeteringState = {
     unreported: emptyUsage(),
     pending: null,
     limitedUntil: null,
@@ -316,7 +320,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       title: this.record.title ?? null,
     };
     // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
-    const retryAt = this.budget.limitedUntil;
+    const retryAt = this.metering.limitedUntil;
     if (retryAt && ['offline', 'waiting_for_user'].includes(lifecycle.status)) {
       return { status: 'blocked', reason: 'usage_limit', retryAt, deadlineAt: null, ...common };
     }
@@ -345,11 +349,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    */
   override async onStart() {
     this._record = this.ctx.storage.kv.get<ConversationRecord>('conversation') ?? null;
-    this.budget = this.ctx.storage.kv.get<BudgetState>('budget') ?? this.budget;
+    this.metering = this.ctx.storage.kv.get<MeteringState>('metering') ?? this.metering;
     // A new object has no saved conversation yet. Leave the private record null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this._record) return;
-    if (this.budget.pending || !isEmptyUsage(this.budget.unreported)) this.scheduleFlush(0);
+    if (this.metering.pending || !isEmptyUsage(this.metering.unreported)) this.scheduleFlush(0);
     this.setState(this.publicState);
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
     // reconstructing an in-flight operation. The remaining states need explicit recovery.
@@ -546,7 +550,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   private recordUsage(usage: Usage) {
     if (isEmptyUsage(usage)) return;
-    this.saveBudget({ ...this.budget, unreported: addUsage(this.budget.unreported, usage) });
+    this.saveMetering({ ...this.metering, unreported: addUsage(this.metering.unreported, usage) });
     this.scheduleFlush(USAGE_FLUSH_SECONDS);
   }
 
@@ -566,7 +570,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * backoff while PrairieLearn is unreachable.
    */
   async flushUsage(retry?: { attempt: number }) {
-    while (this.budget.pending || !isEmptyUsage(this.budget.unreported)) {
+    while (this.metering.pending || !isEmptyUsage(this.metering.unreported)) {
       if (!(await this.reportUsage())) {
         const attempt = (retry?.attempt ?? 0) + 1;
         this.scheduleFlush(
@@ -581,13 +585,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Ask PrairieLearn for a decision unless the current one is still known. */
   private checkUsageLimit(): Promise<boolean> | true {
     const fresh = this.allowedAt !== null && Date.now() - this.allowedAt < DECISION_TTL_MS;
-    return this.budget.limitedUntil || fresh ? true : this.reportUsage();
+    return this.metering.limitedUntil || fresh ? true : this.reportUsage();
   }
 
-  private saveBudget(next: BudgetState) {
-    const limitChanged = next.limitedUntil !== this.budget.limitedUntil;
-    this.ctx.storage.kv.put('budget', next);
-    this.budget = next;
+  private saveMetering(next: MeteringState) {
+    const limitChanged = next.limitedUntil !== this.metering.limitedUntil;
+    this.ctx.storage.kv.put('metering', next);
+    this.metering = next;
     if (limitChanged && this._record) this.setState(this.publicState);
   }
 
@@ -604,14 +608,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   private async sendUsageReport() {
-    let report = this.budget.pending;
+    let report = this.metering.pending;
     if (!report) {
       report = {
         reportId: crypto.randomUUID(),
         model: this.record.config.model,
-        usage: this.budget.unreported,
+        usage: this.metering.unreported,
       };
-      this.saveBudget({ ...this.budget, pending: report, unreported: emptyUsage() });
+      this.saveMetering({ ...this.metering, pending: report, unreported: emptyUsage() });
     }
     let response: Response;
     try {
@@ -645,23 +649,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       // A rejected report is a configuration or deployment fault, such as a rotated token, an
       // unpriced model or a PrairieLearn without this route. Keep the report pending so the
       // conversation recovers once it is fixed.
-      if (this.budget.rejectedReportId !== report.reportId) {
-        this.saveBudget({ ...this.budget, rejectedReportId: report.reportId });
-        this.reportError(new Error(`Usage report was rejected with ${response.status}`));
-      }
+      this.reportError(new Error(`Usage report was rejected with ${response.status}`));
       logEvent('usage_report_rejected', { conversationId: this.name, status: response.status });
       return false;
     }
     // Only Resume clears the limit, so an allowed decision leaves an existing one in place. A
     // decision answered after its hour ended no longer applies.
     const { data } = decision;
-    this.saveBudget({
-      ...this.budget,
+    this.saveMetering({
+      ...this.metering,
       pending: null,
       limitedUntil:
         data.status === 'limited' && Date.parse(data.retryAt) > Date.now()
           ? data.retryAt
-          : this.budget.limitedUntil,
+          : this.metering.limitedUntil,
     });
     this.allowedAt = decision.data.status === 'allowed' ? Date.now() : null;
     return true;
@@ -673,7 +674,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    */
   private async admit(executionId: string): Promise<Admission> {
     const reached = await this.checkUsageLimit();
-    if (this.budget.limitedUntil) {
+    if (this.metering.limitedUntil) {
       this.interruptForUsageLimit();
       return 'limited';
     }
@@ -859,16 +860,19 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!options) throw new Error('Missing SDK chat options');
     const continuation = options.continuation === true;
     // Capture input before any await lets another connection append to history.
-    const message = continuation
-      ? null
-      : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
     const unsentIds = this.record.unsentMessageIds ?? [];
     const unsent = this.messages.filter(({ id }) => unsentIds.includes(id));
+    // Resume after the usage limit runs the messages it refused, without a new one.
+    const message = continuation
+      ? null
+      : (nextUserMessage(this.messages, this.record.submittedMessageId ?? null) ??
+        unsent.at(-1) ??
+        null);
     const earlier = historyBefore(this.messages, message).filter(
       ({ id }) => !unsentIds.includes(id),
     );
     // Messages refused by the usage limit are sent with this one.
-    const sent = message ? [...unsent, message] : [];
+    const sent = message ? [...unsent.filter((entry) => entry !== message), message] : [];
     const attachments = sent.flatMap(attachmentsOf);
     const checkedSandboxId = this.record.sandboxId;
     const [running, images] = await Promise.all([
@@ -898,11 +902,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!admitted || this.active || this.recovering || this.sandboxShutdown) {
       throw refuse('The course agent sandbox is not ready.');
     }
-    if (message && this.budget.limitedUntil) {
+    if (message && this.metering.limitedUntil) {
       this.setRecord({
         ...this.record,
         submittedMessageId: message.id,
-        unsentMessageIds: [...unsentIds, message.id],
+        unsentMessageIds: sent.map(({ id }) => id),
       });
       // The usage limit notice explains the refusal; an empty reply adds nothing to history.
       return createUIMessageStreamResponse({
@@ -918,7 +922,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
     if (message && earlier.length === 0 && !this.record.title) {
-      this.startTitle(unsent[0] ?? message);
+      this.startTitle(sent[0]);
     }
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
@@ -1204,16 +1208,21 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       } finally {
         this.recovering = false;
       }
-    } else if (!this.record.review?.result && !this.budget.limitedUntil) {
+    } else if (!this.record.review?.result && !this.metering.limitedUntil) {
       return false;
     }
-    const limitedUntil = this.budget.limitedUntil;
+    const limitedUntil = this.metering.limitedUntil;
     // Automatic recovery leaves the limit for the user to clear.
     if (limitedUntil && explicit) {
       // A repaired sandbox counts as resumed even though the limit still applies.
       if (Date.parse(limitedUntil) > Date.now()) return lifecycle.status === 'blocked';
       // The next model request asks PrairieLearn again, so a limit that still applies returns.
-      this.saveBudget({ ...this.budget, limitedUntil: null });
+      this.saveMetering({ ...this.metering, limitedUntil: null });
+      if (this.record.unsentMessageIds?.length) {
+        void this.keepAliveWhile(async () => {
+          await this.saveMessages((messages) => [...messages]);
+        }).catch((error: unknown) => this.reportError(error));
+      }
     }
     // Saving the record schedules the delivery, now that the usage limit allows it.
     const review = this.record.review;
@@ -1387,7 +1396,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!review?.result || this.active || this.recovering || this.sandboxShutdown) return;
     if (status !== 'offline' && status !== 'waiting_for_user') return;
     // Resume delivers the result once it clears the usage limit.
-    if (this.budget.limitedUntil) return;
+    if (this.metering.limitedUntil) return;
     if (review.waitsForResume) return;
     this.setRecord({
       ...this.record,

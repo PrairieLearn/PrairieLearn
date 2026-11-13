@@ -41,11 +41,11 @@ export function BlockedNotice({
     <Alert variant="warning">
       <p>
         {retryAt && remaining === 0
-          ? 'The hourly AI usage limit has reset. Resume, then send a message to continue.'
+          ? 'The hourly AI usage limit has reset.'
           : blockedMessage[state.reason]}
         {retryAt &&
           remaining > 0 &&
-          ` It resets in ${formatIntervalMinutes(remaining)}; then you can resume and send a message to continue.`}
+          ` It resets in ${formatIntervalMinutes(remaining)}.`}
       </p>
       <Button
         variant="outline-dark"

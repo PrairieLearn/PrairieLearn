@@ -11,7 +11,7 @@ import {
 
 import { SandboxTurn } from '../sandbox/turn.js';
 
-import { type BudgetState, Conversation } from './conversation.js';
+import { Conversation, type MeteringState } from './conversation.js';
 
 const sdk = vi.hoisted(() => ({
   finishTurn: () => {},
@@ -47,6 +47,12 @@ vi.mock('@cloudflare/ai-chat', () => ({
     stash = vi.fn();
     persistMessages = vi.fn(async (messages: UIMessage[]) => {
       this.messages = structuredClone(messages);
+    });
+
+    saveMessages = vi.fn(async (update: (messages: UIMessage[]) => UIMessage[]) => {
+      await this.persistMessages(update(this.messages));
+      await this.onChatMessage(undefined, { requestId: 'saved' });
+      return { status: 'completed' };
     });
 
     continueLastTurn = vi.fn(async (body?: Record<string, unknown>) => {
@@ -212,12 +218,12 @@ async function runningConversation(saved?: Map<string, unknown>) {
     ...state,
     /** Waits until the response is read and its usage recorded, as Codex's next request would. */
     request: async () => {
-      const unreported = JSON.stringify(budget(state.saved)?.unreported ?? emptyUsage());
+      const unreported = JSON.stringify(metering(state.saved)?.unreported ?? emptyUsage());
       const response = await conversation.proxyModelRequest('{}', executionId);
       if (!response.ok) return response;
       const text = await response.text();
       await vi.waitFor(() => {
-        if (JSON.stringify(budget(state.saved).unreported) === unreported) {
+        if (JSON.stringify(metering(state.saved).unreported) === unreported) {
           throw new Error('Usage is not recorded yet');
         }
       });
@@ -235,8 +241,8 @@ async function runningConversation(saved?: Map<string, unknown>) {
   };
 }
 
-function budget(saved: Map<string, unknown>) {
-  return saved.get('budget') as BudgetState;
+function metering(saved: Map<string, unknown>) {
+  return saved.get('metering') as MeteringState;
 }
 
 function freezeTime() {
@@ -268,12 +274,14 @@ it('checks with PrairieLearn once per decision window rather than before every r
     { ...emptyUsage(), inputTokens: 20_000, outputTokens: 4_000 },
     reportedUsage,
   ]);
-  expect(budget(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
+  expect(metering(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
 });
 
 it.each([
   { failure: 'network error', response: () => Promise.reject(new Error('PL unavailable')) },
   { failure: '5xx response', response: async () => new Response('Down', { status: 503 }) },
+  // A configuration fault such as a rotated token, which recovers once it is fixed.
+  { failure: 'rejection', response: async () => new Response('Unauthorized', { status: 401 }) },
 ])('resends the same report after a $failure', async ({ response }) => {
   freezeTime();
   const usage = vi
@@ -288,7 +296,7 @@ it.each([
   expect((await state.request()).status).toBe(503);
   expect((await state.request()).status).toBe(200);
   expect(reports()[1]).toEqual(reports()[2]);
-  expect(budget(state.saved)).toMatchObject({ pending: null, limitedUntil: null });
+  expect(metering(state.saved)).toMatchObject({ pending: null, limitedUntil: null });
   await state.finish();
 });
 
@@ -339,14 +347,14 @@ it('charges web search commands and refuses them as text once limited', async ()
   });
   const state = await runningConversation();
   expect(await (await state.search(3)).json()).toEqual({ output: 'Results' });
-  expect(budget(state.saved).unreported).toEqual({ ...emptyUsage(), webSearchCalls: 3 });
+  expect(metering(state.saved).unreported).toEqual({ ...emptyUsage(), webSearchCalls: 3 });
   vi.setSystemTime('2026-10-27T03:11:01Z');
   // A failed web request would end the turn, so a refusal is a result the agent can read.
   const refused = await state.search(1);
   expect(refused.status).toBe(200);
   expect(await refused.json()).toEqual({ output: expect.stringContaining('usage limit') });
   expect(reports()[1].usage).toEqual({ ...emptyUsage(), webSearchCalls: 3 });
-  expect(budget(state.saved).unreported).toEqual(emptyUsage());
+  expect(metering(state.saved).unreported).toEqual(emptyUsage());
 });
 
 it('Stop aborts the running request and charges its estimate', async () => {
@@ -408,11 +416,6 @@ it('stops at the hourly limit, and Resume after the reset clears it without cont
     reason: 'usage_limit',
     retryAt: expiresAt,
   });
-  // New messages wait for the limit to be cleared.
-  await restored.persistMessages([
-    { id: 'early', role: 'user', parts: [{ type: 'text', text: 'Continue' }] },
-  ]);
-  await restored.onChatMessage(undefined, { requestId: 'early' });
   expect(await restored.resume()).toBe(false);
   vi.setSystemTime('2026-10-27T04:01:00Z');
   const turns = vi.mocked(SandboxTurn).mock.calls.length;
@@ -427,7 +430,7 @@ it('stops at the hourly limit, and Resume after the reset clears it without cont
   expect(vi.mocked(SandboxTurn).mock.calls).toHaveLength(turns + 1);
 });
 
-it('refuses a message while limited and sends it with the next message after Resume', async () => {
+it('refuses messages while limited, and Resume after the reset sends them', async () => {
   freezeTime();
   const usage = vi
     .fn()
@@ -436,10 +439,16 @@ it('refuses a message while limited and sends it with the next message after Res
   stubFetch({ usage });
   const { conversation, sandbox } = fixture();
   await conversation.onStart();
-  await conversation.persistMessages([
-    { id: 'first', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
-  ]);
-  await conversation.onChatMessage(undefined, { requestId: 'first' });
+  for (const [id, text] of [
+    ['first', 'Edit this question'],
+    ['second', 'Use SI units'],
+  ]) {
+    await conversation.persistMessages([
+      ...conversation.messages,
+      { id, role: 'user', parts: [{ type: 'text', text }] },
+    ]);
+    await conversation.onChatMessage(undefined, { requestId: id });
+  }
   expect(SandboxTurn).not.toHaveBeenCalled();
   expect(sandbox.prepare).not.toHaveBeenCalled();
   expect(generateTitle).not.toHaveBeenCalled();
@@ -450,13 +459,9 @@ it('refuses a message while limited and sends it with the next message after Res
   });
   vi.setSystemTime('2026-10-27T04:01:00Z');
   expect(await conversation.resume()).toBe(true);
-  await conversation.persistMessages([
-    ...conversation.messages,
-    { id: 'second', role: 'user', parts: [{ type: 'text', text: 'Continue' }] },
-  ]);
-  await conversation.onChatMessage(undefined, { requestId: 'second' });
+  await vi.waitFor(() => expect(SandboxTurn).toHaveBeenCalledOnce());
   const { input } = vi.mocked(SandboxTurn).mock.calls[0][2];
-  expect(input.text).toBe('Edit this question\n\nContinue');
+  expect(input.text).toBe('Edit this question\n\nUse SI units');
   expect(input.catchUp).toBeUndefined();
   expect(generateTitle).toHaveBeenCalledWith(
     expect.objectContaining({ message: 'Edit this question' }),
@@ -483,11 +488,11 @@ it('saves a review result while limited and delivers it once Resume clears the l
       waitsForResume: false,
     },
   });
-  saved.set('budget', {
+  saved.set('metering', {
     unreported: emptyUsage(),
     pending: null,
     limitedUntil: expiresAt,
-  } satisfies BudgetState);
+  } satisfies MeteringState);
   const { conversation } = fixture(saved);
   await conversation.onStart();
   expect(conversation.recordReviewResult('review', deniedResult)).toBe(true);
@@ -508,7 +513,7 @@ it('saves a review result while limited and delivers it once Resume clears the l
   await vi.waitFor(() => expect(SandboxTurn).toHaveBeenCalledOnce());
   const options = vi.mocked(SandboxTurn).mock.calls[0][2];
   expect(options.input.text).toContain('The instructor denied the submitted changes.');
-  expect(budget(saved)).toMatchObject({ pending: null, limitedUntil: null });
+  expect(metering(saved)).toMatchObject({ pending: null, limitedUntil: null });
 });
 
 it('runs a review delivery that races a new limit, and stops it at its first model request', async () => {
@@ -531,11 +536,11 @@ it('runs a review delivery that races a new limit, and stops it at its first mod
       waitsForResume: false,
     },
   });
-  saved.set('budget', {
+  saved.set('metering', {
     unreported: reportedUsage,
     pending: null,
     limitedUntil: null,
-  } satisfies BudgetState);
+  } satisfies MeteringState);
   const { conversation, sandbox } = fixture(saved);
   await conversation.onStart();
   expect(conversation.recordReviewResult('review', deniedResult)).toBe(true);
@@ -545,7 +550,7 @@ it('runs a review delivery that races a new limit, and stops it at its first mod
   sdk.continuationCallback = () => callback.promise;
   await conversation.deliverWaitingResult();
   await conversation.flushUsage();
-  expect(budget(saved).limitedUntil).toBe(expiresAt);
+  expect(metering(saved).limitedUntil).toBe(expiresAt);
   callback.resolve(undefined);
   await vi.waitFor(() => expect(SandboxTurn).toHaveBeenCalledOnce());
   const options = vi.mocked(SandboxTurn).mock.calls[0][2];
@@ -571,7 +576,7 @@ it('charges the estimate when final usage never arrives', async () => {
   });
   const state = await runningConversation();
   await state.request();
-  expect(budget(state.saved)).toMatchObject({
+  expect(metering(state.saved)).toMatchObject({
     limitedUntil: null,
     unreported: { inputTokens: 1, outputTokens: 16_000 },
   });
@@ -581,72 +586,8 @@ it('charges the estimate when final usage never arrives', async () => {
   expect(restored.schedule).toHaveBeenCalledWith(0, 'flushUsage', undefined, { idempotent: true });
 });
 
-it('refuses more provider requests than Codex runs at once', async () => {
-  stubFetch({
-    usage: async () => decision(),
-    model: async () =>
-      new Response(new ReadableStream(), { headers: { 'Content-Type': 'text/event-stream' } }),
-  });
-  const state = await runningConversation();
-  for (let i = 0; i < 4; i++) expect((await state.startRequest()).status).toBe(200);
-  expect((await state.startRequest()).status).toBe(429);
-  expect(await (await state.search(1)).json()).toEqual({
-    output: expect.stringContaining('Too many requests'),
-  });
-});
-
-it('retries a rejected report without blocking, reporting the rejection once', async () => {
+it('reports usage recorded while a flush is in flight, even once that flush limits the turn', async () => {
   freezeTime();
-  const usage = vi
-    .fn()
-    .mockResolvedValueOnce(decision())
-    .mockResolvedValueOnce(Response.json({ message: 'Unauthorized' }, { status: 401 }))
-    .mockResolvedValueOnce(Response.json({ message: 'Unauthorized' }, { status: 401 }))
-    .mockImplementation(async () => decision());
-  const { reports } = stubFetch({ usage });
-  const state = await runningConversation();
-  vi.setSystemTime('2026-10-27T03:11:01Z');
-  // A configuration fault such as a rotated token fails the request so Codex retries it.
-  expect((await state.request()).status).toBe(503);
-  expect((await state.request()).status).toBe(503);
-  expect(reportError).toHaveBeenCalledOnce();
-  expect(budget(state.saved).limitedUntil).toBeNull();
-  // Once the fault is fixed, the same report is accepted and inference continues.
-  expect((await state.request()).status).toBe(200);
-  expect(
-    new Set(
-      reports()
-        .slice(1)
-        .map(({ reportId }) => reportId),
-    ).size,
-  ).toBe(1);
-  await state.finish();
-});
-
-it('records a request that finishes after the decision that limited the turn', async () => {
-  freezeTime();
-  const refresh = Promise.withResolvers<Response>();
-  const usage = vi
-    .fn()
-    .mockResolvedValueOnce(decision())
-    .mockReturnValueOnce(refresh.promise)
-    .mockImplementation(async () => decision());
-  const { reports } = stubFetch({ usage });
-  const state = await runningConversation();
-  expect((await state.request()).status).toBe(200);
-  const flushed = state.conversation.flushUsage();
-  // The next request starts while that flush is still waiting for PrairieLearn.
-  expect((await state.request()).status).toBe(200);
-  refresh.resolve(decision({ status: 'limited', retryAt: expiresAt }));
-  await flushed;
-  expect(budget(state.saved).limitedUntil).toBe(expiresAt);
-  await state.finish();
-  await vi.waitFor(() => expect(reports()).toHaveLength(3));
-  expect(reports()[2].usage).toEqual(reportedUsage);
-  expect(budget(state.saved)).toMatchObject({ unreported: emptyUsage(), limitedUntil: expiresAt });
-});
-
-it('reports usage recorded while a flush is in flight before the flush ends', async () => {
   const gate = Promise.withResolvers<Response>();
   const usage = vi
     .fn()
@@ -658,15 +599,20 @@ it('reports usage recorded while a flush is in flight before the flush ends', as
   expect((await state.request()).status).toBe(200);
   const flushed = state.conversation.flushUsage();
   expect((await state.request()).status).toBe(200);
-  await state.finish();
-  gate.resolve(decision());
+  gate.resolve(decision({ status: 'limited', retryAt: expiresAt }));
   await flushed;
+  await state.finish();
+  await vi.waitFor(() => expect(reports()).toHaveLength(3));
   expect(reports().map((report) => report.usage)).toEqual([
     emptyUsage(),
     reportedUsage,
     reportedUsage,
   ]);
-  expect(budget(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
+  expect(metering(state.saved)).toMatchObject({
+    pending: null,
+    unreported: emptyUsage(),
+    limitedUntil: expiresAt,
+  });
 });
 
 it('retries the turn-end report with backoff when PrairieLearn is unreachable', async () => {
@@ -689,5 +635,5 @@ it('retries the turn-end report with backoff when PrairieLearn is unreachable', 
   );
   await state.conversation.flushUsage({ attempt: 1 });
   expect(reports()[2]).toEqual(reports()[1]);
-  expect(budget(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
+  expect(metering(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
 });

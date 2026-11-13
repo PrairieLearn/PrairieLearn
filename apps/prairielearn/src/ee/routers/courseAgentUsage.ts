@@ -9,7 +9,7 @@ import { parseRequest } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { recordCourseAgentUsageReport } from '../lib/course-agent/budget.js';
+import { recordCourseAgentUsageReport } from '../lib/course-agent/usage.js';
 
 const router = Router();
 const PostRequestSchemas = {
