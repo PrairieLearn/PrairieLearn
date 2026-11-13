@@ -1408,6 +1408,85 @@ function PrintPreparation({
                     </a>
                   )}
                 </div>
+                <div className="d-flex flex-wrap align-items-center justify-content-end gap-2 ms-auto">
+                  {(download.isPending || packet.isPending || preparingPdf === 'packet') && (
+                    <div className="d-flex align-items-center gap-2 small" role="status">
+                      <Spinner size="sm" aria-hidden="true" />
+                      <span>
+                        {preparingPdf === 'packet' && pdfPreparationProgress
+                          ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
+                          : 'Generating…'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="print-preparation-download">
+                    <Dropdown align="end">
+                      <Dropdown.Toggle id="print-download-menu" size="sm" disabled={!canDownload}>
+                        <i className="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />
+                        Prepare…
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu>
+                        {formId && previewFormName && (
+                          <>
+                            <Dropdown.Item
+                              disabled={!renderingAvailable}
+                              onClick={() =>
+                                void downloadPacket([formId], 1, 'assessment').catch(() => {})
+                              }
+                            >
+                              Prepare {previewFormName} (PDF)
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              onClick={() =>
+                                download.mutate({ id: formId, printDocument: 'assessment' })
+                              }
+                            >
+                              Prepare {previewFormName} Word (.docx)
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              disabled={!renderingAvailable}
+                              onClick={() =>
+                                void downloadPacket([formId], 1, 'answer_key').catch(() => {})
+                              }
+                            >
+                              Prepare {previewFormName} answer key (PDF)
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              onClick={() =>
+                                download.mutate({ id: formId, printDocument: 'answer_key' })
+                              }
+                            >
+                              Prepare {previewFormName} answer key Word (.docx)
+                            </Dropdown.Item>
+                          </>
+                        )}
+                        <Dropdown.Divider />
+                        {formIds.length > 1 && (
+                          <Dropdown.Item
+                            disabled={!renderingAvailable}
+                            onClick={() =>
+                              void downloadPacket(formIds, formIds.length, 'assessment').catch(
+                                () => {},
+                              )
+                            }
+                          >
+                            Prepare all forms (PDF)
+                          </Dropdown.Item>
+                        )}
+                        <Dropdown.Item
+                          disabled={!renderingAvailable}
+                          onClick={() => {
+                            booklet.reset();
+                            setPdfPreparationError(null);
+                            setShowBookletModal(true);
+                          }}
+                        >
+                          Prepare booklet PDF…
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  </div>
+                </div>
               </Card.Header>
               {isDirty && (
                 <div className="px-3 py-2 bg-warning-subtle small" role="status">
@@ -1440,90 +1519,9 @@ function PrintPreparation({
                 </div>
               )}
               <Card.Footer className="bg-white p-3">
-                <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                  <div className="print-preparation-download-help text-muted small">
-                    Word exports exclude uploaded cover pages. Formatting and page breaks may differ
-                    from the preview and between apps.
-                  </div>
-                  <div className="d-flex flex-wrap align-items-center justify-content-end gap-2 ms-auto">
-                    {(download.isPending || packet.isPending || preparingPdf === 'packet') && (
-                      <div className="d-flex align-items-center gap-2 small" role="status">
-                        <Spinner size="sm" aria-hidden="true" />
-                        <span>
-                          {preparingPdf === 'packet' && pdfPreparationProgress
-                            ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
-                            : 'Generating…'}
-                        </span>
-                      </div>
-                    )}
-                    <div className="print-preparation-download">
-                      <Dropdown drop="up" align="end">
-                        <Dropdown.Toggle id="print-download-menu" size="sm" disabled={!canDownload}>
-                          <i className="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />
-                          Prepare…
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu>
-                          {formId && previewFormName && (
-                            <>
-                              <Dropdown.Item
-                                disabled={!renderingAvailable}
-                                onClick={() =>
-                                  void downloadPacket([formId], 1, 'assessment').catch(() => {})
-                                }
-                              >
-                                Prepare {previewFormName} (PDF)
-                              </Dropdown.Item>
-                              <Dropdown.Item
-                                onClick={() =>
-                                  download.mutate({ id: formId, printDocument: 'assessment' })
-                                }
-                              >
-                                Prepare {previewFormName} Word (.docx)
-                              </Dropdown.Item>
-                              <Dropdown.Item
-                                disabled={!renderingAvailable}
-                                onClick={() =>
-                                  void downloadPacket([formId], 1, 'answer_key').catch(() => {})
-                                }
-                              >
-                                Prepare {previewFormName} answer key (PDF)
-                              </Dropdown.Item>
-                              <Dropdown.Item
-                                onClick={() =>
-                                  download.mutate({ id: formId, printDocument: 'answer_key' })
-                                }
-                              >
-                                Prepare {previewFormName} answer key Word (.docx)
-                              </Dropdown.Item>
-                            </>
-                          )}
-                          <Dropdown.Divider />
-                          {formIds.length > 1 && (
-                            <Dropdown.Item
-                              disabled={!renderingAvailable}
-                              onClick={() =>
-                                void downloadPacket(formIds, formIds.length, 'assessment').catch(
-                                  () => {},
-                                )
-                              }
-                            >
-                              Prepare all forms (PDF)
-                            </Dropdown.Item>
-                          )}
-                          <Dropdown.Item
-                            disabled={!renderingAvailable}
-                            onClick={() => {
-                              booklet.reset();
-                              setPdfPreparationError(null);
-                              setShowBookletModal(true);
-                            }}
-                          >
-                            Prepare booklet PDF…
-                          </Dropdown.Item>
-                        </Dropdown.Menu>
-                      </Dropdown>
-                    </div>
-                  </div>
+                <div className="print-preparation-download-help text-muted small">
+                  Word exports exclude uploaded cover pages. Formatting and page breaks may differ
+                  from the preview and between apps.
                 </div>
                 {download.isError && (
                   <Alert variant="danger" className="mt-2 mb-0">

@@ -248,6 +248,11 @@ test('prepares an assessment and key with consistent variants and downloads', as
   url.searchParams.set('form', form);
   await page.goto(url.href);
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await page.getByRole('button', { name: 'Answer key', exact: true }).focus();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Open preview in a new tab' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(downloadMenu(page)).toBeFocused();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${label}`) })).toHaveAttribute(
     'aria-pressed',
     'true',
