@@ -1,7 +1,9 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import type { PageLocation } from '@prairielearn/course-agent-types';
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
@@ -232,6 +234,8 @@ export function PageLayout({
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
+    /** Whether to render sync errors and warnings above the page content. */
+    showSyncErrorsAndWarnings?: boolean;
     /** Additional classes to apply to the main content container. */
     contentContainerClassName?: string;
     /** A note to display after the pageTitle, shown in parenthesis. */
@@ -272,6 +276,7 @@ export function PageLayout({
     fullWidth: false,
     fullHeight: false,
     contentPadding: true,
+    showSyncErrorsAndWarnings: true,
     contentContainerClassName: '',
     hxExt: '',
     dataAttributes: {},
@@ -298,6 +303,24 @@ export function PageLayout({
     sideNavEnabled && resolvedOptions.enableNavbar && resolvedOptions.showCourseAgentPanel
       ? resLocals.course_agent_panel
       : null;
+
+  // The agent sees the page through its nav key, not the page title, which can name students.
+  // A shared question from another course is flagged, since its files are not in this checkout.
+  const courseAgentPage = courseAgentPanel
+    ? EncodedData(
+        {
+          page: [navContext.page, navContext.subPage].filter((part) => part != null).join('.'),
+          courseInstance: resLocals.course_instance?.short_name ?? undefined,
+          assessment: resLocals.assessment?.tid ?? undefined,
+          question: resLocals.question?.qid ?? undefined,
+          questionFromAnotherCourse:
+            resLocals.question && resLocals.question.course_id !== resLocals.course.id
+              ? true
+              : undefined,
+        } satisfies Omit<PageLocation, 'path'>,
+        'course-agent-page',
+      )
+    : '';
 
   let showContextNavigation = [
     'instructor',
@@ -499,14 +522,22 @@ export function PageLayout({
                   resolvedOptions.fullHeight && 'app-content-full-height flex-grow-1',
                 )}"
               >
-                ${renderHtml(
-                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
-                )}
+                ${
+                  resolvedOptions.showSyncErrorsAndWarnings
+                    ? renderHtml(
+                        <SyncErrorsAndWarningsForContext
+                          navContext={navContext}
+                          resLocals={resLocals}
+                        />,
+                      )
+                    : ''
+                }
                 ${contentString}
               </main>
               ${postContentString}
             </div>
           </div>
+          ${courseAgentPage}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

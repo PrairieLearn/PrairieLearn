@@ -71,11 +71,21 @@ To upgrade Codex, update the release version and the asset's SHA-256 digest (sho
 
 The agent can search the web and read pages through Codex's `web.run` tool, for example to check PrairieLearn documentation or an institution's academic calendar. Codex sends these commands to the model endpoint, and the Worker forwards them to OpenAI, which performs the searches and page reads. The container itself has no internet access. The Worker forwards only the commands it recognizes, sets the search settings itself, and refuses OpenAI-hosted tools in model requests, because the agent can send requests to the model endpoint directly. Searches and page addresses leave PrairieLearn, and page content is untrusted: a page could ask the agent to put course content in a URL it opens.
 
+## Attachment retention
+
+Attachments and their thumbnails are stored in the checkpoint bucket under `uploads/`. A bucket lifecycle rule deletes them 30 days after upload, whether or not the conversation is still in use, and R2 removes an expired object within about a day. The conversation keeps the message, but a sandbox started after that no longer has the file.
+
+The Worker does not create the rule. PrairieLearn's deployed environments define it in Terraform alongside the bucket, so a bucket created any other way keeps attachments until it is given one.
+
+Only the uploaded files expire. A sandbox checkpoint holds the agent's workspace and thread history, so anything the agent copied or printed from an attachment lasts as long as the checkpoint.
+
 ## Deployment environments and monitoring
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.
 
 Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
+
+Every object in the checkpoint bucket lives under a prefix that names its kind, so R2 lifecycle rules can be scoped by prefix: sandbox checkpoints under `checkpoints/` (`<id>.tar.zst`, referenced by conversation state and deleted by the archive cleanup, so they must never expire by age) and local course archives under `local-sources/`. A checkpoint record stores only its id, so changing the checkpoint prefix makes existing checkpoints unreachable unless their objects are copied to the new prefix first.
 
 Set that environment's `SENTRY_DSN` secret (`wrangler secret put SENTRY_DSN --env <environment>`) to enable error reporting; the DSN is kept out of this public repository. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local development does not report to Sentry.
 
