@@ -191,21 +191,37 @@ RETURNING
 -- BLOCK update_instance_question_post_submission
 WITH
   updated_instance_question AS (
-    UPDATE instance_questions
+    UPDATE instance_questions AS iq
     SET
       status = $status,
       duration = duration + ($delta * interval '1 ms'),
       first_duration = coalesce(first_duration, $delta * interval '1 ms'),
       modified_at = now(),
       requires_manual_grading = (
-        requires_manual_grading
+        iq.requires_manual_grading
         OR $requires_manual_grading
       ),
+      grading_pending = (
+        iq.grading_pending
+        AND (
+          iq.requires_manual_grading
+          OR $requires_manual_grading
+        )
+      )
+      OR (
+        $gradable IS TRUE
+        AND $broken IS NOT TRUE
+        AND coalesce($credit::double precision, 100) > 0
+        AND coalesce(iq.points, 0) < coalesce(aq.max_points, 0)
+      ),
       is_ai_graded = FALSE
+    FROM
+      assessment_questions AS aq
     WHERE
-      id = $instance_question_id
+      iq.id = $instance_question_id
+      AND aq.id = iq.assessment_question_id
     RETURNING
-      *
+      iq.*
   ),
   updated_assessment_instance AS (
     UPDATE assessment_instances

@@ -11,6 +11,7 @@ columns
     duration: interval default '00:00:00'::interval
     first_duration: interval
     first_submission_score: double precision
+    grading_pending: boolean not null default false
     highest_submission_score: double precision
     id: bigint not null default nextval('instance_questions_id_seq'::regclass)
     incremental_submission_points_array: double precision[]

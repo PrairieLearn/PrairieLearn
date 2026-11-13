@@ -81,3 +81,52 @@ INSERT INTO
     FROM
       results
   );
+
+-- BLOCK select_and_lock_assessment_instances_for_pending_clear
+SELECT
+  ai.id
+FROM
+  assessment_instances AS ai
+  LEFT JOIN teams AS t ON (
+    t.id = ai.team_id
+    AND t.deleted_at IS NULL
+  )
+WHERE
+  ai.assessment_id = $assessment_id
+  AND (
+    $assessment_instance_ids::bigint[] IS NULL
+    OR ai.id = ANY ($assessment_instance_ids::bigint[])
+  )
+  AND (
+    ai.team_id IS NULL
+    OR t.id IS NOT NULL
+  )
+ORDER BY
+  ai.id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK clear_assessment_instances_grading_pending
+UPDATE instance_questions
+SET
+  grading_pending = FALSE
+WHERE
+  assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
+  AND grading_pending;
+
+-- BLOCK select_grading_pending_assessment_instance_ids
+SELECT DISTINCT
+  iq.assessment_instance_id
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
+  JOIN assessments AS a ON a.id = aq.assessment_id
+  JOIN alternative_groups AS ag ON ag.id = aq.alternative_group_id
+  JOIN zones AS z ON z.id = ag.zone_id
+WHERE
+  iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
+  AND iq.grading_pending
+  AND (
+    aq.deleted_at IS NULL
+    OR a.type = 'Exam'
+  );

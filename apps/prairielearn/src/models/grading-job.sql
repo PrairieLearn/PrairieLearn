@@ -105,8 +105,7 @@ SELECT
       JOIN submissions AS snew ON (snew.variant_id = vnew.id)
     WHERE
       vnew.instance_question_id = iq.id
-      AND s.id != snew.id
-      AND snew.date > s.date
+      AND (snew.date, snew.id) > (s.date, s.id)
   ) AS has_newer_submission
 FROM
   submissions AS s
@@ -241,3 +240,16 @@ WHERE
   id = $grading_job_id
 RETURNING
   *;
+
+-- BLOCK update_instance_question_grading_pending_after_grading
+UPDATE instance_questions AS iq
+SET
+  -- Completion must not reopen work acknowledged by an instructor.
+  grading_pending = iq.grading_pending
+  AND iq.requires_manual_grading
+  AND coalesce(iq.points, 0) < coalesce(aq.max_points, 0)
+FROM
+  assessment_questions AS aq
+WHERE
+  iq.id = $instance_question_id
+  AND aq.id = iq.assessment_question_id;
