@@ -409,9 +409,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     accepted_type_labels = []
     format_examples = []
-    for allowed_type, (label, examples) in FORMAT_HELP_BY_ALLOWED_TYPE.items():
+    for allowed_type, (type_label, examples) in FORMAT_HELP_BY_ALLOWED_TYPE.items():
         if allowed_type in format_help_types:
-            accepted_type_labels.append(label)
+            accepted_type_labels.append(type_label)
             format_examples.extend(examples)
     accepted_types = " and ".join(
         ", ".join(accepted_type_labels).rsplit(", ", maxsplit=1)
