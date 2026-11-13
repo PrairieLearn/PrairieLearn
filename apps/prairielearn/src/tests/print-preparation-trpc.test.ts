@@ -12,10 +12,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
-import {
-  DEFAULT_PRINT_SETTINGS,
-  printLayoutSearch,
-} from '../lib/client/printing/print-preparation.js';
+import { printLayoutSearch } from '../lib/client/printing/print-preparation.js';
 import { getAssessmentTrpcUrl, getPrintFormUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
@@ -32,6 +29,7 @@ import {
 import { createPrintForm } from '../lib/printing/print-forms.js';
 import { PrintPacketMetadataSchema } from '../lib/printing/print-packet-schema.js';
 import { assessmentHasPrintRandomization } from '../lib/printing/print-preparation.js';
+import { DEFAULT_PRINT_SETTINGS } from '../lib/printing/print-settings.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';

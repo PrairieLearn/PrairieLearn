@@ -5,6 +5,7 @@ columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     id: bigint not null default nextval('print_forms_id_seq'::regclass)
     label: text not null
+    settings: jsonb not null
     user_id: bigint not null
 
 indexes

@@ -1,4 +1,4 @@
-import type { PrintSettings } from '../../printing/print-packet-schema.js';
+import type { PrintSettings } from '../../printing/print-settings.js';
 
 import { printIdentityFields } from './print-cover.js';
 
@@ -9,17 +9,6 @@ export interface PrintPreparationQuestion {
   points: number;
   concerns: string[];
 }
-
-export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
-  paperSize: 'Letter',
-  includeCoverPage: true,
-  includeGradingTable: false,
-  includeHonorCode: true,
-  identityFields: 'Student ID\nSection',
-  blockSize: 'auto',
-  questionSizes: {},
-  excludedQuestions: [],
-};
 
 export function printLayoutSearch(settings: PrintSettings): string {
   const search = new URLSearchParams({

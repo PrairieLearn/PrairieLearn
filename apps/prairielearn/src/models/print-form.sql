@@ -1,8 +1,20 @@
 -- BLOCK insert_print_form
 INSERT INTO
-  print_forms (assessment_id, user_id, authn_user_id, label)
+  print_forms (
+    assessment_id,
+    user_id,
+    authn_user_id,
+    label,
+    settings
+  )
 VALUES
-  ($assessment_id, $user_id, $authn_user_id, $label)
+  (
+    $assessment_id,
+    $user_id,
+    $authn_user_id,
+    $label,
+    $settings
+  )
 RETURNING
   *;
 

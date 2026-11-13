@@ -11,6 +11,7 @@ import {
 import { IdSchema } from '@prairielearn/zod';
 
 import { PrintFormSchema } from '../lib/db-types.js';
+import type { PrintSettings } from '../lib/printing/print-settings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -19,15 +20,23 @@ export async function insertPrintForm({
   userId,
   authnUserId,
   label,
+  settings,
 }: {
   assessmentId: string;
   userId: string;
   authnUserId: string;
   label: string;
+  settings: PrintSettings;
 }) {
   return await queryRow(
     sql.insert_print_form,
-    { assessment_id: assessmentId, user_id: userId, authn_user_id: authnUserId, label },
+    {
+      assessment_id: assessmentId,
+      user_id: userId,
+      authn_user_id: authnUserId,
+      label,
+      settings: JSON.stringify(settings),
+    },
     PrintFormSchema,
   );
 }
