@@ -8,6 +8,7 @@ import { formatDateShort } from './resolver.js';
 export function formatLegacyAssessmentAccess(
   raw: SprocAuthzAssessment,
   displayTimezone: string,
+  reqDate: Date,
 ): AssessmentAuthzResult {
   const creditDateString = (() => {
     if (raw.staff_override) return '100% (Staff override)';
@@ -16,11 +17,11 @@ export function formatLegacyAssessmentAccess(
         raw.next_active_credit != null && raw.next_active_credit > 0
           ? `${raw.next_active_credit}%`
           : 'None';
-      return `${credit} starting from ${formatDateShort(raw.next_active_date, displayTimezone)}`;
+      return `${credit} starting from ${formatDateShort(raw.next_active_date, displayTimezone, reqDate)}`;
     }
     if (raw.credit == null || raw.credit <= 0 || !raw.active) return 'None';
     return raw.credit_end_date
-      ? `${raw.credit}% until ${formatDateShort(raw.credit_end_date, displayTimezone)}`
+      ? `${raw.credit}% until ${formatDateShort(raw.credit_end_date, displayTimezone, reqDate)}`
       : `${raw.credit}%`;
   })();
 
@@ -37,6 +38,8 @@ export function formatLegacyAssessmentAccess(
     active: raw.active,
     authorized: raw.authorized,
     credit: raw.credit,
+    credit_end_date:
+      raw.active && raw.credit != null && raw.credit > 0 ? raw.credit_end_date : null,
     credit_date_string: creditDateString,
     exam_access_end: raw.exam_access_end,
     mode: raw.mode,
@@ -54,9 +57,10 @@ export function formatLegacyAssessmentAccess(
 export function formatLegacyAssessmentInstanceAccess(
   raw: SprocAuthzAssessmentInstance,
   displayTimezone: string,
+  reqDate: Date,
 ): AssessmentInstanceAuthzResult {
   return {
-    ...formatLegacyAssessmentAccess(raw, displayTimezone),
+    ...formatLegacyAssessmentAccess(raw, displayTimezone, reqDate),
     authorized_edit: raw.authorized_edit,
     time_limit_expired: raw.time_limit_expired,
   };
