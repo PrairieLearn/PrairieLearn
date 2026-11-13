@@ -71,8 +71,7 @@ SELECT
   aq.max_auto_points,
   aq.max_manual_points,
   aq.mean_question_score,
-  aq.discrimination,
-  aq.average_number_submissions
+  aq.discrimination
 FROM
   course_instances AS ci
   JOIN assessments AS a ON (a.course_instance_id = ci.id)
@@ -135,7 +134,6 @@ SELECT
   iq.auto_points,
   iq.manual_points,
   iq.score_perc,
-  iq.number_attempts,
   iq.highest_submission_score,
   iq.requires_manual_grading,
   EXTRACT(

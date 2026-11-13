@@ -17,7 +17,7 @@ const SCHEMA = JSON.stringify({
         properties: {
           id: { type: 'string', pattern: '^\\d+$' },
           mode: {
-            anyOf: [{ type: 'string', enum: ['Public', 'Exam', 'SEB'] }, { type: 'null' }],
+            anyOf: [{ type: 'string', enum: ['Public', 'Exam'] }, { type: 'null' }],
             description: 'Server mode the answer was submitted in.',
           },
           graded_at: {
@@ -61,7 +61,7 @@ describe('course data tools', () => {
     );
     expect(lines).toContain('  id (string)');
     expect(lines).toContain(
-      '  mode (one of Public, Exam, SEB, nullable): Server mode the answer was submitted in.',
+      '  mode (one of Public, Exam, nullable): Server mode the answer was submitted in.',
     );
     expect(lines).toContain(
       '  graded_at (date-time, nullable): When the submission was graded. Null if not graded.',

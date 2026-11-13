@@ -166,7 +166,7 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
     const listed = await getRows(`${dataUrl}/submissions`, owner, {
       filters: [
         { column: 'id', op: 'in', value: [submission.id, '0'] },
-        { column: 'mode', op: 'in', value: [submission.mode, 'SEB'] },
+        { column: 'mode', op: 'in', value: [submission.mode, 'Public'] },
       ],
       select: ['id'],
     });

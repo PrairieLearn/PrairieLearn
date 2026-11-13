@@ -29,6 +29,9 @@ const QidSchema = z
   .nullable()
   .describe("The question's directory within the course's questions/ directory.");
 
+// PrairieLearn no longer uses the SEB mode, so it isn't offered.
+const ModeSchema = EnumModeSchema.exclude(['SEB']);
+
 // A JSON object from a jsonb column, such as a question's parameters.
 const JsonObjectSchema = z.record(z.string(), z.unknown());
 
@@ -66,7 +69,7 @@ export const COURSE_DATA_DATASETS = {
     query: sql.select_course_instances_by_course_id,
     schema: z.object({
       id: IdSchema,
-      short_name: z.string().describe('Short unique identifier for the course instance.'),
+      short_name: CourseInstanceShortNameSchema,
       long_name: z.string().nullable().describe('Long name of the course instance.'),
       display_timezone: z
         .string()
@@ -74,10 +77,10 @@ export const COURSE_DATA_DATASETS = {
           'Timezone for all date input and display in the course instance, as an IANA identifier.',
         ),
       publishing_start_date: TimestampSchema.nullable().describe(
-        'When students can first access the course instance.',
+        'When students can first access the course instance. Null when access is set by legacy allowAccess rules.',
       ),
       publishing_end_date: TimestampSchema.nullable().describe(
-        'When students lose access to the course instance.',
+        'When students lose access to the course instance. Null when access is set by legacy allowAccess rules.',
       ),
     }),
   }),
@@ -88,10 +91,7 @@ export const COURSE_DATA_DATASETS = {
       id: IdSchema,
       course_instance_id: IdSchema,
       course_instance_short_name: CourseInstanceShortNameSchema,
-      tid: z
-        .string()
-        .nullable()
-        .describe('Short unique identifier for the assessment within its course instance.'),
+      tid: AssessmentTidSchema,
       title: z.string().nullable().describe('Title of the assessment.'),
       label: z
         .string()
@@ -104,9 +104,14 @@ export const COURSE_DATA_DATASETS = {
         .describe('Name of the assessment set the assessment belongs to.'),
       number: z.string().describe('Number of the assessment within its set.'),
       type: EnumAssessmentTypeSchema.describe(
-        'Type of the assessment, which determines how students attempt questions and earn points.',
+        'Homework: students can retry questions on new variants to earn points. Exam: each question has a list of point values for successive tries, and attempts are often timed or proctored.',
       ),
-      max_points: z.number().nullable().describe('Points that must be earned to score 100%.'),
+      max_points: z
+        .number()
+        .nullable()
+        .describe(
+          'Points needed for a score of 100%. Can be null for an assessment no student has started; every attempt in assessment_instances has it.',
+        ),
       max_bonus_points: z
         .number()
         .nullable()
@@ -122,10 +127,7 @@ export const COURSE_DATA_DATASETS = {
     query: sql.select_questions_by_course_id,
     schema: z.object({
       id: IdSchema,
-      qid: z
-        .string()
-        .nullable()
-        .describe('Short unique identifier for the question within the course.'),
+      qid: QidSchema,
       title: z.string().nullable().describe('Title of the question.'),
       topic: z.string().nullable().describe('Category the question belongs to.'),
       grading_method: EnumGradingMethodSchema.describe(
@@ -140,7 +142,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   assessment_questions: dataset({
     description:
-      'Questions as placed on an assessment, with their points and statistics. Statistics are precomputed and can be out of date.',
+      'Questions as placed on an assessment, with their points and statistics. The statistics cover attempts that count in statistics and are recalculated every few minutes, so the latest activity may be missing.',
     query: sql.select_assessment_questions_by_course_id,
     schema: z.object({
       id: IdSchema,
@@ -150,11 +152,13 @@ export const COURSE_DATA_DATASETS = {
       assessment_tid: AssessmentTidSchema,
       question_id: IdSchema,
       qid: QidSchema,
-      number: z.number().nullable().describe('Position of the question on the assessment.'),
+      number: z.number().nullable().describe('Position of the question on the assessment, from 1.'),
       max_points: z
         .number()
         .nullable()
-        .describe('Maximum points for the question on the assessment.'),
+        .describe(
+          'Most points a student can earn on the question, from automatic and manual grading.',
+        ),
       max_auto_points: z.number().nullable().describe('Points available from automatic grading.'),
       max_manual_points: z.number().nullable().describe('Points available from manual grading.'),
       mean_question_score: z
@@ -164,11 +168,9 @@ export const COURSE_DATA_DATASETS = {
       discrimination: z
         .number()
         .nullable()
-        .describe('Correlation between this score and the assessment score, from 0 to 100.'),
-      average_number_submissions: z
-        .number()
-        .nullable()
-        .describe('Mean number of submissions per student.'),
+        .describe(
+          "Correlation between students' scores on this question and on the whole assessment, times 100, from -100 to 100. Low values mean the question doesn't separate stronger from weaker students.",
+        ),
     }),
   }),
   assessment_instances: dataset({
@@ -186,11 +188,18 @@ export const COURSE_DATA_DATASETS = {
         'Team that owns the attempt. Null for individual work.',
       ),
       number: z.number().describe('Attempt number for this student and assessment, from 1.'),
-      mode: EnumModeSchema.nullable().describe('Server mode the attempt was started in.'),
+      mode: ModeSchema.nullable().describe(
+        'Where the attempt was started: Public for normal access, or Exam in a proctored exam session (such as PrairieTest).',
+      ),
       open: z.boolean().describe('Whether the attempt still accepts answers.'),
       started_at: TimestampSchema.nullable().describe('When the attempt started.'),
-      closed_at: TimestampSchema.nullable().describe('When the attempt closed.'),
-      duration: z.number().nullable().describe('Time spent on the attempt, in seconds.'),
+      closed_at: TimestampSchema.nullable().describe('When the attempt closed. Null while open.'),
+      duration: z
+        .number()
+        .nullable()
+        .describe(
+          "Estimated time spent on the attempt, in seconds: the time between the student's actions, skipping gaps over an hour.",
+        ),
       points: z.number().nullable().describe('Points earned on the attempt.'),
       max_points: z.number().nullable().describe('Points needed for a score of 100%.'),
       score_perc: z
@@ -199,7 +208,9 @@ export const COURSE_DATA_DATASETS = {
         .describe('Score from 0 to 100, which bonus points can exceed.'),
       include_in_statistics: z
         .boolean()
-        .describe('False for staff attempts and others excluded from assessment statistics.'),
+        .describe(
+          'Whether the attempt counts in assessment statistics. False for attempts started by course staff.',
+        ),
     }),
   }),
   instance_questions: dataset({
@@ -215,14 +226,14 @@ export const COURSE_DATA_DATASETS = {
       include_in_statistics: z
         .boolean()
         .describe(
-          'Whether the attempt counts in assessment statistics. False for staff attempts and others excluded.',
+          'Whether the attempt counts in assessment statistics. False for attempts started by course staff.',
         ),
       assessment_question_id: IdSchema,
       question_id: IdSchema,
       qid: QidSchema,
       number: z.number().nullable().describe('Position of the question in the attempt.'),
       status: EnumInstanceQuestionStatusSchema.nullable().describe(
-        'Grading status of the question in the attempt.',
+        'unanswered: no submission. saved: answer saved but not graded. grading: waiting for an external grader. invalid: the latest answer could not be graded. incorrect: graded, never fully correct. correct: a submission was fully correct and more points are available. complete: no more points are available, from full points or no tries left, so it does not mean correct.',
       ),
       points: z
         .number()
@@ -231,17 +242,17 @@ export const COURSE_DATA_DATASETS = {
       auto_points: z.number().nullable().describe('Points earned from automatic grading.'),
       manual_points: z.number().nullable().describe('Points earned from manual grading.'),
       score_perc: z.number().nullable().describe('Score on the question, from 0 to 100.'),
-      number_attempts: z
-        .number()
-        .describe(
-          'Counter kept by some grading paths; can be 0 when submissions exist. Count rows in submissions instead.',
-        ),
       highest_submission_score: z
         .number()
         .nullable()
         .describe('Best submission score, from 0 to 1.'),
       requires_manual_grading: z.boolean().describe('Whether manual grading is pending.'),
-      duration: z.number().nullable().describe('Time spent on the question, in seconds.'),
+      duration: z
+        .number()
+        .nullable()
+        .describe(
+          "Estimated time spent on the question, in seconds: the time between the student's actions, skipping gaps over an hour.",
+        ),
       created_at: TimestampSchema.nullable().describe(
         'When the question was added to the attempt.',
       ),
@@ -272,7 +283,11 @@ export const COURSE_DATA_DATASETS = {
         .describe('Number of the variant among those generated for the question in the attempt.'),
       created_at: TimestampSchema.nullable().describe('When the variant was generated.'),
       open: z.boolean().nullable().describe('Whether the variant still accepts submissions.'),
-      broken: z.boolean().describe('Whether the variant was marked broken.'),
+      broken: z
+        .boolean()
+        .describe(
+          "Whether the question's code failed for the variant, so students couldn't use it.",
+        ),
       params: JsonObjectSchema.nullable().describe(
         'Parameters the question generated for the variant. Can be large.',
       ),
@@ -303,25 +318,37 @@ export const COURSE_DATA_DATASETS = {
         'Team that submitted the answer. Null for individual work.',
       ),
       submitted_at: TimestampSchema.nullable().describe('When the answer was submitted.'),
-      mode: EnumModeSchema.nullable().describe('Server mode the answer was submitted in.'),
+      mode: ModeSchema.nullable().describe(
+        'Where the answer was submitted: Public for normal access, or Exam in a proctored exam session (such as PrairieTest).',
+      ),
       gradable: z
         .boolean()
         .nullable()
         .describe('Whether the answer could be graded. False when it had format errors.'),
-      broken: z.boolean().nullable().describe('Whether grading hit an error.'),
+      broken: z
+        .boolean()
+        .nullable()
+        .describe("Whether the question's code failed while grading the answer."),
       graded_at: TimestampSchema.nullable().describe(
         'When the submission was graded. Null if not graded.',
       ),
       score: z
         .number()
         .nullable()
-        .describe('Score from 0 to 1, after any manual override. Null if not graded.'),
-      correct: z.boolean().nullable().describe('Whether the submission was fully correct.'),
+        .describe(
+          'Score from 0 to 1, including any score staff set in manual grading. Null if not graded. Manual grading points are in instance_questions.manual_points.',
+        ),
+      correct: z
+        .boolean()
+        .nullable()
+        .describe('Whether the submission was fully correct. Null if not graded.'),
       overridden: z.boolean().describe('Whether staff manually overrode the score.'),
       credit: z
         .number()
         .nullable()
-        .describe("Credit percentage from the assessment's access rules at submission time."),
+        .describe(
+          "Credit percentage from the assessment's access rules at submission time, which scales the points earned, such as 50 for a late submission.",
+        ),
       submitted_answer: JsonObjectSchema.nullable().describe(
         'The answer, keyed by answer name. Uploaded files are omitted. Can be large.',
       ),
