@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const Count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+const Count = z.number().int().min(0);
 
 /**
  * Provider usage; PrairieLearn prices it. Cached reads and cache writes are both part of

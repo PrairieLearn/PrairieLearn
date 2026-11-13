@@ -26,7 +26,7 @@ export function ConversationStats({
   const usageQuery = useQuery({
     ...trpc.courseAgent.usage.queryOptions({ conversationId }),
     enabled: show,
-    refetchInterval: show ? 5_000 : false,
+    refetchInterval: 5_000,
   });
   const usage = usageQuery.data;
   const missing = usageQuery.isError ? 'Unavailable' : 'Loading';

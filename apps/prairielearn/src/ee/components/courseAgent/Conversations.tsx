@@ -47,17 +47,6 @@ import { currentPageLocation } from './pageLocation.js';
 const ReviewPartSchema = z.object({ reviewId: z.string() });
 const TurnPartSchema = z.object({ tag: z.string() });
 
-/**
- * Instructors decide a review while the sandbox is at rest. The usage limit only pauses the agent's
- * inference, so the decision is still saved and delivered once Resume clears the limit.
- */
-function reviewDecidable(state: ConversationState) {
-  return (
-    state.status === 'waiting_for_user' ||
-    state.status === 'offline' ||
-    (state.status === 'blocked' && state.reason === 'usage_limit')
-  );
-}
 
 const NEW_CONVERSATION = 'new';
 
@@ -426,7 +415,9 @@ function Chat({
   const showInitialText =
     initialText !== undefined && !messages.some((message) => message.role === 'user');
   const awaitingReviewId =
-    !responseActive && lifecycle && reviewDecidable(lifecycle) ? lifecycle.reviewId : null;
+    !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
+      ? (lifecycle.reviewId ?? null)
+      : null;
   // An input request is open until staff send their next message, which answers it however it is sent.
   const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   const latest = messages.at(-1);

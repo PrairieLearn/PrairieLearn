@@ -16,26 +16,17 @@ function priceUsage(report: UsageReport) {
     throw new HttpStatusError(400, 'The model has no configured price.');
   }
   const model = report.model as keyof typeof config.costPerMillionTokens;
-  const {
-    inputTokens,
-    cachedInputTokens,
-    cacheWriteInputTokens,
-    outputTokens,
-    reasoningTokens,
-    webSearchCalls,
-  } = report.usage;
+  const { inputTokens, cachedInputTokens, cacheWriteInputTokens, outputTokens, webSearchCalls } =
+    report.usage;
   const tokens = calculateResponseCost({
     model,
     usage: {
-      inputTokens,
       inputTokenDetails: {
         noCacheTokens: inputTokens - cachedInputTokens - cacheWriteInputTokens,
         cacheReadTokens: cachedInputTokens,
         cacheWriteTokens: cacheWriteInputTokens,
       },
       outputTokens,
-      outputTokenDetails: { textTokens: outputTokens - reasoningTokens, reasoningTokens },
-      totalTokens: inputTokens + outputTokens,
     },
   });
   return tokens + webSearchCalls * config.courseAgentWebSearchCallCostDollars;

@@ -252,14 +252,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private allowedAt: number | null = null;
 
   /**
-   * The turn's provider requests and what to charge if their usage never arrives. Turn completion
-   * aborts them and waits for their usage. They are in memory only: a request running when the
+   * The turn's provider requests. Turn completion aborts them, which charges their estimates. They
+   * are in memory only: a request running when the
    * object restarts goes unrecorded, which deferred deploys make rare.
    */
-  private readonly providerRequests = new Map<
-    string,
-    { estimate: Usage; abort: AbortController; settled: PromiseWithResolvers<undefined> }
-  >();
+  private readonly providerRequests = new Set<AbortController>();
 
   private _record: ConversationRecord | null = null;
   // Process connections and completion promises exist only in this DO instance.
@@ -517,24 +514,17 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Start tracking a provider request, or return null if too many are running. */
   private startProviderRequest(estimate: Usage) {
     if (this.providerRequests.size >= MAX_PROVIDER_REQUESTS) return null;
-    const requestId = crypto.randomUUID();
     const abort = new AbortController();
-    this.providerRequests.set(requestId, {
-      estimate,
-      abort,
-      settled: Promise.withResolvers<undefined>(),
-    });
-    return { requestId, signal: abort.signal };
-  }
-
-  /** Record a provider request's usage once; unknown usage is charged its estimate. */
-  private finishProviderRequest(requestId: string, usage: Usage | null) {
-    const request = this.providerRequests.get(requestId);
-    if (!request) return;
-    this.providerRequests.delete(requestId);
-    if (!usage) logEvent('provider_usage_estimated', { conversationId: this.name });
-    this.recordUsage(usage ?? request.estimate);
-    request.settled.resolve(undefined);
+    this.providerRequests.add(abort);
+    /** Records the request's usage once; unknown usage is charged the estimate. */
+    const finish = (usage: Usage | null) => {
+      if (!this.providerRequests.delete(abort)) return;
+      if (!usage) logEvent('provider_usage_estimated', { conversationId: this.name });
+      this.recordUsage(usage ?? estimate);
+    };
+    // Nothing reads an aborted request, so its usage will never arrive.
+    abort.signal.addEventListener('abort', () => finish(null));
+    return { finish, signal: abort.signal };
   }
 
   private recordUsage(usage: Usage) {
@@ -645,12 +635,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       logEvent('usage_report_rejected', { conversationId: this.name, status: response.status });
       return false;
     }
-    // Only Resume clears the limit, so an allowed decision leaves an existing one in place.
+    // Only Resume clears the limit, so an allowed decision leaves an existing one in place. A
+    // decision answered after its hour ended no longer applies.
+    const { data } = decision;
     this.saveBudget({
       ...this.budget,
       pending: null,
       limitedUntil:
-        decision.data.status === 'limited' ? decision.data.retryAt : this.budget.limitedUntil,
+        data.status === 'limited' && Date.parse(data.retryAt) > Date.now()
+          ? data.retryAt
+          : this.budget.limitedUntil,
     });
     this.allowedAt = decision.data.status === 'allowed' ? Date.now() : null;
     return true;
@@ -680,12 +674,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   private forwardModelResponse(
     response: Response,
-    requestId: string,
-    signal: AbortSignal,
+    { finish, signal }: { finish: (usage: Usage | null) => void; signal: AbortSignal },
   ): Response {
     if (!response.ok) {
       // The provider does not bill a request it rejected or failed to serve.
-      this.finishProviderRequest(requestId, emptyUsage());
+      finish(emptyUsage());
       return response;
     }
     if (!response.body) throw new Error('Provider returned no response body');
@@ -699,7 +692,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             type: 'response.completed',
             response: await new Response(metered).json(),
           });
-          this.finishProviderRequest(requestId, requestUsage(event));
+          finish(requestUsage(event));
           return;
         }
         const reader = parseJsonEventStream({
@@ -719,12 +712,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             const usage =
               requestUsage(chunk.value.value) ??
               (chunk.value.value.type === 'response.failed' ? emptyUsage() : null);
-            if (usage) this.finishProviderRequest(requestId, usage);
+            if (usage) finish(usage);
           }
         }
       } finally {
         // Charges the estimate unless the usage was recorded above.
-        this.finishProviderRequest(requestId, null);
+        finish(null);
       }
     }).catch((error: unknown) => {
       // Turn completion aborts requests nothing reads anymore; that is not a failure.
@@ -788,10 +781,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     try {
       const response = await this.openai('/v1/responses', body, request.signal);
-      return this.forwardModelResponse(response, request.requestId, request.signal);
+      return this.forwardModelResponse(response, request);
     } catch (error) {
-      // An aborted request may have been billed; one that failed to connect was not.
-      this.finishProviderRequest(request.requestId, request.signal.aborted ? null : emptyUsage());
+      // An aborted request was charged its estimate; one that failed to connect was not billed.
+      request.finish(emptyUsage());
       if (request.signal.aborted) return new Response('Execution stopped', { status: 409 });
       throw error;
     }
@@ -819,10 +812,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     try {
       const response = await this.openai('/v1/alpha/search', body, request.signal);
-      this.finishProviderRequest(request.requestId, response.ok ? usage : emptyUsage());
+      request.finish(response.ok ? usage : emptyUsage());
       return response;
     } catch (error) {
-      this.finishProviderRequest(request.requestId, request.signal.aborted ? usage : emptyUsage());
+      request.finish(emptyUsage());
       if (request.signal.aborted) return Response.json({ output: SEARCH_NOT_ADMITTED.stopped });
       throw error;
     }
@@ -1084,9 +1077,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     // Nothing reads a provider request that is still running after Stop, so abort it rather than
     // pay for the rest of its output; it is charged its estimate.
     active.finishing = true;
-    const requests = [...this.providerRequests.values()];
-    for (const request of requests) request.abort.abort();
-    await Promise.all(requests.map((request) => request.settled.promise));
+    for (const abort of this.providerRequests) abort.abort();
     // Report the turn's remaining usage now, so Stats and the hourly limit include it. This also
     // runs when limited: a request can finish after the decision that limited the turn.
     void this.keepAliveWhile(() => this.flushUsage()).catch((error: unknown) =>
@@ -1147,9 +1138,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       return false;
     }
     const limitedUntil = this.budget.limitedUntil;
-    if (limitedUntil) {
-      // Automatic recovery leaves the limit for the user to clear.
-      if (!explicit) return true;
+    // Automatic recovery leaves the limit for the user to clear.
+    if (limitedUntil && explicit) {
       // A repaired sandbox counts as resumed even though the limit still applies.
       if (Date.parse(limitedUntil) > Date.now()) return lifecycle.status === 'blocked';
       // The next model request asks PrairieLearn again, so a limit that still applies returns.
