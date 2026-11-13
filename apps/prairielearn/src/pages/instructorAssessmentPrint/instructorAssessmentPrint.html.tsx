@@ -202,6 +202,7 @@ function PrintPreparation({
   const [automaticExportIds, setAutomaticExportIds] = useState<string[]>([]);
   const prepareButtonRef = useRef<HTMLButtonElement>(null);
   const prepareStatusRef = useRef<HTMLDivElement>(null);
+  const applyPreviewButtonRef = useRef<HTMLButtonElement>(null);
   const printHeadingRef = useRef<HTMLHeadingElement>(null);
   const recentExportsRef = useRef<HTMLElement>(null);
   const nextFormFocusRef = useRef<string | null>(null);
@@ -303,8 +304,10 @@ function PrintPreparation({
   function focusPrepareAction() {
     if (prepareButtonRef.current && !prepareButtonRef.current.disabled) {
       prepareButtonRef.current.focus();
+    } else if (prepareStatusRef.current?.textContent.trim()) {
+      prepareStatusRef.current.focus();
     } else {
-      prepareStatusRef.current?.focus();
+      applyPreviewButtonRef.current?.focus();
     }
   }
 
@@ -1395,6 +1398,7 @@ function PrintPreparation({
                 </p>
               )}
               <Button
+                ref={applyPreviewButtonRef}
                 type="submit"
                 className={clsx('w-100', { disabled: !canApplySettings })}
                 aria-disabled={!canApplySettings}
@@ -1490,7 +1494,11 @@ function PrintPreparation({
                     ref={prepareStatusRef}
                     id="print-prepare-status"
                     className="print-preparation-status small text-muted"
-                    role={download.isError ? 'alert' : 'status'}
+                    role={
+                      download.isError || (exportId && displayedExport?.status === 'failed')
+                        ? 'alert'
+                        : 'status'
+                    }
                     tabIndex={-1}
                   >
                     {download.isPending || packet.isPending || preparingPdf === 'packet' ? (
