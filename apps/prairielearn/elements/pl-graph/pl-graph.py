@@ -247,23 +247,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Read the contents of this element as the data to render
         # we dump the string to json to ensure that newlines are
         # properly encoded
-        graphviz_data = element.text
-
-    translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
+        graphviz_data = element.text or ""
 
     # PyGraphviz 2's native renderer bypasses Python's warning filters and uses
     # CoreFoundation on macOS, which cannot run safely in our forked workers.
     result = subprocess.run(
         ["dot", f"-K{engine}", "-Tsvg"],
-        input=translated_dotcode.string().encode(translated_dotcode.encoding),
+        input=graphviz_data.encode(),
         capture_output=True,
         check=False,
     )
     if result.returncode != 0:
-        raise OSError(result.stderr.decode(translated_dotcode.encoding))
+        raise OSError(result.stderr.decode())
+    # Graphviz exits successfully without output for empty input.
+    if not result.stdout.strip():
+        raise ValueError(
+            "pl-graph did not produce a graph. Check that the graph source is not empty."
+        )
     if log_warnings and result.stderr:
         warnings.warn(
-            result.stderr.decode(translated_dotcode.encoding),
+            result.stderr.decode(),
             RuntimeWarning,
             stacklevel=2,
         )
