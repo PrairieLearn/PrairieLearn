@@ -51,7 +51,9 @@ async function downloadPreparedFile(
   expect(response.status()).toBe(200);
   const body = await response.json();
   const { printExportId } = format === 'pdf' ? body.result.data.json : body;
-  const link = page.locator(`a[href$="/exports/${printExportId}"]`);
+  const link = page
+    .getByRole('region', { name: 'Recent exports' })
+    .locator(`a[href$="/exports/${printExportId}"]`);
   await expect(link).toHaveAttribute('href', new RegExp(`/exports/${printExportId}$`), {
     timeout: 120_000,
   });
@@ -114,6 +116,7 @@ test('keeps multiple export links after another file is queued and the page relo
   }
 
   const copyId = await queuePdf(`Prepare Form ${label} (PDF)`);
+  await expect(page.locator('#print-prepare-status')).toBeFocused();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   const keyId = await queuePdf(`Prepare Form ${label} answer key (PDF)`);
   const recentExports = page.getByRole('region', { name: 'Recent exports' });
@@ -147,9 +150,15 @@ test('recovers when creating the first preview fails', async ({ page, courseInst
   await createPreview.click();
   await expect(page.getByRole('alert')).toBeVisible();
   await expect(createPreview).toBeEnabled();
+  await expect(createPreview).toBeFocused();
+  await page.getByRole('alert').getByRole('button').click();
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.matches('h1, a[href*="/exports/"]')))
+    .toBe(true);
 
   await createPreview.click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeFocused();
   expect(
     await queryScalar(sql.count_print_forms, { assessment_id: assessment.id }, z.number()),
   ).toBe(formsBefore + 1);
@@ -467,6 +476,9 @@ test('combines assessment copies with custom covers and appends every form’s a
   const replacementId = new URL(page.url()).searchParams.get('form')!;
   const replacementLabel = await printFormLabel(page, replacementId);
   expect(replacementLabel).not.toBe(originalLabel);
+  await expect(
+    page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
+  ).toBeFocused();
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
@@ -485,6 +497,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(replacementId);
   const newId = new URL(page.url()).searchParams.get('form')!;
   const newLabel = await printFormLabel(page, newId);
+  await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeFocused();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -617,6 +630,9 @@ test('combines assessment copies with custom covers and appends every form’s a
   await expect(
     page.getByRole('button', { name: `View Form ${newLabel} answer key` }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
+  ).toBeFocused();
 });
 
 test('distinguishes paper review flags from broken questions omitted from the document', async ({
@@ -708,6 +724,7 @@ test('validates a booklet count and retries a failed download', async ({
   });
   expect(await downloaded.failure()).toBeNull();
   await expect(downloadMenu(page)).toBeEnabled();
+  await expect(downloadMenu(page)).toBeFocused();
 });
 test('keeps existing forms available when randomization is disabled', async ({
   page,

@@ -50,6 +50,11 @@
   flex: 1 1 16rem;
 }
 
+.print-preparation-status {
+  max-width: min(20rem, 100%);
+  overflow-wrap: anywhere;
+}
+
 .print-preparation-preview {
   position: relative;
   overflow: hidden;

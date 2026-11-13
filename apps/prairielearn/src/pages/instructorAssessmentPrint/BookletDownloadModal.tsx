@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -15,6 +16,7 @@ export function BookletDownloadModal({
   progress,
   error,
   onHide,
+  onExited,
   onDownload,
 }: {
   show: boolean;
@@ -25,8 +27,10 @@ export function BookletDownloadModal({
   progress: { completed: number; total: number } | null;
   error: unknown;
   onHide: () => void;
+  onExited: () => void;
   onDownload: (students: number) => void;
 }) {
+  const submitRef = useRef<HTMLButtonElement>(null);
   const {
     register,
     handleSubmit,
@@ -42,10 +46,18 @@ export function BookletDownloadModal({
       keyboard={!pending}
       aria-labelledby="print-booklet-title"
       onHide={onHide}
+      onExited={onExited}
       onShow={() => reset({ students })}
       onEntered={() => setFocus('students')}
     >
-      <Form noValidate onSubmit={handleSubmit(({ students }) => onDownload(students))}>
+      <Form
+        noValidate
+        onSubmit={handleSubmit(({ students }) => {
+          if (pending) return;
+          submitRef.current?.focus();
+          onDownload(students);
+        })}
+      >
         <Modal.Header closeButton={!pending}>
           <Modal.Title as="h2" id="print-booklet-title" className="h5">
             Prepare booklet PDF
@@ -99,7 +111,12 @@ export function BookletDownloadModal({
           <Button type="button" variant="secondary" disabled={pending} onClick={onHide}>
             Cancel
           </Button>
-          <Button type="submit" disabled={pending}>
+          <Button
+            ref={submitRef}
+            type="submit"
+            className={pending ? 'disabled' : undefined}
+            aria-disabled={pending}
+          >
             {pending ? (
               <span role="status">
                 <Spinner size="sm" className="me-2" aria-hidden="true" />

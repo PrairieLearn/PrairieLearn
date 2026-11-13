@@ -200,6 +200,11 @@ function PrintPreparation({
   const [snapshotStale, setSnapshotStale] = useState(false);
   const [exportId, setExportId] = useQueryState('export', parseAsString);
   const [automaticExportIds, setAutomaticExportIds] = useState<string[]>([]);
+  const prepareButtonRef = useRef<HTMLButtonElement>(null);
+  const prepareStatusRef = useRef<HTMLDivElement>(null);
+  const printHeadingRef = useRef<HTMLHeadingElement>(null);
+  const recentExportsRef = useRef<HTMLElement>(null);
+  const nextFormFocusRef = useRef<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -265,6 +270,7 @@ function PrintPreparation({
       },
     ),
   );
+  const displayedExport = listedExport ?? exportStatus.data;
   const exportNeedsNewPreview =
     exportId !== null &&
     (listedExport ? listedExport.failureMessage : exportStatus.data?.failureMessage) ===
@@ -278,6 +284,37 @@ function PrintPreparation({
     booklet.isPending ||
     preparingPdf !== null ||
     previewPending;
+  const formActionPending = regenerate.isPending || archive.isPending;
+
+  function focusAfterDismiss() {
+    window.requestAnimationFrame(() => {
+      const link =
+        recentExportsRef.current?.querySelector<HTMLAnchorElement>('a[href*="/exports/"]');
+      (link ?? printHeadingRef.current)?.focus();
+    });
+  }
+
+  function focusPrepareStatus() {
+    window.requestAnimationFrame(() => prepareStatusRef.current?.focus());
+  }
+
+  function focusPrepareAction() {
+    if (prepareButtonRef.current && !prepareButtonRef.current.disabled) {
+      prepareButtonRef.current.focus();
+    } else {
+      prepareStatusRef.current?.focus();
+    }
+  }
+
+  function focusForm(id: string) {
+    window.document.getElementById(`print-form-${id}`)?.focus();
+  }
+
+  function closeFormAction() {
+    if (formActionPending) return;
+    nextFormFocusRef.current = pendingFormAction?.id ?? null;
+    setPendingFormAction(null);
+  }
 
   function markStaleSnapshot(error: unknown) {
     if (error instanceof Error && error.message.includes(STALE_PRINT_SNAPSHOT_MESSAGE)) {
@@ -412,6 +449,7 @@ function PrintPreparation({
     copyCount: number,
     outputDocument: PrintDocument | 'booklet',
   ) {
+    download.reset();
     packet.reset();
     try {
       const result = await packet.mutateAsync(
@@ -446,6 +484,7 @@ function PrintPreparation({
     const result = await create.mutateAsync({ settings: nextSettings });
     if (selectedForms !== null) void setSelectedForms([...formIds, result.printFormId]);
     switchForm(result.printFormId, result.settings);
+    window.requestAnimationFrame(() => focusForm(result.printFormId));
   }
 
   async function regenerateForm(id: string) {
@@ -454,17 +493,19 @@ function PrintPreparation({
       void setSelectedForms(formIds.map((value) => (value === id ? result.printFormId : value)));
     }
     switchForm(result.printFormId, result.settings);
+    return result.printFormId;
   }
 
   async function archiveForm(id: string) {
     await archive.mutateAsync({ printFormId: id });
     const nextIds = formIds.filter((value) => value !== id);
     if (selectedForms !== null) void setSelectedForms(nextIds.length > 0 ? nextIds : null);
+    const nextId = nextIds[0] ?? activeForms.find((form) => form.id !== id)?.id;
     if (id === formId) {
-      const nextId = nextIds[0] ?? activeForms.find((form) => form.id !== id)?.id;
       if (nextId) switchForm(nextId);
       else void setSelectedForm(null);
     }
+    return nextId;
   }
   const download = useMutation({
     mutationFn: async ({ id, printDocument }: { id: string; printDocument: PrintDocument }) => {
@@ -499,6 +540,14 @@ function PrintPreparation({
     },
     onError: (error: Error) => markStaleSnapshot(error),
   });
+
+  function startWordExport(id: string, printDocument: PrintDocument) {
+    packet.reset();
+    setPdfPreparationError(null);
+    focusPrepareStatus();
+    download.mutate({ id, printDocument });
+  }
+  const controlsBusy = isSubmitting || busy || download.isPending;
   const onPreviewState = useCallback(
     (state: PreviewState) => {
       setPreview({ url: previewUrl, state });
@@ -535,6 +584,19 @@ function PrintPreparation({
     omitted.size > 0 ||
     snapshotStale ||
     exportNeedsNewPreview;
+  const settingsLocked = controlsBusy || !!archivedPreviewForm;
+  const canApplySettings =
+    !controlsBusy &&
+    !archivedPreviewForm &&
+    !noQuestionsSelected &&
+    (!formId || isDirty || previewHasError) &&
+    !(groupWork && !formId);
+  const canAddForm =
+    !controlsBusy &&
+    !isDirty &&
+    !groupWork &&
+    hasRandomization &&
+    activeForms.length < MAX_ACTIVE_PRINT_FORMS;
   const canDownload =
     validForm &&
     !isDirty &&
@@ -551,6 +613,8 @@ function PrintPreparation({
 
   async function downloadBooklet(studentCount: number) {
     setCopies(studentCount);
+    download.reset();
+    packet.reset();
     booklet.reset();
     try {
       receiveExport(
@@ -613,11 +677,16 @@ function PrintPreparation({
       >
         <i className="bi bi-arrow-left me-1" aria-hidden="true" /> Back to Questions
       </a>
-      <h1 className="h4 mb-3">Print assessment</h1>
+      <h1 ref={printHeadingRef} className="h4 mb-3" tabIndex={-1}>
+        Print assessment
+      </h1>
       <AppErrorAlert
         error={getAppError<PrintFormsError['create']>(create.error)}
         render={{ UNKNOWN: ({ message }) => message }}
-        onDismiss={() => create.reset()}
+        onDismiss={() => {
+          create.reset();
+          focusAfterDismiss();
+        }}
       />
       <AppErrorAlert
         error={getAppError<PrintFormsError['list']>(forms.error)}
@@ -626,17 +695,26 @@ function PrintPreparation({
       <AppErrorAlert
         error={getAppError<PrintFormsError['regenerate']>(regenerate.error)}
         render={{ UNKNOWN: ({ message }) => message }}
-        onDismiss={() => regenerate.reset()}
+        onDismiss={() => {
+          regenerate.reset();
+          focusAfterDismiss();
+        }}
       />
       <AppErrorAlert
         error={getAppError<PrintFormsError['archive']>(archive.error)}
         render={{ UNKNOWN: ({ message }) => message }}
-        onDismiss={() => archive.reset()}
+        onDismiss={() => {
+          archive.reset();
+          focusAfterDismiss();
+        }}
       />
       <AppErrorAlert
         error={getAppError<PrintFormsError['updateSettings']>(updateSettings.error)}
         render={{ UNKNOWN: ({ message }) => message }}
-        onDismiss={() => updateSettings.reset()}
+        onDismiss={() => {
+          updateSettings.reset();
+          focusAfterDismiss();
+        }}
       />
       <AppErrorAlert
         error={getAppError<PrintableAssessmentExportError['pdf']>(
@@ -646,6 +724,7 @@ function PrintPreparation({
         onDismiss={() => {
           packet.reset();
           setPdfPreparationError(null);
+          focusAfterDismiss();
         }}
       />
       <AppErrorAlert
@@ -653,7 +732,7 @@ function PrintPreparation({
         render={{ UNKNOWN: ({ message }) => message }}
       />
       {recentExports.data && recentExports.data.length > 0 && (
-        <section aria-label="Recent exports" className="mb-3">
+        <section ref={recentExportsRef} aria-label="Recent exports" className="mb-3">
           <Card>
             <Card.Body>
               <h2 className="h6 mb-2">Recent exports</h2>
@@ -720,6 +799,7 @@ function PrintPreparation({
               className="ms-2 p-0"
               onClick={() => {
                 void setExportId(null);
+                focusAfterDismiss();
               }}
             >
               Dismiss
@@ -775,13 +855,15 @@ function PrintPreparation({
         className="print-preparation-form"
         noValidate
         onSubmit={(event) => {
+          if (!canApplySettings) {
+            event.preventDefault();
+            return;
+          }
+          event.currentTarget.querySelector<HTMLButtonElement>('button[type="submit"]')?.focus();
           void handleSubmit(applySettings)(event).catch(() => {});
         }}
       >
-        <fieldset
-          className="print-preparation-columns"
-          disabled={isSubmitting || busy || download.isPending}
-        >
+        <fieldset className="print-preparation-columns">
           <legend className="visually-hidden">Print settings</legend>
           <div className="print-preparation-controls">
             <section
@@ -802,6 +884,7 @@ function PrintPreparation({
                         return (
                           <div key={id} className="d-flex align-items-center gap-2">
                             <Button
+                              id={`print-form-${id}`}
                               type="button"
                               size="sm"
                               className="flex-grow-1 text-start"
@@ -874,17 +957,11 @@ function PrintPreparation({
                       type="button"
                       variant="outline-primary"
                       size="sm"
-                      className="mt-3"
-                      disabled={
-                        busy ||
-                        isDirty ||
-                        isSubmitting ||
-                        download.isPending ||
-                        groupWork ||
-                        !hasRandomization ||
-                        activeForms.length >= MAX_ACTIVE_PRINT_FORMS
-                      }
-                      onClick={() => void addForm().catch(() => {})}
+                      className={clsx('mt-3', { disabled: !canAddForm })}
+                      aria-disabled={!canAddForm}
+                      onClick={() => {
+                        if (canAddForm) void addForm().catch(() => {});
+                      }}
                     >
                       <i className="bi bi-plus-lg me-2" aria-hidden="true" /> Add form
                     </Button>
@@ -943,7 +1020,7 @@ function PrintPreparation({
                     <Form.Label>Paper size</Form.Label>
                     <Form.Select
                       defaultValue={settings.paperSize}
-                      disabled={!!archivedPreviewForm}
+                      disabled={settingsLocked}
                       {...register('paperSize')}
                     >
                       <option value="Letter">US Letter · 8.5 × 11 in</option>
@@ -954,7 +1031,7 @@ function PrintPreparation({
                     <Form.Label>Space per question</Form.Label>
                     <Form.Select
                       defaultValue={settings.blockSize}
-                      disabled={!!archivedPreviewForm}
+                      disabled={settingsLocked}
                       {...register('blockSize')}
                     >
                       {Object.entries(BLOCK_SIZE_LABELS).map(([value, label]) => (
@@ -978,7 +1055,7 @@ function PrintPreparation({
                     className="mb-3"
                     label="Include default cover page"
                     defaultChecked={settings.includeCoverPage}
-                    disabled={!!archivedPreviewForm}
+                    disabled={settingsLocked}
                     {...register('includeCoverPage')}
                   />
                   {includeCoverPage && (
@@ -988,7 +1065,7 @@ function PrintPreparation({
                         as="textarea"
                         rows={2}
                         defaultValue={settings.identityFields}
-                        disabled={!!archivedPreviewForm}
+                        disabled={settingsLocked}
                         aria-describedby="print-identity-help"
                         aria-invalid={!!errors.identityFields}
                         aria-errormessage={
@@ -1017,7 +1094,7 @@ function PrintPreparation({
                       className="mt-3"
                       label="Include grading table"
                       defaultChecked={settings.includeGradingTable}
-                      disabled={!!archivedPreviewForm}
+                      disabled={settingsLocked}
                       {...register('includeGradingTable')}
                     />
                   )}
@@ -1028,7 +1105,7 @@ function PrintPreparation({
                         label="Include academic integrity pledge"
                         aria-describedby="print-honor-code-help"
                         defaultChecked={settings.includeHonorCode}
-                        disabled={!!archivedPreviewForm}
+                        disabled={settingsLocked}
                         {...register('includeHonorCode')}
                       />
                       <Form.Text id="print-honor-code-help">
@@ -1042,7 +1119,7 @@ function PrintPreparation({
                     <Form.Control
                       type="file"
                       accept="application/pdf,.pdf"
-                      disabled={packet.isPending || download.isPending}
+                      disabled={controlsBusy}
                       aria-describedby="print-cover-pages-help"
                       aria-invalid={!!uploadError}
                       aria-errormessage={uploadError ? 'print-cover-pages-error' : undefined}
@@ -1096,7 +1173,7 @@ function PrintPreparation({
                                 size="sm"
                                 variant="link"
                                 aria-label={`Remove cover ${file.name}`}
-                                disabled={packet.isPending || download.isPending}
+                                disabled={controlsBusy}
                                 onClick={() =>
                                   setCoverPages((files) => files.filter((cover) => cover.id !== id))
                                 }
@@ -1147,6 +1224,7 @@ function PrintPreparation({
                         id="print-review-only"
                         label={`Show only items to review (${reviewCount})`}
                         checked={reviewOnly}
+                        disabled={controlsBusy}
                         onChange={(event) => setReviewOnly(event.target.checked)}
                       />
                     )}
@@ -1198,7 +1276,7 @@ function PrintPreparation({
                             className="print-preparation-question-include"
                             aria-label={`Include question ${question.number}`}
                             checked={!excluded}
-                            disabled={!!archivedPreviewForm}
+                            disabled={settingsLocked}
                             onChange={(event) => {
                               setValue(
                                 'excludedQuestions',
@@ -1222,7 +1300,7 @@ function PrintPreparation({
                               type="button"
                               variant="link"
                               className="p-0 text-start fw-semibold text-decoration-none"
-                              disabled={!!error || excluded}
+                              disabled={controlsBusy || !!error || excluded}
                               onClick={() => {
                                 setSelectedQuestion({ number: question.number });
                                 window.document
@@ -1260,7 +1338,7 @@ function PrintPreparation({
                             <Form.Label className="small mb-0">Spacing</Form.Label>
                             <Form.Select
                               size="sm"
-                              disabled={!!archivedPreviewForm || !!error || excluded}
+                              disabled={settingsLocked || !!error || excluded}
                               aria-label={`Spacing for question ${question.number}`}
                               value={questionSizes[question.number] ?? ''}
                               onChange={(event) => {
@@ -1316,15 +1394,8 @@ function PrintPreparation({
               )}
               <Button
                 type="submit"
-                className="w-100"
-                disabled={
-                  isSubmitting ||
-                  busy ||
-                  !!archivedPreviewForm ||
-                  noQuestionsSelected ||
-                  (!!formId && !isDirty && !previewHasError) ||
-                  (groupWork && !formId)
-                }
+                className={clsx('w-100', { disabled: !canApplySettings })}
+                aria-disabled={!canApplySettings}
               >
                 {isSubmitting ? (
                   <>
@@ -1352,7 +1423,9 @@ function PrintPreparation({
                         className="w-auto"
                         aria-label="Preview form"
                         value={formId ?? ''}
-                        disabled={isDirty || (formIds.length < 2 && !archivedPreviewForm)}
+                        disabled={
+                          controlsBusy || isDirty || (formIds.length < 2 && !archivedPreviewForm)
+                        }
                         onChange={(event) => switchForm(event.target.value)}
                       >
                         {formIds.length === 0 && <option value="">No current forms</option>}
@@ -1374,6 +1447,7 @@ function PrintPreparation({
                       type="button"
                       variant={document === 'assessment' ? 'primary' : 'outline-secondary'}
                       aria-pressed={document === 'assessment'}
+                      disabled={controlsBusy}
                       onClick={() => switchDocument('assessment')}
                     >
                       Student copy
@@ -1382,6 +1456,7 @@ function PrintPreparation({
                       type="button"
                       variant={document === 'answer_key' ? 'primary' : 'outline-secondary'}
                       aria-pressed={document === 'answer_key'}
+                      disabled={controlsBusy}
                       onClick={() => switchDocument('answer_key')}
                     >
                       Answer key
@@ -1409,19 +1484,50 @@ function PrintPreparation({
                   )}
                 </div>
                 <div className="d-flex flex-wrap align-items-center justify-content-end gap-2 ms-auto">
-                  {(download.isPending || packet.isPending || preparingPdf === 'packet') && (
-                    <div className="d-flex align-items-center gap-2 small" role="status">
-                      <Spinner size="sm" aria-hidden="true" />
-                      <span>
-                        {preparingPdf === 'packet' && pdfPreparationProgress
-                          ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
-                          : 'Generating…'}
+                  <div
+                    ref={prepareStatusRef}
+                    id="print-prepare-status"
+                    className="print-preparation-status small text-muted"
+                    role={download.isError ? 'alert' : 'status'}
+                    tabIndex={-1}
+                  >
+                    {download.isPending || packet.isPending || preparingPdf === 'packet' ? (
+                      <span className="d-flex align-items-center gap-2">
+                        <Spinner size="sm" aria-hidden="true" />
+                        <span>
+                          {preparingPdf === 'packet' && pdfPreparationProgress
+                            ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
+                            : 'Generating…'}
+                        </span>
                       </span>
-                    </div>
-                  )}
+                    ) : download.isError ? (
+                      <span className="text-danger">{download.error.message}</span>
+                    ) : pdfPreparationError?.target === 'packet' ? (
+                      <span className="text-danger">{pdfPreparationError.error.message}</span>
+                    ) : packet.isError ? (
+                      <span className="text-danger">{packet.error.message}</span>
+                    ) : exportId && displayedExport?.status === 'succeeded' ? (
+                      <a href={displayedExport.downloadUrl ?? undefined}>
+                        Download {displayedExport.label ?? 'prepared file'}
+                      </a>
+                    ) : exportId && displayedExport?.status === 'failed' ? (
+                      <span className="text-danger">
+                        {displayedExport.failureMessage ?? 'The file could not be prepared.'}
+                      </span>
+                    ) : exportId && displayedExport?.status === 'expired' ? (
+                      'This file has expired.'
+                    ) : exportId ? (
+                      'Preparing file… It will download automatically.'
+                    ) : null}
+                  </div>
                   <div className="print-preparation-download">
                     <Dropdown align="end">
-                      <Dropdown.Toggle id="print-download-menu" size="sm" disabled={!canDownload}>
+                      <Dropdown.Toggle
+                        ref={prepareButtonRef}
+                        id="print-download-menu"
+                        size="sm"
+                        disabled={!canDownload}
+                      >
                         <i className="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />
                         Prepare…
                       </Dropdown.Toggle>
@@ -1430,31 +1536,33 @@ function PrintPreparation({
                           <>
                             <Dropdown.Item
                               disabled={!renderingAvailable}
-                              onClick={() =>
-                                void downloadPacket([formId], 1, 'assessment').catch(() => {})
-                              }
+                              onClick={() => {
+                                focusPrepareStatus();
+                                void downloadPacket([formId], 1, 'assessment').catch(() => {});
+                              }}
                             >
                               Prepare {previewFormName} (PDF)
                             </Dropdown.Item>
                             <Dropdown.Item
-                              onClick={() =>
-                                download.mutate({ id: formId, printDocument: 'assessment' })
-                              }
+                              onClick={() => {
+                                startWordExport(formId, 'assessment');
+                              }}
                             >
                               Prepare {previewFormName} Word (.docx)
                             </Dropdown.Item>
                             <Dropdown.Item
                               disabled={!renderingAvailable}
-                              onClick={() =>
-                                void downloadPacket([formId], 1, 'answer_key').catch(() => {})
-                              }
+                              onClick={() => {
+                                focusPrepareStatus();
+                                void downloadPacket([formId], 1, 'answer_key').catch(() => {});
+                              }}
                             >
                               Prepare {previewFormName} answer key (PDF)
                             </Dropdown.Item>
                             <Dropdown.Item
-                              onClick={() =>
-                                download.mutate({ id: formId, printDocument: 'answer_key' })
-                              }
+                              onClick={() => {
+                                startWordExport(formId, 'answer_key');
+                              }}
                             >
                               Prepare {previewFormName} answer key Word (.docx)
                             </Dropdown.Item>
@@ -1464,11 +1572,12 @@ function PrintPreparation({
                         {formIds.length > 1 && (
                           <Dropdown.Item
                             disabled={!renderingAvailable}
-                            onClick={() =>
+                            onClick={() => {
+                              focusPrepareStatus();
                               void downloadPacket(formIds, formIds.length, 'assessment').catch(
                                 () => {},
-                              )
-                            }
+                              );
+                            }}
                           >
                             Prepare all forms (PDF)
                           </Dropdown.Item>
@@ -1523,11 +1632,6 @@ function PrintPreparation({
                   Word exports exclude uploaded cover pages. Formatting and page breaks may differ
                   from the preview and between apps.
                 </div>
-                {download.isError && (
-                  <Alert variant="danger" className="mt-2 mb-0">
-                    {download.error.message}
-                  </Alert>
-                )}
               </Card.Footer>
             </Card>
           </div>
@@ -1548,14 +1652,23 @@ function PrintPreparation({
           booklet.reset();
           setPdfPreparationError(null);
         }}
+        onExited={focusPrepareAction}
         onDownload={(students) => void downloadBooklet(students).catch(() => {})}
       />
       <Modal
         show={pendingFormAction !== null}
         aria-labelledby="print-form-action-title"
-        onHide={() => setPendingFormAction(null)}
+        backdrop="static"
+        keyboard={!formActionPending}
+        restoreFocus={false}
+        onHide={closeFormAction}
+        onExited={() => {
+          const id = nextFormFocusRef.current;
+          nextFormFocusRef.current = null;
+          if (id) window.requestAnimationFrame(() => focusForm(id));
+        }}
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton={!formActionPending}>
           <Modal.Title as="h2" className="h5" id="print-form-action-title">
             {pendingFormAction?.action === 'regenerate' ? 'Regenerate' : 'Archive'} Form{' '}
             {pendingFormAction?.label}
@@ -1577,21 +1690,44 @@ function PrintPreparation({
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button type="button" variant="secondary" onClick={() => setPendingFormAction(null)}>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={formActionPending}
+            onClick={closeFormAction}
+          >
             Cancel
           </Button>
           <Button
             type="button"
             variant={pendingFormAction?.action === 'archive' ? 'danger' : 'primary'}
+            className={formActionPending ? 'disabled' : undefined}
+            aria-disabled={formActionPending}
             onClick={() => {
-              if (!pendingFormAction) return;
+              if (!pendingFormAction || formActionPending) return;
               const { action, id } = pendingFormAction;
-              setPendingFormAction(null);
-              if (action === 'regenerate') void regenerateForm(id).catch(() => {});
-              else void archiveForm(id).catch(() => {});
+              void (async () => {
+                try {
+                  nextFormFocusRef.current =
+                    action === 'regenerate' ? await regenerateForm(id) : await archiveForm(id);
+                } catch {
+                  nextFormFocusRef.current = id;
+                } finally {
+                  setPendingFormAction(null);
+                }
+              })();
             }}
           >
-            {pendingFormAction?.action === 'regenerate' ? 'Regenerate form' : 'Archive form'}
+            {formActionPending ? (
+              <>
+                <Spinner size="sm" className="me-2" aria-hidden="true" />
+                {pendingFormAction?.action === 'regenerate' ? 'Regenerating…' : 'Archiving…'}
+              </>
+            ) : pendingFormAction?.action === 'regenerate' ? (
+              'Regenerate form'
+            ) : (
+              'Archive form'
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
