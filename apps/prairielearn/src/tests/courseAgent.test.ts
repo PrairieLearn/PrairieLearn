@@ -260,7 +260,7 @@ describe('Course agent access and conversation privacy', () => {
   // what they produce: a page offered to the agent must exist for this course.
   test('resolves every catalog page for the course agent, and explains a wrong name', async () => {
     const { agent_conversation_id } = await createConversation(owner);
-    const resolve = (target: Record<string, string>) =>
+    const resolve = (target: { page: string; params: Record<string, string> }) =>
       fetch(`${siteUrl}/pl/api/v1/course/1/agent_navigation`, {
         method: 'POST',
         headers: {
@@ -270,7 +270,7 @@ describe('Course agent access and conversation privacy', () => {
         },
         body: JSON.stringify(target),
       });
-    const names = {
+    const names: Record<string, string> = {
       courseInstance: 'Sp15',
       assessment: 'hw1-automaticTestSuite',
       question: 'addNumbers',
@@ -286,9 +286,10 @@ describe('Course agent access and conversation privacy', () => {
     });
     const missing: string[] = [];
     for (const page of catalog) {
+      const params = page.params.filter((param) => param.required);
       const response = await resolve({
         page: page.key,
-        ...Object.fromEntries(page.params.map((param) => [param, names[param]])),
+        params: Object.fromEntries(params.map((param) => [param.name, names[param.name]])),
       });
       const { url } = (await response.json()) as { url: string };
       const { status } = await withUser(owner, () => fetch(`${siteUrl}${url}`));
@@ -296,7 +297,10 @@ describe('Course agent access and conversation privacy', () => {
     }
     expect(missing).toEqual([]);
 
-    const wrong = await resolve({ ...names, page: 'assessment.settings', assessment: 'hw99' });
+    const wrong = await resolve({
+      page: 'assessment.settings',
+      params: { courseInstance: 'Sp15', assessment: 'hw99' },
+    });
     expect(wrong.status).toBe(404);
     expect(await wrong.json()).toMatchObject({ message: 'No assessment named "hw99".' });
   });

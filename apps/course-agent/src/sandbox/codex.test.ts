@@ -62,8 +62,13 @@ function runner({
   } as unknown as DurableObjectStub<CourseSandbox>;
   const native = new CodexAppServerClient(sandbox, courseData, async (target) => {
     if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
-    if (target.assessment !== 'hw1') throw new Error(`No assessment named "${target.assessment}".`);
-    return { url: '/pl/course_instance/1/instructor/assessment/2/settings', label: 'Settings' };
+    const { assessment } = target.params;
+    if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
+    return {
+      url: '/pl/course_instance/1/instructor/assessment/2/settings',
+      label: 'Settings',
+      subtitle: 'Assessment · Fa25 / hw1',
+    };
   });
   return { sandbox, native, commands, emit, disconnect: () => socket.close() };
 }
@@ -76,7 +81,10 @@ const thread = {
     {
       key: 'assessment.settings',
       label: 'Settings',
-      params: ['courseInstance' as const, 'assessment' as const],
+      params: [
+        { name: 'courseInstance', description: 'Course instance directory.', required: true },
+        { name: 'assessment', description: 'Assessment directory.', required: true },
+      ],
     },
   ],
 };
@@ -316,7 +324,7 @@ describe('course agent turns', () => {
       dynamicTools: [
         { name: 'list_course_datasets' },
         { name: 'get_course_data' },
-        { name: 'navigate' },
+        { name: 'offer_page' },
       ],
     });
     const call = (id: number, tool: string, args: unknown) =>
@@ -426,7 +434,7 @@ describe('course agent turns', () => {
           turnId: 'turn',
           callId: id,
           namespace: null,
-          tool: 'navigate',
+          tool: 'offer_page',
           arguments: args,
         },
       });
@@ -436,11 +444,14 @@ describe('course agent turns', () => {
         return (frame as unknown as { result: { success: boolean } }).result;
       });
     };
-    const target = { page: 'assessment.settings', courseInstance: 'Fa25', assessment: 'hw1' };
-    // Models send empty or null values for names a page does not take.
-    expect(await call('open', { ...target, question: '' })).toMatchObject({ success: true });
+    const params = { courseInstance: 'Fa25', assessment: 'hw1' };
+    const page = 'assessment.settings';
+    // Models send empty or null values for params a page does not take.
+    expect(await call('open', { page, params: { ...params, question: '' } })).toMatchObject({
+      success: true,
+    });
     expect(await call('unknown', { page: 'assessment.nope' })).toMatchObject({ success: false });
-    expect(await call('wrong', { ...target, assessment: 'hw99' })).toMatchObject({
+    expect(await call('wrong', { page, params: { ...params, assessment: 'hw99' } })).toMatchObject({
       success: false,
       contentItems: [{ text: 'No assessment named "hw99".' }],
     });
@@ -451,8 +462,13 @@ describe('course agent turns', () => {
           { name: 'list_course_datasets' },
           { name: 'get_course_data' },
           {
-            name: 'navigate',
-            inputSchema: { properties: { page: { enum: ['assessment.settings'] } } },
+            name: 'offer_page',
+            inputSchema: {
+              properties: {
+                page: { enum: ['assessment.settings'] },
+                params: { properties: { courseInstance: {}, assessment: {} } },
+              },
+            },
           },
         ],
       },
@@ -469,9 +485,9 @@ describe('course agent turns', () => {
         type: 'data-navigation',
         id: 'navigation:open',
         data: {
-          target,
-          label: 'Settings',
           url: '/pl/course_instance/1/instructor/assessment/2/settings',
+          label: 'Settings',
+          subtitle: 'Assessment · Fa25 / hw1',
         },
       },
     ]);

@@ -525,9 +525,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           : undefined,
       thread: {
         model: this.record.config.model,
-        instructions: buildInstructions(this.record.courseContext ?? undefined, source.type, {
-          canNavigate: (this.record.pages ?? []).length > 0,
-        }),
+        instructions: buildInstructions(this.record.courseContext ?? undefined, source.type),
         threadId: this.record.nativeThreadId,
         pages: this.record.pages ?? [],
       },

@@ -1,13 +1,11 @@
-import { z } from 'zod';
-
-import type { NavigationTarget } from '@prairielearn/course-agent-types';
+import { NavigationPartSchema, type NavigationTarget } from '@prairielearn/course-agent-types';
 
 import { type CourseDataContext, authHeaders, errorMessage } from './course-data.js';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
 /**
- * Asks PrairieLearn for the URL and label of the page the agent named, from
+ * Asks PrairieLearn for the URL, label, and subtitle of the page the agent named, from
  * `POST /pl/api/v1/course/:course_id/agent_navigation`. A wrong name fails with PrairieLearn's
  * message, so the agent can correct it before the instructor's browser moves.
  */
@@ -25,5 +23,5 @@ export async function resolveNavigation(context: CourseDataContext, target: Navi
     },
   );
   if (!response.ok) throw new Error(await errorMessage(response));
-  return z.object({ url: z.string(), label: z.string() }).parse(await response.json());
+  return NavigationPartSchema.parse(await response.json());
 }

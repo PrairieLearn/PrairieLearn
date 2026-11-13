@@ -12,16 +12,32 @@ import { selectOptionalQuestionByQid } from '../../../models/question.js';
 
 type PageParam = PageCatalog[number]['params'][number];
 
+/** The names navigation pages take, as course files name things. */
+const NAMES = {
+  courseInstance: 'Directory name under courseInstances/.',
+  assessment: "Directory path under the course instance's assessments/.",
+  question:
+    "Directory path under this course's questions/. Questions shared from another course cannot be opened.",
+};
+
+const required = (name: keyof typeof NAMES): PageParam => ({
+  name,
+  description: NAMES[name],
+  required: true,
+});
+const optional = (name: keyof typeof NAMES): PageParam => ({ ...required(name), required: false });
+
 /**
- * The instructor navigation groups the agent can open, with the names each group's pages need.
+ * The instructor navigation groups the agent can open, with the names each group's pages take.
  * A group missing from here (public, administrator, institution) is not offered to the agent.
  */
 const GROUP_PARAMS = {
   course_admin: [],
-  instance_admin: ['courseInstance'],
-  students: ['courseInstance'],
-  assessment: ['courseInstance', 'assessment'],
-  question: ['question'],
+  instance_admin: [required('courseInstance')],
+  students: [required('courseInstance')],
+  assessment: [required('courseInstance'), required('assessment')],
+  // A question page can also open under a course instance.
+  question: [required('question'), optional('courseInstance')],
 } satisfies Partial<Record<Exclude<NavPage, undefined>, PageParam[]>>;
 
 type Group = keyof typeof GROUP_PARAMS;
@@ -126,46 +142,51 @@ function pageUrl(page: AgentPage, rows: PageRows) {
   return `${urlPrefix}${urlSuffix}`;
 }
 
+/** What the page belongs to, as the chat card shows it. */
+function describeRows({ course_instance, assessment, question }: PageRows) {
+  if (question) return `Question · ${question.qid}`;
+  if (assessment) return `Assessment · ${course_instance?.short_name} / ${assessment.tid}`;
+  if (course_instance) return `Course instance · ${course_instance.short_name}`;
+  return 'Course';
+}
+
 /**
- * The URL and label of the page the agent named, with its names resolved the way course files name
- * things. The messages tell the agent what to correct.
+ * The page the agent named, with its names resolved the way course files name things. The
+ * messages tell the agent what to correct.
  */
 export async function resolveAgentPage(context: PageCatalogContext, target: NavigationTarget) {
   const { course } = context;
   const page = agentPages(context).get(target.page);
   if (!page) throw new HttpStatusError(404, `No page named "${target.page}".`);
-  const { params } = page.entry;
-  const missing = params.filter((param) => !target[param]);
+  const declared = page.entry.params;
+  const unknown = Object.keys(target.params).filter(
+    (name) => !declared.some((param) => param.name === name),
+  );
+  if (unknown.length > 0) {
+    throw new HttpStatusError(400, `Page "${target.page}" does not take: ${unknown.join(', ')}.`);
+  }
+  const missing = declared.filter((param) => param.required && !target.params[param.name]);
   if (missing.length > 0) {
-    throw new HttpStatusError(400, `Page "${target.page}" also needs: ${missing.join(', ')}.`);
+    const names = missing.map((param) => param.name).join(', ');
+    throw new HttpStatusError(400, `Page "${target.page}" also needs: ${names}.`);
   }
 
-  const course_instance = target.courseInstance
-    ? await selectOptionalCourseInstanceByShortName({ course, shortName: target.courseInstance })
+  const { courseInstance, assessment: tid, question: qid } = target.params;
+  const course_instance = courseInstance
+    ? await selectOptionalCourseInstanceByShortName({ course, shortName: courseInstance })
     : null;
-  if (target.courseInstance && !course_instance) {
-    throw new HttpStatusError(404, `No course instance named "${target.courseInstance}".`);
+  if (courseInstance && !course_instance) {
+    throw new HttpStatusError(404, `No course instance named "${courseInstance}".`);
   }
-  // A course instance is used whenever it is named, so a question page can open under it. An
-  // assessment or question is looked up only for the pages that require one.
   const assessment =
-    params.includes('assessment') && course_instance
-      ? await selectOptionalAssessmentByTid({
-          course_instance_id: course_instance.id,
-          tid: target.assessment!,
-        })
+    tid && course_instance
+      ? await selectOptionalAssessmentByTid({ course_instance_id: course_instance.id, tid })
       : null;
-  if (params.includes('assessment') && !assessment) {
-    throw new HttpStatusError(404, `No assessment named "${target.assessment}".`);
+  if (tid && !assessment) throw new HttpStatusError(404, `No assessment named "${tid}".`);
+  const question = qid ? await selectOptionalQuestionByQid({ qid, course_id: course.id }) : null;
+  if (qid && !question) {
+    throw new HttpStatusError(404, `This course has no question named "${qid}".`);
   }
-  const question = params.includes('question')
-    ? await selectOptionalQuestionByQid({ qid: target.question!, course_id: course.id })
-    : null;
-  if (params.includes('question') && !question) {
-    throw new HttpStatusError(404, `This course has no question named "${target.question}".`);
-  }
-  return {
-    url: pageUrl(page, { course, course_instance, assessment, question }),
-    label: page.entry.label,
-  };
+  const rows = { course, course_instance, assessment, question };
+  return { url: pageUrl(page, rows), label: page.entry.label, subtitle: describeRows(rows) };
 }

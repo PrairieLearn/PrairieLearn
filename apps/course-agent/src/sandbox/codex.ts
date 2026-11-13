@@ -58,7 +58,7 @@ const ItemEvent = z.object({
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'navigate']),
+  tool: z.enum(['request_changes', 'offer_page']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -148,10 +148,8 @@ export class CodexAppServerClient {
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
     private courseData: CourseDataTools,
-    /** Resolves a navigation target to its URL and label, failing with a message for the agent. */
-    private resolveNavigation: (
-      target: NavigationTarget,
-    ) => Promise<Pick<NavigationPart, 'url' | 'label'>>,
+    /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
+    private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -298,28 +296,18 @@ export class CodexAppServerClient {
         }
         return await this.onReview({ ...call.data, arguments: {} });
       }
-      case 'navigate':
-        return await this.navigate(call.data.callId, call.data.arguments);
+      case 'offer_page':
+        return await this.offerPage(call.data.callId, call.data.arguments);
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
   }
 
-  private async navigate(callId: string, args: unknown): Promise<ToolReply> {
-    // Models often send empty or null values for the names a page does not take.
-    const target = NavigationTargetSchema.safeParse(
-      args && typeof args === 'object'
-        ? Object.fromEntries(
-            Object.entries(args).filter(([, value]) => value !== '' && value !== null),
-          )
-        : args,
-    );
+  private async offerPage(callId: string, args: unknown): Promise<ToolReply> {
+    const target = NavigationTargetSchema.safeParse(withoutEmptyParams(args));
     if (!target.success) return invalidArguments(target.error);
     return await replyWithError(async () => {
-      const navigation: NavigationPart = {
-        target: target.data,
-        ...(await this.resolveNavigation(target.data)),
-      };
+      const navigation = await this.resolveNavigation(target.data);
       // The chat shows this part as a button that opens the page when the instructor clicks it.
       this.emit({ type: 'data-navigation', id: `navigation:${callId}`, data: navigation });
       return {
@@ -611,34 +599,46 @@ const requestChangesTool = {
 
 /** The model learns which pages exist from this tool, so the catalog is not repeated in instructions. */
 function navigateTool(pages: PageCatalog): DynamicToolSpec {
-  const lines = pages.map(
-    ({ key, label, params }) =>
-      `${key}: ${label}${params.length > 0 ? ` (${params.join(', ')})` : ''}`,
-  );
+  const lines = pages.map(({ key, label, params }) => {
+    const names = params.map((param) => (param.required ? param.name : `optional ${param.name}`));
+    return `${key}: ${label}${names.length > 0 ? ` (${names.join(', ')})` : ''}`;
+  });
+  // PrairieLearn defines the params, so a page that takes a new kind of name needs no change here.
+  const params = new Map(pages.flatMap((page) => page.params).map((p) => [p.name, p.description]));
   return {
     type: 'function',
-    name: 'navigate',
+    name: 'offer_page',
     description: [
-      'Offer the instructor a button that opens a PrairieLearn page in place of the one they are viewing. Pages, with the names each requires:',
+      'Show the instructor a button that opens a PrairieLearn page in place of the one they are viewing. Nothing changes until they click it. Pages, with the params each takes:',
       ...lines,
     ].join('\n'),
     inputSchema: {
       type: 'object',
       properties: {
         page: { type: 'string', enum: pages.map((page) => page.key) },
-        courseInstance: { type: 'string', description: 'Directory name under courseInstances/.' },
-        assessment: {
-          type: 'string',
-          description: "Directory path under the course instance's assessments/.",
-        },
-        question: {
-          type: 'string',
-          description:
-            "Directory path under this course's questions/. Questions shared from another course cannot be opened.",
+        params: {
+          type: 'object',
+          properties: Object.fromEntries(
+            [...params].map(([name, description]) => [name, { type: 'string', description }]),
+          ),
+          additionalProperties: false,
         },
       },
       required: ['page'],
       additionalProperties: false,
     },
+  };
+}
+
+/** Models often send empty or null values for the params a page does not take. */
+function withoutEmptyParams(args: unknown) {
+  if (!args || typeof args !== 'object' || !('params' in args)) return args;
+  const { params } = args;
+  if (!params || typeof params !== 'object') return { ...args, params: {} };
+  return {
+    ...args,
+    params: Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== '' && value !== null),
+    ),
   };
 }

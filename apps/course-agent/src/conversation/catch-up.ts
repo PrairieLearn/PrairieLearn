@@ -39,7 +39,13 @@ export function historyBefore(history: UIMessage[], message: UIMessage | null) {
 export function summarizeReview(result: RequestChangesResult) {
   if (result.decision === 'denied') return 'The instructor denied the submitted changes.';
   const approved = 'The instructor approved the submitted changes';
-  const sync = result.sync.status === 'failed' ? ', but the course sync failed' : '';
+  // The agent offers the page that shows the changes only once they are synced, so say so.
+  const sync =
+    result.sync.status === 'failed'
+      ? ', but the course sync failed'
+      : result.sync.status === 'succeeded'
+        ? ' and the course synced'
+        : '';
   switch (result.publication.status) {
     case 'published':
       return `${approved}; they were published${sync}.`;
@@ -190,11 +196,7 @@ function describePart(part: UIMessage['parts'][number]) {
       return describeFileChange(part.data);
     case 'data-navigation': {
       const navigation = NavigationPartSchema.safeParse(part.data).data;
-      if (!navigation) return '';
-      const named = Object.entries(navigation.target)
-        .filter(([kind]) => kind !== 'page')
-        .map(([kind, name]) => `${kind} ${JSON.stringify(name)}`);
-      return `[Offered to open ${navigation.label}${named.length > 0 ? ` (${named.join(', ')})` : ''}.]`;
+      return navigation ? `[Offered to open ${navigation.label} (${navigation.subtitle}).]` : '';
     }
     default:
       return '';

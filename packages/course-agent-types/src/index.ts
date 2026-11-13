@@ -43,15 +43,24 @@ export const COURSE_DIR = '/workspace/session/course';
 
 /**
  * The PrairieLearn pages the agent can open, built by PrairieLearn from its instructor navigation
- * when a conversation is created. `key` uses the same vocabulary as `PageLocationSchema.page`,
- * and `params` are the names a page requires.
+ * when a conversation is created. `key` uses the same vocabulary as `PageLocationSchema.page`.
+ * PrairieLearn defines each page's params and what they name, so a page that takes a new kind of
+ * name needs no Worker change.
  */
 export const PageCatalogSchema = z
   .array(
     z.strictObject({
       key: z.string().min(1).max(100),
       label: z.string().min(1).max(100),
-      params: z.array(z.enum(['courseInstance', 'assessment', 'question'])),
+      params: z
+        .array(
+          z.strictObject({
+            name: z.string().min(1).max(50),
+            description: z.string().min(1).max(300),
+            required: z.boolean(),
+          }),
+        )
+        .max(10),
     }),
   )
   .max(200);
@@ -301,26 +310,25 @@ export const InputRequestPartSchema = z.object({
 export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;
 
 /**
- * A page the agent opens for the instructor. `page` is a key from the conversation's page catalog,
- * and the names are the ones course files use.
+ * A page the agent opens for the instructor: a key from the conversation's page catalog and the
+ * values of that page's params.
  */
 export const NavigationTargetSchema = z.strictObject({
   page: z.string().min(1).max(100),
-  courseInstance: z.string().min(1).max(500).optional(),
-  assessment: z.string().min(1).max(500).optional(),
-  question: z.string().min(1).max(500).optional(),
+  params: z.record(z.string().min(1).max(50), z.string().min(1).max(500)).default({}),
 });
 
 export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
 
 /**
  * A `data-navigation` part: the agent offered a page, which the instructor opens by clicking it.
- * PrairieLearn resolved `target` to `url` and `label` before the part was written, so history
- * renders without a lookup.
+ * PrairieLearn resolved the target to these before the part was written, so history renders
+ * without a lookup.
  */
 export const NavigationPartSchema = z.strictObject({
-  target: NavigationTargetSchema,
   label: z.string().max(100),
+  /** What the page belongs to, such as `Assessment · Sp26 / hw01`. */
+  subtitle: z.string().max(300),
   url: z.string().max(4000),
 });
 
