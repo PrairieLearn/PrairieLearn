@@ -1401,6 +1401,7 @@ def _convert_source_to_sympy_with_source(
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
+    additional_variables: Mapping[str, sympy.Basic | complex] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1464,6 +1465,9 @@ def _convert_source_to_sympy_with_source(
 
     if allow_sets:
         locals_for_eval["functions"].update(const.set_functions)
+
+    if additional_variables is not None:
+        locals_for_eval["variables"].update(additional_variables)
 
     for name, raw_name in name_validation.normalized_variables.items():
         var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
@@ -1693,6 +1697,9 @@ def json_to_sympy(
         assumptions=sympy_expr_dict.get("_assumptions"),
         resolved_name_overrides=(
             dict.fromkeys(variables) if allow_sets and variables is not None else None
+        ),
+        additional_variables=(
+            const.serialized_named_sets if allow_sets else None
         ),
     )
     return result
