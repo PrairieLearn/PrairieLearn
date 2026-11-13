@@ -145,7 +145,7 @@
   min-width: 0;
 }
 
-@media (min-width: 992px) and (min-height: 600px) {
+@media (min-width: 992px) and (min-height: 800px) {
   /* Share the shell's remaining height so only the two panels scroll. */
   .print-preparation-container {
     overflow: hidden;
