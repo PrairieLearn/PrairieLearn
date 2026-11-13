@@ -100,6 +100,11 @@ export async function init() {
         config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
     },
     {
+      name: 'cleanWorkspaceBootstrapTokens',
+      module: await import('./cleanWorkspaceBootstrapTokens.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || 60,
+    },
+    {
       name: 'cleanTimeSeries',
       module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
