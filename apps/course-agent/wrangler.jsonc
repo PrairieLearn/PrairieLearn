@@ -2,9 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "prairielearn-course-agent",
   "main": "src/worker.ts",
-  // Copies question docs and examples into the sandbox image's skill (see container/skills).
-  // Inherited by every environment.
-  "build": { "command": "node scripts/build-skill-references.mjs" },
   "compatibility_date": "2026-09-17",
   "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],
   "workers_dev": true,
