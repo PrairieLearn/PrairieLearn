@@ -6,6 +6,8 @@ Tools for creating printable PDFs and editable Word documents, plus a helper tha
 
 The browser lays out questions and splits them into pages. PDFs use the finished pages. Word documents use question content saved before page breaks are added, along with images of figures. Create one renderer per application process:
 
+The preview response carries a signed snapshot ID covering its HTML, editable Word source, saved print form, generating user, layout query, and selected question identities and order. Export requests verify the ID and current question list; the export worker loads the submitted pages in the browser and compares their normalized HTML with the signed digest before rendering, so the check doesn't block the Node event loop. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
+
 ```ts
 import { config } from './config.js';
 import { PrintRenderer } from './printing/print-renderer.js';
@@ -46,6 +48,8 @@ The caller owns the paginated HTML page. It must set `document.documentElement.d
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
+`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy printed pages, sharing fonts and images across repeated copies. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
+
 ### Word output
 
 Word documents keep text, lists, tables, answer spaces, links, and equations editable when possible. Images, SVG diagrams, and canvases appear as pictures. Some equations also appear as pictures when no editable version is available.
@@ -64,7 +68,7 @@ Omit the `cover` option to start with questions on the first page.
 
 Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. Regenerating creates a new labeled form and archives the old one. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
-The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` exports a submitted page snapshot. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
+The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
 
 `document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
 
@@ -77,6 +81,10 @@ The form's saved label appears on covers and footers. Labels progress from `A` t
 `include_honor_code=true` or `false` controls the student cover pledge independently of the online assessment requirement. Omitting it uses the assessment’s `requireHonorCode` setting. The printed pledge uses the configured `honorCode` when present, with a blank name line for `{{user_name}}`; otherwise it uses the standard pledge.
 
 `grading_table=true` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
+
+The print preparation page can combine multiple saved print forms and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included in student copies, including individual form downloads. Answer key downloads exclude uploaded covers. Generated page numbers and identification codes continue to identify pages within the original form; uploaded pages retain their own appearance and have no generated identification codes.
+
+PDF and Word exports are queued. Each export is a row in `print_exports`, which is the source of truth for its status, result, and attempt count; its input is stored in S3, and its ID is published to PrairieMQ for dispatch. Exports are grouped by course so courses take turns, and total throughput scales with the number of workers. `processPrintExports` republishes pending exports whose Redis job was lost or interrupted, and fails exports still pending after 24 hours. Workers run on hosts with `printExportWorkerActive` and a browser renderer (local Chromium or Cloudflare). A graceful shutdown returns its attempt; a crashed run is retried once. Downloads are available to the requesting user for 24 hours. The app doesn't delete export files: configure an S3 lifecycle rule on the `print-exports/` prefix that also expires noncurrent versions. PrairieMQ requires a non-clustered Redis without eviction through `nonVolatileRedisUrl`. The queue namespace defaults to a hash of the PostgreSQL host and database, so deployments sharing a Redis stay separate; set `printExportQueuePrefix` when hosts use different aliases for the same database.
 
 Automatic blocks are measured at the final printable width after asynchronous question content, MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an exact fraction of the printable content height, including the question's internal spacing, when the content fits. Taller content uses its measured height and moves to the next page or flows across pages when needed.
 

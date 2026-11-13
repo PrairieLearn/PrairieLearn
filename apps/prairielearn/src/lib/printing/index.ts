@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 
 import { chromium } from 'playwright';
@@ -63,7 +64,7 @@ export function isBrowserRenderingAvailable(): boolean {
 }
 
 /** Previews may omit broken questions for review; downloads must include every selected question. */
-function assertPrintDocumentReady(state: {
+export function assertPrintDocumentReady(state: {
   questionCount: number;
   omittedCount: number;
   coverPageCount: number;
@@ -197,6 +198,27 @@ function selectIncludedQuestions(
   return includedQuestions;
 }
 
+function digestPrintableQuestions(questions: PrintableQuestion[]): string {
+  const identities = questions.map(({ print_form_question, question }) => [
+    print_form_question.id,
+    print_form_question.assessment_question_id,
+    print_form_question.variant_id,
+    print_form_question.position,
+    print_form_question.question_number,
+    print_form_question.max_points,
+    question.id,
+  ]);
+  return createHash('sha256').update(JSON.stringify(identities)).digest('hex');
+}
+
+export async function getPrintableQuestionListDigest(
+  printFormId: string,
+  excludedQuestionNumbers: ReadonlySet<string>,
+): Promise<string> {
+  const questions = await selectPrintFormQuestions(printFormId);
+  return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
+}
+
 /** Validates a Word export's layout against the form and returns the included question IDs. */
 export async function getPrintableFormQuestionIds(
   printFormId: string,
@@ -230,6 +252,7 @@ async function renderPrintFormQuestionsUnbounded(
   }: RenderPrintFormQuestionsOptions,
 ): Promise<{
   questionHtmls: string[];
+  questionListDigest: string;
   questionResults: PrintingQuestionResult[];
   extraHeadersHtml: string;
   maxPoints: number;
@@ -370,6 +393,7 @@ async function renderPrintFormQuestionsUnbounded(
 
   return {
     questionHtmls: await namespaceQuestionHtmls(renderedQuestions),
+    questionListDigest: digestPrintableQuestions(includedQuestions),
     questionResults,
     extraHeadersHtml: combineQuestionHeaders(extraHeaderHtmls),
     maxPoints,

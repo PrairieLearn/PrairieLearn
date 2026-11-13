@@ -1,5 +1,8 @@
 /* oxlint-disable typescript/no-unsafe-enum-comparison -- Cheerio's string node types are declared as DOM enum values. */
 import * as cheerio from 'cheerio';
+import { z } from 'zod';
+
+import { PrintGradingTableSchema } from '../client/printing/print-cover.js';
 
 type HtmlNode = ReturnType<ReturnType<typeof cheerio.load>>['0'];
 type HtmlElement = Extract<HtmlNode, { type: 'tag' | 'script' | 'style' }>;
@@ -54,6 +57,45 @@ export interface PrintableCover {
   gradingTable?: { questionNumbers: string[]; rowsPerColumn: number };
   footer: string;
 }
+
+const PrintableTextRunSchema = z.object({
+  text: z.string(),
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
+  strike: z.boolean().optional(),
+  code: z.boolean().optional(),
+  script: z.enum(['subscript', 'superscript']).optional(),
+}) satisfies z.ZodType<PrintableTextRun>;
+
+const PrintableTextBlockSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('heading'), runs: PrintableTextRunSchema.array() }),
+  z.object({ type: z.literal('paragraph'), runs: PrintableTextRunSchema.array() }),
+  z.object({
+    type: z.literal('list'),
+    ordered: z.boolean(),
+    items: PrintableTextRunSchema.array().array(),
+  }),
+]) satisfies z.ZodType<PrintableTextBlock>;
+
+export const PrintableCoverSchema = z.object({
+  eyebrow: z.string(),
+  eyebrowDetail: z.string().optional(),
+  title: z.string(),
+  subtitle: z.string().optional(),
+  documentLabel: z.string().optional(),
+  fields: z.array(z.object({ label: z.string(), wide: z.boolean().optional() })),
+  summary: z.array(z.object({ term: z.string(), value: z.string() })),
+  sections: z.array(
+    z.object({
+      heading: z.string(),
+      blocks: PrintableTextBlockSchema.array(),
+      signatureLabel: z.string().optional(),
+    }),
+  ),
+  gradingTable: PrintGradingTableSchema.optional(),
+  footer: z.string(),
+}) satisfies z.ZodType<PrintableCover>;
 
 function normalizeRuns(runs: PrintableTextRun[]): PrintableTextRun[] {
   const normalized: PrintableTextRun[] = [];

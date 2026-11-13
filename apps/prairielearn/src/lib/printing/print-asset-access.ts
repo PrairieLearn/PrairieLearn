@@ -22,7 +22,8 @@ const PrintAssetScopeSchema = z.strictObject({
   userId: IdSchema,
 });
 
-export type PrintAssetScope = Omit<z.infer<typeof PrintAssetScopeSchema>, 'jobId'>;
+export const PrintAssetScopeDataSchema = PrintAssetScopeSchema.omit({ jobId: true });
+export type PrintAssetScope = z.infer<typeof PrintAssetScopeDataSchema>;
 
 export function beginPrintAssetAccess(scope: PrintAssetScope, secretKey: SecretKey) {
   const jobId = randomUUID();

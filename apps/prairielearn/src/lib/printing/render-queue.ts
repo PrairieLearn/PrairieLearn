@@ -56,7 +56,7 @@ export class RenderQueue {
     }
 
     if (this.waiters.length >= this.maxWaiters) {
-      throw new Error('Too many print renders are already waiting');
+      throw new HttpStatusError(503, 'Print rendering is busy. Try again shortly.');
     }
 
     // withTimeout() leaves expired acquisitions in async-mutex's queue until a permit is

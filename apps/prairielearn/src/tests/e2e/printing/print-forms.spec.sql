@@ -18,3 +18,25 @@ SELECT
     FROM
       variants
   ) AS variants;
+
+-- BLOCK select_form_variants
+SELECT
+  v.id,
+  v.open
+FROM
+  print_form_questions AS pfq
+  JOIN variants AS v ON v.id = pfq.variant_id
+WHERE
+  pfq.print_form_id = $print_form_id
+ORDER BY
+  pfq.position;
+
+-- BLOCK close_variants
+UPDATE variants AS v
+SET
+  open = FALSE
+FROM
+  print_form_questions AS pfq
+WHERE
+  v.id = pfq.variant_id
+  AND pfq.print_form_id = $print_form_id;
