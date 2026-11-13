@@ -275,6 +275,7 @@ router.get(
     const assessment_text_templated = renderText(res.locals.assessment, {
       urlPrefix: res.locals.urlPrefix,
       markdownEnabled,
+      lockdownBrowser: res.locals.lockdown_browser,
     });
     res.locals.assessment_text_templated = assessment_text_templated;
 

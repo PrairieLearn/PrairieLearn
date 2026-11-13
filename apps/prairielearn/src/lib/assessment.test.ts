@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import { decode } from 'he';
 import { assert, describe, it } from 'vitest';
 
@@ -29,6 +30,48 @@ describe('renderText', () => {
       renderText({ id: assessmentId, text }, markdownOptions),
       '<h2>Instructions</h2>\n<p>Use <strong>exact values</strong> and <code>5*4^2*2!</code>.</p>\n',
     );
+  });
+
+  it('opens overview resources in separate tabs only in LockDown Browser', () => {
+    for (const markdownEnabled of [false, true]) {
+      const text = [
+        '<a href="{{ client_files_course }}/formulas.pdf" target="_self" rel="nofollow">Formulas</a>',
+        '<a href="https://example.com/reference">Reference</a>',
+        '<a href="#instructions">Instructions</a>',
+        '<a href="mailto:instructor@example.com">Email</a>',
+        markdownEnabled
+          ? '[Markdown resource](./reference.html)'
+          : '<a href="./reference.html">HTML resource</a>',
+        ...(markdownEnabled
+          ? []
+          : ['<a href="/help" role="button" data-bs-toggle="modal">Help</a>']),
+      ].join('\n\n');
+      const options = { urlPrefix, markdownEnabled };
+      const normal = cheerio.load(renderText({ id: assessmentId, text }, options)!);
+      assert.equal(normal('a').eq(0).attr('target'), '_self');
+      assert.isUndefined(normal('a').eq(1).attr('target'));
+
+      const $ = cheerio.load(
+        renderText({ id: assessmentId, text }, { ...options, lockdownBrowser: true })!,
+      );
+      assert.equal($('a').eq(0).attr('href'), `${expectedUrlBase}/clientFilesCourse/formulas.pdf`);
+      assert.equal($('a').eq(0).attr('rel'), 'nofollow noopener noreferrer');
+      assert.deepEqual(
+        $('a')
+          .toArray()
+          .map((link) => $(link).attr('target')),
+        [
+          '_blank',
+          '_blank',
+          undefined,
+          undefined,
+          '_blank',
+          ...(!markdownEnabled ? [undefined] : []),
+        ],
+      );
+      assert.equal($('a').eq(1).attr('rel'), 'noopener noreferrer');
+      assert.equal($('a').eq(4).attr('rel'), 'noopener noreferrer');
+    }
   });
 
   it('preserves semantic HTML and literal math while removing custom formatting', () => {

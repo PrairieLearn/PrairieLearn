@@ -1,4 +1,5 @@
 import * as async from 'async';
+import * as cheerio from 'cheerio';
 import debugfn from 'debug';
 import mustache from 'mustache';
 import { z } from 'zod';
@@ -68,11 +69,16 @@ export type InstanceLogEntry = Omit<
  * @param options - Rendering options.
  * @param options.urlPrefix - The current server urlPrefix.
  * @param options.markdownEnabled - Whether to render sanitized Markdown instead of HTML.
+ * @param options.lockdownBrowser - Whether resource links should open in a separate tab for LockDown Browser.
  * @returns The rendered text.
  */
 export function renderText(
   assessment: { id: string; text: string | null },
-  { urlPrefix, markdownEnabled = false }: { urlPrefix: string; markdownEnabled?: boolean },
+  {
+    urlPrefix,
+    markdownEnabled = false,
+    lockdownBrowser = false,
+  }: { urlPrefix: string; markdownEnabled?: boolean; lockdownBrowser?: boolean },
 ): string | null {
   if (!assessment.text) return null;
 
@@ -91,7 +97,31 @@ export function renderText(
     .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
 
   const rendered = mustache.render(text, context);
-  return markdownEnabled ? markdownToHtml(rendered, { interpretMath: false }) : rendered;
+  const html = markdownEnabled ? markdownToHtml(rendered, { interpretMath: false }) : rendered;
+  if (!lockdownBrowser) return html;
+
+  // Keep linked resources from replacing the exam, including in legacy HTML overviews.
+  const $ = cheerio.load(html, null, false);
+  $('a[href]').each((_, element) => {
+    const link = $(element);
+    const href = link.attr('href')!.trim();
+    const scheme = href.match(/^([a-z][a-z\d+.-]*):/i)?.[1];
+    if (
+      !href ||
+      href.startsWith('#') ||
+      (scheme && !/^https?$/i.test(scheme)) ||
+      link.is('[role="button"], [data-bs-toggle], [data-toggle], [onclick]')
+    ) {
+      return;
+    }
+
+    const rel = new Set(link.attr('rel')?.split(/\s+/).filter(Boolean));
+    rel.add('noopener');
+    rel.add('noreferrer');
+    link.attr('target', '_blank');
+    link.attr('rel', [...rel].join(' '));
+  });
+  return $.html();
 }
 
 /**
