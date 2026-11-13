@@ -6,10 +6,7 @@ import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
 /** `history` lists thread items newest first, as thread/items/list returns them. */
-function runner({
-  loseAcceptance = false,
-  history = [] as unknown[],
-} = {}) {
+function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
   const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));

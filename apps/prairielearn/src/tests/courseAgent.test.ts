@@ -311,7 +311,10 @@ describe('Course agent access and conversation privacy', () => {
     expect(await wrong.json()).toMatchObject({ message: 'No assessment named "hw99".' });
 
     // The service's credentials reach only the conversation's course's navigation.
-    const settings = { page: 'course.settings', params: {} };
+    const settings = {
+      page: 'assessment.settings',
+      params: { courseInstance: 'Sp15', assessment: 'hw1-automaticTestSuite' },
+    };
     const refused = await Promise.all([
       resolve(settings, { headers: { ...credentials, Authorization: 'Bearer wrong' } }),
       resolve(settings, {
