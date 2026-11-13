@@ -33,13 +33,13 @@ function mapRow(
   const start_new_set = raw.assessment_set.id !== prev?.assessment_set.id;
   return {
     assessment_id: raw.assessment.id,
-    assessment_instance_id: raw.assessment_instance.id,
+    assessment_instance_id: raw.assessment_instance?.id ?? null,
     assessment_group_work: raw.assessment.team_work,
     title: computeTitle(raw),
     assessment_set_heading: raw.assessment_set.heading,
     assessment_set_color: raw.assessment_set.color,
     label: computeLabel(raw),
-    assessment_instance_score_perc: raw.assessment_instance.score_perc,
+    assessment_instance_score_perc: raw.assessment_instance?.score_perc ?? null,
     show_closed_assessment_score: raw.show_closed_assessment_score,
     start_new_set,
   };
@@ -85,7 +85,7 @@ router.get(
     const csvData = rows.map((row) => [
       computeTitle(row),
       row.assessment_set.heading,
-      row.show_closed_assessment_score ? row.assessment_instance.score_perc?.toFixed(6) : null,
+      row.show_closed_assessment_score ? row.assessment_instance?.score_perc?.toFixed(6) : null,
     ]);
 
     const stringifier = stringifyNonblocking(csvData, {
