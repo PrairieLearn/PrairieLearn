@@ -2,7 +2,7 @@ import { QueryClient, skipToken, useMutation, useQuery } from '@tanstack/react-q
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
-import { type ChangeEvent, Fragment, useCallback, useRef, useState } from 'react';
+import { type ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Badge,
@@ -99,6 +99,38 @@ export function InstructorAssessmentPrint(props: PrintPreparationProps) {
 }
 InstructorAssessmentPrint.displayName = 'InstructorAssessmentPrint';
 
+function AutomaticExportDownload({
+  printExportId,
+  onFinished,
+}: {
+  printExportId: string;
+  onFinished: (id: string) => void;
+}) {
+  const trpc = useTRPC();
+  const completedRef = useRef(false);
+  const status = useQuery(
+    trpc.printableAssessmentExport.status.queryOptions(
+      { printExportId },
+      {
+        refetchInterval: (query) =>
+          query.state.data && query.state.data.status !== 'pending' ? false : 2_000,
+      },
+    ),
+  );
+  useEffect(() => {
+    // A newly queued export starts one download when its background job succeeds.
+    if (!status.data || status.data.status === 'pending' || completedRef.current) return;
+    completedRef.current = true;
+    if (status.data.status === 'succeeded' && status.data.downloadUrl) {
+      const link = window.document.createElement('a');
+      link.href = status.data.downloadUrl;
+      link.click();
+    }
+    onFinished(printExportId);
+  }, [status.data, onFinished, printExportId]);
+  return null;
+}
+
 function PrintPreparation({
   assessmentId,
   courseInstanceId,
@@ -131,7 +163,6 @@ function PrintPreparation({
       ? selectedForm
       : (formIds.at(0) ?? null);
   const archivedPreviewForm = archivedForms.find((form) => form.id === formId);
-  const downloadFormIds = archivedPreviewForm ? [...formIds, archivedPreviewForm.id] : formIds;
   function formLabel(id: string) {
     const form = forms.data.find((item) => item.id === id);
     if (!form) throw new Error('This print form is not available.');
@@ -168,6 +199,7 @@ function PrintPreparation({
   const [retry, setRetry] = useState(0);
   const [snapshotStale, setSnapshotStale] = useState(false);
   const [exportId, setExportId] = useQueryState('export', parseAsString);
+  const [automaticExportIds, setAutomaticExportIds] = useState<string[]>([]);
   const {
     register,
     handleSubmit,
@@ -367,8 +399,13 @@ function PrintPreparation({
 
   function receiveExport(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
     void setExportId(result.printExportId);
+    setAutomaticExportIds((ids) => [...ids, result.printExportId]);
     void recentExports.refetch();
   }
+
+  const finishAutomaticExport = useCallback((id: string) => {
+    setAutomaticExportIds((ids) => ids.filter((value) => value !== id));
+  }, []);
 
   async function downloadPacket(
     ids: string[],
@@ -508,6 +545,9 @@ function PrintPreparation({
     !exportNeedsNewPreview &&
     !download.isPending &&
     !busy;
+  const previewFormName = formId
+    ? `${archivedPreviewForm ? 'Previous Form' : 'Form'} ${formLabel(formId)}`
+    : null;
 
   async function downloadBooklet(studentCount: number) {
     setCopies(studentCount);
@@ -564,6 +604,9 @@ function PrintPreparation({
 
   return (
     <div className="print-preparation">
+      {automaticExportIds.map((id) => (
+        <AutomaticExportDownload key={id} printExportId={id} onFinished={finishAutomaticExport} />
+      ))}
       <a
         className="small mb-3 align-self-start"
         href={`/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/questions`}
@@ -1416,50 +1459,44 @@ function PrintPreparation({
                     <div className="print-preparation-download">
                       <Dropdown drop="up" align="end">
                         <Dropdown.Toggle id="print-download-menu" size="sm" disabled={!canDownload}>
-                          <i className="bi bi-download me-2" aria-hidden="true" />
-                          Download
+                          <i className="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />
+                          Prepare…
                         </Dropdown.Toggle>
                         <Dropdown.Menu>
-                          {downloadFormIds.map((id, index) => {
-                            const label = formLabel(id);
-                            const formName =
-                              id === archivedPreviewForm?.id ? 'Previous Form' : 'Form';
-                            return (
-                              <Fragment key={id}>
-                                {index > 0 && <Dropdown.Divider />}
-                                <Dropdown.Item
-                                  disabled={!renderingAvailable}
-                                  onClick={() =>
-                                    void downloadPacket([id], 1, 'assessment').catch(() => {})
-                                  }
-                                >
-                                  Download {formName} {label} (PDF)
-                                </Dropdown.Item>
-                                <Dropdown.Item
-                                  onClick={() =>
-                                    download.mutate({ id, printDocument: 'assessment' })
-                                  }
-                                >
-                                  Download {formName} {label} Word (.docx)
-                                </Dropdown.Item>
-                                <Dropdown.Item
-                                  disabled={!renderingAvailable}
-                                  onClick={() =>
-                                    void downloadPacket([id], 1, 'answer_key').catch(() => {})
-                                  }
-                                >
-                                  Download {formName} {label} answer key (PDF)
-                                </Dropdown.Item>
-                                <Dropdown.Item
-                                  onClick={() =>
-                                    download.mutate({ id, printDocument: 'answer_key' })
-                                  }
-                                >
-                                  Download {formName} {label} answer key Word (.docx)
-                                </Dropdown.Item>
-                              </Fragment>
-                            );
-                          })}
+                          {formId && previewFormName && (
+                            <>
+                              <Dropdown.Item
+                                disabled={!renderingAvailable}
+                                onClick={() =>
+                                  void downloadPacket([formId], 1, 'assessment').catch(() => {})
+                                }
+                              >
+                                Prepare {previewFormName} (PDF)
+                              </Dropdown.Item>
+                              <Dropdown.Item
+                                onClick={() =>
+                                  download.mutate({ id: formId, printDocument: 'assessment' })
+                                }
+                              >
+                                Prepare {previewFormName} Word (.docx)
+                              </Dropdown.Item>
+                              <Dropdown.Item
+                                disabled={!renderingAvailable}
+                                onClick={() =>
+                                  void downloadPacket([formId], 1, 'answer_key').catch(() => {})
+                                }
+                              >
+                                Prepare {previewFormName} answer key (PDF)
+                              </Dropdown.Item>
+                              <Dropdown.Item
+                                onClick={() =>
+                                  download.mutate({ id: formId, printDocument: 'answer_key' })
+                                }
+                              >
+                                Prepare {previewFormName} answer key Word (.docx)
+                              </Dropdown.Item>
+                            </>
+                          )}
                           <Dropdown.Divider />
                           {formIds.length > 1 && (
                             <Dropdown.Item
@@ -1470,7 +1507,7 @@ function PrintPreparation({
                                 )
                               }
                             >
-                              Download all forms (PDF)
+                              Prepare all forms (PDF)
                             </Dropdown.Item>
                           )}
                           <Dropdown.Item
@@ -1481,7 +1518,7 @@ function PrintPreparation({
                               setShowBookletModal(true);
                             }}
                           >
-                            Download booklet PDF…
+                            Prepare booklet PDF…
                           </Dropdown.Item>
                         </Dropdown.Menu>
                       </Dropdown>

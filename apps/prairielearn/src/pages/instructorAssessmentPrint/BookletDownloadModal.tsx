@@ -48,7 +48,7 @@ export function BookletDownloadModal({
       <Form noValidate onSubmit={handleSubmit(({ students }) => onDownload(students))}>
         <Modal.Header closeButton={!pending}>
           <Modal.Title as="h2" id="print-booklet-title" className="h5">
-            Download booklet PDF
+            Prepare booklet PDF
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -83,7 +83,7 @@ export function BookletDownloadModal({
           {enrolledStudents > MAX_PRINT_COPIES && (
             <Alert variant="warning" className="mt-3 mb-0">
               This course has {enrolledStudents} enrolled students. A booklet can include up to{' '}
-              {MAX_PRINT_COPIES} copies. Download additional booklets to cover the class.
+              {MAX_PRINT_COPIES} copies. Prepare additional booklets to cover the class.
             </Alert>
           )}
           <p id="print-booklet-students-help" className="small text-muted mt-3 mb-0">
@@ -91,8 +91,8 @@ export function BookletDownloadModal({
               ? `Forms ${formLabels.join(', ')} repeat in order, one complete copy per student.`
               : 'Each student receives a copy of the same form.'}{' '}
             Every copy includes your cover pages. One answer key for each form is appended at the
-            end. Print single-sided. Your PDF will be prepared in the background; download it from
-            this page when it is ready.
+            end. Print single-sided. Your PDF will be prepared in the background and downloaded
+            automatically when ready. It will also appear in Recent exports.
           </p>
         </Modal.Body>
         <Modal.Footer>
@@ -110,7 +110,7 @@ export function BookletDownloadModal({
             ) : (
               <>
                 <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
-                Download booklet PDF
+                Prepare booklet PDF
               </>
             )}
           </Button>

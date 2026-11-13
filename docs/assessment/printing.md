@@ -11,7 +11,7 @@ For assessments with randomization, you can prepare several versions, called _fo
 3. Choose what to include on the [cover page](#cover-pages), then select **Create preview**.
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
 5. Select **Update preview** to save your changes to this form. Check the **Student copy** and **Answer key** above the preview.
-6. When you are satisfied with the assessment, open **Download** and [choose a file](#download-files).
+6. When you are satisfied with the assessment, open **Prepare…** and [choose a file](#prepare-and-download-files).
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
 
@@ -34,7 +34,7 @@ If your assessment uses randomization, select **Add form** to create another for
 
 Select a form to review it and choose its questions and spacing. Apply any changes with **Update preview** before switching to another form.
 
-To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding letter). The new form inherits the old form's paper and cover settings. Question exclusions and individual spacing reset because the new form may have different questions. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for answer keys.
+To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding letter), and confirm the change. The new form gets the next label; labels are never reused, so the replacement may skip a letter. It inherits the old form's paper and cover settings. Question exclusions and individual spacing reset because the new form may have different questions. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for answer keys. Use the archive button beside a form to remove it from the current set while keeping it under **Previous forms**.
 
 ## Cover pages
 
@@ -55,28 +55,28 @@ Upload readable PDFs without password protection. Fillable covers must have save
 
 Uploaded covers do not appear in the preview. Download a student copy or booklet to check them before printing.
 
-## Download files
+## Prepare and download files
 
-Select **Update preview** after making changes, then open **Download**. The available files depend on your forms:
+Select **Update preview** after making changes, then open **Prepare…**. The first four options apply to the form you are previewing:
 
-| Option                                      | What you get                                                                             |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **Download Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                              |
-| **Download Form A Word (.docx)**            | An editable student copy of Form A.                                                      |
-| **Download Form A answer key (PDF)**        | The answer key for Form A.                                                               |
-| **Download Form A answer key Word (.docx)** | An editable answer key for Form A.                                                       |
-| **Download all forms (PDF)**                | One student copy of each form, including uploaded covers. Available with multiple forms. |
-| **Download booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.       |
+| Option                                     | What you get                                                                             |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| **Prepare Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                              |
+| **Prepare Form A Word (.docx)**            | An editable student copy of Form A.                                                      |
+| **Prepare Form A answer key (PDF)**        | The answer key for Form A.                                                               |
+| **Prepare Form A answer key Word (.docx)** | An editable answer key for Form A.                                                       |
+| **Prepare all forms (PDF)**                | One student copy of each form, including uploaded covers. Available with multiple forms. |
+| **Prepare booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.       |
 
-If a download says the preview has expired or changed, select **Update preview** and try again.
+If file preparation says the preview has expired or changed, select **Update preview** and try again.
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-PDF and Word files are prepared in the background. You can start another export while one is being prepared. The **Recent exports** list shows your ten newest exports for this assessment, including their progress and download links. The list remains available when you reload the page. Each file is available for 24 hours after it was requested.
+PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. The **Recent exports** list shows your ten newest exports for this assessment, including their progress and download links. Use those links if you return later or an automatic download is blocked. The list remains available when you reload the page. Each file is available for 24 hours after it was requested.
 
 ### Print copies for a class
 
-Select **Download booklet PDF…**, enter the **Number of students** (up to 500), and select **Download booklet PDF**. Each student gets a complete copy. With multiple forms, copies repeat in order: for example, A, B, C, A, B, C. With one form, every student gets the same version. A booklet can contain up to 10,000 pages; for larger classes, download it in batches.
+Select **Prepare booklet PDF…**, enter the **Number of students** (up to 500), and select **Prepare booklet PDF**. Each student gets a complete copy. With multiple forms, copies repeat in order: for example, A, B, C, A, B, C. With one form, every student gets the same version. A booklet can contain up to 10,000 pages; for larger classes, prepare it in batches.
 
 The booklet ends with one answer key for each form. Print it single-sided and set aside the answer keys before distributing the student copies.
 
