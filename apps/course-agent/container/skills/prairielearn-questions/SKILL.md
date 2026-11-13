@@ -7,8 +7,22 @@ description: Write, edit, review, or debug PrairieLearn questions (questions/<qi
 
 ## Workflow
 
-1. Look up the details of each element you plan to use in PrairieLearn's documentation at docs.prairielearn.com.
-2. Write the question following the rules below, then reread `question.html` and `server.py` against them before requesting review.
+1. If the course already has questions, read two or three that are most like the request (same topic, assessment, or input type). If they share a layout, start from a copy of the closest one and adapt it, keeping its structure, wording style, names, and solution format; see "Following the course's style".
+2. Look up the details of each element you plan to use in PrairieLearn's documentation at docs.prairielearn.com.
+3. Write the question following the rules below.
+4. Before requesting review, check the files against this list, even where the course's existing questions differ: every input element is outside all panels; TeX in attributes uses single backslashes; no Mustache tag sits directly inside TeX braces; `correct_answers` is set only for elements that read it; any required precision is stated in the question text.
+
+## Following the course's style
+
+Staff expect new questions to look like the course's existing ones. Follow the conventions you see consistently in similar questions:
+
+- Presentation: wording and tone, how the givens and the task are laid out, labels and units, and whether and how worked solutions are written.
+- Organization: QID and directory naming, `answers-name` naming, `info.json` topics and tags, and shared helpers or `clientFiles` the questions use.
+- Grading habits: tolerances and required precision, as long as students are told the precision.
+
+Conventions don't override the rules below. Don't copy a pattern that breaks a question or misleads students, even if every existing question does it: an input inside a panel, double backslashes in an attribute, Mustache inside TeX braces, an unstated precision requirement, a hint that gives away the answer, or a deprecated v2 format. In your summary, name each course pattern you deliberately didn't follow and why (for example, "the existing questions put the input inside the question panel, which hides the correct answer after grading, so this one puts it outside"), so staff can tell you if it was intentional. Don't change other existing questions to fix such patterns unless asked; offer to.
+
+If the course has no similar questions, or the request asks for a different style, use the defaults below.
 
 ## Rules
 
@@ -19,7 +33,7 @@ description: Write, edit, review, or debug PrairieLearn questions (questions/<qi
 - Do any computation, rounding, and LaTeX string building in `server.py`. Never put a Mustache tag directly inside a TeX group, as in `\frac{{params.a}}{{params.b}}`; write `\frac{ {{params.a}} }{ {{params.b}} }` or pass a prebuilt LaTeX string. In HTML attributes, write TeX with single backslashes, e.g. `suffix="$\mathrm{m/s}$"`.
 - Format displayed numbers in `server.py`: never show Python e-notation such as `1.2e-05` (write `1.2 \times 10^{-5}` in LaTeX instead). Show displayed values with the precision used to compute the answer. If grading requires a precision (`comparison="sigfig"` or `"decdig"`, or a tight tolerance), tell students in the question text.
 - Mustache HTML-escapes `{{params.x}}`. Use triple braces (`{{{params.x}}}`) only for HTML you build in `server.py` from trusted values, never for text that could come from students.
-- Keep the question clear, concise, and unambiguous. Present given values as facts without mentioning randomization, and don't explain how to solve the question unless staff ask; that includes hints such as how many options are correct. Give students the model, relationships, and constants they need to solve it, but not the solved expression for the answer: a formula in the request that defines the correct answer is for computing it in `server.py`, so show it only if the request says students should be given it. Put worked solutions in `pl-answer-panel`.
+- Keep the question clear, concise, and unambiguous. Present given values as facts without mentioning randomization, and don't explain how to solve the question unless staff ask; that includes hints such as how many options are correct. Give students the model, relationships, and constants they need to solve it, but not the solved expression for the answer: a formula in the request that defines the correct answer is for computing it in `server.py`, so show it only if the request says students should be given it. Unless the course's questions do otherwise, put a worked solution in `pl-answer-panel`.
 
 ## Editing existing questions
 
