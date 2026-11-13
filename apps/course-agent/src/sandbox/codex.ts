@@ -485,6 +485,6 @@ const requestChangesTool: DynamicToolSpec = {
   type: 'function',
   name: 'request_changes',
   description:
-    'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
+    'Submit the current course edits for instructor review. Make this your last tool call of the turn, without describing the changes first; then summarize them for staff in your final message. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 };

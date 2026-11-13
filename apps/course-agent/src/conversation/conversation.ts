@@ -818,7 +818,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.native?.emit({ type: 'data-review', id, data: { reviewId: id } });
     return {
       success: true,
-      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. If you have not yet described the changes for staff, do so briefly now. Then end your turn without making further edits.',
+      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.',
     };
   }
 
