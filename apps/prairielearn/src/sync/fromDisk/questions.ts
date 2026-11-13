@@ -4,6 +4,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { QuestionVersionSchema } from '../../lib/db-types.js';
 import { isDraftQid } from '../../lib/draft-question.js';
 import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
@@ -11,9 +12,7 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
-  if (!q) return null;
-
+function getParamsForQuestion(qid: string, q: QuestionJson) {
   let partialCredit;
   if (q.partialCredit != null) {
     partialCredit = q.partialCredit;
@@ -71,6 +70,16 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   };
 }
 
+/** Uses the same defaults and command normalization as live question sync. */
+export function getQuestionVersionSettings(qid: string, question: QuestionJson) {
+  const params = getParamsForQuestion(qid, question);
+  return QuestionVersionSchema.omit({ chunk_id: true }).parse({
+    // SQL sync stores absent settings as NULL. Preserve that distinction in snapshots.
+    ...Object.fromEntries(Object.entries(params).map(([key, value]) => [key, value ?? null])),
+    directory: qid,
+  });
+}
+
 export async function sync(
   courseId: string,
   courseData: CourseData,
@@ -81,7 +90,7 @@ export async function sync(
       question.uuid,
       infofile.stringifyErrors(question),
       infofile.stringifyWarnings(question),
-      getParamsForQuestion(qid, question.data),
+      question.data ? getParamsForQuestion(qid, question.data) : null,
     ]);
   });
 

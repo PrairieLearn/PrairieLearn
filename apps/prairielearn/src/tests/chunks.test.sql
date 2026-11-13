@@ -42,3 +42,14 @@ SET
   END
 WHERE
   course_id = $course_id;
+
+-- BLOCK select_question_versions
+SELECT
+  qv.*
+FROM
+  question_versions AS qv
+  JOIN chunks AS c ON c.id = qv.chunk_id
+WHERE
+  c.question_id = $question_id
+ORDER BY
+  c.id;

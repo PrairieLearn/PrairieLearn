@@ -10,10 +10,12 @@ import { IdSchema } from '@prairielearn/zod';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { type Course, CourseSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema, QuestionVersionSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
+import { selectQuestionById } from '../models/question.js';
+import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
@@ -365,6 +367,131 @@ describe('chunks', () => {
       expect(new Set(atBaseline.map((chunk) => chunk.uuid))).toEqual(
         new Set(baselineChunks.map((chunk) => chunk.uuid)),
       );
+    });
+
+    it('preserves settings across metadata-only and code-only question changes', async () => {
+      const courseDir = tempTestCourseDir.path;
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+      });
+      const initialVersions = await sqldb.queryRows(
+        sql.select_question_versions,
+        { question_id: questionId },
+        QuestionVersionSchema,
+      );
+      expect(initialVersions).toHaveLength(1);
+      expect(initialVersions[0].partial_credit).toBe(true);
+
+      const infoPath = path.join(courseDir, 'questions/addNumbers/info.json');
+      const originalInfo = QuestionJsonSchema.parse(await fs.readJson(infoPath));
+      await fs.writeJson(infoPath, {
+        ...originalInfo,
+        partialCredit: false,
+      });
+      const { logger } = makeMockLogger();
+      const syncResult = await syncDiskToSql(course, logger);
+      assert(syncResult.status === 'complete');
+      assert.isFalse(syncResult.hadJsonErrors);
+      // Exercise settings comparison independently of Git's changed-file list.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: syncResult.courseData,
+        changedFiles: [],
+      });
+      const metadataVersions = await sqldb.queryRows(
+        sql.select_question_versions,
+        { question_id: questionId },
+        QuestionVersionSchema,
+      );
+      expect(metadataVersions).toHaveLength(2);
+      expect(metadataVersions[0]).toEqual(initialVersions[0]);
+      expect(metadataVersions[1].partial_credit).toBe(false);
+      const liveQuestion = await selectQuestionById(questionId);
+      expect(metadataVersions[1]).toEqual({
+        ...QuestionVersionSchema.omit({ chunk_id: true }).parse(liveQuestion),
+        chunk_id: metadataVersions[1].chunk_id,
+      });
+
+      await fs.appendFile(
+        path.join(courseDir, 'questions/addNumbers/server.py'),
+        '\n# New code revision\n',
+      );
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        changedFiles: ['questions/addNumbers/server.py'],
+      });
+      const codeVersions = await sqldb.queryRows(
+        sql.select_question_versions,
+        { question_id: questionId },
+        QuestionVersionSchema,
+      );
+      expect(codeVersions).toHaveLength(3);
+      expect(codeVersions[2]).toEqual({
+        ...metadataVersions[1],
+        chunk_id: codeVersions[2].chunk_id,
+      });
+    });
+
+    it('does not snapshot parsed question settings with validation errors', async () => {
+      const courseDir = tempTestCourseDir.path;
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+      });
+      const initialVersions = await sqldb.queryRows(
+        sql.select_question_versions,
+        { question_id: questionId },
+        QuestionVersionSchema,
+      );
+      const infoPath = path.join(courseDir, 'questions/addNumbers/info.json');
+      const originalInfo = QuestionJsonSchema.parse(await fs.readJson(infoPath));
+      await fs.writeJson(infoPath, { ...originalInfo, gradingMethod: 'External' });
+      const { logger } = makeMockLogger();
+      const invalidSync = await syncDiskToSql(course, logger);
+      assert(invalidSync.status === 'complete');
+      assert.isTrue(invalidSync.hadJsonErrors);
+      const invalidQuestion = invalidSync.courseData.questions.addNumbers;
+      assert.isDefined(invalidQuestion.data);
+      assert.isNotEmpty(invalidQuestion.errors);
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: invalidSync.courseData,
+        changedFiles: ['questions/addNumbers/info.json'],
+      });
+      const invalidVersions = await sqldb.queryRows(
+        sql.select_question_versions,
+        { question_id: questionId },
+        QuestionVersionSchema,
+      );
+      expect(invalidVersions).toEqual(initialVersions);
+      const current = (await chunksLib.selectChunksForCourse(course.id)).find(
+        (chunk) => chunk.question_id === questionId,
+      )!;
+      expect(current.id).not.toBe(initialVersions[0].chunk_id);
+
+      await fs.writeJson(infoPath, originalInfo);
+      const repairedSync = await syncDiskToSql(course, logger);
+      assert(repairedSync.status === 'complete');
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: repairedSync.courseData,
+        changedFiles: [],
+      });
+      const repairedVersions = await sqldb.queryRows(
+        sql.select_question_versions,
+        { question_id: questionId },
+        QuestionVersionSchema,
+      );
+      expect(repairedVersions).toHaveLength(2);
+      expect(repairedVersions[0]).toEqual(initialVersions[0]);
     });
 
     it('handles question nesting after a rename', async () => {
@@ -1115,6 +1242,9 @@ describe('chunks', () => {
 
       // Fetch again and ensure counts are unchanged
       const afterChunks = await chunksLib.selectChunksForCourse(course.id);
+      expect(new Set(afterChunks.map((chunk) => chunk.id))).toEqual(
+        new Set(initialChunks.map((chunk) => chunk.id)),
+      );
       const afterCount = afterChunks.length;
       assert.equal(afterCount, initialCount);
 
