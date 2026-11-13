@@ -5,6 +5,7 @@ import { io } from 'socket.io-client';
 
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
+import { copyContentModal } from '../../src/lib/client/copy-content.js';
 import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 import { createLocalQuestionBrowserServices } from '../../src/lib/client/question-browser-services.js';
 import type {
@@ -17,11 +18,11 @@ import type {
   StatusMessage,
   StatusMessageSubmission,
 } from '../../src/lib/externalGradingSocket.types.js';
+import type { QuestionDialogData } from '../../src/lib/question-dialogs.types.js';
 import type { SubmissionPanels } from '../../src/lib/question-render.types.js';
 import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
-import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
 
 const browserServices = new WeakMap<HTMLElement, QuestionBrowserServices>();
@@ -63,10 +64,38 @@ onDocumentReady(() => {
           ? createLocalQuestionBrowserServices({
               document: container.ownerDocument,
               ...getQuestionBrowserServicesData(),
+              dialogData: decodeData<QuestionDialogData>(
+                `question-dialog-data-${container.dataset.variantId}`,
+              ),
               isCurrent: () => container.isConnected,
             })
           : undefined;
       if (localServices) browserServices.set(container, localServices.services);
+
+      container.addEventListener('click', async (event) => {
+        const button = (event.target as Element).closest<HTMLButtonElement>(
+          'button[data-question-dialog]',
+        );
+        const services = browserServices.get(container);
+        if (!button || !services) return;
+        let triggerSelector: string;
+        if (button.dataset.questionDialog === 'copy-question') {
+          triggerSelector = 'button[data-question-dialog="copy-question"]';
+          await services.openCopyQuestion();
+        } else if (button.dataset.questionDialog === 'submission-info') {
+          const submissionId = button.dataset.submissionId!;
+          triggerSelector = `button[data-question-dialog="submission-info"][data-submission-id="${CSS.escape(submissionId)}"]`;
+          await services.openSubmissionInfo({ submissionId });
+        } else {
+          return;
+        }
+        if (!container.isConnected) return;
+        // Rendering a submission can replace the trigger while its dialog is open.
+        const focusTarget =
+          container.querySelector<HTMLButtonElement>(triggerSelector) ??
+          container.closest<HTMLElement>('.question-page-question');
+        focusTarget?.focus({ preventScroll: true });
+      });
 
       const externalGrading =
         container.dataset.gradingMethod === 'External'
@@ -318,7 +347,10 @@ function fetchResults({
   submissionId: string;
   signal: AbortSignal;
 }): void {
-  window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
+  // Application dialogs stay open and receive the refreshed submission metadata.
+  if (!browserServices.has(container)) {
+    window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
+  }
 
   const submissionPanel = container.querySelector<HTMLElement>(`#submission-${submissionId}`);
   if (!submissionPanel) return;

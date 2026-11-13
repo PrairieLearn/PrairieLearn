@@ -24,6 +24,7 @@ export function QuestionBrowserServicesData({
           ? resLocals.submissions.map((submission: SubmissionForRender) => [
               submission.id,
               getSubmissionRenderUrl({
+                questionHostingUpdate: true,
                 questionContext,
                 urlPrefix: resLocals.urlPrefix,
                 question: resLocals.question,

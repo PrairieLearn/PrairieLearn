@@ -10,6 +10,7 @@ import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionBrowserServicesData } from '../../components/QuestionBrowserServicesData.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { QuestionDialogData } from '../../components/QuestionDialogData.js';
 import { SyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
@@ -120,9 +121,10 @@ export function InstructorQuestionPreview({
         }
       </style>
     `,
-    postContent: CalculatorDrawer({
-      storageKey: `calculator-preview-${resLocals.question.id}`,
-    }),
+    postContent: html`
+      ${questionHostingUpdate ? QuestionDialogData({ resLocals, questionCopyTargets }) : ''}
+      ${CalculatorDrawer({ storageKey: `calculator-preview-${resLocals.question.id}` })}
+    `,
     content: html`
       ${questionHostingUpdate ? QuestionBrowserServicesData({ resLocals, questionContext: 'instructor', renderSubmissionSearchParams }) : ''}
       ${questionHostingUpdate ? '' : previewAlerts}
