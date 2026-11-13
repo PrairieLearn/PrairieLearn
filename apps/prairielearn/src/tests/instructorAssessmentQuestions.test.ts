@@ -801,13 +801,9 @@ describe('Editing assessment questions', { concurrent: false }, () => {
       assert.lengthOf(editor.find('a[href*="/question/"]'), 1);
     });
 
-    test('handles existing question rows without retained references until they are synced again', async () => {
+    test('asks for a resync when a placeholder predates retained references', async () => {
       try {
-        await execute(sql.clear_question_reference, { assessment_id: '1', qid: 'test/question' });
-        const { props } = await getEditorData();
-        assert.deepEqual(serializeZonesForJson(props.jsonZones), syncedZones);
-
-        await execute(sql.clear_question_reference, {
+        await execute(sql.clear_placeholder_reference, {
           assessment_id: '1',
           qid: '@unavailable/shared-only',
         });
@@ -832,7 +828,7 @@ describe('Editing assessment questions', { concurrent: false }, () => {
       const { props } = await getEditorData();
       const questionMetadata = Object.fromEntries(
         props.questionRows.map((row) => [
-          row.assessment_question.json_qid ?? questionDisplayName(props.course, row),
+          questionDisplayName(props.course, row),
           toEditorMetadata(row),
         ]),
       );

@@ -3,13 +3,10 @@ SELECT
   to_jsonb(aq.*) AS assessment_question,
   to_jsonb(ag.*) AS alternative_pool,
   to_jsonb(z.*) AS zone,
-  coalesce(
-    aq.json_qid,
-    CASE
-      WHEN q.course_id = ci.course_id THEN q.qid
-      WHEN c.sharing_name IS NOT NULL THEN '@' || c.sharing_name || '/' || q.qid
-    END
-  ) AS qid
+  CASE
+    WHEN q.course_id = ci.course_id THEN q.qid
+    WHEN c.sharing_name IS NOT NULL THEN '@' || c.sharing_name || '/' || q.qid
+  END AS qid
 FROM
   assessment_questions AS aq
   JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)

@@ -2403,34 +2403,6 @@ describe('Assessment syncing', () => {
   });
 
   describe('Test validating shared questions on sync', () => {
-    it('updates authored question references only after a successful sync', async () => {
-      const courseData = util.getCourseData();
-      const assessment = makeAssessment(courseData);
-      const question = { id: util.QUESTION_ID, points: 5 };
-      assessment.zones = [{ questions: [question] }];
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['renamed'] = assessment;
-      const { courseDir } = await util.writeAndSyncCourseData(courseData);
-      const original = await getSyncedAssessmentData('renamed');
-      assert.equal(original.assessment_questions[0].json_qid, util.QUESTION_ID);
-
-      const renamedQid = 'renamed-question';
-      courseData.questions[renamedQid] = courseData.questions[util.QUESTION_ID];
-      delete courseData.questions[util.QUESTION_ID];
-      question.id = renamedQid;
-      await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-      const renamed = await getSyncedAssessmentData('renamed');
-      assert.equal(renamed.assessment_questions[0].id, original.assessment_questions[0].id);
-      assert.equal(renamed.assessment_questions[0].json_qid, renamedQid);
-
-      question.id = 'missing-question';
-      await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-      const failed = await getSyncedAssessmentData('renamed');
-      assert.isNotNull(failed.assessment.sync_errors);
-      assert.equal(failed.assessment_questions[0].json_qid, renamedQid);
-    });
-
     it('records an error if a zone references a QID from another course that does not exist or we do not have permissions for', async () => {
       const courseData = util.getCourseData();
       const assessment = makeAssessment(courseData);

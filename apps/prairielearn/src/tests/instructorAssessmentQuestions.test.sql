@@ -1,8 +1,11 @@
--- BLOCK clear_question_reference
-UPDATE assessment_questions
+-- BLOCK clear_placeholder_reference
+UPDATE questions AS q
 SET
-  json_qid = NULL
+  qid = NULL
+FROM
+  assessment_questions AS aq
 WHERE
-  assessment_id = $assessment_id
-  AND json_qid = $qid
-  AND deleted_at IS NULL;
+  aq.question_id = q.id
+  AND aq.assessment_id = $assessment_id
+  AND aq.deleted_at IS NULL
+  AND q.qid = $qid;

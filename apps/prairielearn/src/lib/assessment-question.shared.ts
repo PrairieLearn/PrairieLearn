@@ -65,7 +65,7 @@ export const AssessmentQuestionStructureRowSchema = z.object({
   qid: z.string().nullable(),
 });
 
-export type AssessmentQuestionStructureRow = z.infer<typeof AssessmentQuestionStructureRowSchema>;
+type AssessmentQuestionStructureRow = z.infer<typeof AssessmentQuestionStructureRowSchema>;
 
 export type ResolvedAssessmentQuestionStructureRow = AssessmentQuestionStructureRow & {
   qid: string;

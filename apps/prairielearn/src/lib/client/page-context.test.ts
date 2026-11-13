@@ -286,7 +286,6 @@ const STAFF_ASSESSMENT_QUESTION = {
   json_max_auto_points: null,
   json_max_points: null,
   json_points: null,
-  json_qid: null,
   json_tries_per_variant: null,
   last_submission_score_hist: [8, 12, 16, 20],
   last_submission_score_variance: 12,

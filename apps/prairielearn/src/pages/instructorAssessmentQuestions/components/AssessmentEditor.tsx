@@ -199,10 +199,7 @@ function AssessmentEditorInner({
 
   const [initialState] = useState<EditorState>(() => {
     const questionMetadataMap = Object.fromEntries(
-      questionRows.map((r) => [
-        r.assessment_question.json_qid ?? questionDisplayName(course, r),
-        toEditorMetadata(r),
-      ]),
+      questionRows.map((r) => [questionDisplayName(course, r), toEditorMetadata(r)]),
     );
 
     const zones = prepareZonesForEditor(jsonZones, questionMetadataMap);
