@@ -26,6 +26,7 @@ NAMED_SETS = {
     "C": sympy.S.Complexes,
 }
 NAMED_SET_NAMES = frozenset(NAMED_SETS)
+_SET_OPERATOR_NAMES = frozenset({"U", "cup", "cap"})
 
 
 class SetSyntax(Enum):
@@ -117,9 +118,7 @@ type _TransformValue = (
 
 
 _GRAMMAR = (
-    files("prairielearn.internal")
-    .joinpath("set_expression.lark")
-    .read_text(encoding="utf-8")
+    files("prairielearn").joinpath("set_expression.lark").read_text(encoding="utf-8")
 )
 _ACTIVE_SOURCE: ContextVar[psu._SourceText] = ContextVar("set_expression_source")
 
@@ -323,16 +322,27 @@ _PARSER = Lark(
 
 def validate_names(variables: Iterable[str], custom_functions: Iterable[str]) -> None:
     """Reject instructor names that shadow the unqualified named-set syntax."""
-    conflicting_variables = sorted(NAMED_SET_NAMES.intersection(variables))
-    conflicting_functions = sorted(NAMED_SET_NAMES.intersection(custom_functions))
-    if conflicting_variables:
+    variable_names = set(variables)
+    function_names = set(custom_functions)
+    conflicting_named_variables = sorted(NAMED_SET_NAMES.intersection(variable_names))
+    conflicting_named_functions = sorted(NAMED_SET_NAMES.intersection(function_names))
+    if conflicting_named_variables:
         raise ValueError(
-            f"Named sets cannot be used as variable names: {', '.join(conflicting_variables)}"
+            "Named sets cannot be used as variable names: "
+            + ", ".join(conflicting_named_variables)
         )
-    if conflicting_functions:
+    if conflicting_named_functions:
         raise ValueError(
             "Named sets cannot be used as custom function names: "
-            + ", ".join(conflicting_functions)
+            + ", ".join(conflicting_named_functions)
+        )
+    conflicting_operators = sorted(
+        _SET_OPERATOR_NAMES.intersection(variable_names | function_names)
+    )
+    if conflicting_operators:
+        raise ValueError(
+            "Set operators cannot be used as variable or custom function names: "
+            + ", ".join(conflicting_operators)
         )
 
 

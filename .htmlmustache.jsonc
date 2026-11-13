@@ -218,6 +218,10 @@
       ]
     },
     {
+      "name": "pl-set-symbolic-input",
+      "schema": "./apps/prairielearn/elements/pl-set-symbolic-input/schemas/pl-set-symbolic-input.json"
+    },
+    {
       "name": "pl-string-input",
       "schema": "./apps/prairielearn/elements/pl-string-input/schemas/pl-string-input.json"
     },

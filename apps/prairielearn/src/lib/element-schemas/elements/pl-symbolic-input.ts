@@ -11,7 +11,12 @@ const plSymbolicInputAttributesSchema = z
     'additional-simplifications': z.string().regex(additionalSimplificationsPattern).optional(),
     'allow-blank': booleanFormat().optional(),
     'allow-complex': booleanFormat().optional(),
-    'allow-sets': booleanFormat().optional(),
+    'allow-sets': booleanFormat()
+      .meta({
+        deprecated: true,
+        description: 'Use <pl-set-symbolic-input> for new set-valued answers.',
+      })
+      .optional(),
     'allow-trig-functions': booleanFormat().optional(),
     'answers-name': z.string(),
     'aria-label': z.string().optional(),

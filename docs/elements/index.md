@@ -49,6 +49,7 @@ When the response is a string, an essay, or a math expression.
 - [`pl-rich-text-editor`](pl-rich-text-editor.md): Provide an in-browser formattable text editor for open-ended responses and essays.
 - [`pl-file-editor`](pl-file-editor.md): Provide an in-browser editor for longer-form code or raw text (also listed under [Code and files](#code-and-files)).
 - [`pl-symbolic-input`](pl-symbolic-input.md): Fill in a symbolic expression such as `x^2`, `sin(z)`, `mc^2`, and so on.
+- [`pl-set-symbolic-input`](pl-set-symbolic-input.md): Fill in a symbolic set using finite sets, intervals, set operations, or named domains.
 - [`pl-big-o-input`](pl-big-o-input.md): Fill in a symbolic value representing asymptotic complexity.
 
 ??? note "Decision flowchart"
@@ -187,6 +188,7 @@ For showing what the student submitted and the results that come back from gradi
 | [`pl-rich-text-editor`](pl-rich-text-editor.md)                   | Submission     | Formattable text editor for essays.           |
 | [`pl-sketch`](pl-sketch.md)                                       | Submission     | Sketch curves and math objects.               |
 | [`pl-string-input`](pl-string-input.md)                           | Submission     | String value.                                 |
+| [`pl-set-symbolic-input`](pl-set-symbolic-input.md)               | Submission     | Symbolic set expression.                      |
 | [`pl-submission-panel`](pl-submission-panel.md)                   | Panel          | Show only in the submission panel.            |
 | [`pl-symbolic-input`](pl-symbolic-input.md)                       | Submission     | Symbolic math expression.                     |
 | [`pl-template`](pl-template.md)                                   | Display        | Render a mustache template.                   |
@@ -248,6 +250,7 @@ For showing what the student submitted and the results that come back from gradi
     'pl-question-panel-element': 'pl-question-panel/',
     'pl-rich-text-editor-element': 'pl-rich-text-editor/',
     'pl-string-input-element': 'pl-string-input/',
+    'pl-set-symbolic-input-element': 'pl-set-symbolic-input/',
     'pl-submission-panel-element': 'pl-submission-panel/',
     'pl-symbolic-input-element': 'pl-symbolic-input/',
     'pl-template-element': 'pl-template/',

@@ -53,6 +53,7 @@ Input elements:
 - [`pl-number-input`](../elements/pl-number-input.md)
 - [`pl-order-blocks`](../elements/pl-order-blocks.md)
 - [`pl-string-input`](../elements/pl-string-input.md)
+- [`pl-set-symbolic-input`](../elements/pl-set-symbolic-input.md)
 - [`pl-symbolic-input`](../elements/pl-symbolic-input.md)
 
 ## What is not supported
