@@ -10,9 +10,12 @@ import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
 import { selectCourseByShortName } from '../../../models/course.js';
 import { selectQuestionByQid } from '../../../models/question.js';
+import { selectSubmissionById } from '../../../models/submission.js';
 import * as helperCourse from '../../../tests/helperCourse.js';
 import * as helperDb from '../../../tests/helperDb.js';
 import { getOrCreateUser } from '../../../tests/utils/auth.js';
+
+import { deleteAiGradingJobs } from './ai-grading-util.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -36,7 +39,7 @@ async function selectStatus(job_sequence_id: string): Promise<string> {
   return await queryScalar(sql.select_status, { job_sequence_id }, EnumJobStatusSchema);
 }
 
-describe('stopJobSequence (AI grading scope)', () => {
+describe('AI grading', () => {
   let assessment_question_id: string;
   let authn_user_id: string;
 
@@ -75,6 +78,32 @@ describe('stopJobSequence (AI grading scope)', () => {
     // invariant can be exercised without cross-test bleed.
     await execute(sql.delete_test_ai_grading_sequences, { assessment_question_id });
   });
+
+  it.each([null, 'Internal', 'Manual'] as const)(
+    'deletes AI grading results with prior grading method %s',
+    async (grading_method) => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        const submission_id = await queryScalar(
+          sql.insert_submission_with_ai_grading,
+          { assessment_question_id, authn_user_id, grading_method },
+          IdSchema,
+        );
+
+        const iqs = await deleteAiGradingJobs({
+          assessment_question_ids: [assessment_question_id],
+          authn_user_id,
+        });
+
+        assert.lengthOf(iqs, 1);
+        const submission = await selectSubmissionById({ submission_id });
+        assert.isFalse(submission.is_ai_graded);
+        assert.deepEqual(
+          submission.feedback,
+          grading_method ? { manual: 'Previous feedback' } : null,
+        );
+      });
+    },
+  );
 
   it('atomically transitions Running → Stopping and returns true once', async () => {
     const job_sequence_id = await insertAiGradingJobSequence({
