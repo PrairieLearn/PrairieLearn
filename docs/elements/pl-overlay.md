@@ -30,11 +30,11 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 ## `pl-overlay` Customizations
 
-| Attribute | Type    | Default | Description                                                                                |
-| --------- | ------- | ------- | ------------------------------------------------------------------------------------------ |
-| `clip`    | boolean | true    | If true, children will be cut off when exceeding overlay boundaries.                       |
-| `height`  | float   | —       | The height of the overlay canvas in pixels. Required unless a `pl-background` is provided. |
-| `width`   | float   | —       | The width of the overlay canvas in pixels. Required unless a `pl-background` is provided.  |
+| Attribute | Type    | Default | Description                                                                                                          |
+| --------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `clip`    | boolean | true    | If true, children will be cut off when exceeding the final overlay boundaries.                                       |
+| `height`  | float   | —       | The minimum height of the overlay and its coordinate plane in pixels. Required unless a `pl-background` is provided. |
+| `width`   | float   | —       | The width of the overlay and its coordinate plane in pixels. Required unless a `pl-background` is provided.          |
 
 ## `pl-location` Customizations
 
@@ -53,7 +53,7 @@ The `pl-background` child tag does not have any extra attributes that need to be
 
 ## Details
 
-An overlay is pre-defined as a "overlay area" with a static size. By default, elements that exceed these boundaries will get partially or totally cut off.
+The `width` and `height` define the coordinate plane used to position locations. The rendered overlay grows downward when its background or a location extends below that plane, while the coordinates of existing locations remain unchanged. This lets content that changes height, such as validation or grading feedback, remain in normal page flow. The overlay does not grow left, right, or upward; when `clip="true"`, content beyond those final boundaries is cut off.
 
 A background can be specified by wrapping HTML in a `<pl-background>` tag. If the contents of `<pl-background>` don't have a fixed size (e.g. using `<pl-figure>`, which uses a responsive width), then you should explicitly specify at least a `width` on `<pl-overlay>` to ensure that children will be displayed at the expected location no matter how big the browser viewport is. However, if the contents of `<pl-background>` have a fixed size (e.g. using `<pl-drawing width="500">`), then manually specifying a `width`/`height` on `<pl-overlay>` is not necessary.
 
@@ -62,7 +62,9 @@ Floating child elements are wrapped with a `<pl-location>` tag that specifies th
 ## Example implementations
 
 - [element/overlay]
+- [element/overlayDrawingFeedback]: Overlay containing a drawing whose grading feedback increases its height
 
 ---
 
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
+[element/overlayDrawingFeedback]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlayDrawingFeedback
