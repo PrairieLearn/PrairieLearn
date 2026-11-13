@@ -223,7 +223,9 @@ function PrintPreparation({
     : '';
   const previewUrl = `${printBase}/preview?${layout}&document=${document}`;
   const questions = useQuery(
-    trpc.printForms.questions.queryOptions({ printFormId: formId ?? '1' }, { enabled: validForm }),
+    trpc.printForms.questions.queryOptions(
+      validForm && formId ? { printFormId: formId } : skipToken,
+    ),
   );
   const create = useMutation(
     trpc.printForms.create.mutationOptions({
