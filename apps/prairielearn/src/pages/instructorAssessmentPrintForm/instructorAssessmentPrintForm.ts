@@ -32,7 +32,7 @@ import {
   renderPrintFormQuestions,
   validatePrintDocument,
 } from '../../lib/printing/index.js';
-import { PAPER_SIZES, type PaperSize } from '../../lib/printing/pdf-output.js';
+import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import { createPrintFormQuestionAssetRouter } from '../../lib/printing/print-asset-routes.js';
 import {

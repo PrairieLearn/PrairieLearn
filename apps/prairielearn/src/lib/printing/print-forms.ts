@@ -23,6 +23,8 @@ import {
 } from '../db-types.js';
 import { ensureVariant, getQuestionCourse } from '../question-variant.js';
 
+import { DEFAULT_PRINT_SETTINGS } from './print-settings.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 export function nextPrintFormLabel(previous: string | null): string {
@@ -115,7 +117,16 @@ export async function createPrintForm({
       replacesPrintFormId,
     );
     const label = nextPrintFormLabel(await selectLatestPrintFormLabel(assessment.id));
-    const form = await insertPrintForm({ assessmentId: assessment.id, userId, authnUserId, label });
+    const form = await insertPrintForm({
+      assessmentId: assessment.id,
+      userId,
+      authnUserId,
+      label,
+      settings: {
+        ...DEFAULT_PRINT_SETTINGS,
+        includeHonorCode: !!assessment.require_honor_code,
+      },
+    });
     await insertPrintFormQuestions({ printFormId: form.id, questions });
     if (replacesPrintFormId) {
       const archived = await archivePrintForm({

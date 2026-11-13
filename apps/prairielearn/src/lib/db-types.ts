@@ -6,6 +6,7 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
+import { PrintSettingsSchema } from './printing/print-settings.js';
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
@@ -1417,6 +1418,25 @@ export const PlanGrantSchema = z.object({
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
 
+export const PrintExportSchema = z.object({
+  assessment_id: IdSchema,
+  attempts: z.number(),
+  authn_user_id: IdSchema,
+  created_at: DateFromISOString,
+  failure_message: z.string().nullable(),
+  filename: z.string(),
+  finished_at: DateFromISOString.nullable(),
+  format: z.enum(['pdf', 'docx']),
+  id: IdSchema,
+  input_key: z.string(),
+  label: z.string().nullable(),
+  output_key: z.string().nullable(),
+  size_bytes: z.number().nullable(),
+  status: z.enum(['pending', 'succeeded', 'failed']),
+  user_id: IdSchema,
+});
+export type PrintExport = z.infer<typeof PrintExportSchema>;
+
 export const PrintFormSchema = z.object({
   archived_at: DateFromISOString.nullable(),
   assessment_id: IdSchema,
@@ -1424,6 +1444,7 @@ export const PrintFormSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
   label: z.string().regex(/^[A-Z]+$/),
+  settings: PrintSettingsSchema,
   user_id: IdSchema,
 });
 export type PrintForm = z.infer<typeof PrintFormSchema>;
@@ -1907,6 +1928,7 @@ export const TableNames = [
   'page_view_logs',
   'courses',
   'plan_grants',
+  'print_exports',
   'print_form_questions',
   'print_forms',
   'query_runs',
