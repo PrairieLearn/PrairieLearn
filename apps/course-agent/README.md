@@ -73,6 +73,14 @@ Skills in `container/skills/` are copied to `/etc/codex/skills`, where Codex loa
 
 `prairielearn-questions` covers writing and editing questions. Its `references/` directory holds `docs/elements`, `docs/question`, and the text files of `exampleCourse/questions/template` and `exampleCourse/questions/element`, plus a `VERSION` file with the PrairieLearn commit. Wrangler generates it with `scripts/build-skill-references.mjs` before every build, including `wrangler dev`, and it is not checked in. A deploy must rebuild the image whenever those sources change, not only when `apps/course-agent` changes, or the references fall behind the deployed PrairieLearn.
 
+The other skills are plain files in `container/skills/`:
+
+- `diagnose-assessment-issues` finds problems in an assessment from past results and the question source, using the course data tools, and reports recommended edits.
+- `migrate-course-instance` sets up a course instance for a new term. Its `references/shift_dates.py` maps every date onto the new term's academic calendar and removes per-student rules; it needs only Python's standard library.
+- `share-course-content` shares questions, assessments, and course instances with other courses or publicly.
+
+Skills must work with what the sandbox has: the course checkout, the tools in the image, web search, and the course data tools. The agent can't open PrairieLearn pages or sync the course itself, so a skill has it submit edits for review and tell staff what to check afterwards.
+
 ## Web access
 
 The agent can search the web and read pages through Codex's `web.run` tool, for example to check PrairieLearn documentation or an institution's academic calendar. Codex sends these commands to the model endpoint, and the Worker forwards them to OpenAI, which performs the searches and page reads. The container itself has no internet access. The Worker forwards only the commands it recognizes, sets the search settings itself, and refuses OpenAI-hosted tools in model requests, because the agent can send requests to the model endpoint directly. Searches and page addresses leave PrairieLearn, and page content is untrusted: a page could ask the agent to put course content in a URL it opens.
