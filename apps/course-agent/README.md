@@ -77,6 +77,14 @@ The agent reads course data with two tools. `list_course_datasets` lists the dat
 
 The Worker serves both tools from PrairieLearn's course data API (`/pl/api/v1/course/:course_id/data`), at the origin in `PL_URL`. It authenticates with `PL_SERVICE_TOKEN` and names the conversation, and PrairieLearn applies that conversation's user's permissions: only course owners (and administrators) can read course data, and only for the conversation's course. The container itself never calls PrairieLearn.
 
+## Attachment retention
+
+Attachments and their thumbnails are stored in the checkpoint bucket under `uploads/`. A bucket lifecycle rule deletes them 30 days after upload, whether or not the conversation is still in use, and R2 removes an expired object within about a day. The conversation keeps the message, but a sandbox started after that no longer has the file.
+
+The Worker does not create the rule. PrairieLearn's deployed environments define it in Terraform alongside the bucket, so a bucket created any other way keeps attachments until it is given one.
+
+Only the uploaded files expire. A sandbox checkpoint holds the agent's workspace and thread history, so anything the agent copied or printed from an attachment lasts as long as the checkpoint.
+
 ## Deployment environments and monitoring
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.

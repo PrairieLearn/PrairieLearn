@@ -89,6 +89,7 @@ async function prepareConversationProxyRequest(
   // Forward this path and query to the configured Cloudflare service.
   req.url = url.pathname + url.search;
   delete req.headers.cookie;
+  delete req.headers['x-csrf-token'];
   req.headers.authorization = headers.Authorization;
   req.headers['x-pl-user-id'] = authn_user.id;
   req.headers['x-pl-course-context'] = encodeURIComponent(
@@ -130,6 +131,17 @@ router.get(
     res.statusCode = 101;
     res.emit('close');
     proxy.upgrade(req, req.socket, head);
+  }),
+);
+
+// Stream one attachment to the agent service, which enforces the size limits and returns its
+// upload ID. The browser sends raw bytes as application/octet-stream, so PrairieLearn's body
+// parsers leave the stream untouched.
+router.post(
+  '/conversations/:conversation_id/uploads',
+  typedAsyncHandler<'course'>(async (req, res, next) => {
+    await prepareConversationProxyRequest(req, res, '/uploads');
+    await proxy(req, res, next);
   }),
 );
 
