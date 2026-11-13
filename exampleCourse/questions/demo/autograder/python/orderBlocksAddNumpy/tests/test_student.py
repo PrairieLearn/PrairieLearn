@@ -28,7 +28,7 @@ def test_my_dot_product(sandbox: StudentFixture, feedback: FeedbackFixture) -> N
         msg=f"'{name}' is not a number",
     )
     assert_true(
-        abs(expected - actual) < abs(expected) * 1e-5 or abs(expected - actual) < 1e-8,
+        np.isclose(actual, expected, rtol=1e-5, atol=1e-8),
         msg=f"'{name}' is inaccurate",
     )
     feedback.add_message(f"'{name}' looks good")
