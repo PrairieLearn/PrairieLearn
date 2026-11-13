@@ -204,6 +204,11 @@
     "gzip": 1012,
     "brotli": 827
   },
+  "stylesheets/questionLayout.css": {
+    "raw": 1259,
+    "gzip": 485,
+    "brotli": 388
+  },
   "stylesheets/splitPane.css": {
     "raw": 658,
     "gzip": 345,
