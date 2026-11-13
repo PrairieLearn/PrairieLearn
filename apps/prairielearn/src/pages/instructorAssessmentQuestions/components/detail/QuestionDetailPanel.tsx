@@ -329,11 +329,9 @@ export function QuestionDetailPanel({
     question.maxAutoPoints != null || (isAlternative && zoneQuestionBlock.maxAutoPoints != null);
   const showAutoPointsForManual = isManualGrading && savedAutoPointsSet;
   const showMaxAutoPointsForManual = isManualGrading && savedMaxAutoPointsSet;
-  const hasLegacyPoints =
-    question.points != null ||
-    question.maxPoints != null ||
-    zoneQuestionBlock?.points != null ||
-    zoneQuestionBlock?.maxPoints != null;
+  const legacyPoints = question.points ?? zoneQuestionBlock?.points;
+  const legacyMaxPoints = question.maxPoints ?? zoneQuestionBlock?.maxPoints;
+  const hasLegacyPoints = legacyPoints != null || legacyMaxPoints != null;
 
   const Wrapper = editMode ? 'div' : 'dl';
 
@@ -462,10 +460,28 @@ export function QuestionDetailPanel({
       )}
 
       {/* Points fields */}
-      {hasLegacyPoints && questionData && (
-        <p className="text-muted small">
-          Point settings are read-only while grading information is unavailable locally.
-        </p>
+      {hasLegacyPoints && (
+        <>
+          {questionData && (
+            <p className="text-muted small">
+              Point settings are read-only while grading information is unavailable locally.
+            </p>
+          )}
+          <dl className={clsx(editMode ? 'mb-3' : 'mb-2')}>
+            {legacyPoints != null && (
+              <>
+                <dt>Points</dt>
+                <dd>{formatPoints(legacyPoints)}</dd>
+              </>
+            )}
+            {legacyMaxPoints != null && (
+              <>
+                <dt>Max points</dt>
+                <dd>{formatPoints(legacyMaxPoints)}</dd>
+              </>
+            )}
+          </dl>
+        </>
       )}
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         {!hasLegacyPoints && (

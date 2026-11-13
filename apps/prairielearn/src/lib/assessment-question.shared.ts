@@ -67,6 +67,10 @@ export const AssessmentQuestionStructureRowSchema = z.object({
 
 export type AssessmentQuestionStructureRow = z.infer<typeof AssessmentQuestionStructureRowSchema>;
 
+export type ResolvedAssessmentQuestionStructureRow = AssessmentQuestionStructureRow & {
+  qid: string;
+};
+
 /**
  * Lightweight metadata type for the assessment editor. Contains only the
  * fields the editor actually reads, avoiding the need to construct dummy

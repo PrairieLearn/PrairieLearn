@@ -277,6 +277,23 @@ export function AltPoolDetailPanel({
         </p>
       )}
 
+      {(zoneQuestionBlock.points != null || zoneQuestionBlock.maxPoints != null) && (
+        <dl className={clsx(editMode ? 'mb-3' : 'mb-2')}>
+          {zoneQuestionBlock.points != null && (
+            <>
+              <dt>Points (default)</dt>
+              <dd>{formatPoints(zoneQuestionBlock.points)}</dd>
+            </>
+          )}
+          {zoneQuestionBlock.maxPoints != null && (
+            <>
+              <dt>Max points (default)</dt>
+              <dd>{formatPoints(zoneQuestionBlock.maxPoints)}</dd>
+            </>
+          )}
+        </dl>
+      )}
+
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
           editMode={editMode}

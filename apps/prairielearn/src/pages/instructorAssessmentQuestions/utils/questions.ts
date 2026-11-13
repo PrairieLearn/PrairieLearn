@@ -1,7 +1,7 @@
 import {
-  type AssessmentQuestionStructureRow,
   type EditorQuestionMetadata,
   type OtherAssessment,
+  type ResolvedAssessmentQuestionStructureRow,
   type StaffAssessmentQuestionRow,
 } from '../../../lib/assessment-question.shared.js';
 import type {
@@ -133,17 +133,14 @@ export function questionDisplayName(
  * Rows include unavailable questions and are sorted by zone, pool, and question.
  */
 export function buildHierarchicalAssessment(
-  rows: AssessmentQuestionStructureRow[],
+  rows: ResolvedAssessmentQuestionStructureRow[],
+  toolsByZoneNumber: Map<number, NonNullable<ZoneAssessmentJson['tools']>>,
 ): ZoneAssessmentJson[] {
   const zones: ZoneAssessmentJson[] = [];
   const zonesById = new Map<string, ZoneAssessmentJson>();
   const poolsById = new Map<string, ZoneQuestionBlockJson>();
 
   for (const row of rows) {
-    if (row.qid == null) {
-      throw new Error('Assessment question reference is required');
-    }
-
     let zone = zonesById.get(row.zone.id);
     if (!zone) {
       zone = {
@@ -159,6 +156,7 @@ export function buildHierarchicalAssessment(
         allowRealTimeGrading: row.zone.json_allow_real_time_grading ?? undefined,
         canView: row.zone.json_can_view ?? [],
         canSubmit: row.zone.json_can_submit ?? [],
+        tools: toolsByZoneNumber.get(row.zone.number),
       };
       zonesById.set(row.zone.id, zone);
       zones.push(zone);

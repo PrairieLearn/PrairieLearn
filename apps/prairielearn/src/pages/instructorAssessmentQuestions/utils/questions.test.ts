@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type {
-  AssessmentQuestionStructureRow,
+  ResolvedAssessmentQuestionStructureRow,
   StaffAssessmentQuestionRow,
 } from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
@@ -143,9 +143,9 @@ describe('buildHierarchicalAssessment', () => {
         alternative_pool: { id: 'ag3', number: 3, json_has_alternatives: false },
         assessment_question: { number: 4 },
       },
-    ] as unknown as AssessmentQuestionStructureRow[];
+    ] as unknown as ResolvedAssessmentQuestionStructureRow[];
 
-    const result = buildHierarchicalAssessment(rows);
+    const result = buildHierarchicalAssessment(rows, new Map());
 
     expect(result).toMatchObject([
       {
