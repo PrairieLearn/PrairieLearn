@@ -1375,12 +1375,18 @@ function PrintPreparation({
                     Word exports exclude uploaded cover pages. Formatting and page breaks may differ
                     from the preview and between apps.
                   </div>
-                  <div className="position-relative ms-auto flex-shrink-0">
-                    <div
-                      className={clsx('print-preparation-download', {
-                        invisible: download.isPending || packet.isPending,
-                      })}
-                    >
+                  <div className="d-flex flex-wrap align-items-center justify-content-end gap-2 ms-auto">
+                    {(download.isPending || packet.isPending || preparingPdf === 'packet') && (
+                      <div className="d-flex align-items-center gap-2 small" role="status">
+                        <Spinner size="sm" aria-hidden="true" />
+                        <span>
+                          {preparingPdf === 'packet' && pdfPreparationProgress
+                            ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
+                            : 'Generating…'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="print-preparation-download">
                       <Dropdown drop="up" align="end">
                         <Dropdown.Toggle id="print-download-menu" size="sm" disabled={!canDownload}>
                           <i className="bi bi-download me-2" aria-hidden="true" />
@@ -1453,17 +1459,6 @@ function PrintPreparation({
                         </Dropdown.Menu>
                       </Dropdown>
                     </div>
-                    {(download.isPending || packet.isPending || preparingPdf === 'packet') && (
-                      <div
-                        className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center small"
-                        role="status"
-                      >
-                        <Spinner size="sm" className="me-2" aria-hidden="true" />
-                        {preparingPdf === 'packet' && pdfPreparationProgress
-                          ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
-                          : 'Generating…'}
-                      </div>
-                    )}
                   </div>
                 </div>
                 {download.isError && (
