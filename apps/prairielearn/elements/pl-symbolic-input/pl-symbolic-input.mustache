@@ -195,7 +195,7 @@ ${{a_sub}}$
     data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
     title="Original Input"
     {{^raw_submitted_answer_latex}}
-    data-bs-content="Parsed from <samp class=&#34;user-output&#34;>{{raw_submitted_answer}}</samp>"
+    data-bs-content="Parsed from <samp class=&#34;user-output&#34;>{{escaped_raw_submitted_answer}}</samp>"
     {{/raw_submitted_answer_latex}}
     {{#raw_submitted_answer_latex}}
     data-bs-content='Parsed from
@@ -207,7 +207,7 @@ ${{a_sub}}$
             custom-functions="{{custom_functions}}"
             class="read-only"
         >
-            {{raw_submitted_answer_latex}}
+            {{escaped_raw_submitted_answer_latex}}
         </math-field>'
     {{/raw_submitted_answer_latex}}
 >
