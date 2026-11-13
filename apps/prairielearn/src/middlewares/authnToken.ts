@@ -27,8 +27,7 @@ export default asyncHandler(async (req, res, next) => {
     }
     if (agent) {
       res.locals.authn_user = agent.user;
-      // The agent acts with the user's course permissions, never administrator access.
-      res.locals.is_administrator = false;
+      res.locals.is_administrator = agent.is_administrator;
       next();
       return;
     }
