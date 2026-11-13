@@ -19,8 +19,9 @@ function isServiceToken(authorization: string) {
  * Authenticates an API request the course agent service makes for a conversation. The service
  * token proves the request comes from the service; the conversation identifies the user, whose
  * normal permissions then apply, including administrator access, so an administrator who can use
- * the agent in a course can also use its tools there. The request may only read its conversation's course data, so a
- * model in the sandbox cannot reach other courses or other API routes.
+ * the agent in a course can also use its tools there. The request may only read its
+ * conversation's course data, so a model in the sandbox cannot reach other courses or other API
+ * routes.
  *
  * Returns null for a request that is not from the service.
  */
