@@ -35,9 +35,9 @@
     "brotli": 768473
   },
   "scripts/exam-printing-client.ts": {
-    "raw": 27322,
-    "gzip": 8506,
-    "brotli": 7540
+    "raw": 30067,
+    "gzip": 9423,
+    "brotli": 8359
   },
   "scripts/examTimeLimitCountdown.ts": {
     "raw": 6682,
