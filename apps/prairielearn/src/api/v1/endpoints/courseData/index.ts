@@ -73,15 +73,21 @@ router.post(
     const jsonl = (rows: Record<string, unknown>[]) =>
       rows.map((row) => `${JSON.stringify(row)}\n`).join('');
     res.type('application/x-ndjson');
-    await pipeline(
-      Readable.from(
-        (async function* () {
-          if (!first.done) yield jsonl(first.value);
-          for await (const rows of batches) yield jsonl(rows);
-        })(),
-      ),
-      res,
-    );
+    try {
+      await pipeline(
+        Readable.from(
+          (async function* () {
+            if (!first.done) yield jsonl(first.value);
+            for await (const rows of batches) yield jsonl(rows);
+          })(),
+        ),
+        res,
+      );
+    } finally {
+      // If the response closes before the stream is first read, the generator above never runs
+      // and so never closes the cursor, which would keep its database connection.
+      await batches.return(undefined);
+    }
   }),
 );
 

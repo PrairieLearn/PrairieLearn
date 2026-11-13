@@ -104,6 +104,8 @@ const ItemsPage = z.object({
 export interface TurnInput {
   text: string;
   tag: string;
+  /** Sandbox paths of attached images, which the model sees alongside the text. */
+  images?: string[];
   once?: boolean;
   /**
    * The page the instructor was viewing. Codex shows it to the model as untrusted context ahead
@@ -378,6 +380,7 @@ export class CodexAppServerClient {
         input: [
           ...(context ? [{ type: 'text' as const, text: context, text_elements: [] }] : []),
           { type: 'text', text: input.text, text_elements: [] },
+          ...(input.images ?? []).map((path) => ({ type: 'localImage' as const, path })),
         ],
         ...(input.page
           ? { additionalContext: { prairielearn_page: { kind: 'untrusted', value: input.page } } }
