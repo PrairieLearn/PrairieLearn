@@ -259,6 +259,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     if result.returncode != 0:
         raise OSError(result.stderr.decode())
+    # Graphviz exits successfully without output for empty input.
+    if not result.stdout.strip():
+        raise ValueError(
+            "pl-graph did not produce a graph. Check that the graph source is not empty."
+        )
     if log_warnings and result.stderr:
         warnings.warn(
             result.stderr.decode(),
