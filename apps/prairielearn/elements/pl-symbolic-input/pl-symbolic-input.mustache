@@ -232,9 +232,10 @@ ${{a_tru}}$
 {{/answer}}
 
 {{#format}}
-<p><strong>General format information:</strong><br>Your answer must be a symbolic expression. All numbers must be rational - so, <code>1/2</code> instead of <code>0.5</code>.
+<p><strong>General format information:</strong><br>Accepted result types: {{accepted_types}}. All numbers must be rational - so, <code>1/2</code> instead of <code>0.5</code>.
+Example{{#multiple_examples}}s{{/multiple_examples}}: {{#examples}}<code>{{value}}</code>{{separator}}{{/examples}}
 {{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}
-{{#allow_sets}}Intervals and sets may be used, e.g. <code>[0, +oo)</code> or <code>{ 0, pi/2, 3pi/2, 2pi }</code>. Sets and intervals have unions (<code>U</code>) and intersections (<code>&amp;</code>), e.g. <code>({1, 3} U (2, 4]) &amp; {0, 2, 4}</code>.{{/allow_sets}}</p>
+{{#allow_set_operations}}Set notation supports unions (<code>U</code>) and intersections (<code>&amp;</code>).{{/allow_set_operations}}</p>
 {{! From https://stackoverflow.com/a/14417521/2923069 }}
 {{#variables.0}}
 <p>
