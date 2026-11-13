@@ -253,8 +253,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /**
    * The turn's provider requests. Turn completion aborts them, which charges their estimates. They
-   * are in memory only: a request running when the
-   * object restarts goes unrecorded, which deferred deploys make rare.
+   * are in memory only: a request running when the object restarts goes unrecorded, which deferred
+   * deploys make rare.
    */
   private readonly providerRequests = new Set<AbortController>();
 
@@ -845,7 +845,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const message = continuation
       ? null
       : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
-    const unsentIds = continuation ? [] : (this.record.unsentMessageIds ?? []);
+    const unsentIds = this.record.unsentMessageIds ?? [];
     const unsent = this.messages.filter(({ id }) => unsentIds.includes(id));
     const earlier = historyBefore(this.messages, message).filter(
       ({ id }) => !unsentIds.includes(id),
@@ -934,7 +934,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
       // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
-      unsentMessageIds: continuation ? this.record.unsentMessageIds : [],
+      unsentMessageIds: [],
     });
     log('turn_started', { startup });
     const native = (this.native ??= new CodexAppServerClient(this.sandbox));
