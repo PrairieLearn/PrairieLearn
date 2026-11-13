@@ -206,6 +206,7 @@ function PrintPreparation({
   const printHeadingRef = useRef<HTMLHeadingElement>(null);
   const recentExportsRef = useRef<HTMLElement>(null);
   const nextFormFocusRef = useRef<string | null>(null);
+  const formToFocusRef = useRef<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -490,8 +491,8 @@ function PrintPreparation({
     const nextSettings = { ...settings, questionSizes: {}, excludedQuestions: [] };
     const result = await create.mutateAsync({ settings: nextSettings });
     if (selectedForms !== null) void setSelectedForms([...formIds, result.printFormId]);
+    formToFocusRef.current = result.printFormId;
     switchForm(result.printFormId, result.settings);
-    window.requestAnimationFrame(() => focusForm(result.printFormId));
   }
 
   async function regenerateForm(id: string) {
@@ -555,6 +556,15 @@ function PrintPreparation({
     download.mutate({ id, printDocument });
   }
   const controlsBusy = isSubmitting || busy || download.isPending;
+  // The new form button may still be disabled when creation returns, so focus it once ready.
+  useEffect(() => {
+    const id = formToFocusRef.current;
+    if (!id || id !== formId || controlsBusy || isDirty) return;
+    const button = window.document.getElementById(`print-form-${id}`);
+    if (!button) return;
+    button.focus();
+    formToFocusRef.current = null;
+  }, [formId, controlsBusy, isDirty]);
   const preparingExport = download.isPending || packet.isPending || preparingPdf === 'packet';
   const onPreviewState = useCallback(
     (state: PreviewState) => {
