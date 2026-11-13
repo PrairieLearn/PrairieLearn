@@ -4,6 +4,7 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -14,6 +15,7 @@ import { type Course, CourseSchema, QuestionVersionSchema } from '../lib/db-type
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
+import { selectOptionalQuestionVersionAtDate } from '../models/question-version.js';
 import { selectQuestionById } from '../models/question.js';
 import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
 import * as courseDB from '../sync/course-db.js';
@@ -414,6 +416,20 @@ describe('chunks', () => {
         ...QuestionVersionSchema.omit({ chunk_id: true }).parse(liveQuestion),
         chunk_id: metadataVersions[1].chunk_id,
       });
+
+      for (const version of metadataVersions) {
+        const at_date = await sqldb.queryScalar(
+          sql.select_chunk_creation_date,
+          { chunk_id: version.chunk_id },
+          z.string(),
+        );
+        const historical = await selectOptionalQuestionVersionAtDate({
+          question_id: questionId,
+          at_date,
+        });
+        expect(historical?.chunk.id).toBe(version.chunk_id);
+        expect(historical?.question_version).toEqual(version);
+      }
 
       await fs.appendFile(
         path.join(courseDir, 'questions/addNumbers/server.py'),
