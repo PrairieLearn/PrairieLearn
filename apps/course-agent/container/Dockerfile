@@ -12,8 +12,9 @@ FROM debian:bookworm-slim
 ARG CACHEBUST=2026-09-15-14-09-16
 # Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
 # offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
+# python3 with numpy and sympy lets the question skill's checker run server.py's generate().
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends git ca-certificates ripgrep jq procps zstd tini poppler-utils \
+  && apt-get install -y --no-install-recommends git ca-certificates ripgrep jq procps zstd tini poppler-utils python3 python3-numpy python3-sympy \
   && rm -rf /var/lib/apt/lists/* \
   && git config --system user.name "PrairieLearn" \
   && git config --system user.email "course-agent@prairielearn.com" \
@@ -24,4 +25,7 @@ COPY --from=codex /opt/codex /opt/codex
 RUN ln -s /opt/codex/bin/codex-app-server /usr/local/bin/codex-app-server
 COPY --from=sandbox /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
 COPY codex-config.toml /etc/course-agent/codex-config.toml
+# Codex loads skills from /etc/codex/skills (its admin scope): read-only for the agent and outside
+# the checkpointed workspace, so each sandbox gets this image's version.
+COPY skills /etc/codex/skills
 CMD ["/usr/bin/tini", "--", "sleep", "infinity"]

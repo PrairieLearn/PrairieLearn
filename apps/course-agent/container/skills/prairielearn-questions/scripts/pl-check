@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""Check a PrairieLearn v3 question directory for common authoring mistakes.
+
+Usage: pl-check questions/<qid> [more question dirs...]
+
+Static checks on info.json and question.html, then runs server.py's generate()
+for several seeds and checks that every Mustache reference resolves. This does
+not render PrairieLearn elements, so it cannot catch every element error.
+"""
+
+import html.parser
+import importlib.util
+import json
+import random
+import re
+import sys
+import traceback
+from pathlib import Path
+from typing import Any
+
+PANELS = {"pl-question-panel", "pl-answer-panel", "pl-submission-panel"}
+INPUTS = {
+    "pl-number-input",
+    "pl-integer-input",
+    "pl-string-input",
+    "pl-symbolic-input",
+    "pl-multiple-choice",
+    "pl-checkbox",
+    "pl-dropdown",
+    "pl-matrix-input",
+    "pl-matrix-component-input",
+    "pl-order-blocks",
+    "pl-matching",
+    "pl-units-input",
+    "pl-big-o-input",
+}
+# Elements that read data["correct_answers"][answers-name] from server.py.
+READS_CORRECT_ANSWERS = {
+    "pl-number-input",
+    "pl-integer-input",
+    "pl-string-input",
+    "pl-symbolic-input",
+    "pl-matrix-input",
+    "pl-matrix-component-input",
+    "pl-units-input",
+    "pl-big-o-input",
+}
+# Elements that set data["correct_answers"] and data["params"][answers-name]
+# themselves; setting either in server.py makes every variant fail.
+SETS_OWN_ANSWERS = {
+    "pl-multiple-choice",
+    "pl-checkbox",
+    "pl-dropdown",
+    "pl-order-blocks",
+    "pl-matching",
+}
+VOID_TAGS = {"br", "img", "input", "hr", "meta", "link"}
+SEEDS = 20
+# A Mustache tag directly inside a TeX group, e.g. \frac{{params.a}} or x^{{params.n}}.
+# Mustache consumes the TeX braces. Adjacent tags ({{a}}{{b}}) are not TeX.
+TEX_GROUP_TAG = re.compile(r"(\\[A-Za-z]+|\^|_|(?<!\})\})\{\{\{?\s*[A-Za-z_]")
+DOUBLE_BACKSLASH_TEX = re.compile(r"\$[^$]*\\\\[A-Za-z]")
+E_NOTATION = re.compile(r"\s*-?\d+(\.\d+)?[eE][+-]?\d+\s*")
+
+Element = tuple[str, dict[str, str | None], list[str], int]
+
+
+class QuestionParser(html.parser.HTMLParser):
+    """Records each element with its enclosing panels, and the first text outside every panel."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.stack: list[str] = []
+        self.elements: list[Element] = []
+        self.loose_text_line: int | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """Record the element and the panels enclosing it."""
+        panels = [t for t in self.stack if t in PANELS]
+        self.elements.append((tag, dict(attrs), panels, self.getpos()[0]))
+        if tag not in VOID_TAGS:
+            self.stack.append(tag)
+
+    def handle_data(self, data: str) -> None:
+        """Remember the first line of visible text that is outside every panel."""
+        if (
+            self.loose_text_line is None
+            and data.strip()
+            and not any(
+                t in PANELS or t in INPUTS or t in {"script", "style"}
+                for t in self.stack
+            )
+        ):
+            self.loose_text_line = self.getpos()[0]
+
+    def handle_endtag(self, tag: str) -> None:
+        """Pop back to the matching start tag, tolerating unclosed elements."""
+        if tag in self.stack:
+            while self.stack and self.stack.pop() != tag:
+                pass
+
+
+def mustache_references(text: str) -> set[tuple[str, str]]:
+    """Return (sigil, dotted name) for each Mustache tag except section ends."""
+    pattern = r"\{\{\{?\s*([#^/&]?)\s*([A-Za-z_][\w.]*)\s*\}?\}\}"
+    return {
+        (m.group(1), m.group(2))
+        for m in re.finditer(pattern, text)
+        if m.group(1) != "/"
+    }
+
+
+def resolves(data: dict[str, Any], dotted: str) -> bool:
+    """Whether a dotted Mustache name such as params.a.b exists in data."""
+    current: Any = data
+    for part in dotted.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return False
+        current = current[part]
+    return True
+
+
+def check_info(qdir: Path) -> tuple[list[str], list[str]]:
+    """Check the question's location and info.json."""
+    errors: list[str] = []
+    warnings: list[str] = []
+    if "questions" not in qdir.parts:
+        errors.append(
+            "Questions must live under the course's questions/ directory (questions/<qid>/)."
+        )
+    info_path = qdir / "info.json"
+    if not info_path.exists():
+        errors.append("Missing info.json.")
+        return errors, warnings
+    try:
+        info = json.loads(info_path.read_text())
+    except json.JSONDecodeError as e:
+        errors.append(f"info.json is not valid JSON: {e}")
+        return errors, warnings
+    errors.extend(
+        f'info.json is missing "{key}".'
+        for key in ("uuid", "title", "topic", "type")
+        if key not in info
+    )
+    if info.get("type") != "v3":
+        warnings.append('info.json "type" is not "v3".')
+    return errors, warnings
+
+
+def check_html(
+    text: str, parser: QuestionParser
+) -> tuple[list[str], list[str], dict[str, str]]:
+    """Check question.html; also return each input's answers-name mapped to its tag."""
+    errors: list[str] = []
+    warnings: list[str] = []
+    if parser.loose_text_line is not None:
+        warnings.append(
+            f"line {parser.loose_text_line}: text outside every panel is shown in the question, submission, and answer views. Put question text inside <pl-question-panel> unless it should repeat."
+        )
+    answer_names: dict[str, str] = {}
+    for tag, attrs, panels, line in parser.elements:
+        if tag in INPUTS and panels:
+            errors.append(
+                f"line {line}: <{tag}> is inside <{panels[-1]}>. Input elements must be outside all panels; they render their own question, submission, and answer views."
+            )
+        name = attrs.get("answers-name")
+        if tag in INPUTS and name:
+            if name in answer_names:
+                errors.append(
+                    f'answers-name "{name}" is used by more than one element.'
+                )
+            answer_names[name] = tag
+        errors.extend(
+            f'line {line}: attribute {key}="{value}" has a double backslash before a TeX command; use a single backslash in HTML.'
+            for key, value in attrs.items()
+            if value and DOUBLE_BACKSLASH_TEX.search(value)
+        )
+    for m in TEX_GROUP_TAG.finditer(text):
+        line = text.count("\n", 0, m.start()) + 1
+        errors.append(
+            f"line {line}: Mustache tag directly inside a TeX group ({m.group(0)}...). Mustache consumes the braces, so the TeX breaks. Add spaces ({{ {{{{params.x}}}} }}) or build the LaTeX string in server.py."
+        )
+    return errors, warnings, answer_names
+
+
+def check_generated(
+    data: dict[str, Any],
+    answer_names: dict[str, str],
+    references: set[tuple[str, str]],
+) -> tuple[list[str], list[str]]:
+    """Check one generated variant against question.html."""
+    errors: list[str] = []
+    warnings: list[str] = []
+    for name, tag in answer_names.items():
+        if tag in SETS_OWN_ANSWERS and name in data["params"]:
+            errors.append(
+                f'data["params"]["{name}"] has the same name as <{tag} answers-name="{name}">. This element stores its options under params[answers-name], so this makes every variant fail; rename one of them.'
+            )
+        if tag in SETS_OWN_ANSWERS and name in data["correct_answers"]:
+            errors.append(
+                f'server.py sets correct_answers["{name}"], but <{tag}> sets its own correct answer; this makes every variant fail. Mark correct options with correct="true" instead.'
+            )
+        if tag in READS_CORRECT_ANSWERS and name not in data["correct_answers"]:
+            warnings.append(
+                f'<{tag} answers-name="{name}"> has no data["correct_answers"]["{name}"] (fine only if the element has a correct-answer attribute).'
+            )
+    e_notation = sorted(
+        key
+        for key, value in data["params"].items()
+        if isinstance(value, str) and E_NOTATION.fullmatch(value)
+    )
+    if e_notation:
+        warnings.append(
+            f'params {", ".join(e_notation)} hold Python e-notation strings (like 1.2e-05), which render as "1.2e - 05" in math. Format them as LaTeX, e.g. 1.2 \\times 10^{{-5}}.'
+        )
+    errors.extend(
+        f"question.html references {{{{{name}}}}}, which generate() did not set."
+        for sigil, name in sorted(references)
+        if name.split(".")[0] in {"params", "correct_answers"}
+        and sigil != "^"
+        and not resolves(data, name)
+    )
+    return errors, warnings
+
+
+def run_generate(
+    qdir: Path, answer_names: dict[str, str], references: set[tuple[str, str]]
+) -> tuple[list[str], list[str]]:
+    """Import server.py and run generate() for SEEDS seeds."""
+    errors: list[str] = []
+    warnings: list[str] = []
+    spec = importlib.util.spec_from_file_location("question_server", qdir / "server.py")
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str(qdir))
+    try:
+        spec.loader.exec_module(module)
+    except ModuleNotFoundError as e:
+        warnings.append(
+            f"server.py imports {e.name!r}, which is not installed in this sandbox, so generate() was not run; only static checks were done. "
+            "PrairieLearn provides it at runtime, so this is not an error by itself."
+        )
+        return errors, warnings
+    except Exception:
+        errors.append("server.py failed to import:\n" + traceback.format_exc(limit=3))
+        return errors, warnings
+    if not hasattr(module, "generate"):
+        warnings.append("server.py has no generate(data) function.")
+        return errors, warnings
+
+    try:
+        import numpy as np
+    except ImportError:
+        np = None
+    failures = 0
+    for seed in range(SEEDS):
+        random.seed(seed)
+        if np is not None:
+            np.random.seed(seed)
+        data: dict[str, Any] = {
+            "params": {},
+            "correct_answers": {},
+            "options": {},
+            "variant_seed": seed,
+        }
+        try:
+            module.generate(data)
+        except Exception:
+            failures += 1
+            if failures == 1:
+                errors.append(
+                    f"generate() raised for seed {seed}:\n"
+                    + traceback.format_exc(limit=3)
+                )
+            continue
+        try:
+            json.dumps(data["params"])
+            json.dumps(data["correct_answers"])
+        except TypeError as e:
+            errors.append(
+                f"seed {seed}: params/correct_answers are not JSON-serializable ({e}); convert numpy values with float()/int() or use prairielearn's to_json."
+            )
+            break
+        if seed == 0:
+            more_errors, more_warnings = check_generated(data, answer_names, references)
+            errors.extend(more_errors)
+            warnings.extend(more_warnings)
+    if failures > 1:
+        errors.append(f"generate() raised for {failures} of {SEEDS} seeds.")
+    return errors, warnings
+
+
+def check(qdir: Path) -> tuple[list[str], list[str]]:
+    """Return (errors, warnings) for one question directory."""
+    errors, warnings = check_info(qdir)
+    html_path = qdir / "question.html"
+    if not html_path.exists():
+        errors.append("Missing question.html.")
+        return errors, warnings
+    text = html_path.read_text()
+    if not text.strip():
+        errors.append("question.html is empty.")
+        return errors, warnings
+    parser = QuestionParser()
+    parser.feed(text)
+    html_errors, html_warnings, answer_names = check_html(text, parser)
+    errors.extend(html_errors)
+    warnings.extend(html_warnings)
+
+    references = mustache_references(text)
+    has_server = (qdir / "server.py").exists()
+    if not has_server:
+        if any(
+            name.split(".")[0] in {"params", "correct_answers"}
+            for _, name in references
+        ):
+            errors.append(
+                "question.html uses params/correct_answers but there is no server.py."
+            )
+        return errors, warnings
+    more_errors, more_warnings = run_generate(qdir, answer_names, references)
+    return errors + more_errors, warnings + more_warnings
+
+
+def main() -> int:
+    """Check each question directory given on the command line."""
+    if len(sys.argv) < 2:
+        print(__doc__)
+        return 2
+    status = 0
+    for arg in sys.argv[1:]:
+        errors, warnings = check(Path(arg).resolve())
+        print(f"== {arg}")
+        for e in errors:
+            print(f"ERROR: {e}")
+        for w in warnings:
+            print(f"WARNING: {w}")
+        if not errors and not warnings:
+            print("OK")
+        if errors:
+            status = 1
+    return status
+
+
+if __name__ == "__main__":
+    sys.exit(main())
