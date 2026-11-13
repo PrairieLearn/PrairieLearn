@@ -1492,6 +1492,36 @@ export const QuestionTagSchema = z.object({
 });
 export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 
+export const QuestionVersionSchema = z.object({
+  chunk_id: IdSchema,
+  client_files: z.array(z.string()).nullable(),
+  dependencies: z.any(),
+  directory: z.string(),
+  external_grading_enable_networking: z.boolean().nullable(),
+  external_grading_entrypoint: z.string().nullable(),
+  external_grading_environment: z.record(z.string(), z.string().nullable()),
+  external_grading_files: z.array(z.string()).nullable(),
+  external_grading_image: z.string().nullable(),
+  external_grading_timeout: z.number().nullable(),
+  grading_method: EnumGradingMethodSchema,
+  options: z.any().nullable(),
+  partial_credit: z.boolean().nullable(),
+  preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
+  show_correct_answer: z.boolean().nullable(),
+  single_variant: z.boolean().nullable(),
+  template_directory: z.string().nullable(),
+  type: EnumQuestionTypeSchema,
+  workspace_args: z.string().nullable(),
+  workspace_enable_networking: z.boolean().nullable(),
+  workspace_environment: z.record(z.string(), z.string().nullable()),
+  workspace_graded_files: z.array(z.string()).nullable(),
+  workspace_home: z.string().nullable(),
+  workspace_image: z.string().nullable(),
+  workspace_port: z.number().nullable(),
+  workspace_url_rewrite: z.boolean().nullable(),
+});
+export type QuestionVersion = z.infer<typeof QuestionVersionSchema>;
+
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
@@ -1889,6 +1919,7 @@ export const TableNames = [
   'question_generation_context_embeddings',
   'question_score_logs',
   'question_tags',
+  'question_versions',
   'questions',
   'rubric_grading_items',
   'rubric_gradings',

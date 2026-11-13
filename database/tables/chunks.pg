@@ -24,3 +24,6 @@ foreign-key constraints
     chunks_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     chunks_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     chunks_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    question_versions: FOREIGN KEY (chunk_id) REFERENCES chunks(id) ON UPDATE CASCADE ON DELETE CASCADE

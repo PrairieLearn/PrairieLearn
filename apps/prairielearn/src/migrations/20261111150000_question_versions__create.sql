@@ -1,0 +1,30 @@
+-- Each snapshot belongs to one question chunk revision; chunks owns its identity and lifetime.
+-- Writers must supply normalized settings explicitly, rather than applying new defaults to history.
+CREATE TABLE question_versions (
+  chunk_id bigint PRIMARY KEY REFERENCES chunks (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  client_files text[],
+  dependencies jsonb NOT NULL,
+  directory text NOT NULL,
+  external_grading_enable_networking boolean,
+  external_grading_entrypoint text,
+  external_grading_environment jsonb NOT NULL,
+  external_grading_files text[],
+  external_grading_image text,
+  external_grading_timeout integer,
+  grading_method enum_grading_method NOT NULL,
+  options jsonb,
+  partial_credit boolean,
+  preferences_schema jsonb,
+  show_correct_answer boolean,
+  single_variant boolean,
+  template_directory text,
+  type enum_question_type NOT NULL,
+  workspace_args text,
+  workspace_enable_networking boolean,
+  workspace_environment jsonb NOT NULL,
+  workspace_graded_files text[],
+  workspace_home text,
+  workspace_image text,
+  workspace_port integer,
+  workspace_url_rewrite boolean
+);
