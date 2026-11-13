@@ -618,33 +618,60 @@ describe('prepareZonesForEditor normalization', () => {
     expect(pool.pointsDistributedInfoBanner).toBe(true);
   });
 
-  it('preserves unknown legacy point fields through preparation and saving', () => {
-    const originalZones = [
-      {
-        questions: [
-          { id: '@shared/question', points: 5, maxPoints: 10 },
-          {
-            numberChoose: 1,
-            points: 10,
-            maxPoints: 20,
-            alternatives: [
-              { id: 'manual', points: 2 },
-              { id: '@shared/missing', points: 3, maxPoints: 8 },
-            ],
-          },
-        ],
-      },
-    ];
-    const zones = originalZones.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
-    const metadata = {
-      manual: { question: { grading_method: 'Manual' } },
-    } as unknown as QuestionMetadataMap;
+  it.each([
+    {
+      name: 'with pool defaults',
+      poolPoints: { points: 10, maxPoints: 20 },
+      expectedManualPoints: { points: 2 },
+    },
+    {
+      name: 'without pool defaults',
+      poolPoints: {},
+      expectedManualPoints: { manualPoints: 2 },
+    },
+  ])(
+    'preserves unknown point fields $name through preparation and saving',
+    ({ poolPoints, expectedManualPoints }) => {
+      const originalZones = [
+        {
+          questions: [
+            { id: '@shared/question', points: 5, maxPoints: 10 },
+            {
+              numberChoose: 1,
+              ...poolPoints,
+              alternatives: [
+                { id: 'manual', points: 2 },
+                { id: '@shared/missing', points: 3, maxPoints: 8 },
+              ],
+            },
+          ],
+        },
+      ];
+      const zones = originalZones.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
+      const metadata = {
+        manual: { question: { grading_method: 'Manual' } },
+      } as unknown as QuestionMetadataMap;
 
-    const prepared = prepareZonesForEditor(zones, metadata);
-    const saved = serializeZonesForJson(stripTrackingIds(prepared));
+      const prepared = prepareZonesForEditor(zones, metadata);
+      const saved = serializeZonesForJson(stripTrackingIds(prepared));
 
-    expect(saved).toEqual(originalZones);
-  });
+      expect(saved).toEqual([
+        {
+          questions: [
+            { id: '@shared/question', points: 5, maxPoints: 10 },
+            {
+              numberChoose: 1,
+              ...poolPoints,
+              alternatives: [
+                { id: 'manual', ...expectedManualPoints },
+                { id: '@shared/missing', points: 3, maxPoints: 8 },
+              ],
+            },
+          ],
+        },
+      ]);
+    },
+  );
 
   it('does not override alternative-level points when pushing pool points in mixed mode', () => {
     const zones: ZoneAssessmentJson[] = [

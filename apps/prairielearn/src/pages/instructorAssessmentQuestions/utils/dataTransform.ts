@@ -73,8 +73,8 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
 /**
  * Returns the effective grading method for an alt pool by examining its alternatives.
  *
- * A pool with unavailable alternatives keeps its authored point fields because
- * interpreting legacy points requires knowing every alternative's grading method.
+ * Pool defaults require every alternative's grading method to be known.
+ * Alternatives can normalize independently when the pool has no point defaults.
  */
 function getAltPoolGradingMethod(
   alternatives: QuestionAlternativeJson[],
@@ -217,6 +217,13 @@ export function prepareZonesForEditor(
         altPoolGradingMethod != null && altPoolGradingMethod !== 'unknown'
           ? altPoolGradingMethod === 'manual'
           : isManuallyGraded(question.id);
+      const preserveAlternativePoints =
+        altPoolGradingMethod === 'unknown' &&
+        (question.points != null ||
+          question.maxPoints != null ||
+          question.autoPoints != null ||
+          question.maxAutoPoints != null ||
+          question.manualPoints != null);
 
       return {
         ...normalizeQuestionPoints(question, isManualGrading),
@@ -226,7 +233,7 @@ export function prepareZonesForEditor(
         alternatives: question.alternatives?.map((alt) => ({
           ...normalizeQuestionPoints(
             alt,
-            altPoolGradingMethod === 'unknown' ? undefined : isManuallyGraded(alt.id),
+            preserveAlternativePoints ? undefined : isManuallyGraded(alt.id),
           ),
           trackingId: createTrackingId(),
         })),
