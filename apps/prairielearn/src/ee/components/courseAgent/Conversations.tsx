@@ -44,6 +44,7 @@ import {
   uploadDraftAttachments,
   useDraftAttachments,
 } from './Attachments.js';
+import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
@@ -55,16 +56,6 @@ import { currentPageLocation } from './pageLocation.js';
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
 const TurnPartSchema = z.object({ tag: z.string() });
-
-const BLOCKED_MESSAGES = {
-  startup_failed:
-    'The course agent could not start. Resume to clear the incomplete setup, then send a new message.',
-  runtime_failed:
-    "The course agent was interrupted. It may have made some changes, and its reply may be incomplete. Resume to continue; your previous message won't run again.",
-  checkpoint_failed:
-    "The course agent couldn't pause. Resume to try again; its changes are still there.",
-  cleanup_failed: 'The course agent paused, but cleanup did not finish. Resume to finish cleanup.',
-} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
 
 const NEW_CONVERSATION = 'new';
 
@@ -577,17 +568,11 @@ function Chat({
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
           {lifecycle?.status === 'blocked' && (
-            <Alert variant="warning">
-              <p>{BLOCKED_MESSAGES[lifecycle.reason]}</p>
-              <Button
-                variant="outline-dark"
-                size="sm"
-                disabled={!connected || resume.isPending}
-                onClick={() => resume.mutate({ conversationId })}
-              >
-                Resume
-              </Button>
-            </Alert>
+            <BlockedNotice
+              state={lifecycle}
+              disabled={!connected || resume.isPending}
+              onResume={() => resume.mutate({ conversationId })}
+            />
           )}
           {lifecycle?.sandboxLost && (
             <Alert variant="warning">
@@ -640,7 +625,9 @@ function Chat({
         onSubmit={submit}
         onStop={responseActive || canStop ? () => void stop() : undefined}
       >
-        {showConversationStats && <ConversationStats state={lifecycle} />}
+        {showConversationStats && (
+          <ConversationStats state={lifecycle} conversationId={conversationId} />
+        )}
       </Composer>
     </FileDropArea>
   );

@@ -6,7 +6,7 @@ import {
 import { MessageType } from '@cloudflare/ai-chat/types';
 import type { DirectoryBackupRecord } from '@cloudflare/sandbox';
 import type { Connection, ConnectionContext } from 'agents';
-import { type UIMessage, createUIMessageStreamResponse } from 'ai';
+import { type UIMessage, createUIMessageStreamResponse, parseJsonEventStream } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -17,7 +17,14 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  type Usage,
+  UsageDecisionSchema,
+  type UsageReport,
+  UsageSchema,
   UserMessageMetadataSchema,
+  addUsage,
+  emptyUsage,
+  isEmptyUsage,
   reviewTag,
 } from '@prairielearn/course-agent-types';
 
@@ -57,6 +64,96 @@ import { generateTitle } from './title.js';
 // PrairieLearn proxies chat sockets through a load balancer that closes connections after 60 s
 // without traffic, including idle chats and long silent turns.
 const KEEPALIVE_SECONDS = 25;
+
+export interface MeteringState {
+  /** Usage PrairieLearn has not recorded, excluding a report that is being sent. */
+  unreported: Usage;
+  /** The report being sent. A retry resends it unchanged, so PrairieLearn records it once. */
+  pending: UsageReport | null;
+  /**
+   * Set when the user reached the hourly usage limit. It gates new inference and turns until
+   * Resume clears it after this time; the sandbox lifecycle, including idle expiry, continues.
+   */
+  limitedUntil: string | null;
+}
+
+// A provider request that ends without final usage, such as a dropped stream or a Stop, is
+// charged its size at about four characters per token plus a generous reply.
+const ESTIMATED_CHARACTERS_PER_TOKEN = 4;
+const ESTIMATED_OUTPUT_TOKENS = 16_000;
+// Inline images inflate a request's size far beyond its tokens, so the input estimate is capped
+// near the model's context window.
+const MAX_ESTIMATED_INPUT_TOKENS = 400_000;
+
+// Requests wait for PrairieLearn only when its last decision is older than this, which in
+// practice means once per turn. A limit reached mid-turn takes effect at the next request after
+// a report, so spending can overshoot it by up to about USAGE_FLUSH_SECONDS of usage.
+const DECISION_TTL_MS = 60_000;
+// Unsent usage is reported this long after it is recorded, which also keeps the decision fresh
+// while the agent works.
+const USAGE_FLUSH_SECONDS = 30;
+const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
+// Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
+// within one decision.
+const MAX_PROVIDER_REQUESTS = 4;
+
+const OPENAI_API = 'https://api.openai.com';
+
+type Admission = 'allowed' | 'limited' | 'unavailable' | 'stopped';
+
+// Web request failures end a Codex turn, so a search that is not admitted returns text instead.
+const SEARCH_NOT_ADMITTED: Record<Exclude<Admission, 'allowed'>, string> = {
+  limited: 'Web search is unavailable: the hourly usage limit was reached.',
+  unavailable: 'Web search is temporarily unavailable. Try again shortly.',
+  stopped: 'Web search is unavailable because this task was stopped.',
+};
+const SEARCH_BUSY = 'Too many requests are running. Wait for them to finish and try again.';
+
+const Count = z.number().int().nonnegative();
+const ModelEventSchema = z.looseObject({
+  type: z.string(),
+  response: z
+    .looseObject({
+      usage: z
+        .looseObject({
+          input_tokens: Count,
+          output_tokens: Count,
+          input_tokens_details: z
+            .looseObject({
+              cached_tokens: Count.nullish(),
+              cache_write_tokens: Count.nullish(),
+            })
+            .nullish(),
+          output_tokens_details: z.looseObject({ reasoning_tokens: Count.nullish() }).nullish(),
+        })
+        .nullish(),
+    })
+    .nullish(),
+});
+
+function requestUsage(event: z.infer<typeof ModelEventSchema>): Usage | null {
+  const usage = event.response?.usage;
+  if (!usage) return null;
+  return UsageSchema.parse({
+    ...emptyUsage(),
+    inputTokens: usage.input_tokens,
+    cachedInputTokens: usage.input_tokens_details?.cached_tokens ?? 0,
+    cacheWriteInputTokens: usage.input_tokens_details?.cache_write_tokens ?? 0,
+    outputTokens: usage.output_tokens,
+    reasoningTokens: usage.output_tokens_details?.reasoning_tokens ?? 0,
+  });
+}
+
+function estimateUsage(body: string): Usage {
+  return {
+    ...emptyUsage(),
+    inputTokens: Math.min(
+      Math.ceil(body.length / ESTIMATED_CHARACTERS_PER_TOKEN),
+      MAX_ESTIMATED_INPUT_TOKENS,
+    ),
+    outputTokens: ESTIMATED_OUTPUT_TOKENS,
+  };
+}
 
 const CourseContextSchema = z.object({
   courseTitle: z.string().max(500),
@@ -110,6 +207,8 @@ interface RecordData {
   deniedByMessage?: string | null;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
+  /** User messages refused by the usage limit, sent to Codex with the next admitted message. */
+  unsentMessageIds?: string[];
   /** Absent in records saved before titles were generated. */
   title?: string | null;
 }
@@ -126,6 +225,8 @@ type ConversationRecord = RecordData &
   );
 
 interface ActiveTurn {
+  /** Authorizes this turn's model requests; requests made outside a turn are refused. */
+  executionId: string;
   requestId: string;
   startedAt: number;
   execution: SandboxTurn;
@@ -136,6 +237,8 @@ interface ActiveTurn {
   shutdown: boolean;
   /** The review whose result this turn delivers, if it is a delivery turn. */
   deliveringReviewId: string | null;
+  /** Set once the turn's provider requests are aborted, so no new one starts. */
+  finishing: boolean;
 }
 
 const reviewFileKey = (reviewId: string, index: number) => `review-file:${reviewId}:${index}`;
@@ -153,6 +256,24 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     reviewId: null,
     title: null,
   };
+
+  private metering: MeteringState = {
+    unreported: emptyUsage(),
+    pending: null,
+    limitedUntil: null,
+  };
+
+  /** Shared by concurrent callers so that only one report is in flight. */
+  private reporting: Promise<boolean> | null = null;
+  /** When PrairieLearn last allowed inference; in memory, so a restarted object checks first. */
+  private allowedAt: number | null = null;
+
+  /**
+   * The turn's provider requests. Turn completion aborts them, which charges their estimates. They
+   * are in memory only: a request running when the object restarts goes unrecorded, which deferred
+   * deploys make rare.
+   */
+  private readonly providerRequests = new Set<AbortController>();
 
   private _record: ConversationRecord | null = null;
   // Process connections and completion promises exist only in this DO instance.
@@ -193,12 +314,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    */
   private get publicState(): ConversationState {
     const lifecycle = this.record.lifecycle;
-    return {
-      ...(lifecycle.status === 'destroying' ? { status: 'suspending' as const } : lifecycle),
-      deadlineAt: this.record.deadline?.at ?? null,
+    const common = {
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
       title: this.record.title ?? null,
+    };
+    // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
+    const retryAt = this.metering.limitedUntil;
+    if (retryAt && ['offline', 'waiting_for_user'].includes(lifecycle.status)) {
+      return { status: 'blocked', reason: 'usage_limit', retryAt, deadlineAt: null, ...common };
+    }
+    return {
+      ...(lifecycle.status === 'destroying' ? { status: 'suspending' as const } : lifecycle),
+      deadlineAt: this.record.deadline?.at ?? null,
+      ...common,
     };
   }
 
@@ -220,9 +349,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    */
   override async onStart() {
     this._record = this.ctx.storage.kv.get<ConversationRecord>('conversation') ?? null;
+    this.metering = this.ctx.storage.kv.get<MeteringState>('metering') ?? this.metering;
     // A new object has no saved conversation yet. Leave the private record null until initialize()
     // creates the record; this hook does not provision a sandbox.
     if (!this._record) return;
+    if (this.metering.pending || !isEmptyUsage(this.metering.unreported)) this.scheduleFlush(0);
     this.setState(this.publicState);
     // offline, blocked, and waiting_for_user are stable across wakes: none requires
     // reconstructing an in-flight operation. The remaining states need explicit recovery.
@@ -327,7 +458,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return { continue: false };
   }
 
-  private block(reason: BlockedReason) {
+  private block(reason: Exclude<BlockedReason, 'usage_limit'>) {
     // Callers report the underlying error separately.
     logEvent('conversation_blocked', {
       conversationId: this.name,
@@ -401,6 +532,313 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
   }
 
+  /** Start tracking a provider request, or return null if too many are running. */
+  private startProviderRequest(estimate: Usage) {
+    if (this.providerRequests.size >= MAX_PROVIDER_REQUESTS) return null;
+    const abort = new AbortController();
+    this.providerRequests.add(abort);
+    /** Records the request's usage once; unknown usage is charged the estimate. */
+    const finish = (usage: Usage | null) => {
+      if (!this.providerRequests.delete(abort)) return;
+      if (!usage) logEvent('provider_usage_estimated', { conversationId: this.name });
+      this.recordUsage(usage ?? estimate);
+    };
+    // Nothing reads an aborted request, so its usage will never arrive.
+    abort.signal.addEventListener('abort', () => finish(null));
+    return { finish, signal: abort.signal };
+  }
+
+  private recordUsage(usage: Usage) {
+    if (isEmptyUsage(usage)) return;
+    this.saveMetering({ ...this.metering, unreported: addUsage(this.metering.unreported, usage) });
+    this.scheduleFlush(USAGE_FLUSH_SECONDS);
+  }
+
+  /**
+   * Unsent usage always has a flush scheduled. Retries get a distinct payload: an idempotent
+   * insert from inside a running callback would match that callback's own row, which is deleted
+   * when it returns.
+   */
+  private scheduleFlush(delaySeconds: number, attempt = 0) {
+    void this.schedule(delaySeconds, 'flushUsage', attempt ? { attempt } : undefined, {
+      idempotent: true,
+    }).catch((error: unknown) => this.reportError(error));
+  }
+
+  /**
+   * Report all unsent usage, including usage recorded while a report was in flight, retrying with
+   * backoff while PrairieLearn is unreachable.
+   */
+  async flushUsage(retry?: { attempt: number }) {
+    while (this.metering.pending || !isEmptyUsage(this.metering.unreported)) {
+      if (!(await this.reportUsage())) {
+        const attempt = (retry?.attempt ?? 0) + 1;
+        this.scheduleFlush(
+          Math.min(USAGE_FLUSH_SECONDS * 2 ** attempt, MAX_FLUSH_RETRY_SECONDS),
+          attempt,
+        );
+        return;
+      }
+    }
+  }
+
+  /** Ask PrairieLearn for a decision unless the current one is still known. */
+  private checkUsageLimit(): Promise<boolean> | true {
+    const fresh = this.allowedAt !== null && Date.now() - this.allowedAt < DECISION_TTL_MS;
+    return this.metering.limitedUntil || fresh ? true : this.reportUsage();
+  }
+
+  private saveMetering(next: MeteringState) {
+    const limitChanged = next.limitedUntil !== this.metering.limitedUntil;
+    this.ctx.storage.kv.put('metering', next);
+    this.metering = next;
+    if (limitChanged && this._record) this.setState(this.publicState);
+  }
+
+  /**
+   * Send usage since the last report and save PrairieLearn's decision for the next model request.
+   * Returns false if PrairieLearn could not be reached or refused the report; the same report is
+   * resent next time.
+   */
+  private reportUsage(): Promise<boolean> {
+    this.reporting ??= this.sendUsageReport().finally(() => {
+      this.reporting = null;
+    });
+    return this.reporting;
+  }
+
+  private async sendUsageReport() {
+    let report = this.metering.pending;
+    if (!report) {
+      report = {
+        reportId: crypto.randomUUID(),
+        model: this.record.config.model,
+        usage: this.metering.unreported,
+      };
+      this.saveMetering({ ...this.metering, pending: report, unreported: emptyUsage() });
+    }
+    let response: Response;
+    try {
+      const url = new URL(
+        `pl/api/course-agent/conversations/${this.name}/usage`,
+        this.env.PL_SERVICE_URL.endsWith('/')
+          ? this.env.PL_SERVICE_URL
+          : `${this.env.PL_SERVICE_URL}/`,
+      );
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(report),
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (error) {
+      logEvent('usage_report_unavailable', { conversationId: this.name, error: String(error) });
+      return false;
+    }
+    if (response.status >= 500) {
+      logEvent('usage_report_unavailable', { conversationId: this.name, status: response.status });
+      return false;
+    }
+    const decision = response.ok
+      ? UsageDecisionSchema.safeParse(await response.json().catch(() => null))
+      : null;
+    if (!decision?.success) {
+      // A rejected report is a configuration or deployment fault, such as a rotated token, an
+      // unpriced model or a PrairieLearn without this route. Keep the report pending so the
+      // conversation recovers once it is fixed.
+      this.reportError(new Error(`Usage report was rejected with ${response.status}`));
+      logEvent('usage_report_rejected', { conversationId: this.name, status: response.status });
+      return false;
+    }
+    // Only Resume clears the limit, so an allowed decision leaves an existing one in place. A
+    // decision answered after its hour ended no longer applies.
+    const { data } = decision;
+    this.saveMetering({
+      ...this.metering,
+      pending: null,
+      limitedUntil:
+        data.status === 'limited' && Date.parse(data.retryAt) > Date.now()
+          ? data.retryAt
+          : this.metering.limitedUntil,
+    });
+    this.allowedAt = decision.data.status === 'allowed' ? Date.now() : null;
+    return true;
+  }
+
+  /**
+   * Admit a model or search request from the current turn, asking PrairieLearn first when its
+   * last decision is stale.
+   */
+  private async admit(executionId: string): Promise<Admission> {
+    const reached = await this.checkUsageLimit();
+    if (this.metering.limitedUntil) {
+      this.interruptForUsageLimit();
+      return 'limited';
+    }
+    if (!reached) return 'unavailable';
+    if (
+      this.active?.executionId !== executionId ||
+      this.active.finishing ||
+      this.record.lifecycle.status === 'stopping' ||
+      this.sandboxShutdown
+    ) {
+      return 'stopped';
+    }
+    return 'allowed';
+  }
+
+  private forwardModelResponse(
+    response: Response,
+    { finish, signal }: { finish: (usage: Usage | null) => void; signal: AbortSignal },
+  ): Response {
+    if (!response.ok) {
+      // The provider does not bill a request it rejected or failed to serve.
+      finish(emptyUsage());
+      return response;
+    }
+    if (!response.body) throw new Error('Provider returned no response body');
+    // The caller gets the provider's bytes unchanged; a copy is read for the final usage.
+    const [forwarded, metered] = response.body.tee();
+    const streamed = response.headers.get('Content-Type')?.includes('text/event-stream');
+    void this.keepAliveWhile(async () => {
+      try {
+        if (!streamed) {
+          const event = ModelEventSchema.parse({
+            type: 'response.completed',
+            response: await new Response(metered).json(),
+          });
+          finish(requestUsage(event));
+          return;
+        }
+        const reader = parseJsonEventStream({
+          stream: metered,
+          schema: ModelEventSchema,
+        }).getReader();
+        for (;;) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          if (
+            chunk.value.success &&
+            ['response.completed', 'response.incomplete', 'response.failed'].includes(
+              chunk.value.value.type,
+            )
+          ) {
+            // A failed response that reports no usage was not billed.
+            const usage =
+              requestUsage(chunk.value.value) ??
+              (chunk.value.value.type === 'response.failed' ? emptyUsage() : null);
+            if (usage) finish(usage);
+          }
+        }
+      } finally {
+        // Charges the estimate unless the usage was recorded above.
+        finish(null);
+      }
+    }).catch((error: unknown) => {
+      // Turn completion aborts requests nothing reads anymore; that is not a failure.
+      if (!signal.aborted) this.reportError(error);
+    });
+    const headers = new Headers(response.headers);
+    // fetch() decoded the body, so the provider's length and encoding no longer apply.
+    headers.delete('Content-Length');
+    headers.delete('Content-Encoding');
+    return new Response(forwarded, { headers, status: response.status });
+  }
+
+  private interruptForUsageLimit() {
+    const active = this.active;
+    if (!active) return;
+    // Let the provider-facing error return before interrupting its waiting native caller.
+    void this.keepAliveWhile(async () => {
+      await scheduler.wait(0);
+      if (this.active === active) await this.stopLive();
+    }).catch((error: unknown) => this.reportError(error));
+  }
+
+  private openai(path: string, body: string, signal?: AbortSignal) {
+    return fetch(`${OPENAI_API}${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+      redirect: 'manual',
+      signal,
+    });
+  }
+
+  /** The sandbox's model outbound binding calls this; only the current turn may use the model. */
+  async proxyModelRequest(body: string, executionId: string): Promise<Response> {
+    if (this.active?.executionId !== executionId) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    const admission = await this.admit(executionId);
+    const request = admission === 'allowed' ? this.startProviderRequest(estimateUsage(body)) : null;
+    if (!request) {
+      if (admission === 'limited') {
+        return Response.json(
+          {
+            error: {
+              code: 'course_agent_usage_limit',
+              message: 'The hourly AI usage limit was reached.',
+            },
+          },
+          { status: 429 },
+        );
+      }
+      if (admission === 'unavailable') {
+        // Codex retries server errors, and its retry resends the pending report.
+        return new Response('Usage could not be recorded', { status: 503 });
+      }
+      if (admission === 'stopped') return new Response('Execution stopped', { status: 409 });
+      return new Response('Too many model requests are running', { status: 429 });
+    }
+    try {
+      const response = await this.openai('/v1/responses', body, request.signal);
+      return this.forwardModelResponse(response, request);
+    } catch (error) {
+      // An aborted request was charged its estimate; one that failed to connect was not billed.
+      request.finish(emptyUsage());
+      if (request.signal.aborted) return new Response('Execution stopped', { status: 409 });
+      throw error;
+    }
+  }
+
+  /**
+   * The sandbox's model outbound binding calls this for a validated web request. Each command is
+   * charged as one web search call, since the provider reports no usage for them.
+   */
+  async proxySearchRequest(
+    body: string,
+    operations: number,
+    executionId: string,
+  ): Promise<Response> {
+    if (this.active?.executionId !== executionId) {
+      return new Response('Forbidden', { status: 403 });
+    }
+    const admission = await this.admit(executionId);
+    const usage = { ...emptyUsage(), webSearchCalls: operations };
+    const request = admission === 'allowed' ? this.startProviderRequest(usage) : null;
+    if (!request) {
+      return Response.json({
+        output: admission === 'allowed' ? SEARCH_BUSY : SEARCH_NOT_ADMITTED[admission],
+      });
+    }
+    try {
+      const response = await this.openai('/v1/alpha/search', body, request.signal);
+      request.finish(response.ok ? usage : emptyUsage());
+      return response;
+    } catch (error) {
+      request.finish(emptyUsage());
+      if (request.signal.aborted) return Response.json({ output: SEARCH_NOT_ADMITTED.stopped });
+      throw error;
+    }
+  }
+
   /** Stop retains admission until both sandbox cleanup and SDK completion finish. */
   private async stopLive(shutdown = false) {
     const active = this.active;
@@ -422,16 +860,31 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!options) throw new Error('Missing SDK chat options');
     const continuation = options.continuation === true;
     // Capture input before any await lets another connection append to history.
+    const unsentIds = this.record.unsentMessageIds ?? [];
+    const unsent = this.messages.filter(({ id }) => unsentIds.includes(id));
+    // Resume after the usage limit runs the messages it refused, without a new one.
     const message = continuation
       ? null
-      : nextUserMessage(this.messages, this.record.submittedMessageId ?? null);
-    const earlier = historyBefore(this.messages, message);
-    const attachments = message ? attachmentsOf(message) : [];
+      : (nextUserMessage(this.messages, this.record.submittedMessageId ?? null) ??
+        unsent.at(-1) ??
+        null);
+    const earlier = historyBefore(this.messages, message).filter(
+      ({ id }) => !unsentIds.includes(id),
+    );
+    // Messages refused by the usage limit are sent with this one.
+    const sent = message ? [...unsent.filter((entry) => entry !== message), message] : [];
+    const attachments = sent.flatMap(attachmentsOf);
     const checkedSandboxId = this.record.sandboxId;
-    const lost =
-      checkedSandboxId !== null &&
-      !(await this.env.CourseSandbox.getByName(checkedSandboxId).isRunning());
-    const images = await this.findImages(attachments);
+    const [running, images] = await Promise.all([
+      checkedSandboxId === null || this.env.CourseSandbox.getByName(checkedSandboxId).isRunning(),
+      this.findImages(attachments),
+      // Check the usage limit before a message boots a sandbox or generates a title. The first
+      // model request then finds the decision fresh. If PrairieLearn is unreachable, that request
+      // reports the failure instead. Continuations are checked before they are scheduled, and
+      // one that races a new limit is stopped by its first model request.
+      continuation || this.checkUsageLimit(),
+    ]);
+    const lost = !running;
     const review = this.record.review;
     const status = this.record.lifecycle.status;
     // Read with `review`: a denial recorded during the await settles the review it admits by.
@@ -449,24 +902,45 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     if (!admitted || this.active || this.recovering || this.sandboxShutdown) {
       throw refuse('The course agent sandbox is not ready.');
     }
-    if (!images) throw refuse('An attached file is no longer available. Attach it again.');
+    if (message && this.metering.limitedUntil) {
+      this.setRecord({
+        ...this.record,
+        submittedMessageId: message.id,
+        unsentMessageIds: sent.map(({ id }) => id),
+      });
+      // The usage limit notice explains the refusal; an empty reply adds nothing to history.
+      return createUIMessageStreamResponse({
+        stream: new ReadableStream({ start: (c) => c.close() }),
+      });
+    }
+    if (!images) {
+      // A refused message's expired attachment would refuse every later message too.
+      this.setRecord({ ...this.record, unsentMessageIds: [] });
+      throw refuse('An attached file is no longer available. Attach it again.');
+    }
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
-    if (message && earlier.length === 0 && !this.record.title) this.startTitle(message);
+    if (message && earlier.length === 0 && !this.record.title) {
+      this.startTitle(sent[0]);
+    }
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
+    const delivered = continuation && review?.result ? review : null;
     const location =
       message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
     // File parts are left out rather than joined as blank lines.
-    const messageText =
-      message?.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n') ?? '';
+    const messageText = sent
+      .map((entry) =>
+        entry.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n'),
+      )
+      .join('\n\n');
     const input: TurnInput = {
-      ...(continuation && review?.result
+      ...(delivered?.result
         ? {
-            tag: reviewTag(review.id),
+            tag: reviewTag(delivered.id),
             once: true,
-            text: describeReviewResult(review.result, source.type),
+            text: describeReviewResult(delivered.result, source.type),
           }
         : {
             tag: messageTag(message!.id),
@@ -500,10 +974,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
       // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
+      unsentMessageIds: [],
     });
     log('turn_started', { startup });
     const native = (this.native ??= new CodexAppServerClient(this.sandbox));
     let nativeThreadId = this.record.nativeThreadId;
+    const executionId = crypto.randomUUID();
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
       messageId: crypto.randomUUID(),
@@ -517,9 +993,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           const started = await this.sandbox.prepare(this.record.config, this.record.checkpoint);
           log('turn_sandbox_prepare_finished', started);
         }
-        const toWrite = attachmentsToWrite(earlier, message, startup);
+        await this.sandbox.authorizeModel({
+          model: this.record.config.model,
+          conversationId: this.name,
+          executionId,
+        });
+        const toWrite = [...attachmentsToWrite(earlier, null, startup), ...attachments];
         if (toWrite.length > 0) await this.sandbox.writeAttachments(this.name, toWrite);
-        if (continuation && review) await this.advanceLocalBaseline(review);
+        if (delivered) await this.advanceLocalBaseline(delivered);
       },
       addCourseFiles:
         startup && !this.record.checkpoint
@@ -550,16 +1031,17 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           deniedByMessage: deniedReviewId ? null : this.record.deniedByMessage,
         });
         if (nativeTurnId) this.stash({ nativeTurnId });
-        if (continuation && review?.result) {
+        if (delivered?.result) {
           // The agent now has the result: mark the delivery in chat history, so an attempt that
           // fails first leaves no marker, and drop the snapshot so new messages are admitted.
-          native.emit(turnMarker(input.tag, summarizeReview(review.result)));
-          this.settleReview(review.id);
+          native.emit(turnMarker(input.tag, summarizeReview(delivered.result)));
+          this.settleReview(delivered.id);
         }
       },
       log,
     });
     const active: ActiveTurn = {
+      executionId,
       requestId: options.requestId,
       startedAt,
       execution,
@@ -567,7 +1049,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       released: Promise.withResolvers<undefined>(),
       stop: null,
       shutdown: false,
-      deliveringReviewId: continuation && review ? review.id : null,
+      deliveringReviewId: delivered?.id ?? null,
+      finishing: false,
     };
     this.active = active;
     const abort = () => {
@@ -655,6 +1138,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
     }
     await active.sdkFinished.promise;
+    // Nothing reads a provider request that is still running after Stop, so abort it rather than
+    // pay for the rest of its output; it is charged its estimate.
+    active.finishing = true;
+    for (const abort of this.providerRequests) abort.abort();
+    // Report the turn's remaining usage now, so Stats and the hourly limit include it. This also
+    // runs when limited: a request can finish after the decision that limited the turn.
+    void this.keepAliveWhile(() => this.flushUsage()).catch((error: unknown) =>
+      this.reportError(error),
+    );
     if (this.active !== active) return;
     try {
       await active.stop;
@@ -685,9 +1177,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Resume repairs a blocked sandbox, then delivers a waiting review result, even one that waits
-   * for Resume. It never repeats an interrupted prompt. Automatic recovery passes explicit: false
-   * so it only repairs; a result that does not wait for Resume is still delivered afterwards.
+   * Resume repairs a blocked sandbox, clears an expired usage limit, then delivers a waiting review
+   * result, even one that waits for Resume. It never repeats an interrupted prompt. Automatic
+   * recovery passes explicit: false so it only repairs; a result that does not wait for Resume is
+   * still delivered afterwards.
    */
   async resume({ explicit = true }: { explicit?: boolean } = {}): Promise<boolean> {
     // A waiting result is delivered when the current turn ends, or is being delivered now (for
@@ -715,9 +1208,23 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       } finally {
         this.recovering = false;
       }
-    } else if (!this.record.review?.result) {
+    } else if (!this.record.review?.result && !this.metering.limitedUntil) {
       return false;
     }
+    const limitedUntil = this.metering.limitedUntil;
+    // Automatic recovery leaves the limit for the user to clear.
+    if (limitedUntil && explicit) {
+      // A repaired sandbox counts as resumed even though the limit still applies.
+      if (Date.parse(limitedUntil) > Date.now()) return lifecycle.status === 'blocked';
+      // The next model request asks PrairieLearn again, so a limit that still applies returns.
+      this.saveMetering({ ...this.metering, limitedUntil: null });
+      if (this.record.unsentMessageIds?.length) {
+        void this.keepAliveWhile(async () => {
+          await this.saveMessages((messages) => [...messages]);
+        }).catch((error: unknown) => this.reportError(error));
+      }
+    }
+    // Saving the record schedules the delivery, now that the usage limit allows it.
     const review = this.record.review;
     if (explicit && review?.result) {
       this.setRecord({ ...this.record, review: { ...review, waitsForResume: false } });
@@ -888,6 +1395,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const status = this.record.lifecycle.status;
     if (!review?.result || this.active || this.recovering || this.sandboxShutdown) return;
     if (status !== 'offline' && status !== 'waiting_for_user') return;
+    // Resume delivers the result once it clears the usage limit.
+    if (this.metering.limitedUntil) return;
     if (review.waitsForResume) return;
     this.setRecord({
       ...this.record,

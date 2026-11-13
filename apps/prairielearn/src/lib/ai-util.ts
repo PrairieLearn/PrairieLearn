@@ -101,7 +101,7 @@ export function calculateResponseCost({
   usage,
 }: {
   model: keyof (typeof config)['costPerMillionTokens'];
-  usage?: LanguageModelUsage;
+  usage?: Pick<LanguageModelUsage, 'inputTokenDetails' | 'outputTokens'>;
 }): number {
   if (!usage) return 0;
 

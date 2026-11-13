@@ -657,6 +657,13 @@ export const ConfigSchema = z.object({
    */
   aiQuestionGenerationRateLimitDollars: z.number().default(1),
   /**
+   * The hourly spending limit for the course agent, in US dollars. This is applied per user,
+   * across courses and conversations.
+   */
+  courseAgentRateLimitDollars: z.number().default(50),
+  /** What the course agent is charged for each web search command, in US dollars. */
+  courseAgentWebSearchCallCostDollars: z.number().default(0.01),
+  /**
    * OpenAI credentials for administrator tasks like AI-assisted course request review.
    */
   administratorOpenAiApiKey: z.string().nullable().default(null),
@@ -683,7 +690,8 @@ export const ConfigSchema = z.object({
    */
   courseAgentServiceUrl: z.string().nullable().default(null),
   /**
-   * Bearer token that authenticates PrairieLearn to the course agent service.
+   * Bearer token that authenticates PrairieLearn to the course agent service,
+   * and the service to PrairieLearn when it reports usage.
    * Must match the Cloudflare Worker's PL_SERVICE_TOKEN secret, or
    * PL_SERVICE_TOKEN in its .dev.vars file for local development. Multiple
    * tokens are supported to allow for rotation; the first token is sent to

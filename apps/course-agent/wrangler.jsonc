@@ -25,7 +25,7 @@
     "logs": { "enabled": true, "invocation_logs": false }
   },
   "secrets": {
-    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_SERVICE_URL"]
   },
   "durable_objects": {
     // Let turns running at deploy time finish on the old code: 7 h covers AGENT_TURN_SECONDS
@@ -84,7 +84,7 @@
         "SENTRY_ENVIRONMENT": "staging"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_SERVICE_URL"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
@@ -146,7 +146,7 @@
         "SENTRY_ENVIRONMENT": "production"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_SERVICE_URL"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
