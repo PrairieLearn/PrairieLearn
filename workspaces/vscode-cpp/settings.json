@@ -1,3 +1,4 @@
 {
-  "lldb.launch.initCommands": ["command source ${env:HOME}/.lldbinit"]
+  "lldb.launch.initCommands": ["command source ${env:HOME}/.lldbinit"],
+  "lldb.suppressUpdateNotifications": true
 }

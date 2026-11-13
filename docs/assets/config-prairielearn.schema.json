@@ -2,10 +2,6 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
-    "startServer": {
-      "default": true,
-      "type": "boolean"
-    },
     "postgresqlUser": {
       "default": "postgres",
       "type": "string"
@@ -170,6 +166,14 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "printingCloudflareAccountId": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "printingCloudflareApiToken": {
+      "default": null,
+      "type": ["string", "null"]
+    },
     "runMigrations": {
       "default": true,
       "type": "boolean"
@@ -297,6 +301,10 @@
     },
     "cronIntervalChunksHostAutoScalingSec": {
       "default": 10,
+      "type": "number"
+    },
+    "cronIntervalCourseAgentReviewResultsSec": {
+      "default": 60,
       "type": "number"
     },
     "cronIntervalCleanTimeSeriesSec": {
@@ -1041,6 +1049,10 @@
       "default": true,
       "type": "boolean"
     },
+    "compiledAssetsDevMode": {
+      "default": null,
+      "type": ["boolean", "null"]
+    },
     "azureClientID": {
       "default": "<your_client_id>",
       "type": "string"
@@ -1332,6 +1344,32 @@
     "courseFilesApiUrl": {
       "default": null,
       "type": ["string", "null"]
+    },
+    "courseAgentServiceUrl": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "courseAgentServiceToken": {
+      "default": null,
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "newsFeedUrl": {
       "default": null,

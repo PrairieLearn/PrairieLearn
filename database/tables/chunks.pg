@@ -1,16 +1,23 @@
 columns
     assessment_id: bigint
+    commit_hash: text
     course_id: bigint not null
     course_instance_id: bigint
+    created_at: timestamp with time zone
+    deleted: boolean not null default false
     id: bigint not null default nextval('chunks_id_seq'::regclass)
     question_id: bigint
+    size_compressed: bigint
+    size_uncompressed: bigint
+    superseded_at: timestamp with time zone
     type: enum_chunk_type not null
     uuid: uuid not null
 
 indexes
     chunks_pkey: PRIMARY KEY (id) USING btree (id)
-    chunks_unique_values_key: UNIQUE USING btree (course_id, type, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint))
+    chunks_current_values_key: UNIQUE USING btree (course_id, type, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint)) WHERE superseded_at IS NULL
     chunks_uuid_key: UNIQUE (uuid) USING btree (uuid)
+    chunks_course_id_idx: USING btree (course_id)
 
 foreign-key constraints
     chunks_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

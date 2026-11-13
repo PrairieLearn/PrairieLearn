@@ -53,12 +53,8 @@ function ResizeHandle<RowDataModel extends RowData>({
   return (
     <div
       className="py-1 h-100"
-      style={{ position: 'absolute', insetInlineEnd: 0, top: 0, width: '4px' }}
+      style={{ position: 'absolute', insetInlineEnd: 0, top: 0, width: '16px' }}
     >
-      {/* separator role is focusable, so these jsx-a11y-x rules are false positives.
-        https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/separator_role#focusable_separator
-      */}
-      {/* eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions */}
       <div
         role="separator"
         aria-label={`Resize '${columnName}' column`}
@@ -67,14 +63,9 @@ function ResizeHandle<RowDataModel extends RowData>({
         aria-valuemin={minSize}
         aria-valuemax={maxSize}
         aria-valuenow={header.getSize()}
-        // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
         tabIndex={0}
-        className="h-100"
-        style={{
-          background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
-          cursor: 'col-resize',
-          transition: 'background-color 0.2s',
-        }}
+        className="h-100 pl-ui-tanstack-table-resize-handle"
+        data-resizing={header.column.getIsResizing() || undefined}
         onMouseDown={header.getResizeHandler()}
         onMouseUp={onResizeEnd}
         onTouchStart={header.getResizeHandler()}
@@ -131,6 +122,7 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
     minWidth: 0,
     maxWidth: headerSize,
     flexShrink: 0,
+    paddingInlineEnd: header.column.getCanResize() ? 0 : undefined,
     position: isPinned === 'start' ? 'sticky' : 'relative',
     top: 0,
     zIndex: isPinned === 'start' ? 2 : 1,
@@ -146,6 +138,8 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
       className={clsx(isPinned === 'start' && 'bg-light')}
       style={style}
       aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
+      // The table uses CSS grid layout, which drops implicit table semantics, so the role is required.
+      // oxlint-disable-next-line jsx-a11y/no-redundant-roles
       role="columnheader"
     >
       <div
@@ -155,6 +149,8 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
         )}
         style={{
           minWidth: 0,
+          // Keep resize spacing inside the content so narrow headers retain their configured width.
+          paddingInlineEnd: header.column.getCanResize() ? '16px' : undefined,
         }}
       >
         <div
@@ -181,7 +177,11 @@ export function TanstackTableHeaderCell<RowDataModel extends RowData>({
         </div>
 
         {(canSort || canFilter) && (
-          <div className="d-flex align-items-center" style={{ flexShrink: 0 }}>
+          <div
+            className="d-flex align-items-center"
+            // Controls take precedence over the drag target when a column is too narrow for both.
+            style={{ flexShrink: 0, zIndex: 1 }}
+          >
             {canSort && (
               <button
                 type="button"

@@ -1,0 +1,201 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prairielearn-course-agent",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-17",
+  "compatibility_flags": ["nodejs_compat", "enable_request_signal", "request_signal_passthrough"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "OPENAI_MODEL": "gpt-6-luna",
+    "AGENT_TURN_SECONDS": "18000",
+    "USER_IDLE_SECONDS": "600",
+    // A Cloudflare instance type: lite or standard-1 through standard-4.
+    "SANDBOX_INSTANCE_TYPE": "standard-2",
+    "SENTRY_ENVIRONMENT": "development"
+  },
+  "version_metadata": {
+    "binding": "VERSION_METADATA"
+  },
+  // Inherited by every environment. Invocation logs are off because Cloudflare does not document
+  // whether they redact request headers, and PrairieLearn sends the service token in Authorization.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": { "enabled": true, "invocation_logs": false }
+  },
+  "secrets": {
+    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+  },
+  "durable_objects": {
+    // Let turns running at deploy time finish on the old code: 7 h covers AGENT_TURN_SECONDS
+    // (5 h) plus USER_IDLE_SECONDS (10 min), with margin. Later turns can still be reset.
+    "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
+    "bindings": [
+      {
+        "name": "Conversation",
+        "class_name": "Conversation"
+      },
+      {
+        "name": "CourseSandbox",
+        "class_name": "CourseSandbox"
+      }
+    ]
+  },
+  "exports": {
+    "Conversation": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "CourseSandbox": {
+      "type": "durable-object",
+      "storage": "sqlite",
+      "container": "course-agent"
+    }
+  },
+  "containers": [
+    {
+      "name": "course-agent",
+      "scheduling_policy": "durable_object",
+      "observability": { "logs": { "enabled": true } },
+      "images": {
+        "courseAgent": {
+          "dockerfile": "container/Dockerfile",
+          "build_context": "container"
+        }
+      }
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CHECKPOINTS",
+      "bucket_name": "prairielearn-course-agent-checkpoints"
+    }
+  ],
+  "env": {
+    "staging": {
+      "name": "prairielearn-course-agent-staging",
+      "vars": {
+        "OPENAI_MODEL": "gpt-6-luna",
+        "AGENT_TURN_SECONDS": "18000",
+        "USER_IDLE_SECONDS": "600",
+        // A Cloudflare instance type: lite or standard-1 through standard-4.
+        "SANDBOX_INSTANCE_TYPE": "standard-2",
+        "SENTRY_ENVIRONMENT": "staging"
+      },
+      "secrets": {
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+      },
+      "durable_objects": {
+        "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
+        "bindings": [
+          {
+            "name": "Conversation",
+            "class_name": "Conversation"
+          },
+          {
+            "name": "CourseSandbox",
+            "class_name": "CourseSandbox"
+          }
+        ]
+      },
+      "exports": {
+        "Conversation": {
+          "type": "durable-object",
+          "storage": "sqlite"
+        },
+        "CourseSandbox": {
+          "type": "durable-object",
+          "storage": "sqlite",
+          "container": "course-agent-staging"
+        }
+      },
+      // Container application names are unique per account, so each environment's includes
+      // the environment.
+      "containers": [
+        {
+          "name": "course-agent-staging",
+          "scheduling_policy": "durable_object",
+          "observability": { "logs": { "enabled": true } },
+          "images": {
+            "courseAgent": {
+              "dockerfile": "container/Dockerfile",
+              "build_context": "container"
+            }
+          }
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "CHECKPOINTS",
+          "bucket_name": "prairielearn-course-agent-checkpoints-staging"
+        }
+      ],
+      "version_metadata": {
+        "binding": "VERSION_METADATA"
+      }
+    },
+    "production": {
+      "name": "prairielearn-course-agent-production",
+      "vars": {
+        "OPENAI_MODEL": "gpt-6-luna",
+        "AGENT_TURN_SECONDS": "18000",
+        "USER_IDLE_SECONDS": "600",
+        // A Cloudflare instance type: lite or standard-1 through standard-4.
+        "SANDBOX_INSTANCE_TYPE": "standard-2",
+        "SENTRY_ENVIRONMENT": "production"
+      },
+      "secrets": {
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+      },
+      "durable_objects": {
+        "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
+        "bindings": [
+          {
+            "name": "Conversation",
+            "class_name": "Conversation"
+          },
+          {
+            "name": "CourseSandbox",
+            "class_name": "CourseSandbox"
+          }
+        ]
+      },
+      "exports": {
+        "Conversation": {
+          "type": "durable-object",
+          "storage": "sqlite"
+        },
+        "CourseSandbox": {
+          "type": "durable-object",
+          "storage": "sqlite",
+          "container": "course-agent-production"
+        }
+      },
+      // Container application names are unique per account, so each environment's includes
+      // the environment.
+      "containers": [
+        {
+          "name": "course-agent-production",
+          "scheduling_policy": "durable_object",
+          "observability": { "logs": { "enabled": true } },
+          "images": {
+            "courseAgent": {
+              "dockerfile": "container/Dockerfile",
+              "build_context": "container"
+            }
+          }
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "CHECKPOINTS",
+          "bucket_name": "prairielearn-course-agent-checkpoints-production"
+        }
+      ],
+      "version_metadata": {
+        "binding": "VERSION_METADATA"
+      }
+    }
+  }
+}

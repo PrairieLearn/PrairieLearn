@@ -1,6 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import stableStringify from 'fast-json-stable-stringify';
-import { useEffect } from 'react';
+import { memo } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldArrayWithId,
@@ -121,6 +120,49 @@ function getDeadlineLimitDisabledTitle(type: 'early' | 'late', count: number): s
   return `A rule can have at most ${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE} ${type} deadlines.`;
 }
 
+// Memoized on the raw date strings: formatting dates is relatively expensive,
+// and every row re-renders whenever any deadline in the rule changes.
+const DeadlineTimeRange = memo(function DeadlineTimeRange({
+  prefix,
+  start,
+  end,
+  displayTimezone,
+}: {
+  prefix: string;
+  start: string | null;
+  end: string;
+  displayTimezone: string;
+}) {
+  if (!start) {
+    return (
+      <>
+        {prefix} –{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(end)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <FriendlyDate
+        date={Temporal.PlainDateTime.from(start)}
+        timezone={displayTimezone}
+        options={{ includeTz: false }}
+      />{' '}
+      –{' '}
+      <FriendlyDate
+        date={Temporal.PlainDateTime.from(end)}
+        timezone={displayTimezone}
+        options={{ includeTz: false }}
+      />
+    </>
+  );
+});
+
 function DeadlineArrayInput({
   type,
   fieldArrayName,
@@ -128,8 +170,6 @@ function DeadlineArrayInput({
   releaseDate,
   dueDate,
   dueCredit,
-  validationReleaseDate,
-  validationDueDate,
   deadlines,
   displayTimezone,
   renderInlineHeader = true,
@@ -144,8 +184,6 @@ function DeadlineArrayInput({
   dueDate: string | null | undefined;
   /** Effective due-date credit (with default 100). */
   dueCredit: number;
-  validationReleaseDate?: string | null | undefined;
-  validationDueDate?: string | null | undefined;
   deadlines: DeadlineEntry[];
   displayTimezone: string;
   renderInlineHeader?: boolean;
@@ -154,7 +192,7 @@ function DeadlineArrayInput({
   removeDeadline: UseFieldArrayRemove;
 }) {
   const ruleEditable = useAccessControlRuleEditable();
-  const { register, trigger } = useFormContext<AccessControlFormData>();
+  const { register } = useFormContext<AccessControlFormData>();
   const isEarly = type === 'early';
   const addEarlyDisabledTitle = isEarly ? getAddEarlyDisabledTitle(dueCredit) : undefined;
   const addLimitDisabledTitle = getDeadlineLimitDisabledTitle(type, deadlineFields.length);
@@ -163,30 +201,6 @@ function DeadlineArrayInput({
   const addDisabled = addDisabledTitle !== undefined;
 
   const { errors } = useFormState();
-
-  const deadlinesStringified = stableStringify(deadlines);
-  const effectiveValidationDueDate = validationDueDate ?? dueDate;
-  const effectiveValidationReleaseDate = validationReleaseDate ?? releaseDate;
-
-  // Re-run resolver validation for all deadline dates and credits when the
-  // number of deadlines changes (handles append and remove) or when external
-  // constraints change.
-  useEffect(() => {
-    if (deadlineFields.length > 0) {
-      for (let i = 0; i < deadlineFields.length; i++) {
-        void trigger(`${fieldArrayName}.${i}.date`);
-        void trigger(`${fieldArrayName}.${i}.credit`);
-      }
-    }
-  }, [
-    deadlineFields.length,
-    deadlinesStringified,
-    effectiveValidationDueDate,
-    dueCredit,
-    effectiveValidationReleaseDate,
-    fieldArrayName,
-    trigger,
-  ]);
 
   const getDateError = (index: number): string | undefined => {
     return get(errors, `${fieldArrayName}.${index}.date`)?.message;
@@ -201,37 +215,13 @@ function DeadlineArrayInput({
     if (!deadline?.date) return null;
 
     const anchorDate = isEarly ? releaseDate : dueDate;
-    const start = (index > 0 ? deadlines[index - 1].date : null) ?? anchorDate;
-    const end = deadline.date;
-
-    if (!start) {
-      const prefix = isEarly ? 'While accessible' : 'After due date';
-      return (
-        <>
-          {prefix} –{' '}
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(end)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />
-        </>
-      );
-    }
-
     return (
-      <>
-        <FriendlyDate
-          date={Temporal.PlainDateTime.from(start)}
-          timezone={displayTimezone}
-          options={{ includeTz: false }}
-        />{' '}
-        –{' '}
-        <FriendlyDate
-          date={Temporal.PlainDateTime.from(end)}
-          timezone={displayTimezone}
-          options={{ includeTz: false }}
-        />
-      </>
+      <DeadlineTimeRange
+        prefix={isEarly ? 'While accessible' : 'After due date'}
+        start={(index > 0 ? deadlines[index - 1].date : null) ?? anchorDate ?? null}
+        end={deadline.date}
+        displayTimezone={displayTimezone}
+      />
     );
   };
 
@@ -417,8 +407,6 @@ export function DefaultDeadlineArrayField({
       releaseDate={releaseDate}
       dueDate={dueDate}
       dueCredit={dueCredit}
-      validationReleaseDate={releaseDate}
-      validationDueDate={dueDate}
       deadlines={deadlines}
       displayTimezone={displayTimezone}
       deadlineFields={fields}
@@ -474,8 +462,6 @@ export function OverrideDeadlineArrayField({
   const effectiveDue = dueOverridden ? overrideDue : defaultRuleDue;
   const effectiveDueDate = effectiveDue.date;
   const effectiveDueCredit = effectiveDue.credit ?? 100;
-  const validationReleaseDate = releaseDateOverridden ? overrideReleaseDate : undefined;
-  const validationDueDate = dueOverridden ? overrideDue.date : undefined;
 
   const { fields, append, remove, replace } = useFieldArray<
     AccessControlFormData,
@@ -557,8 +543,6 @@ export function OverrideDeadlineArrayField({
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
         dueCredit={effectiveDueCredit}
-        validationReleaseDate={validationReleaseDate}
-        validationDueDate={validationDueDate}
         deadlines={deadlines}
         displayTimezone={displayTimezone}
         renderInlineHeader={false}

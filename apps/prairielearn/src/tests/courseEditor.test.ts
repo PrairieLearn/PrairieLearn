@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
@@ -866,7 +865,7 @@ async function createSharedCourse() {
       type: 'v3',
       title: 'Shared publicly',
       topic: 'TOPIC HERE',
-      authors: [{ email: 'author@example.org' }],
+      authors: ['author@example.org'],
       copiedFrom:
         'ed80830c-fd51-43e3-9f13-6a41e4c7dfd5/cbf5cbf2-6458-4f13-a418-aa4d2b1093ff/upstream',
       sharePublicly: true,

@@ -1,5 +1,4 @@
-/* eslint perfectionist/sort-objects: error */
-
+// `oxlint.config.mts` keeps the objects in this file sorted; update it if this file moves.
 import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
@@ -510,6 +509,7 @@ const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
 };
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
+  authors: null,
   client_files: null,
   copied_from: null,
   copied_from_question_id: null,
