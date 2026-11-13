@@ -6,4 +6,4 @@ def parse(data):
 def last_element(lst: list):
     return lst[{data["submitted_answers"]["index"]}]
     """.strip()
-    pl.add_submitted_file(data, "user_code.py", raw_contents=code)
+    pl.add_submitted_file(data, "student_code.py", raw_contents=code)
