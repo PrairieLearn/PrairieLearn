@@ -3,6 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionBrowserServicesData } from '../../components/QuestionBrowserServicesData.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
@@ -10,10 +11,10 @@ import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function PublicQuestionPreview({
   resLocals,
-  independentScrolling,
+  questionHostingUpdate,
   questionCopyTargets,
 }: {
-  independentScrolling: boolean;
+  questionHostingUpdate: boolean;
   resLocals: UntypedResLocals;
   questionCopyTargets: CopyTarget[] | null;
 }) {
@@ -26,11 +27,11 @@ export function PublicQuestionPreview({
       subPage: 'preview',
     },
     options: {
-      contentContainerClassName: independentScrolling ? 'question-page-layout' : '',
+      contentContainerClassName: questionHostingUpdate ? 'question-page-layout' : '',
       pageNote: 'Public Preview',
     },
     headContent: html`
-      ${independentScrolling ? compiledStylesheetTag('questionLayout.css') : ''}
+      ${questionHostingUpdate ? compiledStylesheetTag('questionLayout.css') : ''}
       <meta
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
@@ -53,17 +54,18 @@ export function PublicQuestionPreview({
       ${unsafeHtml(resLocals.extraHeadersHtml)}
     `,
     content: html`
+      ${questionHostingUpdate ? QuestionBrowserServicesData({ resLocals, questionContext: 'public' }) : ''}
       <div class="row question-page-row">
         <div
           class="col-lg-9 col-sm-12 question-page-question"
-          ${independentScrolling ? html`role="region" aria-label="Question" tabindex="0"` : ''}
+          ${questionHostingUpdate ? html`role="region" aria-label="Question" tabindex="0"` : ''}
         >
-          ${QuestionContainer({ resLocals, questionContext: 'public', questionCopyTargets })}
+          ${QuestionContainer({ questionHostingUpdate, resLocals, questionContext: 'public', questionCopyTargets })}
         </div>
 
         <div
           class="col-lg-3 col-sm-12 question-page-sidebar"
-          ${independentScrolling ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
+          ${questionHostingUpdate ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
         >
           <div class="card mb-3">
             <div class="card-header bg-secondary text-white">
