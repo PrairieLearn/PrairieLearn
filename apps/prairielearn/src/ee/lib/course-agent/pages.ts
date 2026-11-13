@@ -27,13 +27,12 @@ const GROUP_PARAMS = {
 type Group = keyof typeof GROUP_PARAMS;
 
 interface AgentPage {
-  group: Group;
   entry: PageCatalog[number];
   urlSuffix: string | ((resLocals: UntypedResLocals) => string);
 }
 
 /** The course and the course owner's permissions, which decide the pages the agent is offered. */
-export interface PageCatalogContext {
+interface PageCatalogContext {
   course: Pick<Course, 'id' | 'show_getting_started'>;
   authz_data: object;
 }
@@ -99,7 +98,6 @@ function agentPages(context: PageCatalogContext) {
     const key = `${tab.group}.${tab.subPage}`;
     if (pages.has(key) || !shownToOwner(tab.renderCondition, context)) continue;
     pages.set(key, {
-      group: tab.group,
       entry: { key, label: tab.label, params: GROUP_PARAMS[tab.group] },
       urlSuffix: tab.urlSuffix,
     });
@@ -129,10 +127,10 @@ function pageUrl(page: AgentPage, rows: PageRows) {
 }
 
 /**
- * The URL of the page the agent named, with its names resolved the way course files name things.
- * The messages tell the agent what to correct.
+ * The URL and label of the page the agent named, with its names resolved the way course files name
+ * things. The messages tell the agent what to correct.
  */
-export async function resolveAgentPageUrl(context: PageCatalogContext, target: NavigationTarget) {
+export async function resolveAgentPage(context: PageCatalogContext, target: NavigationTarget) {
   const { course } = context;
   const page = agentPages(context).get(target.page);
   if (!page) throw new HttpStatusError(404, `No page named "${target.page}".`);
@@ -166,5 +164,8 @@ export async function resolveAgentPageUrl(context: PageCatalogContext, target: N
   if (params.includes('question') && !question) {
     throw new HttpStatusError(404, `This course has no question named "${target.question}".`);
   }
-  return pageUrl(page, { course, course_instance, assessment, question });
+  return {
+    url: pageUrl(page, { course, course_instance, assessment, question }),
+    label: page.entry.label,
+  };
 }

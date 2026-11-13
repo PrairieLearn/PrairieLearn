@@ -144,14 +144,14 @@ export class CodexAppServerClient {
   private toolChars = { messageId: '', used: 0 };
   private failure: Error | null = null;
   private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
-  /** Navigation calls are checked against the conversation's catalog, also on a resumed thread. */
-  private pages: PageCatalog = [];
 
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
     private courseData: CourseDataTools,
-    /** Resolves a navigation target to its URL, failing with a message for the agent. */
-    private resolveNavigation: (target: NavigationTarget) => Promise<string>,
+    /** Resolves a navigation target to its URL and label, failing with a message for the agent. */
+    private resolveNavigation: (
+      target: NavigationTarget,
+    ) => Promise<Pick<NavigationPart, 'url' | 'label'>>,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -315,15 +315,10 @@ export class CodexAppServerClient {
         : args,
     );
     if (!target.success) return invalidArguments(target.error);
-    const page = this.pages.find((entry) => entry.key === target.data.page);
-    if (!page) return { success: false, text: `Unknown page "${target.data.page}".` };
     return await replyWithError(async () => {
-      const url = await this.resolveNavigation(target.data);
       const navigation: NavigationPart = {
-        action: 'open',
         target: target.data,
-        label: page.label,
-        url,
+        ...(await this.resolveNavigation(target.data)),
       };
       // The chat shows this part as a button that opens the page when the instructor clicks it.
       this.emit({ type: 'data-navigation', id: `navigation:${callId}`, data: navigation });
@@ -372,7 +367,6 @@ export class CodexAppServerClient {
     threadId: string | null;
     pages: PageCatalog;
   }) {
-    this.pages = config.pages;
     const settings = {
       model: config.model,
       cwd: COURSE_DIR,

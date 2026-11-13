@@ -315,17 +315,14 @@ export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
 
 /**
  * A `data-navigation` part: the agent offered a page, which the instructor opens by clicking it.
- * PrairieLearn resolved `target` to `url` before the part was written, and `label` is the
- * catalog's label for the page, so history renders without either lookup.
+ * PrairieLearn resolved `target` to `url` and `label` before the part was written, so history
+ * renders without a lookup.
  */
-export const NavigationPartSchema = z.discriminatedUnion('action', [
-  z.strictObject({
-    action: z.literal('open'),
-    target: NavigationTargetSchema,
-    label: z.string().max(100),
-    url: z.string().max(4000),
-  }),
-]);
+export const NavigationPartSchema = z.strictObject({
+  target: NavigationTargetSchema,
+  label: z.string().max(100),
+  url: z.string().max(4000),
+});
 
 export type NavigationPart = z.infer<typeof NavigationPartSchema>;
 

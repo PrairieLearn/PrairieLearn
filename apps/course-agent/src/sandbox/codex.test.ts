@@ -61,8 +61,9 @@ function runner({
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
   const native = new CodexAppServerClient(sandbox, courseData, async (target) => {
+    if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
     if (target.assessment !== 'hw1') throw new Error(`No assessment named "${target.assessment}".`);
-    return '/pl/course_instance/1/instructor/assessment/2/settings';
+    return { url: '/pl/course_instance/1/instructor/assessment/2/settings', label: 'Settings' };
   });
   return { sandbox, native, commands, emit, disconnect: () => socket.close() };
 }
@@ -468,7 +469,6 @@ describe('course agent turns', () => {
         type: 'data-navigation',
         id: 'navigation:open',
         data: {
-          action: 'open',
           target,
           label: 'Settings',
           url: '/pl/course_instance/1/instructor/assessment/2/settings',

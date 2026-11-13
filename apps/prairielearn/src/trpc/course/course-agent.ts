@@ -173,6 +173,5 @@ export interface CourseAgentError {
   Resume: never;
   GetReview: never;
   PostReviewDecision: never;
-  ResolveNavigation: never;
   SetTitle: never;
 }
