@@ -302,7 +302,9 @@ function PrintPreparation({
   }
 
   function focusPrepareAction() {
-    if (prepareButtonRef.current && !prepareButtonRef.current.disabled) {
+    if (snapshotStale) {
+      applyPreviewButtonRef.current?.focus();
+    } else if (prepareButtonRef.current && !prepareButtonRef.current.disabled) {
       prepareButtonRef.current.focus();
     } else if (prepareStatusRef.current?.textContent.trim()) {
       prepareStatusRef.current.focus();
@@ -553,6 +555,7 @@ function PrintPreparation({
     download.mutate({ id, printDocument });
   }
   const controlsBusy = isSubmitting || busy || download.isPending;
+  const preparingExport = download.isPending || packet.isPending || preparingPdf === 'packet';
   const onPreviewState = useCallback(
     (state: PreviewState) => {
       setPreview({ url: previewUrl, state });
@@ -1495,13 +1498,14 @@ function PrintPreparation({
                     id="print-prepare-status"
                     className="print-preparation-status small text-muted"
                     role={
-                      download.isError || (exportId && displayedExport?.status === 'failed')
+                      !preparingExport &&
+                      (download.isError || (exportId && displayedExport?.status === 'failed'))
                         ? 'alert'
                         : 'status'
                     }
                     tabIndex={-1}
                   >
-                    {download.isPending || packet.isPending || preparingPdf === 'packet' ? (
+                    {preparingExport ? (
                       <span className="d-flex align-items-center gap-2">
                         <Spinner size="sm" aria-hidden="true" />
                         <span>
