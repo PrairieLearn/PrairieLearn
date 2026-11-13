@@ -4,14 +4,17 @@ import { z } from 'zod';
 
 import {
   COURSE_DIR,
+  CourseDataQuerySchema,
   type InputRequestPart,
   type NavigationPart,
+  type NavigationTarget,
   NavigationTargetSchema,
   type PageCatalog,
   type ToolCall,
 } from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { JsonValue } from '../../generated/types/serde_json/JsonValue.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
 import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
 import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
@@ -58,14 +61,27 @@ const CardToolItem = z.object({
   tool: z.enum(['request_changes', 'navigate']),
   success: z.boolean().nullable(),
 });
-const DynamicCall = z.object({
+/** A dynamic tool call from Codex; each tool validates its own arguments. */
+const DynamicToolCall = z.object({
   threadId: z.string(),
   turnId: z.string(),
   callId: z.string(),
   namespace: z.null(),
-  tool: z.enum(['request_changes', 'navigate']),
+  tool: z.string(),
   arguments: z.unknown(),
 });
+const RequestChangesArguments = z.strictObject({});
+const ListCourseDatasetsArguments = z.strictObject({});
+const CourseDataArguments = CourseDataQuerySchema.extend({
+  dataset: z.string().describe('Dataset to download, from list_course_datasets.'),
+});
+export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
+
+/** Serves the course data tools; replies go to the model. */
+export interface CourseDataTools {
+  list(): Promise<ToolReply>;
+  get(request: CourseDataRequest): Promise<ToolReply>;
+}
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
  * prompts are shown only through this item. Codex calls them questions.
@@ -131,7 +147,12 @@ export class CodexAppServerClient {
   /** Navigation calls are checked against the conversation's catalog, also on a resumed thread. */
   private pages: PageCatalog = [];
 
-  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
+  constructor(
+    private sandbox: DurableObjectStub<CourseSandbox>,
+    private courseData: CourseDataTools,
+    /** Resolves a navigation target to its URL, failing with a message for the agent. */
+    private resolveNavigation: (target: NavigationTarget) => Promise<string>,
+  ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
     if (this.controller) throw new Error('An SDK response is already open');
@@ -180,7 +201,7 @@ export class CodexAppServerClient {
         }
       });
     rpc.onRequest('item/tool/call', async (value: unknown) => {
-      const reply = await this.dynamicToolCall(value);
+      const reply = await this.callTool(value);
       return {
         success: reply.success,
         contentItems: [{ type: 'inputText', text: reply.text }],
@@ -255,50 +276,62 @@ export class CodexAppServerClient {
     return this.rpc;
   }
 
-  private async dynamicToolCall(value: unknown): Promise<ToolReply> {
-    const parsed = DynamicCall.safeParse(value);
-    if (!parsed.success || parsed.data.threadId !== this.threadId) {
+  private async callTool(value: unknown): Promise<ToolReply> {
+    const call = DynamicToolCall.safeParse(value);
+    if (!call.success || call.data.threadId !== this.threadId) {
       throw new Error('Invalid dynamic tool call');
     }
-    const call = parsed.data;
-    if (call.tool === 'request_changes') {
-      if (!z.strictObject({}).safeParse(call.arguments).success) {
-        throw new Error('Invalid request_changes call');
+    switch (call.data.tool) {
+      case listCourseDatasetsTool.name: {
+        const request = ListCourseDatasetsArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseData.list());
       }
-      if (!this.onReview) throw new Error('Review handling is not configured');
-      return await this.onReview({ ...call, arguments: {} });
+      case courseDataTool.name: {
+        const request = CourseDataArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseData.get(request.data));
+      }
+      case requestChangesTool.name: {
+        if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
+          throw new Error('Invalid request_changes call');
+        }
+        return await this.onReview({ ...call.data, arguments: {} });
+      }
+      case 'navigate':
+        return await this.navigate(call.data.callId, call.data.arguments);
+      default:
+        throw new Error(`Unknown tool: ${call.data.tool}`);
     }
+  }
+
+  private async navigate(callId: string, args: unknown): Promise<ToolReply> {
     // Models often send empty or null values for the names a page does not take.
     const target = NavigationTargetSchema.safeParse(
-      call.arguments && typeof call.arguments === 'object'
+      args && typeof args === 'object'
         ? Object.fromEntries(
-            Object.entries(call.arguments).filter(([, value]) => value !== '' && value !== null),
+            Object.entries(args).filter(([, value]) => value !== '' && value !== null),
           )
-        : call.arguments,
+        : args,
     );
-    if (!target.success) {
-      const problems = target.error.issues.map((issue) =>
-        issue.code === 'unrecognized_keys'
-          ? `remove ${issue.keys.join(', ')}`
-          : `check ${issue.path.join('.') || 'arguments'}`,
-      );
-      return { success: false, text: `Invalid navigation target: ${problems.join('; ')}.` };
-    }
+    if (!target.success) return invalidArguments(target.error);
     const page = this.pages.find((entry) => entry.key === target.data.page);
-    if (!page) {
-      return { success: false, text: `Unknown page "${target.data.page}".` };
-    }
-    const missing = page.params.filter((param) => !target.data[param]);
-    if (missing.length > 0) {
-      return { success: false, text: `Page "${page.key}" also needs: ${missing.join(', ')}.` };
-    }
-    const navigation: NavigationPart = { action: 'open', target: target.data, label: page.label };
-    // The chat shows this part as a button; the reply cannot confirm that the page opens.
-    this.emit({ type: 'data-navigation', id: `navigation:${call.callId}`, data: navigation });
-    return {
-      success: true,
-      text: 'The instructor sees a button that opens the page when they click it. If a name matches nothing in the course, PrairieLearn shows them an error instead.',
-    };
+    if (!page) return { success: false, text: `Unknown page "${target.data.page}".` };
+    return await replyWithError(async () => {
+      const url = await this.resolveNavigation(target.data);
+      const navigation: NavigationPart = {
+        action: 'open',
+        target: target.data,
+        label: page.label,
+        url,
+      };
+      // The chat shows this part as a button that opens the page when the instructor clicks it.
+      this.emit({ type: 'data-navigation', id: `navigation:${callId}`, data: navigation });
+      return {
+        success: true,
+        text: 'The instructor sees a button that opens the page when clicked.',
+      };
+    });
   }
 
   private fail(error: Error) {
@@ -363,6 +396,8 @@ export class CodexAppServerClient {
             ...settings,
             dynamicTools: [
               ...(this.onReview ? [requestChangesTool] : []),
+              listCourseDatasetsTool,
+              courseDataTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
             ],
           } satisfies ThreadStartParams,
@@ -535,13 +570,50 @@ export class CodexAppServerClient {
   }
 }
 
-const requestChangesTool: DynamicToolSpec = {
+/** Invalid arguments are the model's mistake, so it gets the reason and can retry. */
+function invalidArguments(error: z.ZodError): ToolReply {
+  return { success: false, text: `Invalid arguments: ${z.prettifyError(error)}` };
+}
+
+/** A failed PrairieLearn request is reported to the model rather than failing the turn. */
+async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply> {
+  try {
+    return await call();
+  } catch (error) {
+    return { success: false, text: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/** Codex's tool input schema, generated from the Zod schema that validates the arguments. */
+function toolInputSchema(schema: z.ZodType) {
+  // Zod types its output with a non-enumerable `~standard` property that serialization drops.
+  const { $schema: _schema, ...inputSchema } = z.toJSONSchema(schema);
+  return inputSchema as JsonValue;
+}
+
+const listCourseDatasetsTool = {
+  type: 'function',
+  name: 'list_course_datasets',
+  description:
+    "List the datasets of this course's PrairieLearn data that get_course_data can download, with each column's type and meaning.",
+  inputSchema: toolInputSchema(ListCourseDatasetsArguments),
+} satisfies DynamicToolSpec;
+
+const courseDataTool = {
+  type: 'function',
+  name: 'get_course_data',
+  description:
+    "Download rows of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. The reply gives the file's path, row count, and columns.",
+  inputSchema: toolInputSchema(CourseDataArguments),
+} satisfies DynamicToolSpec;
+
+const requestChangesTool = {
   type: 'function',
   name: 'request_changes',
   description:
     'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
-};
+} satisfies DynamicToolSpec;
 
 /** The model learns which pages exist from this tool, so the catalog is not repeated in instructions. */
 function navigateTool(pages: PageCatalog): DynamicToolSpec {

@@ -10,10 +10,14 @@ RUN mkdir /opt/codex && tar -xzf /tmp/codex.tgz -C /opt/codex
 
 FROM debian:bookworm-slim
 ARG CACHEBUST=2026-09-15-14-09-16
+# Python with pandas and numpy lets the agent analyze course data. Agents often run `python`, so
+# python-is-python3 provides it. tzdata provides timezone rules for converting UTC timestamps; the
+# slim base image does not include them.
 # Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
 # offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
 RUN apt-get update \
   && apt-get install -y --no-install-recommends git ca-certificates ripgrep jq procps zstd tini \
+    python3 python-is-python3 python3-pandas python3-numpy tzdata \
   && rm -rf /var/lib/apt/lists/* \
   && git config --system user.name "PrairieLearn" \
   && git config --system user.email "course-agent@prairielearn.com" \

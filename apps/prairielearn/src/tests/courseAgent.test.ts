@@ -258,8 +258,18 @@ describe('Course agent access and conversation privacy', () => {
 
   // The catalog reuses the navigation's untyped URL builders and visibility conditions, so load
   // what they produce: a page offered to the agent must exist for this course.
-  test('resolves every catalog page to a page that exists', async () => {
-    const client = createClient(owner);
+  test('resolves every catalog page for the course agent, and explains a wrong name', async () => {
+    const { agent_conversation_id } = await createConversation(owner);
+    const resolve = (target: Record<string, string>) =>
+      fetch(`${siteUrl}/pl/api/v1/course/1/agent_navigation`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-token',
+          'X-Course-Agent-Conversation': agent_conversation_id,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(target),
+      });
     const names = {
       courseInstance: 'Sp15',
       assessment: 'hw1-automaticTestSuite',
@@ -274,19 +284,21 @@ describe('Course agent access and conversation privacy', () => {
         has_course_permission_preview: true,
       },
     });
-    const missing = await withUser(owner, async () => {
-      const results: string[] = [];
-      for (const page of catalog) {
-        const { url } = await client.courseAgent.resolveNavigation.query({
-          page: page.key,
-          ...Object.fromEntries(page.params.map((param) => [param, names[param]])),
-        });
-        const { status } = await fetch(`${siteUrl}${url}`);
-        if (status === 404 || status >= 500) results.push(`${page.key}: ${status}`);
-      }
-      return results;
-    });
+    const missing: string[] = [];
+    for (const page of catalog) {
+      const response = await resolve({
+        page: page.key,
+        ...Object.fromEntries(page.params.map((param) => [param, names[param]])),
+      });
+      const { url } = (await response.json()) as { url: string };
+      const { status } = await withUser(owner, () => fetch(`${siteUrl}${url}`));
+      if (status === 404 || status >= 500) missing.push(`${page.key}: ${status}`);
+    }
     expect(missing).toEqual([]);
+
+    const wrong = await resolve({ ...names, page: 'assessment.settings', assessment: 'hw99' });
+    expect(wrong.status).toBe(404);
+    expect(await wrong.json()).toMatchObject({ message: 'No assessment named "hw99".' });
   });
 
   test('initializes from current local files and course-only Git history in dev mode', async () => {

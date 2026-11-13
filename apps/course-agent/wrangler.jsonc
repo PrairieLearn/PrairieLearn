@@ -12,7 +12,9 @@
     "USER_IDLE_SECONDS": "600",
     // A Cloudflare instance type: lite or standard-1 through standard-4.
     "SANDBOX_INSTANCE_TYPE": "standard-2",
-    "SENTRY_ENVIRONMENT": "development"
+    "SENTRY_ENVIRONMENT": "development",
+    // PrairieLearn origin for the course data API. Deployed environments set it as a secret.
+    "PL_URL": "http://localhost:3000"
   },
   "version_metadata": {
     "binding": "VERSION_METADATA"
@@ -84,7 +86,7 @@
         "SENTRY_ENVIRONMENT": "staging"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_URL"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
@@ -133,7 +135,7 @@
         "SENTRY_ENVIRONMENT": "production"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_URL"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },

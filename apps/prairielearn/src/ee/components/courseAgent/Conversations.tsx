@@ -36,7 +36,7 @@ import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
-import { NavigationButton, navigationOf } from './Navigation.js';
+import { NavigationCard, navigationOf } from './Navigation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -730,7 +730,7 @@ function Message({
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
       const navigation = navigationOf(part);
-      if (navigation) return <NavigationButton key={key} navigation={navigation} />;
+      if (navigation) return <NavigationCard key={key} navigation={navigation} />;
       if (part.type === 'data-input-request') {
         const request = InputRequestPartSchema.safeParse(part.data).data;
         if (!request) return null;

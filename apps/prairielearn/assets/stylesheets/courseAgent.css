@@ -50,10 +50,6 @@
   border-color: var(--bs-primary-border-subtle) !important;
 }
 
-.course-agent-page-link[aria-disabled='true'] {
-  cursor: progress;
-}
-
 .course-agent-page-link-text {
   /* Lets long names truncate instead of widening the card. */
   min-width: 0;
