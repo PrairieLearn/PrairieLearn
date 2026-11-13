@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import {
   type FieldErrors,
   type FieldPath,
@@ -34,7 +35,7 @@ import {
   type QuestionVisibilityValue,
   type ScoreVisibilityValue,
   formDataToJson,
-  isReleasedNow,
+  isReleasedAt,
 } from './types.js';
 
 export const DATE_REQUIRED_MESSAGE = 'Date is required';
@@ -194,13 +195,14 @@ function getReleaseStateValidationErrors(
   displayTimezone: string,
 ): { path: AccessControlFormFieldPath; message: string }[] {
   const results: { path: AccessControlFormFieldPath; message: string }[] = [];
+  const now = Temporal.Now.plainDateTimeISO(displayTimezone);
 
   const checkRule = (
     release: AccessControlFormData['defaultRule']['release'],
     path: AccessControlFormFieldPath,
   ) => {
     if (!release.date) return;
-    const dateIsPast = isReleasedNow(release.date, displayTimezone);
+    const dateIsPast = isReleasedAt(release.date, now);
     if (release.released && !dateIsPast) {
       results.push({
         path,

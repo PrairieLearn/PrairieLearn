@@ -57,6 +57,53 @@ describe('missedTurns', () => {
   });
 });
 
+describe('page hints in catch-up', () => {
+  it('names the page and most specific item each staff line was sent from', () => {
+    const page = { path: '/pl/course_instance/1/instructor/assessment/2', page: 'assessment' };
+    const located: UIMessage[] = [
+      {
+        id: 'u1',
+        role: 'user',
+        metadata: { location: { ...page, courseInstance: 'Fa25', assessment: 'hw1' } },
+        parts: [{ type: 'text', text: 'Shorten this assessment' }],
+      },
+      {
+        id: 'u2',
+        role: 'user',
+        metadata: {
+          location: {
+            ...page,
+            courseInstance: 'Fa25',
+            question: 'algebra/add',
+            questionFromAnotherCourse: true,
+          },
+        },
+        parts: [{ type: 'text', text: 'Fix this question' }],
+      },
+      {
+        id: 'u3',
+        role: 'user',
+        metadata: {
+          location: { path: '/pl/course/1/course_admin/settings', page: 'course_admin.settings' },
+        },
+        parts: [{ type: 'text', text: 'Rename the course here' }],
+      },
+      {
+        id: 'u4',
+        role: 'user',
+        metadata: { location: 'bad' },
+        parts: [{ type: 'text', text: 'Hi' }],
+      },
+    ];
+    expect(missedTurns(located, undefined)).toEqual([
+      'Staff (on page "assessment", assessment "hw1"): Shorten this assessment',
+      'Staff (on page "assessment", question "algebra/add" shared from another course): Fix this question',
+      'Staff (on page "course_admin.settings"): Rename the course here',
+      'Staff: Hi',
+    ]);
+  });
+});
+
 describe('tool calls in catch-up', () => {
   it('records changed files in one line and leaves other calls out', () => {
     const diff = { text: '', omitted: 0 };
@@ -161,11 +208,25 @@ describe('describeReviewResult', () => {
       'Do not revise or resubmit on your own.',
     );
   });
+});
 
-  it('passes on the message an instructor sent in place of a decision', () => {
-    const text = describeReviewResult({ ...denied, feedback: 'Use three midterms' }, 'github');
-    expect(text).toContain('Use three midterms');
-    expect(text).toContain('Respond to their message.');
-    expect(text).not.toContain('Do not revise or resubmit on your own.');
+describe('denial by message', () => {
+  it('describes the message that denied a review before it in catch-up', () => {
+    const denial: UIMessage[] = [
+      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Use three midterms' }] },
+      {
+        id: 'a1',
+        role: 'assistant',
+        parts: [
+          { type: 'data-denial', id: 'denial:r1', data: { reviewId: 'r1' } },
+          { type: 'text', text: 'Switching to three midterms.' },
+        ],
+      },
+    ];
+    expect(missedTurns(denial, undefined)).toEqual([
+      'PrairieLearn: The instructor denied the submitted changes by sending this message.',
+      'Staff: Use three midterms',
+      'You: Switching to three midterms.',
+    ]);
   });
 });
