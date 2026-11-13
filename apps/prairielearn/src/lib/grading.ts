@@ -226,7 +226,7 @@ export async function saveSubmission(
           for await (const zipEntry of zip) {
             const name = zipEntry.path;
             const contents = (await zipEntry.buffer()).toString('base64');
-            submission.submitted_answer._files.push({ name, contents });
+            submission.submitted_answer._files.push({ name, contents, source: 'workspace' });
           }
           await fs.promises.unlink(zipPath);
         }

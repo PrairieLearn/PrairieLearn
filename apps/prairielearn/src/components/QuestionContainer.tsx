@@ -727,7 +727,12 @@ export function QuestionFooterContent({
                     />
                   `
                 : html`
-                    <input type="hidden" name="postData" class="postData" />
+                    <input
+                      type="hidden"
+                      name="postData"
+                      class="postData"
+                      data-deferred-initial-value="true"
+                    />
                     <input type="hidden" name="__action" class="__action" />
                   `
             }
