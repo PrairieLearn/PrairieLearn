@@ -1693,6 +1693,7 @@ function PrintPreparation({
         aria-labelledby="print-form-action-title"
         backdrop="static"
         keyboard={!formActionPending}
+        enforceFocus={pendingFormAction !== null}
         restoreFocus={false}
         onHide={closeFormAction}
         onExited={() => {
