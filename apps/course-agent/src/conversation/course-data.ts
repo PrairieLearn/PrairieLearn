@@ -184,7 +184,12 @@ export async function getCourseData({
   logEvent('course_data_fetched', {
     conversationId: context.conversationId,
     dataset,
-    filters,
+    // Values can identify students, so only the shape of each filter is logged.
+    filters: (query.filters ?? []).map((filter) =>
+      filter.op === 'in'
+        ? `${filter.column} in (${filter.value.length} values)`
+        : `${filter.column} ${filter.op}`,
+    ),
     rows,
     bytes: body.bytes,
     elapsedMs: Date.now() - started,

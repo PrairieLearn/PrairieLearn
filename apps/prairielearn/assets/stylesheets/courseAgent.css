@@ -29,6 +29,57 @@
   overflow-wrap: anywhere;
 }
 
+.btn.course-agent-icon-button {
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-active-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-secondary-bg);
+  --bs-btn-active-border-color: transparent;
+  text-decoration: none;
+}
+
+.course-agent-attachment {
+  width: 6rem;
+  height: 6rem;
+}
+
+.course-agent-attachment-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.course-agent-attachment-problem {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.course-agent-attachment-overlay {
+  background-color: rgb(0 0 0 / 45%);
+  color: #fff;
+}
+
+.course-agent-attachment-remove {
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.course-agent-drop-target {
+  inset: 0.5rem;
+  z-index: 1;
+  border-radius: var(--bs-border-radius-lg);
+  background-color: color-mix(in srgb, var(--bs-primary) 6%, var(--bs-body-bg));
+  border: 2px dashed color-mix(in srgb, var(--bs-primary) 45%, var(--bs-body-bg));
+  pointer-events: none;
+}
+
 .course-agent-panel .markdown-body {
   overflow-wrap: anywhere;
 }

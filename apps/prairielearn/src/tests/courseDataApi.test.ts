@@ -1,6 +1,6 @@
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
-import { execute } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { COURSE_DATA_DATASETS } from '../api/v1/endpoints/courseData/datasets.js';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
@@ -13,6 +13,8 @@ import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const locals = {} as {
   shouldHaveButtons: string[];
@@ -190,9 +192,7 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
         uin: 'admin',
         email: 'admin@example.com',
       });
-      await execute('INSERT INTO administrators (user_id) VALUES ($user_id);', {
-        user_id: adminUser.id,
-      });
+      await execute(sql.insert_administrator, { user_id: adminUser.id });
       const admin = await conversation(adminUser.id);
       const statuses = async (headers: Record<string, string>, ...urls: string[]) =>
         Promise.all(urls.map(async (url) => (await post(url, headers)).status));

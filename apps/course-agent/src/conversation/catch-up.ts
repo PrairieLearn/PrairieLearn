@@ -8,6 +8,8 @@ import {
   UserMessageMetadataSchema,
 } from '@prairielearn/course-agent-types';
 
+import { attachmentOf, attachmentPath } from './attachments.js';
+
 /** Keep the newest turns within a bound that leaves room for the current request. */
 const MAX_CATCH_UP_CHARS = 32_000;
 const OMITTED_MARKER = '[Earlier messages omitted.]\n\n';
@@ -197,6 +199,10 @@ function describePart(part: UIMessage['parts'][number]) {
     case 'data-navigation': {
       const navigation = NavigationPartSchema.safeParse(part.data).data;
       return navigation ? `[Offered to open ${navigation.label} (${navigation.subtitle}).]` : '';
+    }
+    case 'file': {
+      const attachment = attachmentOf(part);
+      return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';
     }
     default:
       return '';
