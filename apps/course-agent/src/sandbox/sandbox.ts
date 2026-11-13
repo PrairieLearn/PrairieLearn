@@ -16,9 +16,15 @@ import {
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
 
+import {
+  type Attachment,
+  UPLOADS_DIR,
+  attachmentPath,
+  uploadKey,
+} from '../conversation/attachments.js';
 import { logEvent } from '../monitoring.js';
 
-import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
+import { codexRequestKind, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
 const SESSION = '/workspace/session';
 // Installed by the image from container/codex-config.toml.
@@ -158,16 +164,18 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
     const refusal = modelRequestRefusal(body);
     if (refusal) return new Response(refusal, { status: 403 });
+    const compaction = codexRequestKind(body) === 'compaction';
     // Later requests in a turn end with tool output; only the role is read, never the content.
-    const firstOfTurn = body.input?.at(-1)?.role === 'user';
+    // Local compaction ends with a user-role summarization prompt, so it is excluded by kind.
+    const firstOfTurn = !compaction && body.input?.at(-1)?.role === 'user';
     const started = Date.now();
     if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
     const response = await this.conversation.proxyModelRequest(
       JSON.stringify(body),
       this.ctx.props.executionId,
     );
-    if (firstOfTurn) {
-      logEvent('model_response_started', {
+    if (firstOfTurn || compaction) {
+      logEvent(compaction ? 'model_compaction_started' : 'model_response_started', {
         sandboxId: this.ctx.props.sandboxId,
         status: response.status,
         elapsedMs: Date.now() - started,
@@ -379,6 +387,24 @@ export class CourseSandbox extends DurableObject<Env> {
       );
     }
     await this.lockSession();
+  }
+
+  /**
+   * Copy uploaded attachments into the sandbox as root-owned files the agent can read but not
+   * change. Uploads that have since expired are skipped; a new message's were checked on arrival.
+   */
+  async writeAttachments(conversationId: string, attachments: Attachment[]) {
+    const paths = attachments.map(attachmentPath);
+    await this.exec(['mkdir', '-p', ...paths.map((path) => path.slice(0, path.lastIndexOf('/')))]);
+    // A restored sandbox copies every earlier attachment, so the copies run concurrently.
+    const files = new Files(this.container);
+    await Promise.all(
+      attachments.map(async (attachment, index) => {
+        const upload = await this.env.CHECKPOINTS.get(uploadKey(conversationId, attachment.id));
+        if (upload) await files.writeFile(paths[index], upload.body);
+      }),
+    );
+    await this.exec(['chmod', '-R', 'a+rX,go-w', UPLOADS_DIR]);
   }
 
   /**

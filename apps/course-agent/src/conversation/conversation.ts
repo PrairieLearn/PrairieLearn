@@ -34,6 +34,19 @@ import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import {
+  type Attachment,
+  IMAGE_SIGNATURE_BYTES,
+  UploadQuota,
+  attachmentPath,
+  attachmentsOf,
+  attachmentsToWrite,
+  formatRequest,
+  isImage,
+  keepUploadReferences,
+  uploadKey,
+  uploadPrefix,
+} from './attachments.js';
+import {
   buildCatchUp,
   denialMarker,
   describeDenialMessage,
@@ -265,6 +278,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private recovering = false;
   /** Shared by every shutdown caller; delivery waits for it to finish. */
   private sandboxShutdown: Promise<void> | null = null;
+  private readonly uploadQuota = new UploadQuota(async () => {
+    const { objects } = await this.env.CHECKPOINTS.list({ prefix: uploadPrefix(this.name) });
+    return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
+  });
 
   private reportError(error: unknown) {
     reportError(error, {
@@ -850,9 +867,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const earlier = historyBefore(this.messages, message).filter(
       ({ id }) => !unsentIds.includes(id),
     );
+    // Messages refused by the usage limit are sent with this one.
+    const sent = message ? [...unsent, message] : [];
+    const attachments = sent.flatMap(attachmentsOf);
     const checkedSandboxId = this.record.sandboxId;
-    const [running] = await Promise.all([
+    const [running, images] = await Promise.all([
       checkedSandboxId === null || this.env.CourseSandbox.getByName(checkedSandboxId).isRunning(),
+      this.findImages(attachments),
       // Check the usage limit before a message boots a sandbox or generates a title. The first
       // model request then finds the decision fresh. If PrairieLearn is unreachable, that request
       // reports the failure instead. Continuations are checked before they are scheduled, and
@@ -868,12 +889,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const admitted = continuation
       ? review?.result && status === 'waiting_for_agent'
       : !review && (status === 'offline' || status === 'waiting_for_user');
-    const refused = !admitted || this.active || this.recovering || this.sandboxShutdown;
-    if (refused) {
+    const refuse = (reason: string) => {
       // The SDK has already saved the message. Count it as handled, or the next submit would
       // send this refused prompt in place of the user's next one.
       if (message) this.setRecord({ ...this.record, submittedMessageId: message.id });
-      throw new Error('The course agent sandbox is not ready.');
+      return new Error(reason);
+    };
+    if (!admitted || this.active || this.recovering || this.sandboxShutdown) {
+      throw refuse('The course agent sandbox is not ready.');
     }
     if (message && this.budget.limitedUntil) {
       this.setRecord({
@@ -886,6 +909,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         stream: new ReadableStream({ start: (c) => c.close() }),
       });
     }
+    if (!images) {
+      // A refused message's expired attachment would refuse every later message too.
+      this.setRecord({ ...this.record, unsentMessageIds: [] });
+      throw refuse('An attached file is no longer available. Attach it again.');
+    }
     if (!continuation && !message) throw new Error('Expected a new user message');
     const abandoned = lost && this.record.sandboxId === checkedSandboxId;
     if (abandoned) this.abandonLostSandbox();
@@ -897,8 +925,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const delivered = continuation && review?.result ? review : null;
     const location =
       message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
-    const messageText = [...unsent, ...(message ? [message] : [])]
-      .map((entry) => entry.parts.map((part) => (part.type === 'text' ? part.text : '')).join('\n'))
+    // File parts are left out rather than joined as blank lines.
+    const messageText = sent
+      .map((entry) =>
+        entry.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n'),
+      )
       .join('\n\n');
     const input: TurnInput = {
       ...(delivered?.result
@@ -909,7 +940,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           }
         : {
             tag: messageTag(message!.id),
-            text: deniedReviewId ? describeDenialMessage(messageText) : messageText,
+            text: formatRequest(
+              deniedReviewId ? describeDenialMessage(messageText) : messageText,
+              attachments,
+              images,
+            ),
+            images: attachments.filter(({ id }) => images.has(id)).map(attachmentPath),
             ...(location ? { page: describePageLocation(location) } : {}),
           }),
       // A restored or new thread may lack turns that chat history has.
@@ -958,6 +994,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           conversationId: this.name,
           executionId,
         });
+        const toWrite = [...attachmentsToWrite(earlier, null, startup), ...attachments];
+        if (toWrite.length > 0) await this.sandbox.writeAttachments(this.name, toWrite);
         if (delivered) await this.advanceLocalBaseline(delivered);
       },
       addCourseFiles:
@@ -1048,6 +1086,28 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }).catch((error: unknown) => this.reportError(error));
   }
 
+  /** Which attachments are images, or null if any upload is missing. */
+  private async findImages(attachments: Attachment[]) {
+    const uploads = await Promise.all(
+      attachments.map(({ id }) =>
+        this.env.CHECKPOINTS.get(uploadKey(this.name, id), {
+          range: new Headers({ range: `bytes=0-${IMAGE_SIGNATURE_BYTES - 1}` }),
+        }),
+      ),
+    );
+    const images = new Set<string>();
+    for (const [index, upload] of uploads.entries()) {
+      if (!upload) return null;
+      if (isImage(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
+    }
+    return images;
+  }
+
+  /** SDK persistence hook, which also runs on messages the browser sends. */
+  protected override sanitizeMessageForPersistence(message: UIMessage) {
+    return keepUploadReferences(message);
+  }
+
   /** SDK completion hook: release the SDK half of the active operation. */
   protected override async onChatResponse(result: ChatResponseResult) {
     if (this.active?.requestId === result.requestId) this.active.sdkFinished.resolve(undefined);
@@ -1100,6 +1160,16 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.setRecord({ ...this.record, lifecycle: { status: 'waiting_for_user' } });
       await this.scheduleDeadline('idle');
     }
+  }
+
+  /** RPC: reserve room for an upload under this conversation's cap, or refuse it. */
+  async reserveUpload(size: number) {
+    return await this.uploadQuota.reserve(size);
+  }
+
+  /** RPC: return the room reserved for an upload that was not stored. */
+  async releaseUpload(size: number) {
+    await this.uploadQuota.release(size);
   }
 
   /**
