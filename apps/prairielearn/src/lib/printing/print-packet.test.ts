@@ -6,10 +6,10 @@ import {
   MAX_COVER_FILES,
   MAX_COVER_PAGES,
 } from '../client/printing/print-packet.js';
-import { DEFAULT_PRINT_SETTINGS } from '../client/printing/print-preparation.js';
 
 import { PrintPacketMetadataSchema } from './print-packet-schema.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
+import { DEFAULT_PRINT_SETTINGS } from './print-settings.js';
 
 async function pdfWithPages(widths: number[]): Promise<Uint8Array> {
   const document = await PDFDocument.create();

@@ -6,7 +6,7 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
-import { PrintSettingsSchema } from './printing/print-packet-schema.js';
+import { PrintSettingsSchema } from './printing/print-settings.js';
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
@@ -1444,7 +1444,7 @@ export const PrintFormSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
   label: z.string().regex(/^[A-Z]+$/),
-  settings: PrintSettingsSchema.nullable(),
+  settings: PrintSettingsSchema,
   user_id: IdSchema,
 });
 export type PrintForm = z.infer<typeof PrintFormSchema>;

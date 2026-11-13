@@ -30,10 +30,7 @@ import {
   MAX_COVER_FILES,
   MAX_COVER_PAGES,
 } from '../../lib/client/printing/print-packet.js';
-import {
-  DEFAULT_PRINT_SETTINGS,
-  printLayoutSearch,
-} from '../../lib/client/printing/print-preparation.js';
+import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import {
   type PrintSnapshot,
   STALE_PRINT_SNAPSHOT_MESSAGE,
@@ -43,7 +40,7 @@ import {
 import type { StaffPrintForm } from '../../lib/client/safe-db-types.js';
 import { getPrintFormUrl, getQuestionUrl } from '../../lib/client/url.js';
 import type { PrintDocument } from '../../lib/printing/index.js';
-import type { PrintSettings } from '../../lib/printing/print-packet-schema.js';
+import { DEFAULT_PRINT_SETTINGS, type PrintSettings } from '../../lib/printing/print-settings.js';
 import type { QuestionBlockSize } from '../../lib/printing/question-block-size.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
@@ -336,7 +333,7 @@ function PrintPreparation({
   function settingsForForm(id: string, appliedSettings = settings): PrintSettings {
     const form = forms.data.find((item) => item.id === id);
     if (!form) throw new Error('This print form is not available.');
-    const formSettings = id === formId ? appliedSettings : (form.settings ?? defaultSettings);
+    const formSettings = id === formId ? appliedSettings : form.settings;
     return {
       ...formSettings,
       identityFields: formSettings.includeCoverPage ? formSettings.identityFields : '',
@@ -685,7 +682,7 @@ function PrintPreparation({
         values = result.settings;
       } else {
         const updated = await updateSettings.mutateAsync({ printFormId: formId, settings: values });
-        values = updated.settings ?? values;
+        values = updated.settings;
         if (printLayoutSearch(values) === printLayoutSearch(settings)) {
           await questions.refetch();
         }
@@ -1039,11 +1036,6 @@ function PrintPreparation({
                     </details>
                   </Card.Body>
                 </Card>
-              )}
-              {archivedPreviewForm?.settings === null && (
-                <Alert variant="warning" className="small mb-3">
-                  This older form has no saved print settings. Default settings are shown.
-                </Alert>
               )}
               <Card className="mb-3">
                 <Card.Body>

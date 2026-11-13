@@ -12,7 +12,6 @@ import {
   selectLatestPrintFormLabel,
 } from '../../models/print-form.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../client/printing/print-form-limits.js';
-import { DEFAULT_PRINT_SETTINGS } from '../client/printing/print-preparation.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
@@ -24,7 +23,7 @@ import {
 } from '../db-types.js';
 import { ensureVariant, getQuestionCourse } from '../question-variant.js';
 
-import type { PrintSettings } from './print-packet-schema.js';
+import { DEFAULT_PRINT_SETTINGS, type PrintSettings } from './print-settings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

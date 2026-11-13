@@ -12,7 +12,7 @@ import {
 import { IdSchema } from '@prairielearn/zod';
 
 import { PrintFormSchema } from '../lib/db-types.js';
-import type { PrintSettings } from '../lib/printing/print-packet-schema.js';
+import type { PrintSettings } from '../lib/printing/print-settings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

@@ -7,8 +7,8 @@ import { IdSchema } from '@prairielearn/zod';
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { createPrintForm } from '../../lib/printing/print-forms.js';
-import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-packet-schema.js';
 import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
+import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-settings.js';
 import {
   archivePrintForm,
   selectOptionalPrintForm,
