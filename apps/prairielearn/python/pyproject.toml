@@ -31,3 +31,6 @@ dependencies = [
 # We intentionally exclude internal things, like `zygote.py`, as well
 # as compatibility shims for deprecated entrypoints.
 include = ["prairielearn*"]
+
+[tool.setuptools.package-data]
+prairielearn = ["*.lark"]
