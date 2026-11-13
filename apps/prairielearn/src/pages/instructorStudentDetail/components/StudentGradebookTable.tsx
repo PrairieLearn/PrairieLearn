@@ -78,7 +78,12 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
               </td>
               <td className="text-center align-middle">
                 {row.show_closed_assessment_score ? (
-                  <Scorebar score={row.assessment_instance.score_perc} className="mx-auto" />
+                  <Scorebar
+                    score={row.assessment_instance.score_perc}
+                    scorePending={row.assessment_instance.score_perc_pending}
+                    gradingPending={row.assessment_instance.grading_pending}
+                    className="mx-auto"
+                  />
                 ) : (
                   'In progress'
                 )}

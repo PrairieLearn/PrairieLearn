@@ -20,9 +20,11 @@ import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
+import { computeInstanceQuestionPendingPoints } from '../../lib/question-points.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { selectPendingInstanceQuestions } from '../../models/instance-question.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
 import { getAssessmentInstanceTimeFields } from '../../trpc/assessment/assessment-instances.js';
 import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances/instructorAssessmentInstances.types.js';
@@ -64,20 +66,50 @@ router.get(
       accessType: 'instructor',
     });
     const logCsvFilename = makeLogCsvFilename(res.locals);
-    const [assessment_instance_stats, instance_questions, assessmentInstanceLog] =
-      await Promise.all([
-        sqldb.queryRows(
-          sql.assessment_instance_stats,
-          { assessment_instance_id: res.locals.assessment_instance.id },
-          AssessmentInstanceStatsSchema,
-        ),
-        sqldb.queryRows(
-          sql.select_instance_questions,
-          { assessment_instance_id: res.locals.assessment_instance.id },
-          InstanceQuestionRowSchema,
-        ),
-        selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
-      ]);
+    const [
+      assessment_instance_stats,
+      instanceQuestionRows,
+      assessmentInstanceLog,
+      pendingQuestions,
+    ] = await Promise.all([
+      sqldb.queryRows(
+        sql.assessment_instance_stats,
+        { assessment_instance_id: res.locals.assessment_instance.id },
+        AssessmentInstanceStatsSchema,
+      ),
+      sqldb.queryRows(
+        sql.select_instance_questions,
+        { assessment_instance_id: res.locals.assessment_instance.id },
+        InstanceQuestionRowSchema,
+      ),
+      selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
+      selectPendingInstanceQuestions({
+        assessment_instance_ids: [res.locals.assessment_instance.id],
+      }),
+    ]);
+
+    const pendingQuestionsById = new Map(
+      pendingQuestions.map((question) => [question.instance_question.id, question]),
+    );
+    const instance_questions = instanceQuestionRows.map((row) => {
+      const pending = pendingQuestionsById.get(row.id);
+      return {
+        ...row,
+        auto_grading_pending: pending?.auto_grading_pending ?? false,
+        grading_pending: pending !== undefined,
+        score_perc_pending: pending
+          ? (computeInstanceQuestionPendingPoints({
+              assessment: pending.assessment,
+              assessmentQuestion: pending.assessment_question,
+              instanceQuestion: pending.instance_question,
+              rubric: pending.rubric,
+              autoGradingPending: pending.auto_grading_pending,
+            }) *
+              100) /
+            (pending.assessment_question.max_points || 1)
+          : 0,
+      };
+    });
 
     const actionRow: AssessmentInstanceActionRow = {
       assessment_instance: {

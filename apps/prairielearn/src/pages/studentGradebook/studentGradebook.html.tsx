@@ -11,6 +11,8 @@ export interface StudentGradebookTableRow {
   assessment_set_color: string;
   label: string;
   assessment_instance_score_perc: number | null;
+  assessment_instance_score_perc_pending: number;
+  assessment_instance_grading_pending: boolean;
   show_closed_assessment_score: boolean;
   start_new_set: boolean;
 }
@@ -96,6 +98,8 @@ export function StudentGradebook({
                         {row.show_closed_assessment_score ? (
                           <Scorebar
                             score={row.assessment_instance_score_perc}
+                            scorePending={row.assessment_instance_score_perc_pending}
+                            gradingPending={row.assessment_instance_grading_pending}
                             className="mx-auto"
                           />
                         ) : (

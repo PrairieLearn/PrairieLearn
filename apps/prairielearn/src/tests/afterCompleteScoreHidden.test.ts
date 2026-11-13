@@ -128,6 +128,7 @@ describe(
         AssessmentInstanceSchema,
       );
       assert.equal(result.open, false);
+      await sqldb.execute(sql.set_pending_score);
     });
 
     test('check that accessing a question gives the "assessment closed" message', async () => {
@@ -150,14 +151,16 @@ describe(
       assert.lengthOf(row, 1);
       assert.lengthOf(row.find('td:contains("Score not shown")'), 1);
       assert.lengthOf(row.find('div.progress'), 0);
+      assert.lengthOf(row.find('summary:contains("pending")'), 0);
     });
 
     test('check that accessing gradebook shows score as withheld', async () => {
-      const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+      const response = await helperClient.fetchCheerio(context.gradeBookUrl, { headers });
       assert.equal(response.status, 200);
 
-      assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
-      assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+      assert.lengthOf(response.$('td:contains("Score not shown")'), 1);
+      assert.lengthOf(response.$('div.progress'), 0);
+      assert.lengthOf(response.$('summary:contains("pending")'), 0);
     });
   },
 );
