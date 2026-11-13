@@ -10,7 +10,6 @@ WHERE
 WITH
   grading_job_data AS (
     SELECT
-      s.credit,
       v.id AS variant_id,
       -- This method is only called for manual grading questions if
       -- auto_points > 0, in that case it is treated as internal.
@@ -84,8 +83,7 @@ WITH
   )
 SELECT
   gj.*,
-  gjd.assessment_instance_id,
-  gjd.credit
+  gjd.assessment_instance_id
 FROM
   new_grading_job AS gj
   JOIN grading_job_data AS gjd ON TRUE;
