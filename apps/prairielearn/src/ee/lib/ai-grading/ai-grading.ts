@@ -582,9 +582,11 @@ export async function aiGrade({
         return false;
       }
 
-      const shouldUpdateScore = !instanceQuestionGradingResults[instance_question.id]?.some(
-        (result) => result.latest_update.grading_job.grading_method === 'Manual',
-      );
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // const shouldUpdateScore = !instanceQuestionGradingResults[instance_question.id]?.some(
+      //   (result) => result.latest_update.grading_job.grading_method === 'Manual',
+      // );
+      const shouldUpdateScore = true;
 
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
@@ -764,6 +766,11 @@ export async function aiGrade({
 
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
+          feedback: z
+            .string()
+            .describe(
+              'Student-facing feedback governed by the feedback policy in the grading instructions. Return an empty string unless the Instructor grading guidelines explicitly request feedback and any stated conditions are met. Assume the student will not see the rubric item selections; do not treat them as a substitute for requested feedback. When provided, address the student as "you" and follow the requested content, length, and format.',
+            ),
           rubric_items: RubricGradingItemsSchema,
         });
 
@@ -935,6 +942,7 @@ export async function aiGrade({
               rubric_id: rubric_items[0].rubric_id,
               applied_rubric_items: appliedRubricItems,
             };
+            const feedback = finalGradingResponse.output.feedback;
             return await finalizeAiGradingPersistence({
               createGradingJob: async () =>
                 await updateInstanceQuestionScoreForAiGrading({
@@ -944,7 +952,7 @@ export async function aiGrade({
                   score: {
                     // TODO: consider asking for and recording freeform feedback.
                     manual_rubric_data,
-                    feedback: { manual: '' },
+                    feedback: { manual: feedback },
                   },
                   authn_user_id,
                 }),

@@ -26,7 +26,8 @@ export const assessmentTrpcRouter = createExpressMiddleware({
   router: assessmentRouter,
   createContext,
   onError: handleTrpcError,
-  // Uploads are sent as `multipart/form-data` bodies; bound them the same way
-  // the previous multer-based upload route did.
-  maxBodySize: config.fileUploadMaxBytes,
+  // This module is imported before configuration loads; read the limit per request.
+  get maxBodySize() {
+    return config.fileUploadMaxBytes;
+  },
 });
