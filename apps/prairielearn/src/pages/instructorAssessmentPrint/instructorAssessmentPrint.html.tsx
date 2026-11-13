@@ -206,7 +206,8 @@ function PrintPreparation({
   const printHeadingRef = useRef<HTMLHeadingElement>(null);
   const recentExportsRef = useRef<HTMLElement>(null);
   const nextFormFocusRef = useRef<string | null>(null);
-  const formToFocusRef = useRef<string | null>(null);
+  const formToFocusRef = useRef<{ id: string; waitForSelection: boolean } | null>(null);
+  const [formFocusRequest, setFormFocusRequest] = useState(0);
   const {
     register,
     handleSubmit,
@@ -314,8 +315,9 @@ function PrintPreparation({
     }
   }
 
-  function focusForm(id: string) {
-    window.document.getElementById(`print-form-${id}`)?.focus();
+  function requestFormFocus(id: string, waitForSelection = false) {
+    formToFocusRef.current = { id, waitForSelection };
+    setFormFocusRequest((request) => request + 1);
   }
 
   function closeFormAction() {
@@ -491,8 +493,8 @@ function PrintPreparation({
     const nextSettings = { ...settings, questionSizes: {}, excludedQuestions: [] };
     const result = await create.mutateAsync({ settings: nextSettings });
     if (selectedForms !== null) void setSelectedForms([...formIds, result.printFormId]);
-    formToFocusRef.current = result.printFormId;
     switchForm(result.printFormId, result.settings);
+    requestFormFocus(result.printFormId, true);
   }
 
   async function regenerateForm(id: string) {
@@ -556,15 +558,22 @@ function PrintPreparation({
     download.mutate({ id, printDocument });
   }
   const controlsBusy = isSubmitting || busy || download.isPending;
-  // The new form button may still be disabled when creation returns, so focus it once ready.
+  // Form actions can finish before the target button is enabled, so focus it once ready.
   useEffect(() => {
-    const id = formToFocusRef.current;
-    if (!id || id !== formId || controlsBusy || isDirty) return;
-    const button = window.document.getElementById(`print-form-${id}`);
-    if (!button) return;
+    const request = formToFocusRef.current;
+    if (
+      !request ||
+      (request.waitForSelection && request.id !== formId) ||
+      controlsBusy ||
+      isDirty
+    ) {
+      return;
+    }
+    const button = window.document.getElementById(`print-form-${request.id}`);
+    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
     button.focus();
     formToFocusRef.current = null;
-  }, [formId, controlsBusy, isDirty]);
+  }, [formId, controlsBusy, isDirty, forms.data, formFocusRequest]);
   const preparingExport = download.isPending || packet.isPending || preparingPdf === 'packet';
   const onPreviewState = useCallback(
     (state: PreviewState) => {
@@ -1689,7 +1698,7 @@ function PrintPreparation({
         onExited={() => {
           const id = nextFormFocusRef.current;
           nextFormFocusRef.current = null;
-          if (id) window.requestAnimationFrame(() => focusForm(id));
+          if (id) requestFormFocus(id);
         }}
       >
         <Modal.Header closeButton={!formActionPending}>
