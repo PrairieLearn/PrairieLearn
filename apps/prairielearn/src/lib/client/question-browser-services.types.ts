@@ -17,6 +17,11 @@ export interface QuestionBrowserServices {
 
   openSubmissionInfo(request: { submissionId: string }): Promise<void>;
 
+  /**
+   * Renders an allowed submission in this view. Superseded requests reject with
+   * AbortError. History loads return submission content only; grading results
+   * also refresh shared panels unless a newer result has already refreshed them.
+   */
   renderSubmission(
     request: { submissionId: string; purpose: 'history' | 'grading-result' },
     options: { signal: AbortSignal },

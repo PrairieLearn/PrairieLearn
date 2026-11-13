@@ -27,6 +27,9 @@ export function createLocalQuestionBrowserServices({
   const abortController = new AbortController();
   const subscriptions = new Set<() => void>();
   const dialogs = createQuestionDialogs(document, dialogData);
+  let renderSequence = 0;
+  let appliedPageSequence = 0;
+  const submissionSequences = new Map<string, number>();
 
   function assertCurrent() {
     abortController.signal.throwIfAborted();
@@ -49,6 +52,8 @@ export function createLocalQuestionBrowserServices({
       const renderUrl = submissionRenderUrls.get(submissionId);
       if (!renderUrl) throw new Error('Unknown submission');
 
+      const sequence = ++renderSequence;
+      submissionSequences.set(submissionId, sequence);
       const url = new URL(renderUrl, document.location.origin);
       if (url.origin !== document.location.origin) {
         throw new Error('Submission render URL must be same-origin');
@@ -63,7 +68,16 @@ export function createLocalQuestionBrowserServices({
       // Aborting fetch alone is insufficient if the response was already received.
       requestSignal.throwIfAborted();
       assertCurrent();
-      updateQuestionPagePanels(document, panels);
+      if (submissionSequences.get(submissionId) !== sequence) {
+        throw new DOMException('Submission render was superseded', 'AbortError');
+      }
+      // Different submissions share scores, the answer, and the question footer.
+      // An older response may still supply its own submission, but not those panels.
+      const updatePage = purpose === 'grading-result' && sequence > appliedPageSequence;
+      if (updatePage) {
+        appliedPageSequence = sequence;
+        updateQuestionPagePanels(document, panels);
+      }
       if (panels.submissionInfo) dialogs.updateSubmissionInfo(panels.submissionInfo);
 
       // Select these fields explicitly: the question renderer must not receive
@@ -72,8 +86,8 @@ export function createLocalQuestionBrowserServices({
       return {
         submissionPanel: panels.submissionPanel,
         extraHeadersHtml: panels.extraHeadersHtml,
-        answerPanel: panels.answerPanel,
-        questionPanelFooter: panels.questionPanelFooter,
+        answerPanel: updatePage ? panels.answerPanel : null,
+        questionPanelFooter: updatePage ? panels.questionPanelFooter : null,
       };
     },
 
@@ -82,15 +96,29 @@ export function createLocalQuestionBrowserServices({
       const socket = io('/external-grading');
       let closed = false;
       const onStatus = (msg: StatusMessage | null) => {
-        if (msg == null) return;
         if (closed || abortController.signal.aborted || !isCurrent()) return;
-        if (msg.variant_id !== variantId) return;
+        if (msg?.variant_id !== variantId) return;
         listener(msg.submissions);
       };
+      // A live update can arrive while the server is preparing the initial snapshot.
+      let updatedSinceConnect = new Set<string>();
       socket.on('connect', () => {
-        socket.emit('init', { variant_id: variantId, variant_token: variantToken }, onStatus);
+        updatedSinceConnect = new Set();
+        const updated = updatedSinceConnect;
+        socket.emit(
+          'init',
+          { variant_id: variantId, variant_token: variantToken },
+          (msg: StatusMessage | null) => {
+            if (!msg || updated !== updatedSinceConnect) return;
+            onStatus({ ...msg, submissions: msg.submissions.filter((s) => !updated.has(s.id)) });
+          },
+        );
       });
-      socket.on('change:status', onStatus);
+      socket.on('change:status', (msg: StatusMessage) => {
+        if (msg.variant_id !== variantId) return;
+        msg.submissions.forEach((s) => updatedSinceConnect.add(s.id));
+        onStatus(msg);
+      });
 
       const unsubscribe = () => {
         closed = true;
