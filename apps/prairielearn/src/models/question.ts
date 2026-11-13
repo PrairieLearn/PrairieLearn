@@ -15,6 +15,22 @@ import { type Question, QuestionSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * Counts distinct external courses and institutions within 20 copy links.
+ * Includes soft-deleted questions and courses.
+ */
+export async function selectQuestionCopyAdoption(question_ids: string[]) {
+  return await queryRows(
+    sql.select_question_copy_adoption,
+    { question_ids },
+    z.object({
+      question_id: IdSchema,
+      downstream_course_count: z.number().int().nonnegative(),
+      downstream_institution_count: z.number().int().nonnegative(),
+    }),
+  );
+}
+
 export async function selectQuestionById(question_id: string): Promise<Question> {
   return await queryRow(sql.select_question_by_id, { question_id }, QuestionSchema);
 }

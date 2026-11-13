@@ -22,7 +22,6 @@ const NOT_TOOL_CALLS = new Set([
   'reasoning',
   'plan',
   'hookPrompt',
-  'contextCompaction',
   'functionCallOutput',
 ]);
 
@@ -86,12 +85,14 @@ const WebSearchItem = z.object({
     })
     .nullable(),
 });
+const CompactionItem = z.object({ type: z.literal('contextCompaction') });
 const Item = z.discriminatedUnion('type', [
   CommandItem,
   FileChangeItem,
   McpItem,
   DynamicItem,
   WebSearchItem,
+  CompactionItem,
 ]);
 const OtherItem = z.object({ type: z.string(), path: z.string().nullish(), status: Status });
 
@@ -259,5 +260,7 @@ export function toolCallFromItem(
         error: null,
       };
     }
+    case 'contextCompaction':
+      return { v: 1, kind: 'compaction', status: status(phase, undefined) };
   }
 }
