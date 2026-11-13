@@ -75,7 +75,7 @@ The agent can search the web and read pages through Codex's `web.run` tool, for 
 
 The agent reads course data with two tools. `list_course_datasets` lists the datasets and their columns, and `get_course_data` downloads one dataset's rows, optionally filtered, sorted, and limited, as a JSONL file in `/workspace/session/course-data/`. The agent analyzes the files with Python scripts saved in the same directory. Downloads and scripts are kept in checkpoints, so they survive the sandbox's idle shutdown; checkpoints therefore contain student data.
 
-The Worker serves both tools from PrairieLearn's course data API (`/pl/api/v1/course/:course_id/data`), at the origin in `PL_URL`. It authenticates with `PL_SERVICE_TOKEN` and names the conversation, and PrairieLearn applies that conversation's user's permissions: only course owners can read course data, and only for the conversation's course. The container itself never calls PrairieLearn.
+The Worker serves both tools from PrairieLearn's course data API (`/pl/api/v1/course/:course_id/data`), at the origin in `PL_URL`. It authenticates with `PL_SERVICE_TOKEN` and names the conversation, and PrairieLearn applies that conversation's user's permissions: only course owners (and administrators) can read course data, and only for the conversation's course. The container itself never calls PrairieLearn.
 
 ## Deployment environments and monitoring
 

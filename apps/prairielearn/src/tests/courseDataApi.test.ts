@@ -1,5 +1,7 @@
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
+import { execute } from '@prairielearn/postgres';
+
 import { COURSE_DATA_DATASETS } from '../api/v1/endpoints/courseData/datasets.js';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
@@ -9,6 +11,7 @@ import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import { getOrCreateUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
 
 const locals = {} as {
@@ -157,16 +160,10 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
 
   test('the course agent reads only its conversation course data, as the user', async function () {
     await withConfig({ isEnterprise: true, courseAgentServiceToken: [SERVICE_TOKEN] }, async () => {
-      const conversation = async (uid: string, course_role: 'Owner' | 'Editor') => {
-        const user = await insertCoursePermissionsByUserUid({
-          course_id: '1',
-          uid,
-          course_role,
-          authn_user_id: '1',
-        });
+      const conversation = async (user_id: string) => {
         const { agent_conversation_id } = await insertCourseAgentConversation({
           course_id: '1',
-          user_id: user.id,
+          user_id,
           agent_conversation_id: crypto.randomUUID(),
           title: 'Test',
         });
@@ -175,12 +172,33 @@ describe('course data API', { timeout: 60_000, concurrent: false }, function () 
           'X-Course-Agent-Conversation': agent_conversation_id,
         };
       };
-      const owner = await conversation('owner@example.com', 'Owner');
-      const editor = await conversation('editor@example.com', 'Editor');
+      const staff = async (uid: string, course_role: 'Owner' | 'Editor') => {
+        const user = await insertCoursePermissionsByUserUid({
+          course_id: '1',
+          uid,
+          course_role,
+          authn_user_id: '1',
+        });
+        return await conversation(user.id);
+      };
+      const owner = await staff('owner@example.com', 'Owner');
+      const editor = await staff('editor@example.com', 'Editor');
+      // An administrator can use the agent in a course without holding a role in it.
+      const adminUser = await getOrCreateUser({
+        uid: 'admin@example.com',
+        name: 'Admin',
+        uin: 'admin',
+        email: 'admin@example.com',
+      });
+      await execute('INSERT INTO administrators (user_id) VALUES ($user_id);', {
+        user_id: adminUser.id,
+      });
+      const admin = await conversation(adminUser.id);
       const statuses = async (headers: Record<string, string>, ...urls: string[]) =>
         Promise.all(urls.map(async (url) => (await post(url, headers)).status));
 
       assert.isNotEmpty(await getRows(`${apiUrl}/questions`, owner));
+      assert.isNotEmpty(await getRows(`${apiUrl}/questions`, admin));
       assert.deepEqual(
         await statuses(
           owner,
