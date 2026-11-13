@@ -508,9 +508,14 @@ function PrintPreparation({
 
   async function archiveForm(id: string) {
     await archive.mutateAsync({ printFormId: id });
+    const archivedIndex = formIds.indexOf(id);
     const nextIds = formIds.filter((value) => value !== id);
     if (selectedForms !== null) void setSelectedForms(nextIds.length > 0 ? nextIds : null);
-    const nextId = nextIds[0] ?? activeForms.find((form) => form.id !== id)?.id;
+    const nextId =
+      nextIds.at(archivedIndex) ??
+      nextIds.at(archivedIndex - 1) ??
+      activeForms.find((form) => form.id !== id)?.id ??
+      null;
     if (id === formId) {
       if (nextId) switchForm(nextId);
       else void setSelectedForm(null);

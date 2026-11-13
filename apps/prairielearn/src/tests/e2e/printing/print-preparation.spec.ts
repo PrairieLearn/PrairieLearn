@@ -451,6 +451,10 @@ test('combines assessment copies with custom covers and appends every form’s a
     .context()
     .addCookies([{ name: 'pl_test_user', value: 'test_instructor', url: baseURL }]);
 
+  // Keep an older shared form active so archive must focus the adjacent form.
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
+
   const formsLoaded = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith('/printForms.list'),
   );
