@@ -113,6 +113,25 @@ type _UsedSympyType = _SympyValueType | Literal["empty-set"]
 type AllowedSympyType = Literal["all"] | _SympyValueType
 
 
+def _evaluate_set(expr: sympy.Set) -> sympy.Set:
+    """Evaluate set operations unless they contain a non-iterable symbolic range."""
+    ranges = expr.atoms(sympy.Range)
+    if any(value.free_symbols and not value.is_iterable for value in ranges):
+        return expr
+    return expr.doit(deep=True)
+
+
+def _is_definitely_finite_set(expr: sympy.Set) -> bool:
+    if isinstance(expr, sympy.Range):
+        # Symbolic bounds can make is_finite_set raise even though a Range is
+        # finite unless one of its canonical endpoints is explicitly infinite.
+        return expr.start.is_infinite is not True and expr.stop.is_infinite is not True
+    try:
+        return expr.is_finite_set is True
+    except ValueError:
+        return False
+
+
 def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
     if expr is sympy.EmptySet:
         return {"empty-set"}
@@ -123,7 +142,7 @@ def _used_sympy_types(expr: sympy.Basic) -> set[_UsedSympyType]:
         return {"set"}
     if isinstance(expr, sympy.Interval):
         return {"interval"}
-    if isinstance(expr, sympy.Set) and expr.is_finite_set:
+    if isinstance(expr, sympy.Set) and _is_definitely_finite_set(expr):
         required_types: set[_UsedSympyType] = {"finite-set"}
         for arg in expr.args:
             if isinstance(arg, sympy.Set):
@@ -172,7 +191,7 @@ def check_sympy_types(
     allowed = cast(set[_SympyValueType], allowed_types)
     # SymPy's set evaluation isn't idempotent, so only evaluate unevaluated trees.
     if not simplify_expression and isinstance(expr, sympy.Set):
-        expr = expr.doit()
+        expr = _evaluate_set(expr)
 
     if isinstance(expr, sympy.Set) and "set" in allowed:
         return None
@@ -1077,7 +1096,11 @@ def sympy_check(
         # Reevaluate the existing tree without reparsing, while preserving the
         # unevaluated result returned for display.
         try:
-            evaluated_expr = expr.doit(deep=True)
+            evaluated_expr = (
+                _evaluate_set(expr)
+                if isinstance(expr, sympy.Set)
+                else expr.doit(deep=True)
+            )
         except Exception as exc:
             raise BaseSympyError from exc
         check_nodes(evaluated_expr, check_structure=False, check_complex=True)

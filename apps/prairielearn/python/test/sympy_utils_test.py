@@ -872,6 +872,18 @@ class TestSympy:
         assert isinstance(result, psu.SympyParseFailure)
         assert "uses set" in result.error
 
+        n = sympy.Symbol("n")
+        assert psu.check_sympy_types(sympy.Range(0, n), {"finite-set"}) is None
+
+    def test_unevaluated_symbolic_range_operation_type_classification(self) -> None:
+        n = sympy.Symbol("n", integer=True, positive=True)
+        expr = sympy.Complement(sympy.Range(1, n), sympy.FiniteSet(2), evaluate=False)
+
+        assert (
+            psu.check_sympy_types(expr, {"finite-set"}, simplify_expression=False)
+            is None
+        )
+
     @pytest.mark.parametrize(
         ("fn_name", "fn_args"),
         [

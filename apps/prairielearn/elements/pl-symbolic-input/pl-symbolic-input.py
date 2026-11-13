@@ -1182,6 +1182,13 @@ def _wrap_bare_function_arguments(text: str, function_names: frozenset[str]) -> 
     return "".join(result)
 
 
+def _evaluate_set_for_comparison(expr: sympy.Set) -> sympy.Set:
+    ranges = expr.atoms(sympy.Range)
+    if any(value.free_symbols and not value.is_iterable for value in ranges):
+        return expr
+    return expr.doit(deep=True)
+
+
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
     """Compare set components by symbolic equivalence instead of structure."""
     if isinstance(a, sympy.Set) and isinstance(b, sympy.Set):
@@ -1190,8 +1197,8 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
 
         # Set operations stay unevaluated for display. Evaluate nonidentical sets
         # for comparison here, while grading is protected by SYMPY_TIMEOUT.
-        a = a.doit(deep=True)
-        b = b.doit(deep=True)
+        a = _evaluate_set_for_comparison(a)
+        b = _evaluate_set_for_comparison(b)
 
     @lru_cache(maxsize=128)
     def compare(left: sympy.Basic, right: sympy.Basic) -> bool:
@@ -1199,11 +1206,13 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
             return True
         if (
             isinstance(left, sympy.Range)
-            and left.is_finite_set is True
+            and left.is_iterable
+            and left.size.is_Integer
             and isinstance(right, sympy.FiniteSet)
         ) or (
             isinstance(right, sympy.Range)
-            and right.is_finite_set is True
+            and right.is_iterable
+            and right.size.is_Integer
             and isinstance(left, sympy.FiniteSet)
         ):
             return (

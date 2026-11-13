@@ -273,6 +273,31 @@ def test_finite_range_and_finite_set_grading(
     assert data["partial_scores"]["test"]["score"] == expected_score
 
 
+def test_noniterable_symbolic_range_in_set_operation_grades_without_error() -> None:
+    n = sympy.Symbol("n", integer=True, positive=True)
+    correct_answer = sympy.Complement(
+        sympy.Range(1, n), sympy.FiniteSet(2), evaluate=False
+    )
+    element_html = build_element_html(
+        'allowed-types="finite-set"',
+        'display-simplified-expression="false"',
+    )
+    data = make_question_data(
+        submitted_answers={"test": "{1, 3}"},
+        correct_answers={
+            "test": psu.sympy_to_json(correct_answer, allow_sets=True),
+        },
+    )
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+
+    symbolic_input.grade(element_html, data)
+    assert data["partial_scores"]["test"]["score"] == 0
+
+
 @pytest.mark.parametrize(
     ("allowed_types", "correct_answer", "display_simplified"),
     [
