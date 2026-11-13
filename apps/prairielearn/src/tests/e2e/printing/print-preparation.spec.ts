@@ -450,6 +450,14 @@ test('combines assessment copies with custom covers and appends every form’s a
   const originalLabel = await printFormLabel(page, originalFormId);
   const originalQuestions = await selectPrintFormQuestions(originalFormId);
   await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
+  const regenerateDialog = page.getByRole('dialog', {
+    name: `Regenerate Form ${originalLabel}`,
+  });
+  await expect(regenerateDialog.getByText(/labels are never reused/)).toBeVisible();
+  await regenerateDialog.getByRole('button', { name: 'Cancel' }).click();
+  expect(new URL(page.url()).searchParams.get('form')).toBe(originalFormId);
+  await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
+  await regenerateDialog.getByRole('button', { name: 'Regenerate form' }).click();
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(originalFormId);
   const replacementId = new URL(page.url()).searchParams.get('form')!;
   const replacementLabel = await printFormLabel(page, replacementId);
@@ -594,6 +602,16 @@ test('combines assessment copies with custom covers and appends every form’s a
     'true',
   );
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await page.getByRole('button', { name: `Archive Form ${newLabel}` }).click();
+  const archiveDialog = page.getByRole('dialog', { name: `Archive Form ${newLabel}` });
+  await expect(archiveDialog.getByText(/remain available in Previous forms/)).toBeVisible();
+  await archiveDialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeVisible();
+  await page.getByRole('button', { name: `Archive Form ${newLabel}` }).click();
+  await archiveDialog.getByRole('button', { name: 'Archive form' }).click();
+  await expect(
+    page.getByRole('button', { name: `View Form ${newLabel} answer key` }),
+  ).toBeVisible();
 });
 
 test('distinguishes paper review flags from broken questions omitted from the document', async ({

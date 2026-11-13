@@ -3,7 +3,17 @@ import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 import { type ChangeEvent, Fragment, useCallback, useRef, useState } from 'react';
-import { Alert, Badge, Button, ButtonGroup, Card, Dropdown, Form, Spinner } from 'react-bootstrap';
+import {
+  Alert,
+  Badge,
+  Button,
+  ButtonGroup,
+  Card,
+  Dropdown,
+  Form,
+  Modal,
+  Spinner,
+} from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -130,6 +140,11 @@ function PrintPreparation({
   const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
   const [copies, setCopies] = useState(defaultCopies);
   const [showBookletModal, setShowBookletModal] = useState(false);
+  const [pendingFormAction, setPendingFormAction] = useState<{
+    action: 'regenerate' | 'archive';
+    id: string;
+    label: string;
+  } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const validForm = forms.data.some((form) => form.id === formId);
   const [document, setDocument] = useState<PrintDocument>('assessment');
@@ -775,27 +790,39 @@ function PrintPreparation({
                                   groupWork ||
                                   !hasRandomization
                                 }
-                                onClick={() => void regenerateForm(id).catch(() => {})}
+                                onClick={() =>
+                                  setPendingFormAction({ action: 'regenerate', id, label })
+                                }
                               >
                                 <i className="bi bi-arrow-clockwise" aria-hidden="true" />
                               </Button>
                             </OverlayTrigger>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline-secondary"
-                              aria-label={`Archive Form ${label}`}
-                              disabled={
-                                activeForms.length === 1 ||
-                                busy ||
-                                isDirty ||
-                                isSubmitting ||
-                                download.isPending
-                              }
-                              onClick={() => void archiveForm(id).catch(() => {})}
+                            <OverlayTrigger
+                              placement="top"
+                              tooltip={{
+                                props: { id: `print-archive-${id}` },
+                                body: `Archive Form ${label}`,
+                              }}
                             >
-                              <i className="bi bi-x-lg" aria-hidden="true" />
-                            </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline-secondary"
+                                aria-label={`Archive Form ${label}`}
+                                disabled={
+                                  activeForms.length === 1 ||
+                                  busy ||
+                                  isDirty ||
+                                  isSubmitting ||
+                                  download.isPending
+                                }
+                                onClick={() =>
+                                  setPendingFormAction({ action: 'archive', id, label })
+                                }
+                              >
+                                <i className="bi bi-archive" aria-hidden="true" />
+                              </Button>
+                            </OverlayTrigger>
                           </div>
                         );
                       })}
@@ -1488,6 +1515,51 @@ function PrintPreparation({
         }}
         onDownload={(students) => void downloadBooklet(students).catch(() => {})}
       />
+      <Modal
+        show={pendingFormAction !== null}
+        aria-labelledby="print-form-action-title"
+        onHide={() => setPendingFormAction(null)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title as="h2" className="h5" id="print-form-action-title">
+            {pendingFormAction?.action === 'regenerate' ? 'Regenerate' : 'Archive'} Form{' '}
+            {pendingFormAction?.label}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {pendingFormAction?.action === 'regenerate' ? (
+            <p className="mb-0">
+              This will archive Form {pendingFormAction.label} and create a new form with fresh
+              randomization. The new form gets the next label, which may skip letters because labels
+              are never reused. Form {pendingFormAction.label} will remain in Previous forms with
+              its original questions and settings.
+            </p>
+          ) : (
+            <p className="mb-0">
+              This will remove Form {pendingFormAction?.label} from the current set. Its questions,
+              settings, and answer key will remain available in Previous forms.
+            </p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button type="button" variant="secondary" onClick={() => setPendingFormAction(null)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant={pendingFormAction?.action === 'archive' ? 'danger' : 'primary'}
+            onClick={() => {
+              if (!pendingFormAction) return;
+              const { action, id } = pendingFormAction;
+              setPendingFormAction(null);
+              if (action === 'regenerate') void regenerateForm(id).catch(() => {});
+              else void archiveForm(id).catch(() => {});
+            }}
+          >
+            {pendingFormAction?.action === 'regenerate' ? 'Regenerate form' : 'Archive form'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
