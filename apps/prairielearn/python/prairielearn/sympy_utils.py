@@ -1401,6 +1401,7 @@ def _convert_string_to_sympy_with_source(
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
+    additional_variables: Mapping[str, sympy.Basic | complex] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """Convert a string to a SymPy expression and return its generated source."""
     return _convert_source_to_sympy_with_source(
@@ -1416,6 +1417,7 @@ def _convert_string_to_sympy_with_source(
         assumptions=assumptions,
         allow_extra_symbols=allow_extra_symbols,
         resolved_name_overrides=resolved_name_overrides,
+        additional_variables=additional_variables,
     )
 
 
@@ -1433,6 +1435,7 @@ def _convert_source_to_sympy_with_source(
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
+    additional_variables: Mapping[str, sympy.Basic | complex] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1498,6 +1501,9 @@ def _convert_source_to_sympy_with_source(
 
     if allow_sets:
         locals_for_eval["functions"].update(const.set_functions)
+
+    if additional_variables is not None:
+        locals_for_eval["variables"].update(additional_variables)
 
     for name, (is_var, raw_name) in valid_names.items():
         if is_var:
@@ -1717,6 +1723,9 @@ def json_to_sympy(
         assumptions=sympy_expr_dict.get("_assumptions"),
         resolved_name_overrides=(
             dict.fromkeys(variables) if allow_sets and variables is not None else None
+        ),
+        additional_variables=(
+            sympy_constants.serialized_named_sets if allow_sets else None
         ),
     )
     return result

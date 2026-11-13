@@ -1,0 +1,162 @@
+import prairielearn.sympy_utils as psu
+import pytest
+import sympy
+from prairielearn.internal import set_expression
+
+
+def parse_success(
+    submission: str, variables: list[str] | None = None
+) -> set_expression.SetParseSuccess:
+    result = set_expression.try_parse_set_submission(submission, variables or [])
+    assert isinstance(result, set_expression.SetParseSuccess)
+    return result
+
+
+@pytest.mark.parametrize(
+    ("submission", "expected"),
+    [
+        ("{}", sympy.S.EmptySet),
+        ("{1, 2, x + 1}", sympy.FiniteSet(1, 2, sympy.Symbol("x") + 1)),
+        ("[0, 1)", sympy.Interval.Ropen(0, 1)),
+        ("(0, 1)", sympy.Interval.open(0, 1)),
+        (
+            "[0, 1] U (2, 3)",
+            sympy.Union(sympy.Interval(0, 1), sympy.Interval.open(2, 3)),
+        ),
+        (
+            "[0, 1] cup (2, 3)",
+            sympy.Union(sympy.Interval(0, 1), sympy.Interval.open(2, 3)),
+        ),
+        (
+            "[0, 1] ∪ (2, 3)",  # ruff:ignore[ambiguous-unicode-character-string]
+            sympy.Union(sympy.Interval(0, 1), sympy.Interval.open(2, 3)),
+        ),
+        (
+            "[0, 1] | (2, 3)",
+            sympy.Union(sympy.Interval(0, 1), sympy.Interval.open(2, 3)),
+        ),
+        (
+            "[0, 1] + (2, 3)",
+            sympy.Union(sympy.Interval(0, 1), sympy.Interval.open(2, 3)),
+        ),
+        ("R cap Q", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
+        ("R ∩ Q", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
+        ("R & Q", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
+        ("R - Q", sympy.Complement(sympy.S.Reals, sympy.S.Rationals)),
+        ("{{1}, {2}}", sympy.FiniteSet(sympy.FiniteSet(1), sympy.FiniteSet(2))),
+    ],
+)
+def test_set_syntax(submission: str, expected: sympy.Set) -> None:
+    result = parse_success(submission, ["x"])
+    assert result.expr.doit(deep=True) == expected
+    assert psu.json_to_sympy(result.json, allow_sets=True).doit(deep=True) == expected
+
+
+@pytest.mark.parametrize(
+    ("submission", "expected"),
+    [
+        ("R", sympy.S.Reals),
+        ("Q", sympy.S.Rationals),
+        ("Z", sympy.S.Integers),
+        ("N", sympy.S.Naturals),
+        ("C", sympy.S.Complexes),
+    ],
+)
+def test_named_sets(submission: str, expected: sympy.Set) -> None:
+    result = parse_success(submission)
+    assert result.expr is expected
+    assert psu.json_to_sympy(result.json, allow_sets=True) is expected
+
+
+def test_named_sets_round_trip_through_json_deserialization() -> None:
+    stored = psu.SympyJson(
+        _type="sympy",
+        _value="Union(Reals, Rationals)",
+        _variables=[],
+    )
+    assert psu.json_to_sympy(stored, allow_sets=True) == sympy.S.Reals
+
+
+@pytest.mark.parametrize("name", ["R", "Q", "Z", "N", "C"])
+def test_named_sets_are_reserved(name: str) -> None:
+    with pytest.raises(ValueError, match="Named sets cannot be used as variable names"):
+        set_expression.validate_names([name], [])
+    with pytest.raises(
+        ValueError, match="Named sets cannot be used as custom function names"
+    ):
+        set_expression.validate_names([], [name])
+
+
+@pytest.mark.parametrize(
+    "submission",
+    [
+        "x + 1",
+        "Interval(0, 1)",
+        "FiniteSet(1, 2)",
+        "Reals",
+        "R.foo",
+    ],
+)
+def test_rejects_non_set_and_constructor_syntax(submission: str) -> None:
+    result = set_expression.try_parse_set_submission(submission, ["x"])
+    assert isinstance(result, set_expression.SetParseFailure)
+
+
+def test_scalar_members_use_symbolic_parser_configuration() -> None:
+    result = set_expression.try_parse_set_submission(
+        "{f(x), sin(x), i}",
+        ["x"],
+        allow_complex=True,
+        custom_functions=["f"],
+    )
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert result.expr == sympy.FiniteSet(
+        sympy.Function("f")("x"), sympy.sin(sympy.Symbol("x")), sympy.I
+    )
+
+
+def test_formula_editor_normalization_preserves_set_syntax() -> None:
+    result = set_expression.try_parse_set_submission(
+        "[0, 1] U (2, 3)",
+        [],
+        formula_editor=True,
+    )
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert result.expr.doit(deep=True) == sympy.Union(
+        sympy.Interval(0, 1), sympy.Interval.open(2, 3)
+    )
+
+
+def test_formula_editor_normalization_preserves_scalar_spans() -> None:
+    result = set_expression.try_parse_set_submission(
+        "{s i n ( x )}",
+        ["x"],
+        formula_editor=True,
+    )
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert result.expr == sympy.FiniteSet(sympy.sin(sympy.Symbol("x")))
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        sympy.Range(5),
+        sympy.ConditionSet(sympy.Symbol("x"), sympy.Symbol("x") > 0),
+        sympy.ImageSet(
+            sympy.Lambda(sympy.Symbol("x"), sympy.Symbol("x") + 1), sympy.S.Integers
+        ),
+        sympy.ProductSet(sympy.S.Integers, sympy.S.Integers),
+        sympy.S.UniversalSet,
+    ],
+)
+def test_rejects_unrepresentable_correct_answer_classes(value: sympy.Set) -> None:
+    assert not set_expression.is_representable_set(value)
+
+
+def test_accepts_representable_correct_answer_classes() -> None:
+    value = sympy.Union(
+        sympy.Interval(0, 1),
+        sympy.Complement(sympy.S.Reals, sympy.FiniteSet(2), evaluate=False),
+        evaluate=False,
+    )
+    assert set_expression.is_representable_set(value)
