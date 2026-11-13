@@ -1,14 +1,18 @@
-# Python Autograder
+# Python autograder
 
-This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image. For general information on how to set up an external grader, view the [external grading](../externalGrading.md) documentation.
+The Python autograder grades student Python code with [pytest](https://docs.pytest.org/). It's published as the `prairielearn/grader-python-pytest` Docker image and is built on the [`pytest-prairielearn-grader`](https://github.com/PrairieLearn/grader-python-v2) plugin. Student code runs in a separate, sandboxed process, and test cases query it for variables and call its functions. For general information on how to set up an external grader, see the [external grading](../externalGrading.md) documentation.
+
+This page covers how to set up a question. The [quick start guide](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md) documents every feature of the grader in detail.
+
+!!! tip "Converting existing questions"
+
+    Questions that use the older `prairielearn/grader-python` image, with `tests/test.py` and `PLTestCase`, can be converted by following the [conversion guide](https://github.com/PrairieLearn/grader-python-v2/blob/main/converting.md). The guide is written so that you can also give it to an AI coding agent to do the conversion.
 
 ## Setting up
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Python autograder detailed in this document, `"image"` should be set to `"prairielearn/grader-python"` in the `"externalGradingOptions"` dictionary. The `entrypoint` property does not need to be provided.
-
-A full `info.json` file should look something like:
+Set `"gradingMethod": "External"`, and set `"image"` in `"externalGradingOptions"` to one of the grader's images. The `entrypoint` property doesn't need to be provided.
 
 ```json title="info.json"
 {
@@ -17,84 +21,38 @@ A full `info.json` file should look something like:
   "topic": "...",
   "tags": ["..."],
   "type": "v3",
-  "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "image": "prairielearn/grader-python"
+    "image": "prairielearn/grader-python-pytest:latest",
+    "timeout": 30
   }
 }
 ```
 
-### User variables
+Two images are published. Use the smallest one that has what your question needs:
 
-The question must specify the variables that will be read from student code for grading (`names_from_user`). Optionally, the question may also specify variables that will be made available to student code from the question's setup code (`names_for_user`). Only variables or functions listed in `names_for_user` will be accessible by the user from the setup code; only names listed in `names_from_user` will be accessible by the test cases from the user code.
-
-Each variable must have the following:
-
-- `name`: The name of the variable in the student code.
-- `description`: A human-readable description of the variable.
-- `type`: A human-readable description of the type of the variable. This is used for display purposes only, and does not affect the grading.
-
-There are two ways to do specify these variables.
-
-=== "`question.html`"
-
-    The `<pl-external-grader-variables>` element can be used to both specify and display a table of variables.
-
-    ```html title="question.html"
-    <pl-external-grader-variables params-name="names_for_user">
-      <pl-variable name="n" type="integer">
-        Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.
-      </pl-variable>
-      <pl-variable name="A" type="numpy array (shape $n \times n$)"> Matrix $\mathbf{A}$. </pl-variable>
-      <pl-variable name="b" type="numpy array (length $n$)"> Vector $\mathbf{b}$. </pl-variable>
-    </pl-external-grader-variables>
-
-    <pl-external-grader-variables params-name="names_from_user">
-      <pl-variable name="x" type="numpy array (length $n$)">
-        Solution to $\mathbf{Ax}=\mathbf{b}$.
-      </pl-variable>
-    </pl-external-grader-variables>
-    ```
-
-=== "`server.py`"
-
-    Using `<pl-external-grader-variables>` in `question.html` is the recommended way to specify user variables. However, if you need to dynamically generate the lists of variables or have more advanced needs, you can also do so directly in `server.py` by assigning to `data["params"]["names_for_user"]` and `data["params"]["names_from_user"]`. The following example is equivalent to the previous `question.html` example:
-
-    ```python title="server.py"
-    def generate(data):
-        data["params"]["names_for_user"] = [
-            {
-                "name": "n",
-                "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.",
-                "type": "integer",
-            },
-            {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
-            {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"},
-        ]
-        data["params"]["names_from_user"] = [
-            {
-                "name": "x",
-                "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.",
-                "type": "numpy array",
-            }
-        ]
-    ```
-
-    You can still use `<pl-external-grader-variables>` to display the variables to students; just omit the nested `<pl-variable>` elements.
-
-    ```html title="question.html"
-    <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-    ```
+| Image                                      | Includes                                                                                                         | Use for                                                              |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `prairielearn/grader-python-pytest:lite`   | The grader and the Python standard library                                                                       | Questions where student code and tests only use the standard library |
+| `prairielearn/grader-python-pytest:latest` | The scientific Python stack, such as `numpy`, `pandas`, `scipy`, `matplotlib` and `sympy`, plus notebook support | Everything else                                                      |
 
 ### `question.html`
 
-The question should contain a way for students to submit files, such as `<pl-file-editor>`, `<pl-file-upload>`, or a workspace. The question should also contain a `<pl-external-grader-results>` element to show the grading results. These are placed in the question panel and submission panel, respectively. It is also recommended to place a `<pl-file-preview>` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
+The question needs a way for students to submit files, such as [`pl-file-editor`](../elements/pl-file-editor.md), [`pl-file-upload`](../elements/pl-file-upload.md) or a [workspace](../workspaces/index.md). The submission panel should contain [`pl-external-grader-results`](../elements/pl-external-grader-results.md) to show the results, and [`pl-file-preview`](../elements/pl-file-preview.md) so that students can see their submitted code.
 
 ```html title="question.html"
 <pl-question-panel>
-  <pl-file-editor file-name="user_code.py" ace-mode="ace/mode/python"></pl-file-editor>
+  <pl-external-grader-variables params-name="names_from_user">
+    <pl-variable name="fib" type="python function"
+      >Function to compute the $n^\text{th}$ Fibonacci number</pl-variable
+    >
+  </pl-external-grader-variables>
+  <pl-file-editor
+    file-name="student_code.py"
+    ace-mode="ace/mode/python"
+    source-file-name="tests/initial_code.py"
+  >
+  </pl-file-editor>
 </pl-question-panel>
 
 <pl-submission-panel>
@@ -103,231 +61,232 @@ The question should contain a way for students to submit files, such as `<pl-fil
 </pl-submission-panel>
 ```
 
-By default, the grader will look for a gradable file named `user_code.py`, but this can be changed in the test suite.
+The grader looks for a file matching `student_code*.py` by default. To grade a file with another name, set `student_code_pattern` in the [configuration](#configuration).
 
-Provided and/or expected variables can also be displayed to the user with the `<pl-external-grader-variables>` element. By setting the `params-name` attribute to either `names_for_user` or `names_from_user`, either set of variables can be shown.
+[`pl-external-grader-variables`](../elements/pl-external-grader-variables.md) shows students a table of variables. With `params-name="names_for_user"`, it also sets which variables from the setup code are given to student code. See [Setup code](#setup-code).
 
-### `tests/setup_code.py`
+### The `tests` directory
 
-This file is executed before any reference or student code is run. Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction. The code in this file is run only _once_ total for both student and reference code. If you need to run some code before each of student and reference code (for example, to set a random seed), you may define the function `def repeated_setup()`, which will be executed before each of them. `repeated_setup()` will always run after the setup code itself is run.
+| File                     | Purpose                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `tests/test_student.py`  | Required. The test cases.                                                                              |
+| `tests/initial_code.py`  | Optional. Starter code, shown by `pl-file-editor` with `source-file-name`. The grader doesn't read it. |
+| `tests/setup_code.py`    | Optional. Runs before the student's code, for example to generate random inputs.                       |
+| `tests/leading_code.py`  | Optional. Prepended to the student's code, so student code can use anything it defines.                |
+| `tests/trailing_code.py` | Optional. Appended to the student's code.                                                              |
 
-The server parameters in `data` can be accessed with `data` in this file.
+Make sure that starter code can be run as is. A submission with a syntax error is marked as ungradable: the student doesn't lose an attempt, but doesn't get any test results either.
 
-### `tests/test.py`
+## Writing tests
 
-The test cases for each coding problem are defined as methods of a `Test` class contained in the `test.py` file. The class will extend from either `PLTestCase` or `PLTestCaseWithPlot`, depending on if you require plots from the student:
+Each test case is a function in `tests/test_student.py` whose name starts with `test_`. Tests run in the order they appear in the file. Here's part of the test file for the [`demo/autograder/codeEditor`][demo/autograder/codeeditor] example question:
 
-```python title="tests/test.py"
-from pl_unit_test import PLTestCase, PLTestCaseWithPlot
-
-
-# No plot grading
-class Test(PLTestCase):
-    pass
+```python title="tests/test_student.py"
+import pytest
+from pytest_prairielearn_grader.assertions import assert_fn_equal
+from pytest_prairielearn_grader.fixture import StudentFixture
+from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 
-# Plot grading enabled
-class Test(PLTestCaseWithPlot):
-    pass
+@pytest.mark.output(level=GradingOutputLevel.Friendly)
+@pytest.mark.grading_data(name="Check fib(1)", points=1)
+def test_fib_1(sandbox: StudentFixture) -> None:
+    assert_fn_equal(sandbox, "fib", args=(1,), expected=1, description="fib(1)")
+
+
+@pytest.mark.output(level=GradingOutputLevel.Friendly)
+@pytest.mark.grading_data(name="Check fib(7)", points=2)
+def test_fib_7(sandbox: StudentFixture) -> None:
+    assert_fn_equal(sandbox, "fib", args=(7,), expected=13, description="fib(7)")
 ```
 
-These classes themselves extend `unittest.TestCase`, so any functionality from there is also available.
+- **`@pytest.mark.grading_data(name=..., points=...)`** sets the name that students see and the points the test is worth.
+- **`@pytest.mark.output(level=...)`** sets how much of a failure students see. With `GradingOutputLevel.Friendly`, they see only the assertion's message, without the exception name or traceback.
+- **The `sandbox` fixture** gives the test access to the student's code. Each test that uses it gets a fresh run of the setup code and student code.
 
-Each test case is a separate method in the class, the names of these functions must be prefixed with `test_`, but any name that follows is arbitrary. Test cases are run in sorted order by the `unittest` library, so one convention that can be used is to give tests numeric names to ensure their running order.
+### Querying student code
 
-Adding a name and point value to the test case is done by means of python decorators: `@points(val)` and `@name("name of the test case")`. These will control the name of the case shown to students and the points awarded. An example of a definition:
+| Method                                         | Returns                                                                                                                                              |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sandbox.query("x")`                           | The value of the student's variable `x`.                                                                                                             |
+| `sandbox.query_function("f", *args, **kwargs)` | The return value of the student's function `f`. Takes an optional `query_timeout`, which defaults to 1 second.                                       |
+| `sandbox.query_function_raw("f", *args)`       | A dict with the `status` (such as `"success"`, `"exception"` or `"timeout"`), the `value` and any exception, for tests that check errors themselves. |
+| `sandbox.query_setup("x")`                     | The value of the variable `x` in the setup code.                                                                                                     |
+| `sandbox.get_accumulated_stdout()`             | Everything the student's code has printed.                                                                                                           |
 
-```python title="tests/test.py"
-from pl_unit_test import PLTestCase
-from pl_helpers import name, points
+If the student didn't define a name, `query` and `query_function` raise an error that fails the test with a message saying so. Values sent back from student code have to be serializable: numbers, strings, `None`, lists, dicts, numpy arrays, pandas DataFrames, and matplotlib plots.
 
+### Checking answers
 
-class Test(PLTestCase):
-    @points(10)
-    @name("Check basic math")
-    def test_0(self):
-        assert 1 == 1
+The `pytest_prairielearn_grader.assertions` module has helpers that give students readable messages:
+
+- `assert_equal(value, expected, description=...)` compares a value, and `assert_approx_equal(...)` compares a number with a tolerance.
+- `assert_fn_equal(sandbox, "f", args=..., expected=...)` and `assert_fn_approx_equal(...)` call a student function and compare its return value.
+- `assert_true(condition, msg=...)` and `assert_false(...)` show only your message.
+- `assert_plot_equal(plot, expected)` compares a student's matplotlib plot with a reference plot. See [Plots](#plots).
+
+The comparison helpers show students the expected value. For test cases whose answer should stay hidden, use `assert_true` with a message that doesn't include it. Avoid bare `assert` statements and assertions such as `numpy.testing.assert_allclose`, because their messages also show the expected value. For example, to check a numpy array:
+
+```python
+value = sandbox.query("x")
+assert_true(isinstance(value, np.ndarray), msg="x should be a numpy array")
+assert_true(value.shape == expected.shape, msg=f"x should have shape {expected.shape}")
+assert_true(np.allclose(value, expected), msg="x is inaccurate")
 ```
 
-Inside the test case implementation, the student answer variables and reference answer variables can be accessed as children of the tuples `self.st` and `self.ref`, respectively. There are various helper functions to check correctness of different types of variables, these are defined in `code_feedback.py`. These are taken from the RELATE grader, so this may be familiar to those with prior experience with RELATE.
+### Partial credit
 
-At the end of the test case, set the correctness of the answer using `feedback.set_score()`. This function takes a floating point number between 0 and 1 (inclusive), with 0 being completely *in*correct and 1 being completely correct. By default, if no points are given the test case will be marked incorrect.
+A test that finishes without failing gets full points. To give partial credit, add the `feedback` fixture and call `feedback.set_score()` with a fraction between 0 and 1 as checks pass. A test that fails keeps the last score it set:
 
-The overall structure of a test case should look something like:
+```python
+@pytest.mark.grading_data(name="Multi-step", points=10)
+def test_multi_step(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    assert_fn_equal(sandbox, "initialize", expected=0)
+    feedback.set_score(0.5)
 
-```python title="tests/test.py"
-from pl_unit_test import PLTestCase
-from pl_helpers import name, points
-from code_feedback import Feedback
-
-
-class Test(PLTestCase):
-    @points(10)
-    @name("name of the test case")
-    def test_0(self):
-        if Feedback.check_scalar(
-            "name of the variable", self.ref.variable_name, self.st.variable_names
-        ):
-            Feedback.set_score(1)
-        else:
-            Feedback.set_score(0)
+    assert_fn_equal(sandbox, "compute", args=(10,), expected=100)
+    feedback.set_score(1.0)
 ```
 
-Note that `Feedback.set_score()` is used to set the correctness of the test case between `0` and `1`, this is then multiplied by the number of points awarded by the test case. For example, if a test case is worth 10 points and `Feedback.set_score(0.5)` is run, the student will be awarded 5 points.
+`feedback.set_score_final()` sets a score that stands even if the test fails afterwards, `feedback.add_message()` adds a message for the student, and `feedback.add_image()` shows an image, such as the student's plot, with the test's results.
 
-The server parameters in `data` can be accessed from within the test cases using `self.data`.
+### Plots
 
-See the [code feedback documentation](#code-feedback) for a list of functions that can help you check the correctness of different types of variables.
+Student code draws a plot with matplotlib as usual and saves its axes or figure in a variable, such as `plot = plt.gca()`, or returns it from a function. The test receives a matplotlib `Figure`. This example is from the [`demo/autograder/python/plots`][demo/autograder/python/plots] question:
 
-### Leading and trailing code
+```python title="tests/test_student.py"
+def reference_plot() -> Figure:
+    figure = Figure()
+    axes = figure.subplots()
+    x = np.arange(0, 11)
+    axes.semilogy(x, np.exp(x))
+    return figure
 
-If the optional files `tests/leading_code.py` and/or `tests/trailing_code.py` exist, the autograder will automatically prepend and append the contents to the user's submission before grading. This can be useful if alternative input methods are used, e.g. for Parson's problem questions to provide python imports or other code that must be run.
 
-### Using `__name__ == "__main__"`
-
-By default, the student's code does not execute with `__name__` set to `"__main__"`, as is usually the case with Python scripts that are executed as a Python script. This allows students to use code like the following to test and debug their code in their local environment without affecting the autograder functionality:
-
-```python title="Student handout they are editing"
-if __name__ == "__main__":
-    # Student's own debugging code
+@pytest.mark.output(level=GradingOutputLevel.Friendly)
+@pytest.mark.grading_data(name="plot", points=1)
+def test_plot(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
+    plot = sandbox.query("plot")
+    if isinstance(plot, Figure):
+        feedback.add_image(plot, label="Your plot")
+    assert_plot_equal(plot, reference_plot())
 ```
 
-If, on the other hand, a question expects a student to write code that checks for the value of `__name__`, this can be achieved by adding a [`tests/leading_code.py` file](#leading-and-trailing-code) with the following content:
+- **Comparing.** `assert_plot_equal` checks the number of subplots, the axis scales, and the data in each line, scatter plot and bar plot. Keyword arguments also check labels, titles, legends, limits and styles. For other checks, such as a label containing a word, use the `Figure` directly or [matplotcheck](https://matplotcheck2.readthedocs.io/en/latest/).
+- **Showing the plot.** `feedback.add_image` shows the plot under the test in the results. Call it before the checks, because a failed check ends the test.
+- **Image and timeout.** Use the `:latest` image, which includes matplotlib, and set a longer `sandbox_timeout`, such as 15 seconds, because importing matplotlib can take most of the 1 second default.
 
-```python title="tests/leading_code.py"
-__name__ = "__main__"
+Only some plot types can be sent to the test. See [Testing Matplotlib Plots](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md#testing-matplotlib-plots) for what's supported.
+
+### Other fixtures
+
+- `data_json`: the question's `data`, such as `data_json["params"]` from `server.py`.
+- `tests_dir`: the path of the `tests` directory, for reading data files in tests.
+- `module_sandbox`: like `sandbox`, but shared by all tests in the file, so state carries over between them.
+- `workspace_sandbox`: for multi-file projects from a [workspace](#workspaces-and-notebooks).
+
+## Setup code
+
+`tests/setup_code.py` runs in the sandbox before the student's code. Student code gets only the setup variables listed in `names_for_user`, which usually comes from `<pl-external-grader-variables params-name="names_for_user">` in `question.html`. This example is from the [`demo/autograder/python/square`][demo/autograder/python/square] question:
+
+```python title="tests/setup_code.py"
+import random
+
+x = random.random()
 ```
 
-### Multiple iterations
+```python title="tests/test_student.py"
+@pytest.mark.output(level=GradingOutputLevel.Friendly)
+@pytest.mark.grading_data(name="x_sq", points=10)
+def test_x_sq(sandbox: StudentFixture) -> None:
+    x = sandbox.query_setup("x")
+    assert_approx_equal(sandbox.query("x_sq"), x**2, description="x_sq")
+```
 
-By setting the `total_iters` class variable, the test suite can be run for multiple iterations. To prevent a specific test case from being run multiple times, you can add the `@not_repeated` decorator to it.
+- **Fresh values.** The setup code runs again for each test, so read random values with `sandbox.query_setup` in the test that uses them.
+- **Parameters.** Setup code can read `data["params"]` as `__data_params`. Values that `server.py` stored with `pl.to_json` are still encoded: decode them with `__from_server_json(__data_params["A"])`.
+- **Restrictions.** Setup code has the same builtins and import restrictions as student code. For example, it can't call `open`.
 
-### Code feedback
+## Configuration
 
-The code feedback library contains built-in functions for checking correctness of various datatypes. Here is a nonexhaustive list of them, for a more complete reference refer to the [autogenerated code docs](reference-docs.md) or the [source file on GitHub](https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/python/python_autograder/code_feedback.py). Note that all functions will perform some sort of sanity checking on user input and will not fail if, for example, the student does not define an input variable.
+To change the grader's settings, create a `ConfigObject` named `autograder_config` at the top of `tests/test_student.py`:
 
-- `check_numpy_array_features(name, ref, data)`
-  Checks that a numpy array has the same shape and datatype as the reference solution. Does _not_ check values against the reference.
-- `check_numpy_array_allclose(name, ref, data, rtol=1e-05, atol=1e-08)`
-  Checks that a numpy array has the same shape and datatype as the reference solution, also checks values to see if they are close using specified `rtol` and `atol`.
-- `check_list(name, ref, data, entry_type=None)`
-  Checks that a list has the same length as the reference solution. If `entry_type` is not `None`, can optionally check if each element has that type. Does _not_ check values against the reference.
-- `check_dict(name, ref, data, target_keys=None)`
-  Checks that a student dict has all correct key-value mappings with respect to a reference dict.
-- `check_tuple(name, ref, data)`
-  Checks that a tuple has the same length and values as the reference solution.
-- `check_scalar(name, ref, data, rtol=1e-5, atol=1e-8)`
-  Checks that a scalar value is close to the reference solution using specified `rtol` and `atol`.
-- `call_user(f, *args, **kwargs)`
-  Calls a user defined function with specific `args` and `kwargs`.
-- `check_dataframe(name, ref, data, subset_columns=None)`
-  Checks that a Pandas DataFrame has the same contents as the reference solution. Can optionally check for a subset of columns by giving a list of column names to `subset_columns`.
+```python title="tests/test_student.py"
+from pytest_prairielearn_grader import ConfigObject
 
-Most of these functions have a `accuracy_critical` and `report_failure` keyword argument. If `accuracy_critical` is set to `True` (default is `False`), the grading job will halt if this check fails (similar to an assert). If `report_failure` is true (default), feedback will be displayed to the student if this check fails. The `name` argument is used when displaying feedback.
+autograder_config = ConfigObject(
+    student_code_pattern="user_code.py",
+    # Importing numpy in student code can take longer than the default timeout.
+    sandbox_timeout=15,
+)
+```
 
-## General tips and gotchas
+| Setting                                                     | Use                                                                                                                                       |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `sandbox_timeout`                                           | Seconds allowed for the setup code and student code to start. The default is 1, so increase it when student code imports large libraries. |
+| `student_code_pattern`                                      | The file name, or glob pattern, of the student's file.                                                                                    |
+| `output_level`                                              | The default output level for all tests, such as `"friendly"`.                                                                             |
+| `import_whitelist`, `import_blacklist`, `builtin_whitelist` | Which modules, functions and builtins student code can use. `os`, `sys`, `subprocess`, `pathlib` and `shutil` are blocked by default.     |
+| `names_for_user`, `starting_vars`                           | Variables to give student code, when they don't come from `pl-external-grader-variables`.                                                 |
+| `helper_modules`                                            | Modules in `tests/` that setup code, leading code and student code can import.                                                            |
+| `data_files`                                                | Files in `tests/` that setup code, leading code and student code can read by relative path.                                               |
+| `notebook_cell_tag`                                         | Only grade the notebook cells that start with this tag, such as `"#grade"`.                                                               |
+| `workspace_mode`                                            | Grade a multi-file project with `workspace_sandbox`.                                                                                      |
 
-Note that the first argument of the `Feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly.
-
-Be careful not to switch the ordering of the student and reference arguments. The student answer is subject to more strict type checking, and there have been instances in the past where the grader has been broken by poorly formatted student answers.
+See the [quick start guide](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md#configuration-with-configobject) for every setting.
 
 ## Disallowing library functions
 
-**Note that because Python is a highly-dynamic language, the following method can be bypassed by students with sufficient knowledge of Python. For stronger guarantees about which functions are or are not used, consider using more advanced static analysis techniques, which are beyond the scope of what this autograder offers. You can also perform verification by hand with manual grading.**
+To stop students from using a library function, add it to `import_blacklist` in the `ConfigObject`:
 
-One can hook into library functions in the setup code to disallow students from accessing certain functions. This example is taken from the [demo/autograder/python/numpy] question.
-
-One can set library functions equal to `Feedback.not_allowed`:
-
-```python
-numpy.linalg.inv = Feedback.not_allowed
-numpy.linalg.pinv = Feedback.not_allowed
+```python title="tests/test_student.py"
+autograder_config = ConfigObject(
+    import_blacklist=["os", "sys", "subprocess", "pathlib", "shutil", "numpy.linalg.inv"],
+)
 ```
 
-Now, any time the student tries to use the functions, their code will raise an exception.
+Setting `import_blacklist` replaces the default list, so keep its entries. The grader replaces the function with one that raises an error, however student code reaches it, so `np.linalg.inv(A)` and `from numpy.linalg import inv` both fail. Setup code can't call it either. See [Blocking Functions](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md#blocking-functions).
 
-## Overview
+Python is a highly dynamic language, so students with enough knowledge of Python can get around this, for example through a library's internal modules. For stronger guarantees about which functions are used, check submissions with [manual grading](../manualGrading/index.md).
 
-```d2
-direction: right
-setup: "setup_code.py"
-student: "Student Answer"
-reference: "Reference Answer\n(ans.py)"
-test: "Test Cases\n(test.py)"
+## Workspaces and notebooks
 
-setup -> student {
-  label: "names_for_user"
-  style: {
-    bold: true
-  }
-}
-setup -> reference {
-  label: "All Variables"
-  style: {
-    bold: true
-  }
-}
-student -> test {
-  label: "names_from_user\n(self.st)"
-  style: {
-    bold: true
-  }
-}
-reference -> test {
-  label: "All Variables\n(self.ref)"
-  style: {
-    bold: true
-  }
-}
+For a question where students submit a Jupyter notebook from a [workspace](../workspaces/index.md), set `student_code_pattern` to the notebook's name from `gradedFiles`. To grade only some cells, set `notebook_cell_tag`. For example, with `notebook_cell_tag="#grade"`, only the code cells whose first line starts with `#grade` run. Tests are written the same way as for `.py` files.
+
+For a workspace with several `.py` files that import each other, set `workspace_mode=True` and use the `workspace_sandbox` fixture, which queries names by module path, such as `"utils.helpers.clamp"`. See [Workspace Grading](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md#workspace-grading).
+
+## Testing a question locally
+
+The grader runs the files in `/grade` in the same way it does in PrairieLearn, so you can test a question with Docker before syncing it:
+
+```bash
+mkdir -p grade/tests grade/student grade/data
+cp -R path/to/question/tests/. grade/tests/
+cp solution.py grade/student/student_code.py
+echo '{"params": {}}' > grade/data/data.json
+docker run --rm -v "$PWD/grade:/grade" prairielearn/grader-python-pytest:latest
+cat grade/results/results.json
 ```
 
-## Course-specific libraries
-
-Some courses may use libraries that are common across multiple questions. For such questions, it is possible to save these libraries and classes in the course's `serverFilesCourse` directory. Any files in this directory are automatically added to the Python PATH, so they can be imported in any of the files above as needed. If this option is used, however, the question's `info.json` file should indicate that these files should be added to the grading container, as below:
-
-```json title="info.json"
-{
-  "externalGradingOptions": {
-    "image": "prairielearn/grader-python",
-    "serverFilesCourse": ["course_lib.py"]
-  }
-}
-```
-
-The process above is suitable for small utility libraries that are specific to a particular course. For larger libraries, including those installed from the [Python package index](https://pypi.org/) (i.e., via `pip install` or equivalent), you are strongly encouraged to [create your own custom grader image](../dockerImages.md#custom-variations-of-maintained-images), as that will provide better performance and improve student experience.
-
-### Example usage of `serverFilesCourse` for static data
-
-The Python autograder is able to retrieve information from `serverFilesCourse`. This can be used when there are files and other static data that can be shared across multiple questions. For example, assume there is a data file called `chem.json` used in multiple questions. The file can be saved in the `serverFilesCourse` directory within the course root directory, for example at `serverFilesCourse/compounds/chem.json`.
-
-To access `serverFilesCourse` from the autograder, specify the file or its containing directory in the question `info.json`. For example, to copy the `compounds` directory to the autograder, use:
-
-```json title="info.json" hl_lines="5"
-{
-  "externalGradingOptions": {
-    "image": "prairielearn/grader-python",
-    "serverFilesCourse": ["compounds"]
-  }
-}
-```
-
-The tests in `test.py` can then load the `chem.json` file using code such as the following:
-
-```python
-import json
-
-with open("/grade/serverFilesCourse/compounds/chem.json", "r") as f:
-    list_of_compounds = json.load(f)
-```
+Put in `params` whatever the question's `server.py` and elements would set, such as `names_for_user`. The grader moves files around, so start each run from a fresh copy. You can also [run PrairieLearn locally](../installing.md#support-for-external-graders-and-workspaces) with external grading enabled.
 
 ## Security
 
-At the start of a grading job, the script `run.sh` is run with `root` privileges. This will initialise directories and copy grading files into the correct location, delete itself, and generate a secret filename for the grading results using `uuidgen` which is passed into the grading code via command-line argument. Then the actual grading script will then be run (`pltest.py`) as the user `ag`.
+- **Sandbox.** Student code runs in a separate process as an unprivileged user, with a limited set of builtins and import restrictions. Dangerous builtins such as `open`, `eval` and `exec` aren't available.
+- **Grading data.** `data.json`, which can contain `correct_answers`, is readable only by the grader, not by student code.
+- **What students can read.** `__data_params` and any `helper_modules` and `data_files` are available to student code, so they mustn't contain answers.
+- **Import restrictions.** These only check `import` statements, so they aren't a security boundary on their own. For example, a module that student code is allowed to import can expose `os` as an attribute.
 
-The grading Python scripts will load any sensitive files into memory (setup code, answer code, test cases) and remove them from disk before running any student code. Command line arguments in argv are wiped as well. Users therefore do not have access to question specific code, but only general grader logic which is publicly available.
+## Example questions
 
-After grading, results will be written to the secret filename generated above. If this file does not exist or the filename does not match then the grading job will fail and students will not receive points. This is mostly a failsafe in case the grader code were to crash, but in theory could also prevent crafty students from writing their own results file.
+- [demo/autograder/codeEditor]: a function question with partial credit.
+- [demo/autograder/python/square]: setup code and `query_setup`.
+- [demo/autograder/python/pandas]: checking a DataFrame.
+- [demo/autograder/python/randomFunctionName]: parameters from `server.py` and handling timeouts.
+- [demo/autograder/python/plots]: comparing a plot with `assert_plot_equal` and showing it with `feedback.add_image`.
 
-The grading job will now drop back to `root` in the `run.sh` script and will copy any output to the correct location, as expected by the external grading framework.
-
-[demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy
+[demo/autograder/codeeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
+[demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
+[demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
+[demo/autograder/python/randomfunctionname]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/randomFunctionName
+[demo/autograder/python/square]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/square
