@@ -11,6 +11,7 @@ import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
+import { PageCatalogSchema } from '@prairielearn/course-agent-types';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { withResolvers } from '@prairielearn/utils';
 
@@ -284,6 +285,8 @@ describe('Course agent access and conversation privacy', () => {
         has_course_permission_preview: true,
       },
     });
+    // Conversation creation rejects a catalog outside the schema's limits.
+    PageCatalogSchema.parse(catalog);
     const missing: string[] = [];
     for (const page of catalog) {
       const params = page.params.filter((param) => param.required);

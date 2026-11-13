@@ -307,9 +307,13 @@ export class CodexAppServerClient {
     const target = NavigationTargetSchema.safeParse(withoutEmptyParams(args));
     if (!target.success) return invalidArguments(target.error);
     return await replyWithError(async () => {
+      const controller = this.controller;
       const navigation = await this.resolveNavigation(target.data);
       // The chat shows this part as a button that opens the page when the instructor clicks it.
-      this.emit({ type: 'data-navigation', id: `navigation:${callId}`, data: navigation });
+      // A turn stopped during the lookup may already have given way to the next one's response.
+      if (this.controller === controller) {
+        this.emit({ type: 'data-navigation', id: `navigation:${callId}`, data: navigation });
+      }
       return {
         success: true,
         text: 'The instructor sees a button that opens the page when clicked.',

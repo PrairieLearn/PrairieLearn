@@ -323,13 +323,13 @@ export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
 /**
  * A `data-navigation` part: the agent offered a page, which the instructor opens by clicking it.
  * PrairieLearn resolved the target to these before the part was written, so history renders
- * without a lookup.
+ * without a lookup. Unknown fields are stripped, so either side can add one before the other.
  */
-export const NavigationPartSchema = z.strictObject({
+export const NavigationPartSchema = z.object({
   label: z.string().max(100),
-  /** What the page belongs to, such as `Assessment · Sp26 / hw01`. */
-  subtitle: z.string().max(300),
-  url: z.string().max(4000),
+  /** What the page belongs to, such as `Assessment · Sp26 / hw01`. QIDs and TIDs are paths. */
+  subtitle: z.string().max(4000),
+  url: z.string().startsWith('/pl/').max(4000),
 });
 
 export type NavigationPart = z.infer<typeof NavigationPartSchema>;
