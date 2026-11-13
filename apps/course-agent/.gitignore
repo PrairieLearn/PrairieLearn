@@ -1,3 +1,4 @@
 dist/
 .wrangler/
 .dev.vars
+container/skills/prairielearn-questions/references/

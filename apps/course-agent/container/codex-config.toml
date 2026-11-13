@@ -46,3 +46,8 @@ shell_snapshot = false
 skill_mcp_dependency_install = false
 tool_suggest = false
 worktrees = false
+
+# Codex's bundled skills (image generation, skill installation, OpenAI docs, ...) don't apply to
+# course work or can't run in the offline sandbox. PrairieLearn's skills are in /etc/codex/skills.
+[skills.bundled]
+enabled = false
