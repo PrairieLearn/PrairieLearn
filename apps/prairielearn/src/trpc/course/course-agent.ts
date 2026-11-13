@@ -15,6 +15,7 @@ import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
+import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
 import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
 import {
   insertCourseAgentConversation,
@@ -110,7 +111,10 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const agentConversationId = await run(async () => {
         if (config.devMode && !config.fileEditorUseGit) {
-          return createLocalCourseAgentConversation(ctx.course.path);
+          return createLocalCourseAgentConversation(
+            ctx.course.path,
+            buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+          );
         } else {
           const repository = parseGithubRepository(ctx.course.repository ?? '');
           if (!repository || !ctx.course.branch) {
@@ -129,7 +133,10 @@ export const courseAgentRouter = t.router({
               message: 'The course repository or branch is invalid.',
             });
           }
-          return createCourseAgentConversation(binding.data);
+          return createCourseAgentConversation({
+            ...binding.data,
+            pages: buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+          });
         }
       });
       const conversation = await insertCourseAgentConversation({

@@ -7,7 +7,7 @@ import { SandboxTurn } from './turn.js';
 
 /** `history` lists thread items newest first, as thread/items/list returns them. */
 function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
-  const commands: { id: number; method: string; params: unknown }[] = [];
+  const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
   let closed = false;
@@ -50,11 +50,34 @@ function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox);
+  const native = new CodexAppServerClient(sandbox, async (target) => {
+    if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
+    const { assessment } = target.params;
+    if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
+    return {
+      url: '/pl/course_instance/1/instructor/assessment/2/settings',
+      label: 'Settings',
+      subtitle: 'Assessment · Fa25 / hw1',
+    };
+  });
   return { sandbox, native, commands, emit, disconnect: () => socket.close() };
 }
 
-const thread = { model: 'test', instructions: 'Edit course', threadId: null };
+const thread = {
+  model: 'test',
+  instructions: 'Edit course',
+  threadId: null,
+  pages: [
+    {
+      key: 'assessment.settings',
+      label: 'Settings',
+      params: [
+        { name: 'courseInstance', description: 'Course instance directory.', required: true },
+        { name: 'assessment', description: 'Assessment directory.', required: true },
+      ],
+    },
+  ],
+};
 
 function options(onAccepted: () => void, threadId: string | null = null) {
   return {
@@ -317,6 +340,81 @@ describe('course agent turns', () => {
         type: 'data-input-request',
         id: 'input-request:ask',
         data: { v: 1, itemId: 'ask', prompts },
+      },
+    ]);
+  });
+
+  it('opens catalog pages at the URL PrairieLearn resolves, reporting failures to the agent', async () => {
+    const { sandbox, native, commands, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const call = async (id: string, args: unknown) => {
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: id,
+          namespace: null,
+          tool: 'offer_page',
+          arguments: args,
+        },
+      });
+      return await vi.waitFor(() => {
+        const frame = commands.find((command) => String(command.id) === id);
+        if (!frame) throw new Error('No reply yet');
+        return (frame as unknown as { result: { success: boolean } }).result;
+      });
+    };
+    const params = { courseInstance: 'Fa25', assessment: 'hw1' };
+    const page = 'assessment.settings';
+    // Models send empty or null values for params a page does not take.
+    expect(await call('open', { page, params: { ...params, question: '' } })).toMatchObject({
+      success: true,
+    });
+    expect(await call('unknown', { page: 'assessment.nope' })).toMatchObject({ success: false });
+    expect(await call('wrong', { page, params: { ...params, assessment: 'hw99' } })).toMatchObject({
+      success: false,
+      contentItems: [{ text: 'No assessment named "hw99".' }],
+    });
+    const start = commands.find((command) => command.method === 'thread/start');
+    expect(start).toMatchObject({
+      params: {
+        dynamicTools: [
+          {
+            name: 'offer_page',
+            inputSchema: {
+              properties: {
+                page: { enum: ['assessment.settings'] },
+                params: { properties: { courseInstance: {}, assessment: {} } },
+              },
+            },
+          },
+        ],
+      },
+    });
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type === 'data-navigation')).toEqual([
+      {
+        type: 'data-navigation',
+        id: 'navigation:open',
+        data: {
+          url: '/pl/course_instance/1/instructor/assessment/2/settings',
+          label: 'Settings',
+          subtitle: 'Assessment · Fa25 / hw1',
+        },
       },
     ]);
   });

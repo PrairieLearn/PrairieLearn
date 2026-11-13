@@ -4,6 +4,8 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import * as Sentry from '@prairielearn/sentry';
 
+import { isEnterprise } from '../../lib/license.js';
+
 const router = Router();
 
 /**
@@ -35,6 +37,14 @@ function assertNotExampleCourse(req: Request, res: Response, next: NextFunction)
 const authzHasCourseEditor = asyncHandler(async (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
     throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
+  }
+  next();
+});
+
+/** The course agent is limited to course owners for now, so its routes are too. */
+const authzHasCourseOwner = asyncHandler(async (req, res, next) => {
+  if (!res.locals.authz_data.has_course_permission_own) {
+    throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
   }
   next();
 });
@@ -89,6 +99,22 @@ router.use(
 router.use(
   '/course_instances/:course_instance_id(\\d+)/course_instance_access_rules',
   (await import('./endpoints/courseInstanceAccessRules/index.js')).default,
+);
+// Resolves a page the course agent named to its URL, so the agent learns when a name is wrong.
+// The course agent's credentials are limited to this path (see ee/lib/course-agent/authn.ts).
+// The license is checked per request, like authnToken does, because it can be set after this
+// module loads.
+router.use(
+  '/course/:course_id(\\d+)/agent_navigation',
+  authzHasCourseOwner,
+  asyncHandler(async (req, res, next) => {
+    if (!isEnterprise()) {
+      next();
+      return;
+    }
+    const { default: navigation } = await import('../../ee/routers/courseAgentNavigation.js');
+    navigation(req, res, next);
+  }),
 );
 router.use(
   '/course/:course_id(\\d+)/sync',

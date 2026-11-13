@@ -11,9 +11,11 @@ import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
+import { PageCatalogSchema } from '@prairielearn/course-agent-types';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { withResolvers } from '@prairielearn/utils';
 
+import { buildPageCatalog } from '../ee/lib/course-agent/pages.js';
 import {
   insertCourseAgentConversation,
   selectOptionalCourseAgentConversation,
@@ -25,7 +27,7 @@ import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
-import { updateCourseColumn } from '../models/course.js';
+import { selectCourseById, updateCourseColumn } from '../models/course.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -217,7 +219,11 @@ describe('Course agent access and conversation privacy', () => {
     expect(serviceRequests).toEqual([
       {
         path: '/conversations',
-        body: { repository: 'PrairieLearn/test-course', branch: 'pilot-edits' },
+        body: {
+          repository: 'PrairieLearn/test-course',
+          branch: 'pilot-edits',
+          pages: expect.arrayContaining([expect.objectContaining({ key: 'assessment.settings' })]),
+        },
         authorization: 'Bearer test-token',
       },
     ]);
@@ -249,6 +255,75 @@ describe('Course agent access and conversation privacy', () => {
       }),
     );
     expect(serviceRequests).toEqual([]);
+  });
+
+  // The catalog reuses the navigation's untyped URL builders and visibility conditions, so load
+  // what they produce: a page offered to the agent must exist for this course.
+  test('resolves every catalog page for the course agent, and explains a wrong name', async () => {
+    const { agent_conversation_id } = await createConversation(owner);
+    const credentials = {
+      Authorization: 'Bearer test-token',
+      'X-Course-Agent-Conversation': agent_conversation_id,
+    };
+    const resolve = (
+      target: { page: string; params: Record<string, string> },
+      { headers = credentials, path = '/course/1/agent_navigation' } = {},
+    ) =>
+      fetch(`${siteUrl}/pl/api/v1${path}`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(target),
+      });
+    const names: Record<string, string> = {
+      courseInstance: 'Sp15',
+      assessment: 'hw1-automaticTestSuite',
+      question: 'addNumbers',
+    };
+    const catalog = buildPageCatalog({
+      course: await selectCourseById('1'),
+      authz_data: {
+        has_course_permission_own: true,
+        has_course_permission_edit: true,
+        has_course_permission_view: true,
+        has_course_permission_preview: true,
+      },
+    });
+    // Conversation creation rejects a catalog outside the schema's limits.
+    PageCatalogSchema.parse(catalog);
+    const missing: string[] = [];
+    for (const page of catalog) {
+      const params = page.params.filter((param) => param.required);
+      const response = await resolve({
+        page: page.key,
+        params: Object.fromEntries(params.map((param) => [param.name, names[param.name]])),
+      });
+      const { url } = (await response.json()) as { url: string };
+      const { status } = await withUser(owner, () => fetch(`${siteUrl}${url}`));
+      if (status === 404 || status >= 500) missing.push(`${page.key}: ${status}`);
+    }
+    expect(missing).toEqual([]);
+
+    const wrong = await resolve({
+      page: 'assessment.settings',
+      params: { courseInstance: 'Sp15', assessment: 'hw99' },
+    });
+    expect(wrong.status).toBe(404);
+    expect(await wrong.json()).toMatchObject({ message: 'No assessment named "hw99".' });
+
+    // The service's credentials reach only the conversation's course's navigation.
+    const settings = {
+      page: 'assessment.settings',
+      params: { courseInstance: 'Sp15', assessment: 'hw1-automaticTestSuite' },
+    };
+    const refused = await Promise.all([
+      resolve(settings, { headers: { ...credentials, Authorization: 'Bearer wrong' } }),
+      resolve(settings, {
+        headers: { ...credentials, 'X-Course-Agent-Conversation': crypto.randomUUID() },
+      }),
+      resolve(settings, { path: '/course/2/agent_navigation' }),
+      resolve(settings, { path: '/course/1/sync' }),
+    ]);
+    expect(refused.map((response) => response.status)).toEqual([401, 403, 403, 403]);
   });
 
   test('initializes from current local files and course-only Git history in dev mode', async () => {
