@@ -1,0 +1,7 @@
+{
+  "controller": "pl-set-symbolic-input.py",
+  "dependencies": {
+    "nodeModulesScripts": ["mathlive/mathlive.min.js", "@prairielearn/symbolic-input/index.js"],
+    "nodeModulesStyles": ["@prairielearn/symbolic-input/style.css"]
+  }
+}

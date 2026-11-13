@@ -18,6 +18,7 @@ const INPUT_ELEMENTS = new Set([
   'pl-integer-input',
   'pl-number-input',
   'pl-string-input',
+  'pl-set-symbolic-input',
   'pl-symbolic-input',
   'pl-order-blocks',
 ]);
@@ -28,6 +29,7 @@ const CORRECT_ANSWER_INPUT_ELEMENTS = new Set([
   'pl-integer-input',
   'pl-number-input',
   'pl-string-input',
+  'pl-set-symbolic-input',
   'pl-symbolic-input',
 ]);
 

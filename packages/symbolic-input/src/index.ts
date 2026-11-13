@@ -405,6 +405,7 @@ interface KeyboardLayout {
     // If the allow-trig / allow-sets attributes are set, add matching shortcuts to the virtual keyboard
     const allowTrig = mf.getAttribute('allow-trig');
     const allowSets = mf.getAttribute('allow-sets');
+    const namedSets = mf.getAttribute('named-sets');
     // Swap virtual keyboard labels based on display settings
     const logAsLn = mf.getAttribute('log-as-ln');
     const imaginaryUnit = mf.getAttribute('imaginary-unit') ?? 'i';
@@ -637,6 +638,22 @@ interface KeyboardLayout {
           { class: 'small hide-shift ', label: '[backspace]', shift: null, width: 1 },
           ...onlyIfSets(signKey), // sign shifted from above
         ],
+        ...(namedSets
+          ? [
+              [
+                '[separator]',
+                { label: 'ℝ', insert: 'R' },
+                { label: 'ℚ', insert: 'Q' },
+                { label: 'ℤ', insert: 'Z' },
+                { label: 'ℕ', insert: 'N' },
+                { label: 'ℂ', insert: 'C' },
+                '[separator]',
+                { class: 'small hide-shift', label: '[left]' },
+                { class: 'small hide-shift', label: '[right]' },
+                { class: 'small hide-shift', label: '[backspace]', shift: null },
+              ],
+            ]
+          : []),
       ],
     } satisfies KeyboardLayout;
 

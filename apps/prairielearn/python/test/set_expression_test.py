@@ -3,7 +3,7 @@ import re
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-from prairielearn.internal import set_expression
+from prairielearn import set_expression
 
 
 def _caret_template(template: str) -> tuple[str, str]:
@@ -175,6 +175,12 @@ def test_single_letter_set_names_are_ordinary_variables(name: str) -> None:
 def test_named_set_tokens_do_not_capture_variable_prefixes(name: str) -> None:
     result = parse_success(f"{{{name}}}", [name])
     assert result.expr == sympy.FiniteSet(sympy.Symbol(name))
+
+
+@pytest.mark.parametrize("name", ["U", "cup", "cap"])
+def test_set_operator_names_are_reserved(name: str) -> None:
+    with pytest.raises(ValueError, match="Set operators cannot be used"):
+        set_expression.validate_names([name], [])
 
 
 @pytest.mark.parametrize(

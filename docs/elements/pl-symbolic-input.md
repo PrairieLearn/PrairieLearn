@@ -34,7 +34,7 @@ def generate(data):
 | `additional-simplifications`    | string                  | -                       | Simplifications that should be applied during grading before using SymPy's built-in equality checker. Using this attribute can prevent rare cases of non-convergence during grading. See [the non-convergence section](#non-convergence-in-grading) for more details before using this attribute.                                               |
 | `allow-blank`                   | boolean                 | false                   | Whether an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                                                      |
 | `allow-complex`                 | boolean                 | false                   | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                                                                                                                                                        |
-| `allow-sets`                    | boolean                 | false                   | Whether set and interval notation are allowed. [See below for more details](#set-notation).                                                                                                                                                                                                                                                     |
+| `allow-sets`                    | boolean                 | false                   | **Deprecated.** Whether set and interval notation are allowed. Existing questions remain supported; use [`pl-set-symbolic-input`](pl-set-symbolic-input.md) for new set-valued answers. [See below for migration details](#set-notation).                                                                                                       |
 | `allow-trig-functions`          | boolean                 | true                    | Whether trigonometric functions (`cos`, `atanh`, ...) are allowed.                                                                                                                                                                                                                                                                              |
 | `answers-name`                  | string                  | —                       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. If the correct answer is set in `server.py` as a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`. |
 | `aria-label`                    | string                  | —                       | An accessible label for the input.                                                                                                                                                                                                                                                                                                              |
@@ -69,6 +69,10 @@ See example question for details.
 
 ### Set Notation
 
+!!! warning
+
+    `allow-sets="true"` is deprecated. Existing questions keep their current parsing and grading behavior, but new questions should use [`pl-set-symbolic-input`](pl-set-symbolic-input.md). To migrate, replace the element tag, remove `allow-sets`, and verify that the correct answer uses the dedicated element's documented syntax. The new element intentionally rejects constructor calls and scalar-valued roots, and reserves `R`, `Q`, `Z`, `N`, and `C` for named sets.
+
 If `allow-sets="true"`, the following additional layer of syntax is enabled:
 
 - Set literals with explicitly listed members (e.g. `{1, 2, 3}`, `{0, 2pi/3, 4pi/3}`, `{ {}, { {} } }`)
@@ -89,6 +93,7 @@ coordinates.
 
 ## See also
 
+- [`pl-set-symbolic-input` for set-valued answers](pl-set-symbolic-input.md)
 - [`pl-number-input` for numeric input](pl-number-input.md)
 - [`pl-integer-input` for integer input](pl-integer-input.md)
 - [`pl-string-input` for string input](pl-string-input.md)
