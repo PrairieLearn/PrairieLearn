@@ -6,6 +6,7 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
 import { AccessTimelineEntrySchema } from './assessment-access-control/timeline.js';
+import { PrintSettingsSchema } from './printing/print-settings.js';
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
@@ -1417,6 +1418,48 @@ export const PlanGrantSchema = z.object({
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
 
+export const PrintExportSchema = z.object({
+  assessment_id: IdSchema,
+  attempts: z.number(),
+  authn_user_id: IdSchema,
+  created_at: DateFromISOString,
+  failure_message: z.string().nullable(),
+  filename: z.string(),
+  finished_at: DateFromISOString.nullable(),
+  format: z.enum(['pdf', 'docx']),
+  id: IdSchema,
+  input_key: z.string(),
+  label: z.string().nullable(),
+  output_key: z.string().nullable(),
+  size_bytes: z.number().nullable(),
+  status: z.enum(['pending', 'succeeded', 'failed']),
+  user_id: IdSchema,
+});
+export type PrintExport = z.infer<typeof PrintExportSchema>;
+
+export const PrintFormSchema = z.object({
+  archived_at: DateFromISOString.nullable(),
+  assessment_id: IdSchema,
+  authn_user_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  label: z.string().regex(/^[A-Z]+$/),
+  settings: PrintSettingsSchema,
+  user_id: IdSchema,
+});
+export type PrintForm = z.infer<typeof PrintFormSchema>;
+
+export const PrintFormQuestionSchema = z.object({
+  assessment_question_id: IdSchema,
+  id: IdSchema,
+  max_points: z.number(),
+  position: z.number(),
+  print_form_id: IdSchema,
+  question_number: z.string(),
+  variant_id: IdSchema,
+});
+export type PrintFormQuestion = z.infer<typeof PrintFormQuestionSchema>;
+
 export const QueryRunSchema = z.object({
   authn_user_id: IdSchema,
   date: DateFromISOString,
@@ -1885,6 +1928,9 @@ export const TableNames = [
   'page_view_logs',
   'courses',
   'plan_grants',
+  'print_exports',
+  'print_form_questions',
+  'print_forms',
   'query_runs',
   'question_generation_context_embeddings',
   'question_score_logs',

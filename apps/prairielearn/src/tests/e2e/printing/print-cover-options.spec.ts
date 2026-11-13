@@ -1,0 +1,121 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+import { load } from 'cheerio';
+import * as unzipper from 'unzipper';
+
+import { syncCourse } from '../../helperCourse.js';
+import { createTest, expect } from '../fixtures.js';
+
+import { createPrintableForm, downloadPrintableWord, waitForPrintablePage } from './utils.js';
+
+const test = createTest({ features: { 'printable-assessments': true } });
+
+test('fills the cover grading table down columns using only included questions', async ({
+  page,
+  courseInstance,
+}) => {
+  test.setTimeout(180_000);
+  const { printUrl: base } = await createPrintableForm(courseInstance, 'exam25-printingAutomated');
+  await page.goto(`${base}/preview?paper_size=Letter&grading_table=true&exclude_question=2`);
+  await waitForPrintablePage(page);
+  const cover = page.getByRole('article', { name: 'Exam cover page' });
+  const table = cover.getByRole('region', { name: 'Grading table' });
+  await expect(table).toBeVisible();
+  const layout = await table.evaluate((element) => {
+    const grid = element.querySelector('.assessment-grading-grid')!;
+    const bounds = grid.getBoundingClientRect();
+    const pageBounds = element
+      .closest('.pagedjs_page')!
+      .querySelector('.pagedjs_area')!
+      .getBoundingClientRect();
+    return {
+      rows: [...grid.children].map((row) => ({
+        text: row.textContent,
+        top: row.getBoundingClientRect().top,
+        left: row.getBoundingClientRect().left,
+        bottom: row.getBoundingClientRect().bottom,
+      })),
+      bottom: bounds.bottom,
+      pageBottom: pageBounds.bottom,
+    };
+  });
+  const numbers = await page
+    .locator('.pagedjs_page .printing-question')
+    .evaluateAll((questions) => [
+      ...new Set(questions.map((question) => (question as HTMLElement).dataset.questionNumber)),
+    ]);
+  expect(layout.rows.map((row) => row.text)).toEqual([...numbers, 'Total']);
+  expect(numbers).not.toContain('2');
+  expect(layout.rows[1].left).toBe(layout.rows[0].left);
+  expect(layout.rows[1].top).toBeGreaterThan(layout.rows[0].top);
+  const nextColumn = layout.rows.find((row) => row.left > layout.rows[0].left)!;
+  expect(nextColumn.top).toBe(layout.rows[0].top);
+  expect(layout.bottom).toBeLessThan(layout.pageBottom);
+  expect(layout.pageBottom - layout.bottom).toBeLessThan(50);
+  await expect(cover).toHaveCount(1);
+});
+
+test('uses the configured honor code for printed pledges when requireHonorCode is false', async ({
+  page,
+  courseInstance,
+  testCoursePath,
+}) => {
+  test.setTimeout(120_000);
+  const tid = 'exam13-disableHonorCode';
+  const infoPath = path.join(
+    testCoursePath,
+    'courseInstances',
+    'Sp15',
+    'assessments',
+    tid,
+    'infoAssessment.json',
+  );
+  const original = await fs.readFile(infoPath, 'utf8');
+  try {
+    await fs.writeFile(
+      infoPath,
+      JSON.stringify({
+        ...JSON.parse(original),
+        requireHonorCode: false,
+        honorCode:
+          '## Academic integrity pledge\n\nI, {{user_name}}, agree to follow the **course collaboration policy**.',
+      }),
+    );
+    await syncCourse(testCoursePath);
+    const { printUrl: base } = await createPrintableForm(courseInstance, tid);
+    await page.goto(`${base}/preview?paper_size=Letter&include_honor_code=true`);
+    await waitForPrintablePage(page);
+    const pledge = page.getByRole('region', { name: 'Academic integrity pledge' });
+    await expect(pledge.getByRole('heading', { name: 'Academic integrity pledge' })).toHaveCount(1);
+    await expect(pledge).toContainText(
+      'I, ____________________________, agree to follow the course collaboration policy.',
+    );
+    await expect(pledge.locator('strong')).toHaveText('course collaboration policy');
+    await expect(pledge).not.toContainText('I pledge on my honor');
+    const response = await downloadPrintableWord(
+      page,
+      base,
+      'paper_size=Letter&include_honor_code=true',
+    );
+    expect(response.status()).toBe(200);
+    const archive = await unzipper.Open.buffer(await response.body());
+    const xml = (
+      await archive.files.find((file) => file.path === 'word/document.xml')!.buffer()
+    ).toString();
+    const word = load(xml, { xml: true });
+    const text = word('w\\:t').text();
+    expect(text).toContain(
+      'I, ____________________________, agree to follow the course collaboration policy.',
+    );
+    expect(
+      word('w\\:r')
+        .filter((_, run) => word(run).find('w\\:t').text() === 'course collaboration policy')
+        .find('w\\:b'),
+    ).toHaveLength(1);
+    expect(text).not.toContain('I pledge on my honor');
+  } finally {
+    await fs.writeFile(infoPath, original);
+    await syncCourse(testCoursePath);
+  }
+});

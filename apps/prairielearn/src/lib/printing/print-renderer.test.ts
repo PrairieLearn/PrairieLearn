@@ -60,11 +60,13 @@ function createBrowserHarness({
   let peakOpenContexts = 0;
   const pages: Page[] = [];
   const contexts: BrowserContext[] = [];
+  const pendingPdfFailures = new Set<(error: Error) => void>();
 
   const browser = {
     newContext: vi.fn(async () => {
       openContexts += 1;
       peakOpenContexts = Math.max(peakOpenContexts, openContexts);
+      let rejectPdf: ((error: Error) => void) | undefined;
       const page = {
         emulateMedia: vi.fn(async () => undefined),
         goto: vi.fn(async () => (goto ? await goto() : response)),
@@ -74,7 +76,18 @@ function createBrowserHarness({
           error: printError,
           errorCode: printErrorCode,
         })),
-        pdf: vi.fn(async () => await pdf(renderIndex++)),
+        pdf: vi.fn(async () => {
+          const closed = new Promise<Buffer>((_resolve, reject) => {
+            rejectPdf = reject;
+            pendingPdfFailures.add(reject);
+          });
+          try {
+            return await Promise.race([pdf(renderIndex++), closed]);
+          } finally {
+            pendingPdfFailures.delete(rejectPdf!);
+            rejectPdf = undefined;
+          }
+        }),
       } as unknown as Page;
       const context = {
         route: vi.fn(async (_pattern, handler) => {
@@ -86,6 +99,7 @@ function createBrowserHarness({
         unrouteAll: vi.fn(async () => undefined),
         newPage: vi.fn(async () => page),
         close: vi.fn(async () => {
+          rejectPdf?.(new Error('Browser context closed'));
           await contextClose();
           openContexts -= 1;
         }),
@@ -94,7 +108,9 @@ function createBrowserHarness({
       contexts.push(context);
       return context;
     }),
-    close: vi.fn(async () => undefined),
+    close: vi.fn(async () => {
+      for (const reject of pendingPdfFailures) reject(new Error('Browser closed'));
+    }),
     on: vi.fn(),
   } as unknown as Browser;
   playwrightMocks.connectOverCDP.mockResolvedValue(browser);
@@ -188,7 +204,7 @@ describe('PrintRenderer', () => {
 
   it('prints pre-paginated HTML without running page scripts or loading the preview route', async () => {
     const harness = createBrowserHarness();
-    const url = 'http://localhost:3000/paper/preview?paper_size=Letter';
+    const url = 'http://localhost:3000/print/preview?paper_size=Letter';
     const html = '<html data-print-status="ready"><body>Prepared pages</body></html>';
 
     await renderPdf(new PrintRenderer(), { url, html });
@@ -248,8 +264,8 @@ describe('PrintRenderer', () => {
       assetScope: {
         courseInstanceId: '10',
         assessmentId: '20',
-        assessmentInstanceId: '30',
-        instanceQuestionIds: ['40'],
+        printFormId: '30',
+        printFormQuestionIds: ['40'],
         authnUserId: '50',
         userId: '50',
       },
@@ -273,7 +289,7 @@ describe('PrintRenderer', () => {
     expect(fetch).toHaveBeenLastCalledWith({ maxRedirects: 0 });
 
     for (const pathname of [
-      '/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/image.png',
+      '/pl/course_instance/10/instructor/assessment/20/print_form/30/question/40/clientFilesQuestion/image.png',
       '/pl/static/elements/pl-drawing/pl-drawing.css',
     ]) {
       await routeHandler!({
@@ -296,7 +312,7 @@ describe('PrintRenderer', () => {
       },
       {
         method: 'GET',
-        url: 'http://localhost:3000/pl/course_instance/10/instructor/instance_question/41/clientFilesQuestion/image.png',
+        url: 'http://localhost:3000/pl/course_instance/10/instructor/assessment/20/print_form/30/question/41/clientFilesQuestion/image.png',
       },
       // socket.io polling would otherwise hold HTTP connections open for the whole render.
       { method: 'GET', url: 'http://localhost:3000/socket.io/?EIO=4&transport=polling' },
@@ -417,8 +433,8 @@ describe('PrintRenderer', () => {
       assetScope: {
         courseInstanceId: '10',
         assessmentId: '20',
-        assessmentInstanceId: '30',
-        instanceQuestionIds: ['40'],
+        printFormId: '30',
+        printFormQuestionIds: ['40'],
         authnUserId: '50',
         userId: '50',
       },
@@ -444,7 +460,7 @@ describe('PrintRenderer', () => {
       request: () => ({
         method: () => 'GET',
         url: () =>
-          'https://us.prairielearn.com/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/figure.svg',
+          'https://us.prairielearn.com/pl/course_instance/10/instructor/assessment/20/print_form/30/question/40/clientFilesQuestion/figure.svg',
       }),
       continue: continueRequest,
       fulfill,
@@ -453,7 +469,7 @@ describe('PrintRenderer', () => {
     expect(continueRequest).toHaveBeenCalledOnce();
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch.mock.calls[0][0].toString()).toBe(
-      'http://localhost:3000/pl/course_instance/10/instructor/instance_question/40/clientFilesQuestion/figure.svg',
+      'http://localhost:3000/pl/course_instance/10/instructor/assessment/20/print_form/30/question/40/clientFilesQuestion/figure.svg',
     );
     expect(fetch.mock.calls[0][1]).toMatchObject({
       headers: { 'X-PL-Print-Asset-Token': expect.any(String) },
@@ -652,29 +668,46 @@ describe('PrintRenderer', () => {
     }
   });
 
-  it('times out a stalled render, closes its context, and keeps serving', async () => {
-    const harness = createBrowserHarness({
-      pdf: async (renderIndex) => {
-        if (renderIndex === 0) await new Promise<never>(() => undefined);
-        return Buffer.from('%PDF-test');
-      },
-    });
-    const renderer = new PrintRenderer();
+  it.each(['timeout', 'abort'] as const)(
+    'stops a stalled render, closes its context, and keeps serving (%s)',
+    async (cancellation) => {
+      const controller = new AbortController();
+      const harness = createBrowserHarness({
+        pdf: async (renderIndex) => {
+          if (renderIndex === 0) await new Promise<never>(() => undefined);
+          return Buffer.from('%PDF-test');
+        },
+      });
+      const renderer = new PrintRenderer();
 
-    const results = await Promise.allSettled([
-      renderPdf(renderer, { url: 'http://localhost:3000/print/stalled', timeoutMs: 20 }),
-      renderPdf(renderer, { url: 'http://localhost:3000/print/succeeds', timeoutMs: 2000 }),
-    ]);
+      const renders = Promise.allSettled([
+        renderPdf(renderer, {
+          url: 'http://localhost:3000/print/stalled',
+          timeoutMs: cancellation === 'timeout' ? 20 : 0,
+          signal: controller.signal,
+        }),
+        renderPdf(renderer, { url: 'http://localhost:3000/print/succeeds', timeoutMs: 2000 }),
+      ]);
+      await vi.waitFor(() => expect(harness.pages[0].pdf).toHaveBeenCalledOnce());
+      if (cancellation === 'abort') {
+        controller.abort(new Error('Request aborted'));
+      }
+      const results = await renders;
 
-    expect(results[0]).toMatchObject({
-      status: 'rejected',
-      reason: new Error('Timed out after 20 ms rendering the PDF'),
-    });
-    expect(results[1]).toEqual({ status: 'fulfilled', value: Buffer.from('%PDF-test') });
-    expect(harness.contexts[0].close).toHaveBeenCalledOnce();
-    expect(harness.browser.close).not.toHaveBeenCalled();
-    expect(playwrightMocks.launch).toHaveBeenCalledOnce();
-  });
+      expect(results[0]).toMatchObject({
+        status: 'rejected',
+        reason: new Error(
+          cancellation === 'timeout'
+            ? 'Timed out after 20 ms rendering the PDF'
+            : 'Request aborted',
+        ),
+      });
+      expect(results[1]).toEqual({ status: 'fulfilled', value: Buffer.from('%PDF-test') });
+      expect(harness.contexts[0].close).toHaveBeenCalledOnce();
+      expect(harness.browser.close).not.toHaveBeenCalled();
+      expect(playwrightMocks.launch).toHaveBeenCalledOnce();
+    },
+  );
 
   it('waits for timed-out context cleanup before starting another render', async () => {
     const closeGate = createGate();
@@ -706,6 +739,36 @@ describe('PrintRenderer', () => {
     await expect(first).rejects.toThrow('Timed out after 20 ms rendering the PDF');
     await expect(second).resolves.toEqual(Buffer.from('%PDF-test'));
     expect(harness.getPeakOpenContexts()).toBe(1);
+  });
+
+  it('closes a context that finishes opening after cancellation and keeps the browser', async () => {
+    const contextStarted = createGate();
+    const contextFinished = createGate();
+    const controller = new AbortController();
+    const harness = createBrowserHarness();
+    const createContext = vi.mocked(harness.browser.newContext).getMockImplementation()!;
+    vi.mocked(harness.browser.newContext).mockImplementation(async (options) => {
+      contextStarted.open();
+      await contextFinished.opened;
+      return await createContext(options);
+    });
+    const render = renderPdf(new PrintRenderer(), {
+      url: 'http://localhost:3000/print',
+      signal: controller.signal,
+    });
+    const failure = render.catch((error: unknown) => error);
+    await contextStarted.opened;
+    controller.abort(new Error('Request aborted'));
+
+    try {
+      expect(await failure).toMatchObject({ message: 'Request aborted' });
+    } finally {
+      contextFinished.open();
+    }
+    await vi.waitFor(() => expect(harness.contexts[0].close).toHaveBeenCalledOnce());
+    expect(harness.contexts[0].newPage).not.toHaveBeenCalled();
+    expect(harness.getOpenContexts()).toBe(0);
+    expect(harness.browser.close).not.toHaveBeenCalled();
   });
 
   it('discards the browser when closing a context fails', async () => {
@@ -813,6 +876,29 @@ describe('PrintRenderer', () => {
     expect(playwrightMocks.launch).not.toHaveBeenCalled();
   });
 
+  it('bounds shutdown when the browser does not finish closing', async () => {
+    const harness = createBrowserHarness();
+    const renderer = new PrintRenderer();
+    await renderPdf(renderer, { url: 'http://localhost:3000/print', timeoutMs: 0 });
+    vi.mocked(harness.browser.close).mockImplementation(
+      async () => await new Promise<void>(() => undefined),
+    );
+    vi.useFakeTimers();
+
+    try {
+      const settled = vi.fn();
+      const closing = renderer.close().then(settled);
+      await vi.advanceTimersByTimeAsync(4999);
+      expect(settled).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await closing;
+      expect(harness.browser.close).toHaveBeenCalledOnce();
+      expect(settled).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('rejects missing and unsuccessful page responses', async () => {
     createBrowserHarness({ response: null });
     await expect(
@@ -835,8 +921,9 @@ describe('PrintRenderer', () => {
     });
     const renderer = new PrintRenderer();
     const active = renderPdf(renderer, { url: 'http://localhost:3000/print/active', timeoutMs: 0 });
+    const activeFailure = active.catch((error: unknown) => error);
     const queued = renderPdf(renderer, { url: 'http://localhost:3000/print/queued', timeoutMs: 0 });
-    await vi.waitFor(() => expect(harness.pages).toHaveLength(1));
+    await vi.waitFor(() => expect(harness.pages[0].pdf).toHaveBeenCalledOnce());
 
     await renderer.close();
 
@@ -846,6 +933,6 @@ describe('PrintRenderer', () => {
       'The print renderer has been closed',
     );
     gate.open();
-    await expect(active).resolves.toEqual(Buffer.from('%PDF-test'));
+    expect(await activeFailure).toMatchObject({ message: 'Browser closed' });
   });
 });

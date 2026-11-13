@@ -9,6 +9,8 @@ import {
   SprocUsersSelectOrInsertSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
+import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
@@ -242,6 +244,42 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
       headers,
     });
     assert.isTrue(response.ok);
+  });
+
+  test('instructor (student data viewer) cannot print without course preview permission', async () => {
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: String(context.userIdInstructor),
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: String(context.userIdInstructor),
+    });
+    await features.enable('printable-assessments');
+    const formUrl = `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/print_form/1`;
+    const url = `${formUrl}/preview?paper_size=Letter&document=answer_key`;
+    const headers = {
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student%20Data%20Viewer',
+    };
+    const response = await helperClient.fetchCheerio(url, { headers });
+    assert.equal(response.status, 403);
+    const docxUrl = new URL(`${formUrl}/docx?paper_size=Letter&document=answer_key`);
+    const docxRequest = {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/octet-stream',
+        'X-CSRF-Token': generateCsrfToken({
+          url: docxUrl.pathname,
+          authnUserId: String(context.userIdInstructor),
+        }),
+      },
+      body: JSON.stringify({ html: '<html></html>', source: { html: '', figures: [] } }),
+    };
+    assert.equal((await helperClient.fetchCheerio(docxUrl, docxRequest)).status, 403);
+    await features.disable('printable-assessments');
+    assert.equal((await helperClient.fetchCheerio(url, { headers })).status, 404);
+    assert.equal((await helperClient.fetchCheerio(docxUrl, docxRequest)).status, 404);
   });
 
   test('instructor (student data viewer) can view E1/Q* instance of student', async () => {
