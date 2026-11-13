@@ -82,6 +82,26 @@ async function expectLatex(field: Locator, latex: string) {
     .toBe(latex);
 }
 
+async function checkParenthesisMultiplication(page: Page) {
+  const input = page.getByLabel('Calculator input', { exact: true });
+  const output = page.getByLabel('Calculator output', { exact: true });
+  await input.pressSequentially('1.0342(');
+  await expectLatex(input, String.raw`1.0342\cdot\left(\right)`);
+  await input.pressSequentially('4');
+  await expectLatex(input, String.raw`1.0342\cdot\left(4\right)`);
+  await input.pressSequentially(')');
+  await expectLatex(input, String.raw`1.0342\cdot\left(4\right)`);
+  await expectLatex(output, String.raw`=4.136\,8`);
+  await page.locator('[name="clear"]:visible').click();
+  await input.pressSequentially('2');
+  await page.getByRole('button', { name: '(', exact: true }).click();
+  await expectLatex(input, String.raw`2\cdot\left(\right)`);
+  await input.pressSequentially('3+4)');
+  await expectLatex(input, String.raw`2\cdot\left(3+4\right)`);
+  await expectLatex(output, '=14');
+  await page.locator('[name="clear"]:visible').click();
+}
+
 async function checkPinyinComposition(page: Page) {
   const input = page.getByLabel('Calculator input', { exact: true });
   const prior = await input.evaluate(
@@ -326,6 +346,7 @@ test.describe('Calculator', () => {
       const output = page.getByLabel('Calculator output', { exact: true });
       await expect(input).toBeVisible();
       await expect(input).toHaveJSProperty('popoverPolicy', 'off');
+      await checkParenthesisMultiplication(page);
       await input.pressSequentially('12+34');
       await expectLatex(output, '=46');
       await input.press('Enter');
@@ -576,6 +597,10 @@ test.describe('Calculator', () => {
       await expect(tabs.getByRole('radio', { name: panel, exact: true })).toBeChecked();
     }
     const input = page.getByLabel('Calculator input', { exact: true });
+    await checkParenthesisMultiplication(page);
+    await input.pressSequentially('sin(0)');
+    await expectLatex(input, String.raw`\sin\left(0\right)`);
+    await expectLatex(page.getByLabel('Calculator output', { exact: true }), '=0');
     await input.evaluate((element) => {
       (element as HTMLElement & { value: string }).value = String.raw`\int_0^1 x^2 dx`;
     });
