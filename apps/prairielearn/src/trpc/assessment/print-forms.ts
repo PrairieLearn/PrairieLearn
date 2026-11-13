@@ -8,21 +8,23 @@ import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { createPrintForm } from '../../lib/printing/print-forms.js';
 import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
+import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-settings.js';
 import {
   archivePrintForm,
   selectOptionalPrintForm,
   selectPrintFormsForAssessment,
+  updatePrintFormSettings,
 } from '../../models/print-form.js';
 
 import { type createContext, requireCoursePermissionPreview, t } from './init.js';
 
-/** @knipignore Consumed by the preparation UI in the following PR. */
 export interface PrintFormsError {
   archive: never;
   questions: never;
   list: never;
   create: never;
   regenerate: never;
+  updateSettings: never;
 }
 
 export const requirePrintableAssessments = t.middleware(async (opts) => {
@@ -67,9 +69,11 @@ const assessmentFormProcedure = printFormProcedure
 async function createForm({
   ctx,
   replacesPrintFormId,
+  settings,
 }: {
   ctx: ReturnType<typeof createContext>;
   replacesPrintFormId?: string;
+  settings?: PrintSettings;
 }) {
   try {
     const form = await createPrintForm({
@@ -79,8 +83,13 @@ async function createForm({
       userId: ctx.locals.user.id,
       authnUserId: ctx.authn_user.id,
       replacesPrintFormId,
+      settings,
     });
-    return { printFormId: form.id, label: form.label };
+    return {
+      printFormId: form.id,
+      label: form.label,
+      settings: PrintSettingsSchema.parse(form.settings),
+    };
   } catch (error) {
     if (error instanceof HttpStatusError) {
       if (error.status === 400) {
@@ -108,7 +117,8 @@ export const printFormsRouter = t.router({
   ),
   create: printFormProcedure
     .use(rejectGroupWork)
-    .mutation(async ({ ctx }) => await createForm({ ctx })),
+    .input(z.object({ settings: PrintSettingsSchema }).optional())
+    .mutation(async ({ ctx, input }) => await createForm({ ctx, settings: input?.settings })),
   regenerate: assessmentFormProcedure
     .use(rejectGroupWork)
     .mutation(
@@ -123,4 +133,17 @@ export const printFormsRouter = t.router({
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is no longer active.' });
     }
   }),
+  updateSettings: assessmentFormProcedure
+    .input(z.object({ settings: PrintSettingsSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const form = await updatePrintFormSettings({
+        printFormId: input.printFormId,
+        assessmentId: ctx.assessment.id,
+        settings: input.settings,
+      });
+      if (!form) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is no longer active.' });
+      }
+      return StaffPrintFormSchema.parse(form);
+    }),
 });

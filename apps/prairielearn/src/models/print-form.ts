@@ -7,6 +7,7 @@ import {
   queryRow,
   queryRows,
   queryScalar,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -39,6 +40,29 @@ export async function insertPrintForm({
     },
     PrintFormSchema,
   );
+}
+
+export async function updatePrintFormSettings({
+  printFormId,
+  assessmentId,
+  settings,
+}: {
+  printFormId: string;
+  assessmentId: string;
+  settings: PrintSettings;
+}) {
+  return await runInTransactionAsync(async () => {
+    await lockAssessmentForPrintForms(assessmentId);
+    return await queryOptionalRow(
+      sql.update_print_form_settings,
+      {
+        print_form_id: printFormId,
+        assessment_id: assessmentId,
+        settings: JSON.stringify(settings),
+      },
+      PrintFormSchema,
+    );
+  });
 }
 
 export async function lockAssessmentForPrintForms(assessmentId: string): Promise<void> {

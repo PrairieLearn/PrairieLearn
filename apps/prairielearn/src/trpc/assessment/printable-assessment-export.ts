@@ -25,14 +25,17 @@ import { PrintPacketMetadataSchema } from '../../lib/printing/print-packet-schem
 import { PrintPacketError, readPrintCoverPages } from '../../lib/printing/print-packet.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { selectOptionalPrintExport } from '../../models/print-export.js';
+import {
+  selectOptionalPrintExport,
+  selectRecentPrintExportsForAssessment,
+} from '../../models/print-export.js';
 import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
 import { requirePrintableAssessments } from './print-forms.js';
 
-/** @knipignore Consumed by the preparation UI in the following PR. */
 export interface PrintableAssessmentExportError {
+  list: never;
   pdf: never;
   status: never;
 }
@@ -203,7 +206,8 @@ export const printableAssessmentExportRouter = t.router({
           answer_key: 'answer_keys',
           booklet: 'booklet',
         }[metadata.document];
-        const filename = `${prefix}${documentName}_${metadata.copies}_copies.pdf`;
+        const formName = forms.length === 1 ? `form_${forms[0].formLabel}_` : '';
+        const filename = `${prefix}${formName}${documentName}_${metadata.copies}_copies.pdf`;
         const work: PrintExportWork = {
           format: 'pdf',
           document: metadata.document,
@@ -246,6 +250,30 @@ export const printableAssessmentExportRouter = t.router({
         });
       }
     }),
+  list: t.procedure
+    .use(requireCoursePermissionPreview)
+    .use(requirePrintableAssessments)
+    .query(async ({ ctx }) => {
+      const baseUrl = getAssessmentUrl({
+        courseInstanceId: ctx.course_instance.id,
+        assessmentId: ctx.assessment.id,
+      });
+      const exports = await selectRecentPrintExportsForAssessment({
+        assessmentId: ctx.assessment.id,
+        authnUserId: ctx.authn_user.id,
+      });
+      return exports.map((printExport) => ({
+        id: printExport.id,
+        createdAt: printExport.created_at,
+        status: printExport.status,
+        format: printExport.format,
+        downloadUrl:
+          printExport.status === 'succeeded' ? `${baseUrl}/print/exports/${printExport.id}` : null,
+        sizeBytes: printExport.size_bytes,
+        label: printExport.label ?? printExport.filename,
+        failureMessage: printExport.failure_message,
+      }));
+    }),
   status: t.procedure
     .use(requireCoursePermissionPreview)
     .use(requirePrintableAssessments)
@@ -264,7 +292,7 @@ export const printableAssessmentExportRouter = t.router({
         format: printExport.format,
         downloadUrl:
           status === 'succeeded'
-            ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print_preparation/exports/${printExport.id}`
+            ? `${getAssessmentUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id })}/print/exports/${printExport.id}`
             : null,
         sizeBytes: printExport.size_bytes,
         label: printExport.label,

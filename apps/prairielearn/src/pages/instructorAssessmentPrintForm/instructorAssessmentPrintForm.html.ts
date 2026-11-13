@@ -66,7 +66,6 @@ export function InstructorAssessmentPrintForm({
       data-print-form-id="${resLocals.print_form.id}"
       data-print-document="${document}"
       data-print-form-label="${formLabel}"
-      data-print-paper-size="${paperSize}"
       data-print-include-cover="${includeCoverPage}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
@@ -112,7 +111,7 @@ export function InstructorAssessmentPrintForm({
         <style data-pagedjs-ignore>
           @media print {
             @page {
-              size: ${paperSize};
+              size: ${paperWidth} ${paperHeight};
               margin: 0;
             }
           }

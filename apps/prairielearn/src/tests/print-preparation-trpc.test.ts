@@ -227,6 +227,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         'created_at',
         'id',
         'label',
+        'settings',
       ]);
       const questions = await api.printForms.questions.query(first);
       expect(questions.length).toBeGreaterThan(0);
@@ -242,9 +243,30 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('regeneration creates a replacement and preserves the saved original form', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const first = await api.printForms.create.mutate();
+    const originalSettings = {
+      ...DEFAULT_PRINT_SETTINGS,
+      paperSize: 'A4' as const,
+      excludedQuestions: ['1'],
+    };
+    const first = await api.printForms.create.mutate({ settings: originalSettings });
     const original = await selectPrintFormQuestions(first.printFormId);
     const originalQuestions = await api.printForms.questions.query(first);
+    expect(
+      (await api.printForms.list.query()).find((form) => form.id === first.printFormId),
+    ).toMatchObject({ settings: originalSettings });
+
+    const updatedSettings = {
+      ...originalSettings,
+      questionSizes: { '2': 'half' as const },
+    };
+    await api.printForms.updateSettings.mutate({
+      printFormId: first.printFormId,
+      settings: updatedSettings,
+    });
+    expect(
+      (await api.printForms.list.query()).find((form) => form.id === first.printFormId),
+    ).toMatchObject({ settings: updatedSettings });
+
     const regenerated = await api.printForms.regenerate.mutate(first);
     expect(regenerated.printFormId).not.toBe(first.printFormId);
     expect(regenerated.label).not.toBe(first.label);
@@ -259,6 +281,19 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect(await api.printForms.questions.query(regenerated)).toHaveLength(
       originalQuestions.length,
     );
+    const forms = await api.printForms.list.query();
+    expect(forms.find((form) => form.id === regenerated.printFormId)?.settings).toEqual({
+      ...updatedSettings,
+      questionSizes: {},
+      excludedQuestions: [],
+    });
+    expect(forms.find((form) => form.id === first.printFormId)?.settings).toEqual(updatedSettings);
+    await expect(
+      api.printForms.updateSettings.mutate({
+        printFormId: first.printFormId,
+        settings: originalSettings,
+      }),
+    ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
   });
 
   test('shares forms across staff while keeping assessment boundaries', async () => {
@@ -314,6 +349,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await expect(api.printForms.regenerate.mutate(otherForm)).rejects.toThrow(
       'This print form is not available.',
     );
+    await expect(
+      api.printForms.updateSettings.mutate({
+        printFormId: otherForm.printFormId,
+        settings: DEFAULT_PRINT_SETTINGS,
+      }),
+    ).rejects.toThrow('This print form is not available.');
     await expect(
       api.printableAssessmentExport.pdf.mutate(packetInput(otherForm.printFormId)),
     ).rejects.toThrow('A print form is not available.');
@@ -474,6 +515,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
         format: 'pdf',
         downloadUrl: null,
       });
+      expect(
+        (await api.printableAssessmentExport.list.query()).find(
+          (item) => item.id === printExportId,
+        ),
+      ).toMatchObject({ status: 'pending', label: `Form ${label} PDF`, downloadUrl: null });
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledOnce();
       expect(render.mock.calls[0][0]).toMatchObject({
@@ -487,12 +533,18 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).toEqual({
       status: 'succeeded',
       format: 'pdf',
-      downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${printExportId}`,
+      downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`,
       sizeBytes: pdf.length,
       label: `Form ${label} PDF`,
       failureMessage: null,
     });
-    const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${printExportId}`;
+    expect(
+      (await api.printableAssessmentExport.list.query()).find((item) => item.id === printExportId),
+    ).toMatchObject({
+      status: 'succeeded',
+      downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`,
+    });
+    const url = `${siteUrl}/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`;
     const response = await fetch(url);
     expect(response.status).toBe(200);
     const printExport = (await selectOptionalPrintExport({
@@ -500,6 +552,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       assessmentId: assessment.id,
       authnUserId: '1',
     }))!;
+    expect(printExport.filename).toMatch(new RegExp(`_form_${label}_assessment_1_copies\\.pdf$`));
     expect(response.headers.get('content-disposition')).toBe(
       `attachment; filename="${printExport.filename}"`,
     );
@@ -514,9 +567,14 @@ describe('print preparation', { timeout: 60_000 }, () => {
       client(otherAssessment.id).printableAssessmentExport.status.query({ printExportId }),
     ).rejects.toThrow('NOT_FOUND');
     expect(
+      (await client(otherAssessment.id).printableAssessmentExport.list.query()).some(
+        (item) => item.id === printExportId,
+      ),
+    ).toBe(false);
+    expect(
       (
         await fetch(
-          `${siteUrl}/pl/course_instance/1/instructor/assessment/${otherAssessment.id}/print_preparation/exports/${printExportId}`,
+          `${siteUrl}/pl/course_instance/1/instructor/assessment/${otherAssessment.id}/print/exports/${printExportId}`,
         )
       ).status,
     ).toBe(404);
@@ -524,6 +582,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
     ).toMatchObject({ status: 'expired', downloadUrl: null });
+    expect(
+      (await api.printableAssessmentExport.list.query()).some((item) => item.id === printExportId),
+    ).toBe(false);
     expect((await fetch(url)).status).toBe(404);
   });
 
@@ -607,7 +668,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       render.mockRestore();
     }
     const status = await api.printableAssessmentExport.status.query({ printExportId });
-    const downloadUrl = `/pl/course_instance/1/instructor/assessment/${assessment.id}/print_preparation/exports/${printExportId}`;
+    const downloadUrl = `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`;
     expect(status).toEqual({
       status: 'succeeded',
       format: 'docx',
@@ -622,6 +683,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       authnUserId: '1',
     }))!;
     expect(printExport.output_key).toMatch(/\.docx$/);
+    expect(printExport.filename).toMatch(new RegExp(`_form_${label}_letter\\.docx$`));
     const download = await fetch(`${siteUrl}${downloadUrl}`);
     expect(download.status).toBe(200);
     expect(download.headers.get('content-type')).toBe(
@@ -662,7 +724,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: null,
+      label: 'booklet PDF for 1 student',
       failureMessage:
         '“invalid-cover.pdf” could not be read. Upload a valid PDF without password protection.',
     });
@@ -745,12 +807,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await completePrintExport(assessment.id, printExportId, 'failed');
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).toEqual({
+    ).toMatchObject({
       status: 'failed',
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: null,
       failureMessage:
         'The export stopped repeatedly while rendering. Try fewer forms or contact support.',
     });

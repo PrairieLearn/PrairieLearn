@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
+import { DEFAULT_PRINT_SETTINGS } from '../printing/print-settings.js';
+
 import {
   AdminInstitutionSchema,
   AdminInstitutionWithSettingsSchema,
@@ -279,6 +281,7 @@ const minimalStaffPrintForm: z.input<typeof StaffPrintFormSchema> = {
   created_at: new Date(),
   id: '10',
   label: 'A',
+  settings: DEFAULT_PRINT_SETTINGS,
 };
 
 const minimalStudentAssessmentInstanceAuthzResult: z.input<

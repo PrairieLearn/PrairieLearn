@@ -13,8 +13,19 @@ VALUES
     $user_id,
     $authn_user_id,
     $label,
-    $settings
+    $settings::jsonb
   )
+RETURNING
+  *;
+
+-- BLOCK update_print_form_settings
+UPDATE print_forms
+SET
+  settings = $settings::jsonb
+WHERE
+  id = $print_form_id
+  AND assessment_id = $assessment_id
+  AND archived_at IS NULL
 RETURNING
   *;
 

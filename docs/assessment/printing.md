@@ -1,0 +1,83 @@
+# Printing assessments
+
+With course preview permission, you can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. You can also preview and download answer keys.
+
+For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its applied paper size, spacing, question selection, cover options, randomized values, and matching answer key. Forms are shared with course staff who have preview permission. Creating or regenerating a print form does not start or change a student attempt. Printable forms are not currently supported for group assessments.
+
+## Prepare an assessment
+
+1. Open the assessment's **Questions** page and select **Print**.
+2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
+3. Choose what to include on the [cover page](#cover-pages), then select **Create preview**.
+4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
+5. Select **Update preview** to save your changes to this form. Check the **Student copy** and **Answer key** above the preview.
+6. When you are satisfied with the assessment, open **Prepare…** and [choose a file](#prepare-and-download-files).
+
+The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
+
+## Review questions
+
+Review every question in the preview, including its instructions, figures, and answer choices. Questions that work well online may need changes for a paper assessment. Expandable sections print in full, even when they are closed in the online question.
+
+If your course uses custom elements in questions, check those questions in both the preview and downloaded files. Some elements designed for the screen may not print as expected.
+
+The question list highlights two kinds of items to check:
+
+- **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the assessment.
+- **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of this form. Then select **Update preview**. Downloads are unavailable while included questions have these errors.
+
+Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
+
+## Prepare multiple forms
+
+If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 active forms. Labels continue beyond Z when forms are regenerated. Assessments without randomization use a single form.
+
+Select a form to review it and choose its questions and spacing. Apply any changes with **Update preview** before switching to another form.
+
+To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding letter), and confirm the change. The new form gets the next label; labels are never reused, so the replacement may skip a letter. It inherits the old form's paper and cover settings. Question exclusions and individual spacing reset because the new form may have different questions. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for answer keys. Use the archive button beside a form to remove it from the current set while keeping it under **Previous forms**.
+
+## Cover pages
+
+The default cover has spaces for **Name** and **Date**, along with the assessment's instructions. You can customize it under **Cover page**:
+
+- Under **Additional student information**, enter one label per line, such as “Student ID” or “Section”.
+- Select **Include grading table** to add a table for recording question scores.
+- Select **Include academic integrity pledge** to add the assessment's honor code, or a standard pledge if the assessment does not have one.
+- Uncheck **Include default cover page** if you do not want this cover.
+
+### Add your own cover pages
+
+Use **Custom cover pages (PDF)** to upload your own instructions or other pages for student copies. In each student copy, they appear in the listed order after the default cover and before the questions. If you turn off the default cover, your uploaded pages come first.
+
+You can add up to 10 PDFs, with a combined limit of 100 pages and 10 MB. Uploaded covers are excluded from answer keys and Word files. If you reload the page, you will need to add the files again.
+
+Upload readable PDFs without password protection. Fillable covers must have saved field appearances; if prompted, print or export the cover as a flattened PDF before uploading it. If a cover is rejected, follow the download message or remove the upload.
+
+Uploaded covers do not appear in the preview. Download a student copy or booklet to check them before printing.
+
+## Prepare and download files
+
+Select **Update preview** after making changes, then open **Prepare…**. The first four options apply to the form you are previewing:
+
+| Option                                     | What you get                                                                             |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| **Prepare Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                              |
+| **Prepare Form A Word (.docx)**            | An editable student copy of Form A.                                                      |
+| **Prepare Form A answer key (PDF)**        | The answer key for Form A.                                                               |
+| **Prepare Form A answer key Word (.docx)** | An editable answer key for Form A.                                                       |
+| **Prepare all forms (PDF)**                | One student copy of each form, including uploaded covers. Available with multiple forms. |
+| **Prepare booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.       |
+
+If file preparation says the preview has expired or changed, select **Update preview** and try again.
+
+Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
+
+PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. The **Recent exports** list shows your ten newest exports for this assessment, including their progress and download links. Use those links if you return later or an automatic download is blocked. The list remains available when you reload the page. Each file is available for 24 hours after it was requested.
+
+### Print copies for a class
+
+Select **Prepare booklet PDF…**, enter the **Number of students** (up to 500), and select **Prepare booklet PDF**. Each student gets a complete copy. With multiple forms, copies repeat in order: for example, A, B, C, A, B, C. With one form, every student gets the same version. A booklet can contain up to 10,000 pages; for larger classes, prepare it in batches.
+
+The booklet ends with one answer key for each form. Print it single-sided and set aside the answer keys before distributing the student copies.
+
+Always check the downloaded files before printing, including the cover pages and page breaks for every form.

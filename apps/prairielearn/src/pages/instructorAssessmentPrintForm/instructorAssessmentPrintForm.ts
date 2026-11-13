@@ -418,7 +418,7 @@ router.post(
         res.locals.course,
       ) +
       sanitizeString(
-        `form_${res.locals.print_form.id}_${layout.paperSize.toLowerCase()}${
+        `form_${res.locals.print_form.label}_${layout.paperSize.toLowerCase()}${
           document === 'answer_key' ? '_answer_key' : ''
         }`,
       ) +

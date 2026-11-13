@@ -19,6 +19,7 @@ export async function insertPrintExport({
   authnUserId,
   format,
   filename,
+  label,
   inputKey,
 }: {
   assessmentId: string;
@@ -26,6 +27,7 @@ export async function insertPrintExport({
   authnUserId: string;
   format: PrintExport['format'];
   filename: string;
+  label: string;
   inputKey: string;
 }): Promise<string> {
   return await queryScalar(
@@ -36,6 +38,7 @@ export async function insertPrintExport({
       authn_user_id: authnUserId,
       format,
       filename,
+      label,
       input_key: inputKey,
     },
     IdSchema,
@@ -43,6 +46,16 @@ export async function insertPrintExport({
 }
 
 const PrintExportWithExpirySchema = PrintExportSchema.extend({ expired: z.boolean() });
+const RecentPrintExportSchema = PrintExportSchema.pick({
+  id: true,
+  created_at: true,
+  status: true,
+  format: true,
+  filename: true,
+  label: true,
+  size_bytes: true,
+  failure_message: true,
+});
 
 /** Downloads expire 24 hours after the export was queued. */
 export async function selectOptionalPrintExport({
@@ -58,6 +71,21 @@ export async function selectOptionalPrintExport({
     sql.select_print_export,
     { id: printExportId, assessment_id: assessmentId, authn_user_id: authnUserId },
     PrintExportWithExpirySchema,
+  );
+}
+
+/** Recent exports are limited to their 24-hour download window. */
+export async function selectRecentPrintExportsForAssessment({
+  assessmentId,
+  authnUserId,
+}: {
+  assessmentId: string;
+  authnUserId: string;
+}) {
+  return await queryRows(
+    sql.select_recent_print_exports_for_assessment,
+    { assessment_id: assessmentId, authn_user_id: authnUserId },
+    RecentPrintExportSchema,
   );
 }
 
