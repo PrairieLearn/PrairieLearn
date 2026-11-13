@@ -43,9 +43,7 @@ export function BlockedNotice({
         {retryAt && remaining === 0
           ? 'The hourly AI usage limit has reset.'
           : blockedMessage[state.reason]}
-        {retryAt &&
-          remaining > 0 &&
-          ` It resets in ${formatIntervalMinutes(remaining)}.`}
+        {retryAt && remaining > 0 && ` It resets in ${formatIntervalMinutes(remaining)}.`}
       </p>
       <Button
         variant="outline-dark"
