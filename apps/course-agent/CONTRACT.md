@@ -79,13 +79,11 @@ Each user message may carry `metadata.location` (`PageLocationSchema`): the page
 
 The agent asks staff for decisions or missing information with Codex's `request_user_input_async` tool, which returns at once and completes an unstreamed agent message carrying the prompts. The Worker shows it as a `data-input-request` part matching `InputRequestPartSchema`. Nothing waits for an answer: staff's next message is the answer, whether sent from the input request card or typed, and it is submitted like any other message. The part is never rewritten, and catch-up includes the prompts so a restored thread knows what the next message answers.
 
-## Changing the instructor's page
+## Opening pages for the instructor
 
-PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conversation: one entry per tab of its instructor navigation, with the page's key (the same vocabulary as the page location), its label, the names it requires, and whether it browses files. The catalog is in the JSON body for GitHub conversations and in the `X-PL-Pages` header for local ones, whose body is the course archive. The DO stores it for the conversation's life. A conversation created without one has no `navigate` tool.
+PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conversation: the instructor navigation tabs a course owner always sees, each with its key (the same vocabulary as the page location), label, and required names. It travels in the JSON body for GitHub conversations and in the `X-PL-Pages` header for local ones, whose body is the course archive. `CreateConversationInput` is strict, so the Worker must deploy before a PrairieLearn that sends a catalog. A conversation created without one has no `navigate` tool.
 
-`navigate` is a native dynamic tool like `request_changes`, registered when a thread starts (threads started before it do not have it) with the catalog's keys as the `page` enum and its labels in the description. The DO rejects a call whose page is not in the catalog or lacks a required name, and otherwise emits a `data-navigation` part (`NavigationPartSchema`) with ID `navigation:<call ID>`; a successful call has no `data-tool` part. Targets use course file names, never database IDs, and PrairieLearn resolves them through the `courseAgent.resolveNavigation` tRPC query, because the Worker never calls PrairieLearn. The tool reply cannot confirm that the page loaded, so the agent does not learn when a name matched nothing; the browser shows that error in the chat.
-
-The browser acts on a navigation part only while its reply is live, once per part ID. It records handled IDs in session storage, because changing pages reconnects the chat and the SDK replays the live reply. Parts in settled history only render, an opened page as a link that opens it again.
+`navigate` is a native dynamic tool, registered when a thread starts, with the catalog's keys as its `page` enum. The DO rejects a page outside the catalog or a missing name, and otherwise emits a `data-navigation` part (`NavigationPartSchema`). The chat shows the part as a button; nothing changes pages until the instructor clicks it. PrairieLearn then resolves the course file names through `courseAgent.resolveNavigation` and shows any error beside the button, which the agent does not learn about.
 
 ## Reviews
 

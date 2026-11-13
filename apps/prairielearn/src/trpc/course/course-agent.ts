@@ -114,7 +114,8 @@ export const courseAgentRouter = t.router({
     .output(z.strictObject({ url: z.string() }))
     .query(async ({ ctx, input }) => {
       const notFound = (message: string) => new TRPCError({ code: 'NOT_FOUND', message });
-      const page = findAgentPage(input.page);
+      const context = { course: ctx.course, authz_data: ctx.authz_data };
+      const page = findAgentPage(input.page, context);
       if (!page) throw notFound(`No page named "${input.page}".`);
       const missing = page.params.filter((param) => !input[param]);
       if (missing.length > 0) {
@@ -133,7 +134,8 @@ export const courseAgentRouter = t.router({
       if (input.courseInstance && !course_instance) {
         throw notFound(`No course instance named "${input.courseInstance}".`);
       }
-      // Names a page does not use are ignored, so only its own params are looked up.
+      // A course instance is used whenever it is named, so a question page can open under it. An
+      // assessment or question is looked up only for the pages that require one.
       const assessment =
         page.params.includes('assessment') && course_instance
           ? await selectOptionalAssessmentByTid({
@@ -148,7 +150,7 @@ export const courseAgentRouter = t.router({
         ? await selectOptionalQuestionByQid({ qid: input.question!, course_id: ctx.course.id })
         : null;
       if (page.params.includes('question') && !question) {
-        throw notFound(`No question named "${input.question}".`);
+        throw notFound(`This course has no question named "${input.question}".`);
       }
       return {
         url: agentPageUrl({
@@ -157,7 +159,7 @@ export const courseAgentRouter = t.router({
           course_instance,
           assessment,
           question,
-          file: input.file ?? null,
+          context,
         }),
       };
     }),
@@ -168,7 +170,10 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const agentConversationId = await run(async () => {
         if (config.devMode && !config.fileEditorUseGit) {
-          return createLocalCourseAgentConversation(ctx.course.path, buildPageCatalog());
+          return createLocalCourseAgentConversation(
+            ctx.course.path,
+            buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+          );
         } else {
           const repository = parseGithubRepository(ctx.course.repository ?? '');
           if (!repository || !ctx.course.branch) {
@@ -187,7 +192,10 @@ export const courseAgentRouter = t.router({
               message: 'The course repository or branch is invalid.',
             });
           }
-          return createCourseAgentConversation({ ...binding.data, pages: buildPageCatalog() });
+          return createCourseAgentConversation({
+            ...binding.data,
+            pages: buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+          });
         }
       });
       const conversation = await insertCourseAgentConversation({

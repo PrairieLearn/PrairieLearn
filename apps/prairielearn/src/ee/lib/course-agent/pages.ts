@@ -1,5 +1,3 @@
-import * as path from 'node:path';
-
 import type { PageCatalog } from '@prairielearn/course-agent-types';
 
 import type { NavPage } from '../../../components/Navbar.types.js';
@@ -7,7 +5,6 @@ import { sideNavPagesTabs } from '../../../components/SideNav.js';
 import type { Assessment, Course, CourseInstance, Question } from '../../../lib/db-types.js';
 import { getNavPageTabs } from '../../../lib/navPageTabs.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
-import { encodePath } from '../../../lib/uri-util.js';
 
 type PageParam = PageCatalog[number]['params'][number];
 
@@ -31,56 +28,87 @@ interface AgentPage {
   urlSuffix: string | ((resLocals: UntypedResLocals) => string);
 }
 
+/** The course and the course owner's permissions, which decide the pages the agent is offered. */
+export interface PageCatalogContext {
+  course: Pick<Course, 'id' | 'show_getting_started'>;
+  authz_data: object;
+}
+
 /**
- * Every tab of the instructor navigation, keyed like the page location (`navPage.subPage`), so
- * a page added to the navigation becomes one the agent can open. The side nav comes first, so
- * its labels win where a page is also the first tab of its group ("Course settings" over "General").
+ * Whether a course owner sees this tab on every page of its group. Tabs gated on a per-request
+ * feature (AI grading, LTI 1.1, billing, question sharing) read flags this context lacks, so they
+ * are left out rather than offered and then not found.
  */
-function agentPages() {
+function shownToOwner(
+  renderCondition: ((resLocals: UntypedResLocals) => boolean) | undefined,
+  { course, authz_data }: PageCatalogContext,
+) {
+  if (!renderCondition) return true;
+  return Boolean(
+    renderCondition({
+      course,
+      // Student-data access varies by course instance and is not known here, so pages that need
+      // it are offered and report missing access themselves.
+      authz_data: {
+        ...authz_data,
+        has_course_instance_permission_view: true,
+        has_course_instance_permission_edit: true,
+      },
+      // Question pages are only opened for this course's own questions.
+      question: { course_id: course.id },
+    }),
+  );
+}
+
+/**
+ * The instructor navigation tabs a course owner always sees, keyed like the page location
+ * (`navPage.subPage`), so a page added to the navigation becomes one the agent can open. The side
+ * nav comes first, so its labels win where a page is also the first tab of its group ("Course
+ * settings" over "General").
+ */
+function agentPages(context: PageCatalogContext) {
   const navPageTabs = getNavPageTabs();
   const tabs = [
     ...Object.values(sideNavPagesTabs)
       .flat()
+      .filter((tab) => tab.activePages[0] in GROUP_PARAMS)
       .map((tab) => ({
         group: tab.activePages[0] as Group,
-        subPages: tab.activeSubPages,
+        subPage: tab.activeSubPages[0],
         label: tab.tabLabel,
         urlSuffix: tab.urlSuffix,
+        renderCondition: tab.renderCondition,
       })),
     ...(Object.keys(GROUP_PARAMS) as Group[]).flatMap((group) =>
       navPageTabs[group].map((tab) => ({
         group,
-        subPages: [tab.activeSubPage].flat(),
+        subPage: [tab.activeSubPage].flat()[0],
         // Labels that depend on the request fall back to their plain form.
         label: typeof tab.tabLabel === 'function' ? tab.tabLabel({}) : tab.tabLabel,
         urlSuffix: tab.urlSuffix,
+        renderCondition: 'renderCondition' in tab ? tab.renderCondition : undefined,
       })),
     ),
   ];
   const pages = new Map<string, AgentPage>();
   for (const tab of tabs) {
-    const key = `${tab.group}.${tab.subPages[0]}`;
-    if (pages.has(key)) continue;
+    const key = `${tab.group}.${tab.subPage}`;
+    if (pages.has(key) || !shownToOwner(tab.renderCondition, context)) continue;
     pages.set(key, {
       group: tab.group,
-      entry: {
-        key,
-        label: tab.label,
-        params: GROUP_PARAMS[tab.group],
-        file: tab.subPages.includes('file_view'),
-      },
+      entry: { key, label: tab.label, params: GROUP_PARAMS[tab.group] },
       urlSuffix: tab.urlSuffix,
     });
   }
   return pages;
 }
 
-export function buildPageCatalog(): PageCatalog {
-  return [...agentPages().values()].map((page) => page.entry);
+export function buildPageCatalog(context: PageCatalogContext): PageCatalog {
+  return [...agentPages(context).values()].map((page) => page.entry);
 }
 
-export function findAgentPage(key: string) {
-  return agentPages().get(key)?.entry;
+export function findAgentPage(key: string, context: PageCatalogContext) {
+  return agentPages(context).get(key)?.entry;
 }
 
 interface PageRows {
@@ -90,33 +118,18 @@ interface PageRows {
   question: Pick<Question, 'id' | 'qid'> | null;
 }
 
-/**
- * Each file browser shows only its own directory and rejects paths outside it, so a `file` is a
- * path inside the directory its page belongs to.
- */
-const FILE_ROOTS: Record<Group, (rows: PageRows) => string> = {
-  course_admin: () => '',
-  instance_admin: ({ course_instance }) => `courseInstances/${course_instance?.short_name}`,
-  students: ({ course_instance }) => `courseInstances/${course_instance?.short_name}`,
-  assessment: ({ course_instance, assessment }) =>
-    `courseInstances/${course_instance?.short_name}/assessments/${assessment?.tid}`,
-  question: ({ question }) => `questions/${question?.qid}`,
-};
-
 /** The URL of a catalog page, built by the same function that builds its navigation link. */
 export function agentPageUrl({
   key,
-  file,
+  context,
   ...rows
-}: PageRows & { key: string; file: string | null }) {
-  const page = agentPages().get(key);
+}: PageRows & { key: string; context: PageCatalogContext }) {
+  const page = agentPages(context).get(key);
   if (!page) throw new Error(`Unknown course agent page: ${key}`);
   const urlPrefix = rows.course_instance
     ? `/pl/course_instance/${rows.course_instance.id}/instructor`
     : `/pl/course/${rows.course.id}`;
   const urlSuffix =
     typeof page.urlSuffix === 'function' ? page.urlSuffix({ ...rows, urlPrefix }) : page.urlSuffix;
-  const filePath =
-    page.entry.file && file ? `/${encodePath(path.join(FILE_ROOTS[page.group](rows), file))}` : '';
-  return `${urlPrefix}${urlSuffix}${filePath}`;
+  return `${urlPrefix}${urlSuffix}`;
 }

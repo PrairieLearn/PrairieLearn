@@ -63,7 +63,6 @@ const thread = {
       key: 'assessment.settings',
       label: 'Settings',
       params: ['courseInstance' as const, 'assessment' as const],
-      file: false,
     },
   ],
 };
@@ -362,7 +361,8 @@ describe('course agent turns', () => {
       });
     };
     const target = { page: 'assessment.settings', courseInstance: 'Fa25', assessment: 'hw1' };
-    expect(await call('open', target)).toMatchObject({ success: true });
+    // Models send empty or null values for names a page does not take.
+    expect(await call('open', { ...target, question: '' })).toMatchObject({ success: true });
     expect(await call('unknown', { page: 'assessment.nope' })).toMatchObject({ success: false });
     expect(
       await call('missing', { page: 'assessment.settings', courseInstance: 'Fa25' }),

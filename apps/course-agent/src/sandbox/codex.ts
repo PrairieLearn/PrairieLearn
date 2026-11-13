@@ -268,9 +268,21 @@ export class CodexAppServerClient {
       if (!this.onReview) throw new Error('Review handling is not configured');
       return await this.onReview({ ...call, arguments: {} });
     }
-    const target = NavigationTargetSchema.safeParse(call.arguments);
+    // Models often send empty or null values for the names a page does not take.
+    const target = NavigationTargetSchema.safeParse(
+      call.arguments && typeof call.arguments === 'object'
+        ? Object.fromEntries(
+            Object.entries(call.arguments).filter(([, value]) => value !== '' && value !== null),
+          )
+        : call.arguments,
+    );
     if (!target.success) {
-      return { success: false, text: `Invalid navigation target: ${target.error.message}` };
+      const problems = target.error.issues.map((issue) =>
+        issue.code === 'unrecognized_keys'
+          ? `remove ${issue.keys.join(', ')}`
+          : `check ${issue.path.join('.') || 'arguments'}`,
+      );
+      return { success: false, text: `Invalid navigation target: ${problems.join('; ')}.` };
     }
     const page = this.pages.find((entry) => entry.key === target.data.page);
     if (!page) {
@@ -281,11 +293,11 @@ export class CodexAppServerClient {
       return { success: false, text: `Page "${page.key}" also needs: ${missing.join(', ')}.` };
     }
     const navigation: NavigationPart = { action: 'open', target: target.data, label: page.label };
-    // The browser acts on this part; the reply cannot confirm the page loaded.
+    // The chat shows this part as a button; the reply cannot confirm that the page opens.
     this.emit({ type: 'data-navigation', id: `navigation:${call.callId}`, data: navigation });
     return {
       success: true,
-      text: "The instructor's browser is opening the page. If the names do not match a course instance, assessment, or question, PrairieLearn shows the instructor an error instead.",
+      text: 'The instructor sees a button that opens the page when they click it. If a name matches nothing in the course, PrairieLearn shows them an error instead.',
     };
   }
 
@@ -533,15 +545,15 @@ const requestChangesTool: DynamicToolSpec = {
 
 /** The model learns which pages exist from this tool, so the catalog is not repeated in instructions. */
 function navigateTool(pages: PageCatalog): DynamicToolSpec {
-  const lines = pages.map(({ key, label, params, file }) => {
-    const needs = [...params, ...(file ? ['optional file'] : [])];
-    return `${key}: ${label}${needs.length > 0 ? ` (${needs.join(', ')})` : ''}`;
-  });
+  const lines = pages.map(
+    ({ key, label, params }) =>
+      `${key}: ${label}${params.length > 0 ? ` (${params.join(', ')})` : ''}`,
+  );
   return {
     type: 'function',
     name: 'navigate',
     description: [
-      "Open a PrairieLearn page in the instructor's browser, replacing the page they are viewing. Pages, with the names each requires:",
+      'Offer the instructor a button that opens a PrairieLearn page in place of the one they are viewing. Pages, with the names each requires:',
       ...lines,
     ].join('\n'),
     inputSchema: {
@@ -553,8 +565,11 @@ function navigateTool(pages: PageCatalog): DynamicToolSpec {
           type: 'string',
           description: "Directory path under the course instance's assessments/.",
         },
-        question: { type: 'string', description: 'Directory path under questions/.' },
-        file: { type: 'string', description: "Path inside the page's own directory." },
+        question: {
+          type: 'string',
+          description:
+            "Directory path under this course's questions/. Questions shared from another course cannot be opened.",
+        },
       },
       required: ['page'],
       additionalProperties: false,

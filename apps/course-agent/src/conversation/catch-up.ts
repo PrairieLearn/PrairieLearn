@@ -2,6 +2,7 @@ import type { UIMessage, UIMessageChunk } from 'ai';
 
 import {
   InputRequestPartSchema,
+  NavigationPartSchema,
   type RequestChangesResult,
   ToolCallSchema,
   UserMessageMetadataSchema,
@@ -187,6 +188,14 @@ function describePart(part: UIMessage['parts'][number]) {
       return describeInputRequest(part.data);
     case 'data-tool':
       return describeFileChange(part.data);
+    case 'data-navigation': {
+      const navigation = NavigationPartSchema.safeParse(part.data).data;
+      if (!navigation) return '';
+      const named = Object.entries(navigation.target)
+        .filter(([kind]) => kind !== 'page')
+        .map(([kind, name]) => `${kind} ${JSON.stringify(name)}`);
+      return `[Offered to open ${navigation.label}${named.length > 0 ? ` (${named.join(', ')})` : ''}.]`;
+    }
     default:
       return '';
   }

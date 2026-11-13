@@ -26,7 +26,7 @@ import {
   insertCoursePermissionsByUserUid,
   updateCoursePermissionsRole,
 } from '../models/course-permissions.js';
-import { updateCourseColumn } from '../models/course.js';
+import { selectCourseById, updateCourseColumn } from '../models/course.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -221,7 +221,7 @@ describe('Course agent access and conversation privacy', () => {
         body: {
           repository: 'PrairieLearn/test-course',
           branch: 'pilot-edits',
-          pages: buildPageCatalog(),
+          pages: expect.arrayContaining([expect.objectContaining({ key: 'assessment.settings' })]),
         },
         authorization: 'Bearer test-token',
       },
@@ -256,7 +256,8 @@ describe('Course agent access and conversation privacy', () => {
     expect(serviceRequests).toEqual([]);
   });
 
-  // The catalog reuses the navigation's untyped URL builders, so load what they produce.
+  // The catalog reuses the navigation's untyped URL builders and visibility conditions, so load
+  // what they produce: a page offered to the agent must exist for this course.
   test('resolves every catalog page to a page that exists', async () => {
     const client = createClient(owner);
     const names = {
@@ -264,27 +265,28 @@ describe('Course agent access and conversation privacy', () => {
       assessment: 'hw1-automaticTestSuite',
       question: 'addNumbers',
     };
-    const files: Record<string, string> = {
-      'course_admin.file_view': 'infoCourse.json',
-      'instance_admin.file_view': 'infoCourseInstance.json',
-      'assessment.file_view': 'infoAssessment.json',
-      'question.file_view': 'question.html',
-    };
+    const catalog = buildPageCatalog({
+      course: await selectCourseById('1'),
+      authz_data: {
+        has_course_permission_own: true,
+        has_course_permission_edit: true,
+        has_course_permission_view: true,
+        has_course_permission_preview: true,
+      },
+    });
     const missing = await withUser(owner, async () => {
       const results: string[] = [];
-      for (const page of buildPageCatalog()) {
+      for (const page of catalog) {
         const { url } = await client.courseAgent.resolveNavigation.query({
           page: page.key,
           ...Object.fromEntries(page.params.map((param) => [param, names[param]])),
-          ...(page.file ? { file: files[page.key] } : {}),
         });
         const { status } = await fetch(`${siteUrl}${url}`);
         if (status === 404 || status >= 500) results.push(`${page.key}: ${status}`);
       }
       return results;
     });
-    // Billing answers 404 unless the institution has it enabled.
-    expect(missing).toEqual(['instance_admin.billing: 404']);
+    expect(missing).toEqual([]);
   });
 
   test('initializes from current local files and course-only Git history in dev mode', async () => {

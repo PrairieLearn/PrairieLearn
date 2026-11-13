@@ -44,7 +44,7 @@ export const COURSE_DIR = '/workspace/session/course';
 /**
  * The PrairieLearn pages the agent can open, built by PrairieLearn from its instructor navigation
  * when a conversation is created. `key` uses the same vocabulary as `PageLocationSchema.page`,
- * `params` are the names a page requires, and `file` marks pages that browse a directory's files.
+ * and `params` are the names a page requires.
  */
 export const PageCatalogSchema = z
   .array(
@@ -52,7 +52,6 @@ export const PageCatalogSchema = z
       key: z.string().min(1).max(100),
       label: z.string().min(1).max(100),
       params: z.array(z.enum(['courseInstance', 'assessment', 'question'])),
-      file: z.boolean(),
     }),
   )
   .max(200);
@@ -310,15 +309,14 @@ export const NavigationTargetSchema = z.strictObject({
   courseInstance: z.string().min(1).max(500).optional(),
   assessment: z.string().min(1).max(500).optional(),
   question: z.string().min(1).max(500).optional(),
-  /** For pages that browse files: a path inside the page's own directory. */
-  file: z.string().min(1).max(1000).optional(),
 });
 
 export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
 
 /**
- * A `data-navigation` part: the agent asked the instructor's browser to change pages. `label` is
- * the catalog's label for the page, kept so history renders without the catalog.
+ * A `data-navigation` part: the agent offered to open a page, which the instructor opens by
+ * clicking it. `label` is the catalog's label for the page, kept so history renders without the
+ * catalog.
  */
 export const NavigationPartSchema = z.discriminatedUnion('action', [
   z.strictObject({
