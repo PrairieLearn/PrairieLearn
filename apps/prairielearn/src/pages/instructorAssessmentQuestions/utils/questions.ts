@@ -1,6 +1,7 @@
 import {
   type EditorQuestionMetadata,
   type OtherAssessment,
+  type ResolvedAssessmentQuestionStructureRow,
   type StaffAssessmentQuestionRow,
 } from '../../../lib/assessment-question.shared.js';
 import type {
@@ -16,6 +17,7 @@ import {
   EnumAssessmentToolSchema,
   type QuestionPointsJson,
   type ZoneAssessmentJson,
+  type ZoneQuestionBlockJson,
 } from '../../../schemas/infoAssessment.js';
 import type { QuestionByQidResult } from '../../../trpc/assessment/assessment-questions.js';
 import type {
@@ -35,6 +37,16 @@ export type QuestionMetadataMap = Partial<Record<string, EditorQuestionMetadata>
  */
 export function questionHasTitle(questionData: EditorQuestionMetadata | null): boolean {
   return (questionData?.question.title?.trim().length ?? 0) > 0;
+}
+
+export function hasUnavailableQuestions(
+  question: ZoneQuestionBlockForm,
+  questionMetadata: QuestionMetadataMap,
+): boolean {
+  if (question.alternatives) {
+    return question.alternatives.some((alternative) => !questionMetadata[alternative.id]);
+  }
+  return !questionMetadata[question.id];
 }
 
 /**
@@ -118,44 +130,41 @@ export function questionDisplayName(
 /**
  * Maps questions to a `zone` tree that matches the JSON structure.
  *
- * It assumes that question rows are sorted according to their final JSON structure
- * (e.g. via `selectAssessmentQuestions`).
+ * Rows include unavailable questions and are sorted by zone, pool, and question.
  */
 export function buildHierarchicalAssessment(
-  course: StaffCourse,
-  rows: StaffAssessmentQuestionRow[],
+  rows: ResolvedAssessmentQuestionStructureRow[],
+  toolsByZoneNumber: Map<number, NonNullable<ZoneAssessmentJson['tools']>>,
 ): ZoneAssessmentJson[] {
   const zones: ZoneAssessmentJson[] = [];
-  const zoneAlternativePoolCounts: Record<number, number> = {};
+  const zonesById = new Map<string, ZoneAssessmentJson>();
+  const poolsById = new Map<string, ZoneQuestionBlockJson>();
 
   for (const row of rows) {
-    zones[row.zone.number - 1] ??= {
-      title: row.zone.title ?? undefined,
-      comment: row.zone.json_comment ?? undefined,
-      maxPoints: row.zone.max_points ?? undefined,
-      numberChoose: row.zone.number_choose ?? undefined,
-      bestQuestions: row.zone.best_questions ?? undefined,
-      lockpoint: row.zone.lockpoint,
-      questions: [],
-      advanceScorePerc: row.zone.advance_score_perc ?? undefined,
-      gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,
-      allowRealTimeGrading: row.zone.json_allow_real_time_grading ?? undefined,
-      canView: row.zone.json_can_view ?? [],
-      canSubmit: row.zone.json_can_submit ?? [],
-    };
-
-    const zoneNumber = row.zone.number;
-    zoneAlternativePoolCounts[zoneNumber] ??= -1;
-
-    // If this is a new alternative pool in this zone, increment the count
-    if (row.start_new_alternative_pool) {
-      zoneAlternativePoolCounts[zoneNumber]++;
+    let zone = zonesById.get(row.zone.id);
+    if (!zone) {
+      zone = {
+        title: row.zone.title ?? undefined,
+        comment: row.zone.json_comment ?? undefined,
+        maxPoints: row.zone.max_points ?? undefined,
+        numberChoose: row.zone.number_choose ?? undefined,
+        bestQuestions: row.zone.best_questions ?? undefined,
+        lockpoint: row.zone.lockpoint,
+        questions: [],
+        advanceScorePerc: row.zone.advance_score_perc ?? undefined,
+        gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,
+        allowRealTimeGrading: row.zone.json_allow_real_time_grading ?? undefined,
+        canView: row.zone.json_can_view ?? [],
+        canSubmit: row.zone.json_can_submit ?? [],
+        tools: toolsByZoneNumber.get(row.zone.number),
+      };
+      zonesById.set(row.zone.id, zone);
+      zones.push(zone);
     }
 
-    // Use the count as the position within the zone
-    const positionInZone = zoneAlternativePoolCounts[zoneNumber];
-    if (!zones[zoneNumber - 1].questions[positionInZone]) {
-      zones[zoneNumber - 1].questions[positionInZone] ??= {
+    let pool = poolsById.get(row.alternative_pool.id);
+    if (!pool) {
+      pool = {
         comment: row.alternative_pool.json_comment ?? undefined,
         advanceScorePerc: row.alternative_pool.advance_score_perc ?? undefined,
         canView: row.alternative_pool.json_can_view ?? [],
@@ -171,19 +180,15 @@ export function buildHierarchicalAssessment(
         manualPoints: row.alternative_pool.json_manual_points ?? undefined,
         forceMaxPoints: row.alternative_pool.json_force_max_points ?? undefined,
       };
+      poolsById.set(row.alternative_pool.id, pool);
+      zone.questions.push(pool);
     }
 
     if (row.alternative_pool.json_has_alternatives) {
-      if (row.assessment_question.number_in_alternative_group == null) {
-        throw new Error('Assessment question number is required');
-      }
-
-      zones[zoneNumber - 1].questions[positionInZone].alternatives ??= [];
-      zones[zoneNumber - 1].questions[positionInZone].alternatives![
-        row.assessment_question.number_in_alternative_group - 1
-      ] = {
+      pool.alternatives ??= [];
+      pool.alternatives.push({
         comment: row.assessment_question.json_comment ?? undefined,
-        id: questionDisplayName(course, row),
+        id: row.qid,
         forceMaxPoints: row.assessment_question.json_force_max_points ?? undefined,
         triesPerVariant: row.assessment_question.json_tries_per_variant ?? undefined,
         advanceScorePerc: row.assessment_question.advance_score_perc ?? undefined,
@@ -195,14 +200,12 @@ export function buildHierarchicalAssessment(
         maxAutoPoints: row.assessment_question.json_max_auto_points ?? undefined,
         manualPoints: row.assessment_question.json_manual_points ?? undefined,
         preferences: row.assessment_question.preferences ?? undefined,
-      };
+      });
     } else {
       // Set the top level question ID if there are no alternatives
-      zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
-      zones[zoneNumber - 1].questions[positionInZone].comment =
-        row.assessment_question.json_comment ?? undefined;
-      zones[zoneNumber - 1].questions[positionInZone].preferences =
-        row.assessment_question.preferences ?? undefined;
+      pool.id = row.qid;
+      pool.comment = row.assessment_question.json_comment ?? undefined;
+      pool.preferences = row.assessment_question.preferences ?? undefined;
     }
   }
   return zones;
