@@ -71,6 +71,14 @@ To upgrade Codex, update the release version and the asset's SHA-256 digest (sho
 
 The agent can search the web and read pages through Codex's `web.run` tool, for example to check PrairieLearn documentation or an institution's academic calendar. Codex sends these commands to the model endpoint, and the Worker forwards them to OpenAI, which performs the searches and page reads. The container itself has no internet access. The Worker forwards only the commands it recognizes, sets the search settings itself, and refuses OpenAI-hosted tools in model requests, because the agent can send requests to the model endpoint directly. Searches and page addresses leave PrairieLearn, and page content is untrusted: a page could ask the agent to put course content in a URL it opens.
 
+## Attachment retention
+
+Attachments and their thumbnails are stored in the checkpoint bucket under `uploads/`. A bucket lifecycle rule deletes them 30 days after upload, whether or not the conversation is still in use, and R2 removes an expired object within about a day. The conversation keeps the message, but a sandbox started after that no longer has the file.
+
+The Worker does not create the rule. PrairieLearn's deployed environments define it in Terraform alongside the bucket, so a bucket created any other way keeps attachments until it is given one.
+
+Only the uploaded files expire. A sandbox checkpoint holds the agent's workspace and thread history, so anything the agent copied or printed from an attachment lasts as long as the checkpoint.
+
 ## Deployment environments and monitoring
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.

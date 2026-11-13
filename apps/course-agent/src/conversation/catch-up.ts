@@ -4,7 +4,10 @@ import {
   InputRequestPartSchema,
   type RequestChangesResult,
   ToolCallSchema,
+  UserMessageMetadataSchema,
 } from '@prairielearn/course-agent-types';
+
+import { attachmentOf, attachmentPath } from './attachments.js';
 
 /** Keep the newest turns within a bound that leaves room for the current request. */
 const MAX_CATCH_UP_CHARS = 32_000;
@@ -146,6 +149,24 @@ function describeFileChange(data: unknown) {
   return `[Changed files: ${paths.join(', ')}.]`;
 }
 
+/**
+ * A replayed staff line names the page it was sent from and the most specific item on it, so
+ * "this question" or "here" in an earlier message keeps its referent.
+ */
+function staffSpeaker(metadata: unknown) {
+  const location = UserMessageMetadataSchema.safeParse(metadata ?? {}).data?.location;
+  if (!location) return 'Staff';
+  const item = location.question
+    ? `question ${JSON.stringify(location.question)}${location.questionFromAnotherCourse ? ' shared from another course' : ''}`
+    : location.assessment
+      ? `assessment ${JSON.stringify(location.assessment)}`
+      : location.courseInstance
+        ? `course instance ${JSON.stringify(location.courseInstance)}`
+        : null;
+  const hint = [location.page && `page ${JSON.stringify(location.page)}`, item].filter(Boolean);
+  return hint.length > 0 ? `Staff (on ${hint.join(', ')})` : 'Staff';
+}
+
 /** A restored thread may have lost the prompts that staff's next message answers. */
 function describeInputRequest(data: unknown) {
   const part = InputRequestPartSchema.safeParse(data);
@@ -168,6 +189,10 @@ function describePart(part: UIMessage['parts'][number]) {
       return describeInputRequest(part.data);
     case 'data-tool':
       return describeFileChange(part.data);
+    case 'file': {
+      const attachment = attachmentOf(part);
+      return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';
+    }
     default:
       return '';
   }
@@ -193,7 +218,8 @@ function splitTurns(history: UIMessage[]) {
       }
       const text = describePart(part);
       if (!text) continue;
-      turns.at(-1)?.entries.push(`${message.role === 'user' ? 'Staff' : 'You'}: ${text}`);
+      const speaker = message.role === 'user' ? staffSpeaker(message.metadata) : 'You';
+      turns.at(-1)?.entries.push(`${speaker}: ${text}`);
     }
   }
   return turns;
