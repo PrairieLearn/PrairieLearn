@@ -515,8 +515,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
     log('turn_started', { startup });
     const native = (this.native ??= new CodexAppServerClient(this.sandbox, {
-      list: () => listCourseDatasets(this.courseDataContext()),
-      get: (request) =>
+      listCourseDatasets: () => listCourseDatasets(this.courseDataContext()),
+      getCourseData: (request) =>
         getCourseData({ ...this.courseDataContext(), sandbox: this.sandbox, request }),
     }));
     let nativeThreadId = this.record.nativeThreadId;

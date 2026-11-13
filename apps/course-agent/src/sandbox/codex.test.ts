@@ -10,8 +10,11 @@ function runner({
   loseAcceptance = false,
   history = [] as unknown[],
   courseData = {
-    list: async (): Promise<ToolReply> => ({ success: false, text: 'Not used in this test' }),
-    get: async (_request: CourseDataRequest): Promise<ToolReply> => ({
+    listCourseDatasets: async (): Promise<ToolReply> => ({
+      success: false,
+      text: 'Not used in this test',
+    }),
+    getCourseData: async (_request: CourseDataRequest): Promise<ToolReply> => ({
       success: false,
       text: 'Not used in this test',
     }),
@@ -288,8 +291,8 @@ describe('course agent turns', () => {
 
   it('offers the course data tools to new threads and returns their replies to the model', async () => {
     const courseData = {
-      list: vi.fn(async () => ({ success: true, text: 'Course datasets' })),
-      get: vi.fn(async ({ dataset }: CourseDataRequest) => {
+      listCourseDatasets: vi.fn(async () => ({ success: true, text: 'Course datasets' })),
+      getCourseData: vi.fn(async ({ dataset }: CourseDataRequest) => {
         if (dataset === 'missing') throw new Error('404: Unknown dataset "missing"');
         return { success: true, text: `Wrote rows for ${dataset}` };
       }),
@@ -317,15 +320,17 @@ describe('course agent turns', () => {
     call(11, 'get_course_data', {
       dataset: 'submissions',
       filters: [{ column: 'score', op: 'lt', value: 0.5 }],
+      select: ['id'],
     });
-    call(12, 'get_course_data', { dataset: 'missing' });
+    call(12, 'get_course_data', { dataset: 'missing', select: ['id'] });
     call(13, 'get_course_data', { filters: [] });
     const replies = () => commands.filter((command) => 'result' in command);
     await vi.waitFor(() => expect(replies()).toHaveLength(4));
-    expect(courseData.list).toHaveBeenCalledOnce();
-    expect(courseData.get).toHaveBeenCalledWith({
+    expect(courseData.listCourseDatasets).toHaveBeenCalledOnce();
+    expect(courseData.getCourseData).toHaveBeenCalledWith({
       dataset: 'submissions',
       filters: [{ column: 'score', op: 'lt', value: 0.5 }],
+      select: ['id'],
     });
     const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
     expect(byId[10]).toEqual({
@@ -341,7 +346,7 @@ describe('course agent turns', () => {
       contentItems: [{ type: 'inputText', text: '404: Unknown dataset "missing"' }],
     });
     expect(byId[13]).toMatchObject({ success: false });
-    expect(courseData.get).toHaveBeenCalledTimes(2);
+    expect(courseData.getCourseData).toHaveBeenCalledTimes(2);
   });
 
   it('shows input the agent requests as an input request part', async () => {

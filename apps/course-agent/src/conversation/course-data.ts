@@ -6,7 +6,7 @@ import { logEvent } from '../monitoring.js';
 import type { CourseDataRequest, ToolReply } from '../sandbox/codex.js';
 import type { CourseSandbox } from '../sandbox/sandbox.js';
 
-// The whole response is held in memory and sent to the sandbox in one RPC.
+// Rows are streamed into the sandbox; this bounds one download's size on disk and its time.
 const MAX_BYTES = 25 * 1024 * 1024;
 
 const JsonSchemaProperty = z.looseObject({
@@ -49,7 +49,7 @@ function describeColumn(name: string, property: z.infer<typeof ColumnSchema>) {
 
 function describeSchema(schema: z.infer<typeof SchemaResponse>) {
   return [
-    `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC. Any column can be filtered (eq, lt, lte, gt, gte, or in with a list of up to ${COURSE_DATA_MAX_IN_VALUES} values), selected, or sorted on.`,
+    `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC, so convert them to the course instance's display_timezone before grouping by day. Results carry course_instance_short_name, assessment_tid, and qid, the directory names in the course files, so filter by those rather than looking up IDs. Select the columns you need; any column can be filtered (eq, lt, lte, gt, gte, or in with a list of up to ${COURSE_DATA_MAX_IN_VALUES} values) or sorted on.`,
     ...Object.entries(schema.datasets).flatMap(([name, dataset]) => [
       '',
       `${name}: ${dataset.description}`,
@@ -60,23 +60,45 @@ function describeSchema(schema: z.infer<typeof SchemaResponse>) {
   ].join('\n');
 }
 
-async function readCapped(response: Response) {
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let text = '';
-  let bytes = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    bytes += value.byteLength;
-    if (bytes > MAX_BYTES) {
-      await reader.cancel();
-      return null;
-    }
-    text += decoder.decode(value, { stream: true });
-  }
-  return { text: text + decoder.decode(), bytes };
+/**
+ * Passes JSONL through up to `maxBytes`, ending at a row boundary, and counts what it passed. At
+ * the limit it stops reading, which cancels the download.
+ */
+function capRows(maxBytes: number) {
+  const result = { rows: 0, bytes: 0, truncated: false };
+  // The end of the last chunk, after its last newline: the start of a row still arriving.
+  let partial = new Uint8Array(0);
+  const stream = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      const data = new Uint8Array(partial.length + chunk.length);
+      data.set(partial);
+      data.set(chunk, partial.length);
+      let end = data.lastIndexOf(NEWLINE) + 1;
+      const budget = maxBytes - result.bytes;
+      // Past the limit, keep only the rows that fit. A row still arriving that can't fit also
+      // ends the file, so it is never buffered whole.
+      if (data.length > budget) {
+        end = data.subarray(0, budget).lastIndexOf(NEWLINE) + 1;
+        result.truncated = true;
+      }
+      const rows = data.subarray(0, end);
+      for (const byte of rows) if (byte === NEWLINE) result.rows++;
+      result.bytes += rows.length;
+      if (rows.length > 0) controller.enqueue(rows);
+      partial = data.slice(end);
+      if (result.truncated) controller.terminate();
+    },
+    flush(controller) {
+      // PrairieLearn ends every row with a newline, so this is only a row cut off by an error.
+      if (partial.length > 0) {
+        controller.error(new Error('Course data ended in the middle of a row'));
+      }
+    },
+  });
+  return { stream, result };
 }
+
+const NEWLINE = 0x0a;
 
 async function errorMessage(response: Response) {
   const body = await response.text();
@@ -106,7 +128,7 @@ interface CourseDataContext {
   courseId: string | undefined;
 }
 
-// Longer than PrairieLearn's 60-second statement timeout, so a slow query fails with its reason.
+// Longer than PrairieLearn's 60-second query timeout, so a slow query fails with its reason.
 const REQUEST_TIMEOUT_MS = 120_000;
 
 const UNAVAILABLE: ToolReply = {
@@ -125,11 +147,11 @@ function authHeaders({ serviceToken, conversationId }: CourseDataContext) {
   };
 }
 
-/** Serves `list_course_datasets` from `GET /pl/api/v1/course/:course_id/data`. */
+/** Serves `list_course_datasets` from `GET /pl/course/:course_id/course_agent/data`. */
 export async function listCourseDatasets(context: CourseDataContext): Promise<ToolReply> {
   if (!context.courseId) return UNAVAILABLE;
   const response = await fetch(
-    new URL(`/pl/api/v1/course/${context.courseId}/data`, context.plUrl),
+    new URL(`/pl/course/${context.courseId}/course_agent/data`, context.plUrl),
     { headers: authHeaders(context), signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
   );
   if (!response.ok) {
@@ -139,8 +161,8 @@ export async function listCourseDatasets(context: CourseDataContext): Promise<To
 }
 
 /**
- * Serves `get_course_data` from `POST /pl/api/v1/course/:course_id/data/:dataset`: saves the rows
- * in the sandbox and describes the file.
+ * Serves `get_course_data` from `POST /pl/course/:course_id/course_agent/data/:dataset`: streams
+ * the rows into a file in the sandbox and describes the file.
  */
 export async function getCourseData({
   sandbox,
@@ -155,7 +177,7 @@ export async function getCourseData({
   const started = Date.now();
   const response = await fetch(
     new URL(
-      `/pl/api/v1/course/${context.courseId}/data/${encodeURIComponent(dataset)}`,
+      `/pl/course/${context.courseId}/course_agent/data/${encodeURIComponent(dataset)}`,
       context.plUrl,
     ),
     {
@@ -169,18 +191,9 @@ export async function getCourseData({
     return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
   }
 
-  const body = await readCapped(response);
-  if (!body) {
-    return {
-      success: false,
-      text: `The result is larger than ${MAX_BYTES / 1024 / 1024} MB. Add filters (such as course_instance_id or assessment_id) or select fewer columns.`,
-    };
-  }
-  // Each row ends with a newline, so count them rather than splitting a copy of the whole body.
-  let rows = 0;
-  for (let i = body.text.indexOf('\n'); i !== -1; i = body.text.indexOf('\n', i + 1)) rows++;
-  const filters = (query.filters ?? []).map(describeFilter);
-  const path = await sandbox.writeCourseData(dataset, body.text);
+  const capped = capRows(MAX_BYTES);
+  const path = await sandbox.writeCourseData(dataset, response.body!.pipeThrough(capped.stream));
+  const { rows, bytes, truncated } = capped.result;
   logEvent('course_data_fetched', {
     conversationId: context.conversationId,
     dataset,
@@ -191,17 +204,25 @@ export async function getCourseData({
         : `${filter.column} ${filter.op}`,
     ),
     rows,
-    bytes: body.bytes,
+    bytes,
+    truncated,
     elapsedMs: Date.now() - started,
   });
-  const firstRow = body.text.slice(0, body.text.indexOf('\n'));
-  const columns = rows > 0 ? Object.keys(JSON.parse(firstRow)).join(', ') : 'none';
-  const scope =
-    filters.length > 0
-      ? `Filters: ${filters.join(' AND ')}. The file holds only matching rows.`
-      : 'No filters: every row in this course.';
+  const filters = (query.filters ?? []).map(describeFilter);
   return {
     success: true,
-    text: `Wrote ${rows} rows (${(body.bytes / 1024 / 1024).toFixed(1)} MB) to ${path}. ${scope} Columns: ${columns}.`,
+    text: [
+      `Wrote ${rows} rows (${(bytes / 1024 / 1024).toFixed(1)} MB) to ${path}.`,
+      filters.length > 0
+        ? `Filters: ${filters.join(' AND ')}. The file holds only matching rows.`
+        : 'No filters.',
+      query.limit !== undefined &&
+        `Limit: ${query.limit} rows${rows === query.limit ? ', so more rows may match' : ''}.`,
+      truncated &&
+        `Stopped at the ${MAX_BYTES / 1024 / 1024} MB download limit, so the file holds only the first rows returned and more rows match.`,
+      `Columns: ${query.select.join(', ')}.`,
+    ]
+      .filter(Boolean)
+      .join(' '),
   };
 }

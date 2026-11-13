@@ -122,9 +122,13 @@ if ('h' in argv || 'help' in argv) {
   process.exit(0);
 }
 
-function excludeRoutes(routes: string[], handler: RequestHandler) {
+function excludeRoutes(routes: (string | RegExp)[], handler: RequestHandler) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (routes.some((route) => req.path.startsWith(route))) {
+    if (
+      routes.some((route) =>
+        typeof route === 'string' ? req.path.startsWith(route) : route.test(req.path),
+      )
+    ) {
       next();
     } else {
       handler(req, res, next);
@@ -535,9 +539,14 @@ export async function initExpress(): Promise<Express> {
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
   );
 
-  // Set and check `res.locals.__csrf_token`. We exclude API routes as those
-  // don't require CSRF protection (and in fact can't have it at all).
-  app.use(excludeRoutes(['/pl/api/'], (await import('./middlewares/csrfToken.js')).default));
+  // Set and check `res.locals.__csrf_token`. We exclude API routes and the course agent
+  // service's course data requests, which use tokens rather than cookies.
+  app.use(
+    excludeRoutes(
+      ['/pl/api/', /^\/pl\/course\/\d+\/course_agent\/data(?:\/|$)/],
+      (await import('./middlewares/csrfToken.js')).default,
+    ),
+  );
 
   app.use((await import('./middlewares/logRequest.js')).default);
 
@@ -777,6 +786,11 @@ export async function initExpress(): Promise<Express> {
     app.use(
       '/pl/course/:course_id(\\d+)/course_agent/file',
       (await import('./ee/routers/courseAgentFile.js')).default,
+    );
+    // The course agent service's course data requests; middlewares/authn.ts authenticates them.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent/data',
+      (await import('./ee/routers/courseAgentData/index.js')).default,
     );
     app.use(
       '/pl/course/:course_id(\\d+)/course_agent',

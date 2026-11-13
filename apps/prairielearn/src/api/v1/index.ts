@@ -39,17 +39,6 @@ const authzHasCourseEditor = asyncHandler(async (req, res, next) => {
   next();
 });
 
-/**
- * Course data spans every course instance's student data, so it is limited to course owners
- * for now.
- */
-const authzHasCourseOwner = asyncHandler(async (req, res, next) => {
-  if (!res.locals.authz_data.has_course_permission_own) {
-    throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
-  }
-  next();
-});
-
 // Pretty-print all JSON responses.
 router.use((await import('./prettyPrintJson.js')).default);
 
@@ -100,12 +89,6 @@ router.use(
 router.use(
   '/course_instances/:course_instance_id(\\d+)/course_instance_access_rules',
   (await import('./endpoints/courseInstanceAccessRules/index.js')).default,
-);
-// The course agent's credentials are limited to this path (see ee/lib/course-agent/authn.ts).
-router.use(
-  '/course/:course_id(\\d+)/data',
-  authzHasCourseOwner,
-  (await import('./endpoints/courseData/index.js')).default,
 );
 router.use(
   '/course/:course_id(\\d+)/sync',

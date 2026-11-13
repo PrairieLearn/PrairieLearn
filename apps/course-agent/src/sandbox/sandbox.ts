@@ -704,7 +704,7 @@ export class CourseSandbox extends DurableObject<Env> {
   }
 
   /** Saves downloaded course data outside the course checkout; returns the file path. */
-  async writeCourseData(dataset: string, contents: string) {
+  async writeCourseData(dataset: string, contents: ReadableStream<Uint8Array>) {
     const path = `${COURSE_DATA}/${dataset}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
     await new Files(this.container).writeFile(path, contents, { user: AGENT_UID_GID });
     return path;

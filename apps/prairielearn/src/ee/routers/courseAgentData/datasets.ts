@@ -9,35 +9,56 @@ import {
   EnumGradingMethodSchema,
   EnumInstanceQuestionStatusSchema,
   EnumModeSchema,
-} from '../../../../lib/db-types.js';
+} from '../../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 // Rows are JSON: IDs are strings, as in the rest of the API, and timestamps are ISO 8601 in UTC.
 const TimestampSchema = z.iso.datetime();
 
+// The names the course files use, so a row can be matched to its files without another download.
+const CourseInstanceShortNameSchema = z
+  .string()
+  .describe("The course instance's directory name in the course files, under courseInstances/.");
+const AssessmentTidSchema = z
+  .string()
+  .nullable()
+  .describe("The assessment's directory within its course instance's assessments/ directory.");
+const QidSchema = z
+  .string()
+  .nullable()
+  .describe("The question's directory within the course's questions/ directory.");
+
+// A JSON object from a jsonb column, such as a question's parameters.
+const JsonObjectSchema = z.record(z.string(), z.unknown());
+
 function dataset<Shape extends Record<string, z.ZodType>>({
   description,
   query,
   schema,
+  largeColumns = [],
 }: {
   description: string;
   query: string;
   schema: z.ZodObject<Shape>;
+  /** Columns whose values can be large, so rows that include them are read a few at a time. */
+  largeColumns?: (keyof Shape & string)[];
 }) {
   return {
     description,
     query,
     schema,
+    largeColumns: new Set<string>(largeColumns),
     querySchema: courseDataQuerySchema(z.enum(Object.keys(schema.shape) as [keyof Shape & string])),
   };
 }
 
 /**
- * The course data API's datasets: the single source of truth for what the API exposes. The router,
- * the request schemas, and the committed JSON Schema are derived from this registry, and a test
- * checks that each query returns exactly its schema's columns. Within v1, only add datasets and
- * columns; a removal, rename, or change in meaning needs a new version.
+ * The course data datasets: the single source of truth for what the course agent can read. The
+ * router and the request schemas are derived from this registry, and a test checks that each query
+ * returns exactly its schema's columns. Within v1, only add datasets and columns; a removal,
+ * rename, or change in meaning needs a new version, since a running conversation may still use
+ * an older Worker.
  */
 export const COURSE_DATA_DATASETS = {
   course_instances: dataset({
@@ -66,6 +87,7 @@ export const COURSE_DATA_DATASETS = {
     schema: z.object({
       id: IdSchema,
       course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
       tid: z
         .string()
         .nullable()
@@ -107,7 +129,7 @@ export const COURSE_DATA_DATASETS = {
       title: z.string().nullable().describe('Title of the question.'),
       topic: z.string().nullable().describe('Category the question belongs to.'),
       grading_method: EnumGradingMethodSchema.describe(
-        'How submissions to the question are graded.',
+        "The question's default grading method. An assessment can grade the question differently; see max_auto_points and max_manual_points in assessment_questions.",
       ),
       single_variant: z
         .boolean()
@@ -123,8 +145,11 @@ export const COURSE_DATA_DATASETS = {
     schema: z.object({
       id: IdSchema,
       course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
       assessment_id: IdSchema,
+      assessment_tid: AssessmentTidSchema,
       question_id: IdSchema,
+      qid: QidSchema,
       number: z.number().nullable().describe('Position of the question on the assessment.'),
       max_points: z
         .number()
@@ -153,7 +178,9 @@ export const COURSE_DATA_DATASETS = {
     schema: z.object({
       id: IdSchema,
       course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
       assessment_id: IdSchema,
+      assessment_tid: AssessmentTidSchema,
       user_id: IdSchema.nullable().describe('Student who owns the attempt. Null for team work.'),
       team_id: IdSchema.nullable().describe(
         'Team that owns the attempt. Null for individual work.',
@@ -181,10 +208,18 @@ export const COURSE_DATA_DATASETS = {
     schema: z.object({
       id: IdSchema,
       course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
       assessment_id: IdSchema,
+      assessment_tid: AssessmentTidSchema,
       assessment_instance_id: IdSchema,
+      include_in_statistics: z
+        .boolean()
+        .describe(
+          'Whether the attempt counts in assessment statistics. False for staff attempts and others excluded.',
+        ),
       assessment_question_id: IdSchema,
       question_id: IdSchema,
+      qid: QidSchema,
       number: z.number().nullable().describe('Position of the question in the attempt.'),
       status: EnumInstanceQuestionStatusSchema.nullable().describe(
         'Grading status of the question in the attempt.',
@@ -219,9 +254,12 @@ export const COURSE_DATA_DATASETS = {
     schema: z.object({
       id: IdSchema,
       course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
       assessment_id: IdSchema,
+      assessment_tid: AssessmentTidSchema,
       instance_question_id: IdSchema,
       question_id: IdSchema,
+      qid: QidSchema,
       user_id: IdSchema.nullable().describe(
         'Student the variant was generated for. Null for team work.',
       ),
@@ -235,19 +273,28 @@ export const COURSE_DATA_DATASETS = {
       created_at: TimestampSchema.nullable().describe('When the variant was generated.'),
       open: z.boolean().nullable().describe('Whether the variant still accepts submissions.'),
       broken: z.boolean().describe('Whether the variant was marked broken.'),
+      params: JsonObjectSchema.nullable().describe(
+        'Parameters the question generated for the variant. Can be large.',
+      ),
+      true_answer: JsonObjectSchema.nullable().describe(
+        'Correct answer for the variant, keyed by answer name. Can be large.',
+      ),
     }),
+    largeColumns: ['params', 'true_answer'],
   }),
   submissions: dataset({
-    description:
-      'Student answer submissions, without answer contents. Instructor previews are excluded.',
+    description: 'Student answer submissions. Instructor previews are excluded.',
     query: sql.select_submissions_by_course_id,
     schema: z.object({
       id: IdSchema,
       course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
       assessment_id: IdSchema,
+      assessment_tid: AssessmentTidSchema,
       assessment_instance_id: IdSchema,
       instance_question_id: IdSchema,
       question_id: IdSchema,
+      qid: QidSchema,
       variant_id: IdSchema,
       user_id: IdSchema.nullable().describe(
         'Student who submitted the answer. Null for team work.',
@@ -275,7 +322,20 @@ export const COURSE_DATA_DATASETS = {
         .number()
         .nullable()
         .describe("Credit percentage from the assessment's access rules at submission time."),
+      submitted_answer: JsonObjectSchema.nullable().describe(
+        'The answer, keyed by answer name. Uploaded files are omitted. Can be large.',
+      ),
+      format_errors: JsonObjectSchema.nullable().describe(
+        'Why parts of the answer could not be parsed, keyed by answer name.',
+      ),
+      partial_scores: JsonObjectSchema.nullable().describe(
+        'Score of each graded answer part, keyed by answer name. Can be large.',
+      ),
+      feedback: JsonObjectSchema.nullable().describe(
+        'Feedback from grading, such as autograder results. Can be large.',
+      ),
     }),
+    largeColumns: ['submitted_answer', 'partial_scores', 'feedback'],
   }),
 };
 
@@ -299,7 +359,7 @@ function toJsonSchema(schema: z.ZodType) {
   });
 }
 
-/** The dataset list endpoint's response, also committed as JSON Schema for review. */
+/** The dataset list endpoint's response. */
 export function courseDataSchema() {
   return {
     version: COURSE_DATA_VERSION,

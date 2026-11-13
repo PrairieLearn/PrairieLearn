@@ -1,6 +1,8 @@
 -- Each block returns exactly the columns of its dataset's schema in datasets.ts, limited to the course
--- in $course_id. The API wraps a block as a subquery to filter, sort, and limit its rows, so joins
--- should follow indexed paths down from course_instances.
+-- in $course_id. The router wraps a block as a subquery to select, filter, sort, and limit its rows,
+-- so joins should follow indexed paths down from course_instances. Keep each block a plain join,
+-- without DISTINCT, GROUP BY, window functions, or LIMIT, so that Postgres flattens the wrapper and
+-- reads only the selected columns.
 -- BLOCK select_course_instances_by_course_id
 SELECT
   ci.id,
@@ -19,6 +21,7 @@ WHERE
 SELECT
   a.id,
   a.course_instance_id,
+  ci.short_name AS course_instance_short_name,
   a.tid,
   a.title,
   aset.abbreviation || a.number AS label,
@@ -58,8 +61,11 @@ WHERE
 SELECT
   aq.id,
   a.course_instance_id,
+  ci.short_name AS course_instance_short_name,
   aq.assessment_id,
+  a.tid AS assessment_tid,
   aq.question_id,
+  q.qid,
   aq.number,
   aq.max_points,
   aq.max_auto_points,
@@ -71,6 +77,8 @@ FROM
   course_instances AS ci
   JOIN assessments AS a ON (a.course_instance_id = ci.id)
   JOIN assessment_questions AS aq ON (aq.assessment_id = a.id)
+  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
+  LEFT JOIN questions AS q ON (q.id = aq.question_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -81,7 +89,9 @@ WHERE
 SELECT
   ai.id,
   a.course_instance_id,
+  ci.short_name AS course_instance_short_name,
   ai.assessment_id,
+  a.tid AS assessment_tid,
   ai.user_id,
   ai.team_id,
   ai.number,
@@ -111,10 +121,14 @@ WHERE
 SELECT
   iq.id,
   a.course_instance_id,
+  ci.short_name AS course_instance_short_name,
   a.id AS assessment_id,
+  a.tid AS assessment_tid,
   iq.assessment_instance_id,
+  ai.include_in_statistics,
   iq.assessment_question_id,
   aq.question_id,
+  q.qid,
   iq.number,
   iq.status,
   iq.points,
@@ -136,6 +150,8 @@ FROM
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
+  LEFT JOIN questions AS q ON (q.id = aq.question_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -145,21 +161,28 @@ WHERE
 SELECT
   v.id,
   a.course_instance_id,
+  ci.short_name AS course_instance_short_name,
   a.id AS assessment_id,
+  a.tid AS assessment_tid,
   v.instance_question_id,
   v.question_id,
+  q.qid,
   v.user_id,
   v.team_id,
   v.number,
   v.date AS created_at,
   v.open,
-  v.broken_at IS NOT NULL AS broken
+  v.broken_at IS NOT NULL AS broken,
+  v.params,
+  v.true_answer
 FROM
   course_instances AS ci
   JOIN assessments AS a ON (a.course_instance_id = ci.id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN variants AS v ON (v.instance_question_id = iq.id)
+  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
+  LEFT JOIN questions AS q ON (q.id = v.question_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -169,10 +192,13 @@ WHERE
 SELECT
   s.id,
   a.course_instance_id,
+  ci.short_name AS course_instance_short_name,
   a.id AS assessment_id,
+  a.tid AS assessment_tid,
   ai.id AS assessment_instance_id,
   iq.id AS instance_question_id,
   v.question_id,
+  q.qid,
   s.variant_id,
   v.user_id,
   v.team_id,
@@ -184,7 +210,12 @@ SELECT
   s.score,
   s.correct,
   s.override_score IS NOT NULL AS overridden,
-  s.credit
+  s.credit,
+  -- Uploaded files are base64 file contents, which can be many megabytes.
+  s.submitted_answer - '_files' AS submitted_answer,
+  s.format_errors,
+  s.partial_scores,
+  s.feedback
 FROM
   course_instances AS ci
   JOIN assessments AS a ON (a.course_instance_id = ci.id)
@@ -192,6 +223,8 @@ FROM
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN variants AS v ON (v.instance_question_id = iq.id)
   JOIN submissions AS s ON (s.variant_id = v.id)
+  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
+  LEFT JOIN questions AS q ON (q.id = v.question_id)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL

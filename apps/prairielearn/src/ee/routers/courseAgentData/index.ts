@@ -1,13 +1,15 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import { type ErrorRequestHandler, Router } from 'express';
 import pg from 'pg';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { courseAgentEnabled } from '../../lib/course-agent/access.js';
 
 import { COURSE_DATA_DATASETS, courseDataSchema, isCourseDataset } from './datasets.js';
 import { selectCourseDatasetRowsQuery } from './query.js';
@@ -23,6 +25,20 @@ const SCHEMA = courseDataSchema();
 // the course agent's 120-second request timeout, so a slow query fails with a reason.
 const QUERY_TIMEOUT_MS = 60_000;
 
+// Rows read from the database at a time. A row with a large column, such as a submitted answer,
+// can be megabytes.
+const BATCH_SIZE = 1000;
+const LARGE_BATCH_SIZE = 10;
+
+router.use(
+  typedAsyncHandler<'course'>(async (req, res, next) => {
+    if (!(await courseAgentEnabled(res.locals))) {
+      throw new HttpStatusError(403, 'The course agent is not enabled for this course and user');
+    }
+    next();
+  }),
+);
+
 router.get('/', (req, res) => {
   res.send(SCHEMA);
 });
@@ -30,7 +46,7 @@ router.get('/', (req, res) => {
 // A POST because the request is a JSON document; it only reads data.
 router.post(
   '/:dataset',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const name = req.params.dataset;
     if (!isCourseDataset(name)) {
       throw new HttpStatusError(
@@ -52,7 +68,8 @@ router.post(
       RowSchema,
       { signal: timeout },
     );
-    const batches = cursor.iterate(1000);
+    const large = body.data.select.some((column) => dataset.largeColumns.has(column));
+    const batches = cursor.iterate(large ? LARGE_BATCH_SIZE : BATCH_SIZE);
     // Fetch the first batch before responding, while an error can still be sent: a filter value
     // Postgres can't convert to its column's type (class 22, data exception), or the timeout.
     let first: IteratorResult<Record<string, unknown>[]>;
@@ -70,15 +87,16 @@ router.post(
       }
       throw err;
     }
-    const jsonl = (rows: Record<string, unknown>[]) =>
-      rows.map((row) => `${JSON.stringify(row)}\n`).join('');
     res.type('application/x-ndjson');
     try {
       await pipeline(
+        // One row per chunk, so the stream's read-ahead buffer holds a few rows, not batches.
         Readable.from(
           (async function* () {
-            if (!first.done) yield jsonl(first.value);
-            for await (const rows of batches) yield jsonl(rows);
+            if (!first.done) for (const row of first.value) yield `${JSON.stringify(row)}\n`;
+            for await (const rows of batches) {
+              for (const row of rows) yield `${JSON.stringify(row)}\n`;
+            }
           })(),
         ),
         res,
@@ -90,5 +108,22 @@ router.post(
     }
   }),
 );
+
+/**
+ * The course agent shows error messages to the model, so client errors we raise are sent as JSON:
+ * their messages explain how to fix the request. Other errors may expose internals, so they go to
+ * the default error handler.
+ */
+router.use(((err, req, res, next) => {
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+  if (err instanceof HttpStatusError && err.status < 500) {
+    res.status(err.status).send({ message: err.message });
+    return;
+  }
+  next(err);
+}) satisfies ErrorRequestHandler);
 
 export default router;

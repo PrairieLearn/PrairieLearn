@@ -73,9 +73,9 @@ The agent can search the web and read pages through Codex's `web.run` tool, for 
 
 ## Course data
 
-The agent reads course data with two tools. `list_course_datasets` lists the datasets and their columns, and `get_course_data` downloads one dataset's rows, optionally filtered, sorted, and limited, as a JSONL file in `/workspace/session/course-data/`. The agent analyzes the files with Python scripts saved in the same directory. Downloads and scripts are kept in checkpoints, so they survive the sandbox's idle shutdown; checkpoints therefore contain student data.
+The agent reads course data with two tools. `list_course_datasets` lists the datasets and their columns, and `get_course_data` downloads the selected columns of one dataset's rows, optionally filtered, sorted, and limited, as a JSONL file in `/workspace/session/course-data/`. The Worker streams rows into the file and stops at 25 MB, at a row boundary, telling the agent the file is incomplete. Some columns, such as submitted answers, can be large; uploaded files are left out. The agent analyzes the files with Python scripts saved in the same directory. Downloads and scripts are kept in checkpoints, so they survive the sandbox's idle shutdown; checkpoints therefore contain student data.
 
-The Worker serves both tools from PrairieLearn's course data API (`/pl/api/v1/course/:course_id/data`), at the origin in `PL_URL`. It authenticates with `PL_SERVICE_TOKEN` and names the conversation, and PrairieLearn applies that conversation's user's permissions: only course owners (and administrators) can read course data, and only for the conversation's course. The container itself never calls PrairieLearn.
+The Worker serves both tools from PrairieLearn's internal course data route (`/pl/course/:course_id/course_agent/data`), at the origin in `PL_URL`. It authenticates with `PL_SERVICE_TOKEN` and names the conversation, and PrairieLearn applies that conversation's user's permissions: only users who can use the course agent in the course (its owners and administrators) can read its data, and only for the conversation's course. The container itself never calls PrairieLearn.
 
 ## Attachment retention
 
@@ -89,7 +89,7 @@ Only the uploaded files expire. A sandbox checkpoint holds the agent's workspace
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.
 
-Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, `PL_URL` (PrairieLearn's origin, for course data), and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
+Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
 
 Every object in the checkpoint bucket lives under a prefix that names its kind, so R2 lifecycle rules can be scoped by prefix: sandbox checkpoints under `checkpoints/` (`<id>.tar.zst`, referenced by conversation state and deleted by the archive cleanup, so they must never expire by age) and local course archives under `local-sources/`. A checkpoint record stores only its id, so changing the checkpoint prefix makes existing checkpoints unreachable unless their objects are copied to the new prefix first.
 

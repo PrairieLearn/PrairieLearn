@@ -72,8 +72,8 @@ export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
 
 /** Serves the course data tools; replies go to the model. */
 export interface CourseDataTools {
-  list(): Promise<ToolReply>;
-  get(request: CourseDataRequest): Promise<ToolReply>;
+  listCourseDatasets(): Promise<ToolReply>;
+  getCourseData(request: CourseDataRequest): Promise<ToolReply>;
 }
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
@@ -276,18 +276,19 @@ export class CodexAppServerClient {
       case listCourseDatasetsTool.name: {
         const request = ListCourseDatasetsArguments.safeParse(call.data.arguments);
         if (!request.success) return invalidArguments(request.error);
-        return await replyWithError(() => this.courseData.list());
+        return await replyWithError(() => this.courseData.listCourseDatasets());
       }
       case courseDataTool.name: {
         const request = CourseDataArguments.safeParse(call.data.arguments);
         if (!request.success) return invalidArguments(request.error);
-        return await replyWithError(() => this.courseData.get(request.data));
+        return await replyWithError(() => this.courseData.getCourseData(request.data));
       }
       case requestChangesTool.name: {
-        if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
-          throw new Error('Invalid request_changes call');
-        }
-        return await this.onReview({ ...call.data, arguments: {} });
+        // The tool is offered only when reviews are handled, so this call is a protocol error.
+        if (!this.onReview) throw new Error('Review handling is not configured');
+        const request = RequestChangesArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await this.onReview({ ...call.data, arguments: request.data });
       }
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
@@ -557,7 +558,7 @@ const courseDataTool = {
   type: 'function',
   name: 'get_course_data',
   description:
-    "Download rows of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. The reply gives the file's path, row count, and columns.",
+    "Download the selected columns of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. To narrow results to a course instance, assessment, or question, filter by course_instance_short_name, assessment_tid, or qid, the directory names in the course files; there is no need to look up IDs first. The reply gives the file's path and row count, and says if the file does not hold every matching row.",
   inputSchema: toolInputSchema(CourseDataArguments),
 } satisfies DynamicToolSpec;
 

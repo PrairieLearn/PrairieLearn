@@ -10,11 +10,12 @@ const OPERATORS = {
 } satisfies Record<(typeof COURSE_DATA_COMPARISONS)[number], string>;
 
 /**
- * Wraps a dataset's query from datasets.sql to filter, sort, and limit its rows. This is the one
- * place the API assembles SQL in TypeScript, because Postgres cannot take a column name as a
- * parameter. `query` must already be validated against the dataset's request schema, so every
- * column is one of the dataset's own; operators and directions come from fixed lists, and every
- * value, `in` list, and the limit are parameters.
+ * Wraps a dataset's query from datasets.sql to select, filter, sort, and limit its rows. Postgres
+ * flattens the wrapped query, so it reads only the selected columns, which matters for large JSON
+ * ones. This is the one place the course data router assembles SQL in TypeScript, because Postgres
+ * cannot take a column name as a parameter. `query` must already be validated against the
+ * dataset's request schema, so every column is one of the dataset's own; operators and directions
+ * come from fixed lists, and every value, `in` list, and the limit are parameters.
  */
 export function selectCourseDatasetRowsQuery(
   datasetQuery: string,
@@ -31,7 +32,7 @@ export function selectCourseDatasetRowsQuery(
   const ordering = (query.order ?? []).map(
     (term) => `${escapeIdentifier(term.column)} ${term.direction === 'desc' ? 'DESC' : 'ASC'}`,
   );
-  const columns = query.select?.length ? query.select.map(escapeIdentifier).join(', ') : '*';
+  const columns = query.select.map(escapeIdentifier).join(', ');
   return {
     rawSqlQuery: [
       `SELECT ${columns} FROM (${datasetQuery.trim().replace(/;$/, '')}) AS t`,

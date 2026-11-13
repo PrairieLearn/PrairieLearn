@@ -336,7 +336,12 @@ export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: 
       )
       .optional()
       .describe('Conditions that every row must meet.'),
-    select: z.array(column).optional().describe('Columns to include. Omit for all columns.'),
+    select: z
+      .array(column)
+      .min(1)
+      .describe(
+        'Columns to include. Large columns are slower to read, so select only those needed.',
+      ),
     order: z
       .array(z.strictObject({ column, direction: z.enum(['asc', 'desc']) }))
       .optional()

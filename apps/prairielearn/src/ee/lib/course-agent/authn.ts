@@ -16,35 +16,31 @@ function isServiceToken(authorization: string) {
 }
 
 /**
- * Authenticates an API request the course agent service makes for a conversation. The service
- * token proves the request comes from the service; the conversation identifies the user, whose
- * normal permissions then apply, including administrator access, so an administrator who can use
- * the agent in a course can also use its tools there. The request may only read its
- * conversation's course data, so a model in the sandbox cannot reach other courses or other API
- * routes.
- *
- * Returns null for a request that is not from the service.
+ * Authenticates a request the course agent service makes to read course data for a conversation.
+ * The service token proves the request comes from the service; the conversation identifies the
+ * user, whose normal permissions then apply, including administrator access, so an administrator
+ * who can use the agent in a course can also use its tools there. The conversation must belong to
+ * the requested course, so a model in the sandbox cannot reach other courses' data.
  */
 export async function authenticateCourseAgentRequest({
   authorization,
   conversationId,
-  path,
+  courseId,
 }: {
   authorization: string | undefined;
   conversationId: string | undefined;
-  path: string;
-}): Promise<{ user: User; is_administrator: boolean } | { error: string } | null> {
-  if (authorization === undefined || conversationId === undefined) return null;
-  if (!isServiceToken(authorization)) return null;
+  courseId: string;
+}): Promise<{ user: User; is_administrator: boolean } | { status: number; error: string }> {
+  if (authorization === undefined || !isServiceToken(authorization)) {
+    return { status: 401, error: 'A course agent service token must be provided' };
+  }
   const parsedId = z.uuid().safeParse(conversationId);
   const conversation = parsedId.success
     ? await selectOptionalCourseAgentConversationByAgentConversationId(parsedId.data)
     : null;
-  if (!conversation) return { error: 'Invalid course agent conversation' };
-  // Must match where api/v1/index.ts mounts the course data router.
-  const dataPath = `/course/${conversation.course_id}/data`;
-  if (path !== dataPath && !path.startsWith(`${dataPath}/`)) {
-    return { error: 'The course agent may only read its own course data' };
+  if (!conversation) return { status: 403, error: 'Invalid course agent conversation' };
+  if (conversation.course_id !== courseId) {
+    return { status: 403, error: 'The course agent may only read its own course data' };
   }
   const [user, is_administrator] = await Promise.all([
     selectUserById(conversation.user_id),
