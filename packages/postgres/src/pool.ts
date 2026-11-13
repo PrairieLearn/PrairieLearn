@@ -10,11 +10,8 @@ import { z } from 'zod';
 export type QueryParams = Record<string, any> | any[];
 
 export interface QueryCursorOptions {
-  /**
-   * Cancels the query if any single statement on its connection runs longer than this, such as
-   * the initial sort or scan of a large result. Applies only while the cursor is open.
-   */
-  statementTimeoutMs?: number;
+  /** Stops the cursor, canceling any batch being read on the server, and throws `signal.reason`. */
+  signal?: AbortSignal;
 }
 
 export interface CursorIterator<T> {
@@ -138,6 +135,25 @@ function assertSingleColumn(result: pg.QueryResult, context: Record<string, any>
     );
   }
   return result.fields[0].name;
+}
+
+/**
+ * Cancels the client's running query. This uses its own connection: a pool client could be
+ * unavailable until this or another canceled query finishes, and inside a transaction the pool's
+ * query functions reuse the busy client.
+ */
+async function cancelBackend(options: pg.PoolConfig, client: pg.PoolClient) {
+  // pg sets processID on connect but doesn't type it.
+  if (!('processID' in client) || typeof client.processID !== 'number') {
+    throw new Error('Client has no backend process ID');
+  }
+  const canceler = new pg.Client(options);
+  await canceler.connect();
+  try {
+    await canceler.query('SELECT pg_cancel_backend($1)', [client.processID]);
+  } finally {
+    await canceler.end();
+  }
 }
 
 function enhanceError(err: Error, sql: string, params: QueryParams): Error {
@@ -1005,18 +1021,18 @@ export class PostgresPool {
     sql: string,
     params: QueryParams,
     model: Model | undefined,
-    { statementTimeoutMs }: QueryCursorOptions,
+    { signal }: QueryCursorOptions,
   ): Promise<CursorIterator<z.infer<Model>>> {
     const client = await this.getClientAsync();
-    if (statementTimeoutMs !== undefined) {
-      try {
-        await client.query(`SET statement_timeout = ${Math.trunc(statementTimeoutMs)}`);
-      } catch (err) {
-        client.release(err as Error);
-        throw err;
-      }
-    }
     const cursor = await this.queryCursorWithClient(client, sql, params);
+
+    // Postgres ignores a cancel that arrives between reads, so this can run at any time. If the
+    // cancel fails, the read runs to completion instead.
+    let cancellation: Promise<void> | undefined;
+    const cancel = () => {
+      if (!this.pool) return;
+      cancellation = cancelBackend(this.pool.options, client).catch(() => {});
+    };
 
     let iterateCalled = false;
     const iterator: CursorIterator<z.infer<Model>> = {
@@ -1028,8 +1044,10 @@ export class PostgresPool {
         }
         iterateCalled = true;
 
+        signal?.addEventListener('abort', cancel);
         try {
           while (true) {
+            signal?.throwIfAborted();
             const rows = await cursor.read(batchSize);
             if (rows.length === 0) {
               break;
@@ -1042,13 +1060,16 @@ export class PostgresPool {
             }
           }
         } catch (err: any) {
+          if (signal?.aborted) throw signal.reason;
           throw enhanceError(err, sql, params);
         } finally {
+          signal?.removeEventListener('abort', cancel);
           try {
+            // After an error, pg-cursor's close() hangs unless it is called right away.
             await cursor.close();
-            // The connection returns to the pool, so it must not keep this cursor's timeout.
-            if (statementTimeoutMs !== undefined) await client.query('RESET statement_timeout');
           } finally {
+            // Wait until the backend is signaled so the cancel can't reach the client's next user.
+            await cancellation;
             client.release();
           }
         }

@@ -458,15 +458,17 @@ describe('@prairielearn/postgres', function () {
       assert.equal(allRows[0].id, '1');
       assert.isNotNull(allRows[0].created_at);
     });
-    it('cancels a statement that exceeds the timeout, then resets the connection', async () => {
-      const cursor = await queryCursor('SELECT pg_sleep(1);', {}, z.unknown(), {
-        statementTimeoutMs: 50,
+    it('cancels the running query on the server when the signal aborts', async () => {
+      const cursor = await queryCursor('SELECT pg_sleep(30);', {}, z.unknown(), {
+        signal: AbortSignal.timeout(50),
       });
-      await expect(cursor.iterate(10).next()).rejects.toThrow('statement timeout');
-      // The pool hands out the most recently released connection, which is the cursor's.
+      await expect(cursor.iterate(10).next()).rejects.toMatchObject({ name: 'TimeoutError' });
       assert.equal(
-        await queryScalar("SELECT current_setting('statement_timeout')", z.string()),
-        '0',
+        await queryScalar(
+          "SELECT count(*)::int FROM pg_stat_activity WHERE state = 'active' AND query = 'SELECT pg_sleep(30);'",
+          z.number(),
+        ),
+        0,
       );
     });
 
