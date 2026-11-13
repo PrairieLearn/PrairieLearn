@@ -8,8 +8,7 @@ description: Write, edit, review, or debug PrairieLearn questions (questions/<qi
 ## Workflow
 
 1. Read the docs for each element you plan to use in `references/docs/elements/<element>.md`, and a similar working example in `references/examples/` (find one with `rg -l '<pl-number-input' references/examples/template`). Use web search only for what these don't cover.
-2. Write the question following the rules below.
-3. Run `scripts/pl-check questions/<qid>` (paths in this skill are relative to this file's directory) and fix every ERROR before requesting review; fix each WARNING too unless the question intends it. It checks structure and runs `generate()` for several seeds; it does not render elements, so also reread `question.html` for clarity.
+2. Write the question following the rules below, then reread `question.html` and `server.py` against them before requesting review.
 
 ## Rules
 

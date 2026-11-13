@@ -12,9 +12,8 @@ FROM debian:bookworm-slim
 ARG CACHEBUST=2026-09-15-14-09-16
 # Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
 # offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
-# python3 with numpy and sympy lets the question skill's checker run server.py's generate().
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends git ca-certificates ripgrep jq procps zstd tini poppler-utils python3 python3-numpy python3-sympy \
+  && apt-get install -y --no-install-recommends git ca-certificates ripgrep jq procps zstd tini poppler-utils \
   && rm -rf /var/lib/apt/lists/* \
   && git config --system user.name "PrairieLearn" \
   && git config --system user.email "course-agent@prairielearn.com" \
