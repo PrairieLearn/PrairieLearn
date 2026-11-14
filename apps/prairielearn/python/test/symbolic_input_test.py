@@ -3,7 +3,6 @@ import string
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-from prairielearn.internal import sympy_source
 
 
 def _normalize_symbolic_input(
@@ -11,7 +10,7 @@ def _normalize_symbolic_input(
     *,
     formula_editor: bool = False,
     allow_sets: bool = False,
-) -> sympy_source.SourceText:
+) -> psu._SourceText:
     return psu._normalize_symbolic_input(
         text,
         ["alpha", "x", "y", "j"],
@@ -25,7 +24,7 @@ def _normalize_symbolic_input(
 
 
 def _format_absolute_values(submission: str, *, allow_sets: bool = False) -> str:
-    source = sympy_source.SourceText.from_text(
+    source = psu._SourceText.from_text(
         submission.replace(
             "∣",  # ruff:ignore[ambiguous-unicode-character-string]
             "|",
@@ -43,7 +42,7 @@ def _format_formula_editor_submission(
     allow_sets: bool = False,
 ) -> str:
     source = psu._normalize_unicode_source(
-        sympy_source.SourceText.from_text(submission), formula_editor=True
+        psu._SourceText.from_text(submission), formula_editor=True
     )
     return psu._format_formula_editor_source(
         source,
@@ -224,7 +223,7 @@ def test_format_formula_editor_submission_with_set_names(
 )
 def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
     source = psu._restore_plus_minus_source(
-        sympy_source.SourceText.from_text(submission), latex
+        psu._SourceText.from_text(submission), latex
     )
     assert (None if source is None else source.text()) == expected
 
@@ -339,7 +338,7 @@ def test_formula_editor_does_not_merge_normalized_unicode_multiplication() -> No
 def test_symbolic_input_normalization_preserves_set_unions() -> None:
     text = "[0,1] | (2,3) | [4,5]"
     source = _normalize_symbolic_input(text, allow_sets=True)
-    assert source == sympy_source.SourceText.from_text(text)
+    assert source == psu._SourceText.from_text(text)
 
 
 def test_parse_symbolic_submission_serializes_result() -> None:
