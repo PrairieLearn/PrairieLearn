@@ -40,7 +40,6 @@ class SourceText:
         ):
             raise ValueError("SourceText offsets must be nondecreasing")
 
-    @property
     def text(self) -> str:
         return "".join(token.text for token in self.tokens)
 

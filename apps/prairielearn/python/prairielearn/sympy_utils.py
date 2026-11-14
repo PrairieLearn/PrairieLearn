@@ -37,6 +37,62 @@ from sympy.printing.str import StrPrinter
 from prairielearn.internal import sympy_constants, sympy_source
 from prairielearn.misc_utils import full_unidecode
 
+__all__ = [
+    "SET_NOTATION_OPERATORS",
+    "STANDARD_OPERATORS",
+    "SYMPY_PARSE_ERROR_WITHOUT_LOCATION",
+    "ASTSympyType",
+    "ASTWhiteListT",
+    "AssumptionsDictT",
+    "BaseSympyError",
+    "CheckAST",
+    "FunctionNameWithoutArgumentsError",
+    "HasArgumentTypeError",
+    "HasCommentError",
+    "HasComplexError",
+    "HasConflictingFunctionError",
+    "HasConflictingVariableError",
+    "HasEscapeError",
+    "HasFloatError",
+    "HasFunctionArityError",
+    "HasInvalidAssumptionError",
+    "HasInvalidExpressionError",
+    "HasInvalidFunctionError",
+    "HasInvalidSymbolError",
+    "HasInvalidVariableError",
+    "HasParseError",
+    "HasSetNotationError",
+    "LocalsForEval",
+    "SymbolicSubmissionParseResult",
+    "SymbolicSubmissionParseSuccess",
+    "SympyFunctionMapT",
+    "SympyJson",
+    "SympyMapT",
+    "SympyParseFailure",
+    "SympyParseResult",
+    "SympyParseSuccess",
+    "ast_check_str",
+    "convert_string_to_sympy",
+    "convert_string_to_sympy_with_source",
+    "evaluate",
+    "evaluate_with_source",
+    "find_symbol_offset",
+    "get_builtin_callable_functions",
+    "get_builtin_constants",
+    "get_builtin_functions",
+    "get_items_list",
+    "greek_unicode_transform",
+    "is_sympy_json",
+    "json_to_sympy",
+    "point_to_error",
+    "sympy_check",
+    "sympy_to_json",
+    "try_parse_string_as_sympy",
+    "try_parse_symbolic_submission",
+    "validate_names_for_conflicts",
+    "validate_string_as_sympy",
+]
+
 STANDARD_OPERATORS = sympy_constants.standard_operators
 SET_NOTATION_OPERATORS = sympy_constants.set_notation_operators
 # Compatibility alias for code that previously accessed the container class.
@@ -915,7 +971,7 @@ _MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
 
 def _validate_multiplication(source: sympy_source.SourceText) -> None:
     """Reject multiplication signs that normalization would turn into exponentiation."""
-    for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, source.text):
+    for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, source.text()):
         left_offset = source.tokens[match.start("left")].raw_offset
         right_offset = source.tokens[match.start("right")].raw_offset
         if source.raw_text[right_offset] != "*":
@@ -928,13 +984,14 @@ def _validate_multiplication(source: sympy_source.SourceText) -> None:
 
 def _validate_adjacent_numbers(source: sympy_source.SourceText) -> None:
     """Reject numeric tokens that implicit multiplication would silently combine."""
+    text = source.text()
     line_offsets = [0]
-    for line in source.text.splitlines(keepends=True):
+    for line in text.splitlines(keepends=True):
         line_offsets.append(line_offsets[-1] + len(line))
 
     previous_number_end: tuple[int, int] | None = None
     try:
-        for token in generate_tokens(StringIO(source.text).readline):
+        for token in generate_tokens(StringIO(text).readline):
             if token.type != NUMBER:
                 previous_number_end = None
                 continue
@@ -960,7 +1017,7 @@ def _rewrite_pattern_source(
 ) -> sympy_source.SourceText:
     tokens: list[sympy_source.SourceToken] = []
     last_end = 0
-    for match in pattern.finditer(source.text):
+    for match in pattern.finditer(source.text()):
         tokens.extend(source.tokens[last_end : match.start()])
         tokens.extend(replacement(match, source.tokens[match.start() : match.end()]))
         last_end = match.end()
@@ -975,22 +1032,23 @@ def _validate_and_rewrite_source(
     allow_sets: bool,
 ) -> sympy_source.SourceText:
     _validate_multiplication(source)
+    text = source.text()
 
     for symbol in sympy_constants.plus_minus_operators:
-        ind = source.text.find(symbol)
+        ind = text.find(symbol)
         if ind != -1:
             raise HasInvalidSymbolError(symbol, source.tokens[ind].raw_offset)
 
-    ind = source.text.find("\\")
+    ind = text.find("\\")
     if ind != -1:
         raise HasEscapeError(source.tokens[ind].raw_offset)
-    ind = source.text.find("#")
+    ind = text.find("#")
     if ind != -1:
         raise HasCommentError(source.tokens[ind].raw_offset)
-    if stars := re.search(r"\*{3,}", source.text):
+    if stars := re.search(r"\*{3,}", text):
         raise HasInvalidExpressionError(source.tokens[stars.start()].raw_offset)
     if not allow_sets and any(
-        token in source.text
+        token in text
         for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # ruff:ignore[ambiguous-unicode-character-string]
     ):
         raise HasSetNotationError
@@ -1070,7 +1128,7 @@ def _evaluate_normalized_source(
     allow_extra_symbols: bool,
     resolved_name_overrides: Mapping[str, Any] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
-    normalized_expr = source.text
+    normalized_expr = source.text()
 
     local_dict: DICT = {
         k: v
@@ -1499,8 +1557,9 @@ def _find_type_error_offset(source: sympy_source.SourceText, exc: TypeError) -> 
         if transformed_operator in candidate_operators
     )
 
+    text = source.text()
     for candidate in candidate_operators:
-        ind = find_symbol_offset(source.text, candidate)
+        ind = find_symbol_offset(text, candidate)
         if ind != -1:
             return source.tokens[ind].raw_offset
 
@@ -1810,7 +1869,7 @@ def _restore_plus_minus_source(
         match.group(0).startswith("\\")
         for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
     ]
-    matches = list(re.finditer(r"\+-", source.text))
+    matches = list(re.finditer(r"\+-", source.text()))
     if len(matches) != len(from_plus_minus):
         return None
     if not any(from_plus_minus):
@@ -1834,7 +1893,7 @@ def _delete_literal(
 ) -> sympy_source.SourceText:
     tokens: list[sympy_source.SourceToken] = []
     last_end = 0
-    for match in re.finditer(re.escape(literal), source.text):
+    for match in re.finditer(re.escape(literal), source.text()):
         tokens.extend(source.tokens[last_end : match.start()])
         last_end = match.end()
     tokens.extend(source.tokens[last_end:])
@@ -1844,7 +1903,7 @@ def _delete_literal(
 def _replace_editor_operators(
     source: sympy_source.SourceText,
 ) -> sympy_source.SourceText:
-    text = source.text
+    text = source.text()
     tokens: list[sympy_source.SourceToken] = []
     index = 0
     while index < len(text):
@@ -1904,7 +1963,7 @@ def _merge_spaced_source(
     spaced.sort(key=lambda item: -len(item[1]))
 
     merged_tokens: list[sympy_source.SourceToken] = []
-    text = source.text
+    text = source.text()
     index = 0
     while index < len(text):
         for token, spaced_token in spaced:
@@ -1924,7 +1983,7 @@ def _merge_spaced_source(
 def _add_multiplication_spaces_source(
     source: sympy_source.SourceText, protected_tokens: Sequence[str]
 ) -> sympy_source.SourceText:
-    text = source.text
+    text = source.text()
     protected_positions: set[int] = set()
     for token in protected_tokens:
         if not re.search(r"\d", token):
@@ -2006,7 +2065,7 @@ def _wrap_bare_function_arguments_source(
 ) -> sympy_source.SourceText:
     if not function_names:
         return source
-    text = source.text
+    text = source.text()
     pattern = _bare_function_token_pattern(function_names)
     # Each "(" sorts before a ")" at the same index, which only happens for an
     # empty argument.
@@ -2114,7 +2173,7 @@ _ABSOLUTE_VALUE_PATTERN = re.compile(
 def _convert_absolute_values_source(
     source: sympy_source.SourceText, *, allow_sets: bool
 ) -> sympy_source.SourceText:
-    original_text = source.text
+    original_text = source.text()
     text = original_text
     tokens = list(source.tokens)
     bar_pattern = re.compile(r"\|")
@@ -2293,7 +2352,7 @@ def try_parse_symbolic_submission(
     if isinstance(normalized, SympyParseFailure):
         return normalized
 
-    if not normalized.text.strip():
+    if not normalized.text().strip():
         if not allow_blank:
             return SympyParseFailure("No submitted answer.")
         if not blank_value.strip():
