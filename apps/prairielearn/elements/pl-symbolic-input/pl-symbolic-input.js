@@ -354,10 +354,10 @@
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
-   * @param {string} name Name of the element to look up the tag
+   * @param {string} uuid Unique DOM ID suffix for this rendered element
    */
-  window.PLSymbolicInput = function (name) {
-    const mf = document.getElementById('symbolic-input-' + name);
+  window.PLSymbolicInput = function (uuid) {
+    const mf = document.getElementById('symbolic-input-' + uuid);
 
     // Always keep basic right-click items and append to other menu items
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
@@ -473,7 +473,8 @@
         ],
         [
           ...onlyIfSets('[separator]'),
-          { class: 'small', latex: '|#0|', insert: '|{#0}|' },
+          // Paired fences keep implicit fraction insertion inside the absolute value.
+          { class: 'small', latex: '|#0|', insert: '\\left|{#0}\\right|' },
           { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#0}\\right)' },
           { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#0}\\right)' },
           '[separator]',
@@ -608,7 +609,7 @@
     mf.addEventListener('focus', updateKeyboardLayout);
     mf.addEventListener('selection-change', updateKeyboardLayout);
 
-    const initialLatex = $('#symbolic-input-latex-' + name).val();
+    const initialLatex = $('#symbolic-input-latex-' + uuid).val();
 
     setUpSymbolicInputMacros(mf);
 
@@ -625,8 +626,8 @@
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
       const latex = mf.getValue('latex');
-      $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
-      $('#symbolic-input-latex-' + name).val(latex.trim() === '' ? '' : latex);
+      $('#symbolic-input-sub-' + uuid).val(mf.getValue('plain-text'));
+      $('#symbolic-input-latex-' + uuid).val(latex.trim() === '' ? '' : latex);
     };
 
     updateSubmissionData();
@@ -734,7 +735,7 @@
         value: '{#@}\\cdot',
       },
       '|': {
-        value: '|{#0}|',
+        value: '\\left|{#0}\\right|',
       },
       sqrt: {
         value: '\\sqrt{#0}',

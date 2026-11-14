@@ -145,6 +145,20 @@ describe('course agent turns', () => {
     disconnect();
   });
 
+  it('sends the page as untrusted context and keeps the message text verbatim', async () => {
+    const { native, commands, disconnect } = runner();
+    native.beginTurn('assistant');
+    await native.connect();
+    await native.thread({ ...thread, threadId: 'thread' });
+    await native.run({ tag: 'message:1', text: 'Fix this', page: 'On "algebra/add".' }, () => {});
+    expect(commands.find((command) => command.method === 'turn/start')?.params).toMatchObject({
+      input: [{ type: 'text', text: 'Fix this' }],
+      additionalContext: { prairielearn_page: { kind: 'untrusted', value: 'On "algebra/add".' } },
+    });
+    native.closeStream();
+    disconnect();
+  });
+
   it('reuses the native session for follow-ups and stops processes only on explicit Stop', async () => {
     const { sandbox, native, commands, emit } = runner();
     for (const threadId of [null, 'thread']) {
@@ -259,6 +273,51 @@ describe('course agent turns', () => {
       },
       { id: 'tool:stuck', data: { status: 'running' } },
       { id: 'tool:stuck', data: { status: 'interrupted' } },
+    ]);
+  });
+
+  it('shows input the agent requests as an input request part', async () => {
+    const { sandbox, native, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const prompts = [
+      { title: 'How should students enter the sum?', options: ['One fraction', 'Two fields'] },
+      { title: 'Anything else?', options: null },
+    ];
+    emit({
+      method: 'item/completed',
+      params: {
+        threadId: 'thread',
+        turnId: 'turn',
+        item: {
+          type: 'agentMessage',
+          id: 'ask',
+          text: 'How should students enter the sum?',
+          phase: 'final_answer',
+          memoryCitation: null,
+          delivery: 'async',
+          questions: prompts,
+        },
+      },
+    });
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type.startsWith('data-'))).toEqual([
+      {
+        type: 'data-input-request',
+        id: 'input-request:ask',
+        data: { v: 1, itemId: 'ask', prompts },
+      },
     ]);
   });
 

@@ -32,6 +32,9 @@ pip3 install -r /requirements.txt
 # Clear various caches to minimize the final image size.
 apt-get clean && rm -rf /var/lib/apt/lists/*
 pip3 cache purge
+# pip runs as root here, so it creates XDG_CACHE_HOME owned by root. Remove it
+# so that the workspace user can create caches there, such as matplotlib's.
+rm -rf "$XDG_CACHE_HOME"
 
 # Suppress the opt-in dialog for announcements.
 # https://stackoverflow.com/questions/75511508/how-to-stop-this-message-would-you-like-to-receive-official-jupyter-news

@@ -2,7 +2,7 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import { COURSE_DIR, type ToolCall } from '@prairielearn/course-agent-types';
+import { COURSE_DIR, type InputRequestPart, type ToolCall } from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
@@ -56,6 +56,23 @@ const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
   tool: z.literal('request_changes'),
   arguments: z.strictObject({}),
 });
+/**
+ * `request_user_input_async` completes an agent message whose text Codex never streams, so its
+ * prompts are shown only through this item. Codex calls them questions.
+ */
+const InputRequestItem = z.object({
+  type: z.literal('agentMessage'),
+  id: z.string(),
+  delivery: z.literal('async'),
+  questions: z
+    .array(z.object({ title: z.string(), options: z.array(z.string()).nullable() }))
+    .min(1),
+});
+const UnstreamedAsyncMessage = z.object({
+  type: z.literal('agentMessage'),
+  delivery: z.literal('async'),
+  text: z.string().min(1),
+});
 const ItemsPage = z.object({
   data: z.array(z.object({ item: z.object({ type: z.string(), clientId: z.string().nullish() }) })),
   nextCursor: z.string().nullable(),
@@ -68,7 +85,15 @@ const ItemsPage = z.object({
 export interface TurnInput {
   text: string;
   tag: string;
+  /** Sandbox paths of attached images, which the model sees alongside the text. */
+  images?: string[];
   once?: boolean;
+  /**
+   * The page the instructor was viewing. Codex shows it to the model as untrusted context ahead
+   * of the text, keeps the text verbatim, and skips resending an unchanged page. Compaction
+   * drops that page until it changes: https://github.com/openai/codex/issues/38269
+   */
+  page?: string;
   /** Text to prepend given the thread's latest tag (undefined for a thread started this turn). */
   catchUp?: (latestTag: string | null | undefined) => string | null;
 }
@@ -161,8 +186,32 @@ export class CodexAppServerClient {
     onNotification('item/started', ItemEvent, (params) => this.toolCall('started', params));
     onNotification('item/completed', ItemEvent, (params) => {
       this.toolCall('completed', params);
-      const { threadId, item } = params;
-      if (threadId !== this.threadId) return;
+      const { threadId, turnId, item } = params;
+      if (threadId !== this.threadId || (this.turnId && turnId !== this.turnId)) return;
+      const request = InputRequestItem.safeParse(item);
+      if (request.success) {
+        this.emit({
+          type: 'data-input-request',
+          id: `input-request:${item.id}`,
+          data: {
+            v: 1,
+            itemId: item.id,
+            prompts: request.data.questions,
+          } satisfies InputRequestPart,
+        });
+        return;
+      }
+      // Async agent messages arrive only here, complete, never as streamed deltas, so the text
+      // handling below would drop them. If a Codex upgrade changes the input request shape so the
+      // check above fails, show the message's text rather than silently losing what was asked.
+      const unparsed = UnstreamedAsyncMessage.safeParse(item);
+      if (unparsed.success) {
+        const id = `text:${item.id}`;
+        this.emit({ type: 'text-start', id });
+        this.emit({ type: 'text-delta', id, delta: unparsed.data.text });
+        this.emit({ type: 'text-end', id });
+        return;
+      }
       const type =
         item.type === 'agentMessage' ? 'text' : item.type === 'reasoning' ? 'reasoning' : null;
       if (!type) return;
@@ -288,7 +337,11 @@ export class CodexAppServerClient {
         input: [
           ...(context ? [{ type: 'text' as const, text: context, text_elements: [] }] : []),
           { type: 'text', text: input.text, text_elements: [] },
+          ...(input.images ?? []).map((path) => ({ type: 'localImage' as const, path })),
         ],
+        ...(input.page
+          ? { additionalContext: { prairielearn_page: { kind: 'untrusted', value: input.page } } }
+          : {}),
       } satisfies TurnStartParams,
       TurnResult,
     );

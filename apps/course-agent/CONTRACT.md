@@ -71,6 +71,14 @@ Each Codex tool call (a command, a file change, or any other tool: MCP and dynam
 
 History keeps a bounded copy: command text up to 2,000 characters, output up to 4,000 (its start and end), arguments up to 1,000, each diff up to 4,000, and 50 files per change. Paths in the course checkout are stored relative to the course root. Once a message's tool calls exceed 300,000 characters, later calls in it keep their labels but no output, diffs, or arguments, so the message stays well within a Durable Object row; Codex's own thread keeps the full record. A successful `request_changes` call has no part, because its review card shows it; a failed one does, so the instructor sees why. Catch-up omits tool calls except a one-line list of the files each completed change touched.
 
+## Page location
+
+Each user message may carry `metadata.location` (`PageLocationSchema`): the page the instructor was viewing, named by its path, navigation key, and course items, never its title, which can name students. The browser supplies it, so the turn passes it to Codex as `untrusted` `additionalContext` rather than in the message text. Catch-up replays text, so it labels each replayed staff line with its page.
+
+## Input requests
+
+The agent asks staff for decisions or missing information with Codex's `request_user_input_async` tool, which returns at once and completes an unstreamed agent message carrying the prompts. The Worker shows it as a `data-input-request` part matching `InputRequestPartSchema`. Nothing waits for an answer: staff's next message is the answer, whether sent from the input request card or typed, and it is submitted like any other message. The part is never rewritten, and catch-up includes the prompts so a restored thread knows what the next message answers.
+
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:
@@ -116,6 +124,16 @@ Invariants:
 ### Subsequent edits
 
 For Git-backed courses, the agent fetches and reconciles published changes before further edits; PrairieLearn does not reset its sandbox checkout. Denial and failed saves preserve private sandbox edits. A conflict asks the agent to fetch and reconcile current repository contents, then submit a fresh review; the previous approval does not authorize the revised proposal. Settled review cards show their result and diagnostics; their diffs are not available after the agent receives the result.
+
+## Attachments
+
+A message refers to each attachment with a `file` part whose URL is `upload:<id>`. Bytes never enter chat history: the browser uploads each file first, and the Worker stores it under `uploads/<conversation>/<id>` in the checkpoint bucket.
+
+- A conversation holds at most 100 uploads totaling 200 MB, counting uploads that were never sent, because a starting sandbox copies in every earlier attachment. The conversation's Durable Object counts its uploads in R2 once, then reserves room for each upload before it is stored and returns the room if storing fails, so concurrent uploads can't overshoot the cap.
+- The browser controls message parts, so persistence keeps only `file` parts with an upload URL, at most 10 per message. Keys are built from the conversation's own name, so a message can only refer to that conversation's uploads.
+- Before admitting a message, the conversation checks that its uploads exist and reads their first bytes to find images. A missing upload refuses the message, which counts as handled like any other refusal.
+- Each turn copies its message's attachments to `/uploads/<id>/<name>` as root-owned, read-only files; the image creates `/uploads` root-owned, so the agent can't swap it for a link that root writes through. A turn that starts a sandbox, including a checkpoint restore, also copies every earlier attachment, skipping uploads that have expired. The directory is outside `/workspace`, so checkpoints don't copy attachments, and outside the course checkout, so review capture never includes them.
+- Codex has no input for arbitrary files, so the prompt lists every attachment's path in the format the Codex desktop app sends (`# Files mentioned by the user:` … `## My request:`). Images also go to Codex as `localImage` input. Catch-up text lists earlier attachments.
 
 ## Local course sources
 

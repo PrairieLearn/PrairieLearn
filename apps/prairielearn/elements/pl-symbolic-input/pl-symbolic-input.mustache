@@ -7,25 +7,25 @@
         {{#formula_editor}}
         <script>
             $(function() {
-                window.PLSymbolicInput("{{name}}");
+                window.PLSymbolicInput("{{uuid}}");
             });
         </script>
             <input
                 name="{{name}}"
-                id="symbolic-input-sub-{{name}}"
+                id="symbolic-input-sub-{{uuid}}"
                 type="hidden"
                 value=""
                 data-deferred-initial-value="true"
             />
             <input
                 name="{{name}}-latex"
-                id="symbolic-input-latex-{{name}}"
+                id="symbolic-input-latex-{{uuid}}"
                 type="hidden"
                 value="{{raw_submitted_answer_latex}}"
                 data-deferred-initial-value="true"
             />
             <math-field
-                id="symbolic-input-{{name}}"
+                id="symbolic-input-{{uuid}}"
                 theme="light"
                 class="form-control pl-symbolic-input-input {{#parse_error}}has-validation is-invalid no-validation-icon{{/parse_error}}{{^formula_editor_buttons}} no-buttons{{/formula_editor_buttons}}"
                 {{#parse_error}}aria-invalid="true"{{/parse_error}}
@@ -190,15 +190,15 @@ ${{a_sub}}$
         });
     </script>
 {{/raw_submitted_answer_latex}}
-{{! Show submitted answer submission was parsed from }}
+{{^raw_submitted_answer_latex}}
+{{{raw_input_popover}}}
+{{/raw_submitted_answer_latex}}
+{{#raw_submitted_answer_latex}}
 <button type="button" id="pl-symbolic-input-{{uuid}}-button" class="ms-1 btn btn-sm btn-secondary small border"
     data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
-    title="Original Input"
-    {{^raw_submitted_answer_latex}}
-    data-bs-content="Parsed from <samp class=&#34;user-output&#34;>{{raw_submitted_answer}}</samp>"
-    {{/raw_submitted_answer_latex}}
-    {{#raw_submitted_answer_latex}}
-    data-bs-content='Parsed from
+    data-bs-custom-class="popover-wide popover-scrollable"
+    data-bs-title="Answer as entered" aria-label="{{raw_input_popover_label}}"
+    data-bs-content='<p class="mb-1">Formula editor input:</p>
         <math-field
             read-only
             id="symbolic-input-popover-{{uuid}}"
@@ -208,11 +208,13 @@ ${{a_sub}}$
             class="read-only"
         >
             {{raw_submitted_answer_latex}}
-        </math-field>'
-    {{/raw_submitted_answer_latex}}
+        </math-field>
+        <hr>
+        {{raw_input_popover_content}}'
 >
     <i class="fas fa-question-circle" aria-hidden="true"></i>
 </button>
+{{/raw_submitted_answer_latex}}
 
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 

@@ -12,6 +12,11 @@ supports_websockets = false
 requires_openai_auth = false
 supports_standalone_web_search = true
 
+# Codex enables OpenAI's server-side compaction only for its built-in OpenAI provider. It reuses the
+# cached prompt prefix instead of resending the history under a summarization prompt.
+[model_providers.prairielearn.capabilities]
+remote_compaction = "v2"
+
 # Features the course agent doesn't use, so the runner doesn't start or advertise them. These are
 # Codex 0.163.0's flag names; check `codex features list` when upgrading.
 [features]

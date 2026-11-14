@@ -4,10 +4,10 @@ import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/reac
 import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
 import {
-  Fragment,
   type KeyboardEvent,
   type ReactNode,
   type SyntheticEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -20,6 +20,7 @@ import { z } from 'zod';
 
 import {
   type ConversationState,
+  InputRequestPartSchema,
   type ToolCall,
   ToolCallSchema,
   reviewTag,
@@ -34,11 +35,22 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import {
+  type DraftAttachment,
+  DraftAttachmentList,
+  FileDropArea,
+  SentAttachments,
+  hasInvalidAttachment,
+  uploadDraftAttachments,
+  useDraftAttachments,
+} from './Attachments.js';
 import { ConversationStats } from './ConversationStats.js';
-import { RequestChangesCard, ReviewFeedback } from './RequestChangesCard.js';
+import { InputRequestCard } from './InputRequestCard.js';
+import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
+import { currentPageLocation } from './pageLocation.js';
 
 /** The agent service shows a review in chat history by its ID only. */
 const ReviewPartSchema = z.object({ reviewId: z.string() });
@@ -134,6 +146,9 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
+  const drafts = useDraftAttachments();
+  // A new conversation's first message uploads its attachments once the conversation exists.
+  const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
   const create = useMutation({
     ...trpc.courseAgent.create.mutationOptions(),
     onSuccess: (conversation) => {
@@ -142,6 +157,8 @@ function ConversationPicker({
         ...(current ?? []),
       ]);
       setPickedId(conversation.id);
+      // The new conversation's chat now owns the attachments.
+      drafts.setAttachments([]);
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
     onError: (_error, { text }) => setDraft(text),
@@ -151,6 +168,7 @@ function ConversationPicker({
     event?.preventDefault();
     const text = draft.trim();
     if (!text || create.isPending) return;
+    setInitialAttachments(drafts.attachments);
     create.mutate({ text });
     setDraft('');
   };
@@ -195,6 +213,7 @@ function ConversationPicker({
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
               setDraft('');
+              drafts.setAttachments([]);
               create.reset();
             }}
           >
@@ -209,11 +228,15 @@ function ConversationPicker({
           conversationId={selectedId}
           showConversationStats={showConversationStats}
           chatCsrfToken={chatCsrfToken}
-          initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
+          initialMessage={
+            create.data?.id === selectedId && create.variables
+              ? { text: create.variables.text, attachments: initialAttachments }
+              : undefined
+          }
           onInitialMessageSent={create.reset}
         />
       ) : active ? (
-        <>
+        <FileDropArea enabled={!create.isPending} onDrop={drafts.add}>
           <div className="flex-grow-1 p-3">
             {create.isPending ? (
               <div className="d-flex flex-column gap-3">
@@ -233,10 +256,13 @@ function ConversationPicker({
             draft={draft}
             disabled={create.isPending}
             pending={create.isPending}
+            attachments={drafts.attachments}
+            onAttach={drafts.add}
+            onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
             onSubmit={submitNew}
           />
-        </>
+        </FileDropArea>
       ) : null}
     </div>
   );
@@ -273,15 +299,32 @@ function Chat({
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
-  initialMessage: string | undefined;
+  initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const setTitle = useMutation({
+    ...trpc.courseAgent.setTitle.mutationOptions(),
+    onSuccess: async (updated) => {
+      // A list fetch that started before the save would otherwise restore the old title.
+      await queryClient.cancelQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+      queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) =>
+        current?.map((conversation) => (conversation.id === updated.id ? updated : conversation)),
+      );
+    },
+    // The next state update retries the save.
+    onError: () => {
+      savingTitleRef.current = null;
+    },
+  });
+  // State updates repeat while a save is in flight, so save each generated title once.
+  const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
   const [connectionFailed, setConnectionFailed] = useState(false);
   // Chat remounts per conversation, so this is the message that created it.
-  const [initialText] = useState(initialMessage);
+  const [initialText, setInitialText] = useState(initialMessage?.text);
   // Bridges sending to an offline sandbox and the server reporting that it is starting.
   const [awaitingStart, setAwaitingStart] = useState(initialMessage !== undefined);
   const agent = useAgent<ConversationState>({
@@ -291,6 +334,14 @@ function Chat({
     onStateUpdate: (state) => {
       setLifecycle(state);
       if (state.status !== 'offline') setAwaitingStart(false);
+      // The agent service generates the title; the owner's browser saves it to the list.
+      const savedTitle = queryClient
+        .getQueryData(trpc.courseAgent.list.queryKey())
+        ?.find((conversation) => conversation.id === conversationId)?.title;
+      if (state.title && state.title !== savedTitle && state.title !== savingTitleRef.current) {
+        savingTitleRef.current = state.title;
+        setTitle.mutate({ conversationId, title: state.title });
+      }
     },
     onOpen: () => setConnectionFailed(false),
     onError: () => setConnectionFailed(true),
@@ -326,7 +377,9 @@ function Chat({
   const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
-  const queryClient = useQueryClient();
+  // A new conversation's first attachments start in the composer, where their uploads show progress.
+  const drafts = useDraftAttachments(initialMessage?.attachments);
+  const [sending, setSending] = useState(false);
   const reviewInput = lifecycle?.reviewId
     ? { conversationId, reviewId: lifecycle.reviewId }
     : skipToken;
@@ -334,34 +387,97 @@ function Chat({
     ...trpc.courseAgent.getReview.queryOptions(reviewInput),
     retry: false,
   });
-  // A message sent while a review awaits a decision denies it, and the agent receives the message.
-  const replyDenies = pendingReview && agentIdle && review.data?.status === 'pending';
+  // A message sent while a review awaits a decision denies it, and the agent receives the denial
+  // with the message. A denial by message the agent has not received can be sent again.
+  const replyDenies =
+    pendingReview &&
+    agentIdle &&
+    (review.data?.status === 'pending' ||
+      (review.data?.status === 'decided' && review.data.result?.viaMessage === true));
   const deny = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
-    // Keep anything typed while the denial was in flight.
-    onSuccess: (_, variables) => {
-      const sent = variables.decision === 'denied' ? variables.feedback : undefined;
-      setDraft((current) => (current.trim() === sent ? '' : current));
-    },
     // On a conflict the draft stays, and the review shows the decision that won.
-    onSettled: (_, __, { conversationId, reviewId }) =>
-      queryClient.invalidateQueries({
+    // Not awaited: the message is sent once the denial is delivered, not after the refetch.
+    onSettled: (_, __, { conversationId, reviewId }) => {
+      void queryClient.invalidateQueries({
         queryKey: trpc.courseAgent.getReview.queryKey({ conversationId, reviewId }),
-      }),
+      });
+    },
   });
   const denyError = getAppError<CourseAgentError['PostReviewDecision']>(deny.error);
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
+
+  const { setStatus, setAttachments } = drafts;
+  const { reset: resetDeny, mutateAsync: denyAsync } = deny;
+  const offline = lifecycle?.status === 'offline';
+  /**
+   * Upload the attachments, deny the review if the message replies to one, then send. A failed
+   * upload or a refused denial keeps the draft for another try.
+   */
+  const send = useCallback(
+    async (text: string, attachments: DraftAttachment[], deniedReviewId?: string) => {
+      setSending(true);
+      const files = await uploadDraftAttachments(attachments, {
+        url: `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`,
+        csrfToken: chatCsrfToken,
+        setStatus,
+      });
+      // Denying only after the uploads succeed means a failed upload can't leave the review denied
+      // without its message. PrairieLearn has delivered the denial when this resolves, so the
+      // message's turn follows it. On a conflict the review shows the decision that won.
+      const denied =
+        files && deniedReviewId
+          ? await denyAsync({
+              conversationId,
+              reviewId: deniedReviewId,
+              decision: 'denied',
+              viaMessage: true,
+            }).then(
+              () => true,
+              () => false,
+            )
+          : true;
+      setSending(false);
+      if (!files || !denied) return false;
+      if (offline) setAwaitingStart(true);
+      // A refused denial's error no longer applies once the message goes out normally.
+      resetDeny();
+      void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
+      // An answer chosen on an input request leaves the composer's attachments alone.
+      if (attachments.length > 0) setAttachments([]);
+      return true;
+    },
+    [
+      courseId,
+      conversationId,
+      chatCsrfToken,
+      setStatus,
+      setAttachments,
+      resetDeny,
+      denyAsync,
+      sendMessage,
+      offline,
+    ],
+  );
+
   const initialMessageSentRef = useRef(false);
   // A newly created conversation must receive history before its first prompt is handed to the SDK.
   useEffect(() => {
     if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
     initialMessageSentRef.current = true;
-    void sendMessage({ text: initialMessage });
+    const { text, attachments } = initialMessage;
+    void send(text, attachments).then((sent) => {
+      if (sent) return;
+      // The first message was shown as sent, so return it to the composer for another try.
+      setInitialText(undefined);
+      setAwaitingStart(false);
+      setDraft(text);
+    });
     onInitialMessageSent();
-  }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
+  }, [connected, readyToSend, initialMessage, onInitialMessageSent, send]);
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
@@ -398,33 +514,31 @@ function Chat({
     !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
       ? (lifecycle.reviewId ?? null)
       : null;
+  // An input request is open until staff send their next message, which answers it however it is sent.
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
+  const latest = messages.at(-1);
+  const inputRequestOpen =
+    latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
+  const canSend = connected && readyToSend && !responseActive && !sending;
+
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || responseActive || !connected || deny.isPending) return;
-    if (replyDenies) {
-      deny.mutate({
-        conversationId,
-        reviewId: lifecycle.reviewId!,
-        decision: 'denied',
-        feedback: text,
-      });
-      return;
-    }
-    if (!readyToSend) return;
-    if (lifecycle.status === 'offline') setAwaitingStart(true);
-    // A refused denial's error no longer applies once the message goes out normally.
-    deny.reset();
-    void sendMessage({ text });
-    setDraft('');
+    if (!text || responseActive || !connected || sending || deny.isPending) return;
+    if (!replyDenies && !canSend) return;
+    void send(text, drafts.attachments, replyDenies ? lifecycle.reviewId! : undefined).then(
+      (sent) => {
+        if (sent) setDraft('');
+      },
+    );
   };
 
   return (
-    <div className="d-flex flex-column flex-grow-1 overflow-hidden">
+    <FileDropArea enabled={!sending} onDrop={drafts.add}>
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
@@ -443,7 +557,10 @@ function Chat({
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
               linkTransform={linkTransform}
+              answered={index < lastUserIndex}
+              canAnswer={canSend}
               onToolCallExpand={stickToBottom.stopScroll}
+              onAnswer={(text) => void send(text, [])}
             />
           ))}
           {showInitialText && <UserMessage text={initialText} />}
@@ -452,14 +569,11 @@ function Chat({
           {historyReady &&
             lifecycle?.reviewId &&
             !reviewInHistory(messages, lifecycle.reviewId) && (
-              <>
-                <RequestChangesCard
-                  conversationId={conversationId}
-                  reviewId={lifecycle.reviewId}
-                  canResume={awaitingReviewId === lifecycle.reviewId}
-                />
-                <ReviewFeedback conversationId={conversationId} reviewId={lifecycle.reviewId} />
-              </>
+              <RequestChangesCard
+                conversationId={conversationId}
+                reviewId={lifecycle.reviewId}
+                canResume={awaitingReviewId === lifecycle.reviewId}
+              />
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
           {lifecycle?.status === 'blocked' && (
@@ -509,16 +623,26 @@ function Chat({
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
-        placeholder={replyDenies ? 'Explain what to change…' : undefined}
+        placeholder={
+          replyDenies
+            ? 'Explain what to change…'
+            : inputRequestOpen
+              ? 'Reply to the agent, or ask something else…'
+              : undefined
+        }
         sendLabel={replyDenies ? 'Deny and send' : undefined}
+        pending={sending || deny.isPending}
+        attachments={drafts.attachments}
         stopDisabled={!connected || !canStop}
+        onAttach={drafts.add}
+        onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
         onSubmit={submit}
         onStop={responseActive || canStop ? () => void stop() : undefined}
       >
         {showConversationStats && <ConversationStats state={lifecycle} />}
       </Composer>
-    </div>
+    </FileDropArea>
   );
 }
 
@@ -530,6 +654,9 @@ function Composer({
   placeholder = 'Ask the course agent…',
   sendLabel = 'Send',
   pending = false,
+  attachments,
+  onAttach,
+  onRemoveAttachment,
   stopDisabled = false,
   children,
   onStop,
@@ -540,19 +667,34 @@ function Composer({
   disabled: boolean;
   placeholder?: string;
   sendLabel?: string;
+  /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
+  attachments: DraftAttachment[];
+  onAttach: (files: File[]) => void;
+  onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
   children?: ReactNode;
   onStop?: () => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const invalidAttachment = hasInvalidAttachment(attachments);
+  const submit = (event: SyntheticEvent) => {
+    event.preventDefault();
+    if (!invalidAttachment) onSubmit(event);
+  };
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-      onSubmit(event);
+      submit(event);
     }
   };
 
   return (
-    <Form className="border-top p-3" onSubmit={onSubmit}>
+    <Form className="border-top p-3" onSubmit={submit}>
+      <DraftAttachmentList
+        attachments={attachments}
+        sending={pending}
+        onRemove={onRemoveAttachment}
+      />
       <Form.Control
         as="textarea"
         rows={3}
@@ -562,24 +704,62 @@ function Composer({
         disabled={pending}
         onChange={(event) => onDraftChange(event.target.value)}
         onKeyDown={onKeyDown}
+        onPaste={(event) => {
+          if (pending || event.clipboardData.files.length === 0) return;
+          // Copied cells and rich text carry an image of themselves beside their text; paste the text.
+          if (
+            event.clipboardData.getData('text/plain') &&
+            event.clipboardData.getData('text/html')
+          ) {
+            return;
+          }
+          event.preventDefault();
+          onAttach([...event.clipboardData.files]);
+        }}
       />
-      <div className="d-flex justify-content-end gap-2 mt-2">
-        {children}
-        {onStop ? (
-          <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
-            <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-            Stop
-          </Button>
-        ) : (
-          <Button
-            type="submit"
-            size="sm"
-            aria-label={sendLabel}
-            disabled={!draft.trim() || disabled}
-          >
-            <i className="bi bi-send" aria-hidden="true" />
-          </Button>
-        )}
+      <div className="d-flex align-items-center gap-2 mt-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          hidden
+          onChange={(event) => {
+            onAttach([...(event.target.files ?? [])]);
+            event.target.value = '';
+          }}
+        />
+        <Button
+          variant="link"
+          size="sm"
+          className="course-agent-icon-button"
+          aria-label="Attach files"
+          disabled={pending}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <i className="bi bi-plus-lg" aria-hidden="true" />
+        </Button>
+        <div className="d-flex align-items-center gap-2 ms-auto">
+          {children}
+          {onStop ? (
+            <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
+              <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+              Stop
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="sm"
+              aria-label={sendLabel}
+              disabled={!draft.trim() || disabled || pending || invalidAttachment}
+            >
+              {pending ? (
+                <Spinner animation="border" size="sm" aria-hidden="true" />
+              ) : (
+                <i className="bi bi-send" aria-hidden="true" />
+              )}
+            </Button>
+          )}
+        </div>
       </div>
     </Form>
   );
@@ -608,8 +788,15 @@ function Message({
   awaitingReviewId,
   linkTransform,
   onToolCallExpand,
+  answered,
+  canAnswer,
+  onAnswer,
 }: {
   message: UIMessage;
+  /** Staff have sent a message since this one, which answers any input it requests. */
+  answered: boolean;
+  canAnswer: boolean;
+  onAnswer: (text: string) => void;
   /** Whether this message is still streaming. */
   live: boolean;
   conversationId: string;
@@ -621,7 +808,12 @@ function Message({
 }) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
-    return <UserMessage text={text} />;
+    return (
+      <div className="d-flex flex-column align-items-end gap-2">
+        <SentAttachments message={message} />
+        <UserMessage text={text} />
+      </div>
+    );
   }
   // Consecutive tool calls render together so runs of the same kind can be grouped.
   type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
@@ -634,7 +826,7 @@ function Message({
   });
   // A review ends the agent's turn even though the agent usually writes more after submitting it,
   // so its card goes at the end of that turn: where the agent's turn that receives the result
-  // begins, or the end of the message until then. A message that denied the review follows it.
+  // begins, or the end of the message until then.
   const reviewIds = message.parts.flatMap((part) =>
     part.type === 'data-review' ? [ReviewPartSchema.parse(part.data).reviewId] : [],
   );
@@ -645,14 +837,12 @@ function Message({
   );
   // One key per review, in one list, so the card keeps its state when the marker arrives.
   const reviewEnd = (reviewId: string) => (
-    <Fragment key={`review-${reviewId}`}>
-      <RequestChangesCard
-        conversationId={conversationId}
-        reviewId={reviewId}
-        canResume={awaitingReviewId === reviewId}
-      />
-      <ReviewFeedback conversationId={conversationId} reviewId={reviewId} />
-    </Fragment>
+    <RequestChangesCard
+      key={`review-${reviewId}`}
+      conversationId={conversationId}
+      reviewId={reviewId}
+      canResume={awaitingReviewId === reviewId}
+    />
   );
   const rendered = [
     ...segments.map((segment) => {
@@ -672,6 +862,19 @@ function Message({
         return <TextPart key={key} part={part} urlTransform={linkTransform} />;
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+      if (part.type === 'data-input-request') {
+        const request = InputRequestPartSchema.safeParse(part.data).data;
+        if (!request) return null;
+        return (
+          <InputRequestCard
+            key={key}
+            part={request}
+            answered={answered}
+            canAnswer={canAnswer}
+            onAnswer={onAnswer}
+          />
+        );
+      }
       if (part.type === 'data-turn') {
         const { tag } = TurnPartSchema.parse(part.data);
         const reviewId = reviewIds.find((id) => reviewTag(id) === tag);

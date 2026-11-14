@@ -1,16 +1,127 @@
 <pl-question-panel>
   <p>
-    This input exercises literal restoration of original input after grading. Select
-    <strong>Save &amp; Grade</strong>, then confirm that the invisible character remains in the
-    matrix input.
+    These inputs exercise the answer-as-entered popovers used by elements in this question. Some
+    values contain invisible or non-ASCII characters.
+  </p>
+  <p>
+    Select <strong>Save &amp; Grade</strong>, then open each question-mark popover in the submitted
+    answer panel. The popovers label invisible characters with their Unicode code points (for
+    example, <code>&lt;U+200b&gt;</code>). When useful, they also show a second version with every
+    non-ASCII character replaced by its code point. After submitting, confirm that the literal
+    values are restored to the input fields.
   </p>
 </pl-question-panel>
 
+<pl-card header="Scalar inputs">
+  <div class="vstack gap-3">
+    <pl-string-input
+      answers-name="string_value"
+      aria-label="String value"
+      label="String:"
+      initial-value="caf&#233;"
+      correct-answer="cafe"
+      display="block"
+    ></pl-string-input>
+
+    <pl-big-o-input
+      answers-name="big_o_value"
+      aria-label="Big O value"
+      variables="n"
+      initial-value="n&#8203;"
+      correct-answer="n"
+      display="block"
+    ></pl-big-o-input>
+
+    <pl-integer-input
+      answers-name="integer_value"
+      aria-label="Integer value"
+      label="Integer:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-integer-input>
+
+    <pl-number-input
+      answers-name="number_value"
+      aria-label="Number value"
+      label="Number:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-number-input>
+
+    <pl-number-input
+      answers-name="invalid_number_value"
+      aria-label="Invalid number value"
+      label="Invalid number:"
+      initial-value="1&#8203;"
+      correct-answer="1"
+      display="block"
+    ></pl-number-input>
+
+    <pl-units-input
+      answers-name="units_value"
+      aria-label="Units value"
+      label="Units:"
+      initial-value="1 m&#8203;"
+      correct-answer="1 m"
+      display="block"
+    ></pl-units-input>
+  </div>
+</pl-card>
+
+<pl-card header="Symbolic input">
+  <div class="vstack gap-3">
+    <div>
+      <p>
+        The text field is prefilled with <code>x</code> followed by an invisible
+        <code>U+200B</code>. It looks like an ordinary <code>x</code> until the submitted value is
+        rendered.
+      </p>
+      <pl-symbolic-input
+        answers-name="symbolic_value"
+        aria-label="Symbolic value"
+        label="Text input containing U+200B:"
+        variables="x"
+        initial-value="x&#8203;"
+        correct-answer="x"
+        display="block"
+      ></pl-symbolic-input>
+    </div>
+
+    <pl-symbolic-input
+      answers-name="symbolic_formula_value"
+      aria-label="Symbolic formula value"
+      label="Formula editor:"
+      variables="x"
+      formula-editor="true"
+      initial-value="x"
+      correct-answer="x"
+      display="block"
+    ></pl-symbolic-input>
+  </div>
+</pl-card>
+
 <pl-card header="Matrix inputs">
-  <pl-matrix-input
-    answers-name="matrix_value"
-    aria-label="Matrix value"
-    label="Literal matrix:"
-    initial-value="[1,&#8203; 2]"
-  ></pl-matrix-input>
+  <div class="vstack gap-3">
+    <pl-matrix-input
+      answers-name="matrix_value"
+      aria-label="Matrix value"
+      label="Literal matrix:"
+      initial-value="[1,&#8203; 2]"
+    ></pl-matrix-input>
+
+    <pl-matrix-input
+      answers-name="valid_matrix_value"
+      aria-label="Valid matrix value"
+      label="Valid matrix:"
+      initial-value="[1 2]"
+    ></pl-matrix-input>
+
+    <pl-matrix-component-input
+      answers-name="matrix_grid"
+      aria-label="Matrix grid"
+      label="Component matrix:"
+    ></pl-matrix-component-input>
+  </div>
 </pl-card>

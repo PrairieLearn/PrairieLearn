@@ -6,17 +6,58 @@ import { z } from 'zod';
  * connects OpenAI to any server URL in the request.
  */
 const CLIENT_TOOL_TYPES = new Set(['function', 'custom', 'namespace']);
+/** A namespace groups client-run tools; it cannot hold another namespace. */
+const NAMESPACE_TOOL_TYPES = new Set(['function', 'custom']);
 
-/** Why a `/v1/responses` body is refused, or null if it may be forwarded. */
-export function modelRequestRefusal(body: { tools?: unknown }): string | null {
-  if (body.tools === undefined) return null;
-  if (!Array.isArray(body.tools)) return 'tools must be an array';
-  for (const tool of body.tools as { type?: unknown }[]) {
-    if (typeof tool?.type !== 'string' || !CLIENT_TOOL_TYPES.has(tool.type)) {
+function toolsRefusal(tools: unknown, allowed: Set<string>): string | null {
+  if (!Array.isArray(tools)) return 'tools must be an array';
+  for (const tool of tools as { type?: unknown; tools?: unknown }[]) {
+    if (typeof tool?.type !== 'string' || !allowed.has(tool.type)) {
       return `Tool type ${JSON.stringify(tool?.type)} is not available`;
+    }
+    if (tool.type === 'namespace') {
+      const refusal = toolsRefusal(tool.tools, NAMESPACE_TOOL_TYPES);
+      if (refusal) return refusal;
     }
   }
   return null;
+}
+
+/**
+ * Why a `/v1/responses` body is refused, or null if it may be forwarded. Tools can be declared in
+ * `tools` or, as Codex does for models using Responses Lite, in `additional_tools` input items.
+ */
+export function modelRequestRefusal(body: { tools?: unknown; input?: unknown }): string | null {
+  const declared = [
+    ...(body.tools === undefined ? [] : [body.tools]),
+    ...(Array.isArray(body.input) ? (body.input as { type?: unknown; tools?: unknown }[]) : [])
+      .filter((item) => item?.type === 'additional_tools')
+      .map((item) => item.tools),
+  ];
+  for (const tools of declared) {
+    const refusal = toolsRefusal(tools, CLIENT_TOOL_TYPES);
+    if (refusal) return refusal;
+  }
+  return null;
+}
+
+const TurnMetadataSchema = z.object({
+  client_metadata: z.object({ 'x-codex-turn-metadata': z.string() }),
+});
+const RequestKindSchema = z.object({ request_kind: z.string() });
+
+/** The kind Codex labels a model request with, such as `turn` or `compaction`. */
+export function codexRequestKind(body: unknown): string | null {
+  const metadata = TurnMetadataSchema.safeParse(body);
+  if (!metadata.success) return null;
+  try {
+    const parsed = RequestKindSchema.safeParse(
+      JSON.parse(metadata.data.client_metadata['x-codex-turn-metadata']),
+    );
+    return parsed.success ? parsed.data.request_kind : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

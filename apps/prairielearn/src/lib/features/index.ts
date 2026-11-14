@@ -10,6 +10,7 @@ const featureNames = [
   'ai-grading',
   'ai-submission-grouping',
   'disable-public-workspaces',
+  'printable-exams',
 
   // Should be applied to courses only.
   'ai-question-generation-course-toggle',
@@ -18,6 +19,7 @@ const featureNames = [
   'course-agent',
   'ai-question-generation',
   'rich-text-editor',
+  'question-hosting-update',
 
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.
   'lti11',

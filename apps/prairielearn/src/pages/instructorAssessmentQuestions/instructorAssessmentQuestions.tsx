@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import fs from 'fs-extra';
+import { Alert } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -11,7 +12,11 @@ import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 import { CalculatorPreviewAssets } from '../../components/CalculatorAssets.js';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
+import {
+  selectAssessmentQuestionStructure,
+  selectAssessmentQuestions,
+} from '../../lib/assessment-question.js';
+import type { ResolvedAssessmentQuestionStructureRow } from '../../lib/assessment-question.shared.js';
 import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -35,6 +40,7 @@ import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import {
   CalculatorSettingsSchema,
   type EnumAssessmentTool,
+  type ZoneAssessmentJson,
   ZoneAssessmentJsonSchema,
 } from '../../schemas/infoAssessment.js';
 
@@ -80,9 +86,30 @@ router.get(
       return;
     }
 
-    const questionRows = await selectAssessmentQuestions({
-      assessment_id: res.locals.assessment.id,
-    });
+    const [questionRows, structureRows] = await Promise.all([
+      selectAssessmentQuestions({ assessment_id: pageContext.assessment.id }),
+      selectAssessmentQuestionStructure({ assessment_id: pageContext.assessment.id }),
+    ]);
+
+    const resolvedStructureRows = structureRows.filter(
+      (row): row is ResolvedAssessmentQuestionStructureRow => row.qid != null,
+    );
+    if (resolvedStructureRows.length !== structureRows.length) {
+      res.send(
+        PageLayout({
+          resLocals: res.locals,
+          pageTitle: 'Questions',
+          navContext: { type: 'instructor', page: 'assessment', subPage: 'questions' },
+          content: (
+            <Alert variant="warning">
+              Some questions in this assessment could not be resolved. Fix any sync errors for this
+              assessment and sync the course again.
+            </Alert>
+          ),
+        }),
+      );
+      return;
+    }
 
     const assessmentPath = getAssessmentInfoJsonPath(res.locals);
 
@@ -100,22 +127,22 @@ router.get(
       ? res.locals.assessment.json_can_submit
       : undefined;
 
-    // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
-    // for doing operations.
-    const jsonZones = buildHierarchicalAssessment(pageContext.course, questionRows);
-
-    // Populate zone-level tool overrides from the assessment_tools table.
     const zoneToolRows = await selectZoneToolOverrides({
       assessment_id: res.locals.assessment.id,
     });
+    const toolsByZoneNumber = new Map<number, NonNullable<ZoneAssessmentJson['tools']>>();
     for (const row of zoneToolRows) {
-      const zone = jsonZones[row.zone_number - 1];
-      zone.tools ??= {};
-      zone.tools[row.tool] = {
+      const tools = toolsByZoneNumber.get(row.zone_number) ?? {};
+      tools[row.tool] = {
         enabled: row.enabled,
         ...CalculatorSettingsSchema.parse(row.settings),
       };
+      toolsByZoneNumber.set(row.zone_number, tools);
     }
+
+    // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
+    // for doing operations.
+    const jsonZones = buildHierarchicalAssessment(resolvedStructureRows, toolsByZoneNumber);
 
     // Load assessment-level tool defaults for zone inheritance display.
     const assessmentToolDefaultRows = await selectAssessmentToolDefaults({

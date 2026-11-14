@@ -7,9 +7,12 @@ from prairielearn import ...
 
 import html
 import re
+from collections.abc import Callable, Sequence
 from enum import Enum
+from pathlib import Path
 from typing import Any, overload
 
+import chevron
 import lxml.html
 
 from prairielearn.colors import PLColor
@@ -29,6 +32,8 @@ __all__ = [
     "is_boolean_value",
     "is_float_value",
     "is_integer_value",
+    "render_raw_input_popover",
+    "render_raw_input_popover_content",
 ]
 
 # From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
@@ -74,6 +79,8 @@ _PL_BOOLEAN_FALSE = frozenset({
     "N",
     "NO",
 })
+
+_RAW_INPUT_TEMPLATE_DIRECTORY = Path(__file__).parent / "internal"
 
 
 def is_boolean_value(value: str) -> bool:
@@ -482,3 +489,121 @@ def escape_invalid_string(string: str) -> str:
         The sanitized user input wrapped in a code block.
     """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
+
+
+def _escape_non_ascii_string(string: str) -> str:
+    return "".join(
+        character if "\x20" <= character <= "\x7e" else f"<U+{ord(character):x}>"
+        for character in string
+    )
+
+
+def _render_raw_input_template(template_name: str, data: dict[str, object]) -> str:
+    with (_RAW_INPUT_TEMPLATE_DIRECTORY / template_name).open(
+        encoding="utf-8"
+    ) as template:
+        return chevron.render(template, data).strip()
+
+
+def _render_raw_input_value(value: str, formatter: Callable[[str], str]) -> str:
+    if value == "":
+        return '<span class="text-body-secondary">(nothing entered)</span>'
+
+    return (
+        '<pre class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere">'
+        f"{html.escape(formatter(value))}</pre>"
+    )
+
+
+def _render_raw_input_grid(
+    values: Sequence[Sequence[str]], formatter: Callable[[str], str]
+) -> str:
+    return _render_raw_input_template(
+        "raw_input_grid.mustache",
+        {
+            "rows": [
+                {"cells": [{"value": formatter(value)} for value in row]}
+                for row in values
+            ]
+        },
+    )
+
+
+def _render_raw_input_diagnostics(
+    readable: str, ascii_only: str, raw_values: Sequence[str]
+) -> str:
+    return _render_raw_input_template(
+        "raw_input_diagnostics.mustache",
+        {
+            "show_invisible_characters": any(
+                escape_unicode_string(value) != value for value in raw_values
+            ),
+            "readable": readable,
+            "show_ascii_only": any(
+                _escape_non_ascii_string(value) != escape_unicode_string(value)
+                for value in raw_values
+            ),
+            "ascii_only": ascii_only,
+        },
+    )
+
+
+def render_raw_input_popover(
+    raw_input: str | Sequence[Sequence[str]],
+    input_label: str,
+    *,
+    show_if_ascii_only: bool = True,
+) -> str:
+    """Render raw input as an accessible popover button.
+
+    The returned HTML and all supplied text are escaped, so the result is safe to
+    insert into a template without additional escaping.
+
+    Args:
+        raw_input: A scalar value or a two-dimensional grid of values.
+        input_label: The accessible name of the input associated with the value.
+        show_if_ascii_only: Whether to render the button for ASCII-only input.
+
+    Returns:
+        The rendered HTML, or an empty string when ASCII-only input is hidden.
+    """
+    if isinstance(raw_input, str):
+        raw_values = (raw_input,)
+        content = render_raw_input_popover_content(raw_input)
+    else:
+        raw_values = tuple(value for row in raw_input for value in row)
+        content = _render_raw_input_diagnostics(
+            _render_raw_input_grid(raw_input, escape_unicode_string),
+            _render_raw_input_grid(raw_input, _escape_non_ascii_string),
+            raw_values,
+        )
+
+    if not show_if_ascii_only and all(value.isascii() for value in raw_values):
+        return ""
+
+    return _render_raw_input_template(
+        "raw_input_popover.mustache",
+        {
+            "title": f"Answer as entered for {input_label}",
+            "content": content,
+        },
+    )
+
+
+def render_raw_input_popover_content(raw_input: str) -> str:
+    """Render escaped raw-input diagnostics without the surrounding button.
+
+    The returned HTML and the supplied text are escaped, so the result is safe to
+    insert into a template without additional escaping.
+
+    Args:
+        raw_input: The scalar value to describe.
+
+    Returns:
+        The rendered diagnostic HTML.
+    """
+    return _render_raw_input_diagnostics(
+        _render_raw_input_value(raw_input, escape_unicode_string),
+        _render_raw_input_value(raw_input, _escape_non_ascii_string),
+        (raw_input,),
+    )

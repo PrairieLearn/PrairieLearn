@@ -462,14 +462,15 @@ BEGIN
 
                     IF (assessment_question->>'question_id')::bigint IS NULL THEN
                         -- During local dev, if a shared question is not present we can insert dummy values
-                        -- into the questions table to enable sync success. This code should never
-                        -- be reached in production.
+                        -- into the questions table to enable sync success. The placeholder keeps the
+                        -- authored `@sharing_name/qid` reference so the assessment editor can preserve it.
+                        -- This code should never be reached in production.
                         IF check_sharing_on_sync THEN
                             RAISE EXCEPTION 'Question ID should not be null';
                         END IF;
 
                         INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
-                        VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
+                        VALUES (syncing_course_id, assessment_question->>'qid', null, null) RETURNING dest.id INTO new_question_id;
                     ELSE
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;
