@@ -138,9 +138,14 @@ function assertSingleColumn(result: pg.QueryResult, context: Record<string, any>
 }
 
 /**
- * Cancels the client's running query. This uses its own connection: a pool client could be
- * unavailable until this or another canceled query finishes, and inside a transaction the pool's
- * query functions reuse the busy client.
+ * Cancels the client's running query with `pg_cancel_backend`. This uses its own connection: a
+ * pool client could be unavailable until this or another canceled query finishes, and inside a
+ * transaction the pool's query functions reuse the busy client.
+ *
+ * A protocol-level CancelRequest wouldn't need a connection slot, but pg 8 sends one only through
+ * the untyped `Client#cancel`, which reads the deprecated `activeQuery`, reports no errors, and
+ * sends the request unencrypted even when the pool uses TLS. So if the server has no free
+ * connection, this cancel fails and the read runs until the query finishes.
  */
 async function cancelBackend(options: pg.PoolConfig, client: pg.PoolClient) {
   // pg sets processID on connect but doesn't type it.
@@ -148,6 +153,9 @@ async function cancelBackend(options: pg.PoolConfig, client: pg.PoolClient) {
     throw new Error('Client has no backend process ID');
   }
   const canceler = new pg.Client(options);
+  // A socket error is also emitted as an event, which would crash the process without a listener.
+  // The pending connect or query rejects with it too, so it's handled there.
+  canceler.on('error', () => {});
   await canceler.connect();
   try {
     await canceler.query('SELECT pg_cancel_backend($1)', [client.processID]);

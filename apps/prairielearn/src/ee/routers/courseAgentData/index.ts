@@ -100,6 +100,9 @@ router.post(
           })(),
         ),
         res,
+        // A client that stops reading would otherwise hold the cursor between reads, where the
+        // query timeout can't reach it. Aborting the pipeline closes the cursor.
+        { signal: timeout },
       );
     } finally {
       // If the response closes before the stream is first read, the generator above never runs
