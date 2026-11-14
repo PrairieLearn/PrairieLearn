@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import {
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
+  PageCatalogSchema,
   RequestChangesResultSchema,
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
@@ -29,6 +30,16 @@ app.use('*', async (c, next) => {
   await next();
 });
 
+/** The local route's body is the course archive, so its page catalog arrives in a header. */
+function parsePagesHeader(header: string | undefined) {
+  if (header === undefined) return { success: true as const, data: undefined };
+  try {
+    return PageCatalogSchema.safeParse(JSON.parse(decodeURIComponent(header)));
+  } catch {
+    return { success: false as const };
+  }
+}
+
 // Local PL development uploads the authorized course's current files and Git history.
 // The first message unpacks this archive; creation alone does not start a container.
 app.post('/conversations/local', async (c) => {
@@ -39,12 +50,14 @@ app.post('/conversations/local', async (c) => {
   if (directory.startsWith('/') || directory.split('/').includes('..')) {
     return c.text('Expected a relative course directory', 400);
   }
+  const pages = parsePagesHeader(c.req.header('X-PL-Pages'));
+  if (!pages.success) return c.text('Invalid page catalog', 400);
   const id = crypto.randomUUID();
   const archiveKey = `local-sources/${id}.tar.gz`;
   await c.env.CHECKPOINTS.put(archiveKey, c.req.raw.body);
   try {
     const conversation = await getAgentByName(c.env.Conversation, id);
-    await conversation.initialize({ type: 'local', archiveKey, directory });
+    await conversation.initialize({ type: 'local', archiveKey, directory }, pages.data);
   } catch (error) {
     await c.env.CHECKPOINTS.delete(archiveKey);
     throw error;
@@ -57,7 +70,8 @@ app.post('/conversations', async (c) => {
   if (!input.success) return c.text('Invalid request', 400);
   const id = crypto.randomUUID();
   const conversation = await getAgentByName(c.env.Conversation, id);
-  await conversation.initialize({ type: 'github', ...input.data });
+  const { pages, ...source } = input.data;
+  await conversation.initialize({ type: 'github', ...source }, pages);
   return c.json({ id }, 201);
 });
 

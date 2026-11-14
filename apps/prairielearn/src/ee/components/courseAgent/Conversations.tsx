@@ -47,6 +47,7 @@ import {
 import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
+import { NavigationCard, navigationOf } from './Navigation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -488,7 +489,7 @@ function Chat({
       if (part.type === 'text' || part.type === 'reasoning') {
         return part.text.trim().length > 0;
       }
-      return toolCallOf(part) !== null;
+      return toolCallOf(part) !== null || navigationOf(part) !== null;
     });
   });
   // The server reports the turn's lifecycle before the SDK marks the response active.
@@ -849,6 +850,8 @@ function Message({
         return <TextPart key={key} part={part} urlTransform={linkTransform} />;
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+      const navigation = navigationOf(part);
+      if (navigation) return <NavigationCard key={key} navigation={navigation} />;
       if (part.type === 'data-input-request') {
         const request = InputRequestPartSchema.safeParse(part.data).data;
         if (!request) return null;
