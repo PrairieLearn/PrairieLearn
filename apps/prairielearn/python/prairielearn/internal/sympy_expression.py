@@ -581,6 +581,10 @@ class _Lowerer:
     def _lower_product(self, expression: _Binary) -> _Expression:
         raw_items, operators = self._flatten_product(expression)
         items = [self.lower(item) for item in raw_items]
+        segments: list[_Expression] = []
+        explicit_operators: list[_Operator] = []
+        current_items = [items[0]]
+        current_operators: list[_Operator] = []
         for index, (operator, item) in enumerate(
             zip(operators, items[1:], strict=True)
         ):
@@ -594,7 +598,20 @@ class _Lowerer:
                     self.source,
                     item.span,
                 )
-        return self._lower_multiplication_segment(items, operators)
+            if operator.text == "juxtapose":
+                current_items.append(item)
+                current_operators.append(operator)
+                continue
+            segments.append(
+                self._lower_multiplication_segment(current_items, current_operators)
+            )
+            explicit_operators.append(operator)
+            current_items = [item]
+            current_operators = []
+        segments.append(
+            self._lower_multiplication_segment(current_items, current_operators)
+        )
+        return _make_product(segments, explicit_operators)
 
     def lower(self, expression: _Expression) -> _Expression:
         if isinstance(expression, _Name):

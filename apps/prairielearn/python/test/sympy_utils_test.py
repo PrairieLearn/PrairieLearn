@@ -92,13 +92,18 @@ def test_evaluate_does_not_mutate_locals() -> None:
         ("sin^2 2x", sympy.sin(2 * sympy.Symbol("x")) ** 2, "(sin((2*x))**2)"),
         (
             "sin 2x * y",
-            sympy.sin(2 * sympy.Symbol("x") * sympy.Symbol("y")),
-            "sin(((2*x)*y))",
+            sympy.sin(2 * sympy.Symbol("x")) * sympy.Symbol("y"),
+            "(sin((2*x))*y)",
         ),
         (
             "sin 2 / x",
-            sympy.sin(2 / sympy.Symbol("x")),
-            "sin((2/x))",
+            sympy.sin(2) / sympy.Symbol("x"),
+            "(sin(2)/x)",
+        ),
+        (
+            "sin 2 % x",
+            sympy.Mod(sympy.sin(2), sympy.Symbol("x")),
+            "(sin(2)%x)",
         ),
         (
             "sin^3 x",
@@ -112,7 +117,7 @@ def test_evaluate_does_not_mutate_locals() -> None:
         ),
     ],
 )
-def test_unparenthesized_call_consumes_one_product(
+def test_unparenthesized_call_consumes_implicit_token_stream(
     expression: str, expected: sympy.Expr, expected_structure: str
 ) -> None:
     result, structure = psu.convert_string_to_sympy_with_source(
