@@ -347,7 +347,7 @@ def test_parse_symbolic_submission_serializes_result() -> None:
         "|x|",
         ["x"],
     )
-    assert isinstance(result, psu._SymbolicSubmissionParseSuccess)
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
     assert result.expr == sympy.Abs(sympy.Symbol("x"))
     assert result.json != ""
     assert psu.json_to_sympy(result.json) == result.expr

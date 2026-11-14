@@ -1790,15 +1790,13 @@ class _SymbolicInputNormalizationError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
-class _SymbolicSubmissionParseSuccess:
+class SymbolicSubmissionParseSuccess:
     expr: sympy.Expr | Literal[""]
     json: SympyJson | Literal[""]
 
 
 type _SymbolicInputNormalizationResult = sympy_source.SourceText | SympyParseFailure
-type _SymbolicSubmissionParseResult = (
-    _SymbolicSubmissionParseSuccess | SympyParseFailure
-)
+type SymbolicSubmissionParseResult = SymbolicSubmissionParseSuccess | SympyParseFailure
 
 
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
@@ -2275,7 +2273,7 @@ def try_parse_symbolic_submission(
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
-) -> _SymbolicSubmissionParseResult:
+) -> SymbolicSubmissionParseResult:
     """Normalize, parse, and serialize a symbolic element submission."""
     if submission is None:
         return SympyParseFailure("No submitted answer.")
@@ -2299,7 +2297,7 @@ def try_parse_symbolic_submission(
         if not allow_blank:
             return SympyParseFailure("No submitted answer.")
         if not blank_value.strip():
-            return _SymbolicSubmissionParseSuccess("", "")
+            return SymbolicSubmissionParseSuccess("", "")
         result = try_parse_string_as_sympy(
             blank_value,
             variable_list,
@@ -2345,7 +2343,7 @@ def try_parse_symbolic_submission(
             "Your answer was simplified to this, which contains an invalid expression: "
             f"$${sympy.latex(result.expr)}$$"
         )
-    return _SymbolicSubmissionParseSuccess(result.expr, submission_json)
+    return SymbolicSubmissionParseSuccess(result.expr, submission_json)
 
 
 def validate_string_as_sympy(
