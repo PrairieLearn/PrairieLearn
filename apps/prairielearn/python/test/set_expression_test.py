@@ -1,7 +1,18 @@
+import re
+
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
 from prairielearn.internal import set_expression
+
+
+def _caret_template(template: str) -> tuple[str, str]:
+    match template.split("!", maxsplit=2):
+        case [left, right]:
+            expression = left + right
+            return expression, psu.point_to_error(expression, len(left))
+        case _:
+            raise pytest.UsageError("caret template must have exactly one marker")
 
 
 def parse_success(
@@ -100,6 +111,32 @@ def test_named_sets_are_reserved(name: str) -> None:
 def test_rejects_non_set_and_constructor_syntax(submission: str) -> None:
     result = set_expression.try_parse_set_submission(submission, ["x"])
     assert isinstance(result, set_expression.SetParseFailure)
+
+
+@pytest.mark.parametrize(
+    "caret_template",
+    [
+        "{1, 2!",
+        "{1,!, 2}",
+        "[0 1!)",
+        "[0,!]",
+        "[0, 1!",
+        "[0, 1!}",
+        "!U R",
+        "R U!",
+        "{x^2} U !U Q",
+        "R !* Q",
+        "(R U Q!",
+        "R U Q!)",
+    ],
+)
+def test_syntax_error_caret_output(caret_template: str) -> None:
+    submission, expected_caret = _caret_template(caret_template)
+    result = set_expression.try_parse_set_submission(submission, [])
+    assert isinstance(result, set_expression.SetParseFailure)
+    match = re.search(r"<code>(.*?)</code>", result.error, re.DOTALL)
+    assert match is not None
+    assert match.group(1) == expected_caret
 
 
 def test_scalar_members_use_symbolic_parser_configuration() -> None:
