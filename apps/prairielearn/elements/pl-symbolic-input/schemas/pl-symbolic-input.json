@@ -16,7 +16,9 @@
     },
     "allow-sets": {
       "type": "string",
-      "format": "boolean"
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use <pl-set-symbolic-input> for new set-valued answers."
     },
     "allow-trig-functions": {
       "type": "string",

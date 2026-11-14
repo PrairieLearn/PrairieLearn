@@ -3,7 +3,7 @@ import re
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
-from prairielearn.internal import set_expression
+from prairielearn import set_expression
 
 
 def _caret_template(template: str) -> tuple[str, str]:
@@ -162,6 +162,12 @@ def test_named_sets_are_reserved(name: str) -> None:
         ValueError, match="Named sets cannot be used as custom function names"
     ):
         set_expression.validate_names([], [name])
+
+
+@pytest.mark.parametrize("name", ["U", "cup", "cap"])
+def test_set_operator_names_are_reserved(name: str) -> None:
+    with pytest.raises(ValueError, match="Set operators cannot be used"):
+        set_expression.validate_names([name], [])
 
 
 @pytest.mark.parametrize(

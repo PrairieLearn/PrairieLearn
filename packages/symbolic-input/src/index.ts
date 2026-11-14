@@ -405,6 +405,8 @@ interface KeyboardLayout {
     // If the allow-trig / allow-sets attributes are set, add matching shortcuts to the virtual keyboard
     const allowTrig = mf.getAttribute('allow-trig');
     const allowSets = mf.getAttribute('allow-sets');
+    const namedSets = mf.getAttribute('named-sets');
+    const allowIntervals = mf.getAttribute('set-syntax') !== 'tuple';
     // Swap virtual keyboard labels based on display settings
     const logAsLn = mf.getAttribute('log-as-ln');
     const imaginaryUnit = mf.getAttribute('imaginary-unit') ?? 'i';
@@ -452,8 +454,8 @@ interface KeyboardLayout {
 
     const elementKeyboardLayout = {
       label: 'math',
-      // When allowSets is enabled, set/interval keys take the place of e, x, y, and
-      // sign across these rows; affected keys are reshuffled so the most useful keys
+      // When allowSets is enabled, set syntax keys take the place of e, x, y, and sign
+      // across these rows; affected keys are reshuffled so the most useful keys
       // stay reachable in the same general region of the keyboard.
       rows: [
         [
@@ -505,8 +507,8 @@ interface KeyboardLayout {
           '6',
           '-',
           '[separator]',
-          allowSets ? '[' : 'x',
-          allowSets ? ']' : 'y',
+          allowSets ? (allowIntervals ? '[' : '[separator]') : 'x',
+          allowSets ? (allowIntervals ? ']' : '[separator]') : 'y',
           ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', key: 'U' }, mf)),
           imaginaryUnit,
         ],
@@ -637,6 +639,22 @@ interface KeyboardLayout {
           { class: 'small hide-shift ', label: '[backspace]', shift: null, width: 1 },
           ...onlyIfSets(signKey), // sign shifted from above
         ],
+        ...(namedSets
+          ? [
+              [
+                '[separator]',
+                { label: 'ℝ', insert: 'R' },
+                { label: 'ℚ', insert: 'Q' },
+                { label: 'ℤ', insert: 'Z' },
+                { label: 'ℕ', insert: 'N' },
+                { label: 'ℂ', insert: 'C' },
+                '[separator]',
+                { class: 'small hide-shift', label: '[left]' },
+                { class: 'small hide-shift', label: '[right]' },
+                { class: 'small hide-shift', label: '[backspace]', shift: null },
+              ],
+            ]
+          : []),
       ],
     } satisfies KeyboardLayout;
 
