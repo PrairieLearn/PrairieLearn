@@ -93,19 +93,11 @@ describe('Student API', { timeout: 60_000, concurrent: false }, function () {
     studentToken = await withUser(STUDENT, () => helperClient.generateApiToken(siteUrl));
     otherStudentToken = await withUser(OTHER_STUDENT, () => helperClient.generateApiToken(siteUrl));
     outsiderToken = await withUser(OUTSIDER, () => helperClient.generateApiToken(siteUrl));
-    // The default user is an administrator. We enroll them too so that we can
-    // check that effective user overrides are rejected even for someone who
-    // would otherwise have access.
+    // The default user is an administrator who isn't enrolled.
     staffToken = await helperClient.generateApiToken(siteUrl);
 
     await enrollUser('1', STUDENT);
     await enrollUser('1', OTHER_STUDENT);
-    await enrollUser('1', {
-      name: config.authName,
-      uid: config.authUid!,
-      uin: config.authUin,
-      email: config.authEmail,
-    });
   });
 
   describe('authentication and authorization', () => {
@@ -127,7 +119,7 @@ describe('Student API', { timeout: 60_000, concurrent: false }, function () {
 
     test('returns a JSON error for a nonexistent course instance', async () => {
       const res = await get(`${studentApiUrl}/course_instances/999999/gradebook`, studentToken);
-      assert.oneOf(res.status, [403, 404]);
+      assert.equal(res.status, 403);
       assert.include(res.headers.get('content-type'), 'application/json');
     });
 
@@ -143,8 +135,34 @@ describe('Student API', { timeout: 60_000, concurrent: false }, function () {
       assert.equal((await get(gradebookUrl, studentToken, cookie)).status, 403);
     });
 
+    test('returns 403 for course staff who are not enrolled', async () => {
+      // The instructor API works for this user, but the student API doesn't.
+      assert.equal((await get(`${apiUrl}/course_instances/1/gradebook`, staffToken)).status, 200);
+      assert.equal((await get(gradebookUrl, staffToken)).status, 403);
+
+      const listRes = await get(courseInstancesUrl, staffToken);
+      assert.equal(listRes.status, 200);
+      assert.deepEqual(await listRes.json(), []);
+
+      assert.lengthOf(
+        await selectEnrollmentStatuses({
+          name: config.authName,
+          uid: config.authUid!,
+          uin: config.authUin,
+        }),
+        0,
+      );
+    });
+
     test('rejects effective user overrides', async () => {
-      // Without overrides, the enrolled staff user has access.
+      // We enroll the staff user so that we can check that overrides are
+      // rejected even for someone who would otherwise have access.
+      await enrollUser('1', {
+        name: config.authName,
+        uid: config.authUid!,
+        uin: config.authUin,
+        email: config.authEmail,
+      });
       assert.equal((await get(gradebookUrl, staffToken)).status, 200);
 
       for (const cookie of [
@@ -211,6 +229,27 @@ describe('Student API', { timeout: 60_000, concurrent: false }, function () {
       } finally {
         await sqldb.execute('DELETE FROM enrollments WHERE id = $id', { id: enrollment.id });
       }
+    });
+
+    test('does not list or allow access to a blocked enrollment', async () => {
+      await sqldb.execute(
+        "UPDATE enrollments AS e SET status = 'blocked' FROM users AS u WHERE u.id = e.user_id AND u.uid = $uid",
+        { uid: OTHER_STUDENT.uid },
+      );
+      try {
+        const listRes = await get(courseInstancesUrl, otherStudentToken);
+        assert.equal(listRes.status, 200);
+        assert.deepEqual(await listRes.json(), []);
+
+        assert.equal((await get(gradebookUrl, otherStudentToken)).status, 403);
+        assert.deepEqual(await selectEnrollmentStatuses(OTHER_STUDENT), ['blocked']);
+      } finally {
+        await sqldb.execute(
+          "UPDATE enrollments AS e SET status = 'joined' FROM users AS u WHERE u.id = e.user_id AND u.uid = $uid",
+          { uid: OTHER_STUDENT.uid },
+        );
+      }
+      assert.equal((await get(gradebookUrl, otherStudentToken)).status, 200);
     });
 
     test('does not list a course instance whose access has ended', async () => {

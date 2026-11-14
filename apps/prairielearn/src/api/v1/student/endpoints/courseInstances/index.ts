@@ -30,9 +30,9 @@ router.get(
     );
 
     // Being enrolled isn't sufficient: the course instance must also be
-    // accessible to the student right now. We use the same check as the
-    // per-course-instance routes so that this list contains exactly the
-    // course instances that those routes would allow access to.
+    // accessible to the student right now. We use the same enrollment and
+    // access check as the per-course-instance routes. Those routes may still
+    // deny access for other reasons (for example, missing plan grants).
     const courseInstances = [];
     for (const courseInstance of joinedCourseInstances) {
       const { authzData } = await constructCourseOrInstanceContext({
