@@ -2,7 +2,6 @@ import base64
 import itertools as it
 import json
 import math
-import re
 import string
 import time
 from collections.abc import Callable
@@ -294,14 +293,12 @@ def test_to_json_sympy_set(sympy_set: sympy.Set) -> None:
     assert psu.json_to_sympy(encoded, allow_sets=True) == sympy_set
 
 
-def test_to_json_rejects_sympy_tuples() -> None:
-    message = (
-        "SymPy Tuple values are not supported by PrairieLearn serialization. "
-        "Use separate inputs for point coordinates."
-    )
+def test_to_json_sympy_tuple() -> None:
+    value = sympy.Tuple(1, 2)
 
-    with pytest.raises(ValueError, match=f"^{re.escape(message)}$"):
-        pl.to_json(sympy.Tuple(1, 2))
+    encoded = cast(psu.SympyJson, pl.to_json(value))
+
+    assert pl.from_json(encoded) == value
 
 
 class DummyEnum(Enum):

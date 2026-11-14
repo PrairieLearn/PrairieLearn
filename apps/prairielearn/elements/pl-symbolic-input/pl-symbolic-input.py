@@ -63,7 +63,7 @@ def _get_variables_with_fallback(
 
 
 def _replace_imaginary_for_display(
-    expr: sympy.Expr, imaginary_unit: str
+    expr: sympy.Basic, imaginary_unit: str
 ) -> sympy.Basic:
     return expr.subs(sympy.I, sympy.Symbol(imaginary_unit))
 

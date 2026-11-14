@@ -1,0 +1,51 @@
+start: set_union
+
+set_union: set_intersection (UNION set_intersection)*
+set_intersection: set_difference (INTERSECTION set_difference)*
+set_difference: set_atom (DIFFERENCE set_atom)*
+
+?set_atom: finite_set | delimited | named_set | set_group
+set_group: LPAR set_union RPAR
+named_set: NAMED_SET
+
+finite_set: LBRACE [set_items] RBRACE
+set_items: set_item (COMMA set_item)*
+?set_item: set_union | scalar
+
+delimited: (LPAR | LBRACKET) scalar COMMA scalar (COMMA scalar)* (RPAR | RBRACKET)
+
+scalar: scalar_sum
+?scalar_sum: scalar_product (ADD scalar_product)*
+?scalar_product: scalar_factor scalar_product_tail*
+?scalar_product_tail: PRODUCT scalar_factor -> explicit_scalar_product_tail
+                    | scalar_power          -> implicit_scalar_product_tail
+?scalar_factor: scalar_unary | scalar_power
+scalar_unary: ADD scalar_factor
+?scalar_power: scalar_postfix [POWER scalar_factor]
+scalar_postfix: scalar_atom FACTORIAL*
+?scalar_atom: scalar_call | scalar_group | NUMBER | NAME
+scalar_call: NAME LPAR [scalar_arguments] RPAR
+scalar_arguments: scalar (COMMA scalar)*
+scalar_group: LPAR scalar RPAR
+
+UNION.4: "cup" | "U" | "∪" | "|" | "+"
+INTERSECTION.4: "cap" | "∩" | "&"
+DIFFERENCE: "-"
+NAMED_SET.5: "R" | "Q" | "Z" | "N" | "C"
+
+ADD: "+" | "-"
+PRODUCT: "*" | "/" | "%"
+POWER: "**" | "^"
+FACTORIAL: "!"
+LPAR: "("
+RPAR: ")"
+LBRACKET: "["
+RBRACKET: "]"
+LBRACE: "{"
+RBRACE: "}"
+COMMA: ","
+
+NUMBER: /(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/
+NAME: /[A-Za-z_][A-Za-z_0-9]*/
+
+%ignore /\s+/
