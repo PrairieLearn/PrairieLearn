@@ -18,7 +18,7 @@ supports_standalone_web_search = true
 remote_compaction = "v2"
 
 # Features the course agent doesn't use, so the runner doesn't start or advertise them. These are
-# Codex 0.163.0's flag names; check `codex features list` when upgrading.
+# Codex 0.167.1's flag names; check `codex features list` when upgrading.
 [features]
 apps = false
 browser_annotation_api = false
@@ -38,11 +38,10 @@ in_app_local_automation = false
 in_app_updates = false
 in_app_voice = false
 multi_agent = false
+plugin_discovery_prefetch = false
 plugin_sharing = false
 plugins = false
-realtime_conversation = false
 remote_plugin = false
 shell_snapshot = false
 skill_mcp_dependency_install = false
 tool_suggest = false
-worktrees = false

@@ -16,7 +16,7 @@ export type UserInput =
     }
   | ({ type: 'image'; detail?: ImageDetail } & ({ url: string } | { fileId: string }))
   | { type: 'localImage'; detail?: ImageDetail; path: string }
-  | { type: 'audio'; url: string }
+  | ({ type: 'audio' } & ({ url: string } | { fileId: string }))
   | { type: 'localAudio'; path: string }
   | { type: 'skill'; name: string; path: string }
   | { type: 'mention'; name: string; path: string };
