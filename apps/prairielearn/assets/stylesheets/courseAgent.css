@@ -29,6 +29,36 @@
   overflow-wrap: anywhere;
 }
 
+.course-agent-composer:focus-within {
+  border-color: var(--bs-primary) !important;
+}
+
+.course-agent-composer-input {
+  max-height: 12rem;
+  overflow-y: auto;
+  resize: none;
+}
+
+/* The mode that saves changes unreviewed stands out wherever it is named. */
+.course-agent-approval-risky {
+  --course-agent-risky-color: color-mix(in srgb, var(--bs-orange), black 30%);
+  color: var(--course-agent-risky-color) !important;
+}
+
+.course-agent-approval-menu {
+  width: 19rem;
+  max-width: calc(100vw - 2rem);
+}
+
+.course-agent-approval-menu .dropdown-item {
+  white-space: normal;
+}
+
+.course-agent-approval-menu .dropdown-item:active {
+  color: var(--bs-dropdown-link-hover-color);
+  background-color: var(--bs-dropdown-link-hover-bg);
+}
+
 .btn.course-agent-icon-button {
   --bs-btn-color: var(--bs-secondary-color);
   --bs-btn-hover-color: var(--bs-body-color);
@@ -69,6 +99,13 @@
   right: -0.5rem;
   width: 1.25rem;
   height: 1.25rem;
+}
+
+/* Touch screens have no hover, so they always show the remove button. */
+@media (hover: hover) {
+  .course-agent-attachment:not(:hover, :focus-within) .course-agent-attachment-remove {
+    opacity: 0;
+  }
 }
 
 .course-agent-drop-target {

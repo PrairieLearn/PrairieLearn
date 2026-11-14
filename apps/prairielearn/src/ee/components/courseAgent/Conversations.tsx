@@ -10,6 +10,7 @@ import {
   type SyntheticEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -694,6 +695,15 @@ function Composer({
   onStop?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
+  // the height, and a hidden panel has no height to measure.
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    if (textarea.scrollHeight) textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [draft]);
   const invalidAttachment = hasInvalidAttachment(attachments);
   const submit = (event: SyntheticEvent) => {
     event.preventDefault();
@@ -707,93 +717,108 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
-      <DraftAttachmentList
-        attachments={attachments}
-        sending={pending}
-        onRemove={onRemoveAttachment}
-      />
-      <Form.Control
-        as="textarea"
-        rows={3}
-        value={draft}
-        placeholder={placeholder}
-        aria-label="Message"
-        disabled={pending}
-        onChange={(event) => onDraftChange(event.target.value)}
-        onKeyDown={onKeyDown}
-        onPaste={(event) => {
-          if (pending || event.clipboardData.files.length === 0) return;
-          // Copied cells and rich text carry an image of themselves beside their text; paste the text.
-          if (
-            event.clipboardData.getData('text/plain') &&
-            event.clipboardData.getData('text/html')
-          ) {
-            return;
-          }
-          event.preventDefault();
-          onAttach([...event.clipboardData.files]);
-        }}
-      />
-      <div className="d-flex align-items-center gap-2 mt-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          hidden
-          onChange={(event) => {
-            onAttach([...(event.target.files ?? [])]);
-            event.target.value = '';
+      <div
+        className={clsx('course-agent-composer border rounded-3', pending && 'bg-body-tertiary')}
+      >
+        <DraftAttachmentList
+          attachments={attachments}
+          sending={pending}
+          onRemove={onRemoveAttachment}
+        />
+        <Form.Control
+          ref={textareaRef}
+          as="textarea"
+          rows={2}
+          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
+          value={draft}
+          placeholder={placeholder}
+          aria-label="Message"
+          disabled={pending}
+          onChange={(event) => onDraftChange(event.target.value)}
+          onKeyDown={onKeyDown}
+          onPaste={(event) => {
+            if (pending || event.clipboardData.files.length === 0) return;
+            // Copied cells and rich text carry an image of themselves beside their text; paste the text.
+            if (
+              event.clipboardData.getData('text/plain') &&
+              event.clipboardData.getData('text/html')
+            ) {
+              return;
+            }
+            event.preventDefault();
+            onAttach([...event.clipboardData.files]);
           }}
         />
-        <Button
-          variant="link"
-          size="sm"
-          className="course-agent-icon-button"
-          aria-label="Attach files"
-          disabled={pending}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <i className="bi bi-plus-lg" aria-hidden="true" />
-        </Button>
-        <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
-        <div className="d-flex align-items-center gap-2 ms-auto">
-          {children}
-          {onStop ? (
-            <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
-              <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-              Stop
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              size="sm"
-              aria-label={sendLabel}
-              disabled={!draft.trim() || disabled || pending || invalidAttachment}
-            >
-              {pending ? (
-                <Spinner animation="border" size="sm" aria-hidden="true" />
-              ) : (
-                <i className="bi bi-send" aria-hidden="true" />
-              )}
-            </Button>
-          )}
+        <div className="d-flex align-items-center gap-2 px-2 pb-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(event) => {
+              onAttach([...(event.target.files ?? [])]);
+              event.target.value = '';
+            }}
+          />
+          <Button
+            variant="link"
+            size="sm"
+            className="course-agent-icon-button"
+            aria-label="Attach files"
+            disabled={pending}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <i className="bi bi-plus-lg" aria-hidden="true" />
+          </Button>
+          <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
+          <div className="d-flex align-items-center gap-2 ms-auto">
+            {children}
+            {onStop ? (
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                disabled={stopDisabled}
+                onClick={onStop}
+              >
+                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+                Stop
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="sm"
+                aria-label={sendLabel}
+                disabled={!draft.trim() || disabled || pending || invalidAttachment}
+              >
+                {pending ? (
+                  <Spinner animation="border" size="sm" aria-hidden="true" />
+                ) : (
+                  <i className="bi bi-send" aria-hidden="true" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </Form>
   );
 }
 
-const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
+const APPROVAL_MODES: Record<
+  ApprovalMode,
+  { label: string; description: string; icon: string; risky: boolean }
+> = {
   approval_required: {
-    label: 'Approval required',
-    description: 'You review and approve each set of changes before it is saved.',
-    icon: 'bi-shield-check',
+    label: 'Ask for approval',
+    description: 'Review each set of course changes before it is saved',
+    icon: 'bi-hand-index-thumb',
+    risky: false,
   },
   always_approve: {
     label: 'Always approve',
-    description:
-      'Changes are saved to the course without your review. The agent reads web pages, which can mislead it.',
-    icon: 'bi-lightning-charge',
+    description: 'Save course changes without your review',
+    icon: 'bi-shield-exclamation',
+    risky: true,
   },
 };
 
@@ -804,34 +829,50 @@ function ApprovalModePicker({
   mode: ApprovalMode;
   onChange: (mode: ApprovalMode) => void;
 }) {
+  const current = APPROVAL_MODES[mode];
   return (
     <Dropdown drop="up">
       <Dropdown.Toggle
         variant="link"
         size="sm"
-        className="text-body-secondary text-decoration-none px-1"
-        aria-label={`Approval mode: ${APPROVAL_MODES[mode].label}`}
+        className={clsx(
+          'course-agent-icon-button d-flex align-items-center gap-1',
+          current.risky && 'course-agent-approval-risky',
+        )}
+        aria-label={`Approval mode: ${current.label}`}
       >
-        <i className={clsx('bi me-1', APPROVAL_MODES[mode].icon)} aria-hidden="true" />
-        {APPROVAL_MODES[mode].label}
+        <i className={clsx('bi', current.icon)} aria-hidden="true" />
+        {current.label}
       </Dropdown.Toggle>
-      <Dropdown.Menu style={{ width: '18rem' }}>
-        {ApprovalModeSchema.options.map((option) => (
-          <Dropdown.Item
-            key={option}
-            as="button"
-            type="button"
-            className="text-wrap"
-            active={option === mode}
-            aria-current={option === mode}
-            onClick={() => onChange(option)}
-          >
-            <div>{APPROVAL_MODES[option].label}</div>
-            <div className={clsx('small', option !== mode && 'text-body-secondary')}>
-              {APPROVAL_MODES[option].description}
-            </div>
-          </Dropdown.Item>
-        ))}
+      <Dropdown.Menu className="course-agent-approval-menu shadow-sm p-2">
+        <Dropdown.Header className="px-2 pt-1 pb-2">
+          How should course changes be approved?
+        </Dropdown.Header>
+        {ApprovalModeSchema.options.map((option) => {
+          const { label, description, icon, risky } = APPROVAL_MODES[option];
+          return (
+            <Dropdown.Item
+              key={option}
+              as="button"
+              type="button"
+              className={clsx(
+                'd-flex align-items-start gap-2 rounded-2 px-2 py-2',
+                risky && 'course-agent-approval-risky',
+              )}
+              aria-current={option === mode}
+              onClick={() => onChange(option)}
+            >
+              <i className={clsx('bi fs-5 lh-1 mt-1', icon)} aria-hidden="true" />
+              <span className="flex-grow-1">
+                <span className="d-block">{label}</span>
+                <span className={clsx('d-block small', !risky && 'text-body-secondary')}>
+                  {description}
+                </span>
+              </span>
+              {option === mode && <i className="bi bi-check-lg mt-1" aria-hidden="true" />}
+            </Dropdown.Item>
+          );
+        })}
       </Dropdown.Menu>
     </Dropdown>
   );
