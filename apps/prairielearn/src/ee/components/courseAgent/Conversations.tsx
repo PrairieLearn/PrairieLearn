@@ -718,7 +718,7 @@ function Composer({
   return (
     <Form className="border-top p-3" onSubmit={submit}>
       <div
-        className={clsx('course-agent-composer border rounded-4', pending && 'bg-body-tertiary')}
+        className={clsx('course-agent-composer border rounded-3', pending && 'bg-body-tertiary')}
       >
         <DraftAttachmentList
           attachments={attachments}
@@ -795,7 +795,7 @@ function Composer({
                 {pending ? (
                   <Spinner animation="border" size="sm" aria-hidden="true" />
                 ) : (
-                  <i className="bi bi-arrow-up" aria-hidden="true" />
+                  <i className="bi bi-send" aria-hidden="true" />
                 )}
               </Button>
             )}
