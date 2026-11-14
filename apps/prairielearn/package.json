@@ -79,6 +79,7 @@
     "@prairielearn/session": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/sketchresponse": "^0.3.1",
+    "@prairielearn/symbolic-input": "workspace:^",
     "@prairielearn/tree-sitter-htmlmustache": "^1.4.3",
     "@prairielearn/trpc": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
