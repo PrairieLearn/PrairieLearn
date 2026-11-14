@@ -73,6 +73,10 @@
     "suffix": {
       "type": "string"
     },
+    "syntax": {
+      "type": "string",
+      "enum": ["tuple", "interval"]
+    },
     "variables": {
       "type": "string"
     },

@@ -37,6 +37,7 @@
                 {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
                 {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
                 {{#named_sets}}named-sets="named-sets"{{/named_sets}}
+                {{#set_syntax}}set-syntax="{{set_syntax}}"{{/set_syntax}}
                 {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
                 {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
                 {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
@@ -234,7 +235,7 @@ ${{a_tru}}$
 
 {{#format}}
 {{#set_input}}
-<p><strong>Set format information:</strong><br>Your answer must be a set. Use braces for finite sets (for example <code>{1, 2}</code>) and brackets or parentheses for intervals (for example <code>[0, 1)</code>). Use <code>R</code>, <code>Q</code>, <code>Z</code>, <code>N</code>, and <code>C</code> for the real, rational, integer, natural, and complex numbers.</p>
+<p><strong>Set format information:</strong><br>Your answer must be a set. Use braces for finite sets (for example <code>{1, 2}</code>). {{#tuple_syntax}}Tuples may be used as set members (for example <code>{(1, 2), (3, 4)}</code>); intervals are not available.{{/tuple_syntax}}{{#interval_syntax}}Use brackets or parentheses for intervals (for example <code>[0, 1)</code>); tuples are not available.{{/interval_syntax}} Use <code>R</code>, <code>Q</code>, <code>Z</code>, <code>N</code>, and <code>C</code> for the real, rational, integer, natural, and complex numbers.</p>
 <p>Use <code>U</code>, <code>cup</code>, <code>∪</code>, <code>|</code>, or <code>+</code> for union; <code>cap</code>, <code>∩</code>, or <code>&amp;</code> for intersection; and <code>-</code> for set difference. Set constructor functions and qualified names are not accepted.</p>
 {{/set_input}}
 {{^set_input}}

@@ -25,6 +25,7 @@ const plSetSymbolicInputAttributesSchema = z
     'show-score': booleanFormat().optional(),
     size: integerFormat().optional(),
     suffix: z.string().optional(),
+    syntax: z.enum(['tuple', 'interval']).optional(),
     variables: z.string().optional(),
     weight: integerFormat().optional(),
   })

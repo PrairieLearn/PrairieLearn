@@ -29,6 +29,7 @@ test('loads shared assets when the page contains only pl-set-symbolic-input', as
   );
   await expect(formulaEditor).toBeVisible();
   await expect(formulaEditor).toHaveAttribute('named-sets', 'named-sets');
+  await expect(formulaEditor).toHaveAttribute('set-syntax', 'tuple');
 
   await formulaEditor.getByRole('button', { name: /Toggle Virtual Keyboard/ }).click();
   const realsKey = page.getByLabel('ℝ');
