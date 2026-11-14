@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { type ReactNode, Suspense, lazy, useState } from 'react';
+import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
 import type { RequestChangesResult } from '@prairielearn/course-agent-types';
@@ -31,11 +31,14 @@ export function RequestChangesCard({
   conversationId,
   reviewId,
   canResume,
+  autoApprove,
 }: {
   conversationId: string;
   reviewId: string;
   /** The agent is idle but has not received this review's result, for example after Stop. */
   canResume: boolean;
+  /** Approve the review once its changes load, without waiting for the instructor. */
+  autoApprove: boolean;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -72,6 +75,17 @@ export function RequestChangesCard({
     decision.mutate({ conversationId, reviewId, decision: value });
   const actionsDisabled = !pending || decision.isPending;
   const canApprove = !!pending?.diff.files;
+  // Approves a pending review on the instructor's behalf once its changes have loaded. It tries
+  // once: if the approval fails, the card's buttons are left for the instructor to decide.
+  const autoApprovedRef = useRef(false);
+  const { mutate: mutateDecision } = decision;
+  useEffect(() => {
+    if (!autoApprove || !canApprove || autoApprovedRef.current) return;
+    autoApprovedRef.current = true;
+    mutateDecision({ conversationId, reviewId, decision: 'approved' });
+  }, [autoApprove, canApprove, mutateDecision, conversationId, reviewId]);
+  const approvingAutomatically =
+    autoApprove && decision.isPending && decision.variables.decision === 'approved';
   return (
     <div className="border rounded p-2">
       {data?.status === 'decided' && data.result ? (
@@ -84,6 +98,11 @@ export function RequestChangesCard({
           onViewChanges={() => setShowChanges(true)}
           onDecision={decide}
         />
+      )}
+      {approvingAutomatically && (
+        <p className="small text-muted mt-2 mb-0" role="status">
+          Approving automatically…
+        </p>
       )}
       {data?.status === 'decided' && !data.result && (
         <p className="small text-muted mt-2 mb-0" role="status">

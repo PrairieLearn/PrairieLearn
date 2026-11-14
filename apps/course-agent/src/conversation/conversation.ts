@@ -10,6 +10,7 @@ import { type UIMessage, createUIMessageStreamResponse, parseJsonEventStream } f
 import { z } from 'zod';
 
 import {
+  type ApprovalMode,
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
@@ -17,6 +18,7 @@ import {
   type RequestChangesResult,
   RequestChangesResultSchema,
   type Review,
+  type ReviewPart,
   type ReviewSnapshot,
   type Usage,
   UsageDecisionSchema,
@@ -209,6 +211,8 @@ interface RecordData {
    * the denial with that message, which the browser sends once PrairieLearn records the denial.
    */
   deniedByMessage?: string | null;
+  /** From the latest user message that set one; absent means `approval_required`. */
+  approvalMode?: ApprovalMode;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
   /** User messages refused by the usage limit, sent to Codex with the next admitted message. */
@@ -943,8 +947,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const delivered = continuation && review?.result ? review : null;
-    const location =
-      message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
+    const metadata = message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data;
+    const location = metadata?.location;
     // File parts are left out rather than joined as blank lines.
     const messageText = sent
       .map((entry) =>
@@ -988,6 +992,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
+      approvalMode: metadata?.approvalMode ?? this.record.approvalMode,
       // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
       unsentMessageIds: [],
@@ -1341,10 +1346,19 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
     });
     // Chat history shows the review by ID; its contents and outcome stay out of history.
-    this.native?.emit({ type: 'data-review', id, data: { reviewId: id } });
+    const autoApprove = this.record.approvalMode === 'always_approve';
+    this.native?.emit({
+      type: 'data-review',
+      id,
+      data: { reviewId: id, ...(autoApprove ? { autoApprove } : {}) } satisfies ReviewPart,
+    });
     return {
       success: true,
-      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. If you have not yet described the changes for staff, do so briefly now. Then end your turn without making further edits.',
+      text: `${
+        autoApprove
+          ? 'Submitted the changes; edits after this point are not part of them. The instructor chose to approve changes without reviewing them, so they are being saved now. The result arrives in a later message.'
+          : 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message.'
+      } If you have not yet described the changes for staff, do so briefly now. Then end your turn without making further edits.`,
     };
   }
 

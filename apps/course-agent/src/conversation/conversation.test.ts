@@ -9,6 +9,7 @@ import {
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
+import { CodexAppServerClient } from '../sandbox/codex.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import { Conversation, type MeteringState } from './conversation.js';
@@ -143,6 +144,14 @@ function fixture(saved = new Map<string, unknown>()) {
     checkpoint: vi.fn(async () => ({ id: 'checkpoint' })),
     destroy: vi.fn(),
     authorizeModel: vi.fn(async (_config: { executionId: string }) => {}),
+    captureReview: vi.fn(async () => ({
+      type: 'github',
+      repository: 'PrairieLearn/course',
+      branch: 'master',
+      baseCommit: 'a'.repeat(40),
+      additions: [],
+      deletions: [{ path: 'question.html' }],
+    })),
   };
   const env = {
     OPENAI_MODEL: 'test',
@@ -466,6 +475,55 @@ it('refuses messages while limited, and Resume after the reset sends them', asyn
   expect(generateTitle).toHaveBeenCalledWith(
     expect.objectContaining({ message: 'Edit this question' }),
   );
+});
+
+it('marks reviews for automatic approval from the latest message that chose a mode', async () => {
+  stubFetch({ usage: async () => decision() });
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const startTurn = async (conversation: Conversation, metadata?: Record<string, unknown>) => {
+    await conversation.persistMessages([
+      ...conversation.messages,
+      { id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: 'Edit' }], metadata },
+    ]);
+    const requestId = crypto.randomUUID();
+    await conversation.onChatMessage(undefined, { requestId });
+    const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+    await options.prepare();
+    options.onReady();
+    return { options, requestId };
+  };
+  const submitReview = async (options: ConstructorParameters<typeof SandboxTurn>[2]) => {
+    const reply = await options.onReview!({
+      threadId: 'native-thread',
+      turnId: 'native-turn',
+      callId: 'call',
+      namespace: null,
+      tool: 'request_changes',
+      arguments: {},
+    });
+    const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-review');
+    return { reply, part };
+  };
+
+  const required = fixture().conversation;
+  await required.onStart();
+  const unmarked = await submitReview((await startTurn(required)).options);
+  expect(unmarked.part).toMatchObject({ data: { reviewId: expect.any(String) } });
+  expect(unmarked.part).not.toHaveProperty('data.autoApprove');
+  expect(unmarked.reply.text).toContain('for instructor review');
+
+  emit.mockClear();
+  const always = fixture().conversation;
+  await always.onStart();
+  const first = await startTurn(always, { approvalMode: 'always_approve' });
+  sdk.finishTurn();
+  await sdk.completeResponse(first.requestId);
+  await vi.waitFor(() => expect(always.state.status).toBe('waiting_for_user'));
+  // A message that carries no mode, such as one from an older page, keeps the last choice.
+  const marked = await submitReview((await startTurn(always, {})).options);
+  expect(marked.part).toHaveProperty('data.autoApprove', true);
+  expect(marked.reply.text).toContain('they are being saved now');
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {

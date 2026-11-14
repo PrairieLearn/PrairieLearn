@@ -3,6 +3,7 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
+import clsx from 'clsx';
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -19,10 +20,15 @@ import { useStickToBottom } from 'use-stick-to-bottom';
 import { z } from 'zod';
 
 import {
+  type ApprovalMode,
+  ApprovalModeSchema,
   type ConversationState,
   InputRequestPartSchema,
+  type ReviewPart,
+  ReviewPartSchema,
   type ToolCall,
   ToolCallSchema,
+  UserMessageMetadataSchema,
   reviewTag,
 } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
@@ -54,8 +60,6 @@ import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 import { currentPageLocation } from './pageLocation.js';
 
-/** The agent service shows a review in chat history by its ID only. */
-const ReviewPartSchema = z.object({ reviewId: z.string() });
 const TurnPartSchema = z.object({ tag: z.string() });
 
 const NEW_CONVERSATION = 'new';
@@ -138,6 +142,7 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
+  const [approvalMode, setApprovalMode] = useState<ApprovalMode>('approval_required');
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -222,7 +227,7 @@ function ConversationPicker({
           chatCsrfToken={chatCsrfToken}
           initialMessage={
             create.data?.id === selectedId && create.variables
-              ? { text: create.variables.text, attachments: initialAttachments }
+              ? { text: create.variables.text, attachments: initialAttachments, approvalMode }
               : undefined
           }
           onInitialMessageSent={create.reset}
@@ -249,6 +254,8 @@ function ConversationPicker({
             disabled={create.isPending}
             pending={create.isPending}
             attachments={drafts.attachments}
+            approvalMode={approvalMode}
+            onApprovalModeChange={setApprovalMode}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
@@ -291,7 +298,9 @@ function Chat({
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
-  initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
+  initialMessage:
+    | { text: string; attachments: DraftAttachment[]; approvalMode: ApprovalMode }
+    | undefined;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -369,6 +378,14 @@ function Chat({
   const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
+  // Until the instructor picks a mode here, the conversation keeps the one its last message set.
+  const [pickedApprovalMode, setPickedApprovalMode] = useState(initialMessage?.approvalMode);
+  const approvalMode =
+    pickedApprovalMode ??
+    UserMessageMetadataSchema.safeParse(messages[lastUserIndex]?.metadata ?? {}).data
+      ?.approvalMode ??
+    'approval_required';
   // A new conversation's first attachments start in the composer, where their uploads show progress.
   const drafts = useDraftAttachments(initialMessage?.attachments);
   const [sending, setSending] = useState(false);
@@ -437,7 +454,11 @@ function Chat({
       if (offline) setAwaitingStart(true);
       // A refused denial's error no longer applies once the message goes out normally.
       resetDeny();
-      void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
+      void sendMessage({
+        text,
+        files,
+        metadata: { location: currentPageLocation(), approvalMode },
+      });
       // An answer chosen on an input request leaves the composer's attachments alone.
       if (attachments.length > 0) setAttachments([]);
       return true;
@@ -452,6 +473,7 @@ function Chat({
       denyAsync,
       sendMessage,
       offline,
+      approvalMode,
     ],
   );
 
@@ -507,7 +529,6 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   // An input request is open until staff send their next message, which answers it however it is sent.
-  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   const latest = messages.at(-1);
   const inputRequestOpen =
     latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
@@ -548,6 +569,7 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
+              approvalMode={approvalMode}
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
@@ -565,6 +587,7 @@ function Chat({
                 conversationId={conversationId}
                 reviewId={lifecycle.reviewId}
                 canResume={awaitingReviewId === lifecycle.reviewId}
+                autoApprove={false}
               />
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
@@ -619,7 +642,9 @@ function Chat({
         sendLabel={replyDenies ? 'Deny and send' : undefined}
         pending={sending || deny.isPending}
         attachments={drafts.attachments}
+        approvalMode={approvalMode}
         stopDisabled={!connected || !canStop}
+        onApprovalModeChange={setPickedApprovalMode}
         onAttach={drafts.add}
         onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
@@ -643,6 +668,8 @@ function Composer({
   sendLabel = 'Send',
   pending = false,
   attachments,
+  approvalMode,
+  onApprovalModeChange,
   onAttach,
   onRemoveAttachment,
   stopDisabled = false,
@@ -658,6 +685,8 @@ function Composer({
   /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
   attachments: DraftAttachment[];
+  approvalMode: ApprovalMode;
+  onApprovalModeChange: (mode: ApprovalMode) => void;
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
@@ -726,6 +755,7 @@ function Composer({
         >
           <i className="bi bi-plus-lg" aria-hidden="true" />
         </Button>
+        <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
         <div className="d-flex align-items-center gap-2 ms-auto">
           {children}
           {onStop ? (
@@ -753,6 +783,60 @@ function Composer({
   );
 }
 
+const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
+  approval_required: {
+    label: 'Approval required',
+    description: 'You review and approve each set of changes before it is saved.',
+    icon: 'bi-shield-check',
+  },
+  always_approve: {
+    label: 'Always approve',
+    description:
+      'Changes are saved to the course without your review. The agent reads web pages, which can mislead it.',
+    icon: 'bi-lightning-charge',
+  },
+};
+
+function ApprovalModePicker({
+  mode,
+  onChange,
+}: {
+  mode: ApprovalMode;
+  onChange: (mode: ApprovalMode) => void;
+}) {
+  return (
+    <Dropdown drop="up">
+      <Dropdown.Toggle
+        variant="link"
+        size="sm"
+        className="text-body-secondary text-decoration-none px-1"
+        aria-label={`Approval mode: ${APPROVAL_MODES[mode].label}`}
+      >
+        <i className={clsx('bi me-1', APPROVAL_MODES[mode].icon)} aria-hidden="true" />
+        {APPROVAL_MODES[mode].label}
+      </Dropdown.Toggle>
+      <Dropdown.Menu style={{ width: '18rem' }}>
+        {ApprovalModeSchema.options.map((option) => (
+          <Dropdown.Item
+            key={option}
+            as="button"
+            type="button"
+            className="text-wrap"
+            active={option === mode}
+            aria-current={option === mode}
+            onClick={() => onChange(option)}
+          >
+            <div>{APPROVAL_MODES[option].label}</div>
+            <div className={clsx('small', option !== mode && 'text-body-secondary')}>
+              {APPROVAL_MODES[option].description}
+            </div>
+          </Dropdown.Item>
+        ))}
+      </Dropdown.Menu>
+    </Dropdown>
+  );
+}
+
 function reviewInHistory(messages: UIMessage[], reviewId: string) {
   return messages.some((message) =>
     message.parts.some(
@@ -774,6 +858,7 @@ function Message({
   live,
   conversationId,
   awaitingReviewId,
+  approvalMode,
   linkTransform,
   onToolCallExpand,
   answered,
@@ -790,6 +875,7 @@ function Message({
   conversationId: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
+  approvalMode: ApprovalMode;
   linkTransform: UrlTransform;
   /** Opening a tool call must not scroll it out from under the pointer. */
   onToolCallExpand: () => void;
@@ -815,8 +901,8 @@ function Message({
   // A review ends the agent's turn even though the agent usually writes more after submitting it,
   // so its card goes at the end of that turn: where the agent's turn that receives the result
   // begins, or the end of the message until then.
-  const reviewIds = message.parts.flatMap((part) =>
-    part.type === 'data-review' ? [ReviewPartSchema.parse(part.data).reviewId] : [],
+  const reviews = message.parts.flatMap((part) =>
+    part.type === 'data-review' ? [ReviewPartSchema.parse(part.data)] : [],
   );
   const markerTags = new Set(
     message.parts.flatMap((part) =>
@@ -824,12 +910,14 @@ function Message({
     ),
   );
   // One key per review, in one list, so the card keeps its state when the marker arrives.
-  const reviewEnd = (reviewId: string) => (
+  const reviewEnd = ({ reviewId, autoApprove }: ReviewPart) => (
     <RequestChangesCard
       key={`review-${reviewId}`}
       conversationId={conversationId}
       reviewId={reviewId}
       canResume={awaitingReviewId === reviewId}
+      // Switching back to requiring approval also applies to a review already submitted.
+      autoApprove={autoApprove === true && approvalMode === 'always_approve'}
     />
   );
   const rendered = [
@@ -867,14 +955,14 @@ function Message({
       }
       if (part.type === 'data-turn') {
         const { tag } = TurnPartSchema.parse(part.data);
-        const reviewId = reviewIds.find((id) => reviewTag(id) === tag);
-        if (reviewId) return reviewEnd(reviewId);
+        const review = reviews.find(({ reviewId }) => reviewTag(reviewId) === tag);
+        if (review) return reviewEnd(review);
       }
       return null;
     }),
-    ...reviewIds
-      .filter((reviewId) => !markerTags.has(reviewTag(reviewId)))
-      .map((reviewId) => reviewEnd(reviewId)),
+    ...reviews
+      .filter(({ reviewId }) => !markerTags.has(reviewTag(reviewId)))
+      .map((review) => reviewEnd(review)),
   ].filter((node) => node !== null);
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;
