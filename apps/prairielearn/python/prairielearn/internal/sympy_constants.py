@@ -56,6 +56,10 @@ serialized_named_sets: Final[FrozenDict[str, sympy.Set]] = FrozenDict({
     "Complexes": sympy.S.Complexes,
 })
 
+serialized_functions: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
+    "_pl_Tuple": sympy.Tuple,
+})
+
 functions: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
     "exp": sympy.exp,
     "log": sympy.log,

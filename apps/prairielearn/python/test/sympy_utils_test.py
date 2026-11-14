@@ -644,9 +644,13 @@ class TestSympy:
             psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
         )
 
-    def test_nested_tuple_json_conversion_is_rejected(self) -> None:
-        with pytest.raises(ValueError, match="SymPy Tuple values are not supported"):
-            psu.sympy_to_json(sympy.FiniteSet(sympy.Tuple(1, 2)), allow_sets=True)
+    def test_tuple_json_conversion(self) -> None:
+        expression = sympy.FiniteSet(sympy.Tuple(1, 2))
+
+        encoded = psu.sympy_to_json(expression, allow_sets=True)
+
+        assert "_pl_Tuple" in encoded["_value"]
+        assert psu.json_to_sympy(encoded, allow_sets=True) == expression
 
     def test_unsimplified_set_json_conversion_preserves_operation(self) -> None:
         constant = sympy.Add(sympy.E, sympy.I, evaluate=False)

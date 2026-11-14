@@ -142,6 +142,7 @@ def to_json(
     | complex ndarray | `complex_ndarray` | |
     | `sympy.Expr` | `sympy` | any scalar SymPy expression |
     | `sympy.Set` | `sympy` | SymPy sets such as `FiniteSet` and `Interval` |
+    | `sympy.Tuple` | `sympy` | ordered SymPy values |
     | `sympy.Matrix` | `sympy_matrix` | |
     | `pandas.DataFrame` | `dataframe` | `df_encoding_version=1` |
     | `pandas.DataFrame` | `dataframe_v2` | `df_encoding_version=2` |
@@ -170,8 +171,7 @@ def to_json(
         The serialized value
 
     Raises:
-        ValueError: If `np_encoding_version` or `df_encoding_version` is invalid, or
-            the value is or contains a SymPy tuple.
+        ValueError: If `np_encoding_version` or `df_encoding_version` is invalid.
     """
     if np_encoding_version not in {1, 2}:
         raise ValueError(f"Invalid np_encoding {np_encoding_version}, must be 1 or 2.")

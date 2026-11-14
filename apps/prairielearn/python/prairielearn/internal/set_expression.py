@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 from dataclasses import dataclass
+from enum import Enum
 from importlib.resources import files
 from typing import TYPE_CHECKING, cast
 
@@ -25,6 +26,11 @@ NAMED_SETS = {
     "C": sympy.S.Complexes,
 }
 NAMED_SET_NAMES = frozenset(NAMED_SETS)
+
+
+class SetSyntax(Enum):
+    TUPLE = "tuple"
+    INTERVAL = "interval"
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,9 +75,8 @@ class _FiniteSet:
 
 
 @dataclass(frozen=True, slots=True)
-class _Interval:
-    left: _Scalar
-    right: _Scalar
+class _Delimited:
+    items: tuple[_Scalar, ...]
     left_bracket: _Token
     right_bracket: _Token
     span: _SourceSpan
@@ -97,7 +102,7 @@ class _SetGroup:
     span: _SourceSpan
 
 
-type _SetExpression = _FiniteSet | _Interval | _NamedSet | _SetBinary | _SetGroup
+type _SetExpression = _FiniteSet | _Delimited | _NamedSet | _SetBinary | _SetGroup
 type _SetItem = _SetExpression | _Scalar
 type _SetItems = tuple[_SetItem, ...]
 type _ScalarProductTail = tuple[_Token | None, _Scalar]
@@ -211,14 +216,14 @@ class _IRTransformer(Transformer[Token, _TransformValue]):
         values = cast(_SetItems, items[1]) if len(items) == 3 else ()
         return _FiniteSet(values, _combine(left.span, right.span))
 
-    def interval(self, items: list[_TransformValue]) -> _Interval:
+    def delimited(self, items: list[_TransformValue]) -> _Delimited:
         left_bracket = cast(_Token, items[0])
-        left = cast(_Scalar, items[1])
-        right = cast(_Scalar, items[3])
-        right_bracket = cast(_Token, items[4])
-        return _Interval(
-            left,
-            right,
+        right_bracket = cast(_Token, items[-1])
+        values = tuple(
+            cast(_Scalar, item) for item in items[1:-1] if not isinstance(item, _Token)
+        )
+        return _Delimited(
+            values,
             left_bracket,
             right_bracket,
             _combine(left_bracket.span, right_bracket.span),
@@ -369,6 +374,7 @@ class _Evaluator:
         allow_trig_functions: bool,
         simplify_expression: bool,
         assumptions: psu.AssumptionsDictT | None,
+        syntax: SetSyntax,
     ) -> None:
         self.source = source
         self.variables = variables
@@ -377,6 +383,7 @@ class _Evaluator:
         self.allow_trig_functions = allow_trig_functions
         self.simplify_expression = simplify_expression
         self.assumptions = assumptions
+        self.syntax = syntax
 
     def scalar(self, expression: _Scalar) -> sympy.Expr:
         text = self.source.text()[expression.source_start : expression.source_end]
@@ -400,7 +407,7 @@ class _Evaluator:
             return self.scalar(expression)
         return self.evaluate(expression)
 
-    def evaluate(self, expression: _SetExpression) -> sympy.Set:
+    def evaluate(self, expression: _SetExpression) -> sympy.Basic:
         if isinstance(expression, _NamedSet):
             return NAMED_SETS[expression.name]
         if isinstance(expression, _SetGroup):
@@ -409,16 +416,34 @@ class _Evaluator:
             return sympy.FiniteSet(
                 *(self.evaluate_item(item) for item in expression.items), evaluate=False
             )
-        if isinstance(expression, _Interval):
+        if isinstance(expression, _Delimited):
+            if self.syntax is SetSyntax.TUPLE:
+                if (
+                    expression.left_bracket.text != "("
+                    or expression.right_bracket.text != ")"
+                ):
+                    raise _SetExpressionError(
+                        "Interval notation is not allowed when tuple syntax is enabled."
+                    )
+                return sympy.Tuple(*(self.scalar(item) for item in expression.items))
+
+            if len(expression.items) != 2:
+                raise _SetExpressionError(
+                    "Intervals must contain exactly two endpoints."
+                )
             return sympy.Interval(
-                self.scalar(expression.left),
-                self.scalar(expression.right),
+                self.scalar(expression.items[0]),
+                self.scalar(expression.items[1]),
                 left_open=expression.left_bracket.text == "(",
                 right_open=expression.right_bracket.text == ")",
             )
         if isinstance(expression, _SetBinary):
             left = self.evaluate(expression.left)
             right = self.evaluate(expression.right)
+            if not isinstance(left, sympy.Set) or not isinstance(right, sympy.Set):
+                raise _SetExpressionError(
+                    "Set operators can only be applied to set-valued expressions."
+                )
             if expression.operator.text in {"U", "cup", "∪", "|", "+"}:  # ruff:ignore[ambiguous-unicode-character-string]
                 return sympy.Union(left, right, evaluate=False)
             if expression.operator.text in {"cap", "∩", "&"}:
@@ -427,20 +452,28 @@ class _Evaluator:
         raise AssertionError(expression)
 
 
-def is_representable_set(value: sympy.Basic) -> bool:
+def is_representable_set(
+    value: sympy.Basic, *, syntax: SetSyntax = SetSyntax.TUPLE
+) -> bool:
     """Return whether the set can round-trip through the dedicated grammar."""
     if value in NAMED_SETS.values() or value is sympy.S.EmptySet:
         return True
     if isinstance(value, sympy.Interval):
-        return True
+        return syntax is SetSyntax.INTERVAL
     if isinstance(value, sympy.FiniteSet):
-        return all(
-            not isinstance(item, sympy.Set) or is_representable_set(item)
-            for item in value.args
-        )
+        for item in value.args:
+            if isinstance(item, sympy.Set):
+                if not is_representable_set(item, syntax=syntax):
+                    return False
+            elif isinstance(item, sympy.Tuple):
+                if syntax is not SetSyntax.TUPLE or len(item) < 2:
+                    return False
+                if not all(isinstance(coordinate, sympy.Expr) for coordinate in item):
+                    return False
+        return True
     if isinstance(value, (sympy.Union, sympy.Intersection, sympy.Complement)):
         return all(
-            isinstance(item, sympy.Set) and is_representable_set(item)
+            isinstance(item, sympy.Set) and is_representable_set(item, syntax=syntax)
             for item in value.args
         )
     return False
@@ -457,6 +490,7 @@ def try_parse_set_submission(
     custom_functions: Sequence[str] = (),
     simplify_expression: bool = True,
     assumptions: psu.AssumptionsDictT | None = None,
+    syntax: SetSyntax = SetSyntax.TUPLE,
 ) -> SetParseResult:
     """Normalize, parse, evaluate, and serialize a set-only submission."""
     if submission is None or not submission.strip():
@@ -492,8 +526,11 @@ def try_parse_set_submission(
             allow_trig_functions=allow_trig_functions,
             simplify_expression=simplify_expression,
             assumptions=assumptions,
+            syntax=syntax,
         ).evaluate(expression)
-        if not is_representable_set(value):
+        if not isinstance(value, sympy.Set):
+            return SetParseFailure("Your answer must be a set.")
+        if not is_representable_set(value, syntax=syntax):
             return SetParseFailure(
                 "Your answer produces a set that this input cannot represent."
             )
