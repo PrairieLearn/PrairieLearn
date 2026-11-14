@@ -12,7 +12,9 @@
     "USER_IDLE_SECONDS": "600",
     // A Cloudflare instance type: lite or standard-1 through standard-4.
     "SANDBOX_INSTANCE_TYPE": "standard-2",
-    "SENTRY_ENVIRONMENT": "development"
+    "SENTRY_ENVIRONMENT": "development",
+    // PrairieLearn origin for course data.
+    "PL_URL": "http://localhost:3000"
   },
   "version_metadata": {
     "binding": "VERSION_METADATA"
@@ -81,7 +83,8 @@
         "USER_IDLE_SECONDS": "600",
         // A Cloudflare instance type: lite or standard-1 through standard-4.
         "SANDBOX_INSTANCE_TYPE": "standard-2",
-        "SENTRY_ENVIRONMENT": "staging"
+        "SENTRY_ENVIRONMENT": "staging",
+        "PL_URL": "https://staging.prairielearn.com"
       },
       "secrets": {
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
@@ -143,7 +146,8 @@
         "USER_IDLE_SECONDS": "600",
         // A Cloudflare instance type: lite or standard-1 through standard-4.
         "SANDBOX_INSTANCE_TYPE": "standard-2",
-        "SENTRY_ENVIRONMENT": "production"
+        "SENTRY_ENVIRONMENT": "production",
+        "PL_URL": "https://us.prairielearn.com"
       },
       "secrets": {
         "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]

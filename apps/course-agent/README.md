@@ -61,7 +61,7 @@ Each review supports at most 100 changed files, with a 1 MiB limit on each origi
 
 ## Sandbox image
 
-The sandbox image (`container/Dockerfile`) is Debian slim with Codex's app server and a few CLI tools. It has no Node.js, so the agent can't run `node`, `npm`, or `npx`. Each sandbox installs the Codex config from `container/codex-config.toml` into its workspace, and installs it again after restoring a checkpoint.
+The sandbox image (`container/Dockerfile`) is Debian slim with Codex's app server, a few CLI tools, and Python with pandas and numpy for analyzing course data. It has no Node.js, so the agent can't run `node`, `npm`, or `npx`. Each sandbox installs the Codex config from `container/codex-config.toml` into its workspace, and installs it again after restoring a checkpoint.
 
 `SANDBOX_INSTANCE_TYPE` selects the Cloudflare instance type for each environment. It defaults to `standard-2` because cloning large courses is CPU-bound.
 
@@ -70,6 +70,12 @@ To upgrade Codex, update the release version and the asset's SHA-256 digest (sho
 ## Web access
 
 The agent can search the web and read pages through Codex's `web.run` tool, for example to check PrairieLearn documentation or an institution's academic calendar. Codex sends these commands to the model endpoint, and the Worker forwards them to OpenAI, which performs the searches and page reads. The container itself has no internet access. The Worker forwards only the commands it recognizes, sets the search settings itself, and refuses OpenAI-hosted tools in model requests, because the agent can send requests to the model endpoint directly. Searches and page addresses leave PrairieLearn, and page content is untrusted: a page could ask the agent to put course content in a URL it opens.
+
+## Course data
+
+The agent reads course data with two tools. `list_course_datasets` lists the datasets and their columns, and `get_course_data` downloads the selected columns of one dataset's rows, optionally filtered, sorted, and limited, as a JSONL file in `/workspace/session/course-data/`. The Worker streams rows into the file and stops at 25 MB, at a row boundary, telling the agent the file is incomplete. Some columns, such as submitted answers, can be large; uploaded files are left out. The agent analyzes the files with Python scripts saved in the same directory. Downloads and scripts are kept in checkpoints, so they survive the sandbox's idle shutdown; checkpoints therefore contain student data.
+
+The Worker serves both tools from PrairieLearn's internal course data route (`/pl/course/:course_id/course_agent/data`), at the origin in `PL_URL`. It authenticates with `PL_SERVICE_TOKEN` and names the conversation, and PrairieLearn applies that conversation's user's permissions: only users who can use the course agent in the course (its owners and administrators) can read its data, and only for the conversation's course. The container itself never calls PrairieLearn.
 
 ## Attachment retention
 
@@ -95,7 +101,7 @@ Deploys defer Durable Object code updates for up to seven hours, so turns that a
 
 ### Rotating the service token
 
-PrairieLearn sends the first token listed in `courseAgentServiceToken`. The Worker accepts `PL_SERVICE_TOKEN` and the optional `PL_SERVICE_TOKEN_PREVIOUS` secret. Rotate without downtime in this order, running the Worker commands from `apps/course-agent` for each deployed environment:
+PrairieLearn sends the first token listed in `courseAgentServiceToken` and accepts every listed token from the Worker's course data requests. The Worker sends `PL_SERVICE_TOKEN` and accepts `PL_SERVICE_TOKEN` and the optional `PL_SERVICE_TOKEN_PREVIOUS` secret. Rotate without downtime in this order, running the Worker commands from `apps/course-agent` for each deployed environment:
 
 1. Set PrairieLearn's `courseAgentServiceToken` to `["OLD_TOKEN", "NEW_TOKEN"]` and deploy PrairieLearn.
 2. Run `wrangler secret put PL_SERVICE_TOKEN_PREVIOUS --env <environment>` with the old token, then `wrangler secret put PL_SERVICE_TOKEN --env <environment>` with the new token. Each command deploys immediately, so keep this order to avoid rejecting PrairieLearn's old token.

@@ -27,6 +27,8 @@ import { logEvent } from '../monitoring.js';
 import { codexRequestKind, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
 const SESSION = '/workspace/session';
+// Downloaded course data and the agent's analysis scripts.
+const COURSE_DATA = `${SESSION}/course-data`;
 // Installed by the image from container/codex-config.toml.
 const CODEX_CONFIG = '/etc/course-agent/codex-config.toml';
 // The image's unprivileged user. Checkpoints record file ownership by ID, so the ID must not change.
@@ -296,6 +298,8 @@ export class CourseSandbox extends DurableObject<Env> {
         CODEX_CONFIG,
         `${SESSION}/home/.codex/config.toml`,
       ]);
+      // The agent may also have deleted its course data directory.
+      await this.exec(['mkdir', '-p', COURSE_DATA], AGENT_USER);
       // addCourseFiles() locks a fresh workspace once its files are in place.
       await this.lockSession();
     } else {
@@ -304,6 +308,7 @@ export class CourseSandbox extends DurableObject<Env> {
         ['install', '-D', '-m', '0644', CODEX_CONFIG, `${SESSION}/home/.codex/config.toml`],
         AGENT_USER,
       );
+      await this.exec(['mkdir', '-p', COURSE_DATA], AGENT_USER);
     }
     this.freshContainer = true;
     // Returned rather than only logged: this Durable Object's logs can arrive late or not at all
@@ -696,6 +701,13 @@ export class CourseSandbox extends DurableObject<Env> {
       dir: SESSION,
       exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json'],
     });
+  }
+
+  /** Saves downloaded course data outside the course checkout; returns the file path. */
+  async writeCourseData(dataset: string, contents: ReadableStream<Uint8Array>) {
+    const path = `${COURSE_DATA}/${dataset}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
+    await new Files(this.container).writeFile(path, contents, { user: AGENT_UID_GID });
+    return path;
   }
 
   async deleteCheckpoint(checkpoint: DirectoryBackupRecord) {

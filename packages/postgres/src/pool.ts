@@ -9,6 +9,11 @@ import { z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];
 
+export interface QueryCursorOptions {
+  /** Stops the cursor, canceling any batch being read on the server, and throws `signal.reason`. */
+  signal?: AbortSignal;
+}
+
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
   stream: (batchSize: number) => Readable;
@@ -130,6 +135,33 @@ function assertSingleColumn(result: pg.QueryResult, context: Record<string, any>
     );
   }
   return result.fields[0].name;
+}
+
+/**
+ * Cancels the client's running query with `pg_cancel_backend`. This uses its own connection: a
+ * pool client could be unavailable until this or another canceled query finishes, and inside a
+ * transaction the pool's query functions reuse the busy client.
+ *
+ * A protocol-level CancelRequest wouldn't need a connection slot, but pg 8 sends one only through
+ * the untyped `Client#cancel`, which reads the deprecated `activeQuery`, reports no errors, and
+ * sends the request unencrypted even when the pool uses TLS. So if the server has no free
+ * connection, this cancel fails and the read runs until the query finishes.
+ */
+async function cancelBackend(options: pg.PoolConfig, client: pg.PoolClient) {
+  // pg sets processID on connect but doesn't type it.
+  if (!('processID' in client) || typeof client.processID !== 'number') {
+    throw new Error('Client has no backend process ID');
+  }
+  const canceler = new pg.Client(options);
+  // A socket error is also emitted as an event, which would crash the process without a listener.
+  // The pending connect or query rejects with it too, so it's handled there.
+  canceler.on('error', () => {});
+  await canceler.connect();
+  try {
+    await canceler.query('SELECT pg_cancel_backend($1)', [client.processID]);
+  } finally {
+    await canceler.end();
+  }
 }
 
 function enhanceError(err: Error, sql: string, params: QueryParams): Error {
@@ -974,6 +1006,7 @@ export class PostgresPool {
     sql: string,
     params: QueryParams,
     model: Model,
+    options?: QueryCursorOptions,
   ): Promise<CursorIterator<z.infer<Model>>>;
 
   /**
@@ -985,19 +1018,29 @@ export class PostgresPool {
     sql: string,
     paramsOrSchema: Model | QueryParams,
     maybeModel?: Model,
+    options: QueryCursorOptions = {},
   ): Promise<CursorIterator<z.infer<Model>>> {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
-    return this.queryCursorInternal(sql, params, model);
+    return this.queryCursorInternal(sql, params, model, options);
   }
 
   private async queryCursorInternal<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
-    model?: Model,
+    model: Model | undefined,
+    { signal }: QueryCursorOptions,
   ): Promise<CursorIterator<z.infer<Model>>> {
     const client = await this.getClientAsync();
     const cursor = await this.queryCursorWithClient(client, sql, params);
+
+    // Postgres ignores a cancel that arrives between reads, so this can run at any time. If the
+    // cancel fails, the read runs to completion instead.
+    let cancellation: Promise<void> | undefined;
+    const cancel = () => {
+      if (!this.pool) return;
+      cancellation = cancelBackend(this.pool.options, client).catch(() => {});
+    };
 
     let iterateCalled = false;
     const iterator: CursorIterator<z.infer<Model>> = {
@@ -1009,8 +1052,10 @@ export class PostgresPool {
         }
         iterateCalled = true;
 
+        signal?.addEventListener('abort', cancel);
         try {
           while (true) {
+            signal?.throwIfAborted();
             const rows = await cursor.read(batchSize);
             if (rows.length === 0) {
               break;
@@ -1023,11 +1068,16 @@ export class PostgresPool {
             }
           }
         } catch (err: any) {
+          if (signal?.aborted) throw signal.reason;
           throw enhanceError(err, sql, params);
         } finally {
+          signal?.removeEventListener('abort', cancel);
           try {
+            // After an error, pg-cursor's close() hangs unless it is called right away.
             await cursor.close();
           } finally {
+            // Wait until the backend is signaled so the cancel can't reach the client's next user.
+            await cancellation;
             client.release();
           }
         }

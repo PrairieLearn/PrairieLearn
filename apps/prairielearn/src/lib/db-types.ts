@@ -77,6 +77,17 @@ export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
+export const EnumInstanceQuestionStatusSchema = z.enum([
+  'complete',
+  'unanswered',
+  'saved',
+  'correct',
+  'incorrect',
+  'grading',
+  'invalid',
+]);
+export type EnumInstanceQuestionStatus = z.infer<typeof EnumInstanceQuestionStatusSchema>;
+
 export const EnumJobStatusSchema = z.enum(['Running', 'Stopping', 'Stopped', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
@@ -1150,9 +1161,7 @@ export const InstanceQuestionSchema = z.object({
   some_nonzero_submission: z.boolean().nullable(),
   some_perfect_submission: z.boolean().nullable(),
   some_submission: z.boolean().nullable(),
-  status: z
-    .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
-    .nullable(),
+  status: EnumInstanceQuestionStatusSchema.nullable(),
   submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
   variants_points_list: z.array(z.number().nullable()),
