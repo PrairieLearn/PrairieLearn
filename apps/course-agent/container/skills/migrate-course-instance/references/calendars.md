@@ -1,25 +1,9 @@
 # Calendars
 
-The script needs one calendar file for the source term and one for the target
-term.
-
-```json
-{
-  "term": "Fall 2026",
-  "source": "https://registrar.example.edu/fall-2026-academic-calendar/",
-  "instructionBegins": "2026-08-24",
-  "instructionEnds": "2026-12-09",
-  "holidays": [{ "name": "Labor Day", "date": "2026-09-07" }],
-  "breaks": [{ "name": "Fall break", "start": "2026-11-21", "end": "2026-11-29" }],
-  "finals": { "start": "2026-12-11", "end": "2026-12-17" },
-  "addDeadline": "2026-08-31"
-}
-```
-
-Only `instructionBegins` is required. With nothing else, the script shifts by
-whole weeks and keeps weekdays, ignoring breaks. If the target calendar has
-`addDeadline`, it replaces `selfEnrollment.beforeDate`. Put anything the format
-can't hold, such as make-up class days, in a `notes` field and in the review.
+For each term you need the first and last day of instruction, the holidays,
+the breaks, the finals period, and the add deadline. If the target calendar
+gives an add deadline, it replaces `selfEnrollment.beforeDate`. Mention
+anything unusual, such as make-up class days, in the review.
 
 ## Finding them
 

@@ -76,7 +76,7 @@ Skills in `container/skills/` are copied to `/etc/codex/skills`, where Codex loa
 The other skills are plain files in `container/skills/`:
 
 - `diagnose-assessment-issues` finds problems in an assessment from past results and the question source, using the course data tools, and reports recommended edits.
-- `migrate-course-instance` sets up a course instance for a new term. Its `references/shift_dates.py` maps every date onto the new term's academic calendar and removes per-student rules; it needs only Python's standard library.
+- `migrate-course-instance` sets up a course instance for a new term: it maps every date onto the new term's academic calendar by week of instruction and removes per-student rules.
 - `share-course-content` shares questions, assessments, and course instances with other courses or publicly.
 
 Skills must work with what the sandbox has: the course checkout, the tools in the image, web search, and the course data tools. The agent can't open PrairieLearn pages or sync the course itself, so a skill has it submit edits for review and tell staff what to check afterwards.
