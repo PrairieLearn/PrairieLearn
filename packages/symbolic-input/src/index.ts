@@ -1,4 +1,37 @@
+// Shared by PrairieLearn symbolic-input elements.
+// oxlint-disable typescript/consistent-type-imports -- Import declarations would mark the emitted standalone browser asset as an ES module.
+type MathfieldElement = import('mathlive').MathfieldElement;
+type InlineShortcutDefinitions = import('mathlive').InlineShortcutDefinitions;
+type MacroDictionary = import('mathlive').MacroDictionary;
+type VirtualKeyboardKeycap = import('mathlive').VirtualKeyboardKeycap;
+type VirtualKeyboardLayout = import('mathlive').VirtualKeyboardLayout;
+type JQueryFactory = typeof import('jquery');
+
+type SymbolicInputWindow = typeof window & {
+  PLSymbolicInput: (uuid: string) => void;
+  PLSymbolicInputParseError: (uuid: string) => void;
+  PLSymbolicInputPopover: (uuid: string) => void;
+  mathVirtualKeyboard: import('mathlive').VirtualKeyboardInterface & EventTarget;
+  $: JQueryFactory;
+};
+
+type KeyboardKeycap =
+  | string
+  | (Omit<Partial<VirtualKeyboardKeycap>, 'shift' | 'variants' | 'width'> & {
+      shift?: string | Partial<VirtualKeyboardKeycap> | null;
+      variants?: KeyboardKeycap[];
+      width?: number;
+    });
+
+interface KeyboardLayout {
+  label: string;
+  rows: KeyboardKeycap[][];
+}
+
 (() => {
+  const symbolicInputWindow = window as SymbolicInputWindow;
+  const $ = symbolicInputWindow.$;
+
   const greekLetters = new Set([
     'Gamma',
     'Delta',
@@ -305,20 +338,20 @@
         ],
       ],
     },
-  ];
+  ] satisfies KeyboardLayout[];
 
   // Bullet (U+2022), bullet operator (U+2219), and asterisk operator (U+2217)
   const unicodeMultiplicationKeys = new Set(['•', '∙', '∗']);
 
-  const isSelected = (mf) => {
+  const isSelected = (mf: MathfieldElement): boolean => {
     const firstSelection = mf.selection?.ranges?.[0];
-    return firstSelection && firstSelection[1] !== firstSelection[0];
+    return firstSelection !== undefined && firstSelection[1] !== firstSelection[0];
   };
 
-  const makeShortcutProxy = (proxiedObject, mf) => {
-    const shortcutProxyHandler = {
+  const makeShortcutProxy = <T extends object>(proxiedObject: T, mf: MathfieldElement): T => {
+    const shortcutProxyHandler: ProxyHandler<object> = {
       get(target, prop, receiver) {
-        let value = Reflect.get(target, prop, receiver);
+        let value: unknown = Reflect.get(target, prop, receiver);
 
         if (value === null) {
           return value;
@@ -344,8 +377,8 @@
       },
     };
 
-    function wrapWithProxy(target) {
-      return new Proxy(target, shortcutProxyHandler);
+    function wrapWithProxy<U extends object>(target: U): U {
+      return new Proxy(target, shortcutProxyHandler as ProxyHandler<U>);
     }
 
     return wrapWithProxy(proxiedObject);
@@ -356,12 +389,18 @@
    *
    * @param {string} uuid Unique DOM ID suffix for this rendered element
    */
-  window.PLSymbolicInput = function (uuid) {
-    const mf = document.getElementById('symbolic-input-' + uuid);
+  symbolicInputWindow.PLSymbolicInput = function (uuid: string) {
+    const elementId = 'symbolic-input-' + uuid;
+    const mf = document.getElementById(elementId) as MathfieldElement | null;
+    if (!mf) {
+      throw new Error(`Element '${elementId}' is required but not found in the DOM.`);
+    }
 
     // Always keep basic right-click items and append to other menu items
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
-    const endMenuItems = mf.menuItems.filter((item) => standardMenuItems.has(item.id));
+    const endMenuItems = mf.menuItems.filter(
+      (item) => 'id' in item && item.id !== undefined && standardMenuItems.has(item.id),
+    );
 
     // If the allow-trig / allow-sets attributes are set, add matching shortcuts to the virtual keyboard
     const allowTrig = mf.getAttribute('allow-trig');
@@ -374,10 +413,10 @@
       class: 'small',
       latex: '\\mathrm{sign}',
       insert: '\\operatorname{sign}\\left({#0}\\right)',
-    };
+    } satisfies Exclude<KeyboardKeycap, string>;
 
     /** A key that is only present if `allowSets` */
-    const onlyIfSets = (key) => (allowSets ? [key] : []);
+    const onlyIfSets = <T extends KeyboardKeycap>(key: T): T[] => (allowSets ? [key] : []);
 
     mf.menuItems = [
       {
@@ -599,10 +638,13 @@
           ...onlyIfSets(signKey), // sign shifted from above
         ],
       ],
-    };
+    } satisfies KeyboardLayout;
 
     const updateKeyboardLayout = () => {
-      mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
+      symbolicInputWindow.mathVirtualKeyboard.layouts = [
+        elementKeyboardLayout,
+        ...defaultKeyboardLayouts,
+      ] as VirtualKeyboardLayout[];
     };
 
     mf.addEventListener('focus', updateKeyboardLayout);
@@ -665,6 +707,9 @@
       }
     }
     `);
+    if (!mf.shadowRoot) {
+      throw new Error(`Element '${elementId}' does not have a shadow root.`);
+    }
     mf.shadowRoot.adoptedStyleSheets.push(customCSS);
   };
 
@@ -674,8 +719,10 @@
    *
    * @param {string} uuid UUID of the element to look up the tag (used instead of name since there might be multiple submissions per element)
    */
-  window.PLSymbolicInputParseError = function (uuid) {
-    const mf = document.getElementById(`symbolic-input-parse-error-${uuid}`);
+  symbolicInputWindow.PLSymbolicInputParseError = function (uuid: string) {
+    const mf = document.getElementById(
+      `symbolic-input-parse-error-${uuid}`,
+    ) as MathfieldElement | null;
     if (!mf) {
       throw new Error(
         `Element 'symbolic-input-parse-error-${uuid}' is required but not found in the DOM.`,
@@ -690,10 +737,12 @@
    *
    * @param {string} uuid UUID of the element to look up the tag (used instead of name since there might be multiple submissions per element)
    */
-  window.PLSymbolicInputPopover = function (uuid) {
+  symbolicInputWindow.PLSymbolicInputPopover = function (uuid: string) {
     // Wait for popover to appear
     $(document).on('shown.bs.popover', `#pl-symbolic-input-${uuid}-button`, function () {
-      const mf = document.getElementById(`symbolic-input-popover-${uuid}`);
+      const mf = document.getElementById(
+        `symbolic-input-popover-${uuid}`,
+      ) as MathfieldElement | null;
       if (!mf) {
         throw new Error(
           `Element 'symbolic-input-popover-${uuid}' is required but not found in the DOM.`,
@@ -708,22 +757,22 @@
    * functions and those specified in the custom-functions attribute. Each allowed function is added as a
    *  "macro" to automatically replace individual letters with well-formatted, atomic function name blocks.
    *
-   * @param {HTMLElement} mf The <math-field> element to initialize
+   * @param mf The <math-field> element to initialize
    */
-  function setUpSymbolicInputMacros(mf) {
+  function setUpSymbolicInputMacros(mf: MathfieldElement) {
     const additionalFunctions = mf.getAttribute('custom-functions')?.split(',') ?? [];
 
     const customFunctions = new Set(additionalFunctions.concat(defaultFunctions));
     const allowSets = mf.getAttribute('allow-sets');
 
-    const macros = {};
+    const macros: MacroDictionary = {};
     customFunctions.forEach((fun) => (macros[fun] = `\\operatorname{${fun}}`));
-    greekLettersToUnicode.forEach(
-      ([letter, unicode]) => (macros[letter] = String.fromCodePoint(Number.parseInt(unicode, 16))),
-    );
+    for (const [letter, unicode] of greekLettersToUnicode) {
+      macros[letter] = String.fromCodePoint(Number.parseInt(unicode, 16));
+    }
 
     // Additional shortcuts for instant replacement inside the pl-symbolic-input box
-    const inlineShortcuts = {
+    const inlineShortcuts: InlineShortcutDefinitions = {
       '**': {
         value: '#@^{#?}',
       },
