@@ -31,6 +31,7 @@ export function QuestionPickerPanel({
   isLoading,
   questionsInAssessment,
   disabledQids,
+  readOnlyQids,
   currentChangeQid,
   isPickingQuestion,
   pickerError,
@@ -46,6 +47,7 @@ export function QuestionPickerPanel({
   isLoading?: boolean;
   questionsInAssessment: Map<string, string[]>;
   disabledQids: Set<string>;
+  readOnlyQids: Set<string>;
   currentChangeQid?: string;
   courseId: string;
   courseInstanceId: string;
@@ -487,7 +489,7 @@ export function QuestionPickerPanel({
                       </div>
                     )}
                   </div>
-                  {isInAssessment && (
+                  {isInAssessment && !readOnlyQids.has(qid) && (
                     <button
                       type="button"
                       className="btn btn-sm border-0 text-muted ms-1 picker-delete-btn hover-show"
