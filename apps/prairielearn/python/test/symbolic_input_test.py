@@ -31,7 +31,7 @@ def _format_absolute_values(submission: str, *, allow_sets: bool = False) -> str
             "|",
         )
     )
-    return psu._convert_absolute_values_source(source, allow_sets=allow_sets).text
+    return psu._convert_absolute_values_source(source, allow_sets=allow_sets).text()
 
 
 def _format_formula_editor_submission(
@@ -51,7 +51,7 @@ def _format_formula_editor_submission(
         custom_functions,
         allow_trig_functions=allow_trig,
         allow_sets=allow_sets,
-    ).text
+    ).text()
 
 
 @pytest.mark.parametrize(
@@ -226,7 +226,7 @@ def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -
     source = psu._restore_plus_minus_source(
         sympy_source.SourceText.from_text(submission), latex
     )
-    assert (None if source is None else source.text) == expected
+    assert (None if source is None else source.text()) == expected
 
 
 def test_format_formula_editor_deeply_nested_bare_arguments() -> None:
@@ -300,14 +300,14 @@ def test_symbolic_input_normalization_preserves_source_offsets(
 ) -> None:
     source = _normalize_symbolic_input(text, formula_editor=formula_editor)
     assert source.raw_text == text
-    assert source.text == expected_text
+    assert source.text() == expected_text
     assert tuple(token.raw_offset for token in source.tokens) == expected_offsets
 
 
 def test_symbolic_input_normalization_combines_stages_in_order() -> None:
     raw = "∣l n 2 * x∣^2 + 2e+3 + 3j"  # ruff:ignore[ambiguous-unicode-character-string]
     source = _normalize_symbolic_input(raw, formula_editor=True)
-    assert source.text == "abs(ln (2) * x)**2 + 2*e+3 + 3*j"
+    assert source.text() == "abs(ln (2) * x)**2 + 2*e+3 + 3*j"
 
     result = psu._try_parse_normalized_source_as_sympy(
         source,
