@@ -3,6 +3,9 @@ model_provider = "prairielearn"
 # Codex offers its `web.run` browsing tool to a custom provider only when the provider declares
 # standalone web search; CourseAgentModelOutbound fixes its settings.
 web_search = "live"
+# Courses developed with Claude Code keep their instructions in CLAUDE.md. Codex reads it from a
+# directory that has no AGENTS.md.
+project_doc_fallback_filenames = ["CLAUDE.md"]
 
 [model_providers.prairielearn]
 name = "PrairieLearn"
