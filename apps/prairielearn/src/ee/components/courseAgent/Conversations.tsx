@@ -524,7 +524,7 @@ function Chat({
   const latest = messages.at(-1);
   const inputRequestOpen =
     latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
-  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'instant' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
