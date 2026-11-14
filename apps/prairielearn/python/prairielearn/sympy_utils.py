@@ -263,6 +263,10 @@ class _SympyJsonStrPrinter(StrPrinter):
         right = ")" if i.right_open else "]"
         return f"{left}{start}, {end}{right}"
 
+    def _print_Tuple(self, expr: sympy.Tuple) -> str:  # ruff:ignore[invalid-function-name]
+        args = ", ".join(self._print(arg) for arg in expr.args)
+        return f"_pl_Tuple({args})"
+
 
 # Safe evaluation of user input to convert from string to sympy expression.
 #
@@ -1402,6 +1406,7 @@ def _convert_source_to_sympy_with_source(
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
     additional_variables: Mapping[str, sympy.Basic | complex] | None = None,
+    additional_functions: Mapping[str, Callable[..., Any]] | None = None,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1468,6 +1473,8 @@ def _convert_source_to_sympy_with_source(
 
     if additional_variables is not None:
         locals_for_eval["variables"].update(additional_variables)
+    if additional_functions is not None:
+        locals_for_eval["functions"].update(additional_functions)
 
     for name, raw_name in name_validation.normalized_variables.items():
         var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
@@ -1608,13 +1615,7 @@ def sympy_to_json(
 
     Raises:
         HasSetNotationError: If the expression is a set and `allow_sets` is `False`.
-        ValueError: If the expression contains a SymPy tuple.
     """
-    if a.has(sympy.Tuple):
-        raise ValueError(
-            "SymPy Tuple values are not supported by PrairieLearn serialization. Use separate inputs for point coordinates."
-        )
-
     if isinstance(a, sympy.Set) and not allow_sets:
         raise HasSetNotationError
 
@@ -1662,7 +1663,7 @@ def json_to_sympy(
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
     simplify_expression: bool = True,
-) -> sympy.Expr:
+) -> sympy.Basic:
     """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a SymPy expression.
 
     Returns:
@@ -1701,6 +1702,7 @@ def json_to_sympy(
         additional_variables=(
             const.serialized_named_sets if allow_sets else None
         ),
+        additional_functions=const.serialized_functions,
     )
     return result
 

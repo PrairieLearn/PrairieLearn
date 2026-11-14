@@ -4,7 +4,7 @@ set_union: set_intersection (UNION set_intersection)*
 set_intersection: set_difference (INTERSECTION set_difference)*
 set_difference: set_atom (DIFFERENCE set_atom)*
 
-?set_atom: finite_set | interval | named_set | set_group
+?set_atom: finite_set | delimited | named_set | set_group
 set_group: LPAR set_union RPAR
 named_set: NAMED_SET
 
@@ -12,7 +12,7 @@ finite_set: LBRACE [set_items] RBRACE
 set_items: set_item (COMMA set_item)*
 ?set_item: set_union | scalar
 
-interval: (LPAR | LBRACKET) scalar COMMA scalar (RPAR | RBRACKET)
+delimited: (LPAR | LBRACKET) scalar COMMA scalar (COMMA scalar)* (RPAR | RBRACKET)
 
 scalar: scalar_sum
 ?scalar_sum: scalar_product (ADD scalar_product)*
