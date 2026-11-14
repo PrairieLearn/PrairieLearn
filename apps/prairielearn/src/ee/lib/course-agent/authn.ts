@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { config } from '../../../lib/config.js';
 import type { User } from '../../../lib/db-types.js';
 import { selectUserById, selectUserIsAdministrator } from '../../../models/user.js';
-import { selectOptionalCourseAgentConversationByAgentConversationId } from '../../models/course-agent-conversation.js';
+import { selectOptionalCourseAgentConversationByAgentId } from '../../models/course-agent-conversation.js';
 
 function isServiceToken(authorization: string) {
   const supplied = Buffer.from(authorization);
@@ -38,7 +38,7 @@ export async function authenticateCourseAgentRequest({
   if (!isServiceToken(authorization)) return null;
   const parsedId = z.uuid().safeParse(conversationId);
   const conversation = parsedId.success
-    ? await selectOptionalCourseAgentConversationByAgentConversationId(parsedId.data)
+    ? await selectOptionalCourseAgentConversationByAgentId(parsedId.data)
     : null;
   if (!conversation) return { error: 'Invalid course agent conversation' };
   // Must match where api/v1/index.ts mounts the router the course agent calls.
