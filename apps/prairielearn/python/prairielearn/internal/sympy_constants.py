@@ -55,6 +55,14 @@ serialized_named_sets: Final[FrozenDict[str, sympy.Set]] = FrozenDict({
     "Naturals": sympy.S.Naturals,
     "Complexes": sympy.S.Complexes,
 })
+set_domain_names: Final = frozenset({
+    "Complexes",
+    "Integers",
+    "Naturals",
+    "Naturals0",
+    "Rationals",
+    "Reals",
+})
 
 serialized_functions: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
     "_pl_Tuple": sympy.Tuple,
@@ -152,6 +160,25 @@ def _load_sympy_globals() -> FrozenDict[str, Any]:
 
 
 sympy_globals: Final = _load_sympy_globals()
+legacy_global_variables: Final[FrozenDict[str, sympy.Basic | complex]] = FrozenDict({
+    "Catalan": sympy.Catalan,
+    "EmptySet": sympy.EmptySet,
+    "E": sympy.E,
+    "EulerGamma": sympy.EulerGamma,
+    "GoldenRatio": sympy.GoldenRatio,
+    "I": sympy.I,
+    "TribonacciConstant": sympy.TribonacciConstant,
+    "UniversalSet": sympy.UniversalSet,
+    "false": sympy.false,
+    "nan": sympy.nan,
+    "oo": sympy.oo,
+    "true": sympy.true,
+    "zoo": sympy.zoo,
+})
+sympy_global_names: Final = frozenset(sympy.__all__)
+sympy_global_functions: Final = frozenset(
+    name for name in sympy.__all__ if callable(getattr(sympy, name))
+)
 
 # `sqrt` is a plain function whose second parameter is `evaluate`, so it has no
 # `nargs` and would silently accept a second argument.
@@ -161,6 +188,17 @@ builtin_function_arity_overrides: Final[FrozenDict[str, tuple[int, ...]]] = Froz
 
 # Complement was accepted as a custom function before it became a set builtin.
 legacy_custom_function_overrides: Final = frozenset({"Complement"})
+
+evaluate_false_functions: Final = frozenset(trig_functions) | frozenset({
+    "Abs",
+    "abs",
+    "exp",
+    "ln",
+    "log",
+    "sgn",
+    "sign",
+    "sqrt",
+})
 
 # From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
 greek_alphabet: Final = FrozenDict({

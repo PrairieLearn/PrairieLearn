@@ -14,15 +14,15 @@ from collections import deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from functools import lru_cache, wraps
+from functools import lru_cache
 from io import StringIO
-from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
-from types import CodeType
+from tokenize import NUMBER, TokenError, generate_tokens
 from types import MappingProxyType as FrozenDict
 from typing import (
     Any,
     Final,
     Literal,
+    Never,
     NotRequired,
     TypedDict,
     TypeGuard,
@@ -30,11 +30,14 @@ from typing import (
 )
 
 import sympy
-from sympy.parsing import sympy_parser
-from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
-from prairielearn.internal import sympy_constants
+from prairielearn.internal import (
+    sympy_constants,
+    sympy_evaluation,
+    sympy_expression,
+    sympy_source,
+)
 from prairielearn.misc_utils import full_unidecode
 
 __all__ = [
@@ -138,53 +141,8 @@ class SympyParseFailure:
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
 
 
-@dataclass(frozen=True, slots=True)
-class _SourceToken:
-    """One transformed character and its position in the raw source."""
-
-    text: str
-    raw_offset: int
-
-    def __post_init__(self) -> None:
-        """Validate that this token represents one transformed character."""
-        if len(self.text) != 1:
-            raise ValueError("SourceToken must contain exactly one character")
-
-    def rewrite(self, text: str) -> tuple["_SourceToken", ...]:
-        return tuple(_SourceToken(char, self.raw_offset) for char in text)
-
-
-@dataclass(frozen=True, slots=True)
-class _SourceText:
-    """Transformed tokens that retain positions in the immutable raw source."""
-
-    raw_text: str
-    tokens: tuple[_SourceToken, ...]
-
-    def __post_init__(self) -> None:
-        """Validate that token provenance refers to the raw source in order."""
-        if any(
-            token.raw_offset < 0 or token.raw_offset >= len(self.raw_text)
-            for token in self.tokens
-        ):
-            raise ValueError("SourceText offsets must refer to the raw source")
-        if any(
-            left.raw_offset > right.raw_offset
-            for left, right in zip(self.tokens, self.tokens[1:], strict=False)
-        ):
-            raise ValueError("SourceText offsets must be nondecreasing")
-
-    def text(self) -> str:
-        return "".join(token.text for token in self.tokens)
-
-    @classmethod
-    def from_text(cls, text: str) -> "_SourceText":
-        return cls(
-            text, tuple(_SourceToken(char, offset) for offset, char in enumerate(text))
-        )
-
-    def replace(self, tokens: Iterable[_SourceToken]) -> "_SourceText":
-        return _SourceText(self.raw_text, tuple(tokens))
+_SourceToken = sympy_source.SourceToken
+_SourceText = sympy_source.SourceText
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -319,6 +277,11 @@ class HasSetNotationError(BaseSympyError):
 
 
 @dataclass
+class _HasSetExpressionError(BaseSympyError):
+    message: str
+
+
+@dataclass
 class HasInvalidExpressionError(BaseSympyError):
     offset: int
 
@@ -368,6 +331,7 @@ class HasInvalidVariableError(BaseSympyError):
 class ASTSympyType(Enum):
     SCALAR = "number"
     SET = "set"
+    TUPLE = "tuple"
     BOOL = "true/false"
     STRING = "text"
 
@@ -763,118 +727,13 @@ def ast_check_str(
 ) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
-    This prevents the user from executing arbitrary code through `eval_expr`.
+    This compatibility helper validates generated Python without evaluating it.
     """
     _ast_check_str(expr, locals_for_eval, allow_sets=allow_sets)
 
 
-def _validate_ast_structure(
-    expression_ast: ast.Expression,
-    locals_for_eval: LocalsForEval,
-    *,
-    allow_extra_symbols: bool,
-) -> None:
-    """Validate nodes that SymPy evaluation could remove from the result."""
-    valid_symbols = set().union(
-        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
-    )
-    invalid_symbols: set[str] = set()
-    float_value: float | None = None
-    for node in ast.walk(expression_ast):
-        if (
-            not isinstance(node, ast.Call)
-            or not isinstance(node.func, ast.Name)
-            or len(node.args) != 1
-            or not isinstance(node.args[0], ast.Constant)
-        ):
-            continue
-
-        value = node.args[0].value
-        if (
-            node.func.id == "Symbol"
-            and not allow_extra_symbols
-            and isinstance(value, str)
-            and value not in valid_symbols
-        ):
-            invalid_symbols.add(value)
-        if (
-            node.func.id == "Float"
-            and float_value is None
-            and isinstance(value, (int, float, str))
-        ):
-            try:
-                float_value = float(value)
-            except ValueError:
-                continue
-
-    if invalid_symbols:
-        # Evaluated SymPy expressions order symbols canonically before sympy_check
-        # traverses them. Preserve which invalid symbol existing errors identify.
-        invalid_symbol = max(
-            invalid_symbols,
-            key=lambda symbol: sympy.default_sort_key(sympy.Symbol(symbol)),
-        )
-        raise HasInvalidSymbolError(invalid_symbol)
-    if float_value is not None:
-        raise HasFloatError(float_value)
-
-
-class _SetOperationTransformer(ast.NodeTransformer):
-    """Keep validated set operations unevaluated."""
-
-    def __init__(
-        self,
-        set_operations: frozenset[ast.BinOp | ast.Call],
-        occupied_names: Iterable[str],
-    ) -> None:
-        self._set_operations = set_operations
-        self._function_names: dict[type[ast.operator], str] = {}
-        self.evaluation_locals: SympyFunctionMapT = {}
-
-        used_names = set(occupied_names)
-        protected_names: dict[str, str] = {}
-        for operation_type in {
-            type(node.op) for node in set_operations if isinstance(node, ast.BinOp)
-        }:
-            function_name = _SET_OPERATION_FUNCTIONS[operation_type]
-            protected_name = protected_names.get(function_name)
-            if protected_name is None:
-                protected_name = f"_pl_set_operation_{function_name}"
-                while protected_name in used_names:
-                    protected_name += "_"
-                used_names.add(protected_name)
-                protected_names[function_name] = protected_name
-                self.evaluation_locals[protected_name] = sympy_constants.set_functions[
-                    function_name
-                ]
-            self._function_names[operation_type] = protected_name
-
-    def visit_BinOp(self, node: ast.BinOp) -> ast.AST:
-        node = cast(ast.BinOp, self.generic_visit(node))
-        if node not in self._set_operations:
-            return node
-
-        function_name = self._function_names[type(node.op)]
-        return ast.copy_location(
-            ast.Call(
-                func=ast.Name(id=function_name, ctx=ast.Load()),
-                args=[node.left, node.right],
-                keywords=[ast.keyword(arg="evaluate", value=ast.Constant(value=False))],
-            ),
-            node,
-        )
-
-    def visit_Call(self, node: ast.Call) -> ast.AST:
-        node = cast(ast.Call, self.generic_visit(node))
-        if node in self._set_operations:
-            node.keywords.append(
-                ast.keyword(arg="evaluate", value=ast.Constant(value=False))
-            )
-        return node
-
-
 def sympy_check(
-    expr: sympy.Expr,
+    expr: sympy.Basic,
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool,
@@ -1100,6 +959,8 @@ def _validate_and_rewrite_source(
         raise HasCommentError(source.tokens[ind].raw_offset)
     if stars := re.search(r"\*{3,}", text):
         raise HasInvalidExpressionError(source.tokens[stars.start()].raw_offset)
+    if comparison := re.search(r"==|!=|>=|<=|>|<", text):
+        raise HasInvalidExpressionError(source.tokens[comparison.start()].raw_offset)
     if not allow_sets and any(
         token in text
         for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # ruff:ignore[ambiguous-unicode-character-string]
@@ -1148,13 +1009,11 @@ def _evaluate_with_source(
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
     resolved_name_overrides: Mapping[str, Any] | None = None,
-) -> tuple[sympy.Expr, str | CodeType]:
-    """Evaluate a SymPy expression string with a given set of locals.
-
-    Returns:
-        A tuple of the SymPy expression and the code that was used to generate it.
-
-    """
+    parser_start: sympy_expression.ParserStart = "symbolic_start",
+    simplify_set_operations: bool | None = None,
+    delimited_syntax: sympy_evaluation.DelimitedSyntax = "interval",
+) -> tuple[sympy.Expr, str]:
+    """Evaluate a SymPy expression string and return its lowered structure."""
     source = _normalize_source(
         expr,
         allow_complex=allow_complex,
@@ -1168,6 +1027,9 @@ def _evaluate_with_source(
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
         resolved_name_overrides=resolved_name_overrides,
+        parser_start=parser_start,
+        simplify_set_operations=simplify_set_operations,
+        delimited_syntax=delimited_syntax,
     )
 
 
@@ -1180,142 +1042,93 @@ def _evaluate_normalized_source(
     simplify_expression: bool,
     allow_extra_symbols: bool,
     resolved_name_overrides: Mapping[str, Any] | None = None,
-) -> tuple[sympy.Expr, str | CodeType]:
-    normalized_expr = source.text()
-
-    local_dict: DICT = {
-        k: v
-        for inner_dict in locals_for_eval.values()
-        for k, v in cast(SympyMapT, inner_dict).items()
-    }
-
-    # Keep mutations made during one parse from affecting later parses.
-    global_dict = dict(sympy_constants.sympy_globals)
-
-    transformations = (
-        *sympy_parser.standard_transformations,
-        sympy_parser.implicit_multiplication_application,
+    parser_start: sympy_expression.ParserStart = "symbolic_start",
+    simplify_set_operations: bool | None = None,
+    delimited_syntax: sympy_evaluation.DelimitedSyntax = "interval",
+) -> tuple[sympy.Expr, str]:
+    legacy_untyped_names = frozenset(resolved_name_overrides or ())
+    legacy_untyped_functions = frozenset(
+        name
+        for name in sympy_constants.legacy_custom_function_overrides
+        if name in locals_for_eval["functions"]
+        and locals_for_eval["functions"][name] != sympy_constants.set_functions[name]
     )
-    if allow_sets:
-        transformations = (
-            _unmangle_infix_binops_transformation(sympy_constants.set_operators.keys()),
-            _set_literal_transformation,
-            _set_operation_transformation,
-            _interval_transformation,
-            *transformations,
-        )
-    else:
-        # check for open intervals
-        transformations = (
-            _err_on_transform(_interval_transformation, HasSetNotationError),
-            *transformations,
-        )
-
-    try:
-        code = sympy_parser.stringify_expr(
-            normalized_expr, local_dict, global_dict, transformations
-        )
-    except (TokenError, IndexError) as exc:
-        # SymPy can raise IndexError on malformed token streams for some invalid
-        # inputs instead of a cleaner TokenError. Treat those the same way so the
-        # caller receives a normal syntax error rather than an unexpected error.
-        raise HasParseError(-1) from exc
-
-    # First do AST check, mainly for security
-    parsed_locals_to_eval: LocalsForEval = {
-        "functions": locals_for_eval["functions"].copy(),
-        "variables": locals_for_eval["variables"].copy(),
-        "helpers": locals_for_eval["helpers"].copy(),
-    }
-
-    # Add locals that appear after sympy stringification
-    # This check is only for safety, so won't change what gets parsed
-    parsed_locals_to_eval["functions"].update(
-        Integer=sympy.Integer,
-        Symbol=sympy.Symbol,
-        Float=sympy.Float,
-        Interval=sympy.Interval,
-        Union=sympy.Union,
-        Intersection=sympy.Intersection,
-        Complement=sympy.Complement,
+    context = sympy_evaluation.EvaluationContext.from_locals_for_eval(
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+        simplify_set_operations=simplify_set_operations,
+        delimited_syntax=delimited_syntax,
+        legacy_untyped_names=legacy_untyped_names,
+        legacy_untyped_functions=legacy_untyped_functions,
     )
-
-    parsed_locals_to_eval["variables"].update(
-        I=sympy.I,
-        oo=sympy.oo,
-    )
-
     try:
-        resolved_names = global_dict | local_dict
-        if resolved_name_overrides is not None:
-            resolved_names.update(resolved_name_overrides)
-        expression_ast, set_operations = _ast_check_str(
-            code,
-            parsed_locals_to_eval,
-            allow_sets=allow_sets,
-            resolved_names=resolved_names,
+        result, structure = sympy_expression.parse_and_evaluate_with_structure(
+            source, context, parser_start
         )
-        _validate_ast_structure(
-            expression_ast,
-            locals_for_eval,
-            allow_extra_symbols=allow_extra_symbols,
-        )
-    except (HasArgumentTypeError, HasFunctionArityError) as exc:
-        index = _find_type_error_offset(source, exc.as_type_error())
-        if index != -1:
-            exc.offset = index
+    except sympy_evaluation.ExpressionEvaluationError as exc:
+        _raise_evaluation_error(exc)
 
-        raise
-
-    evaluation_code: str | CodeType = code
-    if not simplify_expression:
-        if allow_sets:
-            set_operation_transformer = _SetOperationTransformer(
-                set_operations,
-                local_dict.keys() | global_dict.keys(),
-            )
-            expression_ast = cast(
-                ast.Expression,
-                set_operation_transformer.visit(expression_ast),
-            )
-            # These names are introduced after validating the user-provided AST so
-            # custom functions cannot replace the generated set operations.
-            local_dict.update(set_operation_transformer.evaluation_locals)
-        expression_ast = cast(
-            ast.Expression,
-            sympy_parser.EvaluateFalseTransformer().visit(expression_ast),
-        )
-        evaluation_code = compile(
-            ast.fix_missing_locations(expression_ast), "<string>", "eval"
-        )
-
-    # Now that it's safe, get sympy expression
-    try:
-        res = sympy_parser.eval_expr(evaluation_code, local_dict, global_dict)
-    except TypeError as exc:
-        # SymPy raises TypeError for semantically invalid set operations that are
-        # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
-        # Because the AST check above already ran, TypeErrors here are expected to
-        # come from SymPy's own type system, not from Python infrastructure bugs.
-        index = _find_type_error_offset(source, exc)
-        if index != -1:
-            raise HasParseError(index) from exc
-        # if we can't localize the type error, report to staff.
-        raise BaseSympyError from exc
-    except Exception as exc:
-        raise BaseSympyError from exc
-
-    # Finally, validate the result.
     sympy_check(
-        res,
+        cast(sympy.Basic, result),
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
         allow_extra_symbols=allow_extra_symbols,
         check_evaluated_complex=not simplify_expression and not allow_complex,
     )
+    return cast(sympy.Expr, result), structure
 
-    return res, evaluation_code
+
+def _raise_evaluation_error(
+    error: sympy_evaluation.ExpressionEvaluationError,
+) -> Never:
+    diagnostic = error.diagnostic
+    if isinstance(diagnostic, sympy_evaluation.ParseDiagnostic):
+        public_error: BaseSympyError = HasParseError(diagnostic.offset)
+    elif isinstance(diagnostic, sympy_evaluation.InvalidExpressionDiagnostic):
+        public_error = HasInvalidExpressionError(diagnostic.offset)
+    elif isinstance(diagnostic, sympy_evaluation.InvalidFunctionDiagnostic):
+        public_error = HasInvalidFunctionError(diagnostic.offset, diagnostic.text)
+    elif isinstance(diagnostic, sympy_evaluation.FunctionWithoutArgumentsDiagnostic):
+        public_error = FunctionNameWithoutArgumentsError(
+            diagnostic.offset, diagnostic.text
+        )
+    elif isinstance(diagnostic, sympy_evaluation.InvalidSymbolDiagnostic):
+        public_error = HasInvalidSymbolError(diagnostic.symbol, diagnostic.offset)
+    elif isinstance(diagnostic, sympy_evaluation.FloatDiagnostic):
+        public_error = HasFloatError(diagnostic.value)
+    elif isinstance(diagnostic, sympy_evaluation.SetNotationDiagnostic):
+        public_error = HasSetNotationError()
+    elif isinstance(diagnostic, sympy_evaluation.SetExpressionDiagnostic):
+        public_error = _HasSetExpressionError(diagnostic.message)
+    elif isinstance(diagnostic, sympy_evaluation.ArgumentTypeDiagnostic):
+        public_error = HasArgumentTypeError(
+            diagnostic.function,
+            ASTSympyType(diagnostic.got.value),
+            tuple(ASTSympyType(value.value) for value in diagnostic.allowable_types),
+            diagnostic.argument_index,
+            diagnostic.offset,
+        )
+        if public_error.offset == -1 and error.span is not None:
+            public_error.offset = error.span.start
+    elif isinstance(diagnostic, sympy_evaluation.FunctionArityDiagnostic):
+        public_error = HasFunctionArityError(
+            diagnostic.function,
+            diagnostic.provided,
+            diagnostic.expected,
+            diagnostic.offset,
+        )
+        if public_error.offset == -1 and error.span is not None:
+            public_error.offset = error.span.start
+    else:
+        public_error = BaseSympyError()
+
+    if error.cause is not None:
+        raise public_error from error.cause
+    raise public_error from None
 
 
 def evaluate_with_source(
@@ -1326,8 +1139,8 @@ def evaluate_with_source(
     allow_sets: bool = False,
     simplify_expression: bool = True,
     allow_extra_symbols: bool = False,
-) -> tuple[sympy.Expr, str | CodeType]:
-    """Evaluate a SymPy expression string and return its value and source code."""
+) -> tuple[sympy.Expr, str]:
+    """Evaluate a SymPy expression string and return its lowered structure."""
     return _evaluate_with_source(
         expr,
         locals_for_eval,
@@ -1407,8 +1220,12 @@ def _convert_string_to_sympy_with_source(
     resolved_name_overrides: Mapping[str, Any] | None = None,
     additional_variables: Mapping[str, sympy.Basic | complex] | None = None,
     additional_functions: Mapping[str, Callable[..., Any]] | None = None,
-) -> tuple[sympy.Expr, str | CodeType]:
-    """Convert a string to a SymPy expression and return its generated source."""
+    parser_start: sympy_expression.ParserStart = "symbolic_start",
+    simplify_set_operations: bool | None = None,
+    allow_set_functions: bool = True,
+    delimited_syntax: sympy_evaluation.DelimitedSyntax = "interval",
+) -> tuple[sympy.Expr, str]:
+    """Convert a string to a SymPy expression and return its lowered structure."""
     return _convert_source_to_sympy_with_source(
         None,
         expr,
@@ -1424,6 +1241,10 @@ def _convert_string_to_sympy_with_source(
         resolved_name_overrides=resolved_name_overrides,
         additional_variables=additional_variables,
         additional_functions=additional_functions,
+        parser_start=parser_start,
+        simplify_set_operations=simplify_set_operations,
+        allow_set_functions=allow_set_functions,
+        delimited_syntax=delimited_syntax,
     )
 
 
@@ -1443,14 +1264,18 @@ def _convert_source_to_sympy_with_source(
     resolved_name_overrides: Mapping[str, Any] | None = None,
     additional_variables: Mapping[str, sympy.Basic | complex] | None = None,
     additional_functions: Mapping[str, Callable[..., Any]] | None = None,
-) -> tuple[sympy.Expr, str | CodeType]:
+    parser_start: sympy_expression.ParserStart = "symbolic_start",
+    simplify_set_operations: bool | None = None,
+    allow_set_functions: bool = True,
+    delimited_syntax: sympy_evaluation.DelimitedSyntax = "interval",
+) -> tuple[sympy.Expr, str]:
     """
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
     raise an exception with a message that can be displayed to the user.
 
     Returns:
-        A tuple of the sympy expression and the source code that was used to generate it.
+        A tuple of the SymPy expression and its lowered structure.
 
     Raises:
         HasInvalidAssumptionError: If the assumptions are not valid.
@@ -1506,7 +1331,7 @@ def _convert_source_to_sympy_with_source(
     if allow_trig_functions:
         locals_for_eval["functions"].update(const.trig_functions)
 
-    if allow_sets:
+    if allow_sets and allow_set_functions:
         locals_for_eval["functions"].update(const.set_functions)
 
     if additional_variables is not None:
@@ -1531,6 +1356,9 @@ def _convert_source_to_sympy_with_source(
             simplify_expression=simplify_expression,
             allow_extra_symbols=allow_extra_symbols,
             resolved_name_overrides=resolved_name_overrides,
+            parser_start=parser_start,
+            simplify_set_operations=simplify_set_operations,
+            delimited_syntax=delimited_syntax,
         )
     return _evaluate_normalized_source(
         source,
@@ -1540,6 +1368,9 @@ def _convert_source_to_sympy_with_source(
         simplify_expression=simplify_expression,
         allow_extra_symbols=allow_extra_symbols,
         resolved_name_overrides=resolved_name_overrides,
+        parser_start=parser_start,
+        simplify_set_operations=simplify_set_operations,
+        delimited_syntax=delimited_syntax,
     )
 
 
@@ -1555,8 +1386,8 @@ def convert_string_to_sympy_with_source(
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
     allow_extra_symbols: bool = False,
-) -> tuple[sympy.Expr, str | CodeType]:
-    """Convert a string to a SymPy expression and return its source code."""
+) -> tuple[sympy.Expr, str]:
+    """Convert a string to a SymPy expression and return its lowered structure."""
     return _convert_string_to_sympy_with_source(
         expr,
         variables,
@@ -1597,37 +1428,6 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
     if ind != -1:
         return ind
     return expr.rfind(symbol)
-
-
-_TYPE_ERROR_OPERATOR_PATTERN = re.compile(
-    r"(unsupported operand type\(s\)|wrong number of arguments) for (?P<operator>[^:]+):"
-)
-
-
-def _find_type_error_offset(source: _SourceText, exc: TypeError) -> int:
-    """Return an approximate raw offset for a SymPy TypeError."""
-    match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
-    if match is None:
-        return -1
-
-    # for some TypeErrors, both the op and magic-method are provided, e.g `...for ** or pow():...`
-    # see https://chromium.googlesource.com/external/github.com/python/cpython/+/refs/tags/v3.7.17/Objects/abstract.c
-    # line 925 for an example.
-    candidate_operators = match.group("operator").replace("()", "").split(" or ")
-    # account for de-sugaring
-    candidate_operators.extend(
-        alias
-        for alias, transformed_operator in sympy_constants.set_operator_desugars.items()
-        if transformed_operator in candidate_operators
-    )
-
-    text = source.text()
-    for candidate in candidate_operators:
-        ind = find_symbol_offset(text, candidate)
-        if ind != -1:
-            return source.tokens[ind].raw_offset
-
-    return -1
 
 
 def sympy_to_json(
@@ -2506,137 +2306,6 @@ def get_items_list(items_string: str | None) -> list[str]:
     return list(map(str.strip, items_string.split(",")))
 
 
-def _set_literal_transformation(
-    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
-) -> list[TOKEN]:
-    """A SymPy token transformation that rewrites set literals to FiniteSet calls."""
-    if not tokens:
-        return tokens
-
-    set_start = (NAME, "FiniteSet"), (OP, "(")
-    set_end = (OP, ")")
-    out: list[TOKEN] = []
-    depth = 0
-
-    for token in tokens:
-        _, text = token
-        if text == "{":
-            out.extend(set_start)
-            depth += 1
-        elif text == "}":
-            if depth <= 0:
-                raise TokenError("too many closing braces")
-            out.append(set_end)
-            depth -= 1
-        else:
-            out.append(token)
-
-    if depth != 0:
-        raise TokenError("set notation is incomplete")
-
-    return out
-
-
-def _try_rewrite_interval_literal(
-    tokens: list[TOKEN], start_index: int
-) -> tuple[tuple[TOKEN, ...] | None, int]:
-    _, start_text = tokens[start_index]
-    if start_text not in ("(", "["):
-        return None, start_index
-
-    set_literal_openers = {"(", "[", "{"}
-    set_literal_closers = {")", "]", "}"}
-
-    def _seek_comma_or_closer(start_index: int) -> tuple[bool, list[TOKEN], int, TOKEN]:
-        operand, depth = [], 0
-        for i, token in enumerate(tokens[start_index:], start=start_index):
-            _, text = token
-            if text in set_literal_openers:
-                depth += 1
-            elif text in set_literal_closers:
-                if depth == 0:
-                    return True, operand, i, token
-                depth -= 1
-            elif text == "," and depth == 0:
-                return False, operand, i, token
-            operand.append(token)
-        raise TokenError("interval notation is incomplete")
-
-    set_notation_only_tokens = {"[", "]", "{", "}", "|", "&"}
-    set_fn_names = sympy_constants.set_functions.keys() | set_notation_only_tokens
-
-    def _contains_set_notation(tokens: list[TOKEN]) -> bool:
-        return any((typ == NAME and text in set_fn_names) for typ, text in tokens)
-
-    # consume until the first top-level comma or closing bracket.
-    closed, left_side, mid_index, _comma = _seek_comma_or_closer(start_index + 1)
-    if closed:
-        return None, start_index
-
-    # consume until the matching top-level closing bracket.
-    closed, right_side, end_index, (_, end_text) = _seek_comma_or_closer(mid_index + 1)
-    if not closed:
-        raise TokenError("interval contains more than one separator")
-
-    if _contains_set_notation(left_side) or _contains_set_notation(right_side):
-        raise TokenError("interval endpoints cannot contain set notation")
-
-    return (
-        (NAME, "Interval"),
-        (OP, "("),
-        *left_side,
-        (OP, ","),
-        *right_side,
-        (OP, ","),
-        (NAME, "True" if start_text == "(" else "False"),
-        (OP, ","),
-        (NAME, "True" if end_text == ")" else "False"),
-        (OP, ")"),
-    ), end_index
-
-
-def _err_on_transform(trans: TRANS, exc: type[BaseSympyError]) -> TRANS:
-    @wraps(trans)
-    def _raise_on_transform(
-        in_tokens: list[TOKEN], local_dict: DICT, global_dict: DICT
-    ) -> list[TOKEN]:
-        out_tokens = trans(in_tokens, local_dict, global_dict)
-        if out_tokens != in_tokens:
-            raise exc()
-        return out_tokens
-
-    return _raise_on_transform
-
-
-def _interval_transformation(
-    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
-) -> list[TOKEN]:
-    """A SymPy token transformation that interprets mathematical intervals like `(-inf, 0]` or `[pi/2, pi]`
-
-    Returns:
-        A transformed sequence of SymPy tokens.
-    """
-    if not tokens:
-        return tokens
-    result = []
-    prev = None
-    i = 0
-    while i < len(tokens):
-        token = tokens[i]
-        if not prev or prev[0] != NAME:
-            rewritten_tokens, end_index = _try_rewrite_interval_literal(tokens, i)
-            if rewritten_tokens is not None:
-                result.extend(rewritten_tokens)
-                prev = tokens[end_index]
-                i = end_index + 1
-                continue
-
-        result.append(token)
-        prev = token
-        i += 1
-    return result
-
-
 def _split_mangled_binop(binops: Sequence[str], text: str) -> tuple[str, str] | None:
     r"""Returns (op, num_text) if text is <op>\d+"""
     if text not in binops:
@@ -2644,48 +2313,6 @@ def _split_mangled_binop(binops: Sequence[str], text: str) -> tuple[str, str] | 
         if stripped in binops:
             return stripped, text[len(stripped) :]
     return None
-
-
-def _unmangle_infix_binops_transformation(binop_literals: Iterable[str]) -> TRANS:
-    """Return a token transform that splits infix operator names from suffix digits.
-
-    SymPy's tokenizer treats strings like ``U2`` or ``cup3`` as a single ``NAME``
-    token. PrairieLearn uses this transform to recover the operator literal and
-    the trailing numeric suffix as separate tokens, so later parsing steps can
-    interpret set-union/set-intersection input from the formula editor without
-    exposing parser internals to students.
-    """
-    bin_lit_set = tuple(binop_literals)
-
-    def _infix_binop_unmangler(
-        tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
-    ) -> list[TOKEN]:
-        out = []
-        for typ, text in tokens:
-            if typ == NAME:
-                split = _split_mangled_binop(bin_lit_set, text)
-                if split is not None:
-                    op, num = split
-                    out.extend(((OP, op), (NUMBER, num)))
-                    continue
-            out.append((typ, text))
-        return out
-
-    return _infix_binop_unmangler
-
-
-def _set_operation_transformation(
-    tokens: list[TOKEN], _local_dict: DICT, _global_dict: DICT
-) -> list[TOKEN]:
-    """A SymPy token transformation that de-sugars set union/intersection.
-
-    Returns:
-        A transformed sequence of SymPy tokens.
-    """
-    set_ops = sympy_constants.set_operator_desugars
-    return [
-        (OP, set_ops[text]) if text in set_ops else (typ, text) for typ, text in tokens
-    ]
 
 
 def get_builtin_constants(

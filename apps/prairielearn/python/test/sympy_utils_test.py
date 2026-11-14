@@ -80,6 +80,55 @@ def test_evaluate_does_not_mutate_locals() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    ("expression", "expected", "expected_structure"),
+    [
+        (
+            "f 2xy",
+            sympy.Function("f")(2 * sympy.Symbol("x") * sympy.Symbol("y")),
+            "f((2*(x*y)))",
+        ),
+        ("sin cos x", sympy.sin(sympy.cos(sympy.Symbol("x"))), "sin(cos(x))"),
+        ("sin^2 2x", sympy.sin(2 * sympy.Symbol("x")) ** 2, "(sin((2*x))**2)"),
+        (
+            "sin 2x * y",
+            sympy.sin(2 * sympy.Symbol("x")) * sympy.Symbol("y"),
+            "(sin((2*x))*y)",
+        ),
+        (
+            "sin 2 / x",
+            sympy.sin(2) / sympy.Symbol("x"),
+            "(sin(2)/x)",
+        ),
+        (
+            "sin 2 % x",
+            sympy.Mod(sympy.sin(2), sympy.Symbol("x")),
+            "(sin(2)%x)",
+        ),
+        (
+            "sin^3 x",
+            sympy.sin(sympy.Symbol("x")) ** 3,
+            "(sin(x)**3)",
+        ),
+        (
+            "f^3 x",
+            sympy.Function("f")(sympy.Symbol("x")) ** 3,
+            "(f(x)**3)",
+        ),
+    ],
+)
+def test_unparenthesized_call_consumes_implicit_token_stream(
+    expression: str, expected: sympy.Expr, expected_structure: str
+) -> None:
+    result, structure = psu.convert_string_to_sympy_with_source(
+        expression,
+        ["x", "y"],
+        custom_functions=["f"],
+    )
+    assert result == expected
+    assert structure == expected_structure
+
+
 @pytest.mark.parametrize("simplify_expression", [True, False])
 def test_evaluate_with_set_variables(*, simplify_expression: bool) -> None:
     locals_for_eval: psu.LocalsForEval = {

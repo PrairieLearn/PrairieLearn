@@ -226,6 +226,20 @@ def test_scalar_members_use_symbolic_parser_configuration() -> None:
     )
 
 
+def test_scalar_members_accept_unparenthesized_product_calls() -> None:
+    result = set_expression.try_parse_set_submission(
+        "{f 2 x y, sin cos x, sin^3 x}",
+        ["x", "y"],
+        custom_functions=["f"],
+    )
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert result.expr == sympy.FiniteSet(
+        sympy.Function("f")(2 * sympy.Symbol("x") * sympy.Symbol("y")),
+        sympy.sin(sympy.cos(sympy.Symbol("x"))),
+        sympy.sin(sympy.Symbol("x")) ** 3,
+    )
+
+
 def test_formula_editor_normalization_preserves_set_syntax() -> None:
     result = set_expression.try_parse_set_submission(
         "[0, 1] U (2, 3)",

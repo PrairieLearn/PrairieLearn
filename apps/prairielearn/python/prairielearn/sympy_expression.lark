@@ -1,0 +1,81 @@
+// General symbolic input, including the legacy set-enabled expression syntax.
+symbolic_start: union
+
+union: intersection (UNION intersection)*
+intersection: sum (INTERSECTION sum)*
+sum: product (ADD product)*
+product: factor product_tail*
+?product_tail: PRODUCT factor -> explicit_product_tail
+             | power          -> implicit_product_tail
+
+?factor: unary | power
+unary: (ADD | INVERT) factor
+power: postfix [POWER factor]
+postfix: primary FACTORIAL*
+
+?primary: interval | set_literal | call | group | NUMBER | NAME
+
+call: NAME LPAR [arguments] RPAR
+arguments: union (_COMMA union)*
+
+group: LPAR union RPAR
+
+set_literal: LBRACE [arguments] RBRACE
+
+interval: (LPAR | LBRACKET) union _COMMA union (RPAR | RBRACKET)
+
+// Set-only input gives union and intersection lower precedence than scalar math.
+set_start: set_union
+
+set_union: set_intersection (SET_UNION set_intersection)*
+set_intersection: set_difference (INTERSECTION set_difference)*
+set_difference: set_atom (SET_DIFFERENCE set_atom)*
+
+?set_atom: set_finite_set | set_delimited | named_set | set_group
+set_group: LPAR set_union RPAR -> group
+named_set: NAMED_SET
+
+set_finite_set: LBRACE [set_items] RBRACE -> set_literal
+set_items: set_item (_COMMA set_item)* -> arguments
+?set_item: set_union | scalar
+
+set_delimited: (LPAR | LBRACKET) scalar _COMMA scalar (_COMMA scalar)* (RPAR | RBRACKET) -> delimited
+
+scalar: scalar_sum
+scalar_sum: scalar_product (ADD scalar_product)* -> sum
+scalar_product: scalar_factor scalar_product_tail* -> product
+?scalar_product_tail: PRODUCT scalar_factor -> explicit_product_tail
+                    | scalar_power          -> implicit_product_tail
+?scalar_factor: scalar_unary | scalar_power
+scalar_unary: (ADD | INVERT) scalar_factor -> unary
+scalar_power: scalar_postfix [POWER scalar_factor] -> power
+scalar_postfix: scalar_primary FACTORIAL* -> postfix
+?scalar_primary: scalar_call | scalar_group | NUMBER | NAME
+scalar_call: NAME LPAR [scalar_arguments] RPAR -> call
+scalar_arguments: scalar (_COMMA scalar)* -> arguments
+scalar_group: LPAR scalar RPAR -> group
+
+// .3 sets the precedence higher than NAME so it captures alphanumeric ops reliably
+UNION.3: "cup" | "U" | "∪" | "|"
+INTERSECTION.3: "cap" | "∩" | "&"
+SET_UNION.4: "cup" | "U" | "∪" | "|" | "+"
+SET_DIFFERENCE: "-"
+NAMED_SET.5: "R" | "Q" | "Z" | "N" | "C"
+
+ADD: "+" | "-"
+INVERT: "~"
+PRODUCT: "*" | "/" | "%"
+POWER: "**"
+FACTORIAL: "!"
+LPAR: "("
+RPAR: ")"
+LBRACKET: "["
+RBRACKET: "]"
+LBRACE: "{"
+RBRACE: "}"
+_COMMA: ","
+
+NUMBER: /(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/
+NAME: /[A-Za-z_][A-Za-z_0-9]*/
+
+%ignore /\s+/
