@@ -12,7 +12,7 @@ Copy the secrets template:
 cp apps/course-agent/.dev.vars.example apps/course-agent/.dev.vars
 ```
 
-Set `OPENAI_API_KEY` and `PL_SERVICE_TOKEN` in `apps/course-agent/.dev.vars`. Generate a service token with:
+Set `OPENAI_API_KEY` and `PL_SERVICE_TOKEN` in `apps/course-agent/.dev.vars`. Set `PL_SERVICE_URL` to your local PrairieLearn origin if it differs from the template’s `http://localhost:3000`. Generate a service token with:
 
 ```sh
 openssl rand -hex 32
@@ -71,6 +71,16 @@ To upgrade Codex, update the release version and the asset's SHA-256 digest (sho
 
 The agent can search the web and read pages through Codex's `web.run` tool, for example to check PrairieLearn documentation or an institution's academic calendar. Codex sends these commands to the model endpoint, and the Worker forwards them to OpenAI, which performs the searches and page reads. The container itself has no internet access. The Worker forwards only the commands it recognizes, sets the search settings itself, and refuses OpenAI-hosted tools in model requests, because the agent can send requests to the model endpoint directly. Searches and page addresses leave PrairieLearn, and page content is untrusted: a page could ask the agent to put course content in a URL it opens.
 
+## Usage limits
+
+The Worker meters the agent's model requests and web searches and reports them to PrairieLearn at `POST /pl/api/course-agent/conversations/{id}/usage`, which answers whether the agent may continue. PrairieLearn prices token usage with `costPerMillionTokens` and each web search command at `courseAgentWebSearchCallCostDollars`, records each report once in `course_agent_usage_reports`, and limits each user to `courseAgentRateLimitDollars` ($50 by default) per UTC hour across courses and conversations.
+
+A model or search request waits for PrairieLearn only when its last decision is more than 60 seconds old, which in practice means once per turn. Unsent usage is reported 30 seconds after it is recorded, which also keeps the decision fresh, and again when the turn ends; if PrairieLearn is unreachable, the report is retried with backoff. Each report carries an ID the Worker mints, so a retried report is not counted twice. If PrairieLearn is unreachable or rejects a report, a model request that needs a decision fails with a 503 that Codex retries, resending the same report, and a rejection is reported to Sentry. A provider request whose final usage never arrives, because its stream dropped or the turn was stopped, is charged an estimate; one running when the Durable Object restarts goes unrecorded. The model outbound refuses background requests, non-default service tiers and stored prompts, which would bill differently from the recorded usage, and at most four provider requests run at once.
+
+The limit is soft: it applies once a report shows it was reached, so spending can exceed it by up to about 30 seconds of usage. Reaching it stops the turn, and a message sent while limited is refused before it starts a sandbox or generates a title; once the hour resets, Resume clears the limit and sends any refused messages to the agent.
+
+Deploy PrairieLearn with the usage route before a Worker that reports to it. The model in `OPENAI_MODEL` needs a price in PrairieLearn's `costPerMillionTokens`, or its reports are rejected and turns fail. A conversation keeps the model it started with, so keep a model's price for as long as conversations started on it are in use.
+
 ## Attachment retention
 
 Attachments and their thumbnails are stored in the checkpoint bucket under `uploads/`. A bucket lifecycle rule deletes them 30 days after upload, whether or not the conversation is still in use, and R2 removes an expired object within about a day. The conversation keeps the message, but a sandbox started after that no longer has the file.
@@ -83,7 +93,7 @@ Only the uploaded files expire. A sandbox checkpoint holds the agent's workspace
 
 Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env production`. Set `CLOUDFLARE_ACCOUNT_ID` to the target Cloudflare account when deploying. The top-level configuration is for local development. Each named environment has its own Worker, Durable Object bindings/storage, checkpoint bucket, model/deadline vars, and secrets. Resource bindings and container configuration are repeated explicitly because Wrangler does not inherit them into named environments.
 
-Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
+Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `PL_SERVICE_URL` (the PrairieLearn origin that receives usage reports), `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
 
 Every object in the checkpoint bucket lives under a prefix that names its kind, so R2 lifecycle rules can be scoped by prefix: sandbox checkpoints under `checkpoints/` (`<id>.tar.zst`, referenced by conversation state and deleted by the archive cleanup, so they must never expire by age) and local course archives under `local-sources/`. A checkpoint record stores only its id, so changing the checkpoint prefix makes existing checkpoints unreachable unless their objects are copied to the new prefix first.
 

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './usage.js';
+
 export type ConversationLifecycle =
   // No live container. The next message initializes a sandbox or restores the committed checkpoint.
   | { status: 'offline' }
@@ -17,7 +19,10 @@ export type ConversationLifecycle =
   | {
       status: 'blocked';
       reason: 'startup_failed' | 'runtime_failed' | 'checkpoint_failed' | 'cleanup_failed';
-    };
+    }
+  // The user reached the hourly usage limit. Resume clears it once retryAt passes; it does not
+  // continue an interrupted task.
+  | { status: 'blocked'; reason: 'usage_limit'; retryAt: string };
 
 /**
  * Public sandbox lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.
