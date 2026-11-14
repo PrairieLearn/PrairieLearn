@@ -34,7 +34,7 @@ from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
-from prairielearn.internal import sympy_constants, sympy_source
+from prairielearn.internal import sympy_constants
 from prairielearn.misc_utils import full_unidecode
 
 __all__ = [
@@ -136,6 +136,55 @@ class SympyParseFailure:
 
 
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
+
+
+@dataclass(frozen=True, slots=True)
+class _SourceToken:
+    """One transformed character and its position in the raw source."""
+
+    text: str
+    raw_offset: int
+
+    def __post_init__(self) -> None:
+        """Validate that this token represents one transformed character."""
+        if len(self.text) != 1:
+            raise ValueError("SourceToken must contain exactly one character")
+
+    def rewrite(self, text: str) -> tuple["_SourceToken", ...]:
+        return tuple(_SourceToken(char, self.raw_offset) for char in text)
+
+
+@dataclass(frozen=True, slots=True)
+class _SourceText:
+    """Transformed tokens that retain positions in the immutable raw source."""
+
+    raw_text: str
+    tokens: tuple[_SourceToken, ...]
+
+    def __post_init__(self) -> None:
+        """Validate that token provenance refers to the raw source in order."""
+        if any(
+            token.raw_offset < 0 or token.raw_offset >= len(self.raw_text)
+            for token in self.tokens
+        ):
+            raise ValueError("SourceText offsets must refer to the raw source")
+        if any(
+            left.raw_offset > right.raw_offset
+            for left, right in zip(self.tokens, self.tokens[1:], strict=False)
+        ):
+            raise ValueError("SourceText offsets must be nondecreasing")
+
+    def text(self) -> str:
+        return "".join(token.text for token in self.tokens)
+
+    @classmethod
+    def from_text(cls, text: str) -> "_SourceText":
+        return cls(
+            text, tuple(_SourceToken(char, offset) for offset, char in enumerate(text))
+        )
+
+    def replace(self, tokens: Iterable[_SourceToken]) -> "_SourceText":
+        return _SourceText(self.raw_text, tuple(tokens))
 
 
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
@@ -932,11 +981,11 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
 
 
 def _normalize_unicode_source(
-    source: sympy_source.SourceText, *, formula_editor: bool = False
-) -> sympy_source.SourceText:
+    source: _SourceText, *, formula_editor: bool = False
+) -> _SourceText:
     """Normalize Unicode while retaining the raw offset of every output character."""
     const = sympy_constants
-    normalized_tokens: list[sympy_source.SourceToken] = []
+    normalized_tokens: list[_SourceToken] = []
     for token in source.tokens:
         char = token.text
         normalized_char = char
@@ -969,7 +1018,7 @@ def _normalize_unicode_source(
 _MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
 
 
-def _validate_multiplication(source: sympy_source.SourceText) -> None:
+def _validate_multiplication(source: _SourceText) -> None:
     """Reject multiplication signs that normalization would turn into exponentiation."""
     for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, source.text()):
         left_offset = source.tokens[match.start("left")].raw_offset
@@ -982,7 +1031,7 @@ def _validate_multiplication(source: sympy_source.SourceText) -> None:
             raise HasInvalidExpressionError(left_offset)
 
 
-def _validate_adjacent_numbers(source: sympy_source.SourceText) -> None:
+def _validate_adjacent_numbers(source: _SourceText) -> None:
     """Reject numeric tokens that implicit multiplication would silently combine."""
     text = source.text()
     line_offsets = [0]
@@ -1008,14 +1057,14 @@ def _validate_adjacent_numbers(source: sympy_source.SourceText) -> None:
 
 
 def _rewrite_pattern_source(
-    source: sympy_source.SourceText,
+    source: _SourceText,
     pattern: re.Pattern[str],
     replacement: Callable[
-        [re.Match[str], tuple[sympy_source.SourceToken, ...]],
-        Iterable[sympy_source.SourceToken],
+        [re.Match[str], tuple[_SourceToken, ...]],
+        Iterable[_SourceToken],
     ],
-) -> sympy_source.SourceText:
-    tokens: list[sympy_source.SourceToken] = []
+) -> _SourceText:
+    tokens: list[_SourceToken] = []
     last_end = 0
     for match in pattern.finditer(source.text()):
         tokens.extend(source.tokens[last_end : match.start()])
@@ -1026,11 +1075,11 @@ def _rewrite_pattern_source(
 
 
 def _validate_and_rewrite_source(
-    source: sympy_source.SourceText,
+    source: _SourceText,
     *,
     allow_complex: bool,
     allow_sets: bool,
-) -> sympy_source.SourceText:
+) -> _SourceText:
     _validate_multiplication(source)
     text = source.text()
 
@@ -1077,8 +1126,8 @@ def _validate_and_rewrite_source(
 
 def _normalize_source(
     text: str, *, allow_complex: bool, allow_sets: bool
-) -> sympy_source.SourceText:
-    source = _normalize_unicode_source(sympy_source.SourceText.from_text(text))
+) -> _SourceText:
+    source = _normalize_unicode_source(_SourceText.from_text(text))
     return _validate_and_rewrite_source(
         source,
         allow_complex=allow_complex,
@@ -1119,7 +1168,7 @@ def _evaluate_with_source(
 
 
 def _evaluate_normalized_source(
-    source: sympy_source.SourceText,
+    source: _SourceText,
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool,
@@ -1371,7 +1420,7 @@ def _convert_string_to_sympy_with_source(
 
 
 def _convert_source_to_sympy_with_source(
-    source: sympy_source.SourceText | None,
+    source: _SourceText | None,
     expr: str,
     variables: Iterable[str] | None = None,
     *,
@@ -1540,7 +1589,7 @@ _TYPE_ERROR_OPERATOR_PATTERN = re.compile(
 )
 
 
-def _find_type_error_offset(source: sympy_source.SourceText, exc: TypeError) -> int:
+def _find_type_error_offset(source: _SourceText, exc: TypeError) -> int:
     """Return an approximate raw offset for a SymPy TypeError."""
     match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
     if match is None:
@@ -1854,16 +1903,14 @@ class SymbolicSubmissionParseSuccess:
     json: SympyJson | Literal[""]
 
 
-type _SymbolicInputNormalizationResult = sympy_source.SourceText | SympyParseFailure
+type _SymbolicInputNormalizationResult = _SourceText | SympyParseFailure
 type SymbolicSubmissionParseResult = SymbolicSubmissionParseSuccess | SympyParseFailure
 
 
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
 
 
-def _restore_plus_minus_source(
-    source: sympy_source.SourceText, latex: str
-) -> sympy_source.SourceText | None:
+def _restore_plus_minus_source(source: _SourceText, latex: str) -> _SourceText | None:
     r"""Restore formula-editor ``+-`` sequences that came from ``\pm``."""
     from_plus_minus = [
         match.group(0).startswith("\\")
@@ -1875,7 +1922,7 @@ def _restore_plus_minus_source(
     if not any(from_plus_minus):
         return source
 
-    tokens: list[sympy_source.SourceToken] = []
+    tokens: list[_SourceToken] = []
     last_end = 0
     for match, is_plus_minus in zip(matches, from_plus_minus, strict=True):
         tokens.extend(source.tokens[last_end : match.start()])
@@ -1888,10 +1935,8 @@ def _restore_plus_minus_source(
     return source.replace(tokens)
 
 
-def _delete_literal(
-    source: sympy_source.SourceText, literal: str
-) -> sympy_source.SourceText:
-    tokens: list[sympy_source.SourceToken] = []
+def _delete_literal(source: _SourceText, literal: str) -> _SourceText:
+    tokens: list[_SourceToken] = []
     last_end = 0
     for match in re.finditer(re.escape(literal), source.text()):
         tokens.extend(source.tokens[last_end : match.start()])
@@ -1901,10 +1946,10 @@ def _delete_literal(
 
 
 def _replace_editor_operators(
-    source: sympy_source.SourceText,
-) -> sympy_source.SourceText:
+    source: _SourceText,
+) -> _SourceText:
     text = source.text()
-    tokens: list[sympy_source.SourceToken] = []
+    tokens: list[_SourceToken] = []
     index = 0
     while index < len(text):
         if text.startswith("-:", index):
@@ -1956,13 +2001,11 @@ def _build_formula_editor_tokens(
     return [token for token in tokens if len(token) > 1 and token != "**"]
 
 
-def _merge_spaced_source(
-    source: sympy_source.SourceText, tokens: Sequence[str]
-) -> sympy_source.SourceText:
+def _merge_spaced_source(source: _SourceText, tokens: Sequence[str]) -> _SourceText:
     spaced = [(token, " ".join(token)) for token in tokens]
     spaced.sort(key=lambda item: -len(item[1]))
 
-    merged_tokens: list[sympy_source.SourceToken] = []
+    merged_tokens: list[_SourceToken] = []
     text = source.text()
     index = 0
     while index < len(text):
@@ -1981,8 +2024,8 @@ def _merge_spaced_source(
 
 
 def _add_multiplication_spaces_source(
-    source: sympy_source.SourceText, protected_tokens: Sequence[str]
-) -> sympy_source.SourceText:
+    source: _SourceText, protected_tokens: Sequence[str]
+) -> _SourceText:
     text = source.text()
     protected_positions: set[int] = set()
     for token in protected_tokens:
@@ -1991,7 +2034,7 @@ def _add_multiplication_spaces_source(
         for match in re.finditer(re.escape(token), text):
             protected_positions.update(range(match.start(), match.end()))
 
-    tokens: list[sympy_source.SourceToken] = []
+    tokens: list[_SourceToken] = []
     for index, token in enumerate(source.tokens):
         tokens.append(token)
         if index + 1 >= len(source.tokens):
@@ -2061,15 +2104,15 @@ def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[s
 
 
 def _wrap_bare_function_arguments_source(
-    source: sympy_source.SourceText, function_names: frozenset[str]
-) -> sympy_source.SourceText:
+    source: _SourceText, function_names: frozenset[str]
+) -> _SourceText:
     if not function_names:
         return source
     text = source.text()
     pattern = _bare_function_token_pattern(function_names)
     # Each "(" sorts before a ")" at the same index, which only happens for an
     # empty argument.
-    insertions: list[tuple[int, sympy_source.SourceToken]] = []
+    insertions: list[tuple[int, _SourceToken]] = []
     # Only the first bare function at a given nesting depth can claim the next
     # implicit multiplication boundary; any later one is inside its argument.
     pending_arguments: dict[int, int] = {}
@@ -2122,7 +2165,7 @@ def _wrap_bare_function_arguments_source(
             case _:
                 pass
 
-    tokens: list[sympy_source.SourceToken] = []
+    tokens: list[_SourceToken] = []
     position = 0
     for index, parenthesis in sorted(
         insertions, key=lambda insertion: (insertion[0], insertion[1].text)
@@ -2135,13 +2178,13 @@ def _wrap_bare_function_arguments_source(
 
 
 def _format_formula_editor_source(
-    source: sympy_source.SourceText,
+    source: _SourceText,
     variables: Sequence[str],
     custom_functions: Sequence[str],
     *,
     allow_trig_functions: bool,
     allow_sets: bool,
-) -> sympy_source.SourceText:
+) -> _SourceText:
     source = _delete_literal(_delete_literal(source, "{:"), ":}")
     source = _replace_editor_operators(source)
     known_tokens = _build_formula_editor_tokens(
@@ -2171,8 +2214,8 @@ _ABSOLUTE_VALUE_PATTERN = re.compile(
 
 
 def _convert_absolute_values_source(
-    source: sympy_source.SourceText, *, allow_sets: bool
-) -> sympy_source.SourceText:
+    source: _SourceText, *, allow_sets: bool
+) -> _SourceText:
     original_text = source.text()
     text = original_text
     tokens = list(source.tokens)
@@ -2216,10 +2259,10 @@ def _normalize_symbolic_input(
     allow_trig_functions: bool,
     allow_complex: bool,
     allow_sets: bool,
-) -> sympy_source.SourceText:
+) -> _SourceText:
     """Normalize a symbolic-input submission in its required transformation order."""
     source = _normalize_unicode_source(
-        sympy_source.SourceText.from_text(text), formula_editor=formula_editor
+        _SourceText.from_text(text), formula_editor=formula_editor
     )
     if formula_editor:
         if latex is not None:
@@ -2286,7 +2329,7 @@ def _try_normalize_symbolic_input(
 
 
 def _try_parse_normalized_source_as_sympy(
-    source: sympy_source.SourceText,
+    source: _SourceText,
     raw_text: str,
     variables: Iterable[str] | None,
     *,
