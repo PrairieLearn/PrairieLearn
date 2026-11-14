@@ -8,7 +8,12 @@ import * as tar from 'tar';
 import { dir as temporaryDirectory } from 'tmp-promise';
 import { z } from 'zod';
 
-import { type RequestChangesResult, ReviewSchema } from '@prairielearn/course-agent-types';
+import {
+  type RepositorySnapshotStatus,
+  RepositorySnapshotStatusSchema,
+  type RequestChangesResult,
+  ReviewSchema,
+} from '@prairielearn/course-agent-types';
 import * as error from '@prairielearn/error';
 
 import { config } from '../../../lib/config.js';
@@ -165,4 +170,34 @@ export async function deliverCourseAgentReviewResult(
     );
   }
   z.strictObject({ outcomeRecorded: z.literal(true) }).parse(await response.json());
+}
+
+/**
+ * Start caching a repository branch so new sandboxes restore it instead of cloning. The build
+ * runs in the service; a repeat request while one is running does not start another.
+ */
+export async function requestCourseAgentRepositorySnapshot(binding: {
+  repository: string;
+  branch: string;
+}): Promise<RepositorySnapshotStatus> {
+  const { url, headers } = buildCourseAgentServiceRequest('repository-snapshots');
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(binding),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new error.HttpStatusError(502, 'Could not start caching the repository');
+  return RepositorySnapshotStatusSchema.parse(await response.json());
+}
+
+export async function getCourseAgentRepositorySnapshot(binding: {
+  repository: string;
+  branch: string;
+}): Promise<RepositorySnapshotStatus> {
+  const { url, headers } = buildCourseAgentServiceRequest('repository-snapshots');
+  url.search = new URLSearchParams(binding).toString();
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
+  if (!response.ok) throw new error.HttpStatusError(502, 'Could not load the repository cache');
+  return RepositorySnapshotStatusSchema.parse(await response.json());
 }

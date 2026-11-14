@@ -67,6 +67,14 @@ The sandbox image (`container/Dockerfile`) is Debian slim with Codex's app serve
 
 To upgrade Codex, update the release version and the asset's SHA-256 digest (shown on the GitHub release) in the Dockerfile. Then update the feature flags in `container/codex-config.toml` to match the new release.
 
+## Repository cache
+
+Cloning a large course repository takes most of a new conversation's startup. An administrator can cache a course's repository from PrairieLearn's administrator settings page ("Course agent repository cache"), which takes course IDs and runs a job that reports each course's result. For each course, the service clones the configured branch in a container that runs no agent and stores the clone's `.git` directory in the checkpoint bucket.
+
+A new GitHub-backed conversation whose repository and branch are cached restores that copy, fetches the branch tip, and checks it out, so it downloads from GitHub only what changed since the copy was made. The copy therefore never needs refreshing to stay correct. If the copy cannot be restored or fetched, the sandbox clones as it would without one.
+
+Caching a course again replaces its copy with a fresh clone. Until then the copy keeps objects for files the branch has since deleted, and a restored sandbox has them in its object store. Nothing removes a copy automatically. Courses that are not cached, and conversations started from local files, are unaffected.
+
 ## Web access
 
 The agent can search the web and read pages through Codex's `web.run` tool, for example to check PrairieLearn documentation or an institution's academic calendar. Codex sends these commands to the model endpoint, and the Worker forwards them to OpenAI, which performs the searches and page reads. The container itself has no internet access. The Worker forwards only the commands it recognizes, sets the search settings itself, and refuses OpenAI-hosted tools in model requests, because the agent can send requests to the model endpoint directly. Searches and page addresses leave PrairieLearn, and page content is untrusted: a page could ask the agent to put course content in a URL it opens.
@@ -95,7 +103,7 @@ Use `pnpm --filter @prairielearn/course-agent deploy --env staging` or `--env pr
 
 Create the matching checkpoint bucket and configure `PL_SERVICE_TOKEN`, `PL_SERVICE_URL` (the PrairieLearn origin that receives usage reports), `OPENAI_API_KEY`, and (for GitHub course sources) `GITHUB_READ_TOKEN` separately for each deployed environment. Configure PL to use the matching Worker URL and service token. Do not point staging at production conversation storage or checkpoints. No deployment or resource provisioning is performed by local checks.
 
-Every object in the checkpoint bucket lives under a prefix that names its kind, so R2 lifecycle rules can be scoped by prefix: sandbox checkpoints under `checkpoints/` (`<id>.tar.zst`, referenced by conversation state and deleted by the archive cleanup, so they must never expire by age) and local course archives under `local-sources/`. A checkpoint record stores only its id, so changing the checkpoint prefix makes existing checkpoints unreachable unless their objects are copied to the new prefix first.
+Every object in the checkpoint bucket lives under a prefix that names its kind, so R2 lifecycle rules can be scoped by prefix: sandbox checkpoints under `checkpoints/` (`<id>.tar.zst`, referenced by conversation state and deleted by the archive cleanup, so they must never expire by age) repository copies under `repository-snapshots/` (`<id>.tar.zst`, referenced by Durable Object state and replaced when a course is cached again, so they must never expire by age either), and local course archives under `local-sources/`. A checkpoint record stores only its id, so changing the checkpoint prefix makes existing checkpoints unreachable unless their objects are copied to the new prefix first.
 
 Set that environment's `SENTRY_DSN` secret (`wrangler secret put SENTRY_DSN --env <environment>`) to enable error reporting; the DSN is kept out of this public repository. `SENTRY_ENVIRONMENT` and Worker version metadata identify the deployment. Reports cover Worker handlers, Durable Object/RPC operations, and handled background lifecycle failures. Reports include request URLs without query parameters and headers, including course context, with Sentry's default sensitive-header filtering. Request bodies, cookies, IP addresses, and breadcrumbs are not attached. Model and service credentials are redacted from exception messages. Local development does not report to Sentry.
 

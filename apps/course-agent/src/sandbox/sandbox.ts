@@ -22,9 +22,10 @@ import {
   attachmentPath,
   uploadKey,
 } from '../conversation/attachments.js';
-import { logEvent } from '../monitoring.js';
+import { logEvent, reportError } from '../monitoring.js';
 
 import { codexRequestKind, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
+import { repositorySnapshotName } from './repository-snapshot.js';
 
 const SESSION = '/workspace/session';
 // Installed by the image from container/codex-config.toml.
@@ -86,6 +87,12 @@ async function githubReviewBase(git: (...args: string[]) => Promise<string>, bra
 export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
+
+/** How a new sandbox got its course files, with the steps a restored snapshot went through. */
+type CourseFilesSource =
+  | { source: 'local' | 'clone' }
+  | { source: 'snapshot'; restoreMs: number; fetchMs: number; checkoutMs: number };
+
 // The named types ctx.container.start() accepts; it rejects `basic`.
 // https://developers.cloudflare.com/containers/configuration/scheduling-policy/#choose-an-instance-size-at-runtime
 const InstanceTypeSchema = z.enum(['lite', 'standard-1', 'standard-2', 'standard-3', 'standard-4']);
@@ -237,6 +244,14 @@ export class CourseSandbox extends DurableObject<Env> {
     });
   }
 
+  // Kept apart from checkpoints, which belong to one conversation and are deleted with it.
+  private get repositorySnapshots() {
+    return new DirectoryBackup(this.container, this.ctx.exports.DirectoryBackupGateway, {
+      binding: 'CHECKPOINTS',
+      prefix: 'repository-snapshots/',
+    });
+  }
+
   private async exec(args: string[], user = 'root') {
     const result = await (await this.container.exec(args, { user })).output();
     if (result.exitCode !== 0) {
@@ -321,8 +336,12 @@ export class CourseSandbox extends DurableObject<Env> {
     );
   }
 
-  /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
-  async addCourseFiles(config: CourseSource) {
+  /**
+   * Unpack the local snapshot, or restore or clone the repository, into a freshly prepared
+   * workspace.
+   */
+  async addCourseFiles(config: CourseSource): Promise<CourseFilesSource> {
+    let files: CourseFilesSource = { source: 'local' };
     if (config.type === 'local') {
       const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
       if (!archive) throw new Error('The local course snapshot is missing');
@@ -368,25 +387,109 @@ export class CourseSandbox extends DurableObject<Env> {
         AGENT_USER,
       );
     } else {
-      // Reviews only need the branch tip, and later fetches still work from a shallow clone.
-      // Full history made large course repositories take most of startup to clone.
-      await this.exec(
-        [
-          'git',
-          'clone',
-          '--depth',
-          '1',
-          '--single-branch',
-          '--branch',
-          config.branch,
-          '--',
-          `http://repository.internal/${config.repository}.git`,
-          `${SESSION}/course`,
-        ],
-        AGENT_USER,
-      );
+      const snapshot = await this.env.RepositorySnapshot.getByName(
+        repositorySnapshotName(config),
+      ).current();
+      const restored = snapshot && (await this.restoreRepository(config.branch, snapshot));
+      if (restored) {
+        files = restored;
+      } else {
+        await this.cloneRepository(config);
+        files = { source: 'clone' };
+      }
     }
     await this.lockSession();
+    return files;
+  }
+
+  private async cloneRepository(source: { repository: string; branch: string }) {
+    // Reviews only need the branch tip, and later fetches still work from a shallow clone.
+    // Full history made large course repositories take most of startup to clone.
+    await this.exec(
+      [
+        'git',
+        'clone',
+        '--depth',
+        '1',
+        '--single-branch',
+        '--branch',
+        source.branch,
+        '--',
+        `http://repository.internal/${source.repository}.git`,
+        `${SESSION}/course`,
+      ],
+      AGENT_USER,
+    );
+  }
+
+  /**
+   * Restore a snapshot's Git directory, then fetch and check out the branch tip, which downloads
+   * only what changed since the snapshot was built. The result matches a fresh clone except that
+   * objects the branch no longer uses stay in the object store until the snapshot is rebuilt.
+   */
+  private async restoreRepository(
+    branch: string,
+    snapshot: DirectoryBackupRecord,
+  ): Promise<CourseFilesSource | null> {
+    const course = `${SESSION}/course`;
+    try {
+      const started = Date.now();
+      await this.exec(['mkdir', course], AGENT_USER);
+      await this.repositorySnapshots.restore(snapshot, { dir: `${course}/.git` });
+      const restored = Date.now();
+      await this.exec(['git', '-C', course, 'fetch', '--depth', '1', 'origin', branch], AGENT_USER);
+      const fetched = Date.now();
+      await this.exec(
+        ['git', '-C', course, 'reset', '--hard', `refs/remotes/origin/${branch}`],
+        AGENT_USER,
+      );
+      return {
+        source: 'snapshot',
+        restoreMs: restored - started,
+        fetchMs: fetched - restored,
+        checkoutMs: Date.now() - fetched,
+      };
+    } catch (error) {
+      // A snapshot only saves time, so one that is missing, damaged, or no longer fetchable must
+      // not fail startup. Cloning still works without it.
+      reportError(error);
+      await this.exec(['rm', '-rf', course]);
+      return null;
+    }
+  }
+
+  /**
+   * Clone the branch in a container of its own and archive its Git directory. The working tree
+   * is left out: it is several times larger and a sandbox checks it out locally in seconds.
+   */
+  async buildRepositorySnapshot(source: { repository: string; branch: string }) {
+    // A build that a deploy interrupted leaves its container behind.
+    if (this.container.running) await this.container.destroy();
+    this.container.start({
+      image: this.container.images.courseAgent,
+      enableInternet: false,
+      instance: InstanceTypeSchema.parse(this.env.SANDBOX_INSTANCE_TYPE),
+    });
+    try {
+      await this.container.interceptOutboundHttp(
+        'repository.internal:80',
+        this.ctx.exports.CourseAgentGitHubOutbound({ props: { repository: source.repository } }),
+      );
+      await this.exec(['install', '-d', '-o', AGENT_USER, '-g', AGENT_USER, SESSION]);
+      await this.cloneRepository(source);
+      const head = await this.exec(
+        ['git', '-C', `${SESSION}/course`, 'rev-parse', 'HEAD'],
+        AGENT_USER,
+      );
+      const backup = await this.repositorySnapshots.backup({ dir: `${SESSION}/course/.git` });
+      return { backup, commit: new TextDecoder().decode(head.stdout).trim() };
+    } finally {
+      await this.container.destroy();
+    }
+  }
+
+  async deleteRepositorySnapshot(snapshot: DirectoryBackupRecord) {
+    await this.repositorySnapshots.delete(snapshot);
   }
 
   /**

@@ -39,6 +39,10 @@
       {
         "name": "CourseSandbox",
         "class_name": "CourseSandbox"
+      },
+      {
+        "name": "RepositorySnapshot",
+        "class_name": "RepositorySnapshot"
       }
     ]
   },
@@ -51,6 +55,10 @@
       "type": "durable-object",
       "storage": "sqlite",
       "container": "course-agent"
+    },
+    "RepositorySnapshot": {
+      "type": "durable-object",
+      "storage": "sqlite"
     }
   },
   "containers": [
@@ -96,6 +104,10 @@
           {
             "name": "CourseSandbox",
             "class_name": "CourseSandbox"
+          },
+          {
+            "name": "RepositorySnapshot",
+            "class_name": "RepositorySnapshot"
           }
         ]
       },
@@ -108,6 +120,10 @@
           "type": "durable-object",
           "storage": "sqlite",
           "container": "course-agent-staging"
+        },
+        "RepositorySnapshot": {
+          "type": "durable-object",
+          "storage": "sqlite"
         }
       },
       // Container application names are unique per account, so each environment's includes
@@ -158,6 +174,10 @@
           {
             "name": "CourseSandbox",
             "class_name": "CourseSandbox"
+          },
+          {
+            "name": "RepositorySnapshot",
+            "class_name": "RepositorySnapshot"
           }
         ]
       },
@@ -170,6 +190,10 @@
           "type": "durable-object",
           "storage": "sqlite",
           "container": "course-agent-production"
+        },
+        "RepositorySnapshot": {
+          "type": "durable-object",
+          "storage": "sqlite"
         }
       },
       // Container application names are unique per account, so each environment's includes

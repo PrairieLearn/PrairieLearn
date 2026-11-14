@@ -8,6 +8,7 @@ import { UploadQuota } from '../conversation/attachments.js';
 import app from './routes.js';
 
 vi.mock('agents', () => ({ getAgentByName: vi.fn() }));
+vi.mock('cloudflare:workers', () => ({ DurableObject: class {} }));
 vi.mock('../monitoring.js', () => ({ reportError: vi.fn() }));
 
 describe('private course agent service', () => {
@@ -31,6 +32,37 @@ describe('private course agent service', () => {
       { PL_SERVICE_TOKEN: 'new-token', PL_SERVICE_TOKEN_PREVIOUS: 'old-token' } as Partial<Env>,
     );
     expect(response.status).toBe(400);
+  });
+});
+
+describe('repository snapshots', () => {
+  function request(body: unknown) {
+    const requestBuild = vi.fn(async () => ({ build: { status: 'building' }, snapshot: null }));
+    const getByName = vi.fn(() => ({ requestBuild }));
+    const response = app.request(
+      '/repository-snapshots',
+      {
+        method: 'POST',
+        headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { PL_SERVICE_TOKEN: 'test-token', RepositorySnapshot: { getByName } } as unknown as Env,
+    );
+    return { response, requestBuild, getByName };
+  }
+
+  it('starts a build shared by every spelling of the repository name', async () => {
+    const source = { repository: 'PrairieLearn/Test-Course', branch: 'Main' };
+    const { response, requestBuild, getByName } = request(source);
+    expect((await response).status).toBe(202);
+    expect(getByName).toHaveBeenCalledWith('prairielearn/test-course@Main');
+    expect(requestBuild).toHaveBeenCalledWith(source);
+  });
+
+  it('rejects a repository that is not an owner and a name', async () => {
+    const { response, getByName } = request({ repository: 'https://github.com/a/b', branch: 'm' });
+    expect((await response).status).toBe(400);
+    expect(getByName).not.toHaveBeenCalled();
   });
 });
 

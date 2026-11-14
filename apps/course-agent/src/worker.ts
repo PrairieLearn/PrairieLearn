@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/cloudflare';
 import { Conversation as ConversationAgent } from './conversation/conversation.js';
 import app from './http/routes.js';
 import { sentryOptions } from './monitoring.js';
+import { RepositorySnapshot as Snapshot } from './sandbox/repository-snapshot.js';
 import {
   CourseAgentGitHubOutbound as GitHubOutbound,
   CourseAgentModelOutbound as ModelOutbound,
@@ -18,6 +19,10 @@ export class Conversation extends Sentry.instrumentAgentWithSentry(
 export class CourseSandbox extends Sentry.instrumentDurableObjectWithSentry(
   sentryOptions,
   Sandbox,
+) {}
+export class RepositorySnapshot extends Sentry.instrumentDurableObjectWithSentry(
+  sentryOptions,
+  Snapshot,
 ) {}
 export class CourseAgentGitHubOutbound extends Sentry.withSentry(sentryOptions, GitHubOutbound) {}
 export class CourseAgentModelOutbound extends Sentry.withSentry(sentryOptions, ModelOutbound) {}
