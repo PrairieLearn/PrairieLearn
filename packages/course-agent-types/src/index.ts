@@ -36,6 +36,8 @@ export type ConversationState = ConversationLifecycle & {
   reviewId: string | null;
   /** Generated from the first message; PrairieLearn shows its own fallback until then. */
   title: string | null;
+  /** Whether reviews the agent submits from now on are approved for the instructor. */
+  approvalMode: ApprovalMode;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
@@ -318,7 +320,8 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 
 /**
  * Whether the instructor decides each `request_changes` review or it is approved for them. The
- * mode of the latest user message applies to reviews the agent submits from then on.
+ * browser sets it on the conversation and repeats it in each user message's metadata; it applies
+ * to reviews the agent submits from then on.
  */
 export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
 

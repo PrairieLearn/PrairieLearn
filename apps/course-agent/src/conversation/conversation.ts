@@ -211,7 +211,7 @@ interface RecordData {
    * the denial with that message, which the browser sends once PrairieLearn records the denial.
    */
   deniedByMessage?: string | null;
-  /** From the latest user message that set one; absent means `approval_required`. */
+  /** Set by the browser, directly or with a user message; absent means `approval_required`. */
   approvalMode?: ApprovalMode;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
@@ -265,6 +265,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     sandboxLost: false,
     reviewId: null,
     title: null,
+    approvalMode: 'approval_required',
   };
 
   private metering: MeteringState = {
@@ -337,6 +338,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
       title: this.record.title ?? null,
+      approvalMode: this.record.approvalMode ?? 'approval_required',
     };
     // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
     const retryAt = this.metering.limitedUntil;
@@ -453,6 +455,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     );
     // Idempotent: every connection shares one interval schedule.
     await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
+  }
+
+  /**
+   * Lets the instructor change the mode without sending a message, so it also applies to a review
+   * the agent submits while receiving an earlier review's result.
+   */
+  setApprovalMode(approvalMode: ApprovalMode) {
+    this.setRecord({ ...this.record, approvalMode });
   }
 
   /** Clients ignore this message type; sending it only keeps proxied sockets from idling out. */

@@ -29,7 +29,6 @@ import {
   ReviewPartSchema,
   type ToolCall,
   ToolCallSchema,
-  UserMessageMetadataSchema,
   reviewTag,
 } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
@@ -380,13 +379,19 @@ function Chat({
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
   const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
-  // Until the instructor picks a mode here, the conversation keeps the one its last message set.
+  // The conversation holds the mode. A choice made here shows at once and is saved to it; the
+  // first message of a new conversation carries the choice made before the conversation existed.
   const [pickedApprovalMode, setPickedApprovalMode] = useState(initialMessage?.approvalMode);
-  const approvalMode =
-    pickedApprovalMode ??
-    UserMessageMetadataSchema.safeParse(messages[lastUserIndex]?.metadata ?? {}).data
-      ?.approvalMode ??
-    'approval_required';
+  const approvalMode = pickedApprovalMode ?? lifecycle?.approvalMode ?? 'approval_required';
+  const saveApprovalMode = useMutation(trpc.courseAgent.setApprovalMode.mutationOptions());
+  const { mutate: mutateApprovalMode } = saveApprovalMode;
+  const changeApprovalMode = useCallback(
+    (mode: ApprovalMode) => {
+      setPickedApprovalMode(mode);
+      mutateApprovalMode({ conversationId, approvalMode: mode });
+    },
+    [conversationId, mutateApprovalMode],
+  );
   // A new conversation's first attachments start in the composer, where their uploads show progress.
   const drafts = useDraftAttachments(initialMessage?.attachments);
   const [sending, setSending] = useState(false);
@@ -574,6 +579,7 @@ function Chat({
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
+              onAlwaysApprove={changeApprovalMode}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={(text) => void send(text, [])}
             />
@@ -589,6 +595,7 @@ function Chat({
                 reviewId={lifecycle.reviewId}
                 canResume={awaitingReviewId === lifecycle.reviewId}
                 autoApprove={false}
+                onAlwaysApprove={() => changeApprovalMode('always_approve')}
               />
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
@@ -645,7 +652,7 @@ function Chat({
         attachments={drafts.attachments}
         approvalMode={approvalMode}
         stopDisabled={!connected || !canStop}
-        onApprovalModeChange={setPickedApprovalMode}
+        onApprovalModeChange={changeApprovalMode}
         onAttach={drafts.add}
         onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
@@ -771,18 +778,19 @@ function Composer({
             <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
           <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
-          <div className="d-flex align-items-center gap-2 ms-auto">
+          <div className="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
             {children}
             {onStop ? (
               <Button
                 variant="link"
                 size="sm"
                 className="course-agent-composer-button"
+                aria-label="Stop"
                 disabled={stopDisabled}
                 onClick={onStop}
               >
                 <i className="bi bi-stop-fill" aria-hidden="true" />
-                Stop
+                <span className="course-agent-composer-wide-only">Stop</span>
               </Button>
             ) : (
               <Button
@@ -833,18 +841,18 @@ function ApprovalModePicker({
 }) {
   const current = APPROVAL_MODES[mode];
   return (
-    <Dropdown drop="up">
+    <Dropdown drop="up" className="course-agent-composer-shrink">
       <Dropdown.Toggle
         variant="link"
         size="sm"
         className={clsx(
-          'course-agent-composer-button',
+          'course-agent-composer-button mw-100',
           current.risky && 'course-agent-approval-risky',
         )}
         aria-label={`Approval mode: ${current.label}`}
       >
         <i className={clsx('bi', current.icon)} aria-hidden="true" />
-        {current.label}
+        <span className="text-truncate">{current.label}</span>
         <i className="bi bi-chevron-down small" aria-hidden="true" />
       </Dropdown.Toggle>
       <Dropdown.Menu className="course-agent-approval-menu shadow-sm p-2">
@@ -860,19 +868,23 @@ function ApprovalModePicker({
               type="button"
               className={clsx(
                 'd-flex align-items-start gap-2 rounded-2 px-2 py-2',
-                risky && 'course-agent-approval-risky',
+                risky && option !== mode && 'course-agent-approval-risky',
               )}
-              aria-current={option === mode}
+              active={option === mode}
               onClick={() => onChange(option)}
             >
               <i className={clsx('bi fs-5 lh-1 mt-1', icon)} aria-hidden="true" />
               <span className="flex-grow-1">
                 <span className="d-block">{label}</span>
-                <span className={clsx('d-block small', !risky && 'text-body-secondary')}>
+                <span
+                  className={clsx(
+                    'd-block small',
+                    !risky && option !== mode && 'text-body-secondary',
+                  )}
+                >
                   {description}
                 </span>
               </span>
-              {option === mode && <i className="bi bi-check-lg mt-1" aria-hidden="true" />}
             </Dropdown.Item>
           );
         })}
@@ -903,6 +915,7 @@ function Message({
   conversationId,
   awaitingReviewId,
   approvalMode,
+  onAlwaysApprove,
   linkTransform,
   onToolCallExpand,
   answered,
@@ -920,6 +933,7 @@ function Message({
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
   approvalMode: ApprovalMode;
+  onAlwaysApprove: (mode: 'always_approve') => void;
   linkTransform: UrlTransform;
   /** Opening a tool call must not scroll it out from under the pointer. */
   onToolCallExpand: () => void;
@@ -962,6 +976,7 @@ function Message({
       canResume={awaitingReviewId === reviewId}
       // Switching back to requiring approval also applies to a review already submitted.
       autoApprove={autoApprove === true && approvalMode === 'always_approve'}
+      onAlwaysApprove={() => onAlwaysApprove('always_approve')}
     />
   );
   const rendered = [

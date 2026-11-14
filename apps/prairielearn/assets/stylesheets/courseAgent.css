@@ -30,7 +30,13 @@
 }
 
 .course-agent-composer {
+  container-type: inline-size;
   padding: 0.75rem;
+}
+
+/* The approval mode gives up width first, so the other controls never leave the box. */
+.course-agent-composer-shrink {
+  min-width: 0;
 }
 
 .course-agent-composer:focus-within {
@@ -62,8 +68,20 @@
 }
 
 .btn.course-agent-composer-icon-button {
+  flex: none;
   width: 2rem;
   padding: 0;
+}
+
+@container (max-width: 24rem) {
+  .course-agent-composer-wide-only {
+    display: none;
+  }
+
+  .btn.course-agent-composer-button:not(.course-agent-composer-icon-button) {
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+  }
 }
 
 .btn.course-agent-composer-send {
@@ -76,7 +94,7 @@
 }
 
 .btn.course-agent-approval-risky {
-  border-color: color-mix(in srgb, var(--course-agent-risky-color), transparent 50%);
+  border-color: var(--color-orange2);
 }
 
 .course-agent-composer-input {
@@ -87,8 +105,7 @@
 
 /* The mode that saves changes unreviewed stands out wherever it is named. */
 .course-agent-approval-risky {
-  --course-agent-risky-color: color-mix(in srgb, var(--bs-orange), black 30%);
-  color: var(--course-agent-risky-color) !important;
+  color: var(--color-orange3) !important;
 }
 
 .course-agent-approval-menu {
@@ -98,11 +115,6 @@
 
 .course-agent-approval-menu .dropdown-item {
   white-space: normal;
-}
-
-.course-agent-approval-menu .dropdown-item:active {
-  color: var(--bs-dropdown-link-hover-color);
-  background-color: var(--bs-dropdown-link-hover-bg);
 }
 
 .course-agent-attachment {

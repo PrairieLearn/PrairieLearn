@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { ApprovalModeSchema, CreateConversationInput } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -14,6 +14,7 @@ import {
 import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
+  setCourseAgentApprovalMode,
 } from '../../ee/lib/course-agent/client.js';
 import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
 import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
@@ -165,6 +166,18 @@ export const courseAgentRouter = t.router({
       return StaffCourseAgentConversationSchema.parse(conversation);
     }),
 
+  setApprovalMode: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, approvalMode: ApprovalModeSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      await setCourseAgentApprovalMode(conversation.agent_conversation_id, input.approvalMode);
+    }),
+
   // The agent service generates a title from the first message and publishes it to the
   // conversation's owner, whose browser saves it here.
   setTitle: courseAgentProcedure
@@ -192,4 +205,5 @@ export interface CourseAgentError {
   GetReview: never;
   PostReviewDecision: never;
   SetTitle: never;
+  SetApprovalMode: never;
 }

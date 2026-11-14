@@ -31,6 +31,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
       sandboxLost: false,
       reviewId: null,
       title: null,
+      approvalMode: 'approval_required',
     };
 
     constructor(
@@ -524,6 +525,15 @@ it('marks reviews for automatic approval from the latest message that chose a mo
   const marked = await submitReview((await startTurn(always, {})).options);
   expect(marked.part).toHaveProperty('data.autoApprove', true);
   expect(marked.reply.text).toContain('they are being saved now');
+
+  // The instructor can also change the mode between messages.
+  emit.mockClear();
+  const switched = fixture().conversation;
+  await switched.onStart();
+  const turn = await startTurn(switched);
+  switched.setApprovalMode('always_approve');
+  expect(switched.state.approvalMode).toBe('always_approve');
+  expect((await submitReview(turn.options)).part).toHaveProperty('data.autoApprove', true);
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {

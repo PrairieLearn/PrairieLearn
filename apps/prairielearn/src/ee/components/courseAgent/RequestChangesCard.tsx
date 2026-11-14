@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Dropdown, Modal, Spinner } from 'react-bootstrap';
 
 import type { RequestChangesResult } from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
@@ -32,6 +32,7 @@ export function RequestChangesCard({
   reviewId,
   canResume,
   autoApprove,
+  onAlwaysApprove,
 }: {
   conversationId: string;
   reviewId: string;
@@ -39,6 +40,8 @@ export function RequestChangesCard({
   canResume: boolean;
   /** Approve the review once its changes load, without waiting for the instructor. */
   autoApprove: boolean;
+  /** The instructor approved this review and asked not to be asked again in this conversation. */
+  onAlwaysApprove: () => void;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -97,6 +100,12 @@ export function RequestChangesCard({
           fileCount={pending?.diff.files?.length ?? null}
           onViewChanges={() => setShowChanges(true)}
           onDecision={decide}
+          onApproveAlways={() =>
+            decision.mutate(
+              { conversationId, reviewId, decision: 'approved' },
+              { onSuccess: onAlwaysApprove },
+            )
+          }
         />
       )}
       {approvingAutomatically && (
@@ -173,12 +182,14 @@ function ReviewActions({
   fileCount,
   onViewChanges,
   onDecision,
+  onApproveAlways,
 }: {
   disabled: boolean;
   canApprove: boolean;
   fileCount: number | null;
   onViewChanges: () => void;
   onDecision: (decision: 'approved' | 'denied') => void;
+  onApproveAlways: () => void;
 }) {
   return (
     <div className="d-flex flex-wrap align-items-center gap-2">
@@ -192,9 +203,29 @@ function ReviewActions({
           : `View ${fileCount === 1 ? '1 changed file' : `${fileCount} changed files`}`}
       </Button>
       <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
-        <Button size="sm" disabled={disabled || !canApprove} onClick={() => onDecision('approved')}>
-          Approve
-        </Button>
+        <Dropdown as={ButtonGroup} size="sm">
+          <Button disabled={disabled || !canApprove} onClick={() => onDecision('approved')}>
+            Approve
+          </Button>
+          <Dropdown.Toggle
+            disabled={disabled || !canApprove}
+            aria-label="More ways to approve"
+            split
+          />
+          <Dropdown.Menu align="end" style={{ width: '17rem', maxWidth: 'calc(100vw - 2rem)' }}>
+            <Dropdown.Item
+              as="button"
+              type="button"
+              className="text-wrap"
+              onClick={onApproveAlways}
+            >
+              <span className="d-block">Approve and don&apos;t ask again</span>
+              <span className="d-block small text-body-secondary">
+                Save later changes in this conversation without your review
+              </span>
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
         <Button
           variant="outline-secondary"
           size="sm"
