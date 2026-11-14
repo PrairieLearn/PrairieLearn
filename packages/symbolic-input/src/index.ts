@@ -406,6 +406,7 @@ interface KeyboardLayout {
     const allowTrig = mf.getAttribute('allow-trig');
     const allowSets = mf.getAttribute('allow-sets');
     const namedSets = mf.getAttribute('named-sets');
+    const allowIntervals = mf.getAttribute('set-syntax') !== 'tuple';
     // Swap virtual keyboard labels based on display settings
     const logAsLn = mf.getAttribute('log-as-ln');
     const imaginaryUnit = mf.getAttribute('imaginary-unit') ?? 'i';
@@ -453,8 +454,8 @@ interface KeyboardLayout {
 
     const elementKeyboardLayout = {
       label: 'math',
-      // When allowSets is enabled, set/interval keys take the place of e, x, y, and
-      // sign across these rows; affected keys are reshuffled so the most useful keys
+      // When allowSets is enabled, set syntax keys take the place of e, x, y, and sign
+      // across these rows; affected keys are reshuffled so the most useful keys
       // stay reachable in the same general region of the keyboard.
       rows: [
         [
@@ -506,8 +507,8 @@ interface KeyboardLayout {
           '6',
           '-',
           '[separator]',
-          allowSets ? '[' : 'x',
-          allowSets ? ']' : 'y',
+          allowSets ? (allowIntervals ? '[' : '[separator]') : 'x',
+          allowSets ? (allowIntervals ? ']' : '[separator]') : 'y',
           ...onlyIfSets(makeShortcutProxy({ latex: '\\cup', key: 'U' }, mf)),
           imaginaryUnit,
         ],

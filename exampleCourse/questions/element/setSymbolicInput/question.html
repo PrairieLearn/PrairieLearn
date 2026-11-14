@@ -1,3 +1,15 @@
+<pl-card header="A set of points">
+  <pl-question-panel>
+    <p>Enter the points $(1,a)$ and $(a+1,2)$.</p>
+  </pl-question-panel>
+  <pl-set-symbolic-input
+    answers-name="points"
+    variables="a"
+    formula-editor="true"
+    label="$P =$"
+  ></pl-set-symbolic-input>
+</pl-card>
+
 <pl-card header="A symbolic set with named domains">
   <pl-question-panel>
     <p>Enter the set of all nonzero real numbers.</p>
@@ -18,6 +30,7 @@
     answers-name="interval"
     variables="a"
     correct-answer="[-a, a]"
+    syntax="interval"
     label="$I =$"
   ></pl-set-symbolic-input>
 </pl-card>
