@@ -38,6 +38,7 @@ BLANK_VALUE_DEFAULT = "{}"
 PLACEHOLDER_DEFAULT = "set"
 SHOW_SCORE_DEFAULT = True
 INITIAL_VALUE_DEFAULT = None
+SYNTAX_DEFAULT = set_expression.SetSyntax.TUPLE
 SYMPY_TIMEOUT = 3
 
 ELEMENT_DIR = pathlib.Path(__file__).parent
@@ -62,7 +63,7 @@ def _get_variables_with_fallback(
 
 def _get_parser_options(
     element: lxml.html.HtmlElement,
-) -> tuple[list[str], bool, bool, bool]:
+) -> tuple[list[str], bool, bool, bool, set_expression.SetSyntax]:
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
@@ -77,7 +78,10 @@ def _get_parser_options(
         "display-simplified-expression",
         DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
     )
-    return custom_functions, allow_complex, allow_trig, simplify_expression
+    syntax = pl.get_enum_attrib(
+        element, "syntax", set_expression.SetSyntax, SYNTAX_DEFAULT
+    )
+    return custom_functions, allow_complex, allow_trig, simplify_expression, syntax
 
 
 def _parse_set(
@@ -88,6 +92,7 @@ def _parse_set(
     allow_complex: bool,
     allow_trig: bool,
     simplify_expression: bool,
+    syntax: set_expression.SetSyntax,
     assumptions: psu.AssumptionsDictT | None = None,
     formula_editor: bool = False,
     formula_editor_latex: str | None = None,
@@ -102,6 +107,7 @@ def _parse_set(
         custom_functions=custom_functions,
         simplify_expression=simplify_expression,
         assumptions=assumptions,
+        syntax=syntax,
     )
     if isinstance(result, set_expression.SetParseFailure):
         raise ValueError(result.error)  # ruff:ignore[type-check-without-type-error]
@@ -116,6 +122,7 @@ def _deserialize_correct_answer(
     allow_complex: bool,
     allow_trig: bool,
     simplify_expression: bool,
+    syntax: set_expression.SetSyntax,
 ) -> sympy.Set:
     if isinstance(value, str):
         result = _parse_set(
@@ -125,6 +132,7 @@ def _deserialize_correct_answer(
             allow_complex=allow_complex,
             allow_trig=allow_trig,
             simplify_expression=simplify_expression,
+            syntax=syntax,
         )
         return result.expr
 
@@ -136,11 +144,14 @@ def _deserialize_correct_answer(
         simplify_expression=simplify_expression,
     )
     if not isinstance(parsed, sympy.Set) or not set_expression.is_representable_set(
-        parsed
+        parsed, syntax=syntax
     ):
+        structured_values = (
+            "tuples" if syntax is set_expression.SetSyntax.TUPLE else "intervals"
+        )
         raise ValueError(
             "The correct answer must be a set representable with finite sets, "
-            "intervals, named sets, union, intersection, or difference."
+            f"{structured_values}, named sets, union, intersection, or difference."
         )
     return parsed
 
@@ -158,7 +169,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    custom_functions, allow_complex, allow_trig, simplify_expression = (
+    custom_functions, allow_complex, allow_trig, simplify_expression, syntax = (
         _get_parser_options(element)
     )
 
@@ -188,6 +199,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     allow_complex=allow_complex,
                     allow_trig=allow_trig,
                     simplify_expression=simplify_expression,
+                    syntax=syntax,
                 )
             except ValueError as exc:
                 raise ValueError(
@@ -211,6 +223,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 allow_complex=allow_complex,
                 allow_trig=allow_trig,
                 simplify_expression=simplify_expression,
+                syntax=syntax,
             )
         except (psu.BaseSympyError, ValueError) as exc:
             raise ValueError(f'Correct answer for "{name}" is not supported.') from exc
@@ -230,6 +243,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 allow_complex=allow_complex,
                 allow_trig=allow_trig,
                 simplify_expression=simplify_expression,
+                syntax=syntax,
             )
         except ValueError as exc:
             raise ValueError(
@@ -251,6 +265,7 @@ def _rendered_answer(
     allow_complex: bool,
     allow_trig: bool,
     simplify_expression: bool,
+    syntax: set_expression.SetSyntax,
     imaginary_unit: str,
     display_log_as_ln: bool,
 ) -> sympy.Basic:
@@ -261,6 +276,7 @@ def _rendered_answer(
         allow_complex=allow_complex,
         allow_trig=allow_trig,
         simplify_expression=simplify_expression,
+        syntax=syntax,
     )
     displayed = _replace_imaginary_for_display(parsed, imaginary_unit)
     if display_log_as_ln:
@@ -275,7 +291,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     variables = _get_variables_with_fallback(element, data, name)
-    custom_functions, allow_complex, allow_trig, simplify_expression = (
+    custom_functions, allow_complex, allow_trig, simplify_expression, syntax = (
         _get_parser_options(element)
     )
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
@@ -290,10 +306,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
 
+    structured_operators = (
+        ["( , )"] if syntax is set_expression.SetSyntax.TUPLE else ["[ , ]", "( , )"]
+    )
     operators = [
         "{ }",
-        "[ , ]",
-        "( , )",
+        *structured_operators,
         "U",
         "cup",
         "∪",  # ruff:ignore[ambiguous-unicode-character-string]
@@ -320,6 +338,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "operators": operators,
         "constants": constants,
         "allow_complex": allow_complex,
+        "tuple_syntax": syntax is set_expression.SetSyntax.TUPLE,
+        "interval_syntax": syntax is set_expression.SetSyntax.INTERVAL,
     }
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     info = chevron.render(template, info_params).strip()
@@ -340,6 +360,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_complex=allow_complex,
                     allow_trig=allow_trig,
                     simplify_expression=simplify_expression,
+                    syntax=syntax,
                     imaginary_unit=imaginary_unit,
                     display_log_as_ln=display_log_as_ln,
                 )
@@ -392,6 +413,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 allow_complex=allow_complex,
                 allow_trig=allow_trig,
                 simplify_expression=simplify_expression,
+                syntax=syntax,
                 imaginary_unit=imaginary_unit,
                 display_log_as_ln=display_log_as_ln,
             )
@@ -407,6 +429,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "allow_trig": allow_trig,
         "allow_sets": True,
         "named_sets": True,
+        "set_syntax": syntax.value,
         "imaginary_unit": imaginary_unit,
         "log_as_ln": display_log_as_ln,
         display.value: True,
@@ -464,6 +487,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_complex=allow_complex,
                     allow_trig=allow_trig,
                     simplify_expression=simplify_expression,
+                    syntax=syntax,
                     imaginary_unit=imaginary_unit,
                     display_log_as_ln=display_log_as_ln,
                 )
@@ -484,7 +508,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     variables = _get_variables_with_fallback(element, data, name)
-    custom_functions, allow_complex, allow_trig, simplify_expression = (
+    custom_functions, allow_complex, allow_trig, simplify_expression, syntax = (
         _get_parser_options(element)
     )
     formula_editor = pl.get_boolean_attrib(
@@ -526,6 +550,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         custom_functions=custom_functions,
         simplify_expression=simplify_expression,
         assumptions=assumptions,
+        syntax=syntax,
     )
     if isinstance(result, set_expression.SetParseFailure):
         data["format_errors"][name] = result.error
@@ -570,6 +595,11 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
                 and compare(left.start, right.start)
                 and compare(left.end, right.end)
             )
+        elif isinstance(left, sympy.Tuple) and isinstance(right, sympy.Tuple):
+            result = len(left) == len(right) and all(
+                compare(left_coordinate, right_coordinate)
+                for left_coordinate, right_coordinate in zip(left, right, strict=True)
+            )
         elif isinstance(left, sympy.Complement) and isinstance(right, sympy.Complement):
             result = len(left.args) == len(right.args) and all(
                 compare(left_arg, right_arg)
@@ -593,7 +623,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     variables = _get_variables_with_fallback(element, data, name)
-    custom_functions, allow_complex, allow_trig, simplify_expression = (
+    custom_functions, allow_complex, allow_trig, simplify_expression, syntax = (
         _get_parser_options(element)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -614,6 +644,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             allow_complex=allow_complex,
             allow_trig=allow_trig,
             simplify_expression=simplify_expression,
+            syntax=syntax,
         )
         if isinstance(submission, str):
             submitted_sympy = _parse_set(
@@ -623,6 +654,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 allow_complex=allow_complex,
                 allow_trig=allow_trig,
                 simplify_expression=simplify_expression,
+                syntax=syntax,
             ).expr
         else:
             submitted_sympy = psu.json_to_sympy(
@@ -671,6 +703,9 @@ class _TestSubmissionPrinter(StrPrinter):
         right = ")" if i.right_open else "]"
         return f"{left}{self._print(i.start)}, {self._print(i.end)}{right}"
 
+    def _print_Tuple(self, expr: sympy.Tuple) -> str:  # ruff:ignore[invalid-function-name]
+        return f"({', '.join(self._print(item) for item in expr)})"
+
     def _print_Union(self, value: sympy.Union) -> str:  # ruff:ignore[invalid-function-name]
         return " U ".join(self._print(item) for item in value.args)
 
@@ -702,7 +737,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    custom_functions, allow_complex, allow_trig, simplify_expression = (
+    custom_functions, allow_complex, allow_trig, simplify_expression, syntax = (
         _get_parser_options(element)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -724,6 +759,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 allow_complex=allow_complex,
                 allow_trig=allow_trig,
                 simplify_expression=simplify_expression,
+                syntax=syntax,
             )
             correct_string = _TestSubmissionPrinter(imaginary_unit).doprint(
                 correct_sympy
