@@ -1,6 +1,6 @@
 # API
 
-PrairieLearn contains a limited API for use by instructors that allows programmatic access to assessments, assessment instances, and submissions.
+PrairieLearn contains a limited API for use by instructors that allows programmatic access to assessments, assessment instances, and submissions. Students can use a separate set of [student endpoints](#student-endpoints) to read their own data.
 
 ## API Authentication
 
@@ -135,3 +135,71 @@ GET /pl/api/v1/course/:course_id/sync/:job_sequence_id
 ```
 
 Returns the status and output of the sync job.
+
+## Student endpoints
+
+Students can use the API to read their own data in course instances that they are enrolled in. Student endpoints are located at `/pl/api/v1/student/` and use the same [personal access tokens](#api-authentication) as the rest of the API.
+
+```sh
+curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/student/course_instances
+```
+
+The following rules apply to all student endpoints:
+
+- You can only access your own data. The user is always the one that the token belongs to.
+- You must already be enrolled in the course instance. Using the API will never enroll you in a course instance.
+- Each endpoint returns the same information that the corresponding page in the PrairieLearn web interface would show you at that moment. For example, if your instructor has hidden the score for an assessment, the API will not return it.
+- The API can't be used while you are taking an exam in a testing center.
+
+### List your course instances
+
+```text
+GET /pl/api/v1/student/course_instances
+```
+
+Returns the course instances that you are enrolled in and currently have access to. Use the `course_instance_id` from this list in the endpoints below.
+
+```json
+[
+  {
+    "course_instance_id": "29832",
+    "course_instance_short_name": "Fa18",
+    "course_instance_long_name": "Fall 2018",
+    "course_instance_course_id": "117",
+    "display_timezone": "America/Chicago",
+    "course_short_name": "TAM 212",
+    "course_title": "Introductory Dynamics"
+  }
+]
+```
+
+### Get your gradebook for a course instance
+
+```text
+GET /pl/api/v1/student/course_instances/:course_instance_id/gradebook
+```
+
+Returns one entry for each of your assessment instances, like the "Gradebook" page. If the score for an assessment is hidden, `score_perc` is `null` and `score_hidden` is `true`.
+
+```json
+[
+  {
+    "assessment_id": "4517",
+    "assessment_instance_id": "981234",
+    "assessment_label": "HW1",
+    "title": "Vectors and coordinates",
+    "assessment_set_heading": "Homeworks",
+    "score_perc": 87.5,
+    "score_hidden": false
+  },
+  {
+    "assessment_id": "4530",
+    "assessment_instance_id": "985678",
+    "assessment_label": "E1",
+    "title": "Midterm 1",
+    "assessment_set_heading": "Exams",
+    "score_perc": null,
+    "score_hidden": true
+  }
+]
+```
