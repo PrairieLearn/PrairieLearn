@@ -718,7 +718,7 @@ function Composer({
   return (
     <Form className="border-top p-3" onSubmit={submit}>
       <div
-        className={clsx('course-agent-composer border rounded-3', pending && 'bg-body-tertiary')}
+        className={clsx('course-agent-composer border rounded-4', pending && 'bg-body-tertiary')}
       >
         <DraftAttachmentList
           attachments={attachments}
@@ -729,7 +729,7 @@ function Composer({
           ref={textareaRef}
           as="textarea"
           rows={2}
-          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
+          className="course-agent-composer-input border-0 shadow-none bg-transparent p-0"
           value={draft}
           placeholder={placeholder}
           aria-label="Message"
@@ -749,7 +749,7 @@ function Composer({
             onAttach([...event.clipboardData.files]);
           }}
         />
-        <div className="d-flex align-items-center gap-2 px-2 pb-2">
+        <div className="d-flex align-items-center gap-2 mt-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -763,7 +763,7 @@ function Composer({
           <Button
             variant="link"
             size="sm"
-            className="course-agent-icon-button"
+            className="course-agent-composer-button course-agent-composer-icon-button"
             aria-label="Attach files"
             disabled={pending}
             onClick={() => fileInputRef.current?.click()}
@@ -775,25 +775,27 @@ function Composer({
             {children}
             {onStop ? (
               <Button
-                variant="outline-secondary"
+                variant="link"
                 size="sm"
+                className="course-agent-composer-button"
                 disabled={stopDisabled}
                 onClick={onStop}
               >
-                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+                <i className="bi bi-stop-fill" aria-hidden="true" />
                 Stop
               </Button>
             ) : (
               <Button
                 type="submit"
                 size="sm"
+                className="course-agent-composer-button course-agent-composer-icon-button course-agent-composer-send"
                 aria-label={sendLabel}
                 disabled={!draft.trim() || disabled || pending || invalidAttachment}
               >
                 {pending ? (
                   <Spinner animation="border" size="sm" aria-hidden="true" />
                 ) : (
-                  <i className="bi bi-send" aria-hidden="true" />
+                  <i className="bi bi-arrow-up" aria-hidden="true" />
                 )}
               </Button>
             )}
@@ -836,13 +838,14 @@ function ApprovalModePicker({
         variant="link"
         size="sm"
         className={clsx(
-          'course-agent-icon-button d-flex align-items-center gap-1',
+          'course-agent-composer-button',
           current.risky && 'course-agent-approval-risky',
         )}
         aria-label={`Approval mode: ${current.label}`}
       >
         <i className={clsx('bi', current.icon)} aria-hidden="true" />
         {current.label}
+        <i className="bi bi-chevron-down small" aria-hidden="true" />
       </Dropdown.Toggle>
       <Dropdown.Menu className="course-agent-approval-menu shadow-sm p-2">
         <Dropdown.Header className="px-2 pt-1 pb-2">
