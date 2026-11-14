@@ -95,6 +95,9 @@ router.use(
   (await import('./endpoints/courseSync/index.js')).default,
 );
 
+// The student API has its own authorization rules; see `./student/index.ts`.
+router.use('/student', (await import('./student/index.js')).default);
+
 // If no earlier routes matched, 404 the route.
 router.use((await import('./notFound.js')).default);
 
