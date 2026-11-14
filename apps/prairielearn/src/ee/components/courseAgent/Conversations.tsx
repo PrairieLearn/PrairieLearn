@@ -259,6 +259,12 @@ function ConversationPicker({
   );
 }
 
+/**
+ * The error the `agents` chat transport reports when the socket drops during a response. The
+ * response resumes once the socket reconnects, so this is not shown as a failure.
+ */
+const SOCKET_CLOSED_MID_STREAM = 'WebSocket closed mid-stream';
+
 function Loading() {
   return (
     <div className="d-flex flex-grow-1 justify-content-center align-items-center">
@@ -498,7 +504,15 @@ function Chat({
     (lifecycle?.status === 'starting' ||
       ((lifecycle === null || lifecycle.status === 'offline') &&
         (awaitingStart || responseActive)));
-  const pendingLabel = startingSandbox ? 'Starting sandbox…' : showThinking ? 'Thinking…' : null;
+  // The socket reconnects on its own after a drop, such as a mobile browser suspending the tab.
+  const reconnecting = connectionFailed && !connectionError;
+  const pendingLabel = reconnecting
+    ? 'Reconnecting…'
+    : startingSandbox
+      ? 'Starting sandbox…'
+      : showThinking
+        ? 'Thinking…'
+        : null;
   const showInitialText =
     initialText !== undefined && !messages.some((message) => message.role === 'user');
   const awaitingReviewId =
@@ -510,7 +524,7 @@ function Chat({
   const latest = messages.at(-1);
   const inputRequestOpen =
     latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
-  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'instant' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
@@ -593,12 +607,10 @@ function Chat({
           {deny.isError && (
             <AppErrorAlert error={denyError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
-          {(connectionError || connectionFailed) && (
-            <Alert variant="danger">
-              Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
-            </Alert>
+          {connectionError && (
+            <Alert variant="danger">Could not connect to the course agent.</Alert>
           )}
-          {error && (
+          {error && error.message !== SOCKET_CLOSED_MID_STREAM && (
             <Alert variant="danger" className="mb-0">
               {error.message || 'Something went wrong. Please try again.'}
             </Alert>
