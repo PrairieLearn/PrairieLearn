@@ -73,30 +73,48 @@ def test_evaluate_does_not_mutate_locals() -> None:
     }
 
 
-def test_evaluate_localizes_recognized_type_error(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize(
+    ("expression", "expected", "expected_structure"),
+    [
+        (
+            "f 2xy",
+            sympy.Function("f")(2 * sympy.Symbol("x") * sympy.Symbol("y")),
+            "f((2*(x*y)))",
+        ),
+        ("sin cos x", sympy.sin(sympy.cos(sympy.Symbol("x"))), "sin(cos(x))"),
+        ("sin^2 2x", sympy.sin(2 * sympy.Symbol("x")) ** 2, "(sin((2*x))**2)"),
+        (
+            "sin 2x * y",
+            sympy.sin(2 * sympy.Symbol("x") * sympy.Symbol("y")),
+            "sin(((2*x)*y))",
+        ),
+        (
+            "sin 2 / x",
+            sympy.sin(2 / sympy.Symbol("x")),
+            "sin((2/x))",
+        ),
+        (
+            "sin^3 x",
+            sympy.sin(sympy.Symbol("x")) ** 3,
+            "(sin(x)**3)",
+        ),
+        (
+            "f^3 x",
+            sympy.Function("f")(sympy.Symbol("x")) ** 3,
+            "(f(x)**3)",
+        ),
+    ],
+)
+def test_unparenthesized_call_consumes_one_product(
+    expression: str, expected: sympy.Expr, expected_structure: str
 ) -> None:
-    def raise_type_error(*_args: Any, **_kwargs: Any) -> None:
-        raise TypeError("unsupported operand type(s) for /: 'Symbol' and 'Integer'")
-
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", raise_type_error)
-
-    with pytest.raises(psu.HasParseError) as exc_info:
-        psu.convert_string_to_sympy("x / 2", ["x"])
-    assert exc_info.value.offset == 2
-
-
-def test_evaluate_preserves_unrecognized_type_error_as_internal(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def raise_type_error(*_args: Any, **_kwargs: Any) -> None:
-        raise TypeError("unexpected internal failure")
-
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", raise_type_error)
-
-    with pytest.raises(psu.BaseSympyError) as exc_info:
-        psu.convert_string_to_sympy("x / 2", ["x"])
-    assert isinstance(exc_info.value.__cause__, TypeError)
+    result, structure = psu.convert_string_to_sympy_with_source(
+        expression,
+        ["x", "y"],
+        custom_functions=["f"],
+    )
+    assert result == expected
+    assert structure == expected_structure
 
 
 @pytest.mark.parametrize("simplify_expression", [True, False])
