@@ -9,6 +9,7 @@ import { dir as temporaryDirectory } from 'tmp-promise';
 import { z } from 'zod';
 
 import {
+  type PageCatalog,
   type RepositorySnapshotStatus,
   RepositorySnapshotStatusSchema,
   type RequestChangesResult,
@@ -39,12 +40,16 @@ const CreatedConversationSchema = z.object({ id: z.uuid() });
 export async function createCourseAgentConversation(binding: {
   repository: string;
   branch: string;
+  pages: PageCatalog;
 }): Promise<string> {
   return createConversation('conversations', JSON.stringify(binding), 'application/json');
 }
 
 /** Snapshot current course files and their Git history without exposing host paths. */
-export async function createLocalCourseAgentConversation(coursePath: string): Promise<string> {
+export async function createLocalCourseAgentConversation(
+  coursePath: string,
+  pages: PageCatalog,
+): Promise<string> {
   assert(config.devMode, 'Local course agent initialization is only available in development');
   const temporary = await temporaryDirectory({ unsafeCleanup: true });
   try {
@@ -90,6 +95,8 @@ export async function createLocalCourseAgentConversation(coursePath: string): Pr
     const body = await openAsBlob(archive);
     return await createConversation('conversations/local', body, 'application/gzip', {
       'X-PL-Course-Directory': encodeURIComponent(directory),
+      // The body is the archive, so the catalog travels in a header.
+      'X-PL-Pages': encodeURIComponent(JSON.stringify(pages)),
     });
   } finally {
     await temporary.cleanup();

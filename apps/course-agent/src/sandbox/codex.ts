@@ -2,7 +2,15 @@ import type { UIMessageChunk } from 'ai';
 import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
-import { COURSE_DIR, type InputRequestPart, type ToolCall } from '@prairielearn/course-agent-types';
+import {
+  COURSE_DIR,
+  type InputRequestPart,
+  type NavigationPart,
+  type NavigationTarget,
+  NavigationTargetSchema,
+  type PageCatalog,
+  type ToolCall,
+} from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
@@ -42,20 +50,25 @@ const ItemEvent = z.object({
   turnId: z.string(),
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
-/** `request_changes` shows as a review card; only a failed call needs its own entry. */
-const ReviewToolItem = z.object({
+/**
+ * `request_changes` shows as a review card and navigation as its own part; only a failed call
+ * needs a tool entry.
+ */
+const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.literal('request_changes'),
+  tool: z.enum(['request_changes', 'offer_page']),
   success: z.boolean().nullable(),
 });
-const RequestChangesCall: z.ZodType<DynamicToolCallParams> = z.object({
+/** A dynamic tool call from Codex; each tool validates its own arguments. */
+const DynamicToolCall = z.object({
   threadId: z.string(),
   turnId: z.string(),
   callId: z.string(),
   namespace: z.null(),
-  tool: z.literal('request_changes'),
-  arguments: z.strictObject({}),
+  tool: z.string(),
+  arguments: z.unknown(),
 });
+const RequestChangesArguments = z.strictObject({});
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
  * prompts are shown only through this item. Codex calls them questions.
@@ -121,7 +134,11 @@ export class CodexAppServerClient {
   private failure: Error | null = null;
   private onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>;
 
-  constructor(private sandbox: DurableObjectStub<CourseSandbox>) {}
+  constructor(
+    private sandbox: DurableObjectStub<CourseSandbox>,
+    /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
+    private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
+  ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
     if (this.controller) throw new Error('An SDK response is already open');
@@ -170,9 +187,7 @@ export class CodexAppServerClient {
         }
       });
     rpc.onRequest('item/tool/call', async (value: unknown) => {
-      const call = this.parseReviewCall(value);
-      if (!this.onReview) throw new Error('Review handling is not configured');
-      const reply = await this.onReview(call);
+      const reply = await this.callTool(value);
       return {
         success: reply.success,
         contentItems: [{ type: 'inputText', text: reply.text }],
@@ -247,12 +262,41 @@ export class CodexAppServerClient {
     return this.rpc;
   }
 
-  private parseReviewCall(value: unknown): DynamicToolCallParams {
-    const parsed = RequestChangesCall.safeParse(value);
-    if (!parsed.success || parsed.data.threadId !== this.threadId) {
-      throw new Error('Invalid request_changes call');
+  private async callTool(value: unknown): Promise<ToolReply> {
+    const call = DynamicToolCall.safeParse(value);
+    if (!call.success || call.data.threadId !== this.threadId) {
+      throw new Error('Invalid dynamic tool call');
     }
-    return parsed.data;
+    switch (call.data.tool) {
+      case requestChangesTool.name: {
+        if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
+          throw new Error('Invalid request_changes call');
+        }
+        return await this.onReview({ ...call.data, arguments: {} });
+      }
+      case 'offer_page':
+        return await this.offerPage(call.data.callId, call.data.arguments);
+      default:
+        throw new Error(`Unknown tool: ${call.data.tool}`);
+    }
+  }
+
+  private async offerPage(callId: string, args: unknown): Promise<ToolReply> {
+    const target = NavigationTargetSchema.safeParse(withoutEmptyParams(args));
+    if (!target.success) return invalidArguments(target.error);
+    return await replyWithError(async () => {
+      const controller = this.controller;
+      const navigation = await this.resolveNavigation(target.data);
+      // The chat shows this part as a button that opens the page when the instructor clicks it.
+      // A turn stopped during the lookup may already have given way to the next one's response.
+      if (this.controller === controller) {
+        this.emit({ type: 'data-navigation', id: `navigation:${callId}`, data: navigation });
+      }
+      return {
+        success: true,
+        text: 'The instructor sees a button that opens the page when clicked.',
+      };
+    });
   }
 
   private fail(error: Error) {
@@ -287,7 +331,12 @@ export class CodexAppServerClient {
     }
   }
 
-  async thread(config: { model: string; instructions: string; threadId: string | null }) {
+  async thread(config: {
+    model: string;
+    instructions: string;
+    threadId: string | null;
+    pages: PageCatalog;
+  }) {
     const settings = {
       model: config.model,
       cwd: COURSE_DIR,
@@ -309,7 +358,10 @@ export class CodexAppServerClient {
           'thread/start',
           {
             ...settings,
-            dynamicTools: this.onReview ? [requestChangesTool] : [],
+            dynamicTools: [
+              ...(this.onReview ? [requestChangesTool] : []),
+              ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
+            ],
           } satisfies ThreadStartParams,
           ThreadResult,
         );
@@ -420,8 +472,8 @@ export class CodexAppServerClient {
     if (params.threadId !== this.threadId || (this.turnId && params.turnId !== this.turnId)) {
       return;
     }
-    const review = ReviewToolItem.safeParse(params.item);
-    if (review.success && (phase === 'started' || review.data.success !== false)) return;
+    const card = CardToolItem.safeParse(params.item);
+    if (card.success && (phase === 'started' || card.data.success !== false)) return;
     const call = toolCallFromItem(phase, params.item);
     if (!call) return;
     const id = `tool:${params.item.id}`;
@@ -481,10 +533,70 @@ export class CodexAppServerClient {
   }
 }
 
-const requestChangesTool: DynamicToolSpec = {
+/** Invalid arguments are the model's mistake, so it gets the reason and can retry. */
+function invalidArguments(error: z.ZodError): ToolReply {
+  return { success: false, text: `Invalid arguments: ${z.prettifyError(error)}` };
+}
+
+/** A failed PrairieLearn request is reported to the model rather than failing the turn. */
+async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply> {
+  try {
+    return await call();
+  } catch (error) {
+    return { success: false, text: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+const requestChangesTool = {
   type: 'function',
   name: 'request_changes',
   description:
     'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
-};
+} satisfies DynamicToolSpec;
+
+/** The model learns which pages exist from this tool, so the catalog is not repeated in instructions. */
+function navigateTool(pages: PageCatalog): DynamicToolSpec {
+  const lines = pages.map(({ key, label, params }) => {
+    const names = params.map((param) => (param.required ? param.name : `optional ${param.name}`));
+    return `${key}: ${label}${names.length > 0 ? ` (${names.join(', ')})` : ''}`;
+  });
+  // PrairieLearn defines the params, so a page that takes a new kind of name needs no change here.
+  const params = new Map(pages.flatMap((page) => page.params).map((p) => [p.name, p.description]));
+  return {
+    type: 'function',
+    name: 'offer_page',
+    description: [
+      'Show the instructor a button that opens a PrairieLearn page in place of the one they are viewing. Nothing changes until they click it. Pages, with the params each takes:',
+      ...lines,
+    ].join('\n'),
+    inputSchema: {
+      type: 'object',
+      properties: {
+        page: { type: 'string', enum: pages.map((page) => page.key) },
+        params: {
+          type: 'object',
+          properties: Object.fromEntries(
+            [...params].map(([name, description]) => [name, { type: 'string', description }]),
+          ),
+          additionalProperties: false,
+        },
+      },
+      required: ['page'],
+      additionalProperties: false,
+    },
+  };
+}
+
+/** Models often send empty or null values for the params a page does not take. */
+function withoutEmptyParams(args: unknown) {
+  if (!args || typeof args !== 'object' || !('params' in args)) return args;
+  const { params } = args;
+  if (!params || typeof params !== 'object') return { ...args, params: {} };
+  return {
+    ...args,
+    params: Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== '' && value !== null),
+    ),
+  };
+}
