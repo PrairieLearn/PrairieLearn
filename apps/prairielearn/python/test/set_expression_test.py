@@ -228,7 +228,7 @@ def test_scalar_members_use_symbolic_parser_configuration() -> None:
 
 def test_scalar_members_accept_unparenthesized_product_calls() -> None:
     result = set_expression.try_parse_set_submission(
-        "{f 2*x*y, sin cos x, sin^3 x}",
+        "{f 2 x y, sin cos x, sin^3 x}",
         ["x", "y"],
         custom_functions=["f"],
     )
