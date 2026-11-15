@@ -59,6 +59,7 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
+import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
 import { resolveNavigation } from './navigation.js';
 import { generateTitle } from './title.js';
@@ -993,8 +994,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       unsentMessageIds: [],
     });
     log('turn_started', { startup });
-    const native = (this.native ??= new CodexAppServerClient(this.sandbox, (target) =>
-      resolveNavigation(this.prairieLearnContext(), target),
+    const native = (this.native ??= new CodexAppServerClient(
+      this.sandbox,
+      {
+        listCourseDatasets: () => listCourseDatasets(this.prairieLearnContext()),
+        getCourseData: (request) =>
+          getCourseData({ ...this.prairieLearnContext(), sandbox: this.sandbox, request }),
+      },
+      (target) => resolveNavigation(this.prairieLearnContext(), target),
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
