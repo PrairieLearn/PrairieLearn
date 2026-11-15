@@ -216,10 +216,10 @@ function ReviewActions({
           Deny
         </Button>
         <Button size="sm" disabled={disabled || !canApprove} onClick={() => onDecision('approved')}>
-          Approve
+          Approve once
         </Button>
         <Button
-          variant="outline-primary"
+          variant="outline-secondary"
           size="sm"
           disabled={disabled || !canApprove}
           onClick={onApproveAlways}
@@ -291,17 +291,17 @@ function ReviewChangesModal({
           Close
         </Button>
         <Button
-          variant="outline-danger"
+          variant="outline-secondary"
           disabled={actionsDisabled}
           onClick={() => onDecision('denied')}
         >
           Deny
         </Button>
         <Button disabled={actionsDisabled || !canApprove} onClick={() => onDecision('approved')}>
-          Approve
+          Approve once
         </Button>
         <Button
-          variant="outline-primary"
+          variant="outline-secondary"
           disabled={actionsDisabled || !canApprove}
           onClick={onApproveAlways}
         >
