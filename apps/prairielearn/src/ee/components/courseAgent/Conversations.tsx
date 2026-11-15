@@ -816,13 +816,13 @@ function Composer({
 
 const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
   approval_required: {
-    label: 'Ask for approval',
-    description: 'Review each set of course changes before it is saved',
+    label: 'Ask first',
+    description: 'You review course changes before they are saved.',
     icon: 'bi-hand-index-thumb',
   },
   always_approve: {
     label: 'Always approve',
-    description: 'Save course changes without your review',
+    description: 'The agent saves course changes without your review.',
     icon: 'bi-shield-exclamation',
   },
 };
@@ -848,7 +848,7 @@ function ApprovalModePicker({
         <i className="bi bi-chevron-down" aria-hidden="true" />
       </Dropdown.Toggle>
       <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
-        <Dropdown.Header>How should course changes be approved?</Dropdown.Header>
+        <Dropdown.Header>Change approvals</Dropdown.Header>
         {ApprovalModeSchema.options.map((option) => {
           const { label, description, icon } = APPROVAL_MODES[option];
           return (
