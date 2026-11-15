@@ -814,21 +814,16 @@ function Composer({
   );
 }
 
-const APPROVAL_MODES: Record<
-  ApprovalMode,
-  { label: string; description: string; icon: string; risky: boolean }
-> = {
+const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
   approval_required: {
     label: 'Ask for approval',
     description: 'Review each set of course changes before it is saved',
     icon: 'bi-hand-index-thumb',
-    risky: false,
   },
   always_approve: {
     label: 'Always approve',
     description: 'Save course changes without your review',
     icon: 'bi-shield-exclamation',
-    risky: true,
   },
 };
 
@@ -845,43 +840,30 @@ function ApprovalModePicker({
       <Dropdown.Toggle
         variant="link"
         size="sm"
-        className={clsx(
-          'course-agent-composer-button mw-100',
-          current.risky && 'course-agent-approval-risky',
-        )}
+        className="course-agent-composer-button mw-100"
         aria-label={`Approval mode: ${current.label}`}
       >
         <i className={clsx('bi', current.icon)} aria-hidden="true" />
-        <span className="text-truncate">{current.label}</span>
+        <span className="course-agent-composer-wide-only text-truncate">{current.label}</span>
         <i className="bi bi-chevron-down small" aria-hidden="true" />
       </Dropdown.Toggle>
-      <Dropdown.Menu className="course-agent-approval-menu shadow-sm p-2">
-        <Dropdown.Header className="px-2 pt-1 pb-2">
-          How should course changes be approved?
-        </Dropdown.Header>
+      <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
+        <Dropdown.Header>How should course changes be approved?</Dropdown.Header>
         {ApprovalModeSchema.options.map((option) => {
-          const { label, description, icon, risky } = APPROVAL_MODES[option];
+          const { label, description, icon } = APPROVAL_MODES[option];
           return (
             <Dropdown.Item
               key={option}
               as="button"
               type="button"
-              className={clsx(
-                'd-flex align-items-start gap-2 rounded-2 px-2 py-2',
-                risky && option !== mode && 'course-agent-approval-risky',
-              )}
+              className="d-flex align-items-start gap-2 py-2"
               active={option === mode}
               onClick={() => onChange(option)}
             >
               <i className={clsx('bi fs-5 lh-1 mt-1', icon)} aria-hidden="true" />
               <span className="flex-grow-1">
                 <span className="d-block">{label}</span>
-                <span
-                  className={clsx(
-                    'd-block small',
-                    !risky && option !== mode && 'text-body-secondary',
-                  )}
-                >
+                <span className={clsx('d-block small', option !== mode && 'text-body-secondary')}>
                   {description}
                 </span>
               </span>

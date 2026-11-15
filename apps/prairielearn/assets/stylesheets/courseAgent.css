@@ -93,19 +93,10 @@
   border-color: var(--bs-btn-border-color);
 }
 
-.btn.course-agent-approval-risky {
-  border-color: var(--color-orange2);
-}
-
 .course-agent-composer-input {
   max-height: 12rem;
   overflow-y: auto;
   resize: none;
-}
-
-/* The mode that saves changes unreviewed stands out wherever it is named. */
-.course-agent-approval-risky {
-  color: var(--color-orange3) !important;
 }
 
 .course-agent-approval-menu {
