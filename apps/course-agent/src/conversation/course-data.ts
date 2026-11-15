@@ -6,6 +6,8 @@ import { logEvent } from '../monitoring.js';
 import type { CourseDataRequest, ToolReply } from '../sandbox/codex.js';
 import type { CourseSandbox } from '../sandbox/sandbox.js';
 
+import { type PrairieLearnContext, authHeaders, errorMessage } from './prairielearn.js';
+
 // Rows are streamed into the sandbox; this bounds one download's size on disk and its time.
 const MAX_BYTES = 25 * 1024 * 1024;
 
@@ -100,18 +102,6 @@ function capRows(maxBytes: number) {
 
 const NEWLINE = 0x0a;
 
-async function errorMessage(response: Response) {
-  const body = await response.text();
-  let json: unknown = null;
-  try {
-    json = JSON.parse(body);
-  } catch {
-    // A proxy or load balancer error page, not an API response.
-  }
-  const parsed = z.object({ message: z.string() }).safeParse(json);
-  return parsed.success ? parsed.data.message : response.statusText;
-}
-
 /** A filter as the model and logs see it; a long `in` list shows its first values and its size. */
 function describeFilter(filter: NonNullable<CourseDataRequest['filters']>[number]) {
   if (filter.op !== 'in' || filter.value.length <= 5) {
@@ -119,13 +109,6 @@ function describeFilter(filter: NonNullable<CourseDataRequest['filters']>[number
   }
   const shown = filter.value.slice(0, 5).map((value) => JSON.stringify(value));
   return `${filter.column} in [${shown.join(',')},…] (${filter.value.length} values)`;
-}
-
-interface CourseDataContext {
-  plUrl: string;
-  serviceToken: string;
-  conversationId: string;
-  courseId: string | undefined;
 }
 
 // Longer than PrairieLearn's 60-second query timeout, so a slow query fails with its reason.
@@ -136,19 +119,8 @@ const UNAVAILABLE: ToolReply = {
   text: 'Course data is unavailable. Reload the PrairieLearn page.',
 };
 
-/**
- * PrairieLearn identifies the user and course from the conversation, so the model chooses only
- * which rows to read.
- */
-function authHeaders({ serviceToken, conversationId }: CourseDataContext) {
-  return {
-    Authorization: `Bearer ${serviceToken}`,
-    'X-Course-Agent-Conversation': conversationId,
-  };
-}
-
 /** Serves `list_course_datasets` from `GET /pl/course/:course_id/course_agent/data`. */
-export async function listCourseDatasets(context: CourseDataContext): Promise<ToolReply> {
+export async function listCourseDatasets(context: PrairieLearnContext): Promise<ToolReply> {
   if (!context.courseId) return UNAVAILABLE;
   const response = await fetch(
     new URL(`/pl/course/${context.courseId}/course_agent/data`, context.plUrl),
@@ -168,7 +140,7 @@ export async function getCourseData({
   sandbox,
   request,
   ...context
-}: CourseDataContext & {
+}: PrairieLearnContext & {
   sandbox: DurableObjectStub<CourseSandbox>;
   request: CourseDataRequest;
 }): Promise<ToolReply> {

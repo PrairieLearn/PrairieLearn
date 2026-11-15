@@ -42,8 +42,8 @@ export default asyncHandler(async (req, res, next) => {
   // no session. The path matches where server.ts mounts the course data router.
   const courseAgentData = /^\/pl\/course\/(\d+)\/course_agent\/data(?:\/|$)/.exec(req.path);
   if (courseAgentData && isEnterprise()) {
-    const { authenticateCourseAgentRequest } = await import('../ee/lib/course-agent/authn.js');
-    const agent = await authenticateCourseAgentRequest({
+    const { authenticateCourseAgentDataRequest } = await import('../ee/lib/course-agent/authn.js');
+    const agent = await authenticateCourseAgentDataRequest({
       authorization: req.header('Authorization'),
       conversationId: req.header('X-Course-Agent-Conversation'),
       courseId: courseAgentData[1],

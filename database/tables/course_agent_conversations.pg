@@ -17,3 +17,4 @@ foreign-key constraints
 
 referenced by
     course_agent_reviews: FOREIGN KEY (course_agent_conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_agent_usage_reports: FOREIGN KEY (course_agent_conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE
