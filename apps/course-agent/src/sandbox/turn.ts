@@ -30,7 +30,8 @@ export class SandboxTurn {
       prepare: () => Promise<void>;
       /** Runs alongside the runner start; the thread starts only after both finish. */
       addCourseFiles?: () => Promise<void>;
-      thread: Parameters<CodexAppServerClient['thread']>[0];
+      /** Read after `prepare`, which drops the thread ID if it finds the checkpoint expired. */
+      thread: () => Parameters<CodexAppServerClient['thread']>[0];
       onThread: (id: string) => void;
       onReady: () => void;
       /** Receives the native turn ID, or null when an earlier attempt already submitted it. */
@@ -103,7 +104,7 @@ export class SandboxTurn {
       if (runner.status === 'rejected') throw runner.reason;
       if (options.addCourseFiles) options.log('turn_workspace_ready');
       this.abort.signal.throwIfAborted();
-      options.onThread(await this.native.thread(options.thread));
+      options.onThread(await this.native.thread(options.thread()));
       this.abort.signal.throwIfAborted();
       options.onReady();
       this.abort.signal.throwIfAborted();
