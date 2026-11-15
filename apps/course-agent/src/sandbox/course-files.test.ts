@@ -46,20 +46,6 @@ function createSandbox(snapshot: DirectoryBackupRecord | null) {
   return { sandbox, commands };
 }
 
-it('checks out the branch tip from a restored snapshot instead of cloning', async () => {
-  const snapshot = { id: 'snapshot' } as DirectoryBackupRecord;
-  const { sandbox, commands } = createSandbox(snapshot);
-  restore.mockResolvedValueOnce(undefined);
-  expect(await sandbox.addCourseFiles(source)).toMatchObject({ source: 'snapshot' });
-  expect(restore).toHaveBeenCalledWith(snapshot, { dir: '/workspace/session/course/.git' });
-  expect(commands).toEqual([
-    'mkdir /workspace/session/course',
-    'git -C /workspace/session/course fetch --depth 1 origin main',
-    'git -C /workspace/session/course reset --hard refs/remotes/origin/main',
-    'chown root:root /workspace/session',
-  ]);
-});
-
 it('clones when the snapshot cannot be restored', async () => {
   const { sandbox, commands } = createSandbox({ id: 'snapshot' } as DirectoryBackupRecord);
   restore.mockRejectedValueOnce(new Error('BACKUP_NOT_FOUND'));

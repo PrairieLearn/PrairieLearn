@@ -5,6 +5,7 @@ import {
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
   PageCatalogSchema,
+  RepositoryBranchSchema,
   RequestChangesResultSchema,
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
@@ -76,17 +77,17 @@ app.post('/conversations', async (c) => {
   return c.json({ id }, 201);
 });
 
-// A snapshot is identified by the same repository and branch a conversation is created with.
-// Building takes as long as a clone, so the request only starts it and PrairieLearn polls.
+// Building a snapshot takes as long as a clone, so the request only starts it and PrairieLearn
+// polls for the result.
 app.post('/repository-snapshots', async (c) => {
-  const input = CreateConversationInput.safeParse(await c.req.json().catch(() => null));
+  const input = RepositoryBranchSchema.safeParse(await c.req.json().catch(() => null));
   if (!input.success) return c.text('Invalid request', 400);
   const snapshot = c.env.RepositorySnapshot.getByName(repositorySnapshotName(input.data));
   return c.json(await snapshot.requestBuild(input.data), 202);
 });
 
 app.get('/repository-snapshots', async (c) => {
-  const input = CreateConversationInput.safeParse(c.req.query());
+  const input = RepositoryBranchSchema.safeParse(c.req.query());
   if (!input.success) return c.text('Invalid request', 400);
   const snapshot = c.env.RepositorySnapshot.getByName(repositorySnapshotName(input.data));
   return c.json(await snapshot.status());
