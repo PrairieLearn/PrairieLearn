@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { CreateConversationInput, RepositoryBranchSchema } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -51,14 +51,11 @@ const courseAgentProcedure = t.procedure.use(requireCoursePermissionOwn).use(req
 // configured, this keeps repeated requests from starting containers nobody will use.
 const WARM_SANDBOX_COOLDOWN_MS = 30_000;
 
-/** The repository and branch the agent service binds a conversation to, if the course has them. */
-function githubBinding(course: { repository: string | null; branch: string | null }) {
+/** The course's GitHub repository and branch as the agent service names them, if it has both. */
+function githubRepositoryBranch(course: { repository: string | null; branch: string | null }) {
   const repository = parseGithubRepository(course.repository ?? '');
   if (!repository || !course.branch) return null;
-  return CreateConversationInput.pick({ repository: true, branch: true }).safeParse({
-    repository: `${repository.owner}/${repository.repo}`,
-    branch: course.branch,
-  });
+  return { repository: `${repository.owner}/${repository.repo}`, branch: course.branch };
 }
 
 export const courseAgentRouter = t.router({
@@ -146,8 +143,8 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       // A local conversation uploads its course when it is created, so nothing can start early.
       if (config.devMode && !config.fileEditorUseGit) return;
-      const binding = githubBinding(ctx.course);
-      if (!binding?.success) return;
+      const binding = RepositoryBranchSchema.safeParse(githubRepositoryBranch(ctx.course));
+      if (!binding.success) return;
       const cooldownKey = `course-agent-warm-sandbox:${ctx.locals.authn_user.id}`;
       if (await cache.get(cooldownKey)) return;
       cache.set(cooldownKey, true, WARM_SANDBOX_COOLDOWN_MS);
@@ -170,13 +167,14 @@ export const courseAgentRouter = t.router({
             buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
           );
         } else {
-          const binding = githubBinding(ctx.course);
-          if (!binding) {
+          const source = githubRepositoryBranch(ctx.course);
+          if (!source) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
               message: 'Configure a GitHub repository and branch before starting a conversation.',
             });
           }
+          const binding = CreateConversationInput.safeParse(source);
           if (!binding.success) {
             throw new TRPCError({
               code: 'BAD_REQUEST',

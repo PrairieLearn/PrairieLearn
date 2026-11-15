@@ -72,9 +72,14 @@ export const PageCatalogSchema = z
 
 export type PageCatalog = z.infer<typeof PageCatalogSchema>;
 
-export const CreateConversationInput = z.strictObject({
+/** The GitHub branch a conversation works on, as `owner/name` and a branch name. */
+export const RepositoryBranchSchema = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
+});
+
+export const CreateConversationInput = z.strictObject({
+  ...RepositoryBranchSchema.shape,
   // Optional so the Worker can deploy before PrairieLearn starts sending it.
   pages: PageCatalogSchema.optional(),
   // A sandbox started while the first message was being typed, adopted if it is still there.

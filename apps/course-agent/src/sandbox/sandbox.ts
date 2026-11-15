@@ -385,7 +385,7 @@ export class CourseSandbox extends DurableObject<Env> {
   }
 
   private async loadCourseFiles(config: CourseSource): Promise<CourseFilesSource> {
-    let files: CourseFilesSource = { source: 'local' };
+    let loaded: CourseFilesSource;
     if (config.type === 'local') {
       const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
       if (!archive) throw new Error('The local course snapshot is missing');
@@ -430,23 +430,18 @@ export class CourseSandbox extends DurableObject<Env> {
         ['ln', '-s', `repository/${config.directory}`, `${SESSION}/course`],
         AGENT_USER,
       );
+      loaded = { source: 'local' };
     } else {
-      const snapshot = await this.env.RepositorySnapshot.getByName(
-        repositorySnapshotName(config),
-      ).current();
-      const restored = snapshot && (await this.restoreRepository(config.branch, snapshot));
-      if (restored) {
-        files = restored;
-      } else {
-        await this.cloneRepository(config);
-        files = { source: 'clone' };
-      }
+      loaded = (await this.restoreRepository(config)) ?? (await this.cloneRepository(config));
     }
     await this.lockSession();
-    return files;
+    return loaded;
   }
 
-  private async cloneRepository(source: { repository: string; branch: string }) {
+  private async cloneRepository(source: {
+    repository: string;
+    branch: string;
+  }): Promise<CourseFilesSource> {
     // Reviews only need the branch tip, and later fetches still work from a shallow clone.
     // Full history made large course repositories take most of startup to clone.
     await this.exec(
@@ -464,19 +459,26 @@ export class CourseSandbox extends DurableObject<Env> {
       ],
       AGENT_USER,
     );
+    return { source: 'clone' };
   }
 
   /**
-   * Restore a snapshot's Git directory, then fetch and check out the branch tip, which downloads
-   * only what changed since the snapshot was built. The result matches a fresh clone except that
-   * objects the branch no longer uses stay in the object store until the snapshot is rebuilt.
+   * Restore the repository's snapshot, if it has one, then fetch and check out the branch tip,
+   * which downloads only what changed since the snapshot was built. The result matches a fresh
+   * clone except that objects the branch no longer uses stay in the object store until the
+   * snapshot is rebuilt. Returns null when the caller should clone instead.
    */
-  private async restoreRepository(
-    branch: string,
-    snapshot: DirectoryBackupRecord,
-  ): Promise<CourseFilesSource | null> {
+  private async restoreRepository(source: {
+    repository: string;
+    branch: string;
+  }): Promise<CourseFilesSource | null> {
     const course = `${SESSION}/course`;
+    const { branch } = source;
     try {
+      const snapshot = await this.env.RepositorySnapshot.getByName(
+        repositorySnapshotName(source),
+      ).current();
+      if (!snapshot) return null;
       const started = Date.now();
       await this.exec(['mkdir', course], AGENT_USER);
       await this.repositorySnapshots.restore(snapshot, { dir: `${course}/.git` });
@@ -494,7 +496,7 @@ export class CourseSandbox extends DurableObject<Env> {
         checkoutMs: Date.now() - fetched,
       };
     } catch (error) {
-      // A snapshot only saves time, so one that is missing, damaged, or no longer fetchable must
+      // A snapshot only saves time, so one that cannot be looked up, restored, or fetched must
       // not fail startup. Cloning still works without it.
       reportError(error);
       await this.exec(['rm', '-rf', course]);
@@ -507,7 +509,7 @@ export class CourseSandbox extends DurableObject<Env> {
    * is left out: it is several times larger and a sandbox checks it out locally in seconds.
    */
   async buildRepositorySnapshot(source: { repository: string; branch: string }) {
-    // A build that a deploy interrupted leaves its container behind.
+    // An earlier build that never finished may have left its container behind.
     if (this.container.running) await this.container.destroy();
     this.container.start({
       image: this.container.images.courseAgent,
@@ -906,9 +908,9 @@ export class CourseSandbox extends DurableObject<Env> {
       return false;
     }
     this.warm = { ...warm, claimedBy: conversationId };
-    // Keep the alarm from removing the sandbox between this claim and its adoption.
-    const alarm = await this.ctx.storage.getAlarm();
-    await this.ctx.storage.setAlarm(Math.max(alarm ?? 0, Date.now() + 60_000));
+    // Adoption follows within moments, or not at all if the turn is refused. Either way the
+    // alarm must not remove the sandbox in between.
+    await this.ctx.storage.setAlarm(Date.now() + 60_000);
     return true;
   }
 

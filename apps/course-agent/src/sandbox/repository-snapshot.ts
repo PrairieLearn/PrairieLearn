@@ -10,10 +10,17 @@ interface RepositoryBranch {
   branch: string;
 }
 
+// PrairieLearn's job stops waiting for a build after this long. A build still marked as running
+// by then is treated as lost, so that a new request starts over instead of waiting forever.
+const BUILD_ABANDONED_MS = 30 * 60 * 1000;
+
 interface SnapshotRecord {
   source: RepositoryBranch;
   snapshot: { backup: DirectoryBackupRecord; commit: string; builtAt: string } | null;
-  build: RepositorySnapshotStatus['build'];
+  build:
+    | { status: 'idle' }
+    | { status: 'building'; startedAt: number }
+    | { status: 'failed'; error: string };
 }
 
 /** GitHub treats owner and repository names case-insensitively; branch names are exact. */
@@ -42,8 +49,9 @@ export class RepositorySnapshot extends DurableObject<Env> {
 
   status(): RepositorySnapshotStatus {
     const record = this.record;
+    const build = record?.build ?? { status: 'idle' };
     return {
-      build: record?.build ?? { status: 'idle' },
+      build: build.status === 'building' ? { status: 'building' } : build,
       snapshot: record?.snapshot
         ? {
             commit: record.snapshot.commit,
@@ -54,12 +62,19 @@ export class RepositorySnapshot extends DurableObject<Env> {
     };
   }
 
-  /** Start replacing the snapshot with a fresh clone, unless a build is already running. */
+  /** Start replacing the snapshot with a fresh clone, unless a build is already under way. */
   async requestBuild(source: RepositoryBranch) {
     const record = this.record;
-    if (record?.build.status !== 'building') {
-      this.record = { source, snapshot: record?.snapshot ?? null, build: { status: 'building' } };
-      // An alarm outlives the request and runs again if a deploy interrupts the build.
+    if (
+      record?.build.status !== 'building' ||
+      Date.now() - record.build.startedAt > BUILD_ABANDONED_MS
+    ) {
+      this.record = {
+        source,
+        snapshot: record?.snapshot ?? null,
+        build: { status: 'building', startedAt: Date.now() },
+      };
+      // The build outlives this request, so it runs from an alarm.
       await this.ctx.storage.setAlarm(Date.now());
     }
     return this.status();

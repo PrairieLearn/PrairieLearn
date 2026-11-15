@@ -5,6 +5,7 @@ import {
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
   PageCatalogSchema,
+  RepositoryBranchSchema,
   RequestChangesResultSchema,
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
@@ -81,24 +82,23 @@ app.post('/conversations', async (c) => {
 // course in the background and removes itself if no conversation adopts it.
 app.put('/sandboxes/:id', async (c) => {
   if (!UUID_PATTERN.test(c.req.param('id'))) return c.notFound();
-  const input = CreateConversationInput.safeParse(await c.req.json().catch(() => null));
+  const input = RepositoryBranchSchema.safeParse(await c.req.json().catch(() => null));
   if (!input.success) return c.text('Invalid request', 400);
-  const { repository, branch } = input.data;
-  await c.env.CourseSandbox.getByName(c.req.param('id')).warmUp({ repository, branch });
+  await c.env.CourseSandbox.getByName(c.req.param('id')).warmUp(input.data);
   return c.body(null, 204);
 });
 
-// A snapshot is identified by the same repository and branch a conversation is created with.
-// Building takes as long as a clone, so the request only starts it and PrairieLearn polls.
+// Building a snapshot takes as long as a clone, so the request only starts it and PrairieLearn
+// polls for the result.
 app.post('/repository-snapshots', async (c) => {
-  const input = CreateConversationInput.safeParse(await c.req.json().catch(() => null));
+  const input = RepositoryBranchSchema.safeParse(await c.req.json().catch(() => null));
   if (!input.success) return c.text('Invalid request', 400);
   const snapshot = c.env.RepositorySnapshot.getByName(repositorySnapshotName(input.data));
   return c.json(await snapshot.requestBuild(input.data), 202);
 });
 
 app.get('/repository-snapshots', async (c) => {
-  const input = CreateConversationInput.safeParse(c.req.query());
+  const input = RepositoryBranchSchema.safeParse(c.req.query());
   if (!input.success) return c.text('Invalid request', 400);
   const snapshot = c.env.RepositorySnapshot.getByName(repositorySnapshotName(input.data));
   return c.json(await snapshot.status());

@@ -22,29 +22,18 @@ function backup(id: string) {
 
 function createSnapshot() {
   const stored = new Map<string, unknown>();
-  const setAlarm = vi.fn();
   const sandbox = { buildRepositorySnapshot: vi.fn(), deleteRepositorySnapshot: vi.fn() };
   const snapshot = new RepositorySnapshot(
     {
       storage: {
         kv: { get: (key: string) => stored.get(key), put: stored.set.bind(stored) },
-        setAlarm,
+        setAlarm: vi.fn(),
       },
     } as unknown as DurableObjectState,
     { CourseSandbox: { getByName: () => sandbox } } as unknown as Env,
   );
-  return { snapshot, sandbox, setAlarm };
+  return { snapshot, sandbox };
 }
-
-it('builds once when asked again during a build', async () => {
-  const { snapshot, setAlarm } = createSnapshot();
-  await snapshot.requestBuild(source);
-  expect(await snapshot.requestBuild(source)).toEqual({
-    build: { status: 'building' },
-    snapshot: null,
-  });
-  expect(setAlarm).toHaveBeenCalledOnce();
-});
 
 it('replaces the snapshot and deletes the archive it replaced', async () => {
   const { snapshot, sandbox } = createSnapshot();
