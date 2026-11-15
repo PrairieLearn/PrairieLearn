@@ -9,7 +9,7 @@ ADD --checksum=sha256:cce5802264a44d082da894ff2f2ba695a6ade722bc62a1ad0902153667
 RUN mkdir /opt/codex && tar -xzf /tmp/codex.tgz -C /opt/codex
 
 FROM debian:bookworm-slim
-ARG CACHEBUST=2026-09-15-14-09-16
+ARG CACHEBUST=2026-11-15-14-04-41
 # Python with pandas and numpy lets the agent analyze course data. Agents often run `python`, so
 # python-is-python3 provides it. tzdata provides timezone rules for converting UTC timestamps; the
 # slim base image does not include them.
