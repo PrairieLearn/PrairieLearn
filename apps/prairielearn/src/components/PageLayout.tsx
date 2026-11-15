@@ -10,6 +10,7 @@ import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 
+import { nodeModulesAssetPath } from '../lib/assets.js';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
@@ -376,6 +377,19 @@ export function PageLayout({
           }),
           compiledStylesheetTag('pageLayout.css'),
           courseAgentPanel ? compiledStylesheetTag('courseAgent.css') : '',
+          // The course agent loads MathJax only when a message contains math.
+          courseAgentPanel
+            ? html`
+                <meta
+                  name="mathjax-fonts-path"
+                  content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+                />
+                <meta
+                  name="mathjax-script-path"
+                  content="${nodeModulesAssetPath('mathjax/tex-svg.js')}"
+                />
+              `
+            : '',
           headContentString,
           sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : '',
         ]}

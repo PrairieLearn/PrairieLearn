@@ -1,11 +1,16 @@
-import { type JSX, createElement, useEffect, useId, useState } from 'react';
+import clsx from 'clsx';
+import { type JSX, createElement, useEffect, useId, useRef, useState } from 'react';
 import type { UrlTransform } from 'react-markdown';
+import remarkMath from 'remark-math';
 import {
   type Components,
   Streamdown,
   defaultRehypePlugins,
+  defaultRemarkPlugins,
   useIsCodeFenceIncomplete,
 } from 'streamdown';
+
+import { loadMathjax, mathjaxTypeset } from '../../../lib/client/mathjax.js';
 
 // Streamdown's default renderers are styled with Tailwind, which we don't
 // use. Some of its utility class names (`px-4`, `py-2`, `mb-2`) also exist in
@@ -89,6 +94,30 @@ function MermaidDiagram({ code }: { code: string }) {
   );
 }
 
+function MathExpression({ tex, display }: { tex: string; display: boolean }) {
+  const ref = useRef<HTMLElement>(null);
+  const source = display ? `$$${tex}$$` : `$${tex}$`;
+
+  // MathJax replaces the source text with the typeset math. An expression
+  // that is still streaming changes several times a second, so this waits
+  // until it has settled instead of typesetting each partial expression.
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      await loadMathjax();
+      if (ref.current) await mathjaxTypeset([ref.current]);
+    }, 200);
+    return () => clearTimeout(timeout);
+  }, [source]);
+
+  // The key gives a changed expression a fresh element, since MathJax has
+  // replaced the contents of the old one.
+  return createElement(
+    display ? 'div' : 'span',
+    { key: source, ref, className: clsx('mathjax_process', display && 'mb-3 overflow-auto') },
+    source,
+  );
+}
+
 const PLAIN_TAGS = [
   'h1',
   'h2',
@@ -111,12 +140,20 @@ const PLAIN_TAGS = [
 const components: Components = {
   ...Object.fromEntries(PLAIN_TAGS.map((tag) => [tag, plain(tag)])),
   strong: plain('strong'),
-  inlineCode: plain('code'),
+  inlineCode: ({ node: _node, className, children, ...props }) => {
+    if (className?.includes('language-math') && typeof children === 'string') {
+      return <MathExpression tex={children} display={false} />;
+    }
+    return <code {...props}>{children}</code>;
+  },
   // `pre` is left to Streamdown: it only marks its child as a block, and
   // `code` then renders the whole code block.
   code: ({ className, children }) => {
     if (className?.includes('language-mermaid') && typeof children === 'string') {
       return <MermaidDiagram code={children} />;
+    }
+    if (className?.includes('language-math') && typeof children === 'string') {
+      return <MathExpression tex={children.trim()} display />;
     }
     return (
       <pre>
@@ -153,6 +190,19 @@ function rehypeHtmlAsText() {
   return visit;
 }
 
+// Models usually delimit math with `\(...\)` and `\[...\]`, which markdown
+// reads as escaped brackets. Code is matched first so that it is left alone.
+const MATH_DELIMITERS = /(```[\s\S]*?(?:```|$)|`[^`\n]*`)|\\\[([\s\S]*?)\\\]|\\\((.*?)\\\)/g;
+
+function normalizeMathDelimiters(markdown: string) {
+  return markdown.replaceAll(MATH_DELIMITERS, (match, code, display, inline) => {
+    if (code !== undefined) return match;
+    return display !== undefined ? `$$${display}$$` : `$${inline}$`;
+  });
+}
+
+const remarkPlugins = [...Object.values(defaultRemarkPlugins), remarkMath];
+
 const rehypePlugins = [
   rehypeHtmlAsText,
   defaultRehypePlugins.sanitize,
@@ -178,12 +228,13 @@ export function ChatMarkdown({
       isAnimating={isStreaming}
       linkSafety={{ enabled: false }}
       rehypePlugins={rehypePlugins}
+      remarkPlugins={remarkPlugins}
       // A link that is still streaming has no destination yet, so it is shown
       // as text until it is complete.
       remend={{ linkMode: 'text-only' }}
       urlTransform={urlTransform}
     >
-      {content}
+      {normalizeMathDelimiters(content)}
     </Streamdown>
   );
 }

@@ -43,6 +43,27 @@ describe('ChatMarkdown', () => {
     expect(html).toContain('Use &lt;pl-number-input answers-name=&quot;x&quot;&gt; here.');
   });
 
+  it('leaves math for MathJax instead of parsing it as markdown', () => {
+    const html = renderToStaticMarkup(
+      <ChatMarkdown content={'Solve $a_1 + b_1$ and\n\n$$\nx_1 * y_1 * z\n$$\n'} />,
+    );
+
+    expect(html).toContain('<span class="mathjax_process">$a_1 + b_1$</span>');
+    expect(html).toContain('$$x_1 * y_1 * z$$</div>');
+  });
+
+  it('accepts LaTeX-style math delimiters outside of code', () => {
+    const html = renderToStaticMarkup(
+      <ChatMarkdown
+        content={'So \\(p_1\\) is even, unlike `\\(q\\)`:\n\n\\[\np^2 = 2q^2\n\\]\n'}
+      />,
+    );
+
+    expect(html).toContain('<span class="mathjax_process">$p_1$</span>');
+    expect(html).toContain('<code>\\(q\\)</code>');
+    expect(html).toContain('$$p^2 = 2q^2$$</div>');
+  });
+
   it('keeps links in the same tab and applies the URL transform', () => {
     const html = renderToStaticMarkup(
       <ChatMarkdown

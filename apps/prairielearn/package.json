@@ -239,6 +239,7 @@
     "react-hook-form": "^7.89.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "requirejs": "^2.3.8",
