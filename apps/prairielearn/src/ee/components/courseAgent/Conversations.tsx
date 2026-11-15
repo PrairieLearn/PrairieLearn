@@ -848,7 +848,7 @@ function ApprovalModePicker({
         <i className="bi bi-chevron-down" aria-hidden="true" />
       </Dropdown.Toggle>
       <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
-        <Dropdown.Header>Change approvals</Dropdown.Header>
+        <Dropdown.Header>Saving course changes</Dropdown.Header>
         {ApprovalModeSchema.options.map((option) => {
           const { label, description, icon } = APPROVAL_MODES[option];
           return (
