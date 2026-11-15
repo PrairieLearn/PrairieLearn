@@ -26,6 +26,7 @@ import {
   selectOptionalCourseAgentConversation,
 } from '../ee/models/course-agent-conversation.js';
 import { selectCourseAgentConversationUsage } from '../ee/models/course-agent-usage-report.js';
+import { selectCourseAgentUserSettings } from '../ee/models/course-agent-user-settings.js';
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -291,6 +292,39 @@ describe('Course agent access and conversation privacy', () => {
     });
     expect(serviceRequests.map((request) => request.path)).toEqual([
       `/conversations/${own.agent_conversation_id}/resume`,
+    ]);
+  });
+
+  test('remembers the approval mode per user and tells only the open conversation', async () => {
+    const own = await createConversation(owner);
+    const other = await createConversation(otherOwner);
+    const settings = (user: User) =>
+      selectCourseAgentUserSettings({ user_id: user.id, course_id: '1' });
+    expect((await settings(owner)).approval_mode).toBe('approval_required');
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      // A choice made before a conversation exists is saved without calling the service.
+      await client.courseAgent.setApprovalMode.mutate({ approvalMode: 'always_approve' });
+      expect(serviceRequests).toEqual([]);
+      await expect(
+        client.courseAgent.setApprovalMode.mutate({
+          conversationId: other.id,
+          approvalMode: 'approval_required',
+        }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      expect((await settings(owner)).approval_mode).toBe('always_approve');
+      await client.courseAgent.setApprovalMode.mutate({
+        conversationId: own.id,
+        approvalMode: 'approval_required',
+      });
+    });
+    expect((await settings(owner)).approval_mode).toBe('approval_required');
+    expect((await settings(otherOwner)).approval_mode).toBe('approval_required');
+    expect(serviceRequests.map(({ path, body }) => ({ path, body }))).toEqual([
+      {
+        path: `/conversations/${own.agent_conversation_id}/approval-mode`,
+        body: { approvalMode: 'approval_required' },
+      },
     ]);
   });
 

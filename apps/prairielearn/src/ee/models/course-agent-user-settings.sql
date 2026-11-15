@@ -1,0 +1,19 @@
+-- BLOCK select_course_agent_user_settings
+SELECT
+  *
+FROM
+  course_agent_user_settings
+WHERE
+  user_id = $user_id
+  AND course_id = $course_id;
+
+-- BLOCK upsert_course_agent_user_settings
+INSERT INTO
+  course_agent_user_settings (user_id, course_id, approval_mode)
+VALUES
+  ($user_id, $course_id, $approval_mode)
+ON CONFLICT (user_id, course_id) DO UPDATE
+SET
+  approval_mode = EXCLUDED.approval_mode
+RETURNING
+  *;

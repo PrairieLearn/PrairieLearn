@@ -10,6 +10,7 @@ import * as DbSchemas from './db-types.js';
 import { TableNames } from './db-types.js';
 
 const schemaNameOverrides: Record<string, string | null> = {
+  course_agent_user_settings: 'CourseAgentUserSettingsSchema',
   institution_settings: 'InstitutionSettingsSchema',
   last_accesses: 'LastAccessSchema',
   query_runs: 'QueryRunSchema',

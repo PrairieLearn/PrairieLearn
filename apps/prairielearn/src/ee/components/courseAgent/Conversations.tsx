@@ -71,12 +71,14 @@ export function Conversations({
   chatCsrfToken,
   active,
   showConversationStats,
+  initialApprovalMode,
 }: {
   courseId: string;
   authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
   showConversationStats: boolean;
+  initialApprovalMode: ApprovalMode;
 }) {
   const trpc = useTRPC();
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
@@ -99,6 +101,7 @@ export function Conversations({
           chatCsrfToken={chatCsrfToken}
           active={active}
           showConversationStats={showConversationStats}
+          initialApprovalMode={initialApprovalMode}
         />
       )}
     </>
@@ -108,6 +111,7 @@ export function Conversations({
 function ConversationPicker({
   conversations,
   showConversationStats,
+  initialApprovalMode,
   courseId,
   authnUserId,
   chatCsrfToken,
@@ -119,6 +123,7 @@ function ConversationPicker({
   chatCsrfToken: string;
   active: boolean;
   showConversationStats: boolean;
+  initialApprovalMode: ApprovalMode;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -142,7 +147,16 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
-  const [approvalMode, setApprovalMode] = useState<ApprovalMode>('approval_required');
+  // PrairieLearn keeps the user's choice for this course; each conversation is told when it
+  // changes and with every message.
+  const [approvalMode, setApprovalMode] = useState(initialApprovalMode);
+  const { mutate: saveApprovalMode } = useMutation(
+    trpc.courseAgent.setApprovalMode.mutationOptions(),
+  );
+  const changeApprovalMode = (mode: ApprovalMode) => {
+    setApprovalMode(mode);
+    saveApprovalMode({ conversationId: selectedId ?? undefined, approvalMode: mode });
+  };
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -224,13 +238,15 @@ function ConversationPicker({
           courseId={courseId}
           conversationId={selectedId}
           showConversationStats={showConversationStats}
+          approvalMode={approvalMode}
           chatCsrfToken={chatCsrfToken}
           initialMessage={
             create.data?.id === selectedId && create.variables
-              ? { text: create.variables.text, attachments: initialAttachments, approvalMode }
+              ? { text: create.variables.text, attachments: initialAttachments }
               : undefined
           }
           onInitialMessageSent={create.reset}
+          onApprovalModeChange={changeApprovalMode}
         />
       ) : active ? (
         <FileDropArea enabled={!create.isPending} onDrop={drafts.add}>
@@ -255,7 +271,7 @@ function ConversationPicker({
             pending={create.isPending}
             attachments={drafts.attachments}
             approvalMode={approvalMode}
-            onApprovalModeChange={setApprovalMode}
+            onApprovalModeChange={changeApprovalMode}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
@@ -293,14 +309,16 @@ function Chat({
   initialMessage,
   onInitialMessageSent,
   showConversationStats,
+  approvalMode,
+  onApprovalModeChange,
 }: {
   courseId: string;
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
-  initialMessage:
-    | { text: string; attachments: DraftAttachment[]; approvalMode: ApprovalMode }
-    | undefined;
+  initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
+  approvalMode: ApprovalMode;
+  onApprovalModeChange: (mode: ApprovalMode) => void;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -379,19 +397,6 @@ function Chat({
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
   const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
-  // The conversation holds the mode. A choice made here shows at once and is saved to it; the
-  // first message of a new conversation carries the choice made before the conversation existed.
-  const [pickedApprovalMode, setPickedApprovalMode] = useState(initialMessage?.approvalMode);
-  const approvalMode = pickedApprovalMode ?? lifecycle?.approvalMode ?? 'approval_required';
-  const saveApprovalMode = useMutation(trpc.courseAgent.setApprovalMode.mutationOptions());
-  const { mutate: mutateApprovalMode } = saveApprovalMode;
-  const changeApprovalMode = useCallback(
-    (mode: ApprovalMode) => {
-      setPickedApprovalMode(mode);
-      mutateApprovalMode({ conversationId, approvalMode: mode });
-    },
-    [conversationId, mutateApprovalMode],
-  );
   // A new conversation's first attachments start in the composer, where their uploads show progress.
   const drafts = useDraftAttachments(initialMessage?.attachments);
   const [sending, setSending] = useState(false);
@@ -579,7 +584,7 @@ function Chat({
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
-              onAlwaysApprove={changeApprovalMode}
+              onAlwaysApprove={onApprovalModeChange}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={(text) => void send(text, [])}
             />
@@ -595,7 +600,7 @@ function Chat({
                 reviewId={lifecycle.reviewId}
                 canResume={awaitingReviewId === lifecycle.reviewId}
                 autoApprove={false}
-                onAlwaysApprove={() => changeApprovalMode('always_approve')}
+                onAlwaysApprove={() => onApprovalModeChange('always_approve')}
               />
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
@@ -652,7 +657,7 @@ function Chat({
         attachments={drafts.attachments}
         approvalMode={approvalMode}
         stopDisabled={!connected || !canStop}
-        onApprovalModeChange={changeApprovalMode}
+        onApprovalModeChange={onApprovalModeChange}
         onAttach={drafts.add}
         onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
