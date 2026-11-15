@@ -35,6 +35,14 @@ describe('ChatMarkdown', () => {
     expect(html).toContain('<pre><code class="language-python">x = 1\n</code></pre>');
   });
 
+  it('shows HTML tags as text', () => {
+    const html = renderToStaticMarkup(
+      <ChatMarkdown content='Use <pl-number-input answers-name="x"> here.' />,
+    );
+
+    expect(html).toContain('Use &lt;pl-number-input answers-name=&quot;x&quot;&gt; here.');
+  });
+
   it('keeps links in the same tab and applies the URL transform', () => {
     const html = renderToStaticMarkup(
       <ChatMarkdown

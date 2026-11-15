@@ -1,6 +1,11 @@
 import { type JSX, createElement, useEffect, useId, useState } from 'react';
 import type { UrlTransform } from 'react-markdown';
-import { type Components, Streamdown, useIsCodeFenceIncomplete } from 'streamdown';
+import {
+  type Components,
+  Streamdown,
+  defaultRehypePlugins,
+  useIsCodeFenceIncomplete,
+} from 'streamdown';
 
 // Streamdown's default renderers are styled with Tailwind, which we don't
 // use. Some of its utility class names (`px-4`, `py-2`, `mb-2`) also exist in
@@ -131,21 +136,51 @@ const components: Components = {
   ),
 };
 
+interface HastNode {
+  type: string;
+  children?: HastNode[];
+}
+
+// Streamdown parses HTML in a message and then sanitizes it, which silently
+// drops any tag it doesn't know. Replies routinely mention elements like
+// `<pl-number-input>` outside of code spans, so HTML is shown as written
+// instead.
+function rehypeHtmlAsText() {
+  const visit = (node: HastNode) => {
+    if (node.type === 'raw') node.type = 'text';
+    node.children?.forEach(visit);
+  };
+  return visit;
+}
+
+const rehypePlugins = [
+  rehypeHtmlAsText,
+  defaultRehypePlugins.sanitize,
+  defaultRehypePlugins.harden,
+];
+
 export function ChatMarkdown({
   content,
+  className,
   urlTransform,
   isStreaming = false,
 }: {
   content: string;
+  className?: string;
   urlTransform?: UrlTransform;
   isStreaming?: boolean;
 }) {
   return (
     <Streamdown
+      className={className}
       components={components}
       controls={false}
       isAnimating={isStreaming}
       linkSafety={{ enabled: false }}
+      rehypePlugins={rehypePlugins}
+      // A link that is still streaming has no destination yet, so it is shown
+      // as text until it is complete.
+      remend={{ linkMode: 'text-only' }}
       urlTransform={urlTransform}
     >
       {content}
