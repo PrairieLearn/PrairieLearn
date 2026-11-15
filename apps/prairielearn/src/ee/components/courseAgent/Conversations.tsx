@@ -59,6 +59,9 @@ const ReviewPartSchema = z.object({ reviewId: z.string() });
 const TurnPartSchema = z.object({ tag: z.string() });
 
 const NEW_CONVERSATION = 'new';
+// The agent service removes a sandbox nobody adopts after five minutes, so one started longer ago
+// than this is replaced when typing resumes.
+const WARM_SANDBOX_MS = 4 * 60 * 1000;
 
 /** The conversation picker plus the selected conversation's chat. */
 export function Conversations({
@@ -156,12 +159,26 @@ function ConversationPicker({
     onError: (_error, { text }) => setDraft(text),
   });
 
+  // Starting the sandbox on the first keystroke lets it load the course while the message is
+  // written. Nothing shows this: a sandbox that is not ready in time is simply waited for as usual.
+  const prewarm = useMutation(trpc.courseAgent.prewarm.mutationOptions());
+  const warmSandboxRef = useRef<{ id: string; startedAt: number } | null>(null);
+  const changeNewDraft = (text: string) => {
+    setDraft(text);
+    const started = warmSandboxRef.current?.startedAt;
+    if (text.trim() && (started === undefined || Date.now() - started > WARM_SANDBOX_MS)) {
+      warmSandboxRef.current = { id: crypto.randomUUID(), startedAt: Date.now() };
+      prewarm.mutate({ sandboxId: warmSandboxRef.current.id });
+    }
+  };
+
   const submitNew = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
     if (!text || create.isPending) return;
     setInitialAttachments(drafts.attachments);
-    create.mutate({ text });
+    create.mutate({ text, sandboxId: warmSandboxRef.current?.id });
+    warmSandboxRef.current = null;
     setDraft('');
   };
 
@@ -251,7 +268,7 @@ function ConversationPicker({
             attachments={drafts.attachments}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
-            onDraftChange={setDraft}
+            onDraftChange={changeNewDraft}
             onSubmit={submitNew}
           />
         </FileDropArea>

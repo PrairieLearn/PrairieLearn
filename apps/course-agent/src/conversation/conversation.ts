@@ -217,6 +217,8 @@ interface RecordData {
   title?: string | null;
   /** Pages the agent can open; absent in records saved before PrairieLearn sent a catalog. */
   pages?: PageCatalog;
+  /** A sandbox started while the first message was typed; the first turn adopts it if it can. */
+  warmSandboxId?: string | null;
 }
 
 // Destruction is a private phase because the replacement checkpoint is committed
@@ -411,7 +413,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * Set up conversation state and pin the course source and model.
    * The sandbox is created or restored when the first message arrives.
    */
-  initialize(config: CourseSource, pages?: PageCatalog) {
+  initialize(config: CourseSource, pages?: PageCatalog, warmSandboxId?: string) {
     if (this._record) throw new Error('Conversation is already initialized');
     // TODO: Define how existing sandboxes follow course repository/branch changes. Never
     // retarget an edited sandbox just because a reconnect supplies updated course labels.
@@ -429,7 +431,24 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       submittedMessageId: null,
       title: null,
       pages,
+      warmSandboxId,
     });
+  }
+
+  /** Whether the sandbox started while the first message was typed is still there to adopt. */
+  private async claimWarmSandbox(sandboxId: string) {
+    const { config } = this.record;
+    if (config.type !== 'github') return false;
+    try {
+      return await this.env.CourseSandbox.getByName(sandboxId).claim(
+        { repository: config.repository, branch: config.branch },
+        this.name,
+      );
+    } catch (error) {
+      // A warm sandbox only saves time, so the conversation starts its own instead.
+      reportError(error);
+      return false;
+    }
   }
 
   /**
@@ -891,7 +910,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const sent = message ? [...unsent.filter((entry) => entry !== message), message] : [];
     const attachments = sent.flatMap(attachmentsOf);
     const checkedSandboxId = this.record.sandboxId;
-    const [running, images] = await Promise.all([
+    // Only a conversation's very first sandbox can be one that was started ahead of it.
+    const warmSandboxId =
+      checkedSandboxId === null && !this.record.checkpoint
+        ? (this.record.warmSandboxId ?? null)
+        : null;
+    const [running, images, , warm] = await Promise.all([
       checkedSandboxId === null || this.env.CourseSandbox.getByName(checkedSandboxId).isRunning(),
       this.findImages(attachments),
       // Check the usage limit before a message boots a sandbox or generates a title. The first
@@ -899,6 +923,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       // reports the failure instead. Continuations are checked before they are scheduled, and
       // one that races a new limit is stopped by its first model request.
       continuation || this.checkUsageLimit(),
+      warmSandboxId !== null && this.claimWarmSandbox(warmSandboxId),
     ]);
     const lost = !running;
     const review = this.record.review;
@@ -985,7 +1010,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       ...this.record,
       // A user message acknowledges an earlier loss unless this message found it.
       sandboxLost: abandoned || (continuation && this.record.sandboxLost),
-      sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
+      sandboxId: startup ? (warm && warmSandboxId) || crypto.randomUUID() : this.record.sandboxId,
+      warmSandboxId: null,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
       // Prompts are never resubmitted, even if this turn fails before Codex accepts it.

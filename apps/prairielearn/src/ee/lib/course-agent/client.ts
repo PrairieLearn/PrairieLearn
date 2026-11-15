@@ -41,6 +41,7 @@ export async function createCourseAgentConversation(binding: {
   repository: string;
   branch: string;
   pages: PageCatalog;
+  warmSandboxId?: string;
 }): Promise<string> {
   return createConversation('conversations', JSON.stringify(binding), 'application/json');
 }
@@ -207,4 +208,24 @@ export async function getCourseAgentRepositorySnapshot(binding: {
   const response = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new error.HttpStatusError(502, 'Could not load the repository cache');
   return RepositorySnapshotStatusSchema.parse(await response.json());
+}
+
+/**
+ * Start a sandbox for a conversation that does not exist yet, so that its first message finds
+ * the course already loaded. The service removes the sandbox if no conversation adopts it.
+ */
+export async function warmCourseAgentSandbox(
+  sandboxId: string,
+  binding: { repository: string; branch: string },
+) {
+  const { url, headers } = buildCourseAgentServiceRequest(
+    `sandboxes/${encodeURIComponent(sandboxId)}`,
+  );
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(binding),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new error.HttpStatusError(502, 'Could not start a course agent sandbox');
 }

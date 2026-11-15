@@ -75,6 +75,12 @@ A new GitHub-backed conversation whose repository and branch are cached restores
 
 Caching a course again replaces its copy with a fresh clone. Until then the copy keeps objects for files the branch has since deleted, and a restored sandbox has them in its object store. Nothing removes a copy automatically. Courses that are not cached, and conversations started from local files, are unaffected.
 
+## Starting the sandbox early
+
+When an instructor starts typing the first message of a new GitHub-backed conversation, the browser asks PrairieLearn to start a sandbox under an ID it chose, and the sandbox loads the course in the background. Creating the conversation names that ID, and the conversation's first turn adopts the sandbox if it was started for the same repository and branch, has not been claimed by another conversation, and is still running. Otherwise the first turn starts a sandbox as usual. The instructor sees nothing different except a shorter wait.
+
+Only the container and the course checkout are prepared early. The model, attachments, and Codex runner are set up by the first turn, so a sandbox that is never adopted has run no agent. It removes itself five minutes after it was started. Conversations started from local files do not use this.
+
 ## Web access
 
 The agent can search the web and read pages through Codex's `web.run` tool, for example to check PrairieLearn documentation or an institution's academic calendar. Codex sends these commands to the model endpoint, and the Worker forwards them to OpenAI, which performs the searches and page reads. The container itself has no internet access. The Worker forwards only the commands it recognizes, sets the search settings itself, and refuses OpenAI-hosted tools in model requests, because the agent can send requests to the model endpoint directly. Searches and page addresses leave PrairieLearn, and page content is untrusted: a page could ask the agent to put course content in a URL it opens.

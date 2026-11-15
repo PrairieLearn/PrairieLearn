@@ -77,6 +77,8 @@ export const CreateConversationInput = z.strictObject({
   branch: z.string().min(1).max(1024),
   // Optional so the Worker can deploy before PrairieLearn starts sending it.
   pages: PageCatalogSchema.optional(),
+  // A sandbox started while the first message was being typed, adopted if it is still there.
+  warmSandboxId: z.uuid().optional(),
 });
 
 /**

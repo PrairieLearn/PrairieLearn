@@ -12,6 +12,8 @@ The conversation's private `conversation` storage record is authoritative. It co
 
 Each review fact has one owner. The DO owns the snapshot and whether the agent has received the result. PrairieLearn's `course_agent_reviews` table owns the decision, the editor job, and the result. The Codex thread is a cache of the conversation that the DO can resume, not a record the DO reconciles against.
 
+A sandbox may exist before any conversation owns it: one started while the first message was typed holds its own record of the source it was warmed for and the conversation that claimed it, and an alarm that removes it if it is not adopted. The conversation's record only names such a sandbox as a candidate until its first turn claims it; a failed claim means a new sandbox ID, never a shared one.
+
 Active execution handles and SDK completion promises exist only in memory. An unfinished turn cannot be reconstructed from those handles after a restart. Stable wake states are `offline`, `waiting_for_user`, and `blocked`; interrupted operations become blocked without resubmitting the prompt.
 
 The private `destroying` phase means that a replacement checkpoint has been committed and only container destruction remains. Browsers see `suspending`. A wake during this phase requires cleanup recovery, not another backup of potentially unavailable files.

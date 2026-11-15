@@ -97,6 +97,18 @@ type CourseFilesSource =
 // https://developers.cloudflare.com/containers/configuration/scheduling-policy/#choose-an-instance-size-at-runtime
 const InstanceTypeSchema = z.enum(['lite', 'standard-1', 'standard-2', 'standard-3', 'standard-4']);
 
+// A warm sandbox nobody adopts costs a running container, so it is kept only about as long as
+// writing a first message plausibly takes.
+const WARM_SANDBOX_SECONDS = 5 * 60;
+
+/** A sandbox started before its conversation exists, until that conversation's first turn adopts it. */
+interface WarmSandbox {
+  source: { repository: string; branch: string };
+  claimedBy: string | null;
+  /** Set once the course files are in place. */
+  files: CourseFilesSource | null;
+}
+
 // Cloudflare's maximum time a container can stay disconnected from its Durable Object.
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
@@ -222,6 +234,9 @@ export class CourseSandbox extends DurableObject<Env> {
   // Set by prepare(): a container this instance just started has no orphaned processes, and the
   // first runner start must not kill a course clone that is running alongside it.
   private freshContainer = false;
+  // A warm-up still running in this instance. It is lost if the instance restarts, which leaves
+  // the warm sandbox unclaimable until its alarm removes it.
+  private warming: Promise<CourseFilesSource> | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -252,6 +267,15 @@ export class CourseSandbox extends DurableObject<Env> {
     });
   }
 
+  private get warm() {
+    return this.ctx.storage.kv.get<WarmSandbox>('warm');
+  }
+
+  private set warm(warm: WarmSandbox | undefined) {
+    if (warm) this.ctx.storage.kv.put('warm', warm);
+    else this.ctx.storage.kv.delete('warm');
+  }
+
   private async exec(args: string[], user = 'root') {
     const result = await (await this.container.exec(args, { user })).output();
     if (result.exitCode !== 0) {
@@ -267,10 +291,19 @@ export class CourseSandbox extends DurableObject<Env> {
    * Start an isolated workspace and configure Codex. A checkpoint is restored here; otherwise the
    * caller adds course files with `addCourseFiles()`, which can run while the Codex runner starts.
    */
-  async prepare(
-    config: CourseSource & { model: string },
-    checkpoint: DirectoryBackupRecord | null,
-  ) {
+  async prepare(config: CourseSource, checkpoint: DirectoryBackupRecord | null) {
+    const warm = this.warm;
+    if (warm) {
+      if (warm.claimedBy && this.container.running && (warm.files || this.warming)) {
+        await this.ctx.storage.deleteAlarm();
+        return { instance: this.env.SANDBOX_INSTANCE_TYPE, prewarmed: true };
+      }
+      await this.discardWarm();
+    }
+    return { ...(await this.start(config, checkpoint)), prewarmed: false };
+  }
+
+  private async start(config: CourseSource, checkpoint: DirectoryBackupRecord | null) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
     const instance = InstanceTypeSchema.parse(this.env.SANDBOX_INSTANCE_TYPE);
     // The default `lite` (256 MiB) is too small for Codex and course tooling, and running out of
@@ -341,6 +374,17 @@ export class CourseSandbox extends DurableObject<Env> {
    * workspace.
    */
   async addCourseFiles(config: CourseSource): Promise<CourseFilesSource> {
+    const warm = this.warm;
+    if (!warm) return this.loadCourseFiles(config);
+    // prepare() adopted a warm sandbox, whose files are in place or on their way.
+    const files = warm.files ?? (await this.warming);
+    if (!files) throw new Error('The warm sandbox was interrupted while loading course files');
+    this.warm = undefined;
+    this.warming = null;
+    return files;
+  }
+
+  private async loadCourseFiles(config: CourseSource): Promise<CourseFilesSource> {
     let files: CourseFilesSource = { source: 'local' };
     if (config.type === 'local') {
       const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
@@ -814,5 +858,68 @@ export class CourseSandbox extends DurableObject<Env> {
     await this.container.destroy();
     this.process = null;
     this.nativeToken = null;
+    this.warm = undefined;
+    this.warming = null;
+  }
+
+  /**
+   * Start a sandbox and load the course before any conversation owns it, so a first message
+   * written in the meantime finds it ready. Nothing here depends on the conversation: the model,
+   * attachments, and Codex runner are set up by its first turn as usual.
+   */
+  async warmUp(source: WarmSandbox['source']) {
+    if (this.warm || this.container.running) return;
+    this.warm = { source, claimedBy: null, files: null };
+    // Also removes a warm-up that never finishes.
+    await this.ctx.storage.setAlarm(Date.now() + WARM_SANDBOX_SECONDS * 1000);
+    const config = { type: 'github' as const, ...source };
+    this.warming = (async () => {
+      await this.start(config, null);
+      const files = await this.loadCourseFiles(config);
+      const warm = this.warm;
+      if (warm) this.warm = { ...warm, files };
+      return files;
+    })();
+    // The request that asked for the warm-up does not wait for it.
+    this.ctx.waitUntil(
+      this.warming.catch(async (error: unknown) => {
+        // Discarding a warm sandbox interrupts its own warm-up; only other failures are faults.
+        if (!this.warm) return;
+        reportError(error);
+        await this.discardWarm();
+      }),
+    );
+  }
+
+  /**
+   * Reserve this warm sandbox for a conversation's first turn, which adopts it in prepare().
+   * Only a sandbox warmed for the same source can be claimed, and only by one conversation.
+   */
+  async claim(source: WarmSandbox['source'], conversationId: string) {
+    const warm = this.warm;
+    if (
+      warm?.source.repository !== source.repository ||
+      warm.source.branch !== source.branch ||
+      (warm.claimedBy !== null && warm.claimedBy !== conversationId) ||
+      !(warm.files ? this.container.running : this.warming)
+    ) {
+      return false;
+    }
+    this.warm = { ...warm, claimedBy: conversationId };
+    // Keep the alarm from removing the sandbox between this claim and its adoption.
+    const alarm = await this.ctx.storage.getAlarm();
+    await this.ctx.storage.setAlarm(Math.max(alarm ?? 0, Date.now() + 60_000));
+    return true;
+  }
+
+  /** Adoption cancels this alarm, so it only finds a warm sandbox nobody used in time. */
+  override async alarm() {
+    if (this.warm) await this.discardWarm();
+  }
+
+  private async discardWarm() {
+    this.warm = undefined;
+    this.warming = null;
+    if (this.container.running) await this.container.destroy();
   }
 }

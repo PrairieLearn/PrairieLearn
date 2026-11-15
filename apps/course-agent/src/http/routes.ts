@@ -71,9 +71,21 @@ app.post('/conversations', async (c) => {
   if (!input.success) return c.text('Invalid request', 400);
   const id = crypto.randomUUID();
   const conversation = await getAgentByName(c.env.Conversation, id);
-  const { pages, ...source } = input.data;
-  await conversation.initialize({ type: 'github', ...source }, pages);
+  const { pages, warmSandboxId, ...source } = input.data;
+  await conversation.initialize({ type: 'github', ...source }, pages, warmSandboxId);
   return c.json({ id }, 201);
+});
+
+// PrairieLearn asks for a sandbox when an instructor starts typing a first message, under an ID
+// the browser chose, and names that ID when it creates the conversation. The sandbox loads the
+// course in the background and removes itself if no conversation adopts it.
+app.put('/sandboxes/:id', async (c) => {
+  if (!UUID_PATTERN.test(c.req.param('id'))) return c.notFound();
+  const input = CreateConversationInput.safeParse(await c.req.json().catch(() => null));
+  if (!input.success) return c.text('Invalid request', 400);
+  const { repository, branch } = input.data;
+  await c.env.CourseSandbox.getByName(c.req.param('id')).warmUp({ repository, branch });
+  return c.body(null, 204);
 });
 
 // A snapshot is identified by the same repository and branch a conversation is created with.

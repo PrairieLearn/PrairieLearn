@@ -331,6 +331,41 @@ describe('Course agent access and conversation privacy', () => {
     expect(stored!.agent_conversation_id).toBe(serviceConversationId);
   });
 
+  test('starts a sandbox while the first message is typed and names it at creation', async () => {
+    await updateCourseColumn({
+      courseId: '1',
+      columnName: 'repository',
+      value: 'git@github.com:PrairieLearn/test-course.git',
+      authnUserId: owner.id,
+    });
+    await updateCourseColumn({
+      courseId: '1',
+      columnName: 'branch',
+      value: 'pilot-edits',
+      authnUserId: owner.id,
+    });
+    const sandboxId = crypto.randomUUID();
+    // A local conversation uploads its course at creation, so there is nothing to start early.
+    await withConfig({ devMode: true, fileEditorUseGit: false }, () =>
+      withUser(owner, () => createClient(owner).courseAgent.prewarm.mutate({ sandboxId })),
+    );
+    expect(serviceRequests).toEqual([]);
+
+    await withConfig({ fileEditorUseGit: true }, () =>
+      withUser(owner, async () => {
+        await createClient(owner).courseAgent.prewarm.mutate({ sandboxId });
+        await createClient(owner).courseAgent.create.mutate({ text: 'First message', sandboxId });
+      }),
+    );
+    expect(serviceRequests).toMatchObject([
+      {
+        path: `/sandboxes/${sandboxId}`,
+        body: { repository: 'PrairieLearn/test-course', branch: 'pilot-edits' },
+      },
+      { path: '/conversations', body: { warmSandboxId: sandboxId } },
+    ]);
+  });
+
   test('rejects unbound creation before calling the service or recording a conversation', async () => {
     await updateCourseColumn({
       courseId: '1',
