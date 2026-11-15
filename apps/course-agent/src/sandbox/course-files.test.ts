@@ -88,10 +88,23 @@ it('clones when the snapshot cannot be restored', async () => {
 
 describe('a sandbox warmed before its conversation exists', () => {
   it('is adopted mid-warm-up by the conversation that claims it, loading the course once', async () => {
-    const { sandbox, commands, hasAlarm } = createSandbox(null);
+    const { sandbox, commands, container, hasAlarm } = createSandbox(null);
+    let finishStarting = () => {};
+    container.setInactivityTimeout = () =>
+      new Promise<void>((resolve) => {
+        finishStarting = resolve;
+      });
     await sandbox.warmUp(source);
     expect(await sandbox.claim(source, 'conversation')).toBe(true);
-    expect(await sandbox.prepare(source, null)).toMatchObject({ prewarmed: true });
+    // The runner connects once prepare() returns, and that connection kills the agent user's
+    // processes in a sandbox that has not finished starting.
+    const prepared = vi.fn();
+    const preparing = sandbox.prepare(source, null).then(prepared);
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(prepared).not.toHaveBeenCalled();
+    finishStarting();
+    await preparing;
+    expect(prepared).toHaveBeenCalledWith(expect.objectContaining({ prewarmed: true }));
     expect(hasAlarm()).toBe(false);
     expect(await sandbox.addCourseFiles(source)).toEqual({ source: 'clone' });
     expect(commands.filter((command) => command === clone)).toHaveLength(1);

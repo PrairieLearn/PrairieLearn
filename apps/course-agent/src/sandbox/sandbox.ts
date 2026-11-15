@@ -236,7 +236,7 @@ export class CourseSandbox extends DurableObject<Env> {
   private freshContainer = false;
   // A warm-up still running in this instance. It is lost if the instance restarts, which leaves
   // the warm sandbox unclaimable until its alarm removes it.
-  private warming: Promise<CourseFilesSource> | null = null;
+  private warming: { started: Promise<unknown>; files: Promise<CourseFilesSource> } | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -296,6 +296,9 @@ export class CourseSandbox extends DurableObject<Env> {
     if (warm) {
       if (warm.claimedBy && this.container.running && (warm.files || this.warming)) {
         await this.ctx.storage.deleteAlarm();
+        // The runner connects once this returns. Before start() finishes, that connection would
+        // kill the agent user's processes, the warm-up's among them, and find no home directory.
+        await this.warming?.started;
         return { instance: this.env.SANDBOX_INSTANCE_TYPE, prewarmed: true };
       }
       await this.discardWarm();
@@ -377,7 +380,7 @@ export class CourseSandbox extends DurableObject<Env> {
     const warm = this.warm;
     if (!warm) return this.loadCourseFiles(config);
     // prepare() adopted a warm sandbox, whose files are in place or on their way.
-    const files = warm.files ?? (await this.warming);
+    const files = warm.files ?? (await this.warming?.files);
     if (!files) throw new Error('The warm sandbox was interrupted while loading course files');
     this.warm = undefined;
     this.warming = null;
@@ -875,16 +878,17 @@ export class CourseSandbox extends DurableObject<Env> {
     // Also removes a warm-up that never finishes.
     await this.ctx.storage.setAlarm(Date.now() + WARM_SANDBOX_SECONDS * 1000);
     const config = { type: 'github' as const, ...source };
-    this.warming = (async () => {
-      await this.start(config, null);
+    const started = this.start(config, null);
+    const loaded = started.then(async () => {
       const files = await this.loadCourseFiles(config);
       const warm = this.warm;
       if (warm) this.warm = { ...warm, files };
       return files;
-    })();
+    });
+    this.warming = { started, files: loaded };
     // The request that asked for the warm-up does not wait for it.
     this.ctx.waitUntil(
-      this.warming.catch(async (error: unknown) => {
+      loaded.catch(async (error: unknown) => {
         // Discarding a warm sandbox interrupts its own warm-up; only other failures are faults.
         if (!this.warm) return;
         reportError(error);
