@@ -845,7 +845,7 @@ function ApprovalModePicker({
       >
         <i className={clsx('bi', current.icon)} aria-hidden="true" />
         <span className="course-agent-composer-wide-only text-truncate">{current.label}</span>
-        <i className="bi bi-chevron-down small" aria-hidden="true" />
+        <i className="bi bi-chevron-down" aria-hidden="true" />
       </Dropdown.Toggle>
       <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
         <Dropdown.Header>How should course changes be approved?</Dropdown.Header>
@@ -863,7 +863,7 @@ function ApprovalModePicker({
               <i className={clsx('bi fs-5 lh-1 mt-1', icon)} aria-hidden="true" />
               <span className="flex-grow-1">
                 <span className="d-block">{label}</span>
-                <span className={clsx('d-block small', option !== mode && 'text-body-secondary')}>
+                <span className="course-agent-approval-description d-block small">
                   {description}
                 </span>
               </span>

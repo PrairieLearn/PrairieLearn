@@ -40,7 +40,7 @@ export function ConversationStats({
       >
         <i className="bi bi-bar-chart" aria-hidden="true" />
         <span className="course-agent-composer-wide-only">Stats</span>
-        <i className="bi bi-chevron-down small" aria-hidden="true" />
+        <i className="bi bi-chevron-down" aria-hidden="true" />
       </Dropdown.Toggle>
       {show && (
         <Dropdown.Menu align="end" className="p-3 text-nowrap">
