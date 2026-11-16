@@ -224,9 +224,10 @@ export async function close() {
   await Promise.all([esbuildContext?.dispose(), splitWatcher?.close()]);
   endSplitBuild(new Error('Development asset server closed'));
   splitBuild = Promise.resolve(null);
+  // Keep `splitOutputDirectory` set: callers (e.g. test servers that restart
+  // without re-running `init()`) may still create a handler after closing.
   if (splitOutputDirectory) await fs.remove(splitOutputDirectory);
   splitWatcher = null;
-  splitOutputDirectory = null;
 }
 
 export function assertConfigured(): void {
