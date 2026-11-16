@@ -2,6 +2,7 @@ CREATE FUNCTION
     sync_questions(
         IN disk_questions_data jsonb[],
         IN syncing_course_id bigint,
+        IN sync_mode text,
         OUT name_to_id_map jsonb
     )
 AS $$
@@ -40,67 +41,95 @@ BEGIN
         (entries->4)::JSONB
     FROM UNNEST(disk_questions_data) AS entries;
 
-    -- Synchronize the dest (questions) with the src
-    -- (disk_questions). This soft-deletes, un-soft-deletes, and
-    -- inserts new rows in questions. No data is synced yet. Only the
-    -- (id, course_id, uuid, qid, deleted_at) columns are used.
+    IF sync_mode NOT IN ('full', 'metadata') THEN
+        RAISE EXCEPTION 'Unknown question sync mode: %', sync_mode;
+    END IF;
 
-    WITH
-    matched_rows AS (
-        -- DISTINCT ON is necessary to ensure that we only try to update one
-        -- row per qid. See comment below in ORDER BY for more details.
-        SELECT DISTINCT ON (src_qid)
-            src.qid AS src_qid,
-            src.uuid AS src_uuid,
-            dest.id AS dest_id
-        FROM disk_questions AS src LEFT JOIN questions AS dest ON (
+    IF sync_mode = 'metadata' THEN
+        IF EXISTS (
+            SELECT 1
+            FROM disk_questions AS src
+            LEFT JOIN questions AS dest ON (
+                dest.course_id = syncing_course_id
+                AND dest.qid = src.qid
+                AND dest.deleted_at IS NULL
+            )
+            WHERE dest.id IS NULL OR src.uuid IS DISTINCT FROM dest.uuid
+        ) THEN
+            RAISE EXCEPTION 'Metadata sync requires an existing question with matching identity';
+        END IF;
+
+        SELECT COALESCE(jsonb_object_agg(src.qid, dest.id), '{}'::JSONB)
+        INTO name_to_id_map
+        FROM disk_questions AS src
+        JOIN questions AS dest ON (
             dest.course_id = syncing_course_id
-            AND (
-                src.uuid = dest.uuid
-                OR (
-                    (src.uuid IS NULL OR dest.uuid IS NULL)
-                    AND src.qid = dest.qid AND dest.deleted_at IS NULL
+            AND dest.qid = src.qid
+            AND dest.deleted_at IS NULL
+        );
+    ELSE
+        -- Synchronize the dest (questions) with the src
+        -- (disk_questions). This soft-deletes, un-soft-deletes, and
+        -- inserts new rows in questions. No data is synced yet. Only the
+        -- (id, course_id, uuid, qid, deleted_at) columns are used.
+
+        WITH
+        matched_rows AS (
+            -- DISTINCT ON is necessary to ensure that we only try to update one
+            -- row per qid. See comment below in ORDER BY for more details.
+            SELECT DISTINCT ON (src_qid)
+                src.qid AS src_qid,
+                src.uuid AS src_uuid,
+                dest.id AS dest_id
+            FROM disk_questions AS src LEFT JOIN questions AS dest ON (
+                dest.course_id = syncing_course_id
+                AND (
+                    src.uuid = dest.uuid
+                    OR (
+                        (src.uuid IS NULL OR dest.uuid IS NULL)
+                        AND src.qid = dest.qid AND dest.deleted_at IS NULL
+                    )
                 )
             )
+            ORDER BY
+                -- This ORDER BY clause is necessary for DISTINCT ON
+                src_qid,
+                -- Together with the use of DISTINCT ON, this ORDER BY clause
+                -- ensures that, when given the choice between matching based on
+                -- qid or uuid, we prefer matching based on uuid. This avoids a
+                -- scenario where we try to insert a new row with a UUID that's
+                -- already in use in another row.
+                --
+                -- See https://github.com/PrairieLearn/PrairieLearn/issues/6539 for
+                -- a case where this occurred, including a description of how to
+                -- reproduce it.
+                (src.uuid = dest.uuid) DESC NULLS LAST
+        ),
+        deactivate_unmatched_dest_rows AS (
+            UPDATE questions AS dest
+            SET deleted_at = now()
+            WHERE dest.id NOT IN (
+                SELECT dest_id FROM matched_rows WHERE dest_id IS NOT NULL
+            ) AND dest.deleted_at IS NULL AND dest.course_id = syncing_course_id
+        ),
+        update_matched_dest_rows AS (
+            UPDATE questions AS dest
+            SET qid = src_qid, uuid = src_uuid, deleted_at = NULL
+            FROM matched_rows
+            WHERE dest.id = dest_id AND dest.course_id = syncing_course_id
+        ),
+        insert_unmatched_src_rows AS (
+            INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
+            SELECT syncing_course_id, src_qid, src_uuid, NULL
+            FROM matched_rows
+            WHERE dest_id IS NULL
+            RETURNING dest.qid AS src_qid, dest.id AS inserted_dest_id
         )
-        ORDER BY
-            -- This ORDER BY clause is necessary for DISTINCT ON
-            src_qid,
-            -- Together with the use of DISTINCT ON, this ORDER BY clause
-            -- ensures that, when given the choice between matching based on
-            -- qid or uuid, we prefer matching based on uuid. This avoids a
-            -- scenario where we try to insert a new row with a UUID that's
-            -- already in use in another row.
-            --
-            -- See https://github.com/PrairieLearn/PrairieLearn/issues/6539 for
-            -- a case where this occurred, including a description of how to
-            -- reproduce it.
-            (src.uuid = dest.uuid) DESC NULLS LAST
-    ),
-    deactivate_unmatched_dest_rows AS (
-        UPDATE questions AS dest
-        SET deleted_at = now()
-        WHERE dest.id NOT IN (
-            SELECT dest_id FROM matched_rows WHERE dest_id IS NOT NULL
-        ) AND dest.deleted_at IS NULL AND dest.course_id = syncing_course_id
-    ),
-    update_matched_dest_rows AS (
-        UPDATE questions AS dest
-        SET qid = src_qid, uuid = src_uuid, deleted_at = NULL
-        FROM matched_rows
-        WHERE dest.id = dest_id AND dest.course_id = syncing_course_id
-    ),
-    insert_unmatched_src_rows AS (
-        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
-        SELECT syncing_course_id, src_qid, src_uuid, NULL
-        FROM matched_rows
-        WHERE dest_id IS NULL
-        RETURNING dest.qid AS src_qid, dest.id AS inserted_dest_id
-    )
-    -- Make a map from QID to ID to return to the caller
-    SELECT COALESCE(jsonb_object_agg(src_qid, COALESCE(dest_id, inserted_dest_id)), '{}'::JSONB)
-    INTO name_to_id_map
-    FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (src_qid);
+        -- Make a map from QID to ID to return to the caller
+        SELECT COALESCE(jsonb_object_agg(src_qid, COALESCE(dest_id, inserted_dest_id)), '{}'::JSONB)
+        INTO name_to_id_map
+        FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (src_qid);
+    END IF;
 
     -- Internal consistency checks to ensure that dest (questions) and
     -- src (disk_questions) are in fact synchronized.
@@ -116,7 +145,7 @@ BEGIN
     SELECT string_agg(dest.qid, ', ')
     INTO missing_src_qids
     FROM questions AS dest
-    WHERE dest.course_id = syncing_course_id AND dest.deleted_at IS NULL AND dest.qid NOT IN (SELECT src.qid FROM disk_questions AS src);
+    WHERE sync_mode = 'full' AND dest.course_id = syncing_course_id AND dest.deleted_at IS NULL AND dest.qid NOT IN (SELECT src.qid FROM disk_questions AS src);
     IF (missing_src_qids IS NOT NULL) THEN
         RAISE EXCEPTION 'Assertion failure: QIDs in DB but not on disk: %', missing_src_qids;
     END IF;
@@ -203,46 +232,49 @@ BEGIN
         AND dest.course_id = syncing_course_id
         AND (src.errors IS NOT NULL AND src.errors != '');
 
-    -- Ensure that all questions have numbers
-    WITH
-    questions_needing_numbers AS (
-        SELECT id, row_number() OVER (ORDER BY id) AS index
-        FROM questions
-        WHERE
-            number IS NULL
-            AND course_id = syncing_course_id
-    ),
-    course_question_count AS (
-        SELECT COUNT(*) AS total
-        FROM questions
-        WHERE course_id = syncing_course_id
-    ),
-    available_numbers AS (
-        SELECT gs.number
-        FROM
-          -- 3-digit numbers are used if the number of questions allows for
-          -- enough unique 3-digit numbers with reasonable gaps.
-          generate_series(100, GREATEST(999, 101 + 2 * (SELECT total FROM course_question_count))) AS gs (number)
-          -- Using anti-join pattern instead of EXCEPT to give Postgres more freedom to optimize the query and potentially reduce resource utilization.
-          LEFT JOIN questions AS q ON (q.course_id = syncing_course_id AND q.number = gs.number)
-        WHERE q.number IS NULL
-    ),
-    new_numbers AS (
-        SELECT
-          row_number() OVER (ORDER BY random()) AS index,
-          number
-        FROM available_numbers
-        LIMIT (SELECT COUNT(*) FROM questions_needing_numbers)
-    ),
-    questions_with_new_numbers AS (
-        -- use row_number() as the matching key for the join
-        SELECT qnn.id, nn.number
-        FROM questions_needing_numbers AS qnn
-        JOIN new_numbers AS nn ON (qnn.index = nn.index)
-    )
-    UPDATE questions AS q
-    SET number = qwnn.number
-    FROM questions_with_new_numbers AS qwnn
-    WHERE q.id = qwnn.id;
+    IF sync_mode = 'full' THEN
+        -- Ensure that all questions have numbers
+        WITH
+        questions_needing_numbers AS (
+            SELECT id, row_number() OVER (ORDER BY id) AS index
+            FROM questions
+            WHERE
+                number IS NULL
+                AND course_id = syncing_course_id
+        ),
+        course_question_count AS (
+            SELECT COUNT(*) AS total
+            FROM questions
+            WHERE course_id = syncing_course_id
+        ),
+        available_numbers AS (
+            SELECT gs.number
+            FROM
+              -- 3-digit numbers are used if the number of questions allows for
+              -- enough unique 3-digit numbers with reasonable gaps.
+              generate_series(100, GREATEST(999, 101 + 2 * (SELECT total FROM course_question_count))) AS gs (number)
+              -- Using anti-join pattern instead of EXCEPT to give Postgres more freedom to optimize the query and potentially reduce resource utilization.
+              LEFT JOIN questions AS q ON (q.course_id = syncing_course_id AND q.number = gs.number)
+            WHERE q.number IS NULL
+        ),
+        new_numbers AS (
+            SELECT
+              row_number() OVER (ORDER BY random()) AS index,
+              number
+            FROM available_numbers
+            LIMIT (SELECT COUNT(*) FROM questions_needing_numbers)
+        ),
+        questions_with_new_numbers AS (
+            -- use row_number() as the matching key for the join
+            SELECT qnn.id, nn.number
+            FROM questions_needing_numbers AS qnn
+            JOIN new_numbers AS nn ON (qnn.index = nn.index)
+        )
+        UPDATE questions AS q
+        SET number = qwnn.number
+        FROM questions_with_new_numbers AS qwnn
+        WHERE q.id = qwnn.id;
+    END IF;
+
 END;
 $$ LANGUAGE plpgsql VOLATILE;

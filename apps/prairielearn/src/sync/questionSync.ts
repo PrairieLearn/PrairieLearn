@@ -12,15 +12,20 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { type Course, QuestionSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
-import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
+import { selectSharingSetsForQuestion } from '../models/sharing-set.js';
+import { selectTagsByQuestionId } from '../models/tags.js';
+import { selectTopicsByCourseId } from '../models/topics.js';
+import { type QuestionJson, QuestionJsonSchema } from '../schemas/infoQuestion.js';
 
-import { loadInfoFile } from './course-db.js';
+import { loadInfoFile, loadQuestionInfo } from './course-db.js';
+import { type InfoFile } from './infofile.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export type QuestionSyncChange =
   | { kind: 'content'; qid: string }
-  | { kind: 'title'; qid: string; title: string };
+  | { kind: 'title'; qid: string; title: string }
+  | { kind: 'recover'; qid: string; info: InfoFile<QuestionJson> };
 
 /** Requires the course lock and final checkout. Returns null when changes require full sync. */
 export async function getQuestionSyncPlan({
@@ -87,8 +92,36 @@ export async function getQuestionSyncPlan({
       if (!(await fs.lstat(absolutePath)).isFile()) return null;
     }
     if (file === `questions/${question.qid}/info.json`) {
-      // A narrow update cannot recover other fields left unapplied by an error.
-      if (question.sync_errors) return null;
+      if (question.sync_errors) {
+        const info = await loadQuestionInfo(course.id, course.path, question.qid);
+        if (!info || !question.uuid || info.uuid?.toLowerCase() !== question.uuid.toLowerCase()) {
+          return null;
+        }
+        // Question errors can leave errors on assessments using preferences.
+        // Use full sync until those assessments can be revalidated selectively.
+        if (question.preferences_schema != null || info.data?.preferences != null) return null;
+        if (info.data && info.errors.length === 0) {
+          const [tags, topics, sharingSets] = await Promise.all([
+            selectTagsByQuestionId(question.id),
+            selectTopicsByCourseId(course.id),
+            selectSharingSetsForQuestion({ course_id: course.id, question_id: question.id }),
+          ]);
+          // Catalog and sharing changes use their own sync paths. Recovery here
+          // only reapplies metadata whose external dependencies are unchanged.
+          if (
+            !isDeepStrictEqual(new Set(tags.map((tag) => tag.name)), new Set(info.data.tags)) ||
+            topics.find((topic) => topic.id === question.topic_id)?.name !== info.data.topic ||
+            info.data.sharePublicly !== question.share_publicly ||
+            info.data.shareSourcePublicly !== question.share_source_publicly ||
+            info.data.sharingSets?.length ||
+            sharingSets.some((set) => set.in_set)
+          ) {
+            return null;
+          }
+        }
+        plan.set(question.qid, { kind: 'recover', qid: question.qid, info });
+        continue;
+      }
       const loaded = await loadInfoFile<Record<string, unknown>>({
         coursePath: course.path,
         filePath: file,
