@@ -28,4 +28,7 @@ COPY --from=codex /opt/codex /opt/codex
 RUN ln -s /opt/codex/bin/codex-app-server /usr/local/bin/codex-app-server
 COPY --from=sandbox /usr/local/bin/sandbox-shim /usr/local/bin/sandbox-shim
 COPY codex-config.toml /etc/course-agent/codex-config.toml
+# Codex loads skills from /etc/codex/skills (its admin scope): read-only for the agent and outside
+# the checkpointed workspace, so each sandbox gets this image's version.
+COPY skills /etc/codex/skills
 CMD ["/usr/bin/tini", "--", "sleep", "infinity"]
