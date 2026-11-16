@@ -39,7 +39,8 @@ it('matches concurrent responses to requests across real ports and propagates fa
     .fn<QuestionBrowserServices['renderSubmission']>()
     .mockReturnValueOnce(first.promise)
     .mockReturnValueOnce(second.promise)
-    .mockRejectedValueOnce(new Error('Internal details'));
+    .mockRejectedValueOnce(new Error('Internal details'))
+    .mockRejectedValueOnce(new DOMException('Question view was removed', 'AbortError'));
   const { services } = connect({
     openCopyQuestion: vi.fn(),
     openSubmissionInfo: vi.fn(),
@@ -57,6 +58,9 @@ it('matches concurrent responses to requests across real ports and propagates fa
   await expect(
     services.renderSubmission({ submissionId: '3', purpose: 'history' }, options),
   ).rejects.toThrow('Question service request failed');
+  await expect(
+    services.renderSubmission({ submissionId: '4', purpose: 'history' }, options),
+  ).rejects.toMatchObject({ name: 'AbortError' });
 });
 
 it('rejects cancellation locally and aborts host work', async () => {

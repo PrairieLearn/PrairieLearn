@@ -38,20 +38,21 @@
       // We finish by checking if an existing file already matches the name.
       // This allows a file pattern already covered to be replaced with another file with the same name, presuming the file is acceptable if already submitted.
       this.findAcceptedFileName = (fileName) => {
-        if (this.requiredFilesLowerCase.includes(fileName)) {
-          return this.requiredFiles[this.requiredFilesLowerCase.indexOf(fileName)];
+        const fileNameLowerCase = fileName.toLowerCase();
+        if (this.requiredFilesLowerCase.includes(fileNameLowerCase)) {
+          return this.requiredFiles[this.requiredFilesLowerCase.indexOf(fileNameLowerCase)];
         }
         if (this.requiredFilesUnmatchedRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
           return fileName;
         }
-        if (this.optionalFilesLowerCase.includes(fileName)) {
-          return this.optionalFiles[this.optionalFilesLowerCase.indexOf(fileName)];
+        if (this.optionalFilesLowerCase.includes(fileNameLowerCase)) {
+          return this.optionalFiles[this.optionalFilesLowerCase.indexOf(fileNameLowerCase)];
         }
         if (this.optionalFilesRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
           return fileName;
         }
-        const existingFile = this.files.find((f) => f.name.toLowerCase() === fileName);
-        if (existingFile) return existingFile.name;
+        // Keep the uploaded casing; saveSubmittedFile replaces the existing file that differs only by case.
+        if (this.files.some((f) => f.name.toLowerCase() === fileNameLowerCase)) return fileName;
         return null;
       };
 
@@ -174,14 +175,12 @@
 
     async addFiles(/** @type {FileList} */ fileList) {
       for (const file of fileList) {
-        // fuzzy case match
-        const fileNameLowerCase = file.name.toLowerCase();
-        const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
+        const acceptedFileName = this.findAcceptedFileName(file.name);
 
         if (acceptedFileName === null) {
           // If the file matches a required regex, we show a different message, as the user may be attempting to replace an existing file with a different name.
           const regexMatch = this.requiredFilesRegex.find((f) =>
-            new RegExp(f[0], 'i').test(fileNameLowerCase),
+            new RegExp(f[0], 'i').test(file.name),
           );
           if (regexMatch) {
             this.addWarningMessage(
@@ -198,7 +197,7 @@
         const existingFileSize = this.files
           // Don't count the size of the existing file with the same name, since
           // we're replacing it
-          .filter((f) => f.name !== acceptedFileName)
+          .filter((f) => f.name.toLowerCase() !== acceptedFileName.toLowerCase())
           .reduce((prev, next) => prev + next.size, 0);
         if (existingFileSize + file.size > this.maxFileSizeMB * 1024 * 1024) {
           this.addWarningMessage(
@@ -275,7 +274,7 @@
      * @param {string} contents The file's base64-encoded contents
      */
     saveSubmittedFile(name, size, date, contents) {
-      const idx = this.files.findIndex((file) => file.name === name);
+      const idx = this.files.findIndex((file) => file.name.toLowerCase() === name.toLowerCase());
       if (idx === -1) {
         this.files.push({
           name,
@@ -284,6 +283,7 @@
           contents,
         });
       } else {
+        this.files[idx].name = name;
         this.files[idx].contents = contents;
         this.files[idx].size = size;
         this.files[idx].date = date;

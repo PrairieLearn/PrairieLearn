@@ -40,6 +40,15 @@ describe('modelRequestRefusal', () => {
       modelRequestRefusal(declare([{ type: 'namespace', tools: [{ type: 'web_search' }] }])),
     ).not.toBeNull();
   });
+
+  it('refuses options that bill or declare tools outside the recorded usage', () => {
+    expect(modelRequestRefusal({ background: true })).not.toBeNull();
+    expect(modelRequestRefusal({ service_tier: 'priority' })).not.toBeNull();
+    expect(modelRequestRefusal({ service_tier: 'flex' })).not.toBeNull();
+    expect(modelRequestRefusal({ background: false, service_tier: 'default' })).toBeNull();
+    expect(modelRequestRefusal({ service_tier: 'auto' })).toBeNull();
+    expect(modelRequestRefusal({ prompt: { id: 'pmpt_1' } })).not.toBeNull();
+  });
 });
 
 describe('prepareSearchRequest', () => {
@@ -57,7 +66,7 @@ describe('prepareSearchRequest', () => {
       find: [{ ref_id: 'turn0view0', pattern: 'rtol' }],
       response_length: 'short',
     };
-    expect(prepareSearchRequest({ ...request, commands })).toEqual({
+    expect(prepareSearchRequest({ ...request, commands, unknown_option: true })).toEqual({
       forward: {
         ...request,
         commands,
@@ -67,10 +76,12 @@ describe('prepareSearchRequest', () => {
     });
   });
 
-  it('refuses commands it does not know', () => {
+  it('refuses commands it does not know, and requests without any', () => {
     for (const commands of [
       { search_query: [{ q: 'x' }], submit_form: [{ ref_id: 'turn0view0' }] },
       { open: { ref_id: 'https://example.com' } },
+      { response_length: 'short' },
+      {},
       undefined,
     ]) {
       expect(prepareSearchRequest({ ...request, commands })).toEqual({ refusal: SEARCH_REFUSAL });

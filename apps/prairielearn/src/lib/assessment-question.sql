@@ -1,3 +1,35 @@
+-- BLOCK select_assessment_question_structure
+SELECT
+  to_jsonb(aq.*) AS assessment_question,
+  to_jsonb(ag.*) AS alternative_pool,
+  to_jsonb(z.*) AS zone,
+  CASE
+    WHEN q.course_id = ci.course_id THEN q.qid
+    WHEN c.sharing_name IS NOT NULL THEN '@' || c.sharing_name || '/' || q.qid
+  END AS qid
+FROM
+  assessment_questions AS aq
+  JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+  JOIN zones AS z ON (z.id = ag.zone_id)
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  LEFT JOIN questions AS q ON (
+    q.id = aq.question_id
+    AND q.deleted_at IS NULL
+  )
+  LEFT JOIN courses AS c ON (
+    c.id = q.course_id
+    AND c.deleted_at IS NULL
+  )
+WHERE
+  aq.assessment_id = $assessment_id
+  AND aq.deleted_at IS NULL
+ORDER BY
+  z.number,
+  z.id,
+  ag.number,
+  aq.number;
+
 -- BLOCK select_assessment_questions
 WITH
   issue_count AS (
