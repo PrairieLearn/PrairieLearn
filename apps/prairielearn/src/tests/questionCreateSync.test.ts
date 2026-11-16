@@ -11,7 +11,7 @@ import { pullAndUpdateCourse } from '../lib/course.js';
 import { ChunkSchema } from '../lib/db-types.js';
 import { QuestionAddEditor, QuestionCopyEditor } from '../lib/editors.js';
 import * as courseModel from '../models/course.js';
-import { getCourseCommitHash, selectCourseById, updateCourseCommitHash } from '../models/course.js';
+import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import { selectQuestionByQid, selectQuestionByUuid } from '../models/question.js';
 import { selectUserById } from '../models/user.js';
 import * as courseDB from '../sync/course-db.js';
@@ -27,6 +27,17 @@ import {
 
 let fixture: CourseRepoFixture;
 
+async function sync() {
+  const course = await selectCourseById('1');
+  const user = await selectUserById('1');
+  const { jobPromise } = await pullAndUpdateCourse({
+    course,
+    userId: user.id,
+    authnUserId: user.id,
+  });
+  await jobPromise;
+}
+
 beforeAll(async () => {
   fixture = await createCourseRepoFixture(
     path.join(import.meta.dirname, 'testFileEditor/courseTemplate'),
@@ -34,7 +45,7 @@ beforeAll(async () => {
   config.fileEditorUseGit = true;
   config.chunksGenerator = true;
   await helperServer.before(fixture.courseLiveDir)();
-  await updateCourseCommitHash(await selectCourseById('1'));
+  await sync();
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -72,7 +83,7 @@ it('uses full sync when creating a missing question repairs an assessment', asyn
   });
   await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
   await syncCourseData(fixture.courseLiveDir);
-  await updateCourseCommitHash(await selectCourseById('1'));
+  await sync();
   const before = await captureDatabaseSnapshot();
   assert.include(
     before.assessments.find((assessment) => assessment.tid === 'HW1')!.sync_errors!,
@@ -137,6 +148,7 @@ it('creates and copies questions without loading the course and matches full syn
       assert.equal(load.mock.calls.length, 0);
       const targeted = await captureDatabaseSnapshot();
       await syncCourseData(course.path);
+      await sync();
       const full = await captureDatabaseSnapshot();
       assertSnapshotsMatch(targeted, full);
       load.mockClear();
@@ -227,6 +239,7 @@ it.each(['upload', 'database'] as const)(
     );
     const targeted = await captureDatabaseSnapshot();
     await syncCourseData(course.path);
+    await sync();
     assertSnapshotsMatch(targeted, await captureDatabaseSnapshot());
   },
 );
@@ -239,7 +252,7 @@ it('resolves copies of a new origin regardless of insertion order and matches fu
   const copyUuid = randomUUID();
   await fs.writeJson(originalPath, {
     ...original,
-    copiedFrom: `${course.uuid.toUpperCase()}/${sourceUuid.toUpperCase()}`,
+    copiedFrom: `${course.uuid.toUpperCase()}/${sourceUuid.toUpperCase()}/zz-source`,
   });
   await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
   await execa('git', ['commit', '-m', 'Existing copy with a pending origin'], {
@@ -247,7 +260,7 @@ it('resolves copies of a new origin regardless of insertion order and matches fu
   });
   await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
   await syncCourseData(course.path);
-  await updateCourseCommitHash(course);
+  await sync();
   assert.isNull(
     (await selectQuestionByQid({ course_id: course.id, qid: 'test/question' }))
       .copied_from_question_id,
@@ -288,6 +301,7 @@ it('resolves copies of a new origin regardless of insertion order and matches fu
   );
   const targeted = await captureDatabaseSnapshot();
   await syncCourseData(course.path);
+  await sync();
   assertSnapshotsMatch(targeted, await captureDatabaseSnapshot());
 });
 
@@ -299,7 +313,7 @@ it('uses full sync when an added question repeats an unresolved UUID', async () 
   await execa('git', ['commit', '-m', 'Unresolved UUID fixture'], { cwd: fixture.courseOriginDir });
   await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
   await syncCourseData(fixture.courseLiveDir);
-  await updateCourseCommitHash(await selectCourseById('1'));
+  await sync();
   assert.isNull((await selectQuestionByQid({ course_id: '1', qid: 'test/question' })).uuid);
   await fs.copy(source, path.join(fixture.courseOriginDir, 'questions/third-duplicate'));
   await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });

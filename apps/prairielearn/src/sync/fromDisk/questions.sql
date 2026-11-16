@@ -48,4 +48,5 @@ WHERE
   AND copy.deleted_at IS NULL
   AND NULLIF(copy.sync_errors, '') IS NULL
   AND copy.copied_from_question_id IS NULL
-  AND lower(copy.copied_from) = source_course.uuid::text || '/' || source.uuid::text;
+  AND lower(split_part(copy.copied_from, '/', 1)) = source_course.uuid::text
+  AND lower(split_part(copy.copied_from, '/', 2)) = source.uuid::text;
