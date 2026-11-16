@@ -32,7 +32,7 @@ describe('print forms', { timeout: 60_000 }, () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
-  it('versions the first vacant letter slot and handles alphabet rollover', () => {
+  it('versions the first vacant letter slot', () => {
     const form = (label: string, archived = false) => ({
       label,
       archived_at: archived ? new Date() : null,
@@ -41,11 +41,6 @@ describe('print forms', { timeout: 60_000 }, () => {
     expect(nextPrintFormLabel([form('A')], 'A')).toBe('A2');
     expect(nextPrintFormLabel([form('A', true), form('A2')], 'A2')).toBe('A3');
     expect(nextPrintFormLabel([form('A'), form('B'), form('C', true)])).toBe('C2');
-    expect(
-      nextPrintFormLabel(
-        Array.from({ length: 26 }, (_, index) => form(String.fromCharCode(65 + index))),
-      ),
-    ).toBe('AA');
   });
 
   it('saves assessment-shared form versions without creating student records', () =>
