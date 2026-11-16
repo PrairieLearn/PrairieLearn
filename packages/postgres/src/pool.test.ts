@@ -458,6 +458,20 @@ describe('@prairielearn/postgres', function () {
       assert.equal(allRows[0].id, '1');
       assert.isNotNull(allRows[0].created_at);
     });
+    it('cancels the running query on the server when the signal aborts', async () => {
+      const cursor = await queryCursor('SELECT pg_sleep(30);', {}, z.unknown(), {
+        signal: AbortSignal.timeout(50),
+      });
+      await expect(cursor.iterate(10).next()).rejects.toMatchObject({ name: 'TimeoutError' });
+      assert.equal(
+        await queryScalar(
+          "SELECT count(*)::int FROM pg_stat_activity WHERE state = 'active' AND query = 'SELECT pg_sleep(30);'",
+          z.number(),
+        ),
+        0,
+      );
+    });
+
     it('returns zero rows', async () => {
       const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 10000;', z.unknown());
       const rowBatches = [];
