@@ -29,12 +29,17 @@
   overflow-wrap: anywhere;
 }
 
+.course-agent-composer {
+  border: var(--bs-border-width) solid var(--bs-border-color);
+}
+
 .course-agent-composer:focus-within {
-  border-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary);
 }
 
 .course-agent-composer-input {
-  max-height: 12rem;
+  /* Ten lines plus the vertical padding of .form-control. */
+  max-height: calc(10lh + 0.75rem);
   overflow-y: auto;
   resize: none;
 }
@@ -86,13 +91,21 @@
   transition: opacity 0.15s;
 }
 
-.course-agent-attachment:is(:hover, :focus-within) .course-agent-attachment-download {
+.course-agent-attachment:has(:focus-visible) .course-agent-attachment-download {
   opacity: 1;
 }
 
-/* Touch screens have no hover, so they always show the remove button. */
-@media (hover: hover) {
-  .course-agent-attachment:not(:hover, :focus-within) .course-agent-attachment-remove {
+/*
+ * Touch can't hover, so any device with a touch screen always shows the remove button, as does a
+ * tile that has to be removed before sending. A tap opens a sent attachment without the overlay.
+ */
+@media not all and (any-pointer: coarse) {
+  .course-agent-attachment:hover .course-agent-attachment-download {
+    opacity: 1;
+  }
+
+  .course-agent-attachment:not(:hover, :focus-within, .course-agent-attachment-invalid)
+    .course-agent-attachment-remove {
     opacity: 0;
   }
 }
