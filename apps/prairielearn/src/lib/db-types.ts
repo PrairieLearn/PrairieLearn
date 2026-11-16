@@ -77,6 +77,17 @@ export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
+export const EnumInstanceQuestionStatusSchema = z.enum([
+  'complete',
+  'unanswered',
+  'saved',
+  'correct',
+  'incorrect',
+  'grading',
+  'invalid',
+]);
+export type EnumInstanceQuestionStatus = z.infer<typeof EnumInstanceQuestionStatusSchema>;
+
 export const EnumJobStatusSchema = z.enum(['Running', 'Stopping', 'Stopped', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
@@ -736,6 +747,23 @@ export const CourseAgentReviewSchema = z.object({
 });
 export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
 
+export const CourseAgentUsageReportSchema = z.object({
+  cost: z.number(),
+  course_agent_conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  input_tokens: z.coerce.number(),
+  input_tokens_cache_read: z.coerce.number(),
+  input_tokens_cache_write: z.coerce.number(),
+  model: z.string(),
+  output_tokens: z.coerce.number(),
+  output_tokens_reasoning: z.coerce.number(),
+  report_id: z.string(),
+  user_id: IdSchema,
+  web_search_calls: z.coerce.number(),
+});
+export type CourseAgentUsageReport = z.infer<typeof CourseAgentUsageReportSchema>;
+
 export const CourseSchema = z.object({
   ai_grading_free_credit_redemptions_used: z.number(),
   announcement_color: z.string().nullable(),
@@ -1150,9 +1178,7 @@ export const InstanceQuestionSchema = z.object({
   some_nonzero_submission: z.boolean().nullable(),
   some_perfect_submission: z.boolean().nullable(),
   some_submission: z.boolean().nullable(),
-  status: z
-    .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
-    .nullable(),
+  status: EnumInstanceQuestionStatusSchema.nullable(),
   submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
   variants_points_list: z.array(z.number().nullable()),
@@ -1835,6 +1861,7 @@ export const TableNames = [
   'client_fingerprints',
   'course_agent_conversations',
   'course_agent_reviews',
+  'course_agent_usage_reports',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',
