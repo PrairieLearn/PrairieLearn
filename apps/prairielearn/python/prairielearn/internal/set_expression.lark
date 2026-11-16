@@ -31,7 +31,7 @@ scalar_group: LPAR scalar RPAR
 UNION.4: "cup" | "U" | "∪" | "|" | "+"
 INTERSECTION.4: "cap" | "∩" | "&"
 DIFFERENCE: "-"
-NAMED_SET.5: "R" | "Q" | "Z" | "N" | "C"
+NAMED_SET.5: /(?:NN|ZZ|QQ|RR|CC)(?![A-Za-z_0-9])/
 
 ADD: "+" | "-"
 PRODUCT: "*" | "/" | "%"
