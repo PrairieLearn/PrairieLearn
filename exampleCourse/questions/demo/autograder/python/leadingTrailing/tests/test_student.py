@@ -1,3 +1,5 @@
+import numbers
+
 import numpy as np
 import pytest
 from pytest_prairielearn_grader.fixture import FeedbackFixture, StudentFixture
@@ -35,11 +37,9 @@ def test_0(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
         expected = x - alpha * (2 * x)
         if value is None:
             feedback.add_message(f"'{name}' is None or not defined")
-        elif not isinstance(value, (complex, float, int, np.number)):
+        elif not isinstance(value, numbers.Number):
             feedback.add_message(f"'{name}' is not a number")
-        elif (
-            abs(expected - value) < abs(expected) * 1e-5 or abs(expected - value) < 1e-8
-        ):
+        elif np.isclose(value, expected):
             num_correct += 1
             feedback.add_message(f"'{name}' looks good")
         else:
