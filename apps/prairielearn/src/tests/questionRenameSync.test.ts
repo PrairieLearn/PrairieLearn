@@ -14,7 +14,7 @@ import { ChunkSchema } from '../lib/db-types.js';
 import { computeFileContentHash } from '../lib/editorUtil.js';
 import { FileModifyEditor, MultiEditor, QuestionRenameEditor } from '../lib/editors.js';
 import * as courseModel from '../models/course.js';
-import { getCourseCommitHash, selectCourseById, updateCourseCommitHash } from '../models/course.js';
+import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectUserById } from '../models/user.js';
 import * as courseDB from '../sync/course-db.js';
@@ -60,7 +60,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     config.fileEditorUseGit = true;
     config.chunksGenerator = true;
     await helperServer.before(fixture.courseLiveDir)();
-    await updateCourseCommitHash(await selectCourseById('1'));
+    await sync();
   });
   afterEach(() => vi.restoreAllMocks());
   afterAll(async () => {
@@ -70,6 +70,17 @@ describe('question QID sync with real Git and a course subdirectory', () => {
       await fs.remove(fixture.baseDir);
     }
   });
+
+  async function sync() {
+    const course = await selectCourseById('1');
+    const user = await selectUserById('1');
+    const { jobPromise } = await pullAndUpdateCourse({
+      course,
+      userId: user.id,
+      authnUserId: user.id,
+    });
+    await jobPromise;
+  }
 
   async function prepareRename(edit: 'title' | 'gradingMethod' | 'content' | 'assessment') {
     const course = await selectCourseById('1');
@@ -171,6 +182,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
       }
       assert.isFalse(await fs.pathExists(path.join(course.path, 'questions', question.qid!)));
       const result = await syncCourseData(course.path);
+      await sync();
       assert.equal(result.status, 'complete');
       const full = await captureDatabaseSnapshot();
       assertSnapshotsMatch(targeted, full);
@@ -216,7 +228,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
       });
       await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
       await syncCourseData(fixture.courseLiveDir);
-      await updateCourseCommitHash(await selectCourseById('1'));
+      await sync();
       await chunks.updateQuestionContentChunk({
         coursePath: fixture.courseLiveDir,
         courseId: '1',
@@ -340,7 +352,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     });
     await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
     await syncCourseData(fixture.courseLiveDir);
-    await updateCourseCommitHash(await selectCourseById('1'));
+    await sync();
     const before = await captureDatabaseSnapshot();
     const missing = before.assessments.find((assessment) => assessment.tid === 'HW3')!;
     assert.include(missing.sync_errors!, destination);
@@ -365,6 +377,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
       ),
     );
     await syncCourseData(course.path);
+    await sync();
     assertSnapshotsMatch(after, await captureDatabaseSnapshot());
   });
 
@@ -416,7 +429,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     });
     await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
     await syncCourseData(fixture.courseLiveDir);
-    await updateCourseCommitHash(await selectCourseById('1'));
+    await sync();
     const before = await captureDatabaseSnapshot();
     assert.isNotNull(
       before.assessments.find((assessment) => assessment.tid === 'HW1')!.sync_errors,
@@ -459,6 +472,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     );
     await execa('git', ['push'], { cwd: course.path });
     const baseline = await syncCourseData(course.path);
+    await sync();
     assert.equal(baseline.status, 'complete');
     const original = await selectQuestionByQid({ course_id: course.id, qid });
     assert.isNull(original.uuid);
@@ -488,7 +502,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     await execa('git', ['commit', '-m', 'Nesting fixture'], { cwd: fixture.courseOriginDir });
     await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
     await syncCourseData(course.path);
-    await updateCourseCommitHash(course);
+    await sync();
     const source = await selectQuestionByQid({ course_id: course.id, qid: 'nesting-source' });
     assert.equal(source.uuid, sourceUuid);
     assert.isNull(source.sync_errors);
@@ -512,6 +526,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     const after = await captureDatabaseSnapshot();
     assert.isNotNull(after.questions.find((question) => question.id === source.id)!.deleted_at);
     await syncCourseData(course.path);
+    await sync();
     assertSnapshotsMatch(after, await captureDatabaseSnapshot());
   });
 });
