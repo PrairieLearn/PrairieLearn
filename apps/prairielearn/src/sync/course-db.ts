@@ -1747,6 +1747,26 @@ function validateCourseInstance({
   return { warnings, errors };
 }
 
+/** Loads one question without reconciling course-wide identities or catalogs. */
+export async function loadQuestionInfo(courseId: string, coursePath: string, qid: string) {
+  const institution = await selectInstitutionForCourse({ course_id: courseId });
+  const sharingEnabled = await features.enabled('question-sharing', {
+    course_id: courseId,
+    institution_id: institution.id,
+  });
+  const info = await loadAndValidateJson({
+    coursePath,
+    filePath: path.join('questions', qid, 'info.json'),
+    schema: schemas.infoQuestion,
+    zodSchema: schemas.QuestionJsonSchema,
+    validate: (question) => validateQuestion({ qid, question, sharingEnabled }),
+  });
+  if (info && qid.startsWith('@')) {
+    infofile.addError(info, "Question IDs are not allowed to begin with '@'");
+  }
+  return info;
+}
+
 /**
  * Loads all questions in a course directory.
  */

@@ -21,7 +21,7 @@ import { b64EncodeUnicode } from '../lib/base64-util.js';
 import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';
-import { ChunkSchema, QuestionSchema, type User } from '../lib/db-types.js';
+import { AssessmentSchema, ChunkSchema, QuestionSchema, type User } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editorUtil.js';
 import {
   FileModifyEditor,
@@ -35,6 +35,7 @@ import * as courseModel from '../models/course.js';
 import { getCourseCommitHash, selectCourseById, updateCourseColumn } from '../models/course.js';
 import { insertInstitution } from '../models/institution.js';
 import { selectQuestionByQid } from '../models/question.js';
+import { selectSharingSetsForQuestion } from '../models/sharing-set.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 import * as courseDB from '../sync/course-db.js';
 
@@ -573,6 +574,168 @@ describe('content-only question save', () => {
     await content.run();
     expect(load).not.toHaveBeenCalled();
     assert.deepEqual(await selectQuestionByQid({ course_id: courseId, qid }), withErrors);
+  });
+
+  it('recovers pending metadata atomically while preserving unrelated question errors', async () => {
+    config.chunksGenerator = true;
+    const otherPath = path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json');
+    const other = await fs.readJson(otherPath);
+    await expect(
+      (await save(otherPath, JSON.stringify({ ...other, title: 123 }))).run(),
+    ).rejects.toThrow('One or more JSON files');
+    const infoPath = path.join(path.dirname(filePath), 'info.json');
+    const original = await fs.readJson(infoPath);
+    await expect(
+      (
+        await save(infoPath, JSON.stringify({ ...original, title: 123, singleVariant: true }))
+      ).run(),
+    ).rejects.toThrow('One or more JSON files');
+    const before = await util.dumpTableWithSchema('questions', QuestionSchema);
+    const beforeChunks = await util.dumpTableWithSchema('chunks', ChunkSchema);
+    const previousCommit = (await selectCourseById(courseId)).commit_hash;
+    assert.isFalse((await selectQuestionByQid({ course_id: courseId, qid })).single_variant);
+    const fixed = JSON.stringify({ ...original, title: 'Recovered title', singleVariant: true });
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    const checkpoint = vi
+      .spyOn(courseModel, 'updateCourseCommitHash')
+      .mockRejectedValueOnce(new Error('Checkpoint failed'));
+    await expect((await save(infoPath, fixed)).run()).rejects.toThrow('Checkpoint failed');
+    assert.deepEqual(await util.dumpTableWithSchema('questions', QuestionSchema), before);
+    assert.deepEqual(await util.dumpTableWithSchema('chunks', ChunkSchema), beforeChunks);
+    assert.equal((await selectCourseById(courseId)).commit_hash, previousCommit);
+    checkpoint.mockRestore();
+    await (await save(infoPath, fixed)).run();
+    expect(load).not.toHaveBeenCalled();
+    const recovered = await selectQuestionByQid({ course_id: courseId, qid });
+    assert.equal(recovered.title, 'Recovered title');
+    assert.isTrue(recovered.single_variant);
+    assert.isNull(recovered.sync_errors);
+    assert.sameDeepMembers(
+      await util.dumpTableWithSchema('questions', QuestionSchema),
+      before.map((question) => (question.qid === qid ? recovered : question)),
+    );
+    assert.equal(
+      (await selectCourseById(courseId)).commit_hash,
+      await getCourseCommitHash(courseDir),
+    );
+  });
+
+  it('retains validation errors and unapplied fields when question recovery is still invalid', async () => {
+    const infoPath = path.join(path.dirname(filePath), 'info.json');
+    const original = await fs.readJson(infoPath);
+    await expect(
+      (
+        await save(infoPath, JSON.stringify({ ...original, title: 123, singleVariant: true }))
+      ).run(),
+    ).rejects.toThrow('One or more JSON files');
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    const operation = await save(
+      infoPath,
+      JSON.stringify({
+        ...original,
+        title: 'Valid title',
+        singleVariant: true,
+        gradingMethod: 'External',
+      }),
+    );
+    await expect(operation.run()).rejects.toThrow('One or more JSON files');
+    expect(load).not.toHaveBeenCalled();
+    const question = await selectQuestionByQid({ course_id: courseId, qid });
+    assert.equal(question.title, original.title);
+    assert.isFalse(question.single_variant);
+    assert.include(question.sync_errors!, 'externalGradingOptions');
+    assert.equal(classifyEditOutcome((await operation.result()).data), 'sync_json_errors');
+    assert.equal(
+      (await selectCourseById(courseId)).commit_hash,
+      await getCourseCommitHash(courseDir),
+    );
+  });
+
+  it('uses full sync to clear dependent assessment errors when recovering question preferences', async () => {
+    const infoPath = path.join(path.dirname(filePath), 'info.json');
+    const original = await fs.readJson(infoPath);
+    const valid = { ...original, preferences: { num: { type: 'number', default: 1 } } };
+    await (await save(infoPath, JSON.stringify(valid))).run();
+    const assessmentPath = path.join(
+      courseDir,
+      'courseInstances',
+      util.COURSE_INSTANCE_ID,
+      'assessments',
+      util.ASSESSMENT_ID,
+      'infoAssessment.json',
+    );
+    const assessment = await fs.readJson(assessmentPath);
+    await (
+      await save(
+        assessmentPath,
+        JSON.stringify({
+          ...assessment,
+          zones: [{ questions: [{ id: qid, points: 10, preferences: { num: 2 } }] }],
+        }),
+      )
+    ).run();
+    const selectedAssessment = async () =>
+      (await util.dumpTableWithSchema('assessments', AssessmentSchema)).find(
+        (a) => a.tid === util.ASSESSMENT_ID,
+      )!;
+    assert.isNull((await selectedAssessment()).sync_errors);
+    await expect(
+      (await save(infoPath, JSON.stringify({ ...valid, title: 123 }))).run(),
+    ).rejects.toThrow('One or more JSON files');
+    assert.include(
+      (await selectedAssessment()).sync_errors!,
+      'does not define a preferences schema',
+    );
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    await (await save(infoPath, JSON.stringify({ ...valid, title: 'Recovered title' }))).run();
+    expect(load).toHaveBeenCalled();
+    assert.isNull((await selectQuestionByQid({ course_id: courseId, qid })).sync_errors);
+    assert.isNull((await selectedAssessment()).sync_errors);
+    assert.equal(
+      (await selectCourseById(courseId)).commit_hash,
+      await getCourseCommitHash(courseDir),
+    );
+  });
+
+  it('uses full sync to remove existing sharing-set membership during error recovery', async () => {
+    await withConfig(
+      { features: { 'question-sharing': true }, checkSharingOnSync: true },
+      async () => {
+        const courseInfoPath = path.join(courseDir, 'infoCourse.json');
+        const courseInfo = await fs.readJson(courseInfoPath);
+        await (
+          await save(
+            courseInfoPath,
+            JSON.stringify({
+              ...courseInfo,
+              sharingSets: [{ name: 'shared', description: 'Shared questions' }],
+            }),
+          )
+        ).run();
+        const infoPath = path.join(path.dirname(filePath), 'info.json');
+        const original = await fs.readJson(infoPath);
+        const shared = { ...original, sharingSets: ['shared'] };
+        await (await save(infoPath, JSON.stringify(shared))).run();
+        const question = await selectQuestionByQid({ course_id: courseId, qid });
+        const memberships = () =>
+          selectSharingSetsForQuestion({ course_id: courseId, question_id: question.id });
+        assert.isTrue((await memberships())[0].in_set);
+        await expect(
+          (await save(infoPath, JSON.stringify({ ...shared, title: 123 }))).run(),
+        ).rejects.toThrow('One or more JSON files');
+        const load = vi.spyOn(courseDB, 'loadFullCourse');
+        await (
+          await save(infoPath, JSON.stringify({ ...original, title: 'Recovered title' }))
+        ).run();
+        expect(load).toHaveBeenCalled();
+        assert.isFalse((await memberships())[0].in_set);
+        assert.isNull((await selectQuestionByQid({ course_id: courseId, qid })).sync_errors);
+        assert.equal(
+          (await selectCourseById(courseId)).commit_hash,
+          await getCourseCommitHash(courseDir),
+        );
+      },
+    );
   });
 
   it('refreshes eligibility after acquiring the lock instead of trusting the request snapshot', async () => {

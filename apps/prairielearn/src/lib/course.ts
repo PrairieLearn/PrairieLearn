@@ -20,6 +20,8 @@ import {
 import { syncQuestionTitle } from '../models/question.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 import * as courseDB from '../sync/course-db.js';
+import * as syncQuestions from '../sync/fromDisk/questions.js';
+import * as infofile from '../sync/infofile.js';
 import { getQuestionSyncPlan } from '../sync/questionSync.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import { checkSharingConfigurationValid, syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
@@ -111,7 +113,7 @@ export async function syncCourseFromDisk({
 
     if (questionChanges !== null) {
       const qids = questionChanges.map((change) => change.qid);
-      job.info(`Syncing question content: ${qids.join(', ') || 'no changes'}`);
+      job.info(`Syncing question changes: ${qids.join(', ') || 'no changes'}`);
       const prepared =
         config.chunksGenerator && qids.length > 0
           ? await chunks.prepareQuestionContentChunks({
@@ -124,6 +126,14 @@ export async function syncCourseFromDisk({
         for (const change of questionChanges) {
           if (change.kind === 'title') {
             await syncQuestionTitle({ course_id: course.id, qid: change.qid, title: change.title });
+          } else if (change.kind === 'recover') {
+            job.info(`Reprocessing question metadata: ${change.qid}`);
+            await syncQuestions.sync(
+              course.id,
+              { questions: { [change.qid]: change.info } },
+              'metadata',
+            );
+            for (const error of change.info.errors) job.error(error);
           }
         }
         if (prepared) await chunks.applyPreparedChunks(course.id, prepared);
@@ -132,7 +142,12 @@ export async function syncCourseFromDisk({
       });
       if (prepared) chunks.logChunkChangesToJob(prepared.changes, job);
       if (config.devMode) flushElementCache();
-      return { status: 'complete', hadJsonErrors: false };
+      return {
+        status: 'complete',
+        hadJsonErrors: questionChanges.some(
+          (change) => change.kind === 'recover' && infofile.hasErrors(change.info),
+        ),
+      };
     }
 
     job.info('Using full course sync');
