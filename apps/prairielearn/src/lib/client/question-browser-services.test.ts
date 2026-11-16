@@ -11,6 +11,11 @@ import type { SubmissionPanels } from '../question-render.types.js';
 import type { SubmissionInfo } from '../submission-info.js';
 
 import { createQuestionServicesHost } from './question-browser-services.js';
+import {
+  createQuestionServicesClient,
+  serveQuestionServices,
+} from './question-browser-services.transport.js';
+import { createQuestionSubmissions } from './question-submissions.js';
 
 vi.mock('socket.io-client', () => ({ io: vi.fn() }));
 
@@ -333,3 +338,60 @@ it.each(['4', '5'])(
     expect(socket.close).toHaveBeenCalledOnce();
   },
 );
+
+it('invalidates host renders before cancellation returns across the port', async () => {
+  const socket = { on: vi.fn(), emit: vi.fn(), close: vi.fn(), removeAllListeners: vi.fn() };
+  vi.mocked(io).mockReturnValue(socket as unknown as ReturnType<typeof io>);
+  const response = withResolvers<Response>();
+  const fetch = vi
+    .fn()
+    .mockReturnValueOnce(response.promise)
+    .mockResolvedValueOnce(Response.json(panels));
+  vi.stubGlobal('fetch', fetch);
+  document.body.innerHTML = '<div id="question-score-panel">Original score</div>';
+  const host = createServices({ copyQuestion: null, submissions: [] });
+  const channel = new MessageChannel();
+  const disposeHost = serveQuestionServices(channel.port1, host);
+  const client = createQuestionServicesClient(channel.port2);
+  const queued = { id: '2', grading_job_id: '10', grading_job_status: 'queued' as const };
+  const onStatus = vi.fn();
+  const onRender = vi.fn();
+  const onError = vi.fn();
+  const view = createQuestionSubmissions({
+    services: client.services,
+    submissions: [queued],
+    externalGrading: true,
+    isCurrent: () => true,
+    onStatus,
+    onRender,
+    onError,
+  });
+  try {
+    await vi.waitFor(() => expect(socket.on).toHaveBeenCalledTimes(2));
+    const publish = socket.on.mock.calls.find(([event]) => event === 'change:status')![1];
+    publish({ variant_id: '3', submissions: [{ ...queued, grading_job_status: 'graded' }] });
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    const replacement = { ...queued, grading_job_id: '11' };
+    publish({ variant_id: '3', submissions: [replacement] });
+    // Resolve before the queued status message can reach the UI and cancel the request.
+    response.resolve(
+      Response.json({
+        ...panels,
+        questionScorePanel: '<div id="question-score-panel">Stale score</div>',
+      }),
+    );
+    await vi.waitFor(() => expect(onStatus).toHaveBeenLastCalledWith(replacement));
+    expect(document.getElementById('question-score-panel')!.textContent).toBe('Original score');
+    expect(onRender).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+
+    publish({ variant_id: '3', submissions: [{ ...replacement, grading_job_status: 'graded' }] });
+    await vi.waitFor(() => expect(onRender).toHaveBeenCalledOnce());
+    expect(document.getElementById('question-score-panel')!.textContent).toBe('80%');
+    await vi.waitFor(() => expect(socket.close).toHaveBeenCalledOnce());
+  } finally {
+    view.dispose();
+    client.dispose();
+    disposeHost();
+  }
+});

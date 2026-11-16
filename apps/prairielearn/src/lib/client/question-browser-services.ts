@@ -122,8 +122,15 @@ export function createQuestionServicesHost({
           if (msg.variant_id !== variantId) return;
           const latest = (latestSubmissions ??= new Map());
           const updates = msg.submissions.filter((submission) => {
-            if (isStaleGradingStatus(submission, latest.get(submission.id))) {
-              return false;
+            const previous = latest.get(submission.id);
+            if (isStaleGradingStatus(submission, previous)) return false;
+            if (
+              previous &&
+              (previous.grading_job_id || null) !== (submission.grading_job_id || null)
+            ) {
+              // UI cancellation crosses the port asynchronously. Invalidate here
+              // before an old response can update scores or dialog metadata.
+              submissionSequences.delete(submission.id);
             }
             latest.set(submission.id, submission);
             return true;
