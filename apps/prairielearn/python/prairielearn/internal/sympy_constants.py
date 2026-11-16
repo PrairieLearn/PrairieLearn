@@ -48,6 +48,18 @@ hidden_complex_variables: Final[FrozenDict[str, sympy.Basic | complex]] = Frozen
     "_ImaginaryUnit": sympy.I,
 })
 
+serialized_named_sets: Final[FrozenDict[str, sympy.Set]] = FrozenDict({
+    "Reals": sympy.S.Reals,
+    "Rationals": sympy.S.Rationals,
+    "Integers": sympy.S.Integers,
+    "Naturals": sympy.S.Naturals,
+    "Complexes": sympy.S.Complexes,
+})
+
+serialized_functions: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
+    "_pl_Tuple": sympy.Tuple,
+})
+
 functions: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
     "exp": sympy.exp,
     "log": sympy.log,
