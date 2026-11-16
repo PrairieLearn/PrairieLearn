@@ -37,7 +37,7 @@ import prairielearn.sympy_utils as psu
 
     === "Old"
 
-        ```python
+        ```python { .no-copy }
         import colors
         import to_precision
         import python_helper_sympy

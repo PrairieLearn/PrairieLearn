@@ -428,6 +428,14 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "printingCloudflareAccountId": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "printingCloudflareApiToken": {
+      "default": null,
+      "type": ["string", "null"]
+    },
     "runMigrations": {
       "default": true,
       "type": "boolean"
@@ -1484,6 +1492,14 @@
     },
     "aiQuestionGenerationRateLimitDollars": {
       "default": 1,
+      "type": "number"
+    },
+    "courseAgentRateLimitDollars": {
+      "default": 50,
+      "type": "number"
+    },
+    "courseAgentWebSearchCallCostDollars": {
+      "default": 0.01,
       "type": "number"
     },
     "administratorOpenAiApiKey": {

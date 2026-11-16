@@ -1,11 +1,10 @@
 {{#question}}
 <script>
-$(function() {
+$(function () {
     var UUID = "{{uuid}}";
 
     new window.PLFileEditor(UUID, {
         originalContents: "{{original_file_contents}}",
-        currentContents: "{{current_file_contents}}",
         readOnly: {{#editable}}false{{/editable}}{{^editable}}true{{/editable}},
         aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}},
         aceModePath: {{#ace_mode_path}}"{{ace_mode_path}}"{{/ace_mode_path}}{{^ace_mode_path}}undefined{{/ace_mode_path}},
@@ -20,7 +19,7 @@ $(function() {
 });
 </script>
 <div id="file-editor-{{uuid}}" class="mathjax_ignore">
-    <input type="hidden" name="{{name}}">
+    <input type="hidden" name="{{name}}" value="{{current_file_contents}}">
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
              {{file_name}}

@@ -5,7 +5,7 @@ import {
   imageRegistryRestrictionsText,
 } from '@prairielearn/docker-utils/registry';
 
-import { QuestionAuthorUidSchema } from '../lib/question-authors.js';
+import { QuestionAuthorUidsSchema } from '../lib/question-authors.js';
 
 import { CommentJsonSchema } from './comment.js';
 
@@ -75,36 +75,6 @@ const QuestionDependencyJsonSchema = z
   })
   .strict()
   .describe("The question's client-side dependencies.");
-
-const LegacyQuestionAuthorJsonSchema = z
-  .object({
-    name: z
-      .string()
-      .describe('A human-readable name of a question author.')
-      .trim()
-      .min(3)
-      .max(255)
-      .optional(),
-    email: z
-      .string()
-      .describe('An email address to contact a question author.')
-      .max(255)
-      .optional(),
-    orcid: z
-      .string()
-      .describe('An ORCID identifier that uniquely identifies an individual question author.')
-      .regex(/^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$/)
-      .optional(),
-    originCourse: z
-      .string()
-      .describe('The sharing name of a course whose staff is a question author.')
-      .optional(),
-  })
-  .strict()
-  .describe(
-    'Deprecated structured author metadata. Replace with a UID string; legacy email values are treated as UIDs during the transition.',
-  )
-  .meta({ deprecated: true });
 
 const WorkspaceOptionsJsonSchema = z
   .object({
@@ -255,15 +225,9 @@ export const QuestionJsonSchema = z
       .describe("Extra tags associated with the question (e.g., 'Exam Only', 'Broken').")
       .optional()
       .default([]),
-    authors: z
-      .array(
-        z.union([
-          QuestionAuthorUidSchema.describe(
-            'A user UID, which need not identify an existing account or be a routable email.',
-          ),
-          LegacyQuestionAuthorJsonSchema,
-        ]),
-      )
+    authors: QuestionAuthorUidsSchema.describe(
+      'Author UIDs or full ORCID URLs. UIDs need not identify an existing account or be a routable email.',
+    )
       .optional()
       .default([]),
     clientFiles: z

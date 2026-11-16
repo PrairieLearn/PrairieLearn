@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
-import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
-
-/** The agent's working directory, a checkout of the course. */
-export const COURSE_DIR = '/workspace/session/course';
+import { COURSE_DIR, type Clip, type ToolCall } from '@prairielearn/course-agent-types';
 
 /** Bounds on what one call adds to chat history; Codex's thread keeps the full record. */
 const OUTPUT_CHARS = 4_000;
@@ -25,7 +22,6 @@ const NOT_TOOL_CALLS = new Set([
   'reasoning',
   'plan',
   'hookPrompt',
-  'contextCompaction',
   'functionCallOutput',
 ]);
 
@@ -89,12 +85,14 @@ const WebSearchItem = z.object({
     })
     .nullable(),
 });
+const CompactionItem = z.object({ type: z.literal('contextCompaction') });
 const Item = z.discriminatedUnion('type', [
   CommandItem,
   FileChangeItem,
   McpItem,
   DynamicItem,
   WebSearchItem,
+  CompactionItem,
 ]);
 const OtherItem = z.object({ type: z.string(), path: z.string().nullish(), status: Status });
 
@@ -262,5 +260,7 @@ export function toolCallFromItem(
         error: null,
       };
     }
+    case 'contextCompaction':
+      return { v: 1, kind: 'compaction', status: status(phase, undefined) };
   }
 }

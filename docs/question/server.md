@@ -83,7 +83,7 @@ For generated floating point answers, it's important to use consistent rounding 
 
 === "Bad"
 
-    ```python title="server.py"
+    ```python { title="server.py" .no-copy }
     def generate(data):
         a = 33.33337
         b = 33.33333

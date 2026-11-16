@@ -30,7 +30,7 @@
     "cheerio": "^1.2.0",
     "commander": "^15.0.0",
     "domhandler": "^6.0.1",
-    "fast-xml-parser": "^5.11.1",
+    "fast-xml-parser": "^5.12.0",
     "file-type": "^22.1.1",
     "he": "^1.2.0",
     "mime": "^4.1.0",

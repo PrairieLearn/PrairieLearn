@@ -6,7 +6,17 @@ import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
 import { Disclosure } from '../ai/ChatParts.js';
 
-type Verb = 'read' | 'list' | 'search' | 'browse' | 'run' | 'edit' | 'create' | 'delete' | 'call';
+type Verb =
+  | 'read'
+  | 'list'
+  | 'search'
+  | 'browse'
+  | 'run'
+  | 'edit'
+  | 'create'
+  | 'delete'
+  | 'call'
+  | 'summarize';
 
 const VERBS: Record<Verb, [running: string, done: string]> = {
   read: ['Reading', 'Read'],
@@ -18,6 +28,7 @@ const VERBS: Record<Verb, [running: string, done: string]> = {
   create: ['Creating', 'Created'],
   delete: ['Deleting', 'Deleted'],
   call: ['Calling', 'Called'],
+  summarize: ['Summarizing', 'Summarized'],
 };
 
 /** Codex runs commands through a login shell; the inner script is what the agent wrote. */
@@ -84,6 +95,12 @@ function category(call: ToolCall): {
         icon: 'bi-plug',
         group: (n) => `Called ${toolName(call)} ${n} times`,
       };
+    case 'compaction':
+      return {
+        key: 'compaction',
+        icon: 'bi-arrows-collapse',
+        group: (n) => `Summarized earlier conversation ${n} times`,
+      };
   }
 }
 
@@ -139,6 +156,8 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
     case 'tool':
       if (call.server === 'web') return describeWeb(call.tool, call.arguments.text);
       return { verb: 'call', subject: <Code>{toolName(call)}</Code> };
+    case 'compaction':
+      return { verb: 'summarize', subject: 'earlier conversation' };
   }
 }
 
@@ -391,6 +410,13 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
           )}
           {call.error && <div className="small text-danger">{call.error}</div>}
         </>
+      );
+    case 'compaction':
+      return (
+        <div className="small text-body-secondary">
+          The conversation got long, so the agent replaced earlier messages with a summary to make
+          room. It may not remember every detail from before this point.
+        </div>
       );
   }
 }

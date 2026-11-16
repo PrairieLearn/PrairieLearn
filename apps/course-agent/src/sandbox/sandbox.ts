@@ -16,11 +16,19 @@ import {
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
 
-import { logEvent, redactSecrets } from '../monitoring.js';
+import {
+  type Attachment,
+  UPLOADS_DIR,
+  attachmentPath,
+  uploadKey,
+} from '../conversation/attachments.js';
+import { logEvent } from '../monitoring.js';
 
-import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
+import { codexRequestKind, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
 const SESSION = '/workspace/session';
+// Downloaded course data and the agent's analysis scripts.
+const COURSE_DATA = `${SESSION}/course-data`;
 // Installed by the image from container/codex-config.toml.
 const CODEX_CONFIG = '/etc/course-agent/codex-config.toml';
 // The image's unprivileged user. Checkpoints record file ownership by ID, so the ID must not change.
@@ -88,32 +96,6 @@ const InstanceTypeSchema = z.enum(['lite', 'standard-1', 'standard-2', 'standard
 // AGENT_TURN_SECONDS + USER_IDLE_SECONDS must fit within it.
 const MAX_CONTAINER_INACTIVITY_SECONDS = 6 * 60 * 60;
 
-// Codex output can contain sensitive content, so stderr is forwarded only when DEBUG_RUNNER_OUTPUT
-// is "true" (staging only), capped in case a runner repeats an error.
-const RUNNER_LOG_LINES = 200;
-const RUNNER_LOG_CHARS = 2000;
-
-/** Forward runner stderr to Worker logs and keep a short tail for startup errors. */
-function forwardRunnerStderr(stream: ReadableStream) {
-  let lines = 0;
-  let tail = '';
-  const done = (async () => {
-    try {
-      for await (const chunk of stream.pipeThrough(new TextDecoderStream())) {
-        tail = (tail + chunk).slice(-RUNNER_LOG_CHARS);
-        for (const line of chunk.split('\n')) {
-          if (line && ++lines <= RUNNER_LOG_LINES) {
-            console.warn(`[codex stderr] ${redactSecrets(line.slice(0, RUNNER_LOG_CHARS))}`);
-          }
-        }
-      }
-    } catch {
-      // The stream errors when the container stops; the runner's exit is handled by the caller.
-    }
-  })();
-  return { done, tail: () => redactSecrets(tail.trim()) };
-}
-
 /** Read-only access to the bound repository; the container never receives the GitHub token. */
 export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
   Env & { GITHUB_READ_TOKEN?: string },
@@ -150,8 +132,6 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
   }
 }
 
-const OPENAI_API = 'https://api.openai.com';
-
 /**
  * Only the conversation's pinned model and web browsing are available; the API key stays outside
  * the container. OpenAI runs searches and reads pages, so the container never connects to other
@@ -159,7 +139,7 @@ const OPENAI_API = 'https://api.openai.com';
  */
 export class CourseAgentModelOutbound extends WorkerEntrypoint<
   Env,
-  { model: string; sandboxId: string }
+  { model: string; sandboxId: string; conversationId: string; executionId: string }
 > {
   override async fetch(request: Request) {
     const url = new URL(request.url);
@@ -171,16 +151,8 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
     return new Response('Forbidden', { status: 403 });
   }
 
-  private openai(path: string, body: unknown) {
-    return fetch(`${OPENAI_API}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      redirect: 'manual',
-    });
+  private get conversation() {
+    return this.env.Conversation.getByName(this.ctx.props.conversationId);
   }
 
   private async responses(request: Request) {
@@ -188,17 +160,24 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
       model?: string;
       input?: { role?: string }[];
       tools?: unknown;
+      background?: unknown;
+      service_tier?: unknown;
     };
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
     const refusal = modelRequestRefusal(body);
     if (refusal) return new Response(refusal, { status: 403 });
+    const compaction = codexRequestKind(body) === 'compaction';
     // Later requests in a turn end with tool output; only the role is read, never the content.
-    const firstOfTurn = body.input?.at(-1)?.role === 'user';
+    // Local compaction ends with a user-role summarization prompt, so it is excluded by kind.
+    const firstOfTurn = !compaction && body.input?.at(-1)?.role === 'user';
     const started = Date.now();
     if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
-    const response = await this.openai('/v1/responses', body);
-    if (firstOfTurn) {
-      logEvent('model_response_started', {
+    const response = await this.conversation.proxyModelRequest(
+      JSON.stringify(body),
+      this.ctx.props.executionId,
+    );
+    if (firstOfTurn || compaction) {
+      logEvent(compaction ? 'model_compaction_started' : 'model_response_started', {
         sandboxId: this.ctx.props.sandboxId,
         status: response.status,
         elapsedMs: Date.now() - started,
@@ -216,8 +195,11 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
       return Response.json({ output: prepared.refusal });
     }
     const started = Date.now();
-    const response = await this.openai('/v1/alpha/search', prepared.forward);
-    // OpenAI bills hosted search per call; the response carries no usage to meter.
+    const response = await this.conversation.proxySearchRequest(
+      JSON.stringify(prepared.forward),
+      prepared.operations,
+      this.ctx.props.executionId,
+    );
     logEvent('web_search', {
       sandboxId: this.ctx.props.sandboxId,
       operations: prepared.operations,
@@ -253,6 +235,7 @@ export class CourseSandbox extends DurableObject<Env> {
   private get backups() {
     return new DirectoryBackup(this.container, this.ctx.exports.DirectoryBackupGateway, {
       binding: 'CHECKPOINTS',
+      prefix: 'checkpoints/',
     });
   }
 
@@ -291,12 +274,6 @@ export class CourseSandbox extends DurableObject<Env> {
         this.ctx.exports.CourseAgentGitHubOutbound({ props: { repository: config.repository } }),
       );
     }
-    await this.container.interceptOutboundHttp(
-      'model.internal:80',
-      this.ctx.exports.CourseAgentModelOutbound({
-        props: { model: config.model, sandboxId: this.ctx.id.name },
-      }),
-    );
     if (checkpoint) {
       await this.backups.restore(checkpoint);
       // The agent owns its home and may have deleted .codex.
@@ -313,6 +290,8 @@ export class CourseSandbox extends DurableObject<Env> {
         CODEX_CONFIG,
         `${SESSION}/home/.codex/config.toml`,
       ]);
+      // The agent may also have deleted its course data directory.
+      await this.exec(['mkdir', '-p', COURSE_DATA], AGENT_USER);
       // addCourseFiles() locks a fresh workspace once its files are in place.
       await this.lockSession();
     } else {
@@ -321,6 +300,7 @@ export class CourseSandbox extends DurableObject<Env> {
         ['install', '-D', '-m', '0644', CODEX_CONFIG, `${SESSION}/home/.codex/config.toml`],
         AGENT_USER,
       );
+      await this.exec(['mkdir', '-p', COURSE_DATA], AGENT_USER);
     }
     this.freshContainer = true;
     // Returned rather than only logged: this Durable Object's logs can arrive late or not at all
@@ -331,6 +311,19 @@ export class CourseSandbox extends DurableObject<Env> {
   /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
   private async lockSession() {
     await this.exec(['chown', 'root:root', SESSION]);
+  }
+
+  /**
+   * Route the model through the conversation for this turn. Each turn gets a new execution ID, so
+   * a request made after its turn ends is refused until the next turn starts.
+   */
+  async authorizeModel(config: { model: string; conversationId: string; executionId: string }) {
+    await this.container.interceptOutboundHttp(
+      'model.internal:80',
+      this.ctx.exports.CourseAgentModelOutbound({
+        props: { ...config, sandboxId: this.ctx.id.name },
+      }),
+    );
   }
 
   /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
@@ -399,6 +392,24 @@ export class CourseSandbox extends DurableObject<Env> {
       );
     }
     await this.lockSession();
+  }
+
+  /**
+   * Copy uploaded attachments into the sandbox as root-owned files the agent can read but not
+   * change. Uploads that have since expired are skipped; a new message's were checked on arrival.
+   */
+  async writeAttachments(conversationId: string, attachments: Attachment[]) {
+    const paths = attachments.map(attachmentPath);
+    await this.exec(['mkdir', '-p', ...paths.map((path) => path.slice(0, path.lastIndexOf('/')))]);
+    // A restored sandbox copies every earlier attachment, so the copies run concurrently.
+    const files = new Files(this.container);
+    await Promise.all(
+      attachments.map(async (attachment, index) => {
+        const upload = await this.env.CHECKPOINTS.get(uploadKey(conversationId, attachment.id));
+        if (upload) await files.writeFile(paths[index], upload.body);
+      }),
+    );
+    await this.exec(['chmod', '-R', 'a+rX,go-w', UPLOADS_DIR]);
   }
 
   /**
@@ -601,9 +612,6 @@ export class CourseSandbox extends DurableObject<Env> {
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
-    // Temporary: forwards Codex output to diagnose staging sandbox startup. Remove this flag and
-    // the forwarding once that is resolved; production must never set it.
-    const debugOutput = this.env.DEBUG_RUNNER_OUTPUT === 'true';
     const started = Date.now();
     this.process = await this.container.exec(
       [
@@ -622,7 +630,7 @@ export class CourseSandbox extends DurableObject<Env> {
         cwd: `${SESSION}/home`,
         env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
         stdout: 'ignore',
-        stderr: debugOutput ? 'pipe' : 'ignore',
+        stderr: 'ignore',
       },
     );
     logEvent('runner_started', {
@@ -630,7 +638,6 @@ export class CourseSandbox extends DurableObject<Env> {
       pid: this.process.pid,
       elapsedMs: Date.now() - started,
     });
-    const stderr = this.process.stderr ? forwardRunnerStderr(this.process.stderr) : null;
     let exitCode: number | null = null;
     void this.process.exitCode.then((code) => {
       exitCode = code;
@@ -656,16 +663,13 @@ export class CourseSandbox extends DurableObject<Env> {
           await scheduler.wait(100);
           continue;
         }
-        // A runner that is still alive never closes stderr, so only briefly wait for its tail.
-        if (stderr) await Promise.race([stderr.done, scheduler.wait(1000)]);
         const facts = JSON.stringify({
           elapsedMs: Date.now() - started,
           failures,
           exitCode,
           containerRunning: this.container.running,
         });
-        const tail = stderr ? `: ${stderr.tail() || '(no stderr)'}` : '';
-        throw new Error(`Codex runner did not listen: ${facts}${tail}`, { cause: error });
+        throw new Error(`Codex runner did not listen: ${facts}`, { cause: error });
       }
     }
   }
@@ -702,6 +706,13 @@ export class CourseSandbox extends DurableObject<Env> {
       dir: SESSION,
       exclude: ['home/.cache', '**/node_modules', 'home/.codex/auth.json'],
     });
+  }
+
+  /** Saves downloaded course data outside the course checkout; returns the file path. */
+  async writeCourseData(dataset: string, contents: ReadableStream<Uint8Array>) {
+    const path = `${COURSE_DATA}/${dataset}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
+    await new Files(this.container).writeFile(path, contents, { user: AGENT_UID_GID });
+    return path;
   }
 
   async deleteCheckpoint(checkpoint: DirectoryBackupRecord) {

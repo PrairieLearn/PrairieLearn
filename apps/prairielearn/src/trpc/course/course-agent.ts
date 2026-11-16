@@ -15,11 +15,18 @@ import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
+import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
+import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
   selectOptionalCourseAgentConversation,
+  updateCourseAgentConversationTitle,
 } from '../../ee/models/course-agent-conversation.js';
+import {
+  CourseAgentConversationUsageSchema,
+  selectCourseAgentConversationUsage,
+} from '../../ee/models/course-agent-usage-report.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
@@ -52,11 +59,19 @@ export const courseAgentRouter = t.router({
     }),
   postReviewDecision: courseAgentProcedure
     .input(
-      z.object({
-        conversationId: IdSchema,
-        reviewId: z.uuid(),
-        decision: z.enum(['approved', 'denied']),
-      }),
+      z.discriminatedUnion('decision', [
+        z.object({
+          conversationId: IdSchema,
+          reviewId: z.uuid(),
+          decision: z.literal('approved'),
+        }),
+        z.object({
+          conversationId: IdSchema,
+          reviewId: z.uuid(),
+          decision: z.literal('denied'),
+          viaMessage: z.boolean().optional(),
+        }),
+      ]),
     )
     .mutation(async ({ ctx, input }) => {
       const conversation = await selectOptionalCourseAgentConversation({
@@ -81,6 +96,19 @@ export const courseAgentRouter = t.router({
     return z.array(StaffCourseAgentConversationSchema).parse(conversations);
   }),
 
+  usage: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema }))
+    .output(CourseAgentConversationUsageSchema)
+    .query(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      return selectCourseAgentConversationUsage(conversation.id);
+    }),
+
   resume: courseAgentProcedure
     .input(z.object({ conversationId: IdSchema }))
     .output(z.strictObject({ recovered: z.literal(true) }))
@@ -100,7 +128,10 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const agentConversationId = await run(async () => {
         if (config.devMode && !config.fileEditorUseGit) {
-          return createLocalCourseAgentConversation(ctx.course.path);
+          return createLocalCourseAgentConversation(
+            ctx.course.path,
+            buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+          );
         } else {
           const repository = parseGithubRepository(ctx.course.repository ?? '');
           if (!repository || !ctx.course.branch) {
@@ -119,24 +150,46 @@ export const courseAgentRouter = t.router({
               message: 'The course repository or branch is invalid.',
             });
           }
-          return createCourseAgentConversation(binding.data);
+          return createCourseAgentConversation({
+            ...binding.data,
+            pages: buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+          });
         }
       });
-      const title = input.text.replaceAll(/\s+/g, ' ');
       const conversation = await insertCourseAgentConversation({
         course_id: ctx.course.id,
         user_id: ctx.locals.authn_user.id,
         agent_conversation_id: agentConversationId,
-        title: title.length > 80 ? `${title.slice(0, 77)}...` : title,
+        title: formatCourseAgentConversationTitle(input.text),
       });
       return StaffCourseAgentConversationSchema.parse(conversation);
+    }),
+
+  // The agent service generates a title from the first message and publishes it to the
+  // conversation's owner, whose browser saves it here.
+  setTitle: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, title: z.string().trim().min(1).max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      const updated = await updateCourseAgentConversationTitle({
+        conversation,
+        title: input.title,
+      });
+      return StaffCourseAgentConversationSchema.parse(updated);
     }),
 });
 
 export interface CourseAgentError {
   List: never;
+  Usage: never;
   Create: never;
   Resume: never;
   GetReview: never;
   PostReviewDecision: never;
+  SetTitle: never;
 }

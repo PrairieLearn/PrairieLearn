@@ -4,13 +4,14 @@ import re
 from enum import Enum
 from functools import lru_cache
 from sys import get_int_max_str_digits
-from typing import assert_never
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
+from sympy.printing.str import StrPrinter
 
 
 class DisplayType(Enum):
@@ -263,6 +264,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error: str | None = data["format_errors"].get(name)
     missing_input = False
     a_sub_converted = None
+    submitted_raw_answer = data["raw_submitted_answers"].get(name, None)
+    raw_input_popover = None
+    raw_input_popover_content = None
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
@@ -298,6 +302,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if display_log_as_ln and a_sub_parsed != "":
             a_sub_parsed = a_sub_parsed.replace(sympy.log, sympy.Function("ln"))
         a_sub_converted = "" if a_sub_parsed == "" else sympy.latex(a_sub_parsed)
+        if data["panel"] == "submission" and submitted_raw_answer is not None:
+            raw_input_popover = pl.render_raw_input_popover(
+                submitted_raw_answer, aria_label or name
+            )
+            raw_input_popover_content = pl.render_raw_input_popover_content(
+                submitted_raw_answer
+            )
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -317,9 +328,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
-    raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = initial_value
     if (
         raw_submitted_answer_latex is None
         and initial_value is not None
@@ -346,6 +354,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if data["panel"] == "question":
         editable = data["editable"]
+        raw_answer_or_initial_value = submitted_raw_answer
+        if raw_answer_or_initial_value is None:
+            raw_answer_or_initial_value = initial_value
 
         html_params = {
             "question": True,
@@ -364,7 +375,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "allow_sets": allow_sets,
             "imaginary_unit": imaginary_unit,
             "log_as_ln": display_log_as_ln,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "parse_error": parse_error,
             display.value: True,
@@ -386,8 +397,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
             "a_sub": a_sub_converted,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": (
+                pl.escape_unicode_string(submitted_raw_answer)
+                if parse_error is not None and submitted_raw_answer is not None
+                else submitted_raw_answer
+            ),
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
+            "raw_input_popover": raw_input_popover,
+            "raw_input_popover_content": raw_input_popover_content,
+            "raw_input_popover_label": f"Answer as entered for {aria_label or name}",
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
@@ -1092,7 +1110,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    def grade_function(a_sub: str | psu.SympyJson) -> tuple[bool, None]:
+    def grade_function(a_sub: str | psu.SympyJson | None) -> tuple[bool, None]:
+        if a_sub is None:
+            return False, None
+
         # Special case: submitted answer or correct answer is the empty string
         if isinstance(a_tru, str) and a_tru == "":
             if isinstance(a_sub, str) and a_sub == "":
@@ -1180,6 +1201,30 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             raise
 
 
+class _TestSubmissionPrinter(StrPrinter):
+    def __init__(self, imaginary_unit: str) -> None:
+        super().__init__()
+        self._constant_names = {
+            sympy.E: "e",
+            sympy.I: imaginary_unit,
+        }
+
+    def _print(self, expr: Any, **kwargs: Any) -> str:
+        if isinstance(expr, sympy.Basic) and expr in self._constant_names:
+            return self._constant_names[expr]
+        return super()._print(expr, **kwargs)
+
+    def _print_EmptySet(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
+        return "{}"
+
+    def _print_Interval(self, i: sympy.Interval) -> str:  # ruff:ignore[invalid-function-name]
+        start = self._print(i.start)
+        end = self._print(i.end)
+        left = "(" if i.left_open else "["
+        right = ")" if i.right_open else "]"
+        return f"{left}{start}, {end}{right}"
+
+
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
@@ -1211,13 +1256,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             # This element cannot test itself. Defer the generation of test inputs to server.py
             return
 
-        # Get raw correct answer
         a_tru = data["correct_answers"][name]
-
-        # Parse correct answer based on type
-        if isinstance(a_tru, str):
-            if a_tru != "":
-                a_tru = psu.convert_string_to_sympy(
+        if a_tru != "":
+            if isinstance(a_tru, str):
+                a_tru_sympy = psu.convert_string_to_sympy(
                     a_tru,
                     variables,
                     allow_complex=allow_complex,
@@ -1226,17 +1268,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     custom_functions=custom_functions,
                     simplify_expression=simplify_expression,
                 )
-        else:
-            a_tru = psu.json_to_sympy(
-                a_tru,
-                allow_complex=allow_complex,
-                allow_sets=allow_sets,
-                allow_trig_functions=allow_trig,
-            )
+            else:
+                a_tru_sympy = psu.json_to_sympy(
+                    a_tru,
+                    allow_complex=allow_complex,
+                    allow_sets=allow_sets,
+                    allow_trig_functions=allow_trig,
+                )
 
-        if a_tru != "":
-            # Substitute in imaginary unit symbol
-            a_tru_str = str(_replace_imaginary_for_display(a_tru, imaginary_unit))
+            a_tru_str = _TestSubmissionPrinter(imaginary_unit).doprint(a_tru_sympy)
 
     if result == "correct":
         if a_tru_str == "":

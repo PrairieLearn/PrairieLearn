@@ -424,6 +424,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ),
             "inline": "true" if inline or display_blocks.is_inline() else "false",
             "check_indentation": "true" if check_indentation else "false",
+            "ordering_required": "false"
+            if grading_method is GradingMethodType.UNORDERED
+            else "true",
             "help_text": help_text,
             "max_indent": order_blocks_options.max_indent,
             "uuid": uuid,

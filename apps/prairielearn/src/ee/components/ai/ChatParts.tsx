@@ -1,6 +1,7 @@
 import type { ReasoningUIPart, TextUIPart } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useId, useState } from 'react';
+import type { UrlTransform } from 'react-markdown';
 
 import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 
@@ -71,10 +72,16 @@ export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
   );
 }
 
-export function TextPart({ part }: { part: TextUIPart }) {
+export function TextPart({
+  part,
+  urlTransform,
+}: {
+  part: TextUIPart;
+  urlTransform?: UrlTransform;
+}) {
   return (
     <div className="markdown-body">
-      <MemoizedMarkdown content={part.text} />
+      <MemoizedMarkdown content={part.text} urlTransform={urlTransform} />
     </div>
   );
 }

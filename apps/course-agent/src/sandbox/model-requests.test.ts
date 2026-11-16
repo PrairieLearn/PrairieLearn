@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { SEARCH_REFUSAL, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
+import {
+  SEARCH_REFUSAL,
+  codexRequestKind,
+  modelRequestRefusal,
+  prepareSearchRequest,
+} from './model-requests.js';
 
 describe('modelRequestRefusal', () => {
   it('allows the client-run tools Codex declares', () => {
@@ -15,6 +20,34 @@ describe('modelRequestRefusal', () => {
     for (const type of ['web_search', 'mcp', 'web_search_preview']) {
       expect(modelRequestRefusal({ tools: [{ type: 'function' }, { type }] })).not.toBeNull();
     }
+  });
+
+  // Codex declares tools in `additional_tools` input items for models using Responses Lite.
+  it('checks tools declared in input items and namespaces', () => {
+    const declare = (tools: unknown[]) => ({
+      input: [
+        { type: 'additional_tools', role: 'developer', tools },
+        { type: 'message', role: 'user', content: [] },
+      ],
+    });
+    expect(
+      modelRequestRefusal(
+        declare([{ type: 'namespace', tools: [{ type: 'function' }, { type: 'custom' }] }]),
+      ),
+    ).toBeNull();
+    expect(modelRequestRefusal(declare([{ type: 'mcp' }]))).not.toBeNull();
+    expect(
+      modelRequestRefusal(declare([{ type: 'namespace', tools: [{ type: 'web_search' }] }])),
+    ).not.toBeNull();
+  });
+
+  it('refuses options that bill or declare tools outside the recorded usage', () => {
+    expect(modelRequestRefusal({ background: true })).not.toBeNull();
+    expect(modelRequestRefusal({ service_tier: 'priority' })).not.toBeNull();
+    expect(modelRequestRefusal({ service_tier: 'flex' })).not.toBeNull();
+    expect(modelRequestRefusal({ background: false, service_tier: 'default' })).toBeNull();
+    expect(modelRequestRefusal({ service_tier: 'auto' })).toBeNull();
+    expect(modelRequestRefusal({ prompt: { id: 'pmpt_1' } })).not.toBeNull();
   });
 });
 
@@ -33,7 +66,7 @@ describe('prepareSearchRequest', () => {
       find: [{ ref_id: 'turn0view0', pattern: 'rtol' }],
       response_length: 'short',
     };
-    expect(prepareSearchRequest({ ...request, commands })).toEqual({
+    expect(prepareSearchRequest({ ...request, commands, unknown_option: true })).toEqual({
       forward: {
         ...request,
         commands,
@@ -43,13 +76,27 @@ describe('prepareSearchRequest', () => {
     });
   });
 
-  it('refuses commands it does not know', () => {
+  it('refuses commands it does not know, and requests without any', () => {
     for (const commands of [
       { search_query: [{ q: 'x' }], submit_form: [{ ref_id: 'turn0view0' }] },
       { open: { ref_id: 'https://example.com' } },
+      { response_length: 'short' },
+      {},
       undefined,
     ]) {
       expect(prepareSearchRequest({ ...request, commands })).toEqual({ refusal: SEARCH_REFUSAL });
     }
+  });
+});
+
+describe('codexRequestKind', () => {
+  it('reads the kind from Codex turn metadata', () => {
+    const body = (kind: string) => ({
+      client_metadata: { 'x-codex-turn-metadata': JSON.stringify({ request_kind: kind }) },
+    });
+    expect(codexRequestKind(body('compaction'))).toBe('compaction');
+    expect(codexRequestKind(body('turn'))).toBe('turn');
+    expect(codexRequestKind({ client_metadata: { 'x-codex-turn-metadata': '{' } })).toBeNull();
+    expect(codexRequestKind({})).toBeNull();
   });
 });

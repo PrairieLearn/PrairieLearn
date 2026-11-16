@@ -317,41 +317,43 @@ describe('Question syncing', () => {
   });
 
   describe('UID authors', () => {
-    it('stores UID order and preserves authors on unchanged re-sync', async () => {
+    it('stores UID and ORCID order and preserves authors on unchanged re-sync', async () => {
       const data = util.getCourseData();
-      data.questions[util.QUESTION_ID].authors = ['second-author', 'first-author'];
+      data.questions[util.QUESTION_ID].authors = [
+        ' second-author ',
+        'https://orcid.org/0000-0002-1825-0097',
+        'first-author',
+        'second-author',
+      ];
       const { courseDir } = await util.writeAndSyncCourseData(data);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
         'second-author',
+        'https://orcid.org/0000-0002-1825-0097',
         'first-author',
       ]);
       await util.syncCourseData(courseDir);
       assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
         'second-author',
+        'https://orcid.org/0000-0002-1825-0097',
         'first-author',
       ]);
     });
 
-    it('persists converted legacy authors and their warning without changing source files', async () => {
+    it('rejects legacy author objects without replacing synced authors', async () => {
       const data = util.getCourseData();
-      data.questions[util.QUESTION_ID].authors = [
-        { name: 'Legacy name', email: 'not-an-email', orcid: '0000-0002-1825-0097' },
-        { orcid: '0000-0002-1694-233X' },
-        { name: 'Name only' },
-      ];
+      data.questions[util.QUESTION_ID].authors = ['existing-author'];
       const { courseDir } = await util.writeAndSyncCourseData(data);
+      const legacyAuthors = [{ email: 'legacy@example.org', orcid: '0000-0002-1825-0097' }];
+      // @ts-expect-error -- legacy author objects are no longer supported.
+      data.questions[util.QUESTION_ID].authors = legacyAuthors;
+      await util.overwriteAndSyncCourseData(data, courseDir);
       const question = await findSyncedQuestion(util.QUESTION_ID);
-      assert.isNull(question.sync_errors);
-      assert.deepEqual(question.authors, [
-        'not-an-email',
-        'https://orcid.org/0000-0002-1825-0097',
-        'https://orcid.org/0000-0002-1694-233X',
-      ]);
-      assert.include(question.sync_warnings, 'Name only');
+      assert.include(question.sync_errors, 'authors');
+      assert.deepEqual(question.authors, ['existing-author']);
       const info = await fs.readJSON(
         path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'),
       );
-      assert.deepEqual(info.authors, data.questions[util.QUESTION_ID].authors);
+      assert.deepEqual(info.authors, legacyAuthors);
     });
 
     it('replaces authors and clears them when omitted', async () => {

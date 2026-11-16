@@ -63,6 +63,20 @@ export async function selectCourseInstanceByShortName({
   );
 }
 
+export async function selectOptionalCourseInstanceByShortName({
+  course,
+  shortName,
+}: {
+  course: Pick<Course, 'id'>;
+  shortName: string;
+}): Promise<CourseInstance | null> {
+  return queryOptionalRow(
+    sql.select_course_instance_by_short_name,
+    { course_id: course.id, short_name: shortName },
+    CourseInstanceSchema,
+  );
+}
+
 export async function selectOptionalCourseInstanceIdByEnrollmentCode({
   enrollmentCode,
 }: {

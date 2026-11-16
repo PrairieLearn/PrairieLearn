@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/cloudflare';
 import { env } from 'cloudflare:workers';
 
 /** Remove service credentials from text before it is logged or reported. */
-export function redactSecrets(text: string) {
+function redactSecrets(text: string) {
   const secrets = env as Env & { GITHUB_READ_TOKEN?: string; PL_SERVICE_TOKEN_PREVIOUS?: string };
   for (const secret of [
     secrets.PL_SERVICE_TOKEN,

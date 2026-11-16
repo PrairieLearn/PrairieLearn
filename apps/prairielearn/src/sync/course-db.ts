@@ -18,7 +18,6 @@ import { config } from '../lib/config.js';
 import { isDraftQid } from '../lib/draft-question.js';
 import { features } from '../lib/features/index.js';
 import { convertLegacyGroupsToGroupsConfig } from '../lib/group-config.js';
-import { normalizeQuestionAuthors } from '../lib/question-authors.js';
 import { validatePreferencesSchema } from '../lib/question-settings/validation.js';
 import { UUID_REGEXP_INLINE } from '../lib/string-util.js';
 import { selectOptionalCourseById } from '../models/course.js';
@@ -989,11 +988,9 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
 }
 
 function validateQuestion({
-  qid,
   question,
   sharingEnabled,
 }: {
-  qid: string;
   question: QuestionJson;
   sharingEnabled: boolean;
 }): { warnings: string[]; errors: string[] } {
@@ -1055,10 +1052,6 @@ function validateQuestion({
   if (question.preferences) {
     errors.push(...validatePreferencesSchema(question.preferences));
   }
-
-  const authors = normalizeQuestionAuthors(question.authors);
-  question.authors = authors.uids;
-  warnings.push(...authors.warnings.map((warning) => `Question "${qid}": ${warning}`));
 
   return { warnings, errors };
 }
@@ -1770,7 +1763,7 @@ export async function loadQuestions({
     infoFilename: 'info.json',
     zodSchema: schemas.QuestionJsonSchema,
     schema: schemas.infoQuestion,
-    validate: (question, _rawQuestion, qid) => validateQuestion({ qid, question, sharingEnabled }),
+    validate: (question) => validateQuestion({ question, sharingEnabled }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is

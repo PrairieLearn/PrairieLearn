@@ -116,6 +116,43 @@ export async function readReviewBaseFiles(
   return baseFiles;
 }
 
+export interface ReviewDiffFile {
+  path: string;
+  change: 'added' | 'modified' | 'deleted';
+  /** Size of the proposed contents, or of the original contents for a deletion. */
+  bytes: number;
+  /** A unified diff, or `null` for binary files. */
+  patch: string | null;
+}
+
+/**
+ * @param base The original contents, or `null` if the file is new.
+ * @param contents The proposed base64 contents, or `undefined` if the file is deleted.
+ */
+export function createReviewDiffFile(
+  filePath: string,
+  base: Buffer | null,
+  contents: string | undefined,
+): ReviewDiffFile {
+  const old = base ?? Buffer.alloc(0);
+  const next = contents === undefined ? Buffer.alloc(0) : Buffer.from(contents, 'base64');
+  const change = contents === undefined ? 'deleted' : base === null ? 'added' : 'modified';
+  const binary = old.includes(0) || next.includes(0) || !isUtf8(old) || !isUtf8(next);
+  return {
+    path: filePath,
+    change,
+    bytes: change === 'deleted' ? old.length : next.length,
+    patch: binary
+      ? null
+      : createTwoFilesPatch(
+          change === 'added' ? '/dev/null' : filePath,
+          change === 'deleted' ? '/dev/null' : filePath,
+          old.toString('utf8'),
+          next.toString('utf8'),
+        ),
+  };
+}
+
 /** Build the displayed diff from the base files and proposed file contents. */
 export async function createReviewDiff(
   course: Pick<Course, 'path' | 'repository' | 'branch'>,
@@ -140,27 +177,8 @@ export async function createReviewDiff(
   return run(async () => {
     const baseFiles = await readReviewBaseFiles(course, snapshot);
     const additions = new Map(snapshot.additions.map((file) => [file.path, file.contents]));
-    const patches: string[] = [];
-    for (const file of [...snapshot.additions, ...snapshot.deletions]) {
-      const base = baseFiles.get(file.path) ?? null;
-      const old = base ?? Buffer.alloc(0);
-      const contents = additions.get(file.path);
-      const next = contents === undefined ? Buffer.alloc(0) : Buffer.from(contents, 'base64');
-      if (old.includes(0) || next.includes(0) || !isUtf8(old) || !isUtf8(next)) {
-        patches.push(
-          `Binary file ${file.path}: ${base !== null ? (contents === undefined ? 'deleted' : 'modified') : 'added'}\n`,
-        );
-      } else {
-        patches.push(
-          createTwoFilesPatch(
-            base !== null ? file.path : '/dev/null',
-            contents === undefined ? '/dev/null' : file.path,
-            old.toString('utf8'),
-            next.toString('utf8'),
-          ),
-        );
-      }
-    }
-    return patches.join('\n');
+    return [...snapshot.additions, ...snapshot.deletions].map((file) =>
+      createReviewDiffFile(file.path, baseFiles.get(file.path) ?? null, additions.get(file.path)),
+    );
   });
 }

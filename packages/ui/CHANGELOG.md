@@ -1,5 +1,16 @@
 # @prairielearn/ui
 
+## 4.5.0
+
+### Minor Changes
+
+- e003824: Export `OverlayTrigger` from `@prairielearn/ui/overlay-trigger` so eagerly loaded bundles can use it without pulling in the rest of the package.
+
+### Patch Changes
+
+- 1d53679: Add a button for creating custom tags and allow consumers to control pending input text.
+- da082ba: Make table column resize handles easier to grab with a wider drag target and a thin divider that highlights on hover, keyboard focus, and drag.
+
 ## 4.4.1
 
 ### Patch Changes

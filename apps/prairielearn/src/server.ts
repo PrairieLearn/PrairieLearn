@@ -129,9 +129,13 @@ if ('h' in argv || 'help' in argv) {
   process.exit(0);
 }
 
-function excludeRoutes(routes: string[], handler: RequestHandler) {
+function excludeRoutes(routes: (string | RegExp)[], handler: RequestHandler) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (routes.some((route) => req.path.startsWith(route))) {
+    if (
+      routes.some((route) =>
+        typeof route === 'string' ? req.path.startsWith(route) : route.test(req.path),
+      )
+    ) {
       next();
     } else {
       handler(req, res, next);
@@ -177,6 +181,9 @@ export async function initExpress(): Promise<Express> {
     setLocalsFromConfig(res.locals);
     next();
   });
+
+  // Print assets carry a short-lived job credential instead of an instructor session.
+  (await import('./lib/printing/print-asset-routes.js')).applyPrintAssetRoutes(app);
 
   const sessionMiddleware = createSessionMiddleware({
     secret: config.secretKey,
@@ -527,6 +534,10 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/authLogout/authLogout.js')).default,
   ]);
+  if (isEnterprise()) {
+    // Service authentication is handled by this router, independently of browser sessions.
+    app.use('/pl/api/course-agent', (await import('./ee/routers/courseAgentUsage.js')).default);
+  }
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
@@ -553,9 +564,14 @@ export async function initExpress(): Promise<Express> {
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
   );
 
-  // Set and check `res.locals.__csrf_token`. We exclude API routes as those
-  // don't require CSRF protection (and in fact can't have it at all).
-  app.use(excludeRoutes(['/pl/api/'], (await import('./middlewares/csrfToken.js')).default));
+  // Set and check `res.locals.__csrf_token`. We exclude API routes and the course agent
+  // service's course data requests, which use tokens rather than cookies.
+  app.use(
+    excludeRoutes(
+      ['/pl/api/', /^\/pl\/course\/\d+\/course_agent\/data(?:\/|$)/],
+      (await import('./middlewares/csrfToken.js')).default,
+    ),
+  );
 
   app.use((await import('./middlewares/logRequest.js')).default);
 
@@ -791,8 +807,17 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course/:course_id(\\d+)/trpc', courseTrpcRouter);
 
   if (isEnterprise()) {
-    // The course agent chat proxy, and the panel that PageLayout renders on
-    // instructor pages. Both run after the instructor chains above.
+    // The course agent's file links, its chat proxy, and the panel that PageLayout
+    // renders on instructor pages. All run after the instructor chains above.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent/file',
+      (await import('./ee/routers/courseAgentFile.js')).default,
+    );
+    // The course agent service's course data requests; middlewares/authn.ts authenticates them.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent/data',
+      (await import('./ee/routers/courseAgentData/index.js')).default,
+    );
     app.use(
       '/pl/course/:course_id(\\d+)/course_agent',
       (await import('./ee/routers/courseAgentChat.js')).default,
