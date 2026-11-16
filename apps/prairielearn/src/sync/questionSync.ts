@@ -118,21 +118,31 @@ export async function getQuestionSyncPlan({
         ) {
           return null;
         }
-        if (info.data && info.errors.length === 0) {
-          const [tags, topics, sharingSets] = await Promise.all([
-            selectTagsByQuestionId(question.id),
-            selectTopicsByCourseId(course.id),
-            selectSharingSetsForQuestion({ course_id: course.id, question_id: question.id }),
-          ]);
-          // Catalog and sharing changes use their own sync paths. Recovery here
-          // only reapplies metadata whose external dependencies are unchanged.
+        if (info.data) {
+          const sharingSets = await selectSharingSetsForQuestion({
+            course_id: course.id,
+            question_id: question.id,
+          });
+          // Validation errors must not bypass the pre-push sharing checks.
           if (
-            !isDeepStrictEqual(new Set(tags.map((tag) => tag.name)), new Set(info.data.tags)) ||
-            topics.find((topic) => topic.id === question.topic_id)?.name !== info.data.topic ||
             info.data.sharePublicly !== question.share_publicly ||
             info.data.shareSourcePublicly !== question.share_source_publicly ||
             info.data.sharingSets?.length ||
             sharingSets.some((set) => set.in_set)
+          ) {
+            return null;
+          }
+        }
+        if (info.data && info.errors.length === 0) {
+          const [tags, topics] = await Promise.all([
+            selectTagsByQuestionId(question.id),
+            selectTopicsByCourseId(course.id),
+          ]);
+          // Catalog changes use their own sync paths. Recovery here only
+          // reapplies metadata whose external dependencies are unchanged.
+          if (
+            !isDeepStrictEqual(new Set(tags.map((tag) => tag.name)), new Set(info.data.tags)) ||
+            topics.find((topic) => topic.id === question.topic_id)?.name !== info.data.topic
           ) {
             return null;
           }
