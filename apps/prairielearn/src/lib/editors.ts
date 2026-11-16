@@ -177,7 +177,11 @@ export abstract class Editor {
    */
   abstract write(): Promise<WriteResult | null>;
 
-  async getQuestionRenameScope(_course: Course): Promise<QuestionRenameScope | null> {
+  /**
+   * Supplies UI rename intent under the course lock before each write attempt.
+   * The planner still verifies the final diff; null leaves discovery to that planner.
+   */
+  async getEditorQuestionRenameScope(_course: Course): Promise<QuestionRenameScope | null> {
     return null;
   }
 
@@ -302,7 +306,7 @@ export abstract class Editor {
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
 
-          renameScope = await this.getQuestionRenameScope(this.course);
+          renameScope = await this.getEditorQuestionRenameScope(this.course);
           job.info('Write changes to disk');
           // Validate the entire edit under the course lock, including after a push
           // retry resets to newer remote files. No part may be written before validation.
@@ -1747,7 +1751,7 @@ export class QuestionRenameEditor extends Editor {
     this.question = question;
   }
 
-  override async getQuestionRenameScope(course: Course) {
+  override async getEditorQuestionRenameScope(course: Course) {
     if (!this.question.qid || this.qid_new === this.question.qid) return null;
     return await getQuestionRenameScope(course, this.question.qid, this.qid_new);
   }
@@ -2719,9 +2723,9 @@ export class MultiEditor extends Editor {
     this.editors = editors;
   }
 
-  override async getQuestionRenameScope(course: Course) {
+  override async getEditorQuestionRenameScope(course: Course) {
     const scopes = (
-      await Promise.all(this.editors.map((editor) => editor.getQuestionRenameScope(course)))
+      await Promise.all(this.editors.map((editor) => editor.getEditorQuestionRenameScope(course)))
     ).filter((scope) => scope !== null);
     return scopes.length === 1 ? scopes[0] : null;
   }

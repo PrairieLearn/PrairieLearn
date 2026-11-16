@@ -321,3 +321,11 @@ export async function selectAssessmentZonePointsRange({
   );
   return { min: row.min_total, max: row.max_total };
 }
+
+export async function selectAssessmentPathsWithSyncErrors(course_id: string) {
+  return await queryRows(
+    sql.select_assessment_paths_with_sync_errors,
+    { course_id },
+    z.object({ course_instance_short_name: z.string(), assessment_directory: z.string() }),
+  );
+}

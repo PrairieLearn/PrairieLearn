@@ -2,6 +2,7 @@ import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
 import { execa } from 'execa';
+import fs from 'fs-extra';
 
 import type { Course } from '../lib/db-types.js';
 import { isDraftQid } from '../lib/draft-question.js';
@@ -12,7 +13,10 @@ import { type AssessmentJsonInput, AssessmentJsonSchema } from '../schemas/infoA
 import { QuestionJsonSchema } from '../schemas/infoQuestion.js';
 
 import { loadInfoFile } from './course-db.js';
-import { isQuestionQidEligibleForSync } from './questionSyncEligibility.js';
+import {
+  hasErroredAssessmentsReferencingQids,
+  isQuestionQidEligibleForSync,
+} from './questionSyncEligibility.js';
 import { selectSharedQuestions } from './sharing.js';
 
 export interface QuestionRenameScope {
@@ -30,6 +34,12 @@ export async function getQuestionRenameScope(
   newQid: string,
 ): Promise<QuestionRenameScope | null> {
   if (isDraftQid(qid) || !isQuestionQidEligibleForSync(newQid)) return null;
+  // Full discovery stops at the first info.json, hiding any question below it.
+  for (let parent = path.dirname(newQid); parent !== '.'; parent = path.dirname(parent)) {
+    if (await fs.pathExists(path.join(course.path, 'questions', parent, 'info.json'))) return null;
+  }
+  // The destination can repair a missing-QID error even without an existing association.
+  if (await hasErroredAssessmentsReferencingQids(course, new Set([newQid]))) return null;
   if ((await selectSharedQuestions(course.id)).some((question) => question.qid === qid)) {
     return null;
   }

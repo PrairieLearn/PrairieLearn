@@ -421,3 +421,18 @@ WHERE
         )
     )
   );
+
+-- BLOCK select_assessment_paths_with_sync_errors
+SELECT
+  ci.short_name AS course_instance_short_name,
+  a.tid AS assessment_directory
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON ci.id = a.course_instance_id
+WHERE
+  ci.course_id = $course_id
+  AND a.deleted_at IS NULL
+  AND ci.deleted_at IS NULL
+  AND a.tid IS NOT NULL
+  AND ci.short_name IS NOT NULL
+  AND NULLIF(a.sync_errors, '') IS NOT NULL;
