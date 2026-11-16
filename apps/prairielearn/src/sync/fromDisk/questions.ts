@@ -93,6 +93,12 @@ export async function sync(
   );
 
   await syncQuestionCopyProvenance(courseId, courseData, result);
+  if (mode === 'insert') {
+    await sqldb.execute(sql.resolve_copies_of_new_questions, {
+      course_id: courseId,
+      new_question_ids: Object.values(result),
+    });
+  }
   return result;
 }
 
