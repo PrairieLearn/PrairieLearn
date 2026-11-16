@@ -36,6 +36,7 @@ export function StudentInstanceQuestion({
   lastGrader,
   questionCopyTargets,
   enabledTools = [],
+  autoGradingPending,
 }: {
   independentScrolling: boolean;
   resLocals: ResLocalsForPage<'instance-question'>;
@@ -45,6 +46,7 @@ export function StudentInstanceQuestion({
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
   enabledTools?: AssessmentTool[];
+  autoGradingPending: boolean;
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
@@ -231,6 +233,7 @@ export function StudentInstanceQuestion({
                 })
           }
           ${QuestionScorePanel({
+            autoGradingPending,
             instance_question: resLocals.instance_question,
             assessment: resLocals.assessment,
             assessment_question: resLocals.assessment_question,

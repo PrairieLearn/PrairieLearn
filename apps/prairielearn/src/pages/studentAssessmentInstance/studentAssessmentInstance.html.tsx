@@ -316,7 +316,7 @@ export function StudentAssessmentInstance({
                       }
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
+                      ${ScorebarHtml(resLocals.assessment_instance.score_perc, { scorePending: resLocals.assessment_instance.score_perc_pending, gradingPending: resLocals.assessment_instance.grading_pending })}
                     </div>
                     <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({

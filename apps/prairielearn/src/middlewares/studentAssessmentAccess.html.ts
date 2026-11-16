@@ -59,7 +59,7 @@ export function StudentAssessmentAccess({
                       )}
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${ScorebarHtml(assessment_instance.score_perc)}
+                      ${ScorebarHtml(assessment_instance.score_perc, { scorePending: assessment_instance.score_perc_pending, gradingPending: assessment_instance.grading_pending })}
                     </div>
 
                     ${AssessmentStatusDescription({

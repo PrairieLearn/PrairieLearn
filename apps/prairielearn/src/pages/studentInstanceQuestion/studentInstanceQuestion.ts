@@ -24,6 +24,7 @@ import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.js';
+import { selectPendingInstanceQuestions } from '../../models/instance-question.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -325,10 +326,14 @@ router.get(
     const isAssessmentAvailable =
       res.locals.assessment_instance.open && res.locals.authz_result.active;
 
-    const enabledTools = await selectEnabledToolsForInstanceQuestion({
-      instance_question_id: res.locals.instance_question.id,
-      assessment_id: res.locals.assessment.id,
-    });
+    const [enabledTools, pendingQuestions] = await Promise.all([
+      selectEnabledToolsForInstanceQuestion({
+        instance_question_id: res.locals.instance_question.id,
+        assessment_id: res.locals.assessment.id,
+      }),
+      selectPendingInstanceQuestions({ instance_question_ids: [res.locals.instance_question.id] }),
+    ]);
+    const autoGradingPending = pendingQuestions.some((q) => q.auto_grading_pending);
 
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we
@@ -348,6 +353,7 @@ router.get(
             renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
             enabledTools,
+            autoGradingPending,
           }),
         );
         return;
@@ -414,6 +420,7 @@ router.get(
         lastGrader,
         questionCopyTargets,
         enabledTools,
+        autoGradingPending,
       }),
     );
   }),

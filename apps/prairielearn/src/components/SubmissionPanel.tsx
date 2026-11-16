@@ -363,7 +363,17 @@ function SubmissionStatusBadge({
       ? assessment_question.max_auto_points || !assessment_question.max_manual_points
       : question.grading_method !== 'Manual'
   ) {
-    if (submission.graded_at == null) {
+    // Manual grading can set graded_at without assigning an automatic score.
+    if (
+      submission.graded_at != null &&
+      submission.score == null &&
+      submission.gradable &&
+      !submission.broken
+    ) {
+      autoGradingBadge = html`
+        <span class="badge text-bg-secondary">${autoStatusPrefix} waiting for grading</span>
+      `;
+    } else if (submission.graded_at == null) {
       if (submission.grading_requested_at == null) {
         if (submission.gradable) {
           autoGradingBadge = html`

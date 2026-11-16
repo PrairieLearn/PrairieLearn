@@ -29,7 +29,10 @@ import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectAssessmentInstanceById } from '../../models/assessment-instance.js';
-import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
+import {
+  computeNextAllowedGradingTimeMs,
+  selectPendingInstanceQuestions,
+} from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
@@ -240,15 +243,24 @@ router.get(
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
     }
-    const instance_question_rows = await queryRows(
-      sql.select_instance_questions,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      InstanceQuestionRowSchema,
+    const [instance_question_rows, allPreviousVariants, pendingQuestions] = await Promise.all([
+      queryRows(
+        sql.select_instance_questions,
+        { assessment_instance_id: res.locals.assessment_instance.id },
+        InstanceQuestionRowSchema,
+      ),
+      selectVariantsByInstanceQuestion({
+        assessment_instance_id: res.locals.assessment_instance.id,
+      }),
+      selectPendingInstanceQuestions({
+        assessment_instance_ids: [res.locals.assessment_instance.id],
+      }),
+    ]);
+    const autoGradingPendingIds = new Set(
+      pendingQuestions.filter((q) => q.auto_grading_pending).map((q) => q.instance_question.id),
     );
-    const allPreviousVariants = await selectVariantsByInstanceQuestion({
-      assessment_instance_id: res.locals.assessment_instance.id,
-    });
     for (const row of instance_question_rows) {
+      row.autoGradingPending = autoGradingPendingIds.has(row.instance_question.id);
       row.previous_variants = allPreviousVariants.filter((variant) =>
         idsEqual(variant.instance_question_id, row.instance_question.id),
       );

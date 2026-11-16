@@ -420,7 +420,13 @@ export function AssessmentInstancesTable({
       columnHelper.accessor((row) => row.assessment_instance.score_perc, {
         id: 'score_perc',
         header: 'Score',
-        cell: (info) => <Scorebar score={info.getValue()} />,
+        cell: (info) => (
+          <Scorebar
+            score={info.getValue()}
+            scorePending={info.row.original.assessment_instance.score_perc_pending}
+            gradingPending={info.row.original.assessment_instance.grading_pending}
+          />
+        ),
         meta: { label: 'Score' },
         filterFn: numericColumnFilterFn,
         size: 150,
@@ -665,6 +671,11 @@ export function AssessmentInstancesTable({
             { name: 'Group members', value: row.uid_list?.join(', ') ?? null },
             { name: 'Instance', value: row.assessment_instance.number },
             { name: 'Score (%)', value: row.assessment_instance.score_perc },
+            { name: 'Pending score (%)', value: row.assessment_instance.score_perc_pending },
+            {
+              name: 'Grading pending',
+              value: row.assessment_instance.grading_pending ? 'Yes' : 'No',
+            },
             { name: 'Points', value: row.assessment_instance.points },
             { name: 'Max points', value: row.assessment_instance.max_points },
             { name: 'Date started', value: row.date_formatted },
@@ -685,6 +696,8 @@ export function AssessmentInstancesTable({
             uid_list: row.uid_list,
             number: row.assessment_instance.number,
             score_perc: row.assessment_instance.score_perc,
+            score_perc_pending: row.assessment_instance.score_perc_pending,
+            grading_pending: row.assessment_instance.grading_pending,
             points: row.assessment_instance.points,
             max_points: row.assessment_instance.max_points,
             date: row.assessment_instance.date,
