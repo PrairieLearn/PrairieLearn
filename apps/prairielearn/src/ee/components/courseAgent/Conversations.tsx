@@ -710,9 +710,7 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
-      <div
-        className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}
-      >
+      <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
         <DraftAttachmentList
           attachments={attachments}
           sending={pending}

@@ -174,7 +174,9 @@ function AttachmentTile({
     <li
       className={clsx(
         'course-agent-attachment position-relative flex-shrink-0 rounded-3 border',
-        problem ? 'course-agent-attachment-invalid border-danger bg-danger-subtle' : 'bg-body-tertiary',
+        problem
+          ? 'course-agent-attachment-invalid border-danger bg-danger-subtle'
+          : 'bg-body-tertiary',
       )}
       title={filename}
     >
