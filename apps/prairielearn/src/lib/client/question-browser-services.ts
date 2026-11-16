@@ -1,15 +1,19 @@
 import { io } from 'socket.io-client';
 
-import type { StatusMessage } from '../externalGradingSocket.types.js';
+import type { StatusMessage, StatusMessageSubmission } from '../externalGradingSocket.types.js';
 import type { QuestionDialogData } from '../question-dialogs.types.js';
 import type { SubmissionPanels } from '../question-render.types.js';
 
+import {
+  createQuestionServicesClient,
+  serveQuestionServices,
+} from './question-browser-services.transport.js';
 import type { QuestionBrowserServices } from './question-browser-services.types.js';
 import { createQuestionDialogs } from './question-dialogs.js';
 import { updateQuestionPagePanels } from './question-page-panels.js';
 
-/** Same-document adapter, constructed by the application for the active view. */
-export function createLocalQuestionBrowserServices({
+/** Application implementation; endpoints and credentials never cross the port. */
+export function createQuestionServicesHost({
   document,
   variantId,
   variantToken,
@@ -25,11 +29,22 @@ export function createLocalQuestionBrowserServices({
   isCurrent: () => boolean;
 }): { services: QuestionBrowserServices; dispose: () => void } {
   const abortController = new AbortController();
-  const subscriptions = new Set<() => void>();
   const dialogs = createQuestionDialogs(document, dialogData);
   let renderSequence = 0;
   let appliedPageSequence = 0;
   const submissionSequences = new Map<string, number>();
+  const subscriptions = new Set<{
+    listener: (submissions: StatusMessageSubmission[]) => void;
+  }>();
+  let gradingSocket: ReturnType<typeof io> | undefined;
+  let latestSubmissions: Map<string, StatusMessageSubmission> | undefined;
+
+  function closeGradingSocket() {
+    gradingSocket?.removeAllListeners();
+    gradingSocket?.close();
+    gradingSocket = undefined;
+    latestSubmissions = undefined;
+  }
 
   function assertCurrent() {
     abortController.signal.throwIfAborted();
@@ -93,41 +108,48 @@ export function createLocalQuestionBrowserServices({
 
     subscribeToGradingStatus(listener) {
       assertCurrent();
-      const socket = io('/external-grading');
-      let closed = false;
-      const onStatus = (msg: StatusMessage | null) => {
-        if (closed || abortController.signal.aborted || !isCurrent()) return;
-        if (msg?.variant_id !== variantId) return;
-        listener(msg.submissions);
-      };
-      // A live update can arrive while the server is preparing the initial snapshot.
-      let updatedSinceConnect = new Set<string>();
-      socket.on('connect', () => {
-        updatedSinceConnect = new Set();
-        const updated = updatedSinceConnect;
-        socket.emit(
-          'init',
-          { variant_id: variantId, variant_token: variantToken },
-          (msg: StatusMessage | null) => {
-            if (!msg || updated !== updatedSinceConnect) return;
-            onStatus({ ...msg, submissions: msg.submissions.filter((s) => !updated.has(s.id)) });
-          },
-        );
-      });
-      socket.on('change:status', (msg: StatusMessage) => {
-        if (msg.variant_id !== variantId) return;
-        msg.submissions.forEach((s) => updatedSinceConnect.add(s.id));
-        onStatus(msg);
-      });
+      const subscription = { listener };
+      subscriptions.add(subscription);
+      // A view owns one socket, regardless of how many protocol subscriptions
+      // the question creates. Later subscribers receive its latest snapshot.
+      if (!gradingSocket) {
+        const socket = io('/external-grading');
+        gradingSocket = socket;
+        const onStatus = (msg: StatusMessage | null) => {
+          if (msg == null) return;
+          if (gradingSocket !== socket || abortController.signal.aborted || !isCurrent()) return;
+          if (msg.variant_id !== variantId) return;
+          latestSubmissions ??= new Map();
+          for (const submission of msg.submissions) {
+            latestSubmissions.set(submission.id, submission);
+          }
+          subscriptions.forEach(({ listener }) => listener(msg.submissions));
+        };
+        // A live update can arrive while the server is preparing the initial snapshot.
+        let updatedSinceConnect = new Set<string>();
+        socket.on('connect', () => {
+          updatedSinceConnect = new Set();
+          const updated = updatedSinceConnect;
+          socket.emit(
+            'init',
+            { variant_id: variantId, variant_token: variantToken },
+            (msg: StatusMessage | null) => {
+              if (!msg || updated !== updatedSinceConnect) return;
+              onStatus({ ...msg, submissions: msg.submissions.filter((s) => !updated.has(s.id)) });
+            },
+          );
+        });
+        socket.on('change:status', (msg: StatusMessage) => {
+          if (msg.variant_id !== variantId) return;
+          msg.submissions.forEach((s) => updatedSinceConnect.add(s.id));
+          onStatus(msg);
+        });
+      }
+      if (latestSubmissions) listener(Array.from(latestSubmissions.values()));
 
-      const unsubscribe = () => {
-        closed = true;
-        socket.removeAllListeners();
-        socket.close();
-        subscriptions.delete(unsubscribe);
+      return () => {
+        if (subscriptions.delete(subscription) && subscriptions.size === 0) closeGradingSocket();
       };
-      subscriptions.add(unsubscribe);
-      return unsubscribe;
     },
   };
 
@@ -136,7 +158,24 @@ export function createLocalQuestionBrowserServices({
     dispose() {
       abortController.abort();
       dialogs.dispose();
-      subscriptions.forEach((unsubscribe) => unsubscribe());
+      subscriptions.clear();
+      closeGradingSocket();
+    },
+  };
+}
+
+/** Same-document wiring using the same port transport as a future iframe. */
+export function createLocalQuestionBrowserServices(
+  options: Parameters<typeof createQuestionServicesHost>[0],
+): { services: QuestionBrowserServices; dispose: () => void } {
+  const channel = new MessageChannel();
+  const disposeHost = serveQuestionServices(channel.port1, createQuestionServicesHost(options));
+  const client = createQuestionServicesClient(channel.port2);
+  return {
+    services: client.services,
+    dispose() {
+      client.dispose();
+      disposeHost();
     },
   };
 }

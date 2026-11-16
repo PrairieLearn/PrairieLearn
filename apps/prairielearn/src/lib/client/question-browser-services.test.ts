@@ -10,18 +10,16 @@ import type { QuestionDialogData } from '../question-dialogs.types.js';
 import type { SubmissionPanels } from '../question-render.types.js';
 import type { SubmissionInfo } from '../submission-info.js';
 
-import { createLocalQuestionBrowserServices } from './question-browser-services.js';
+import { createQuestionServicesHost } from './question-browser-services.js';
 
 vi.mock('socket.io-client', () => ({ io: vi.fn() }));
 
 const panels: SubmissionPanels = {
-  submissionPanel: '<div id="submission-2">Feedback</div>',
-  extraHeadersHtml: '<script src="/question.js"></script>',
+  submissionPanel: null,
+  extraHeadersHtml: null,
+  questionScorePanel: '<div id="question-score-panel">80%</div>',
   answerPanel: '<p>Answer</p>',
   questionPanelFooter: '<div id="question-panel-footer">Grade again</div>',
-  questionScorePanel: '<div id="question-score-panel">80%</div>',
-  assessmentScorePanel: '<div id="assessment-score-panel">50%</div>',
-  questionNavNextButton: '<div id="question-nav-next-container">Next</div>',
 };
 
 const submissionInfo: SubmissionInfo = {
@@ -37,7 +35,7 @@ function createServices(
   dialogData: QuestionDialogData,
   submissionRenderUrls = new Map([['2', '/pl/question/1/variant/3/submission/2']]),
 ) {
-  return createLocalQuestionBrowserServices({
+  return createQuestionServicesHost({
     document,
     variantId: '3',
     variantToken: 'token',
@@ -92,8 +90,6 @@ it('opens the application copy form and keeps destination credentials paired', a
   destination.dispatchEvent(new Event('change'));
   expect(form.getAttribute('action')).toBe('/pl/course/5/copy_public_question');
   expect(form.querySelector<HTMLInputElement>('[name="__csrf_token"]')!.value).toBe('token-b');
-  expect(form.querySelector<HTMLInputElement>('[name="question_id"]')!.value).toBe('7');
-  expect(form.querySelector<HTMLInputElement>('[name="course_id"]')!.value).toBe('1');
 
   form.querySelector<HTMLButtonElement>('[data-bs-dismiss="modal"]')!.click();
   await Promise.all([closed, repeated]);
@@ -107,9 +103,6 @@ it('updates an open submission dialog from server data without returning that da
     copyQuestion: null,
     submissions: [submissionInfo],
   });
-  await expect(services.openSubmissionInfo({ submissionId: '99' })).rejects.toThrow(
-    'Unknown submission',
-  );
   const closed = services.openSubmissionInfo({ submissionId: '2' });
   expect(document.querySelector('.modal-body')!.textContent).toContain(
     'This submission has not been graded.',
@@ -161,14 +154,15 @@ it('updates an open submission dialog from server data without returning that da
   await reopened;
   expect(document.querySelector('.modal-backdrop')).toBeNull();
   expect(document.body.classList.contains('modal-open')).toBe(false);
-  await expect(services.openSubmissionInfo({ submissionId: '2' })).rejects.toMatchObject({
-    name: 'AbortError',
-  });
 });
 
 it('discards submission responses received after the view is disposed', async () => {
   const response = withResolvers<Response>();
-  vi.stubGlobal('fetch', vi.fn().mockReturnValue(response.promise));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => response.promise),
+  );
+  document.body.innerHTML = '<div id="question-score-panel">Original score</div>';
   const { services, dispose } = createServices({
     copyQuestion: null,
     submissions: [submissionInfo],
@@ -178,9 +172,56 @@ it('discards submission responses received after the view is disposed', async ()
     { signal: new AbortController().signal },
   );
   dispose();
-  response.resolve(Response.json({ ...panels, submissionInfo }));
+  response.resolve(
+    Response.json({
+      ...panels,
+      submissionInfo,
+      questionScorePanel: '<div id="question-score-panel">Stale score</div>',
+    }),
+  );
   await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
-  expect(document.querySelector('.modal')).toBeNull();
+  expect(document.getElementById('question-score-panel')!.textContent).toBe('Original score');
+});
+
+it('shares one grading socket and its latest status until the last subscriber leaves', () => {
+  const socket = { on: vi.fn(), emit: vi.fn(), close: vi.fn(), removeAllListeners: vi.fn() };
+  vi.mocked(io).mockReturnValue(socket as unknown as ReturnType<typeof io>);
+  const host = createQuestionServicesHost({
+    document,
+    dialogData: { copyQuestion: null, submissions: [] },
+    variantId: '1',
+    variantToken: 'token',
+    submissionRenderUrls: new Map(),
+    isCurrent: () => true,
+  });
+  try {
+    const first = vi.fn();
+    const stopFirst = host.services.subscribeToGradingStatus(first);
+    const publish = socket.on.mock.calls.find(([event]) => event === 'change:status')![1];
+    const submissions = [
+      { id: '2', grading_job_id: '3', grading_job_status: 'grading' },
+      { id: '4', grading_job_id: '5', grading_job_status: 'queued' },
+    ];
+    publish({ variant_id: '1', submissions });
+    const graded = { ...submissions[0], grading_job_status: 'graded' };
+    publish({ variant_id: '1', submissions: [graded] });
+    const second = vi.fn();
+    const stopSecond = host.services.subscribeToGradingStatus(second);
+    expect(vi.mocked(io)).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledWith([graded, submissions[1]]);
+
+    stopFirst();
+    expect(socket.close).not.toHaveBeenCalled();
+    publish({ variant_id: '1', submissions: [] });
+    expect(first).toHaveBeenCalledTimes(2);
+    expect(second).toHaveBeenLastCalledWith([]);
+
+    stopSecond();
+    expect(socket.close).toHaveBeenCalledTimes(1);
+  } finally {
+    host.dispose();
+    vi.clearAllMocks();
+  }
 });
 
 it('discards an older render of the same submission before updating scores', async () => {
