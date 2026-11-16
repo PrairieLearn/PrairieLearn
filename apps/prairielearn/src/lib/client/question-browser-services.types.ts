@@ -11,6 +11,8 @@ export type QuestionContentPanels = Pick<
  * Application operations available to a single question view. The implementation
  * owns endpoints and credentials; callers only identify actions within that view.
  * Native form submission remains separate until the iframe transport is introduced.
+ * This is the local UI API, not the wire format: the port adapter translates
+ * signals and callbacks into cancellation and subscription messages.
  */
 export interface QuestionBrowserServices {
   renderSubmission(
