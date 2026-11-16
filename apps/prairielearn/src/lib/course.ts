@@ -21,9 +21,12 @@ import { syncQuestionTitle } from '../models/question.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 import { assessmentDependenciesRequireFullSync } from '../sync/assessmentDependencies.js';
 import * as courseDB from '../sync/course-db.js';
-import * as syncQuestions from '../sync/fromDisk/questions.js';
 import * as infofile from '../sync/infofile.js';
-import { getQuestionSyncPlan, syncQuestionMetadata } from '../sync/questionSync.js';
+import {
+  getQuestionSyncPlan,
+  syncQuestionMetadata,
+  syncRecoveredQuestion,
+} from '../sync/questionSync.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import { checkSharingConfigurationValid, syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
@@ -140,11 +143,7 @@ export async function syncCourseFromDisk({
             await syncQuestionTitle({ course_id: course.id, qid: change.qid, title: change.title });
           } else if (change.kind === 'recover') {
             job.info(`Reprocessing question metadata: ${change.qid}`);
-            await syncQuestions.sync(
-              course.id,
-              { questions: { [change.qid]: change.info } },
-              'metadata',
-            );
+            await syncRecoveredQuestion(course, change);
             for (const error of change.info.errors) job.error(error);
           } else if (change.kind === 'metadata') {
             await syncQuestionMetadata(course, change);
