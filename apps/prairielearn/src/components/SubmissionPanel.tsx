@@ -10,7 +10,6 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
-  type GradingJob,
   GradingJobSchema,
   type InstanceQuestion,
   type Question,
@@ -38,8 +37,21 @@ const detailedSubmissionColumns = {
   true_answer: true,
 } as const;
 
+const SubmissionGradingJobSchema = GradingJobSchema.pick({
+  id: true,
+  grading_method: true,
+  grading_requested_at: true,
+  grading_submitted_at: true,
+  grading_received_at: true,
+  grading_started_at: true,
+  grading_finished_at: true,
+  graded_at: true,
+  grading_request_canceled_at: true,
+});
+type SubmissionGradingJob = z.infer<typeof SubmissionGradingJobSchema>;
+
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
-  grading_job: GradingJobSchema.nullable(),
+  grading_job: SubmissionGradingJobSchema.nullable(),
   user_uid: z.string().nullable(),
 });
 
@@ -304,6 +316,8 @@ export function SubmissionPanel({
 
         ${SubmissionInfoModal({
           submission,
+          question,
+          assessment_question,
           formattedDate,
           course_id: question.course_id,
           course_instance_id: course_instance?.id,
@@ -373,11 +387,7 @@ function SubmissionStatusBadge({
 
   const autoStatusPrefix = manualGradingBadge ? 'auto-grading: ' : '';
 
-  if (
-    assessment_question
-      ? assessment_question.max_auto_points || !assessment_question.max_manual_points
-      : question.grading_method !== 'Manual'
-  ) {
+  if (isAutograded({ question, assessment_question })) {
     if (submission.graded_at == null) {
       if (submission.grading_requested_at == null) {
         if (submission.gradable) {
@@ -446,13 +456,29 @@ function SubmissionStatusBadge({
   return html`${manualGradingBadge} ${autoGradingBadge}`;
 }
 
+function isAutograded({
+  question,
+  assessment_question,
+}: {
+  question: Question;
+  assessment_question?: AssessmentQuestion | null;
+}) {
+  return assessment_question
+    ? !!assessment_question.max_auto_points || !assessment_question.max_manual_points
+    : question.grading_method !== 'Manual';
+}
+
 function SubmissionInfoModal({
   submission,
+  question,
+  assessment_question,
   course_id,
   course_instance_id,
   formattedDate,
 }: {
   submission: SubmissionForRender;
+  question: Question;
+  assessment_question?: AssessmentQuestion | null;
   course_id: string;
   course_instance_id?: string | null;
   formattedDate: string;
@@ -519,7 +545,11 @@ function SubmissionInfoModal({
           }
         </tbody>
       </table>
-      ${gradingJobStats ? '' : html`<p class="mt-2">This submission has not been graded.</p>`}
+      ${
+        gradingJobStats || !isAutograded({ question, assessment_question })
+          ? ''
+          : html`<p class="mt-2">This submission was not automatically graded.</p>`
+      }
       ${
         gradingJobStats?.grading_method === 'External'
           ? html`
@@ -599,7 +629,7 @@ function RubricItem({
   `;
 }
 
-function buildGradingJobStats(job: GradingJob | null) {
+function buildGradingJobStats(job: SubmissionGradingJob | null) {
   if (!job) return null;
 
   const durations: (number | null)[] = [];
