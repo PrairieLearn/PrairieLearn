@@ -68,11 +68,19 @@ The HTML inside the inner `pl-variable` tag is used as the description. If the t
 ## Example implementations
 
 - [demo/autograder/codeEditor]
+- [demo/autograder/codeUpload]
 - [demo/autograder/python/square]
+- [demo/autograder/python/random]
+- [demo/autograder/python/numpy]
 - [demo/autograder/python/pandas]
+- [demo/autograder/python/earlyExit]
 - [demo/autograder/python/plots]
 
 [demo/autograder/codeeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
+[demo/autograder/codeupload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload
+[demo/autograder/python/earlyexit]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/earlyExit
+[demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy
 [demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
 [demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
+[demo/autograder/python/random]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/random
 [demo/autograder/python/square]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/square

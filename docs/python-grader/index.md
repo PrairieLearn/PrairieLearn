@@ -150,6 +150,8 @@ def test_multi_step(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
 
 `feedback.set_score_final()` sets a score that stands even if the test fails afterwards, `feedback.add_message()` adds a message for the student, and `feedback.add_image()` shows an image, such as the student's plot, with the test's results.
 
+To give credit for each of several inputs in one test, call `sandbox.query_function_raw`, which returns a status and value instead of failing the test when the student's function raises an error. Count the inputs that pass, using `np.isclose` for floating-point values, and finish with `feedback.set_score_final(num_correct / num_tests)`. Stop at the first timeout, because a late reply would be read as the answer to the next call. The [`demo/autograder/python/fillBlankLastElement`][demo/autograder/python/fillblanklastelement] question does this.
+
 ### Plots
 
 Student code draws a plot with matplotlib as usual and saves its axes or figure in a variable, such as `plot = plt.gca()`, or returns it from a function. The test receives a matplotlib `Figure`. This example is from the [`demo/autograder/python/plots`][demo/autograder/python/plots] question:
@@ -172,7 +174,7 @@ def test_plot(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
     assert_plot_equal(plot, reference_plot())
 ```
 
-- **Comparing.** `assert_plot_equal` checks the number of subplots, the axis scales, and the data in each line, scatter plot and bar plot. Keyword arguments also check labels, titles, legends, limits and styles. For other checks, such as a label containing a word, use the `Figure` directly or [matplotcheck](https://matplotcheck2.readthedocs.io/en/latest/).
+- **Comparing.** `assert_plot_equal` checks the number of subplots, the axis scales, and the data in each line, scatter plot, bar plot, and `axhline` or `axvline` reference line. Keyword arguments also check labels, titles, legends, limits and styles, and `check_texts=True` checks the text of `text` and `annotate` labels. Students can add text and annotations without failing the check unless `check_texts` is set. For other checks, such as a label containing a word, use the `Figure` directly or [matplotcheck](https://matplotcheck2.readthedocs.io/en/latest/).
 - **Showing the plot.** `feedback.add_image` shows the plot under the test in the results. Call it before the checks, because a failed check ends the test.
 - **Image and timeout.** Use the `:latest` image, which includes matplotlib, and set a longer `sandbox_timeout`, such as 15 seconds, because importing matplotlib can take most of the 1 second default.
 
@@ -280,13 +282,31 @@ Put in `params` whatever the question's `server.py` and elements would set, such
 ## Example questions
 
 - [demo/autograder/codeEditor]: a function question with partial credit.
+- [demo/autograder/codeUpload]: grading an uploaded file, with `student_code_pattern`.
 - [demo/autograder/python/square]: setup code and `query_setup`.
+- [demo/autograder/python/random]: checking an answer that depends on random values from setup code.
+- [demo/autograder/python/numpy]: checking a numpy array without showing the answer, and blocking `numpy.linalg.inv` with `import_blacklist`.
 - [demo/autograder/python/pandas]: checking a DataFrame.
 - [demo/autograder/python/randomFunctionName]: parameters from `server.py` and handling timeouts.
+- [demo/autograder/python/earlyExit]: skipping the remaining tests after one fails.
+- [demo/autograder/python/fillBlankLastElement]: credit for each input with `query_function_raw`, and trailing code that checks the input isn't modified.
+- [demo/autograder/python/leadingTrailing]: wrapping a one-line answer in fixed code in `server.py`.
+- [demo/autograder/python/orderBlocksAddNumpy] and [demo/autograder/python/orderBlocksRandomParams]: grading code that students put together with `pl-order-blocks`.
 - [demo/autograder/python/plots]: comparing a plot with `assert_plot_equal` and showing it with `feedback.add_image`.
+- [demo/workspace/vscode-python] and [demo/workspace/jupyterlab-python]: grading a file and notebook cells from a workspace.
 
 [demo/autograder/codeeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
-[demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
+[demo/autograder/codeupload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload
+[demo/autograder/python/earlyexit]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/earlyExit
+[demo/autograder/python/fillblanklastelement]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/fillBlankLastElement
+[demo/autograder/python/leadingtrailing]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/leadingTrailing
+[demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy
+[demo/autograder/python/orderblocksaddnumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/orderBlocksAddNumpy
+[demo/autograder/python/orderblocksrandomparams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/orderBlocksRandomParams
 [demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
+[demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
+[demo/autograder/python/random]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/random
 [demo/autograder/python/randomfunctionname]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/randomFunctionName
 [demo/autograder/python/square]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/square
+[demo/workspace/jupyterlab-python]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/workspace/jupyterlab-python
+[demo/workspace/vscode-python]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/workspace/vscode-python
