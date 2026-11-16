@@ -19,7 +19,7 @@ def generate(data):
     data["correct_answers"]["points"] = pl.to_json(answer)
 ```
 
-Correct answers may also be written with the element syntax, for example `correct-answer="R - {0}"`.
+Correct answers may also be written with the element syntax, for example `correct-answer="RR - {0}"`.
 
 ## Syntax
 
@@ -28,7 +28,7 @@ The whole answer must be a set. Supported forms are:
 - finite sets, such as `{1, 2, x + 1}` and nested finite sets such as `{{1}, {2}}`;
 - in the default `syntax="tuple"` mode, tuples of two or more scalar coordinates as set members, such as `{(1, 2), (x, y + 1)}`;
 - in `syntax="interval"` mode, intervals with any open or closed endpoints, such as `(-infty, 0]` and `[a, b)`;
-- the named sets `R`, `Q`, `Z`, `N`, and `C`, representing the real, rational, integer, natural, and complex numbers;
+- the named sets `RR`, `QQ`, `ZZ`, `NN`, and `CC`, representing the real, rational, integer, nonnegative integer, and complex numbers;
 - union using `U`, `cup`, `∪`, `|`, or `+`;
 - intersection using `cap`, `∩`, or `&`;
 - set difference using `-`.
@@ -37,7 +37,7 @@ Tuple and interval syntax are mutually exclusive. Tuple mode rejects interval no
 
 Scalar members, tuple coordinates, and interval endpoints use the usual `pl-symbolic-input` expression syntax. Function-style constructors such as `Tuple(1, 2)` and `Interval(0, 1)`, qualified names, and long named-set forms such as `Reals` are not accepted student syntax.
 
-The names `R`, `Q`, `Z`, `N`, and `C` are reserved and cannot appear in `variables` or `custom-functions`.
+The names `RR`, `QQ`, `ZZ`, `NN`, and `CC` are reserved and cannot appear in `variables` or `custom-functions`.
 
 ## Customizations
 

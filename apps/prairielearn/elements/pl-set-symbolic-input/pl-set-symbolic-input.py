@@ -716,19 +716,19 @@ class _TestSubmissionPrinter(StrPrinter):
         return f"({self._print(value.args[0])}) - ({self._print(value.args[1])})"
 
     def _print_Reals(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return "R"
+        return "RR"
 
     def _print_Rationals(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return "Q"
+        return "QQ"
 
     def _print_Integers(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return "Z"
+        return "ZZ"
 
-    def _print_Naturals(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return "N"
+    def _print_Naturals0(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
+        return "NN"
 
     def _print_Complexes(self, expr: sympy.Set) -> str:  # pyright: ignore[reportIncompatibleMethodOverride] # ruff:ignore[unused-method-argument, invalid-function-name]
-        return "C"
+        return "CC"
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:

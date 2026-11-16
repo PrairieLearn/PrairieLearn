@@ -643,11 +643,11 @@ interface KeyboardLayout {
           ? [
               [
                 '[separator]',
-                { label: 'ℝ', insert: 'R' },
-                { label: 'ℚ', insert: 'Q' },
-                { label: 'ℤ', insert: 'Z' },
-                { label: 'ℕ', insert: 'N' },
-                { label: 'ℂ', insert: 'C' },
+                { label: 'ℝ', insert: '\\mathbb{R}' },
+                { label: 'ℚ', insert: '\\mathbb{Q}' },
+                { label: 'ℤ', insert: '\\mathbb{Z}' },
+                { label: 'ℕ', insert: '\\mathbb{N}' },
+                { label: 'ℂ', insert: '\\mathbb{C}' },
                 '[separator]',
                 { class: 'small hide-shift', label: '[left]' },
                 { class: 'small hide-shift', label: '[right]' },

@@ -35,7 +35,7 @@ test('loads shared assets when the page contains only pl-set-symbolic-input', as
   const realsKey = page.getByLabel('ℝ');
   await expect(realsKey).toBeVisible();
   await realsKey.click();
-  await expect(page.locator('input[name="domain"]')).toHaveValue('R');
+  await expect(page.locator('input[name="domain"]')).toHaveValue('RR');
 
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(
