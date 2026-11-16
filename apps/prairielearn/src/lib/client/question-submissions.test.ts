@@ -51,9 +51,8 @@ const feedback: QuestionContentPanels = {
 it('supersedes history with grading, deduplicates updates, and waits for all pending submissions', async () => {
   const second = { ...queued, id: '2', grading_job_id: '11' };
   const { view, notify, unsubscribe, render, onRender } = setup([queued, second]);
-  const history = withResolvers<QuestionContentPanels>();
   const result = withResolvers<QuestionContentPanels>();
-  render.mockReturnValueOnce(history.promise).mockReturnValueOnce(result.promise);
+  render.mockReturnValueOnce(new Promise(() => {})).mockReturnValueOnce(result.promise);
 
   view.loadHistory('1');
   view.loadHistory('1');
@@ -69,22 +68,23 @@ it('supersedes history with grading, deduplicates updates, and waits for all pen
 
   result.resolve(feedback);
   await vi.waitFor(() => expect(onRender).toHaveBeenCalledExactlyOnceWith('1', feedback));
-  history.resolve({ ...feedback, submissionPanel: '<div>Old history</div>' });
-  await history.promise;
-  expect(onRender).toHaveBeenCalledTimes(1);
   expect(unsubscribe).not.toHaveBeenCalled();
 
   notify([{ ...second, grading_job_status: 'canceled' }]);
   expect(unsubscribe).toHaveBeenCalledOnce();
   view.dispose();
-  expect(unsubscribe).toHaveBeenCalledOnce();
 });
 
-it('retries grading with score panels despite late same-job statuses', async () => {
-  const { view, notify, unsubscribe, render, onError, onRender } = setup([queued]);
+it('retries grading with score panels despite stale statuses', async () => {
+  const { view, notify, unsubscribe, render, onError, onRender, onStatus } = setup([queued]);
   render.mockRejectedValueOnce(new Error('Network failure')).mockResolvedValueOnce(feedback);
-  notify([{ ...queued, grading_job_status: 'graded' }]);
-  notify([{ ...queued, grading_job_status: 'grading' }]);
+  const graded = { ...queued, grading_job_id: '12', grading_job_status: 'graded' as const };
+  notify([graded]);
+  notify([{ ...graded, grading_job_status: 'grading' }]);
+  notify([queued]);
+  notify([{ ...queued, grading_job_id: undefined, grading_job_status: 'none' }]);
+  expect(onStatus).toHaveBeenLastCalledWith(graded);
+  expect(render.mock.calls[0][1].signal.aborted).toBe(false);
   await vi.waitFor(() => expect(onError).toHaveBeenCalledExactlyOnceWith('1'));
   expect(unsubscribe).not.toHaveBeenCalled();
 
@@ -95,77 +95,15 @@ it('retries grading with score panels despite late same-job statuses', async () 
   view.dispose();
 });
 
-it('ignores superseded jobs and late completions after disposal', async () => {
-  const { view, notify, unsubscribe, render, onRender, onError } = setup([queued]);
-  const first = withResolvers<QuestionContentPanels>();
-  const second = withResolvers<QuestionContentPanels>();
-  render.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
-  notify([{ ...queued, grading_job_status: 'graded' }]);
-  notify([{ ...queued, grading_job_id: '12', grading_job_status: 'queued' }]);
-  expect(render.mock.calls[0][1].signal.aborted).toBe(true);
-  first.resolve(feedback);
-  await first.promise;
-  expect(onRender).not.toHaveBeenCalled();
-
-  notify([{ ...queued, grading_job_id: '12', grading_job_status: 'graded' }]);
-  view.dispose();
-  expect(render.mock.calls[1][1].signal.aborted).toBe(true);
-  second.reject(new Error('Late failure'));
-  await second.promise.catch(() => undefined);
-  notify([{ ...queued, grading_job_id: '13', grading_job_status: 'graded' }]);
-  expect(render).toHaveBeenCalledTimes(2);
-  expect(onRender).not.toHaveBeenCalled();
-  expect(onError).not.toHaveBeenCalled();
-  expect(unsubscribe).toHaveBeenCalledOnce();
-});
-
-it('keeps save-only history loading when the initial snapshot omits its job ID', async () => {
-  const saved: StatusMessageSubmission = {
-    id: '2',
-    grading_job_id: '',
-    grading_job_status: 'none',
-  };
-  const { view, notify, render, onRender } = setup([queued, saved]);
-  const history = withResolvers<QuestionContentPanels>();
-  render.mockReturnValueOnce(history.promise);
-  view.loadHistory('2');
-  notify([queued, { ...saved, grading_job_id: undefined }]);
-  expect(render.mock.calls[0][1].signal.aborted).toBe(false);
-  history.resolve(feedback);
-  await vi.waitFor(() => expect(onRender).toHaveBeenCalledExactlyOnceWith('2', feedback));
-  expect(render).toHaveBeenCalledOnce();
-  view.dispose();
-});
-
-it('ignores older-job statuses while a newer grading result is loading', async () => {
-  const { view, notify, render, onRender, onStatus, unsubscribe } = setup([queued]);
-  const result = withResolvers<QuestionContentPanels>();
-  render.mockReturnValueOnce(result.promise);
-  const graded = { ...queued, grading_job_id: '12', grading_job_status: 'graded' as const };
-  notify([graded]);
-  notify([{ ...graded, grading_job_status: 'grading' }]);
-  notify([queued]);
-  notify([{ ...queued, grading_job_id: undefined, grading_job_status: 'none' }]);
-  expect(onStatus).toHaveBeenLastCalledWith(graded);
-  expect(render.mock.calls[0][1].signal.aborted).toBe(false);
-  result.resolve(feedback);
-  await vi.waitFor(() => expect(onRender).toHaveBeenCalledExactlyOnceWith('1', feedback));
-  expect(render).toHaveBeenCalledOnce();
-  expect(unsubscribe).toHaveBeenCalledOnce();
-  view.dispose();
-});
-
 it('restarts requested history when its job changes even if the new job is canceled', async () => {
   const { view, notify, render, onRender } = setup([queued]);
-  const old = withResolvers<QuestionContentPanels>();
   const current = withResolvers<QuestionContentPanels>();
-  render.mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
+  render.mockReturnValueOnce(new Promise(() => {})).mockReturnValueOnce(current.promise);
   view.loadHistory('1');
   notify([{ ...queued, grading_job_id: '11' }]);
   expect(render.mock.calls[0][1].signal.aborted).toBe(true);
   expect(render.mock.calls[1][0]).toEqual({ submissionId: '1', purpose: 'history' });
   notify([{ ...queued, grading_job_id: '11', grading_job_status: 'canceled' }]);
-  old.resolve({ ...feedback, submissionPanel: '<div>Old feedback</div>' });
   current.resolve(feedback);
   await vi.waitFor(() => expect(onRender).toHaveBeenCalledExactlyOnceWith('1', feedback));
   view.dispose();

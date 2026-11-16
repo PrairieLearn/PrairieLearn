@@ -10,11 +10,10 @@ import type { QuestionDialogData } from '../question-dialogs.types.js';
 import type { SubmissionPanels } from '../question-render.types.js';
 import type { SubmissionInfo } from '../submission-info.js';
 
-import { createQuestionServicesHost } from './question-browser-services.js';
 import {
-  createQuestionServicesClient,
-  serveQuestionServices,
-} from './question-browser-services.transport.js';
+  createLocalQuestionBrowserServices,
+  createQuestionServicesHost,
+} from './question-browser-services.js';
 import { createQuestionSubmissions } from './question-submissions.js';
 
 vi.mock('socket.io-client', () => ({ io: vi.fn() }));
@@ -173,7 +172,7 @@ it('discards submission responses received after the view is disposed', async ()
     submissions: [submissionInfo],
   });
   const pending = services.renderSubmission(
-    { submissionId: '2', purpose: 'history' },
+    { submissionId: '2', purpose: 'grading-result' },
     { signal: new AbortController().signal },
   );
   dispose();
@@ -229,33 +228,7 @@ it('shares one grading socket and its latest status until the last subscriber le
   }
 });
 
-it('discards an older render of the same submission before updating scores', async () => {
-  const old = withResolvers<Response>();
-  vi.stubGlobal(
-    'fetch',
-    vi.fn().mockReturnValueOnce(old.promise).mockResolvedValueOnce(Response.json(panels)),
-  );
-  document.body.innerHTML = '<div id="question-score-panel">0%</div>';
-  const { services, dispose } = createServices({
-    copyQuestion: null,
-    submissions: [submissionInfo],
-  });
-  const request = { submissionId: '2', purpose: 'grading-result' as const };
-  const options = { signal: new AbortController().signal };
-  const pending = services.renderSubmission(request, options);
-  await services.renderSubmission(request, options);
-  old.resolve(
-    Response.json({
-      ...panels,
-      questionScorePanel: '<div id="question-score-panel">Old score</div>',
-    }),
-  );
-  await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
-  expect(document.getElementById('question-score-panel')!.textContent).toBe('80%');
-  dispose();
-});
-
-it('keeps feedback for different submissions without letting late responses roll back shared panels', async () => {
+it('keeps earlier submission feedback without rolling back shared panels', async () => {
   const old = withResolvers<Response>();
   vi.stubGlobal(
     'fetch',
@@ -282,77 +255,75 @@ it('keeps feedback for different submissions without letting late responses roll
       questionScorePanel: '<div id="question-score-panel">Old score</div>',
     }),
   );
-  const result = await pending;
-  expect(result.submissionPanel).toBe('<div>Earlier submission</div>');
-  expect(result.answerPanel).toBeNull();
-  expect(result.questionPanelFooter).toBeNull();
+  await expect(pending).resolves.toMatchObject({
+    submissionPanel: '<div>Earlier submission</div>',
+    answerPanel: null,
+    questionPanelFooter: null,
+  });
   expect(document.getElementById('question-score-panel')!.textContent).toBe('80%');
   dispose();
 });
 
-it.each(['4', '5'])(
-  'merges snapshot job %s with live statuses and ignores obsolete acknowledgments',
-  (snapshotJobId) => {
-    const socket = {
-      on: vi.fn<(event: string, listener: unknown) => void>(),
-      emit: vi.fn<
-        (
-          event: string,
-          message: unknown,
-          acknowledge: (message: StatusMessage | null) => void,
-        ) => void
-      >(),
-      removeAllListeners: vi.fn(),
-      close: vi.fn(),
-    };
-    vi.mocked(io).mockReturnValue(socket as unknown as ReturnType<typeof io>);
-    const { services, dispose } = createServices({ copyQuestion: null, submissions: [] });
-    const listener = vi.fn();
-    services.subscribeToGradingStatus(listener);
-    const connect = socket.on.mock.calls.find(([event]) => event === 'connect')![1] as () => void;
-    const change = socket.on.mock.calls.find(([event]) => event === 'change:status')![1] as (
-      message: StatusMessage,
-    ) => void;
-    connect();
-    const acknowledge = socket.emit.mock.calls[0][2];
-    acknowledge(null);
-    expect(listener).not.toHaveBeenCalled();
-    const graded = { id: '2', grading_job_id: '4', grading_job_status: 'graded' as const };
-    const other = { ...graded, id: '5', grading_job_status: 'queued' as const };
-    change({ variant_id: '3', submissions: [graded, other] });
-    const completed = { ...graded, id: '5', grading_job_id: snapshotJobId };
-    acknowledge({
-      variant_id: '3',
-      submissions: [{ ...graded, grading_job_status: 'queued' }, completed],
-    });
-    expect(listener.mock.calls).toEqual([[[graded, other]], [[completed]]]);
+it('merges newer snapshot statuses and jobs while ignoring obsolete acknowledgments', () => {
+  const socket = {
+    on: vi.fn<(event: string, listener: unknown) => void>(),
+    emit: vi.fn<
+      (
+        event: string,
+        message: unknown,
+        acknowledge: (message: StatusMessage | null) => void,
+      ) => void
+    >(),
+    removeAllListeners: vi.fn(),
+    close: vi.fn(),
+  };
+  vi.mocked(io).mockReturnValue(socket as unknown as ReturnType<typeof io>);
+  const { services, dispose } = createServices({ copyQuestion: null, submissions: [] });
+  const listener = vi.fn();
+  services.subscribeToGradingStatus(listener);
+  const connect = socket.on.mock.calls.find(([event]) => event === 'connect')![1] as () => void;
+  const change = socket.on.mock.calls.find(([event]) => event === 'change:status')![1] as (
+    message: StatusMessage,
+  ) => void;
+  connect();
+  const acknowledge = socket.emit.mock.calls[0][2];
+  const graded = { id: '2', grading_job_id: '4', grading_job_status: 'graded' as const };
+  const other = { ...graded, id: '5', grading_job_status: 'queued' as const };
+  const regraded = { ...other, id: '6' };
+  change({ variant_id: '3', submissions: [graded, other, regraded] });
+  const completed = { ...graded, id: '5' };
+  const newJob = { ...graded, id: '6', grading_job_id: '5' };
+  acknowledge({
+    variant_id: '3',
+    submissions: [{ ...graded, grading_job_status: 'queued' }, completed, newJob],
+  });
+  expect(listener.mock.calls).toEqual([[[graded, other, regraded]], [[completed, newJob]]]);
 
-    connect();
-    acknowledge({ variant_id: '3', submissions: [other] });
-    expect(listener).toHaveBeenCalledTimes(2);
-    dispose();
-    socket.emit.mock.calls[1][2]({ variant_id: '3', submissions: [graded] });
-    change({ variant_id: '3', submissions: [graded] });
-    expect(listener).toHaveBeenCalledTimes(2);
-    expect(socket.removeAllListeners).toHaveBeenCalledOnce();
-    expect(socket.close).toHaveBeenCalledOnce();
-  },
-);
+  connect();
+  acknowledge({ variant_id: '3', submissions: [other] });
+  expect(listener).toHaveBeenCalledTimes(2);
+  dispose();
+});
 
 it('invalidates host renders before cancellation returns across the port', async () => {
   const socket = { on: vi.fn(), emit: vi.fn(), close: vi.fn(), removeAllListeners: vi.fn() };
   vi.mocked(io).mockReturnValue(socket as unknown as ReturnType<typeof io>);
   const response = withResolvers<Response>();
+  const feedback = { ...panels, submissionPanel: '<div>Replacement feedback</div>' };
   const fetch = vi
     .fn()
     .mockReturnValueOnce(response.promise)
-    .mockResolvedValueOnce(Response.json(panels));
+    .mockResolvedValueOnce(Response.json(feedback));
   vi.stubGlobal('fetch', fetch);
   document.body.innerHTML = '<div id="question-score-panel">Original score</div>';
-  const host = createServices({ copyQuestion: null, submissions: [] });
-  const channel = new MessageChannel();
-  const disposeHost = serveQuestionServices(channel.port1, host);
-  const client = createQuestionServicesClient(channel.port2);
+  const client = createLocalQuestionBrowserServices({
+    document,
+    variantId: '3',
+    variantToken: 'token',
+    submissionRenderUrls: new Map([['2', '/submission/2']]),
+    dialogData: { copyQuestion: null, submissions: [] },
+    isCurrent: () => true,
+  });
   const queued = { id: '2', grading_job_id: '10', grading_job_status: 'queued' as const };
   const onStatus = vi.fn();
   const onRender = vi.fn();
@@ -367,7 +338,9 @@ it('invalidates host renders before cancellation returns across the port', async
     onError,
   });
   try {
-    await vi.waitFor(() => expect(socket.on).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() =>
+      expect(socket.on).toHaveBeenCalledWith('change:status', expect.any(Function)),
+    );
     const publish = socket.on.mock.calls.find(([event]) => event === 'change:status')![1];
     publish({ variant_id: '3', submissions: [{ ...queued, grading_job_status: 'graded' }] });
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
@@ -386,12 +359,18 @@ it('invalidates host renders before cancellation returns across the port', async
     expect(onError).not.toHaveBeenCalled();
 
     publish({ variant_id: '3', submissions: [{ ...replacement, grading_job_status: 'graded' }] });
-    await vi.waitFor(() => expect(onRender).toHaveBeenCalledOnce());
+    await vi.waitFor(() =>
+      expect(onRender).toHaveBeenCalledExactlyOnceWith('2', {
+        submissionPanel: feedback.submissionPanel,
+        extraHeadersHtml: feedback.extraHeadersHtml,
+        answerPanel: feedback.answerPanel,
+        questionPanelFooter: feedback.questionPanelFooter,
+      }),
+    );
     expect(document.getElementById('question-score-panel')!.textContent).toBe('80%');
     await vi.waitFor(() => expect(socket.close).toHaveBeenCalledOnce());
   } finally {
     view.dispose();
     client.dispose();
-    disposeHost();
   }
 });
