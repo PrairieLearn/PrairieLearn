@@ -1443,7 +1443,7 @@ export const PrintFormSchema = z.object({
   authn_user_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
-  label: z.string().regex(/^[A-Z]+$/),
+  label: z.string().regex(/^[A-Z]+([2-9]|[1-9][0-9]+)?$/),
   settings: PrintSettingsSchema,
   user_id: IdSchema,
 });

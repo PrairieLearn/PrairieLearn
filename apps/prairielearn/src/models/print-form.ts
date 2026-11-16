@@ -1,9 +1,6 @@
-import { z } from 'zod';
-
 import {
   loadSqlEquiv,
   queryOptionalRow,
-  queryOptionalScalar,
   queryRow,
   queryRows,
   queryScalar,
@@ -43,14 +40,6 @@ export async function insertPrintForm({
 
 export async function lockAssessmentForPrintForms(assessmentId: string): Promise<void> {
   await queryScalar(sql.lock_assessment_for_print_forms, { assessment_id: assessmentId }, IdSchema);
-}
-
-export async function selectLatestPrintFormLabel(assessmentId: string): Promise<string | null> {
-  return await queryOptionalScalar(
-    sql.select_latest_print_form_label,
-    { assessment_id: assessmentId },
-    z.string(),
-  );
 }
 
 export async function selectOptionalPrintForm({
