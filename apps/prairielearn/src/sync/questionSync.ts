@@ -15,13 +15,10 @@ import {
 } from '@prairielearn/postgres';
 
 import { type Course, QuestionSchema } from '../lib/db-types.js';
-import { collectAssessmentQids } from '../lib/infoAssessment-edits.js';
-import { selectAssessmentPathsWithSyncErrors } from '../models/assessment.js';
 import { selectQuestionByQid, syncQuestionTitle, syncQuestionTopic } from '../models/question.js';
 import { selectSharingSetsForQuestion } from '../models/sharing-set.js';
 import { selectTagNamesForOtherQuestions, selectTagsByQuestionId } from '../models/tags.js';
 import { selectTopicNamesForOtherQuestions, selectTopicsByCourseId } from '../models/topics.js';
-import { AssessmentJsonSchema } from '../schemas/infoAssessment.js';
 import { type CourseJson, CourseJsonSchema } from '../schemas/infoCourse.js';
 import { type QuestionJson, QuestionJsonSchema } from '../schemas/infoQuestion.js';
 
@@ -36,7 +33,10 @@ import {
   getQuestionRenameScope,
   verifyQuestionRename,
 } from './questionRenameSync.js';
-import { isQuestionQidEligibleForSync } from './questionSyncEligibility.js';
+import {
+  hasErroredAssessmentsReferencingQids,
+  isQuestionQidEligibleForSync,
+} from './questionSyncEligibility.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -191,23 +191,8 @@ export async function getQuestionSyncPlan({
       });
       if (info?.uuid && createdUuids.has(info.uuid.toLowerCase())) return null;
     }
-    const assessments = await selectAssessmentPathsWithSyncErrors(course.id);
-    for (const assessment of assessments) {
-      const info = await loadInfoFile({
-        coursePath: course.path,
-        filePath: path.join(
-          'courseInstances',
-          assessment.course_instance_short_name,
-          'assessments',
-          assessment.assessment_directory,
-          'infoAssessment.json',
-        ),
-      });
-      const parsed = AssessmentJsonSchema.safeParse(info?.data);
-      if (!parsed.success) continue;
-      // Creating a previously missing QID can repair an assessment; question-only sync cannot.
-      if ([...collectAssessmentQids(parsed.data)].some((qid) => createdQids.has(qid))) return null;
-    }
+    // A newly available QID can repair an assessment, which still requires full sync.
+    if (await hasErroredAssessmentsReferencingQids(course, createdQids)) return null;
   }
   if ([...files].some((file) => !file.startsWith('questions/'))) return null;
 
