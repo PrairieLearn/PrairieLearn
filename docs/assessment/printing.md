@@ -72,7 +72,7 @@ If file preparation says the preview has expired or changed, select **Update pre
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. The **Recent exports** list shows your ten newest exports for this assessment, including their progress and download links. Forms are shared with course staff, but prepared files are available only to the staff member who requested them. Use those links if you return later or an automatic download is blocked. The list remains available when you reload the page. Each file is available for 24 hours after it was requested.
+**Prepare…** starts a new file; **Download** links retrieve files that have already finished. PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. The **Recent exports** list shows your ten newest exports for this assessment, including their progress and download links. Forms are shared with course staff, but prepared files are available only to the staff member who requested them. Use those links if you return later or an automatic download is blocked. The list remains available when you reload the page. Each file is available for 24 hours after it was requested.
 
 ### Print copies for a class
 

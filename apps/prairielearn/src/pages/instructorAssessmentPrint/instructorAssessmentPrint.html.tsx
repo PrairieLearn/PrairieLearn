@@ -667,9 +667,7 @@ function PrintPreparation({
     !exportNeedsNewPreview &&
     !download.isPending &&
     !busy;
-  const previewFormName = formId
-    ? `${archivedPreviewForm ? 'Previous Form' : 'Form'} ${formLabel(formId)}`
-    : null;
+  const selectedFormName = formId ? `Form ${formLabel(formId)}` : null;
   const initialFormError = getAppError<PrintFormsError['ensureInitial']>(ensureInitial.error);
 
   async function downloadBooklet(studentCount: number) {
@@ -1591,9 +1589,7 @@ function PrintPreparation({
                     ) : packet.isError ? (
                       <span className="text-danger">{packet.error.message}</span>
                     ) : exportId && displayedExport?.status === 'succeeded' ? (
-                      <a href={displayedExport.downloadUrl ?? undefined}>
-                        Download {displayedExport.label ?? 'prepared file'}
-                      </a>
+                      'File ready. Download it above.'
                     ) : exportId && displayedExport?.status === 'failed' ? (
                       <span className="text-danger">
                         {displayedExport.failureMessage ?? 'The file could not be prepared.'}
@@ -1616,7 +1612,7 @@ function PrintPreparation({
                         Prepare…
                       </Dropdown.Toggle>
                       <Dropdown.Menu>
-                        {formId && previewFormName && (
+                        {formId && selectedFormName && (
                           <>
                             <Dropdown.Item
                               disabled={!renderingAvailable}
@@ -1625,14 +1621,14 @@ function PrintPreparation({
                                 void downloadPacket([formId], 1, 'assessment').catch(() => {});
                               }}
                             >
-                              Prepare {previewFormName} (PDF)
+                              Prepare {selectedFormName} (PDF)
                             </Dropdown.Item>
                             <Dropdown.Item
                               onClick={() => {
                                 startWordExport(formId, 'assessment');
                               }}
                             >
-                              Prepare {previewFormName} Word (.docx)
+                              Prepare {selectedFormName} Word (.docx)
                             </Dropdown.Item>
                             <Dropdown.Item
                               disabled={!renderingAvailable}
@@ -1641,14 +1637,14 @@ function PrintPreparation({
                                 void downloadPacket([formId], 1, 'answer_key').catch(() => {});
                               }}
                             >
-                              Prepare {previewFormName} answer key (PDF)
+                              Prepare {selectedFormName} answer key (PDF)
                             </Dropdown.Item>
                             <Dropdown.Item
                               onClick={() => {
                                 startWordExport(formId, 'answer_key');
                               }}
                             >
-                              Prepare {previewFormName} answer key Word (.docx)
+                              Prepare {selectedFormName} answer key Word (.docx)
                             </Dropdown.Item>
                           </>
                         )}
