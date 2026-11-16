@@ -21,6 +21,7 @@
         { "id": "element/orderBlocksOptional", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/integerInput", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/symbolicInput", "autoPoints": 2, "maxAutoPoints": 10 },
+        { "id": "element/setSymbolicInput", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/bigOInput", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/unitsInput", "autoPoints": 2, "maxAutoPoints": 10 },
         { "id": "element/stringInput", "autoPoints": 2, "maxAutoPoints": 10 },
