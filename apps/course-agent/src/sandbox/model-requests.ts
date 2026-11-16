@@ -41,6 +41,25 @@ export function modelRequestRefusal(body: { tools?: unknown; input?: unknown }):
   return null;
 }
 
+const TurnMetadataSchema = z.object({
+  client_metadata: z.object({ 'x-codex-turn-metadata': z.string() }),
+});
+const RequestKindSchema = z.object({ request_kind: z.string() });
+
+/** The kind Codex labels a model request with, such as `turn` or `compaction`. */
+export function codexRequestKind(body: unknown): string | null {
+  const metadata = TurnMetadataSchema.safeParse(body);
+  if (!metadata.success) return null;
+  try {
+    const parsed = RequestKindSchema.safeParse(
+      JSON.parse(metadata.data.client_metadata['x-codex-turn-metadata']),
+    );
+    return parsed.success ? parsed.data.request_kind : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Commands of Codex's `web.run` tool, which posts them to the provider's `alpha/search` endpoint.
  * OpenAI runs them: searches, page reads by URL, and data lookups. The container only receives

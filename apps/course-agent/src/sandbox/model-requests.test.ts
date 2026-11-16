@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { SEARCH_REFUSAL, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
+import {
+  SEARCH_REFUSAL,
+  codexRequestKind,
+  modelRequestRefusal,
+  prepareSearchRequest,
+} from './model-requests.js';
 
 describe('modelRequestRefusal', () => {
   it('allows the client-run tools Codex declares', () => {
@@ -70,5 +75,17 @@ describe('prepareSearchRequest', () => {
     ]) {
       expect(prepareSearchRequest({ ...request, commands })).toEqual({ refusal: SEARCH_REFUSAL });
     }
+  });
+});
+
+describe('codexRequestKind', () => {
+  it('reads the kind from Codex turn metadata', () => {
+    const body = (kind: string) => ({
+      client_metadata: { 'x-codex-turn-metadata': JSON.stringify({ request_kind: kind }) },
+    });
+    expect(codexRequestKind(body('compaction'))).toBe('compaction');
+    expect(codexRequestKind(body('turn'))).toBe('turn');
+    expect(codexRequestKind({ client_metadata: { 'x-codex-turn-metadata': '{' } })).toBeNull();
+    expect(codexRequestKind({})).toBeNull();
   });
 });

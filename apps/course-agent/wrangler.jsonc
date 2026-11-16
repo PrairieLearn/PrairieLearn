@@ -99,9 +99,22 @@
           }
         ]
       },
+      "exports": {
+        "Conversation": {
+          "type": "durable-object",
+          "storage": "sqlite"
+        },
+        "CourseSandbox": {
+          "type": "durable-object",
+          "storage": "sqlite",
+          "container": "course-agent-staging"
+        }
+      },
+      // Container application names are unique per account, so each environment's includes
+      // the environment.
       "containers": [
         {
-          "name": "course-agent",
+          "name": "course-agent-staging",
           "scheduling_policy": "durable_object",
           "observability": { "logs": { "enabled": true } },
           "images": {
@@ -148,9 +161,22 @@
           }
         ]
       },
+      "exports": {
+        "Conversation": {
+          "type": "durable-object",
+          "storage": "sqlite"
+        },
+        "CourseSandbox": {
+          "type": "durable-object",
+          "storage": "sqlite",
+          "container": "course-agent-production"
+        }
+      },
+      // Container application names are unique per account, so each environment's includes
+      // the environment.
       "containers": [
         {
-          "name": "course-agent",
+          "name": "course-agent-production",
           "scheduling_policy": "durable_object",
           "observability": { "logs": { "enabled": true } },
           "images": {
