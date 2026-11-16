@@ -15,7 +15,7 @@ indexes
     print_forms_user_id_idx: USING btree (user_id)
 
 check constraints
-    print_forms_label_check: CHECK (label ~ '^[A-Z]+$'::text)
+    print_forms_label_check: CHECK (label ~ '^[A-Z]+([2-9]|[1-9][0-9]+)?$'::text)
 
 foreign-key constraints
     print_forms_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

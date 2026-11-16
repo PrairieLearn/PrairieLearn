@@ -39,18 +39,6 @@ WHERE
   AND deleted_at IS NULL
 FOR NO KEY UPDATE;
 
--- BLOCK select_latest_print_form_label
-SELECT
-  label
-FROM
-  print_forms
-WHERE
-  assessment_id = $assessment_id
-ORDER BY
-  id DESC
-LIMIT
-  1;
-
 -- BLOCK select_optional_print_form
 SELECT
   pf.*

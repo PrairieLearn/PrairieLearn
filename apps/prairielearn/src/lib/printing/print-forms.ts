@@ -9,8 +9,9 @@ import {
   insertPrintForm,
   lockAssessmentForPrintForms,
   selectActivePrintFormsForAssessment,
-  selectLatestPrintFormLabel,
+  selectPrintFormsForAssessment,
 } from '../../models/print-form.js';
+import { printFormLabelBase } from '../client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../client/printing/print-form-limits.js';
 import {
   type Assessment,
@@ -27,8 +28,7 @@ import { DEFAULT_PRINT_SETTINGS, type PrintSettings } from './print-settings.js'
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export function nextPrintFormLabel(previous: string | null): string {
-  if (previous === null) return 'A';
+function nextLetter(previous: string): string {
   const letters = previous.split('');
   for (let index = letters.length - 1; index >= 0; index--) {
     if (letters[index] !== 'Z') {
@@ -38,6 +38,32 @@ export function nextPrintFormLabel(previous: string | null): string {
     letters[index] = 'A';
   }
   return `A${letters.join('')}`;
+}
+
+export function nextPrintFormLabel(
+  forms: Pick<PrintForm, 'label' | 'archived_at'>[],
+  replacesLabel?: string,
+): string {
+  let base: string;
+  if (replacesLabel) {
+    base = printFormLabelBase(replacesLabel);
+  } else {
+    const activeBases = new Set(
+      forms
+        .filter((form) => form.archived_at === null)
+        .map((form) => printFormLabelBase(form.label)),
+    );
+    base = 'A';
+    while (activeBases.has(base)) base = nextLetter(base);
+  }
+
+  let latestVersion = 0;
+  for (const form of forms) {
+    if (printFormLabelBase(form.label) === base) {
+      latestVersion = Math.max(latestVersion, Number(form.label.slice(base.length)) || 1);
+    }
+  }
+  return latestVersion === 0 ? base : `${base}${latestVersion + 1}`;
 }
 
 function assertCanCreatePrintForm(activeForms: PrintForm[], replacesPrintFormId?: string) {
@@ -53,16 +79,7 @@ function assertCanCreatePrintForm(activeForms: PrintForm[], replacesPrintFormId?
   }
 }
 
-/** Creates an independent form with saved question selection, ordering, and variants. */
-export async function createPrintForm({
-  assessment,
-  course,
-  courseInstance,
-  userId,
-  authnUserId,
-  replacesPrintFormId,
-  settings,
-}: {
+interface CreatePrintFormOptions {
   assessment: Assessment;
   course: Course;
   courseInstance: CourseInstance;
@@ -70,11 +87,38 @@ export async function createPrintForm({
   authnUserId: string;
   replacesPrintFormId?: string;
   settings?: PrintSettings;
-}) {
-  assertCanCreatePrintForm(
-    await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
-    replacesPrintFormId,
-  );
+}
+
+/** Creates an independent form with saved question selection, ordering, and variants. */
+export async function createPrintForm(options: CreatePrintFormOptions) {
+  return await createPrintFormInternal({ ...options, ensureInitial: false });
+}
+
+/** Returns the active A form, creating its first version when needed. */
+export async function ensureInitialPrintForm(
+  options: Omit<CreatePrintFormOptions, 'replacesPrintFormId'>,
+) {
+  return await createPrintFormInternal({ ...options, ensureInitial: true });
+}
+
+async function createPrintFormInternal({
+  assessment,
+  course,
+  courseInstance,
+  userId,
+  authnUserId,
+  replacesPrintFormId,
+  settings,
+  ensureInitial,
+}: CreatePrintFormOptions & { ensureInitial: boolean }) {
+  const initialActiveForms = await selectActivePrintFormsForAssessment({
+    assessmentId: assessment.id,
+  });
+  if (ensureInitial) {
+    const existing = initialActiveForms.find((form) => printFormLabelBase(form.label) === 'A');
+    if (existing) return existing;
+  }
+  assertCanCreatePrintForm(initialActiveForms, replacesPrintFormId);
   const selectedQuestions = await queryRows(
     sql.select_questions_for_new_form,
     { assessment_id: assessment.id },
@@ -114,19 +158,24 @@ export async function createPrintForm({
 
   return await runInTransactionAsync(async () => {
     await lockAssessmentForPrintForms(assessment.id);
-    const activeForms = await selectActivePrintFormsForAssessment({ assessmentId: assessment.id });
+    const forms = await selectPrintFormsForAssessment({ assessmentId: assessment.id });
+    const activeForms = forms.filter((form) => form.archived_at === null);
+    if (ensureInitial) {
+      const existing = activeForms.find((form) => printFormLabelBase(form.label) === 'A');
+      if (existing) return existing;
+    }
     assertCanCreatePrintForm(activeForms, replacesPrintFormId);
+    const replacedForm = replacesPrintFormId
+      ? activeForms.find((form) => form.id === replacesPrintFormId)
+      : undefined;
+    const label = nextPrintFormLabel(forms, replacedForm?.label);
     const defaultSettings = {
       ...DEFAULT_PRINT_SETTINGS,
       includeHonorCode: !!assessment.require_honor_code,
     };
-    const sourceSettings = replacesPrintFormId
-      ? (activeForms.find((form) => form.id === replacesPrintFormId)?.settings ?? defaultSettings)
-      : null;
-    const formSettings = sourceSettings
-      ? { ...sourceSettings, questionSizes: {}, excludedQuestions: [] }
+    const formSettings = replacedForm
+      ? { ...replacedForm.settings, questionSizes: {}, excludedQuestions: [] }
       : (settings ?? defaultSettings);
-    const label = nextPrintFormLabel(await selectLatestPrintFormLabel(assessment.id));
     const form = await insertPrintForm({
       assessmentId: assessment.id,
       userId,
