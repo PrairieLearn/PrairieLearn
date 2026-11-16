@@ -90,8 +90,9 @@ export function createQuestionServicesHost({
           if (gradingSocket !== socket || abortController.signal.aborted || !isCurrent()) return;
           if (msg.variant_id !== variantId) return;
           latestSubmissions ??= new Map();
-          for (const submission of msg.submissions)
-            {latestSubmissions.set(submission.id, submission);}
+          for (const submission of msg.submissions) {
+            latestSubmissions.set(submission.id, submission);
+          }
           subscriptions.forEach(({ listener }) => listener(msg.submissions));
         };
         socket.on('connect', () => {
