@@ -14,6 +14,7 @@ import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { extractDefaultPreferences } from '../lib/question-preferences.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
+import { extractSharedStateObjectDefaults } from '../lib/shared-state.js';
 import * as questionServers from '../question-servers/index.js';
 
 import * as helperServer from './helperServer.js';
@@ -280,6 +281,22 @@ const course = {
   // Note: this doesn't respect any course-level options set.
 } as unknown as Course;
 
+// This test doesn't sync the example course into the database, so shared-state
+// objects can't be resolved from `shared_state_access` the way they normally
+// would be. Instead, build each object's schema defaults directly from
+// `infoCourse.json` so `data['shared_state']` is populated the same way it
+// would be for a fresh assessment instance.
+const courseInfo = fs.readJsonSync(join(EXAMPLE_COURSE_PATH, 'infoCourse.json'));
+const sharedStateDefaultsByObjectName: Record<
+  string,
+  Record<string, string | number | boolean>
+> = Object.fromEntries(
+  Object.entries(courseInfo.sharedState ?? {}).map(([name, definition]: [string, any]) => [
+    name,
+    extractSharedStateObjectDefaults(definition.properties),
+  ]),
+);
+
 const questionModule = questionServers.getModule('Freeform');
 
 const accessibilitySkip = new Set([
@@ -308,6 +325,16 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       // Extract default preferences from info.json preferences schema
       const preferences = info.preferences ? extractDefaultPreferences(info.preferences) : {};
 
+      // Build shared-state defaults for whichever objects this question accesses
+      const sharedState: Record<
+        string,
+        Record<string, string | number | boolean>
+      > = Object.fromEntries(
+        Object.entries((info.sharedStateAccess ?? {}) as Record<string, string>).map(
+          ([localName, objectName]) => [localName, sharedStateDefaultsByObjectName[objectName]],
+        ),
+      );
+
       // Prepare and generate
       const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant({
         question,
@@ -315,12 +342,13 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant_course: course,
         variant_seed: null,
         preferences,
+        shared_state: sharedState,
         effective_user_id: null,
         group_id: null,
       });
       assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
-      const variant = rawVariant as Variant;
+      const variant = rawVariant as unknown as Variant;
       variant.num_tries = 0;
 
       // Render
@@ -385,6 +413,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        sharedState,
         caller,
       );
       // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via parse+render, add more checks.
@@ -401,6 +430,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         variant,
         question,
         course,
+        sharedState,
         caller,
       );
 

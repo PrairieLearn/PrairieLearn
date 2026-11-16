@@ -63,6 +63,57 @@ export const TagJsonSchema = z
 export type TagJson = z.infer<typeof TagJsonSchema>;
 export type TagJsonInput = z.input<typeof TagJsonSchema>;
 
+// Shared-state object names show up in JSON, in Python/JS access paths, and
+// (eventually) in linked-question namespacing like `@sharing-name/objectName`.
+// We reserve `@`, `/`, `:`, `.`, and whitespace so that namespacing convention
+// stays unambiguous, and start with a conservative grammar that's easy to
+// relax later but impossible to tighten once names exist in production.
+export const SHARED_STATE_OBJECT_NAME_REGEXP = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+
+export const SharedStateObjectPropertyJsonSchema = z
+  .object({
+    type: z.enum(['string', 'number', 'boolean']),
+    default: z.union([z.string(), z.number(), z.boolean()]),
+    enum: z.array(z.union([z.string(), z.number()])).optional(),
+  })
+  .strict();
+
+export const SharedStateObjectPropertiesJsonSchema = z.record(
+  z.string().min(1),
+  SharedStateObjectPropertyJsonSchema,
+);
+
+export const SharedStateObjectJsonSchema = z
+  .object({
+    comment: CommentJsonSchema.optional(),
+    uuid: z
+      .guid()
+      .describe(
+        'Unique identifier (UUID) for this shared-state object. Keep this stable when copying the object to another course.',
+      ),
+    scope: z
+      .enum(['assessmentInstance', 'courseInstance'])
+      .describe(
+        'The lifetime of this object\'s values. Only "assessmentInstance" is currently supported.',
+      ),
+    dataVersion: z
+      .number()
+      .int()
+      .min(1)
+      .describe(
+        'A compatibility boundary, authored by the course. Increment this to intentionally reset all stored values for this object, e.g. after a breaking change to its properties.',
+      ),
+    properties: SharedStateObjectPropertiesJsonSchema.describe(
+      'The named, typed properties that make up this object.',
+    ),
+  })
+  .strict()
+  .describe('A single shared-state object definition.');
+
+export type SharedStateObjectJson = z.infer<typeof SharedStateObjectJsonSchema>;
+export type SharedStateObjectPropertyJson = z.infer<typeof SharedStateObjectPropertyJsonSchema>;
+export type SharedStateObjectPropertiesJson = z.infer<typeof SharedStateObjectPropertiesJsonSchema>;
+
 export const AssessmentSetJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
@@ -152,6 +203,20 @@ export const CourseJsonSchema = z
           .describe('A sharing set description.'),
       )
       .describe('Sharing sets.')
+      .optional(),
+    sharedState: z
+      .record(
+        z
+          .string()
+          .regex(
+            SHARED_STATE_OBJECT_NAME_REGEXP,
+            'Shared-state object names must start with a letter and contain only letters, numbers, underscores, and hyphens.',
+          ),
+        SharedStateObjectJsonSchema,
+      )
+      .describe(
+        'Named, typed, scoped objects of small mutable state that questions can share with each other. See `sharedStateAccess` in question info files.',
+      )
       .optional(),
   })
   .strict()

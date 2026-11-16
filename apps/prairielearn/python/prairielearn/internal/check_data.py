@@ -47,6 +47,11 @@ PROPS: dict[str, PropInfo] = {
         "present_phases": all_phases,
         "edit_phases": frozenset(),
     },
+    "shared_state": {
+        "type": "object",
+        "present_phases": frozenset({"generate", "prepare", "parse", "grade"}),
+        "edit_phases": frozenset({"generate", "prepare", "parse", "grade"}),
+    },
     "submitted_answers": {
         "type": "object",
         "present_phases": frozenset({"render", "parse", "grade"}),
