@@ -94,9 +94,7 @@ export async function syncCourseFromDisk({
       if (revision.exitCode !== 0) startGitHash = null;
     }
     const previousConfiguration = (await selectCourseById(course.id)).sync_configuration;
-    const configurationChanged =
-      config.courseSyncConfigurationEnabled &&
-      !isDeepStrictEqual(previousConfiguration, configuration);
+    const configurationChanged = !isDeepStrictEqual(previousConfiguration, configuration);
     if (configurationChanged) {
       job.info('Sync configuration changed; reprocessing all course metadata');
     }
@@ -123,10 +121,7 @@ export async function syncCourseFromDisk({
       await sqldb.runInTransactionAsync(async () => {
         if (prepared) await chunks.applyPreparedChunks(course.id, prepared);
         await updateCourseCommitHash(course);
-        await updateCourseSyncConfiguration(
-          course.id,
-          config.courseSyncConfigurationEnabled ? configuration : null,
-        );
+        await updateCourseSyncConfiguration(course.id, configuration);
       });
       if (prepared) chunks.logChunkChangesToJob(prepared.changes, job);
       if (config.devMode) flushElementCache();
@@ -152,8 +147,7 @@ export async function syncCourseFromDisk({
             !startGitHash ||
             forceFull ||
             !config.fileEditorUseGit ||
-            (config.courseSyncConfigurationEnabled &&
-              previousConfiguration?.chunksGenerator !== true),
+            previousConfiguration?.chunksGenerator !== true,
         })
       : undefined;
     const result = await sqldb.runInTransactionAsync(async () => {
@@ -161,10 +155,7 @@ export async function syncCourseFromDisk({
       if (result.status !== 'complete') return result;
       if (prepared) await chunks.applyPreparedChunks(course.id, prepared);
       await updateCourseCommitHash(course);
-      await updateCourseSyncConfiguration(
-        course.id,
-        config.courseSyncConfigurationEnabled ? configuration : null,
-      );
+      await updateCourseSyncConfiguration(course.id, configuration);
       return result;
     });
     if (result.status !== 'complete') return { status: 'sharing_error' };

@@ -582,11 +582,6 @@ export const ConfigSchema = z.object({
    */
   checkSharingOnSync: z.boolean().default(false),
   /**
-   * Deploy invalidation writes to every server before enabling these checks.
-   * Unchecked syncs clear the record so rolling activation cannot leave a stale configuration.
-   */
-  courseSyncConfigurationEnabled: z.boolean().default(false),
-  /**
    * Determines if institution names in course instance access rules should be
    * validated at sync time. This defaults to false in dev mode where institutions
    * are not set up, but should be enabled in production to help instructors

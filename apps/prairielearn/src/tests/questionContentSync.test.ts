@@ -27,12 +27,7 @@ import { FileModifyEditor, classifyEditOutcome } from '../lib/editors.js';
 import { features } from '../lib/features/index.js';
 import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import * as courseModel from '../models/course.js';
-import {
-  getCourseCommitHash,
-  selectCourseById,
-  updateCourseColumn,
-  updateCourseCommitHash,
-} from '../models/course.js';
+import { getCourseCommitHash, selectCourseById, updateCourseColumn } from '../models/course.js';
 import { insertInstitution } from '../models/institution.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
@@ -69,7 +64,7 @@ describe('content-only question save', () => {
   beforeEach(async () => {
     await helperDb.resetDatabase();
     config.fileEditorUseGit = true;
-    config.chunksGenerator = false;
+    config.chunksGenerator = true;
     config.chunksConsumer = false;
     const data = util.getCourseData();
     data.questions[qid] = { ...data.questions[util.QUESTION_ID], uuid: randomUUID() };
@@ -88,7 +83,7 @@ describe('content-only question save', () => {
     courseId = result.courseId;
     filePath = path.join(courseDir, 'questions', qid, 'question.html');
     user = await selectOrInsertUserByUid('editor@example.com');
-    await updateCourseCommitHash({ id: courseId, path: courseDir });
+    await sync();
   });
 
   async function save(targetPath = filePath, content = '<p>Updated</p>') {
@@ -119,36 +114,34 @@ describe('content-only question save', () => {
   }
 
   it('establishes the sync configuration, reprocesses version changes without Git changes, and returns to partial sync', async () => {
-    await withConfig({ courseSyncConfigurationEnabled: true }, async () => {
-      const load = vi.spyOn(courseDB, 'loadFullCourse');
-      await sync();
-      expect(load).toHaveBeenCalledOnce();
-      const initial = await selectCourseById(courseId);
-      assert.isNotNull(initial.sync_configuration);
-      load.mockClear();
-      await sync();
-      expect(load).not.toHaveBeenCalled();
+    await courseModel.updateCourseSyncConfiguration(courseId, null);
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    await sync();
+    expect(load).toHaveBeenCalledOnce();
+    const initial = await selectCourseById(courseId);
+    assert.isNotNull(initial.sync_configuration);
+    load.mockClear();
+    await sync();
+    expect(load).not.toHaveBeenCalled();
 
-      await courseModel.updateCourseSyncConfiguration(courseId, {
-        ...initial.sync_configuration,
-        version: 0,
-      });
-      await sync();
-      expect(load).toHaveBeenCalledOnce();
-      const refreshed = await selectCourseById(courseId);
-      assert.equal(refreshed.commit_hash, initial.commit_hash);
-      assert.deepEqual(refreshed.sync_configuration, initial.sync_configuration);
-      load.mockClear();
-      await (await save()).run();
-      expect(load).not.toHaveBeenCalled();
-
-      await withConfig({ courseSyncConfigurationEnabled: false }, async () => {
-        await (await save(filePath, '<p>Old deployment</p>')).run();
-      });
-      assert.isNull((await selectCourseById(courseId)).sync_configuration);
-      await sync();
-      expect(load).toHaveBeenCalledOnce();
+    await courseModel.updateCourseSyncConfiguration(courseId, {
+      ...initial.sync_configuration,
+      version: 0,
     });
+    await sync();
+    expect(load).toHaveBeenCalledOnce();
+    const refreshed = await selectCourseById(courseId);
+    assert.equal(refreshed.commit_hash, initial.commit_hash);
+    assert.deepEqual(refreshed.sync_configuration, initial.sync_configuration);
+    load.mockClear();
+    await (await save()).run();
+    expect(load).not.toHaveBeenCalled();
+
+    await util.syncCourseData(courseDir);
+    assert.isNull((await selectCourseById(courseId)).sync_configuration);
+    load.mockClear();
+    await sync();
+    expect(load).toHaveBeenCalledOnce();
   });
 
   it('revalidates sharing on feature changes and keeps recorded JSON errors without repeatedly doing full sync', async () => {
@@ -158,7 +151,6 @@ describe('content-only question save', () => {
     await commitOriginAndSync(fixture, 'Make question public');
     await withConfig(
       {
-        courseSyncConfigurationEnabled: true,
         checkSharingOnSync: true,
         features: { 'question-sharing': true, 'consume-public-questions': false },
       },
@@ -201,45 +193,42 @@ describe('content-only question save', () => {
     const info = await fs.readJson(infoPath);
     await fs.writeJson(infoPath, { ...info, sharePublicly: true });
     await commitOriginAndSync(fixture, 'Make question public');
-    await withConfig(
-      { courseSyncConfigurationEnabled: true, checkSharingOnSync: true },
-      async () => {
-        const initial = await selectCourseById(courseId);
-        await features.enable('question-sharing', { institution_id: initial.institution_id });
-        await sync();
-        const requestedCourse = await selectCourseById(courseId);
-        // resetDatabase inserts the default institution with an explicit ID.
-        await execute(sql.advance_institution_sequence, {});
-        const institutionId = await insertInstitution({
-          shortName: 'Other',
-          longName: 'Other institution',
-          displayTimezone: 'UTC',
-          uidRegexp: null,
-        });
-        await features.disable('question-sharing', { institution_id: institutionId });
-        await updateCourseColumn({
-          courseId,
-          columnName: 'institution_id',
-          value: institutionId,
-          authnUserId: user.id,
-        });
-        const load = vi.spyOn(courseDB, 'loadFullCourse');
-        const { jobPromise } = await pullAndUpdateCourse({
-          course: requestedCourse,
-          userId: user.id,
-          authnUserId: user.id,
-        });
-        await jobPromise;
-        expect(load).toHaveBeenCalledOnce();
-        expect((await selectCourseById(courseId)).sync_configuration?.features).toMatchObject({
-          'question-sharing': false,
-        });
-        assert.include(
-          (await selectQuestionByQid({ course_id: courseId, qid })).sync_errors!,
-          'sharing is not enabled',
-        );
-      },
-    );
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const initial = await selectCourseById(courseId);
+      await features.enable('question-sharing', { institution_id: initial.institution_id });
+      await sync();
+      const requestedCourse = await selectCourseById(courseId);
+      // resetDatabase inserts the default institution with an explicit ID.
+      await execute(sql.advance_institution_sequence, {});
+      const institutionId = await insertInstitution({
+        shortName: 'Other',
+        longName: 'Other institution',
+        displayTimezone: 'UTC',
+        uidRegexp: null,
+      });
+      await features.disable('question-sharing', { institution_id: institutionId });
+      await updateCourseColumn({
+        courseId,
+        columnName: 'institution_id',
+        value: institutionId,
+        authnUserId: user.id,
+      });
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      const { jobPromise } = await pullAndUpdateCourse({
+        course: requestedCourse,
+        userId: user.id,
+        authnUserId: user.id,
+      });
+      await jobPromise;
+      expect(load).toHaveBeenCalledOnce();
+      expect((await selectCourseById(courseId)).sync_configuration?.features).toMatchObject({
+        'question-sharing': false,
+      });
+      assert.include(
+        (await selectQuestionByQid({ course_id: courseId, qid })).sync_errors!,
+        'sharing is not enabled',
+      );
+    });
   });
 
   it('reloads prepared metadata when sharing changes during the push', async () => {
@@ -247,42 +236,39 @@ describe('content-only question save', () => {
     const info = await fs.readJson(originInfoPath);
     await fs.writeJson(originInfoPath, { ...info, sharePublicly: true });
     await commitOriginAndSync(fixture, 'Make question public');
-    await withConfig(
-      { courseSyncConfigurationEnabled: true, checkSharingOnSync: true },
-      async () => {
-        const course = await selectCourseById(courseId);
-        await features.enable('question-sharing', { institution_id: course.institution_id });
-        await sync();
-        const load = vi.spyOn(courseDB, 'loadFullCourse');
-        const operation = await save(
-          path.join(path.dirname(filePath), 'info.json'),
-          JSON.stringify({ ...info, sharePublicly: true, title: 'Changed title' }),
-        );
-        await expect(
-          operation.run({
-            beforeWrite: async (job) => {
-              const exec = job.exec.bind(job);
-              vi.spyOn(job, 'exec').mockImplementation(async (file, args, options) => {
-                const result = await exec(file, args, options);
-                if (file === 'git' && args[0] === 'push') {
-                  await features.disable('question-sharing', {
-                    institution_id: course.institution_id,
-                  });
-                }
-                return result;
-              });
-            },
-          }),
-        ).rejects.toThrow('One or more JSON files contained errors');
-        expect(load).toHaveBeenCalledTimes(2);
-        const question = await selectQuestionByQid({ course_id: courseId, qid });
-        assert.equal(question.title, info.title);
-        assert.include(question.sync_errors!, 'sharing is not enabled');
-        expect((await selectCourseById(courseId)).sync_configuration?.features).toMatchObject({
-          'question-sharing': false,
-        });
-      },
-    );
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const course = await selectCourseById(courseId);
+      await features.enable('question-sharing', { institution_id: course.institution_id });
+      await sync();
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      const operation = await save(
+        path.join(path.dirname(filePath), 'info.json'),
+        JSON.stringify({ ...info, sharePublicly: true, title: 'Changed title' }),
+      );
+      await expect(
+        operation.run({
+          beforeWrite: async (job) => {
+            const exec = job.exec.bind(job);
+            vi.spyOn(job, 'exec').mockImplementation(async (file, args, options) => {
+              const result = await exec(file, args, options);
+              if (file === 'git' && args[0] === 'push') {
+                await features.disable('question-sharing', {
+                  institution_id: course.institution_id,
+                });
+              }
+              return result;
+            });
+          },
+        }),
+      ).rejects.toThrow('One or more JSON files contained errors');
+      expect(load).toHaveBeenCalledTimes(2);
+      const question = await selectQuestionByQid({ course_id: courseId, qid });
+      assert.equal(question.title, info.title);
+      assert.include(question.sync_errors!, 'sharing is not enabled');
+      expect((await selectCourseById(courseId)).sync_configuration?.features).toMatchObject({
+        'question-sharing': false,
+      });
+    });
   });
 
   it('refreshes declared feature warnings without hashing unrelated feature flags', async () => {
@@ -295,7 +281,6 @@ describe('content-only question save', () => {
     await commitOriginAndSync(fixture, 'Declare editor feature');
     await withConfig(
       {
-        courseSyncConfigurationEnabled: true,
         devMode: false,
         features: { 'rich-text-editor': true },
       },
@@ -325,7 +310,7 @@ describe('content-only question save', () => {
   });
 
   it('rebuilds chunks on activation but preserves chunk revisions when only processing settings change', async () => {
-    await withConfig({ courseSyncConfigurationEnabled: true }, async () => {
+    await withConfig({ chunksGenerator: false }, async () => {
       await sync();
       await withConfig({ chunksGenerator: true }, async () => {
         const full = vi.spyOn(chunks, 'prepareChunksForCourse');
@@ -349,48 +334,45 @@ describe('content-only question save', () => {
   it.each(['upload', 'database'])(
     'keeps the old configuration on %s failure and retries the configuration change',
     async (failure) => {
-      await withConfig(
-        { courseSyncConfigurationEnabled: true, chunksGenerator: true },
-        async () => {
-          await sync();
-          const before = await selectCourseById(courseId);
-          const beforeChunks = await util.dumpTableWithSchema('chunks', ChunkSchema);
-          await courseModel.updateCourseSyncConfiguration(courseId, {
-            ...before.sync_configuration,
-            version: 0,
+      await withConfig({ chunksGenerator: true }, async () => {
+        await sync();
+        const before = await selectCourseById(courseId);
+        const beforeChunks = await util.dumpTableWithSchema('chunks', ChunkSchema);
+        await courseModel.updateCourseSyncConfiguration(courseId, {
+          ...before.sync_configuration,
+          version: 0,
+        });
+        const oldConfiguration = (await selectCourseById(courseId)).sync_configuration;
+        const upload = vi.spyOn(chunks, 'prepareChunksForCourse');
+        const publishConfiguration = courseModel.updateCourseSyncConfiguration;
+        const publish = vi.spyOn(courseModel, 'updateCourseSyncConfiguration');
+        if (failure === 'upload') upload.mockRejectedValueOnce(new Error('Upload failed'));
+        if (failure === 'database') {
+          // Fail after metadata and commit updates, when publishing the new configuration.
+          publish.mockImplementation(async (id, configuration) => {
+            await publishConfiguration(id, configuration);
+            if (configuration !== null) throw new Error('Database failed');
           });
-          const oldConfiguration = (await selectCourseById(courseId)).sync_configuration;
-          const upload = vi.spyOn(chunks, 'prepareChunksForCourse');
-          const publishConfiguration = courseModel.updateCourseSyncConfiguration;
-          const publish = vi.spyOn(courseModel, 'updateCourseSyncConfiguration');
-          if (failure === 'upload') upload.mockRejectedValueOnce(new Error('Upload failed'));
-          if (failure === 'database') {
-            // Fail after metadata and commit updates, when publishing the new configuration.
-            publish.mockImplementation(async (id, configuration) => {
-              await publishConfiguration(id, configuration);
-              if (configuration !== null) throw new Error('Database failed');
-            });
-          }
-          const operation = await save();
-          await expect(operation.run()).rejects.toThrow(
-            failure === 'upload' ? 'Upload failed' : 'Database failed',
-          );
-          const after = await selectCourseById(courseId);
-          assert.equal(after.commit_hash, before.commit_hash);
-          assert.deepEqual(after.sync_configuration, oldConfiguration);
-          assert.deepEqual(await util.dumpTableWithSchema('chunks', ChunkSchema), beforeChunks);
-          publish.mockRestore();
-          await sync();
-          assert.deepEqual(
-            (await selectCourseById(courseId)).sync_configuration,
-            before.sync_configuration,
-          );
-          assert.equal(
-            (await selectCourseById(courseId)).commit_hash,
-            await getCourseCommitHash(courseDir),
-          );
-        },
-      );
+        }
+        const operation = await save();
+        await expect(operation.run()).rejects.toThrow(
+          failure === 'upload' ? 'Upload failed' : 'Database failed',
+        );
+        const after = await selectCourseById(courseId);
+        assert.equal(after.commit_hash, before.commit_hash);
+        assert.deepEqual(after.sync_configuration, oldConfiguration);
+        assert.deepEqual(await util.dumpTableWithSchema('chunks', ChunkSchema), beforeChunks);
+        publish.mockRestore();
+        await sync();
+        assert.deepEqual(
+          (await selectCourseById(courseId)).sync_configuration,
+          before.sync_configuration,
+        );
+        assert.equal(
+          (await selectCourseById(courseId)).commit_hash,
+          await getCourseCommitHash(courseDir),
+        );
+      });
     },
   );
 
@@ -404,7 +386,7 @@ describe('content-only question save', () => {
       courseId,
       qid: util.QUESTION_ID,
     });
-    const before = await util.dumpTableWithSchema('chunks', ChunkSchema);
+    const before = await chunks.selectChunksForCourse(courseId);
     const question = await selectQuestionByQid({ course_id: courseId, qid });
     const targeted = vi.spyOn(chunks, 'prepareQuestionContentChunks');
     const full = vi.spyOn(chunks, 'prepareChunksForCourse');
@@ -432,15 +414,19 @@ describe('content-only question save', () => {
       await getCourseCommitHash(courseDir),
     );
 
-    const after = await util.dumpTableWithSchema('chunks', ChunkSchema);
-    assert.lengthOf(after, 2);
+    const after = await chunks.selectChunksForCourse(courseId);
+    assert.lengthOf(after, before.length);
+    const updated = after.find((chunk) => chunk.question_id === question.id)!;
+    assert.equal(updated.commit_hash, await getCourseCommitHash(courseDir));
+    assert.isAbove(updated.size_compressed!, 0);
+    assert.isAbove(updated.size_uncompressed!, 0);
     assert.notEqual(
       after.find((chunk) => chunk.question_id === question.id)!.uuid,
       before.find((chunk) => chunk.question_id === question.id)!.uuid,
     );
     assert.deepEqual(
-      after.find((chunk) => chunk.question_id !== question.id),
-      before.find((chunk) => chunk.question_id !== question.id),
+      after.filter((chunk) => chunk.question_id !== question.id),
+      before.filter((chunk) => chunk.question_id !== question.id),
     );
     await chunks.ensureChunksForCourseAsync(courseId, {
       type: 'question',
@@ -465,7 +451,7 @@ describe('content-only question save', () => {
           path.join(fixture.courseOriginDir, 'metadata-alias.json'),
         );
         await commitOriginAndSync(fixture, 'Add metadata symlink');
-        await updateCourseCommitHash({ id: courseId, path: courseDir });
+        await sync();
       }
       const load = vi.spyOn(courseDB, 'loadFullCourse');
       const operation = await save();
@@ -498,32 +484,27 @@ describe('content-only question save', () => {
   });
 
   it('fully syncs restored question metadata and records JSON errors', async () => {
-    await withConfig({ courseSyncConfigurationEnabled: true }, async () => {
-      const jsonPath = path.join(path.dirname(filePath), 'info.json');
-      const info = await fs.readJson(jsonPath);
-      const load = vi.spyOn(courseDB, 'loadFullCourse');
-      const operation = await save(jsonPath, JSON.stringify({ ...info, title: 'Changed title' }));
-      await fs.remove(jsonPath);
-      await operation.run();
-      expect(load).toHaveBeenCalledOnce();
-      assert.equal(
-        (await selectQuestionByQid({ course_id: courseId, qid })).title,
-        'Changed title',
-      );
+    const jsonPath = path.join(path.dirname(filePath), 'info.json');
+    const info = await fs.readJson(jsonPath);
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    const operation = await save(jsonPath, JSON.stringify({ ...info, title: 'Changed title' }));
+    await fs.remove(jsonPath);
+    await operation.run();
+    expect(load).toHaveBeenCalledOnce();
+    assert.equal((await selectQuestionByQid({ course_id: courseId, qid })).title, 'Changed title');
 
-      load.mockClear();
-      const invalid = await save(jsonPath, 'invalid JSON');
-      await expect(invalid.run()).rejects.toThrow('One or more JSON files contained errors');
-      expect(load).toHaveBeenCalledOnce();
-      assert.isNotNull((await selectQuestionByQid({ course_id: courseId, qid })).sync_errors);
-      assert.equal(classifyEditOutcome((await invalid.result()).data), 'sync_json_errors');
-      const withErrors = await selectQuestionByQid({ course_id: courseId, qid });
-      load.mockClear();
-      const content = await save();
-      await content.run();
-      expect(load).not.toHaveBeenCalled();
-      assert.deepEqual(await selectQuestionByQid({ course_id: courseId, qid }), withErrors);
-    });
+    load.mockClear();
+    const invalid = await save(jsonPath, 'invalid JSON');
+    await expect(invalid.run()).rejects.toThrow('One or more JSON files contained errors');
+    expect(load).toHaveBeenCalledOnce();
+    assert.isNotNull((await selectQuestionByQid({ course_id: courseId, qid })).sync_errors);
+    assert.equal(classifyEditOutcome((await invalid.result()).data), 'sync_json_errors');
+    const withErrors = await selectQuestionByQid({ course_id: courseId, qid });
+    load.mockClear();
+    const content = await save();
+    await content.run();
+    expect(load).not.toHaveBeenCalled();
+    assert.deepEqual(await selectQuestionByQid({ course_id: courseId, qid }), withErrors);
   });
 
   it('refreshes eligibility after acquiring the lock instead of trusting the request snapshot', async () => {
@@ -669,7 +650,7 @@ describe('content-only question save', () => {
   });
 
   it('replans supported changes from another question after push recovery', async () => {
-    config.chunksGenerator = true;
+    const beforeChunks = await chunks.selectChunksForCourse(courseId);
     const remote = path.join(fixture.courseDevDir, 'questions', util.QUESTION_ID, 'question.html');
     await fs.writeFile(remote, '<p>Remote content</p>');
     await execa('git', ['add', remote], { cwd: fixture.courseDevDir });
@@ -682,11 +663,11 @@ describe('content-only question save', () => {
     expect(load).not.toHaveBeenCalled();
     expect(upload).toHaveBeenCalledOnce();
     expect(upload.mock.calls[0][0].qids).toEqual(expect.arrayContaining([qid, util.QUESTION_ID]));
-    assert.equal((await util.dumpTableWithSchema('chunks', ChunkSchema)).length, 2);
+    assert.lengthOf(await chunks.selectChunksForCourse(courseId), beforeChunks.length);
   });
 
   it('uses partial processing for sync-only remote content changes', async () => {
-    config.chunksGenerator = true;
+    const beforeChunks = await chunks.selectChunksForCourse(courseId);
     await fs.writeFile(
       path.join(fixture.courseOriginDir, 'questions', qid, 'question.html'),
       '<p>Remote only</p>',
@@ -706,7 +687,7 @@ describe('content-only question save', () => {
       (await selectCourseById(courseId)).commit_hash,
       await getCourseCommitHash(courseDir),
     );
-    assert.lengthOf(await util.dumpTableWithSchema('chunks', ChunkSchema), 1);
+    assert.lengthOf(await chunks.selectChunksForCourse(courseId), beforeChunks.length);
     const question = await selectQuestionByQid({ course_id: courseId, qid });
     config.chunksConsumer = true;
     config.chunksConsumerDirectory = path.join(fixture.baseDir, 'runtime');
