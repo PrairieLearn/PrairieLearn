@@ -71,7 +71,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     }
   });
 
-  async function prepareRename(edit: 'title' | 'gradingMethod' | 'content') {
+  async function prepareRename(edit: 'title' | 'gradingMethod' | 'content' | 'assessment') {
     const course = await selectCourseById('1');
     const user = await selectUserById('1');
     const question = await selectQuestionByQid({ course_id: course.id, qid });
@@ -82,20 +82,28 @@ describe('question QID sync with real Git and a course subdirectory', () => {
       question,
     };
     const newQid = qid === 'test/question' ? 'renamed/nested/question' : 'test/question';
-    const filePath = path.join(
-      course.path,
-      'questions',
-      qid,
-      edit === 'content' ? 'question.html' : 'info.json',
-    );
+    const filePath =
+      edit === 'assessment'
+        ? path.join(course.path, 'courseInstances/Fa18/assessments/HW1/infoAssessment.json')
+        : path.join(
+            course.path,
+            'questions',
+            qid,
+            edit === 'content' ? 'question.html' : 'info.json',
+          );
     const previous = await fs.readFile(filePath, 'utf8');
     const content =
-      edit === 'content'
-        ? `${previous}\n<p>Changed</p>`
-        : JSON.stringify({
+      edit === 'assessment'
+        ? JSON.stringify({
             ...JSON.parse(previous),
-            ...(edit === 'title' ? { title: 'Renamed question' } : { gradingMethod: 'Manual' }),
-          });
+            zones: [{ questions: [{ id: qid, points: 20 }] }],
+          })
+        : edit === 'content'
+          ? `${previous}\n<p>Changed</p>`
+          : JSON.stringify({
+              ...JSON.parse(previous),
+              ...(edit === 'title' ? { title: 'Renamed question' } : { gradingMethod: 'Manual' }),
+            });
     const editor = new MultiEditor({ locals, description: 'Rename question' }, [
       new FileModifyEditor({
         locals,
@@ -111,7 +119,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     return { load, question, course, editor, job, newQid };
   }
 
-  async function rename(edit: 'title' | 'gradingMethod' | 'content') {
+  async function rename(edit: 'title' | 'gradingMethod' | 'content' | 'assessment') {
     const operation = await prepareRename(edit);
     await operation.editor.executeWithServerJob(operation.job);
     qid = operation.newQid;
@@ -169,13 +177,30 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     },
   );
 
-  it('uses full sync when a rename also changes gradingMethod', async () => {
-    const { load, question, course } = await rename('gradingMethod');
-    assert.isAbove(load.mock.calls.length, 0);
-    const renamed = await selectQuestionByQid({ course_id: course.id, qid });
-    assert.equal(renamed.id, question.id);
-    assert.equal(renamed.grading_method, 'Manual');
-  });
+  it.each(['gradingMethod', 'assessment'] as const)(
+    'uses full sync when a rename also changes %s',
+    async (edit) => {
+      const { load, question, course } = await rename(edit);
+      expect(load).toHaveBeenCalled();
+      const renamed = await selectQuestionByQid({ course_id: course.id, qid });
+      assert.equal(renamed.id, question.id);
+      if (edit === 'gradingMethod') {
+        assert.equal(renamed.grading_method, 'Manual');
+      } else {
+        const snapshot = await captureDatabaseSnapshot();
+        const assessment = snapshot.assessments.find((assessment) => assessment.tid === 'HW1')!;
+        assert.equal(
+          snapshot.assessmentQuestions.find(
+            (aq) =>
+              aq.assessment_id === assessment.id &&
+              aq.question_id === renamed.id &&
+              aq.deleted_at === null,
+          )!.max_points,
+          20,
+        );
+      }
+    },
+  );
 
   it.each(['upload', 'database'] as const)(
     'recovers a pushed rename and accumulated content after a %s failure without full sync',
@@ -289,6 +314,60 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     },
   );
 
+  it('uses full sync to repair an assessment that only referenced the destination QID', async () => {
+    const destination = qid === 'test/question' ? 'renamed/nested/question' : 'test/question';
+    const original = await fs.readJson(
+      path.join(
+        fixture.courseOriginDir,
+        'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      ),
+    );
+    await fs.outputJson(
+      path.join(
+        fixture.courseOriginDir,
+        'courseInstances/Fa18/assessments/HW3/infoAssessment.json',
+      ),
+      {
+        ...original,
+        uuid: randomUUID(),
+        number: '3',
+        zones: [{ questions: [{ id: destination, points: 10 }] }],
+      },
+    );
+    await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+    await execa('git', ['commit', '-m', 'Missing destination fixture'], {
+      cwd: fixture.courseOriginDir,
+    });
+    await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
+    await syncCourseData(fixture.courseLiveDir);
+    await updateCourseCommitHash(await selectCourseById('1'));
+    const before = await captureDatabaseSnapshot();
+    const missing = before.assessments.find((assessment) => assessment.tid === 'HW3')!;
+    assert.include(missing.sync_errors!, destination);
+    assert.isFalse(
+      before.assessmentQuestions.some(
+        (aq) => aq.assessment_id === missing.id && aq.deleted_at === null,
+      ),
+    );
+    const { load, question, course } = await rename('title');
+    expect(load).toHaveBeenCalled();
+    assert.equal((await selectQuestionByQid({ course_id: course.id, qid })).id, question.id);
+    const after = await captureDatabaseSnapshot();
+    assert.isNull(
+      after.assessments.find((assessment) => assessment.id === missing.id)!.sync_errors,
+    );
+    assert.isTrue(
+      after.assessmentQuestions.some(
+        (aq) =>
+          aq.assessment_id === missing.id &&
+          aq.question_id === question.id &&
+          aq.deleted_at === null,
+      ),
+    );
+    await syncCourseData(course.path);
+    assertSnapshotsMatch(after, await captureDatabaseSnapshot());
+  });
+
   it('rejects a copy that keeps the original question directory', async () => {
     const checkout = path.join(fixture.baseDir, 'copy-check');
     await execa('git', ['clone', path.dirname(fixture.courseLiveDir), checkout]);
@@ -388,5 +467,51 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     const duplicate = await selectQuestionByQid({ course_id: course.id, qid: 'duplicate-uuid' });
     assert.include(duplicate.sync_warnings!, qid);
     assert.notInclude(duplicate.sync_warnings!, oldQid);
+  });
+  it('uses full sync for a remote rename below an existing question', async () => {
+    const course = await selectCourseById('1');
+    const sourceUuid = randomUUID();
+    const original = await fs.readJson(
+      path.join(fixture.courseOriginDir, 'questions', qid, 'info.json'),
+    );
+    await fs.outputJson(path.join(fixture.courseOriginDir, 'questions/nesting-source/info.json'), {
+      ...original,
+      uuid: sourceUuid,
+      title: 'Nesting source',
+    });
+    await fs.outputJson(path.join(fixture.courseOriginDir, 'questions/nesting-parent/info.json'), {
+      ...original,
+      uuid: randomUUID(),
+      title: 'Nesting parent',
+    });
+    await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+    await execa('git', ['commit', '-m', 'Nesting fixture'], { cwd: fixture.courseOriginDir });
+    await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
+    await syncCourseData(course.path);
+    await updateCourseCommitHash(course);
+    const source = await selectQuestionByQid({ course_id: course.id, qid: 'nesting-source' });
+    assert.equal(source.uuid, sourceUuid);
+    assert.isNull(source.sync_errors);
+    await fs.move(
+      path.join(fixture.courseOriginDir, 'questions/nesting-source'),
+      path.join(fixture.courseOriginDir, 'questions/nesting-parent/child'),
+    );
+    await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+    await execa('git', ['commit', '-m', 'Unsupported nested rename'], {
+      cwd: fixture.courseOriginDir,
+    });
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    const user = await selectUserById('1');
+    const { jobPromise } = await pullAndUpdateCourse({
+      course: await selectCourseById(course.id),
+      userId: user.id,
+      authnUserId: user.id,
+    });
+    await jobPromise;
+    expect(load).toHaveBeenCalled();
+    const after = await captureDatabaseSnapshot();
+    assert.isNotNull(after.questions.find((question) => question.id === source.id)!.deleted_at);
+    await syncCourseData(course.path);
+    assertSnapshotsMatch(after, await captureDatabaseSnapshot());
   });
 });
