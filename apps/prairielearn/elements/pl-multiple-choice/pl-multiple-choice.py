@@ -464,6 +464,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                         '"feedback" on pl-answer should not be set when builtin-grading is false.'
                     )
 
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    if weight < 0:
+        raise ValueError(
+            f'Attribute "weight" must be a non-negative integer, not {weight}'
+        )
+
     correct_answers, incorrect_answers = categorize_options(element, data)
 
     # Check for duplicate answers. Ignore trailing/leading whitespace

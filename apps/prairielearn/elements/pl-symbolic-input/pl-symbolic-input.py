@@ -114,6 +114,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     pl.check_answers_names(data, name)
 
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    if weight < 0:
+        raise ValueError(
+            f'Attribute "weight" must be a non-negative integer, not {weight}'
+        )
+
     if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
