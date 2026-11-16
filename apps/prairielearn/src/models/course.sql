@@ -83,7 +83,15 @@ WHERE
 -- BLOCK update_course_commit_hash
 UPDATE courses
 SET
-  commit_hash = $commit_hash
+  commit_hash = $commit_hash,
+  sync_configuration = NULL
+WHERE
+  id = $course_id;
+
+-- BLOCK update_course_sync_configuration
+UPDATE courses
+SET
+  sync_configuration = $sync_configuration::jsonb
 WHERE
   id = $course_id;
 

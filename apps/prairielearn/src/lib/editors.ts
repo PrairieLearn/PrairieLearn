@@ -26,6 +26,7 @@ import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
 import { getQuestionContentPlan } from '../sync/questionContent.js';
+import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
@@ -33,7 +34,7 @@ import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
-import { syncCourseFromDisk } from './course.js';
+import { type PreparedCourseData, syncCourseFromDisk } from './course.js';
 import {
   type Assessment,
   AssessmentSchema,
@@ -50,6 +51,7 @@ import {
   getDetailsForFile,
 } from './editorUtil.js';
 import { FileType, getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
+import { features } from './features/index.js';
 import { idsEqual } from './id.js';
 import { removeQidsFromAssessment, renameQidInAssessment } from './infoAssessment-edits.js';
 import { computeStableHash } from './json.js';
@@ -329,9 +331,9 @@ export abstract class Editor {
           );
         };
 
-        let courseData: courseDB.CourseData | undefined;
+        let preparedCourseData: PreparedCourseData | undefined;
         let candidateHash: string;
-        const prepareCourseData = async () => {
+        const prepareCourseData = async (): Promise<PreparedCourseData | undefined> => {
           const qids = await getQuestionContentPlan({
             course: this.course,
             oldHash: startGitHash,
@@ -339,12 +341,17 @@ export abstract class Editor {
             editedPaths: [...editedPaths],
           });
           if (qids !== null) return undefined;
-          const data = await courseDB.loadFullCourse(this.course.id, this.course.path);
-          if (!(await syncFromDisk.checkSharingConfigurationValid(this.course, data, job))) {
-            if (startGitHash) await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
-            throw new Error('Invalid sharing operation, reverted to last known good state.');
-          }
-          return data;
+          const configuration = await getSyncConfiguration(this.course);
+          return await features.runWithOverrides(configuration.features, async () => {
+            const data = await courseDB.loadFullCourse(this.course.id, this.course.path);
+            if (!(await syncFromDisk.checkSharingConfigurationValid(this.course, data, job))) {
+              if (startGitHash) {
+                await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
+              }
+              throw new Error('Invalid sharing operation, reverted to last known good state.');
+            }
+            return { data, configuration };
+          });
         };
         try {
           await writeAndCommitChanges();
@@ -376,11 +383,12 @@ export abstract class Editor {
             // we can be sure that there weren't any further changes to the
             // files on disk. This helps keep syncing fast by avoiding loading
             // all course JSON files twice.
+            // Publication also checks that the sync configuration still matches.
             //
             // If pushing fails, we'll need to incorporate the latest changes
             // from the remote repository, so we'll have to load the latest
             // course data from disk after we do so.
-            courseData = possibleCourseData;
+            preparedCourseData = possibleCourseData;
           } catch {
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
@@ -419,7 +427,7 @@ export abstract class Editor {
                 cancelSignal: AbortSignal.timeout(30_000),
               });
               job.data.saveSucceeded = true;
-              courseData = retryCourseData;
+              preparedCourseData = retryCourseData;
             } finally {
               // Clean up to remove any empty directories that might have been
               // left behind by operations like renames. This will also ensure
@@ -448,7 +456,7 @@ export abstract class Editor {
               course: this.course,
               startGitHash,
               job,
-              courseData,
+              preparedCourseData,
               editedPaths: [...editedPaths],
             }),
             job,

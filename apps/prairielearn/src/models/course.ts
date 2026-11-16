@@ -187,6 +187,7 @@ export async function getGitRemoteUrl(coursePath: string): Promise<string | null
 /**
  * Loads the current commit hash from disk and stores it in the database. This
  * will also add the `commit_hash` property to the given course object.
+ * Invalidates the sync configuration; a completed sync restores it in the same transaction.
  */
 export async function updateCourseCommitHash(course: {
   id: string;
@@ -198,6 +199,17 @@ export async function updateCourseCommitHash(course: {
     commit_hash: hash,
   });
   return hash;
+}
+
+/** Only publish a configuration after its metadata and chunk references have been applied. */
+export async function updateCourseSyncConfiguration(
+  courseId: string,
+  configuration: Course['sync_configuration'],
+): Promise<void> {
+  await execute(sql.update_course_sync_configuration, {
+    course_id: courseId,
+    sync_configuration: configuration == null ? null : JSON.stringify(configuration),
+  });
 }
 
 /**
