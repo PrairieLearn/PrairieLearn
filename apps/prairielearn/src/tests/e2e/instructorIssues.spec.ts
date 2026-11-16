@@ -385,10 +385,20 @@ test.describe('Instructor issues page', () => {
       await page.goto(`${issuesUrl}?q=is%3Aopen`);
       const countBefore = await page.getByTestId('issue-list-item').count();
 
+      // Bootstrap ignores dismiss clicks until the show transition finishes, which
+      // is after the modal becomes visible. The promise is wrapped in an object so
+      // that `evaluateHandle` registers the listener without waiting for the event.
+      const modalShown = await page
+        .getByRole('dialog', { name: 'Close matching issues', includeHidden: true })
+        .evaluateHandle((el) => ({
+          shown: new Promise<void>((resolve) =>
+            el.addEventListener('shown.bs.modal', () => resolve(), { once: true }),
+          ),
+        }));
       await page.getByRole('button', { name: 'Close matching issues' }).click();
-      const modal = page.getByRole('dialog', { name: 'Close matching issues' });
-      await expect(modal).toBeVisible();
+      await modalShown.evaluate(({ shown }) => shown);
 
+      const modal = page.getByRole('dialog', { name: 'Close matching issues' });
       await modal.getByRole('button', { name: 'Cancel' }).click();
       await expect(modal).not.toBeVisible();
       await expect(page.getByTestId('issue-list-item')).toHaveCount(countBefore);
