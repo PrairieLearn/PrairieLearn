@@ -60,7 +60,7 @@ UNION.3: "cup" | "U" | "∪" | "|"
 INTERSECTION.3: "cap" | "∩" | "&"
 SET_UNION.4: "cup" | "U" | "∪" | "|" | "+"
 SET_DIFFERENCE: "-"
-NAMED_SET.5: "R" | "Q" | "Z" | "N" | "C"
+NAMED_SET.5: /(?:NN|ZZ|QQ|RR|CC)(?![A-Za-z_0-9])/
 
 ADD: "+" | "-"
 INVERT: "~"

@@ -7,6 +7,7 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+from prairielearn.internal import mathjson as internal_mathjson
 from prairielearn.internal import sympy_constants
 
 
@@ -1554,6 +1555,112 @@ def test_builtin_callable_functions_exclude_set_operators() -> None:
     assert callable_functions.isdisjoint({"U", "cup", "cap", "∪", "∩"})  # ruff:ignore[ambiguous-unicode-character-string]
 
 
+def test_symbolic_submission_mathjson_bypasses_text_parser() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "not valid text",
+        ["x"],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps([
+            "Add",
+            ["Sin", "x"],
+            ["InvisibleOperator", 2, "x"],
+        ]),
+    )
+
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
+    assert result.expr == sympy.sin(sympy.Symbol("x")) + 2 * sympy.Symbol("x")
+
+
+def test_symbolic_submission_accepts_compute_engine_bare_log_boundary() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "ln 8(x + 1)",
+        ["x"],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps([
+            "InvisibleOperator",
+            ["Ln", 8],
+            ["Delimiter", ["Add", "x", 1]],
+        ]),
+    )
+
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
+    x = sympy.Symbol("x")
+    assert result.expr == sympy.log(8) * (x + 1)
+
+
+def test_symbolic_submission_mathjson_symbols_bypass_name_lowering() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "xy",
+        ["x", "y"],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps("xy"),
+    )
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert 'invalid symbol "xy"' in result.error
+
+
+def test_symbolic_submission_mathjson_enforces_configuration() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "sin(x)",
+        ["x"],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps(["Sin", "x"]),
+        allow_trig_functions=False,
+    )
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert 'invalid function "sin"' in result.error
+
+    result = psu.try_parse_symbolic_submission(
+        "RR",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps("RealNumbers"),
+        allow_sets=False,
+    )
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert "set notation" in result.error
+
+
+def test_symbolic_submission_backfills_mathjson() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "x + 1",
+        ["x"],
+        formula_editor=True,
+    )
+
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
+    assert result.mathjson is not None
+    assert json.loads(result.mathjson) == internal_mathjson.sympy_to_mathjson(
+        result.expr
+    )
+
+
+def test_symbolic_submission_blank_mathjson_falls_back_to_text() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "x + 1",
+        ["x"],
+        formula_editor=True,
+        formula_editor_mathjson="   ",
+    )
+
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
+    assert result.expr == sympy.Symbol("x") + 1
+    assert result.mathjson is not None
+
+
+def test_mathlive_named_sets_replace_single_letter_sets() -> None:
+    named_set = psu.try_parse_symbolic_submission("NN", [], allow_sets=True)
+    ordinary_symbol = psu.try_parse_symbolic_submission("N", ["N"], allow_sets=True)
+
+    assert isinstance(named_set, psu.SymbolicSubmissionParseSuccess)
+    assert named_set.expr is sympy.S.Naturals0
+    assert isinstance(ordinary_symbol, psu.SymbolicSubmissionParseSuccess)
+    assert ordinary_symbol.expr == sympy.Symbol("N")
+
+
 class TestValidateNamesForConflicts:
     """Tests for validate_names_for_conflicts()."""
 
@@ -1581,6 +1688,19 @@ class TestValidateNamesForConflicts:
             psu.validate_names_for_conflicts(
                 "test", ["Complement"], [], allow_sets=True
             )
+
+    @pytest.mark.parametrize("conflicting_name", ["NN", "ZZ", "QQ", "RR", "CC"])
+    def test_mathlive_named_sets_conflict_when_sets_enabled(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [conflicting_name], [], allow_sets=True
+            )
+
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_sets=False
+        )
 
     @pytest.mark.parametrize("conflicting_name", ["i", "j"])
     def test_complex_constants_only_conflict_when_enabled(

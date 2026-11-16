@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Never, cast
@@ -9,6 +10,7 @@ from typing import TYPE_CHECKING, Never, cast
 import sympy
 
 import prairielearn.sympy_utils as psu
+from prairielearn.internal import mathjson as internal_mathjson
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -34,6 +36,7 @@ class SetSyntax(Enum):
 class SetParseSuccess:
     expr: sympy.Set
     json: psu.SympyJson
+    mathjson: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,6 +129,7 @@ def try_parse_set_submission(
     *,
     formula_editor: bool = False,
     formula_editor_latex: str | None = None,
+    formula_editor_mathjson: str | None = None,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: Sequence[str] = (),
@@ -144,37 +148,63 @@ def try_parse_set_submission(
     except ValueError as exc:
         return SetParseFailure(str(exc))
 
-    normalized = psu._try_normalize_symbolic_input(
-        submission,
-        variable_list,
-        custom_function_list,
-        formula_editor=formula_editor,
-        latex=formula_editor_latex,
-        allow_trig_functions=allow_trig_functions,
-        allow_complex=allow_complex,
-        allow_sets=True,
+    use_mathjson = bool(
+        formula_editor and formula_editor_mathjson and formula_editor_mathjson.strip()
     )
-    if isinstance(normalized, psu.SympyParseFailure):
-        return SetParseFailure(normalized.error)
 
     try:
-        value, _structure = psu._convert_source_to_sympy_with_source(
-            normalized,
-            submission,
-            variable_list,
-            allow_hidden=True,
-            allow_complex=allow_complex,
-            allow_sets=True,
-            allow_trig_functions=allow_trig_functions,
-            custom_functions=custom_function_list,
-            simplify_expression=simplify_expression,
-            assumptions=assumptions,
-            additional_variables=NAMED_SETS,
-            parser_start="set_start",
-            simplify_set_operations=False,
-            allow_set_functions=False,
-            delimited_syntax=syntax.value,
-        )
+        if use_mathjson:
+            assert formula_editor_mathjson is not None
+            parsed = psu._try_parse_mathjson_as_sympy(
+                formula_editor_mathjson,
+                formula_editor_latex or submission,
+                variable_list,
+                allow_hidden=True,
+                allow_complex=allow_complex,
+                allow_sets=True,
+                allow_trig_functions=allow_trig_functions,
+                custom_functions=custom_function_list,
+                simplify_expression=simplify_expression,
+                assumptions=assumptions,
+                additional_variables=NAMED_SETS,
+                parser_start="set_start",
+                simplify_set_operations=False,
+                allow_set_functions=False,
+                delimited_syntax=syntax.value,
+            )
+            if isinstance(parsed, psu.SympyParseFailure):
+                return SetParseFailure(parsed.error)
+            value = parsed.expr
+        else:
+            normalized = psu._try_normalize_symbolic_input(
+                submission,
+                variable_list,
+                custom_function_list,
+                formula_editor=formula_editor,
+                latex=formula_editor_latex,
+                allow_trig_functions=allow_trig_functions,
+                allow_complex=allow_complex,
+                allow_sets=True,
+            )
+            if isinstance(normalized, psu.SympyParseFailure):
+                return SetParseFailure(normalized.error)
+            value, _structure = psu._convert_source_to_sympy_with_source(
+                normalized,
+                submission,
+                variable_list,
+                allow_hidden=True,
+                allow_complex=allow_complex,
+                allow_sets=True,
+                allow_trig_functions=allow_trig_functions,
+                custom_functions=custom_function_list,
+                simplify_expression=simplify_expression,
+                assumptions=assumptions,
+                additional_variables=NAMED_SETS,
+                parser_start="set_start",
+                simplify_set_operations=False,
+                allow_set_functions=False,
+                delimited_syntax=syntax.value,
+            )
         value = cast(sympy.Basic, value)
         if not isinstance(value, sympy.Set):
             return SetParseFailure("Your answer must be a set.")
@@ -198,4 +228,8 @@ def try_parse_set_submission(
         )
     except (TypeError, ValueError):
         return SetParseFailure("Your answer contains an invalid set expression.")
-    return SetParseSuccess(set_value, result_json)
+    serialized_mathjson = formula_editor_mathjson if use_mathjson else None
+    if formula_editor and serialized_mathjson is None:
+        with suppress(TypeError):
+            serialized_mathjson = internal_mathjson.sympy_to_raw_mathjson(set_value)
+    return SetParseSuccess(set_value, result_json, serialized_mathjson)

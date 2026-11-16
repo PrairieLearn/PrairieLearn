@@ -1,9 +1,11 @@
+import json
 import re
 
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
 from prairielearn import set_expression
+from prairielearn.internal import mathjson as internal_mathjson
 
 
 def _caret_template(template: str) -> tuple[str, str]:
@@ -91,6 +93,85 @@ def test_named_sets_round_trip_through_json_deserialization() -> None:
         _variables=[],
     )
     assert psu.json_to_sympy(stored, allow_sets=True) == sympy.S.Reals
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("RealNumbers", sympy.S.Reals),
+        ("RationalNumbers", sympy.S.Rationals),
+        ("Integers", sympy.S.Integers),
+        ("NonNegativeIntegers", sympy.S.Naturals0),
+        ("ComplexNumbers", sympy.S.Complexes),
+        (
+            ["SetMinus", "RealNumbers", ["Set", {"num": "0"}]],
+            sympy.Complement(sympy.S.Reals, sympy.FiniteSet(0)),
+        ),
+        (
+            ["Add", "RealNumbers", "RationalNumbers"],
+            sympy.S.Reals,
+        ),
+        (
+            ["Interval", 0, ["Open", 1]],
+            sympy.Interval.Ropen(0, 1),
+        ),
+    ],
+)
+def test_mathjson_bypasses_text_parser(
+    value: internal_mathjson.MathJsonExpression, expected: sympy.Set
+) -> None:
+    result = set_expression.try_parse_set_submission(
+        "not valid text",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps(value),
+        syntax=set_expression.SetSyntax.INTERVAL,
+    )
+
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert result.expr.doit(deep=True) == expected
+
+
+def test_mathjson_tuple_uses_configured_set_syntax() -> None:
+    result = set_expression.try_parse_set_submission(
+        "not valid text",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps([
+            "Set",
+            ["Delimiter", ["Sequence", 1, 2], {"str": "'(,)'"}],
+        ]),
+    )
+
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert result.expr == sympy.FiniteSet(sympy.Tuple(1, 2))
+
+
+def test_mathjson_rejects_malformed_nonempty_payload() -> None:
+    result = set_expression.try_parse_set_submission(
+        "RR",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson="{",
+    )
+
+    assert isinstance(result, set_expression.SetParseFailure)
+
+
+def test_supported_mathjson_round_trip() -> None:
+    value = sympy.Union(sympy.Interval.Ropen(0, 1), sympy.S.Naturals0, evaluate=False)
+    raw = internal_mathjson.sympy_to_raw_mathjson(value)
+    result = set_expression.try_parse_set_submission(
+        "not valid text",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=raw,
+        syntax=set_expression.SetSyntax.INTERVAL,
+    )
+
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert result.expr == value
+    assert json.loads(result.mathjson or "null") == json.loads(raw)
 
 
 @pytest.mark.parametrize(
