@@ -8,7 +8,7 @@
             mb-0 w-100
         " 
         aria-label="{{aria_label}}" 
-        data-answer-name="{{name}}" 
+        data-answers-name="{{name}}" 
         data-max-response-per-option="{{max_response_per_option}}"
         style="table-layout: fixed;"
     >
@@ -101,7 +101,7 @@
         {{/show_help_text}}
     </div>
     {{#reset_button}}
-        <button type="button" class="btn btn-outline-secondary btn-sm pl-matching-reset-btn" data-answers-name="{{name}}" radio-matrix-name="{{name}}">
+        <button id="{{name}}-reset-btn" type="button" class="btn btn-outline-secondary btn-sm pl-matching-reset-btn" data-answers-name="{{name}}" radio-matrix-name="{{name}}">
             Reset Above Radio Matrix
         </button>
     {{/reset_button}}
