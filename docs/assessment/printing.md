@@ -2,15 +2,15 @@
 
 With course preview permission, you can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. You can also preview and download answer keys.
 
-For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its applied paper size, spacing, question selection, cover options, randomized values, and matching answer key. Forms are shared with course staff who have preview permission. Creating or regenerating a print form does not start or change a student attempt. Printable forms are not currently supported for group assessments.
+For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its applied paper size, spacing, question selection, default cover settings, randomized values, and matching answer key. Forms are shared with course staff who have preview permission. Creating or regenerating a print form does not start or change a student attempt. Printable forms are not currently supported for group assessments.
 
 ## Prepare an assessment
 
-1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view.
+1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view. Its questions and randomized values are fixed then.
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
 3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
-5. Select **Update preview** to save your changes to this form. Check the **Student copy** and **Answer key** above the preview.
+5. Select **Update preview** to save your changes to this form without changing its randomization. Check the **Student copy** and **Answer key** above the preview.
 6. When you are satisfied with the assessment, open **Prepare…** and [choose a file](#prepare-and-download-files).
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
@@ -30,15 +30,15 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 active forms, labeled A through Z. New forms take the first available letter. The A slot, including A2 and later versions, cannot be archived. Assessments without randomization use a single form.
+If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 active forms, labeled A through Z. New forms take the first available letter. The A slot, including A2 and later versions, cannot be archived directly; regenerate it to replace it. Assessments without randomization use a single form.
 
 Select a form to review it and choose its questions and spacing. Apply any changes with **Update preview** before switching to another form.
 
-To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. It inherits the old form's paper and cover settings. Question exclusions and individual spacing reset because the new form may have different questions. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for answer keys. Use the archive button beside a non-A form to remove it from the current set while keeping it under **Previous forms**. Adding a form after archiving C creates C2.
+To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. It inherits the old form's paper and default cover settings. Question exclusions and individual spacing reset because the new form may have different questions. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for student copies and answer keys. Use the archive button beside a non-A form to remove it from the current set while keeping it under **Previous forms**. Adding a form after archiving C creates C2.
 
 ## Cover pages
 
-The default cover has spaces for **Name** and **Date**, along with the assessment's instructions. You can customize it under **Cover page**:
+The default cover has spaces for **Name**, **Date**, **Student ID**, and **Section**, along with the assessment's instructions. You can edit or remove the latter two fields under **Cover page**:
 
 - Under **Additional student information**, enter one label per line, such as “Student ID” or “Section”.
 - Select **Include grading table** to add a table for recording question scores.
@@ -72,7 +72,7 @@ If file preparation says the preview has expired or changed, select **Update pre
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. The **Recent exports** list shows your ten newest exports for this assessment, including their progress and download links. Use those links if you return later or an automatic download is blocked. The list remains available when you reload the page. Each file is available for 24 hours after it was requested.
+PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. The **Recent exports** list shows your ten newest exports for this assessment, including their progress and download links. Forms are shared with course staff, but prepared files are available only to the staff member who requested them. Use those links if you return later or an automatic download is blocked. The list remains available when you reload the page. Each file is available for 24 hours after it was requested.
 
 ### Print copies for a class
 

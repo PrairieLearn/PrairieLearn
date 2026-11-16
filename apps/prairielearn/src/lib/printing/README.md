@@ -66,7 +66,7 @@ Omit the `cover` option to start with questions on the first page.
 
 ### PrairieLearn endpoint parameters
 
-Form A is created automatically when course staff first open the print preparation view. Forms store a permanent label, selected questions, order, point values, and floating variants. Regenerating archives a form and creates the next numbered version of its letter, such as A2; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
+Form A is created automatically when course staff first open the print preparation view. Forms store a permanent label, selected questions, order, point values, floating variants, and print settings such as paper size, default cover options, question exclusions, and spacing. Regenerating archives a form and creates the next numbered version of its letter, such as A2. The replacement inherits paper and default cover settings but resets question exclusions and individual spacing; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
 The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
 
