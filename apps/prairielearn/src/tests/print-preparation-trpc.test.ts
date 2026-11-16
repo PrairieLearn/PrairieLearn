@@ -280,6 +280,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
       course_role: 'Owner',
       authn_user_id: '1',
     });
+    const api = client(assessment.id);
+    await api.printForms.create.mutate();
     const otherUserForm = await createPrintForm({
       assessment,
       course: await selectCourseById(courseInstance.course_id),
@@ -287,7 +289,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
       userId: otherUser.id,
       authnUserId: '1',
     });
-    const api = client(assessment.id);
     expect((await api.printForms.list.query()).some((form) => form.id === otherUserForm.id)).toBe(
       true,
     );
@@ -307,7 +308,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await expect(
       api.printableAssessmentExport.pdf.mutate(packetInput(otherUserForm.id)),
     ).rejects.toThrow('The printable pages are incomplete.');
-    const otherForm = await client(otherAssessment.id).printForms.create.mutate();
+    const otherAssessmentApi = client(otherAssessment.id);
+    const otherForm = await otherAssessmentApi.printForms.create.mutate();
+    expect(otherForm.label).toBe('A');
+    await expect(otherAssessmentApi.printForms.archive.mutate(otherForm)).rejects.toThrow(
+      'Form A cannot be archived.',
+    );
     await expect(api.printForms.questions.query(otherForm)).rejects.toThrow(
       'This print form is not available.',
     );

@@ -61,7 +61,7 @@ const assessmentFormProcedure = printFormProcedure
     if (!form) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is not available.' });
     }
-    return next();
+    return next({ ctx: { printForm: form } });
   });
 
 async function createForm({
@@ -115,6 +115,12 @@ export const printFormsRouter = t.router({
       async ({ ctx, input }) => await createForm({ ctx, replacesPrintFormId: input.printFormId }),
     ),
   archive: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
+    if (ctx.printForm.archived_at === null && ctx.printForm.label.replace(/\d+$/, '') === 'A') {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Form A cannot be archived. Regenerate it to make a new version.',
+      });
+    }
     const archived = await archivePrintForm({
       printFormId: input.printFormId,
       assessmentId: ctx.assessment.id,
