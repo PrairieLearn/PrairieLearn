@@ -206,9 +206,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
       const assessment = await selectAssessmentByTid({ course_instance_id: '1', tid });
       const api = client(assessment.id);
       expect(assessment.multiple_instance).toBe(false);
-      const first = await api.printForms.create.mutate();
+      const first = await api.printForms.ensureInitial.mutate();
+      expect(await api.printForms.ensureInitial.mutate()).toEqual(first);
       const second = await api.printForms.create.mutate();
       expect(second.printFormId).not.toBe(first.printFormId);
+      expect([first.label, second.label]).toEqual(['A', 'B']);
       expect(
         await selectOptionalPrintForm({
           printFormId: first.printFormId,
@@ -242,12 +244,15 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('regeneration creates a replacement and preserves the saved original form', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const first = await api.printForms.create.mutate();
+    const first = await api.printForms.ensureInitial.mutate();
     const original = await selectPrintFormQuestions(first.printFormId);
     const originalQuestions = await api.printForms.questions.query(first);
     const regenerated = await api.printForms.regenerate.mutate(first);
     expect(regenerated.printFormId).not.toBe(first.printFormId);
-    expect(regenerated.label).not.toBe(first.label);
+    expect(regenerated.label).toBe('A2');
+    await expect(api.printForms.archive.mutate(regenerated)).rejects.toThrow(
+      'Form A cannot be archived.',
+    );
     expect(await selectPrintFormQuestions(first.printFormId)).toEqual(original);
     expect(
       (await selectOptionalPrintForm({

@@ -4,9 +4,10 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
+import { printFormLabelBase } from '../../lib/client/printing/print-form-label.js';
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
-import { createPrintForm } from '../../lib/printing/print-forms.js';
+import { createPrintForm, ensureInitialPrintForm } from '../../lib/printing/print-forms.js';
 import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
 import {
   archivePrintForm,
@@ -22,6 +23,7 @@ export interface PrintFormsError {
   questions: never;
   list: never;
   create: never;
+  ensureInitial: never;
   regenerate: never;
 }
 
@@ -67,19 +69,23 @@ const assessmentFormProcedure = printFormProcedure
 async function createForm({
   ctx,
   replacesPrintFormId,
+  ensureInitial = false,
 }: {
   ctx: ReturnType<typeof createContext>;
   replacesPrintFormId?: string;
+  ensureInitial?: boolean;
 }) {
   try {
-    const form = await createPrintForm({
+    const options = {
       assessment: ctx.assessment,
       course: ctx.course,
       courseInstance: ctx.course_instance,
       userId: ctx.locals.user.id,
       authnUserId: ctx.authn_user.id,
-      replacesPrintFormId,
-    });
+    };
+    const form = ensureInitial
+      ? await ensureInitialPrintForm(options)
+      : await createPrintForm({ ...options, replacesPrintFormId });
     return { printFormId: form.id, label: form.label };
   } catch (error) {
     if (error instanceof HttpStatusError) {
@@ -109,13 +115,16 @@ export const printFormsRouter = t.router({
   create: printFormProcedure
     .use(rejectGroupWork)
     .mutation(async ({ ctx }) => await createForm({ ctx })),
+  ensureInitial: printFormProcedure
+    .use(rejectGroupWork)
+    .mutation(async ({ ctx }) => await createForm({ ctx, ensureInitial: true })),
   regenerate: assessmentFormProcedure
     .use(rejectGroupWork)
     .mutation(
       async ({ ctx, input }) => await createForm({ ctx, replacesPrintFormId: input.printFormId }),
     ),
   archive: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
-    if (ctx.printForm.archived_at === null && ctx.printForm.label.replace(/\d+$/, '') === 'A') {
+    if (ctx.printForm.archived_at === null && printFormLabelBase(ctx.printForm.label) === 'A') {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'Form A cannot be archived. Regenerate it to make a new version.',
