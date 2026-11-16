@@ -157,10 +157,7 @@ function PrintPreparation({
     });
   const hasActiveA = activeForms.some((form) => printFormLabelBase(form.label) === 'A');
   const archivedForms = forms.data.filter((form) => form.archived_at !== null);
-  const savedFormIds =
-    selectedForms === null || (selectedForms.length === 0 && activeForms.length === 1 && hasActiveA)
-      ? activeForms.map((form) => form.id)
-      : selectedForms;
+  const savedFormIds = selectedForms?.length ? selectedForms : activeForms.map((form) => form.id);
   const selectedFormIds = new Set(savedFormIds);
   const availableFormIds = activeForms
     .filter((form) => selectedFormIds.has(form.id))

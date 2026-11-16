@@ -74,7 +74,7 @@ The form resource is `/pl/course_instance/:course_instance_id/instructor/assessm
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
-The form's saved label appears on covers and footers. New letter slots progress from `A` through `Z`, then `AA`, `AB`, and so on. Archiving a slot makes its letter available to the next added form, which receives the next numbered version (for example, `C2`). The active A slot cannot be archived. Query parameters cannot change labels.
+The form's saved label appears on covers and footers. Up to 26 active slots use letters `A` through `Z`. Archiving a slot makes its letter available to the next added form, which receives the next numbered version (for example, `C2`). The active A slot cannot be archived. Query parameters cannot change labels.
 
 `include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
 

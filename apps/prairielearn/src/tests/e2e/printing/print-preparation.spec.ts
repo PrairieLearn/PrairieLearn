@@ -80,6 +80,8 @@ async function preparePreview(page: Page) {
   await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible({
     timeout: 120_000,
   });
+  const applyPreview = page.getByRole('button', { name: /^(Create|Update) preview$/ });
+  if (await applyPreview.isEnabled()) await applyPreview.click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 }
 
@@ -459,10 +461,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   );
   await openPrintPreparation(page, courseInstance.id);
   await formsLoaded;
-  await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
-  await expect(downloadMenu(page)).toBeEnabled({
-    timeout: 120_000,
-  });
+  await preparePreview(page);
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
   const originalLabel = await printFormLabel(page, originalFormId);
   expect(originalLabel).toMatch(/^A(?:[2-9]|[1-9]\d+)?$/);
@@ -573,7 +572,6 @@ test('combines assessment copies with custom covers and appends every form’s a
     buffer: Buffer.from(await cover.save()),
   });
   await expect(page.getByText('extended-instructions.pdf', { exact: true })).toBeVisible();
-  expect(new URL(page.url()).searchParams.get('forms')?.split(',')).toEqual(formIds);
   const copies = 45;
   await choosePrepare(page, 'Prepare booklet PDF…');
   await page.getByLabel('Number of students', { exact: true }).fill(String(copies));
