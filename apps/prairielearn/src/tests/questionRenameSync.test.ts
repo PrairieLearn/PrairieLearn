@@ -3,31 +3,41 @@ import path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { afterAll, afterEach, assert, beforeAll, describe, it, vi } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
+import * as chunks from '../lib/chunks.js';
 import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { computeEncodedFileContentHash } from '../lib/editorUtil.js';
+import { pullAndUpdateCourse } from '../lib/course.js';
+import { ChunkSchema } from '../lib/db-types.js';
+import { computeFileContentHash } from '../lib/editorUtil.js';
 import { FileModifyEditor, MultiEditor, QuestionRenameEditor } from '../lib/editors.js';
-import { selectCourseById, updateCourseCommitHash } from '../models/course.js';
+import * as courseModel from '../models/course.js';
+import { getCourseCommitHash, selectCourseById, updateCourseCommitHash } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectUserById } from '../models/user.js';
 import * as courseDB from '../sync/course-db.js';
-import { getQuestionRenameScope, verifyQuestionRename } from '../sync/questionRenameSync.js';
+import { verifyQuestionRename } from '../sync/questionRenameSync.js';
 
 import { type CourseRepoFixture, createCourseRepoFixture } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-import { captureDatabaseSnapshot, syncCourseData } from './sync/util.js';
+import {
+  assertSnapshotsMatch,
+  captureDatabaseSnapshot,
+  dumpTableWithSchema,
+  syncCourseData,
+} from './sync/util.js';
 import { withConfig } from './utils/config.js';
 
-describe('question QID sync with real Git', () => {
+describe('question QID sync with real Git and a course subdirectory', () => {
   let fixture: CourseRepoFixture;
   let qid = 'test/question';
 
   beforeAll(async () => {
     fixture = await createCourseRepoFixture({
-      populateOrigin: async (directory) => {
+      populateOrigin: async (repoDirectory) => {
+        const directory = path.join(repoDirectory, 'course');
         await fs.copy(path.join(import.meta.dirname, 'testFileEditor/courseTemplate'), directory);
         const first = path.join(
           directory,
@@ -45,9 +55,12 @@ describe('question QID sync with real Git', () => {
         );
       },
     });
+    fixture.courseLiveDir = path.join(fixture.courseLiveDir, 'course');
+    fixture.courseOriginDir = path.join(fixture.courseOriginDir, 'course');
     config.fileEditorUseGit = true;
     config.chunksGenerator = true;
     await helperServer.before(fixture.courseLiveDir)();
+    await updateCourseCommitHash(await selectCourseById('1'));
   });
   afterEach(() => vi.restoreAllMocks());
   afterAll(async () => {
@@ -58,9 +71,8 @@ describe('question QID sync with real Git', () => {
     }
   });
 
-  async function rename(edit: 'title' | 'gradingMethod' | 'content') {
+  async function prepareRename(edit: 'title' | 'gradingMethod' | 'content') {
     const course = await selectCourseById('1');
-    await updateCourseCommitHash(course);
     const user = await selectUserById('1');
     const question = await selectQuestionByQid({ course_id: course.id, qid });
     const locals = {
@@ -90,80 +102,197 @@ describe('question QID sync with real Git', () => {
         filePath,
         container: { rootPath: course.path, invalidRootPaths: [] },
         editContents: b64EncodeUnicode(content),
-        origHash: computeEncodedFileContentHash(b64EncodeUnicode(previous)),
+        origHash: computeFileContentHash(previous),
       }),
       new QuestionRenameEditor({ locals, qid_new: newQid }),
     ]);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const job = await editor.prepareServerJob();
-    await editor.executeWithServerJob(job);
-    qid = newQid;
-    return { load, question, course };
+    return { load, question, course, editor, job, newQid };
   }
 
-  it('preserves identity and assessment associations, matching full sync after a nested rename and title edit', async () => {
-    const before = await captureDatabaseSnapshot();
-    const { load, question, course } = await rename('title');
-    assert.equal(load.mock.calls.length, 0);
-    const renamed = await selectQuestionByQid({ course_id: course.id, qid });
-    assert.equal(renamed.id, question.id);
-    assert.equal(renamed.title, 'Renamed question');
-    assert.equal(renamed.directory, qid);
-    await withConfig(
-      { chunksConsumer: true, chunksConsumerDirectory: path.join(fixture.baseDir, 'runtime') },
-      async () => {
-        await ensureChunksForCourseAsync(course.id, { type: 'question', questionId: renamed.id });
-        const runtimeInfo = await fs.readJson(
-          path.join(getRuntimeDirectoryForCourse(course), 'questions', qid, 'info.json'),
-        );
-        assert.equal(runtimeInfo.title, renamed.title);
-      },
-    );
-    const targeted = await captureDatabaseSnapshot();
-    assert.sameDeepMembers(targeted.assessmentQuestions, before.assessmentQuestions);
-    for (const assessment of ['HW1', 'HW2']) {
-      const info = await fs.readJson(
-        path.join(
-          course.path,
-          'courseInstances/Fa18/assessments',
-          assessment,
-          'infoAssessment.json',
-        ),
-      );
-      assert.include(JSON.stringify(info.zones), qid);
-      assert.notInclude(JSON.stringify(info.zones), 'test/question');
-    }
-    assert.isFalse(await fs.pathExists(path.join(course.path, 'questions/test/question')));
-    const result = await syncCourseData(course.path);
-    assert.equal(result.status, 'complete');
-    const full = await captureDatabaseSnapshot();
-    for (const table of Object.keys(full) as (keyof typeof full)[]) {
-      assert.sameDeepMembers<unknown>(full[table], targeted[table]);
-    }
-  });
+  async function rename(edit: 'title' | 'gradingMethod' | 'content') {
+    const operation = await prepareRename(edit);
+    await operation.editor.executeWithServerJob(operation.job);
+    qid = operation.newQid;
+    return operation;
+  }
 
-  it.each(['gradingMethod', 'content'] as const)(
-    'uses full sync when a rename also changes %s',
+  it.each(['title', 'content'] as const)(
+    'preserves identity, references, and chunks when renaming with a %s edit',
     async (edit) => {
+      const before = await captureDatabaseSnapshot();
       const { load, question, course } = await rename(edit);
-      assert.isAbove(load.mock.calls.length, 0);
+      assert.equal(load.mock.calls.length, 0);
       const renamed = await selectQuestionByQid({ course_id: course.id, qid });
       assert.equal(renamed.id, question.id);
-      if (edit === 'gradingMethod') assert.equal(renamed.grading_method, 'Manual');
+      assert.equal(renamed.title, 'Renamed question');
+      assert.equal(renamed.directory, qid);
+      await withConfig(
+        { chunksConsumer: true, chunksConsumerDirectory: path.join(fixture.baseDir, 'runtime') },
+        async () => {
+          await ensureChunksForCourseAsync(course.id, { type: 'question', questionId: renamed.id });
+          const runtimeInfo = await fs.readJson(
+            path.join(getRuntimeDirectoryForCourse(course), 'questions', qid, 'info.json'),
+          );
+          assert.equal(runtimeInfo.title, renamed.title);
+          if (edit === 'content') {
+            assert.include(
+              await fs.readFile(
+                path.join(getRuntimeDirectoryForCourse(course), 'questions', qid, 'question.html'),
+                'utf8',
+              ),
+              '<p>Changed</p>',
+            );
+          }
+        },
+      );
+      const targeted = await captureDatabaseSnapshot();
+      assert.sameDeepMembers(targeted.assessmentQuestions, before.assessmentQuestions);
+      for (const assessment of ['HW1', 'HW2']) {
+        const info = await fs.readJson(
+          path.join(
+            course.path,
+            'courseInstances/Fa18/assessments',
+            assessment,
+            'infoAssessment.json',
+          ),
+        );
+        assert.include(JSON.stringify(info.zones), qid);
+        assert.notInclude(JSON.stringify(info.zones), question.qid!);
+      }
+      assert.isFalse(await fs.pathExists(path.join(course.path, 'questions', question.qid!)));
+      const result = await syncCourseData(course.path);
+      assert.equal(result.status, 'complete');
+      const full = await captureDatabaseSnapshot();
+      assertSnapshotsMatch(targeted, full);
     },
   );
 
-  it.each(['@renamed', '__proto__'])(
-    'excludes reserved QID %s from the fast path',
-    async (newQid) => {
-      const course = await selectCourseById('1');
-      assert.isNull(await getQuestionRenameScope(course, qid, newQid));
+  it('uses full sync when a rename also changes gradingMethod', async () => {
+    const { load, question, course } = await rename('gradingMethod');
+    assert.isAbove(load.mock.calls.length, 0);
+    const renamed = await selectQuestionByQid({ course_id: course.id, qid });
+    assert.equal(renamed.id, question.id);
+    assert.equal(renamed.grading_method, 'Manual');
+  });
+
+  it.each(['upload', 'database'] as const)(
+    'recovers a pushed rename and accumulated content after a %s failure without full sync',
+    async (failure) => {
+      const otherQid = `other-${failure}`;
+      const otherPath = path.join(fixture.courseOriginDir, 'questions', otherQid);
+      await fs.copy(path.join(fixture.courseOriginDir, 'questions', qid), otherPath);
+      const info = await fs.readJson(path.join(otherPath, 'info.json'));
+      await fs.writeJson(path.join(otherPath, 'info.json'), { ...info, uuid: randomUUID() });
+      await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+      await execa('git', ['commit', '-m', 'Add unrelated question'], {
+        cwd: fixture.courseOriginDir,
+      });
+      await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
+      await syncCourseData(fixture.courseLiveDir);
+      await updateCourseCommitHash(await selectCourseById('1'));
+      await chunks.updateQuestionContentChunk({
+        coursePath: fixture.courseLiveDir,
+        courseId: '1',
+        qid: otherQid,
+      });
+      const before = await captureDatabaseSnapshot();
+      const beforeChunks = await dumpTableWithSchema('chunks', ChunkSchema);
+      const operation = await prepareRename('title');
+      const fail =
+        failure === 'upload'
+          ? vi
+              .spyOn(chunks, 'prepareQuestionContentChunks')
+              .mockRejectedValueOnce(new Error('Upload failed'))
+          : vi
+              .spyOn(courseModel, 'updateCourseCommitHash')
+              .mockRejectedValueOnce(new Error('Checkpoint failed'));
+      await expect(operation.editor.executeWithServerJob(operation.job)).rejects.toThrow(
+        failure === 'upload' ? 'Upload failed' : 'Checkpoint failed',
+      );
+      fail.mockRestore();
+      assert.deepEqual(await captureDatabaseSnapshot(), before);
+      assert.deepEqual(await dumpTableWithSchema('chunks', ChunkSchema), beforeChunks);
+      assert.equal((await selectCourseById('1')).commit_hash, operation.course.commit_hash);
+      assert.notEqual(
+        await getCourseCommitHash(fixture.courseLiveDir),
+        operation.course.commit_hash,
+      );
+      await fs.writeFile(
+        path.join(otherPath, 'question.html'),
+        '<p>Accumulated remote content</p>',
+      );
+      await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+      await execa('git', ['commit', '-m', 'Remote content edit'], { cwd: fixture.courseOriginDir });
+      const user = await selectUserById('1');
+      const { jobPromise } = await pullAndUpdateCourse({
+        course: await selectCourseById('1'),
+        userId: user.id,
+        authnUserId: user.id,
+      });
+      await jobPromise;
+      qid = operation.newQid;
+      expect(operation.load).not.toHaveBeenCalled();
+      assert.equal((await selectQuestionByQid({ course_id: '1', qid })).id, operation.question.id);
+      assert.equal(
+        (await selectCourseById('1')).commit_hash,
+        await getCourseCommitHash(fixture.courseLiveDir),
+      );
+      const after = await captureDatabaseSnapshot();
+      assert.sameDeepMembers(after.assessmentQuestions, before.assessmentQuestions);
+      const activeChunks = await dumpTableWithSchema('chunks', ChunkSchema);
+      assert.lengthOf(activeChunks, beforeChunks.length);
+      assert.notInclude(
+        activeChunks.map((chunk) => chunk.question_id),
+        null,
+      );
+      await withConfig(
+        {
+          chunksConsumer: true,
+          chunksConsumerDirectory: path.join(fixture.baseDir, `runtime-${failure}`),
+        },
+        async () => {
+          const other = await selectQuestionByQid({ course_id: '1', qid: otherQid });
+          await ensureChunksForCourseAsync('1', { type: 'question', questionId: other.id });
+          assert.equal(
+            await fs.readFile(
+              path.join(
+                getRuntimeDirectoryForCourse(operation.course),
+                'questions',
+                otherQid,
+                'question.html',
+              ),
+              'utf8',
+            ),
+            '<p>Accumulated remote content</p>',
+          );
+          await ensureChunksForCourseAsync('1', {
+            type: 'question',
+            questionId: operation.question.id,
+          });
+          assert.equal(
+            (
+              await fs.readJson(
+                path.join(
+                  getRuntimeDirectoryForCourse(operation.course),
+                  'questions',
+                  qid,
+                  'info.json',
+                ),
+              )
+            ).uuid,
+            operation.question.uuid,
+          );
+        },
+      );
     },
   );
 
   it('rejects a copy that keeps the original question directory', async () => {
-    const directory = path.join(fixture.baseDir, 'copy-check');
-    await execa('git', ['clone', fixture.courseLiveDir, directory]);
+    const checkout = path.join(fixture.baseDir, 'copy-check');
+    await execa('git', ['clone', path.dirname(fixture.courseLiveDir), checkout]);
+    const directory = path.join(checkout, 'course');
     const { stdout: oldHash } = await execa('git', ['rev-parse', 'HEAD'], { cwd: directory });
     await fs.copy(path.join(directory, 'questions', qid), path.join(directory, 'questions/copied'));
     await execa('git', ['add', '.'], { cwd: directory });
@@ -197,6 +326,39 @@ describe('question QID sync with real Git', () => {
       }),
     );
   });
+  it('uses full sync to recover an assessment JSON repair accumulated before a rename', async () => {
+    const assessmentPath = 'courseInstances/Fa18/assessments/HW1/infoAssessment.json';
+    const originPath = path.join(fixture.courseOriginDir, assessmentPath);
+    const valid = await fs.readFile(originPath, 'utf8');
+    await fs.writeFile(originPath, '{ invalid JSON');
+    await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+    await execa('git', ['commit', '-m', 'Invalid assessment fixture'], {
+      cwd: fixture.courseOriginDir,
+    });
+    await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
+    await syncCourseData(fixture.courseLiveDir);
+    await updateCourseCommitHash(await selectCourseById('1'));
+    const before = await captureDatabaseSnapshot();
+    assert.isNotNull(
+      before.assessments.find((assessment) => assessment.tid === 'HW1')!.sync_errors,
+    );
+    await fs.writeFile(originPath, valid);
+    await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+    await execa('git', ['commit', '-m', 'Repair assessment fixture'], {
+      cwd: fixture.courseOriginDir,
+    });
+    await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
+    const { load, question, course } = await rename('title');
+    assert.isAbove(load.mock.calls.length, 0);
+    assert.equal((await selectQuestionByQid({ course_id: course.id, qid })).id, question.id);
+    const after = await captureDatabaseSnapshot();
+    assert.isNull(after.assessments.find((assessment) => assessment.tid === 'HW1')!.sync_errors);
+    assert.equal(
+      (await selectCourseById(course.id)).commit_hash,
+      await getCourseCommitHash(course.path),
+    );
+  });
+
   it('uses full sync to refresh duplicate UUID warnings when renaming', async () => {
     const course = await selectCourseById('1');
     const oldQid = qid;
