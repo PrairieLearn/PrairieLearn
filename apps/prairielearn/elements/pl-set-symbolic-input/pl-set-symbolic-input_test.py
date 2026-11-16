@@ -1,4 +1,5 @@
 import importlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +68,45 @@ def test_named_sets_parse_and_grade(submission: str, expected: sympy.Set) -> Non
         is expected
     )
     assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_formula_editor_mathjson_bypasses_set_text_parser() -> None:
+    element_html = build_element_html('formula-editor="true"', 'syntax="interval"')
+    submitted_answers = {
+        "test": "not valid text",
+        "test-json": json.dumps([
+            "SetMinus",
+            "RealNumbers",
+            ["Set", {"num": "0"}],
+        ]),
+    }
+    data = make_question_data(
+        submitted_answers=submitted_answers,
+        raw_submitted_answers={
+            **submitted_answers,
+            "test-latex": r"\mathbb{R}\setminus\{0\}",
+        },
+    )
+
+    set_symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    submitted = psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
+    assert submitted == sympy.Complement(sympy.S.Reals, sympy.FiniteSet(0))
+
+
+def test_formula_editor_malformed_mathjson_does_not_fall_back() -> None:
+    element_html = build_element_html('formula-editor="true"')
+    submitted_answers = {"test": "RR", "test-json": "{"}
+    data = make_question_data(
+        submitted_answers=submitted_answers,
+        raw_submitted_answers=submitted_answers.copy(),
+    )
+
+    set_symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert "test" in data["format_errors"]
 
 
 def test_set_operations_grade_by_symbolic_equivalence() -> None:
@@ -217,6 +257,26 @@ def test_generated_tuple_submission_can_be_parsed_and_graded() -> None:
 
     assert data["format_errors"] == {}
     assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_generated_formula_editor_submission_includes_mathjson() -> None:
+    element_html = build_element_html('formula-editor="true"', 'correct-answer="NN"')
+    data = make_question_data()
+    data["test_type"] = "correct"
+
+    set_symbolic_input.prepare(element_html, data)
+    set_symbolic_input.test(element_html, data)
+
+    assert json.loads(data["raw_submitted_answers"]["test-json"]) == (
+        "NonNegativeIntegers"
+    )
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    set_symbolic_input.parse(element_html, data)
+    assert data["format_errors"] == {}
+    assert (
+        psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
+        is sympy.S.Naturals0
+    )
 
 
 def test_schema_rejects_general_symbolic_set_attributes() -> None:
