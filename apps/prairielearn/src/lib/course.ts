@@ -25,7 +25,7 @@ import * as infofile from '../sync/infofile.js';
 import { type QuestionRenameScope } from '../sync/questionRenameSync.js';
 import {
   getQuestionSyncPlan,
-  syncNewQuestion,
+  syncNewQuestions,
   syncQuestionMetadata,
   syncRecoveredQuestion,
 } from '../sync/questionSync.js';
@@ -149,6 +149,10 @@ export async function syncCourseFromDisk({
             })
           : undefined;
       await sqldb.runInTransactionAsync(async () => {
+        await syncNewQuestions(
+          course,
+          questionChanges.filter((change) => change.kind === 'create'),
+        );
         for (const change of questionChanges) {
           if (change.kind === 'title') {
             await syncQuestionTitle({ course_id: course.id, qid: change.qid, title: change.title });
@@ -163,8 +167,6 @@ export async function syncCourseFromDisk({
               qid: change.qid,
               title: change.title,
             });
-          } else if (change.kind === 'create') {
-            await syncNewQuestion(course, change);
           } else if (change.kind === 'metadata') {
             await syncQuestionMetadata(course, change);
           }
