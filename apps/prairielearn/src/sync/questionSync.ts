@@ -3,7 +3,6 @@ import { isDeepStrictEqual } from 'node:util';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import jju from 'jju';
 import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
@@ -92,14 +91,33 @@ export async function getQuestionSyncPlan({
       if (!(await fs.lstat(absolutePath)).isFile()) return null;
     }
     if (file === `questions/${question.qid}/info.json`) {
+      const original = await execa('git', ['show', `${oldHash}:./${file}`], {
+        cwd: course.path,
+        reject: false,
+      });
+      if (original.exitCode !== 0) return null;
+      let previous: unknown;
+      try {
+        previous = JSON.parse(original.stdout);
+      } catch {
+        return null;
+      }
+      const parsed = z.record(z.string(), z.unknown()).safeParse(previous);
+      if (!parsed.success) return null;
       if (question.sync_errors) {
         const info = await loadQuestionInfo(course.id, course.path, question.qid);
         if (!info || !question.uuid || info.uuid?.toLowerCase() !== question.uuid.toLowerCase()) {
           return null;
         }
-        // Question errors can leave errors on assessments using preferences.
+        // Even unapplied preferences in the failed file can leave errors on assessments.
         // Use full sync until those assessments can be revalidated selectively.
-        if (question.preferences_schema != null || info.data?.preferences != null) return null;
+        if (
+          question.preferences_schema != null ||
+          info.data?.preferences != null ||
+          parsed.data.preferences != null
+        ) {
+          return null;
+        }
         if (info.data && info.errors.length === 0) {
           const [tags, topics, sharingSets] = await Promise.all([
             selectTagsByQuestionId(question.id),
@@ -129,19 +147,6 @@ export async function getQuestionSyncPlan({
       if (!loaded?.data || loaded.errors.length > 0) return null;
       const validated = QuestionJsonSchema.safeParse(loaded.data);
       if (!validated.success) return null;
-      const original = await execa('git', ['show', `${oldHash}:./${file}`], {
-        cwd: course.path,
-        reject: false,
-      });
-      if (original.exitCode !== 0) return null;
-      let previous: unknown;
-      try {
-        previous = jju.parse(original.stdout);
-      } catch {
-        return null;
-      }
-      const parsed = z.record(z.string(), z.unknown()).safeParse(previous);
-      if (!parsed.success) return null;
       const { title: _oldTitle, ...oldMetadata } = parsed.data;
       const { title: _newTitle, ...newMetadata } = loaded.data;
       if (!isDeepStrictEqual(oldMetadata, newMetadata)) return null;

@@ -81,7 +81,11 @@ describe('content-only question save', () => {
     config.chunksGenerator = true;
     config.chunksConsumer = false;
     const data = util.getCourseData();
-    data.questions[qid] = { ...data.questions[util.QUESTION_ID], uuid: randomUUID() };
+    data.questions[qid] = {
+      ...data.questions[util.QUESTION_ID],
+      uuid: randomUUID(),
+      dependencies: {},
+    };
     fixture = await createCourseRepoFixture({
       populateOrigin: async (directory) => {
         await util.writeCourseToDirectory(data, directory);
@@ -412,7 +416,7 @@ describe('content-only question save', () => {
   });
 
   it.each(['file', 'settings', 'rename'] as const)(
-    'syncs a title-only %s edit without loading the course',
+    'syncs a title-only %s edit with nested metadata without loading the course',
     async (mode) => {
       config.chunksGenerator = true;
       const load = vi.spyOn(courseDB, 'loadFullCourse');
@@ -584,6 +588,62 @@ describe('content-only question save', () => {
       (await selectCourseById(courseId)).commit_hash,
       await getCourseCommitHash(courseDir),
     );
+  });
+
+  it('clears dependent assessment errors when preferences only existed in failed metadata', async () => {
+    const infoPath = path.join(path.dirname(filePath), 'info.json');
+    const original = await fs.readJson(infoPath);
+    const assessmentPath = path.join(
+      courseDir,
+      'courseInstances',
+      util.COURSE_INSTANCE_ID,
+      'assessments',
+      util.ASSESSMENT_ID,
+      'infoAssessment.json',
+    );
+    const assessment = await fs.readJson(assessmentPath);
+    await (
+      await save(
+        assessmentPath,
+        JSON.stringify({ ...assessment, zones: [{ questions: [{ id: qid, points: 10 }] }] }),
+      )
+    ).run();
+    const selectedAssessment = async () =>
+      (await util.dumpTableWithSchema('assessments', AssessmentSchema)).find(
+        (a) => a.tid === util.ASSESSMENT_ID,
+      )!;
+    assert.isNull((await selectedAssessment()).sync_errors);
+    await expect(
+      (
+        await save(
+          infoPath,
+          JSON.stringify({
+            ...original,
+            preferences: { num: { type: 'number', default: 1, enum: [2] } },
+          }),
+        )
+      ).run(),
+    ).rejects.toThrow('One or more JSON files');
+    const failed = await selectQuestionByQid({ course_id: courseId, qid });
+    assert.isNotNull(failed.sync_errors);
+    assert.isNull(failed.preferences_schema);
+    assert.include((await selectedAssessment()).sync_errors!, 'preferences/num');
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    await (await save(infoPath, JSON.stringify({ ...original, title: 'Recovered title' }))).run();
+    expect(load).toHaveBeenCalled();
+    const recovered = await selectQuestionByQid({ course_id: courseId, qid });
+    assert.equal(recovered.title, 'Recovered title');
+    assert.isNull(recovered.sync_errors);
+    assert.isNull(recovered.preferences_schema);
+    const repairedAssessment = await selectedAssessment();
+    assert.isNull(repairedAssessment.sync_errors);
+    assert.equal(
+      (await selectCourseById(courseId)).commit_hash,
+      await getCourseCommitHash(courseDir),
+    );
+    await util.syncCourseData(courseDir);
+    assert.deepEqual(await selectQuestionByQid({ course_id: courseId, qid }), recovered);
+    assert.deepEqual(await selectedAssessment(), repairedAssessment);
   });
 
   it('uses full sync to remove existing sharing-set membership during error recovery', async () => {
