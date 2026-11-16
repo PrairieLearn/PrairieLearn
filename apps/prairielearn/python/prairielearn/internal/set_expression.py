@@ -19,11 +19,11 @@ if TYPE_CHECKING:
 
 
 NAMED_SETS = {
-    "R": sympy.S.Reals,
-    "Q": sympy.S.Rationals,
-    "Z": sympy.S.Integers,
-    "N": sympy.S.Naturals,
-    "C": sympy.S.Complexes,
+    "RR": sympy.S.Reals,
+    "QQ": sympy.S.Rationals,
+    "ZZ": sympy.S.Integers,
+    "NN": sympy.S.Naturals0,
+    "CC": sympy.S.Complexes,
 }
 NAMED_SET_NAMES = frozenset(NAMED_SETS)
 

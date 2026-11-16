@@ -55,10 +55,10 @@ def parse_success(
             "[0, 1] + (2, 3)",
             sympy.Union(sympy.Interval(0, 1), sympy.Interval.open(2, 3)),
         ),
-        ("R cap Q", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
-        ("R ∩ Q", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
-        ("R & Q", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
-        ("R - Q", sympy.Complement(sympy.S.Reals, sympy.S.Rationals)),
+        ("RR cap QQ", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
+        ("RR ∩ QQ", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
+        ("RR & QQ", sympy.Intersection(sympy.S.Reals, sympy.S.Rationals)),
+        ("RR - QQ", sympy.Complement(sympy.S.Reals, sympy.S.Rationals)),
         ("{{1}, {2}}", sympy.FiniteSet(sympy.FiniteSet(1), sympy.FiniteSet(2))),
     ],
 )
@@ -71,11 +71,11 @@ def test_set_syntax(submission: str, expected: sympy.Set) -> None:
 @pytest.mark.parametrize(
     ("submission", "expected"),
     [
-        ("R", sympy.S.Reals),
-        ("Q", sympy.S.Rationals),
-        ("Z", sympy.S.Integers),
-        ("N", sympy.S.Naturals),
-        ("C", sympy.S.Complexes),
+        ("RR", sympy.S.Reals),
+        ("QQ", sympy.S.Rationals),
+        ("ZZ", sympy.S.Integers),
+        ("NN", sympy.S.Naturals0),
+        ("CC", sympy.S.Complexes),
     ],
 )
 def test_named_sets(submission: str, expected: sympy.Set) -> None:
@@ -154,7 +154,7 @@ def test_interval_syntax_rejects_tuple_arity() -> None:
     assert "exactly two endpoints" in result.error
 
 
-@pytest.mark.parametrize("name", ["R", "Q", "Z", "N", "C"])
+@pytest.mark.parametrize("name", ["RR", "QQ", "ZZ", "NN", "CC"])
 def test_named_sets_are_reserved(name: str) -> None:
     with pytest.raises(ValueError, match="Named sets cannot be used as variable names"):
         set_expression.validate_names([name], [])
@@ -164,6 +164,19 @@ def test_named_sets_are_reserved(name: str) -> None:
         set_expression.validate_names([], [name])
 
 
+@pytest.mark.parametrize("name", ["R", "Q", "Z", "N", "C"])
+def test_single_letter_set_names_are_ordinary_variables(name: str) -> None:
+    set_expression.validate_names([name], [])
+    result = parse_success(f"{{{name}}}", [name])
+    assert result.expr == sympy.FiniteSet(sympy.Symbol(name))
+
+
+@pytest.mark.parametrize("name", ["RRfoo", "NN2", "CC_x"])
+def test_named_set_tokens_do_not_capture_variable_prefixes(name: str) -> None:
+    result = parse_success(f"{{{name}}}", [name])
+    assert result.expr == sympy.FiniteSet(sympy.Symbol(name))
+
+
 @pytest.mark.parametrize(
     "submission",
     [
@@ -171,7 +184,7 @@ def test_named_sets_are_reserved(name: str) -> None:
         "Interval(0, 1)",
         "FiniteSet(1, 2)",
         "Reals",
-        "R.foo",
+        "RR.foo",
     ],
 )
 def test_rejects_non_set_and_constructor_syntax(submission: str) -> None:
@@ -188,12 +201,12 @@ def test_rejects_non_set_and_constructor_syntax(submission: str) -> None:
         "[0,!]",
         "[0, 1!",
         "[0, 1!}",
-        "!U R",
-        "R U!",
-        "{x^2} U !U Q",
-        "R !* Q",
-        "(R U Q!",
-        "R U Q!)",
+        "!U RR",
+        "RR U!",
+        "{x^2} U !U QQ",
+        "RR !* QQ",
+        "(RR U QQ!",
+        "RR U QQ!)",
     ],
 )
 def test_syntax_error_caret_output(caret_template: str) -> None:
