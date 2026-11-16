@@ -23,7 +23,7 @@ export const PrintGradingTableSchema = z.object({
   rowsPerColumn: z.number().int().positive(),
 });
 
-export function printIdentityFields(value: string): string[] {
+function printIdentityFields(value: string): string[] {
   return value
     .split('\n')
     .map((field) => field.trim())
