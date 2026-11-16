@@ -158,11 +158,14 @@ export function serveQuestionServices(
         { signal: controller.signal },
       );
       if (!controller.signal.aborted) send({ type: 'result', id: message.id, panels });
-    } catch {
+    } catch (error) {
       send({
         type: 'error',
         id: message.id,
-        code: controller.signal.aborted ? 'aborted' : 'failed',
+        code:
+          controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')
+            ? 'aborted'
+            : 'failed',
       });
     } finally {
       requests.delete(message.id);
