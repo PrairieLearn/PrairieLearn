@@ -1,5 +1,6 @@
 import pathlib
 import random
+from contextlib import suppress
 from enum import Enum
 from sys import get_int_max_str_digits
 from typing import Any, assert_never
@@ -369,6 +370,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "formula_editor": formula_editor,
             "custom_functions": ",".join(custom_functions),
+            "variables": ",".join(variables),
         }
 
         if show_score and score is not None:
@@ -485,11 +487,22 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
+    raw_mathjson = data["submitted_answers"].get(name + "-json")
+    if (
+        formula_editor
+        and raw_mathjson is not None
+        and not isinstance(raw_mathjson, str)
+    ):
+        data["format_errors"][name] = psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION
+        data["submitted_answers"][name] = None
+        return
+
     result = psu.try_parse_symbolic_submission(
         data["submitted_answers"].get(name),
         variables,
         formula_editor=formula_editor,
         formula_editor_latex=data["raw_submitted_answers"].get(name + "-latex"),
+        formula_editor_mathjson=raw_mathjson,
         allow_blank=allow_blank,
         blank_value=blank_value,
         allow_complex=allow_complex,
@@ -506,6 +519,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
     data["submitted_answers"][name] = result.json
+    if result.mathjson is not None:
+        data["submitted_answers"][name + "-json"] = result.mathjson
 
 
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
@@ -737,8 +752,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
+    formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
+    )
     result = data["test_type"]
     a_tru_str = ""
+    a_tru_sympy: sympy.Basic | None = None
 
     if result in ["correct", "incorrect"]:
         if name not in data["correct_answers"]:
@@ -782,6 +801,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                     correct_answers.append(f"cos(0) * ( {a_tru_str} )")
 
             data["raw_submitted_answers"][name] = random.choice(correct_answers)
+        if formula_editor and a_tru_sympy is not None:
+            with suppress(TypeError):
+                data["raw_submitted_answers"][name + "-json"] = (
+                    psu.sympy_to_raw_mathjson(a_tru_sympy)
+                )
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":

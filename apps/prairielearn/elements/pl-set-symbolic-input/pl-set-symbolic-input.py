@@ -1,5 +1,6 @@
 import pathlib
 import random
+from contextlib import suppress
 from enum import Enum
 from sys import get_int_max_str_digits
 from typing import Any, assert_never
@@ -426,6 +427,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
         "formula_editor": formula_editor,
         "custom_functions": ",".join(custom_functions),
+        "variables": ",".join(variables),
         "allow_trig": allow_trig,
         "allow_sets": True,
         "named_sets": True,
@@ -519,6 +521,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     submission = data["submitted_answers"].get(name)
     latex = data["raw_submitted_answers"].get(name + "-latex")
+    raw_mathjson = data["submitted_answers"].get(name + "-json")
+    if (
+        formula_editor
+        and raw_mathjson is not None
+        and not isinstance(raw_mathjson, str)
+    ):
+        data["format_errors"][name] = psu.SYMPY_PARSE_ERROR_WITHOUT_LOCATION
+        data["submitted_answers"][name] = None
+        return
     if submission is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
@@ -545,6 +556,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         variables,
         formula_editor=formula_editor,
         formula_editor_latex=latex,
+        formula_editor_mathjson=raw_mathjson,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
         custom_functions=custom_functions,
@@ -557,6 +569,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
     data["submitted_answers"][name] = result.json
+    if result.mathjson is not None:
+        data["submitted_answers"][name + "-json"] = result.mathjson
 
 
 def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
@@ -744,8 +758,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
+    formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
+    )
     result = data["test_type"]
     correct_string = ""
+    correct_sympy: sympy.Set | None = None
 
     if result in {"correct", "incorrect"}:
         correct_answer = data["correct_answers"].get(name)
@@ -767,6 +785,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     if result == "correct":
         data["raw_submitted_answers"][name] = correct_string
+        if formula_editor and correct_sympy is not None:
+            with suppress(TypeError):
+                data["raw_submitted_answers"][name + "-json"] = (
+                    psu.sympy_to_raw_mathjson(correct_sympy)
+                )
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = f"{{{random.randint(1, 100)}}}"

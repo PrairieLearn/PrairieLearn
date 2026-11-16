@@ -6,12 +6,70 @@ type MacroDictionary = import('mathlive').MacroDictionary;
 type VirtualKeyboardKeycap = import('mathlive').VirtualKeyboardKeycap;
 type VirtualKeyboardLayout = import('mathlive').VirtualKeyboardLayout;
 type JQueryFactory = typeof import('jquery');
+type MathJsonExpression =
+  | boolean
+  | number
+  | string
+  | { fn?: MathJsonExpression[]; num?: string; str?: string; sym?: string }
+  | MathJsonExpression[];
+
+interface LatexSyntax {
+  parse: (latex: string) => MathJsonExpression | null;
+}
+
+interface LatexParser {
+  peek: string;
+  skipSpace: () => void;
+  parseArguments: (kind: 'enclosure') => MathJsonExpression[] | null;
+  parseExpression: (options: {
+    minPrec: number;
+    condition: (parser: LatexParser) => boolean;
+  }) => MathJsonExpression | null;
+}
+
+interface ParseUntil {
+  condition?: (parser: LatexParser) => boolean;
+}
+
+type ExpressionParseHandler = (
+  parser: LatexParser,
+  until?: ParseUntil,
+) => MathJsonExpression | null;
+
+interface LatexDictionaryEntry {
+  name?: string;
+  symbolTrigger?: string;
+  parse?: string | ExpressionParseHandler;
+  [key: string]: unknown;
+}
+
+interface ComputeEngineGlobal {
+  LatexSyntax: new (options: {
+    parseStrict: boolean;
+    dictionary: LatexDictionaryEntry[];
+  }) => LatexSyntax;
+  CORE_DICTIONARY: LatexDictionaryEntry[];
+  SYMBOLS_DICTIONARY: LatexDictionaryEntry[];
+  ALGEBRA_DICTIONARY: LatexDictionaryEntry[];
+  LOGIC_DICTIONARY: LatexDictionaryEntry[];
+  SETS_DICTIONARY: LatexDictionaryEntry[];
+  INEQUALITIES_DICTIONARY: LatexDictionaryEntry[];
+  ARITHMETIC_DICTIONARY: LatexDictionaryEntry[];
+  COMPLEX_DICTIONARY: LatexDictionaryEntry[];
+  TRIGONOMETRY_DICTIONARY: LatexDictionaryEntry[];
+  CALCULUS_DICTIONARY: LatexDictionaryEntry[];
+  LINEAR_ALGEBRA_DICTIONARY: LatexDictionaryEntry[];
+  STATISTICS_DICTIONARY: LatexDictionaryEntry[];
+  UNITS_DICTIONARY: LatexDictionaryEntry[];
+  OTHERS_DICTIONARY: LatexDictionaryEntry[];
+}
 
 type SymbolicInputWindow = typeof window & {
   PLSymbolicInput: (uuid: string) => void;
   PLSymbolicInputParseError: (uuid: string) => void;
   PLSymbolicInputPopover: (uuid: string) => void;
   mathVirtualKeyboard: import('mathlive').VirtualKeyboardInterface & EventTarget;
+  ComputeEngine: ComputeEngineGlobal;
   $: JQueryFactory;
 };
 
@@ -384,6 +442,146 @@ interface KeyboardLayout {
     return wrapWithProxy(proxiedObject);
   };
 
+  const latexSyntaxCache = new Map<string, LatexSyntax>();
+
+  function createSyntax(mf: MathfieldElement): LatexSyntax {
+    const variables = mf.dataset.variables?.split(',').filter(Boolean) ?? [];
+    const customFunctions = mf.getAttribute('custom-functions')?.split(',').filter(Boolean) ?? [];
+    const allowTrig = mf.hasAttribute('allow-trig');
+    const allowSets = mf.hasAttribute('allow-sets');
+    const cacheKey = JSON.stringify([
+      allowTrig,
+      allowSets,
+      [...variables].sort(),
+      [...customFunctions].sort(),
+    ]);
+    const cached = latexSyntaxCache.get(cacheKey);
+    if (cached) return cached;
+
+    const {
+      LatexSyntax,
+      CORE_DICTIONARY,
+      SYMBOLS_DICTIONARY,
+      ALGEBRA_DICTIONARY,
+      LOGIC_DICTIONARY,
+      SETS_DICTIONARY,
+      INEQUALITIES_DICTIONARY,
+      ARITHMETIC_DICTIONARY,
+      COMPLEX_DICTIONARY,
+      TRIGONOMETRY_DICTIONARY,
+      CALCULUS_DICTIONARY,
+      LINEAR_ALGEBRA_DICTIONARY,
+      STATISTICS_DICTIONARY,
+      UNITS_DICTIONARY,
+      OTHERS_DICTIONARY,
+    } = symbolicInputWindow.ComputeEngine;
+
+    const syntax = new LatexSyntax({
+      parseStrict: false,
+      dictionary: [
+        ...CORE_DICTIONARY,
+        ...SYMBOLS_DICTIONARY,
+        ...ALGEBRA_DICTIONARY,
+        ...LOGIC_DICTIONARY,
+        ...INEQUALITIES_DICTIONARY,
+        ...ARITHMETIC_DICTIONARY.map((entry) => {
+          const head = entry.name ?? entry.symbolTrigger;
+          if (!head || !['Ln', 'Log', 'ln', 'log'].includes(head)) return entry;
+          if (typeof entry.parse !== 'function') return entry;
+          const defaultParse = entry.parse;
+          return {
+            ...entry,
+            parse: (parser: LatexParser, until?: ParseUntil) => {
+              parser.skipSpace();
+              // Preserve Compute Engine's grouped arguments, log bases, and function powers.
+              if (['<{}>', '_', '^'].includes(parser.peek)) return defaultParse(parser, until);
+              const name = head === 'ln' ? 'Ln' : head === 'log' ? 'Log' : head;
+              const args = parser.parseArguments('enclosure');
+              if (args !== null) return [name, ...args];
+
+              // Bare arguments include juxtaposed factors (ln 2x), but not explicit products.
+              const argument = parser.parseExpression({
+                minPrec: 391,
+                condition: (candidate) =>
+                  ['*', '\\cdot', '\\times', '/', '\\div'].includes(candidate.peek) ||
+                  (until?.condition?.(candidate) ?? false),
+              });
+              if (argument === null) return name;
+              if (Array.isArray(argument) && argument[0] === 'InvisibleOperator') {
+                // A following parenthesized factor ends the bare argument: ln 8(x+1).
+                const boundary = argument.findIndex((factor, index) => {
+                  if (index <= 1) return false;
+                  while (
+                    Array.isArray(factor) &&
+                    ['Power', 'Factorial', 'Factorial2'].includes(String(factor[0]))
+                  ) {
+                    factor = factor[1];
+                  }
+                  return Array.isArray(factor) && factor[0] === 'Delimiter';
+                });
+                if (boundary !== -1) {
+                  const value = boundary === 2 ? argument[1] : argument.slice(0, boundary);
+                  return ['InvisibleOperator', [name, value], ...argument.slice(boundary)];
+                }
+              }
+              return [name, argument];
+            },
+          };
+        }),
+        ...COMPLEX_DICTIONARY,
+        ...CALCULUS_DICTIONARY,
+        ...LINEAR_ALGEBRA_DICTIONARY,
+        ...STATISTICS_DICTIONARY,
+        ...UNITS_DICTIONARY,
+        ...OTHERS_DICTIONARY,
+        ...variables.map((variable) => ({
+          kind: 'symbol',
+          latexTrigger: variable,
+          parse: variable,
+        })),
+        ...customFunctions.flatMap((name) =>
+          [
+            { latexTrigger: name },
+            { symbolTrigger: name },
+            { latexTrigger: `\\operatorname{\\mathrm{${name}}}` },
+          ].map((trigger) => ({
+            kind: 'function',
+            ...trigger,
+            parse: name,
+          })),
+        ),
+        ...(allowTrig ? TRIGONOMETRY_DICTIONARY : []),
+        ...(allowSets
+          ? [
+              ...SETS_DICTIONARY,
+              ...['|', 'u', 'U', 'cup'].map((latexTrigger) => ({
+                latexTrigger,
+                kind: 'infix',
+                precedence: 350,
+                parse: 'Union',
+              })),
+              ...['&', 'cap'].map((latexTrigger) => ({
+                latexTrigger,
+                kind: 'infix',
+                precedence: 350,
+                parse: 'Intersection',
+              })),
+            ]
+          : []),
+      ],
+    });
+    latexSyntaxCache.set(cacheKey, syntax);
+    return syntax;
+  }
+
+  function parseLatex(syntax: LatexSyntax, latex: string): MathJsonExpression {
+    try {
+      return syntax.parse(latex) ?? 'Nothing';
+    } catch {
+      return ['Error', 'Unknown parse error'];
+    }
+  }
+
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
@@ -684,14 +882,15 @@ interface KeyboardLayout {
 
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
-      const latex = mf.getValue('latex');
+      const latex = mf.getValue('latex-unstyled');
       $('#symbolic-input-sub-' + uuid).val(mf.getValue('plain-text'));
       $('#symbolic-input-latex-' + uuid).val(latex.trim() === '' ? '' : latex);
+      $('#symbolic-input-json-' + uuid).val(JSON.stringify(parseLatex(createSyntax(mf), latex)));
     };
 
     updateSubmissionData();
     mf.addEventListener('input', updateSubmissionData);
-    mf.closest('form')?.addEventListener('submit', updateSubmissionData);
+    mf.closest('form')?.addEventListener('submit', updateSubmissionData, { capture: true });
 
     // Disable access to manual "\" macro mode
     mf.addEventListener(
