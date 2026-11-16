@@ -10,7 +10,6 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
-  type GradingJob,
   GradingJobSchema,
   type InstanceQuestion,
   type Question,
@@ -38,8 +37,21 @@ const detailedSubmissionColumns = {
   true_answer: true,
 } as const;
 
+const SubmissionGradingJobSchema = GradingJobSchema.pick({
+  id: true,
+  grading_method: true,
+  grading_requested_at: true,
+  grading_submitted_at: true,
+  grading_received_at: true,
+  grading_started_at: true,
+  grading_finished_at: true,
+  graded_at: true,
+  grading_request_canceled_at: true,
+});
+type SubmissionGradingJob = z.infer<typeof SubmissionGradingJobSchema>;
+
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
-  grading_job: GradingJobSchema.nullable(),
+  grading_job: SubmissionGradingJobSchema.nullable(),
   user_uid: z.string().nullable(),
 });
 
@@ -584,7 +596,7 @@ function RubricItem({
   `;
 }
 
-function buildGradingJobStats(job: GradingJob | null) {
+function buildGradingJobStats(job: SubmissionGradingJob | null) {
   if (!job) return null;
 
   const durations: (number | null)[] = [];
