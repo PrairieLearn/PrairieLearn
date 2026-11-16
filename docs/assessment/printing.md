@@ -6,9 +6,9 @@ For assessments with randomization, you can prepare several versions, called _fo
 
 ## Prepare an assessment
 
-1. Open the assessment's **Questions** page and select **Print**.
+1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view.
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
-3. Choose what to include on the [cover page](#cover-pages), then select **Create preview**.
+3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
 5. Select **Update preview** to save your changes to this form. Check the **Student copy** and **Answer key** above the preview.
 6. When you are satisfied with the assessment, open **Prepare…** and [choose a file](#prepare-and-download-files).
@@ -30,11 +30,11 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 active forms. Labels continue beyond Z when forms are regenerated. Assessments without randomization use a single form.
+If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 active forms. New forms take the first available letter, from A through Z and then AA, AB, and so on. The A slot, including A2 and later versions, cannot be archived. Assessments without randomization use a single form.
 
 Select a form to review it and choose its questions and spacing. Apply any changes with **Update preview** before switching to another form.
 
-To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding letter), and confirm the change. The new form gets the next label; labels are never reused, so the replacement may skip a letter. It inherits the old form's paper and cover settings. Question exclusions and individual spacing reset because the new form may have different questions. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for answer keys. Use the archive button beside a form to remove it from the current set while keeping it under **Previous forms**.
+To replace a form with a new randomized version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. It inherits the old form's paper and cover settings. Question exclusions and individual spacing reset because the new form may have different questions. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for answer keys. Use the archive button beside a non-A form to remove it from the current set while keeping it under **Previous forms**. Adding a form after archiving C creates C2.
 
 ## Cover pages
 

@@ -17,13 +17,14 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { getAppError } from '@prairielearn/trpc/client';
+import { getAppError, renderAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
 import { IdSchema } from '@prairielearn/zod';
 
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { PrintIdentityFieldsTextSchema } from '../../lib/client/printing/print-cover.js';
+import { printFormLabelBase } from '../../lib/client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
 import {
   MAX_COVER_BYTES,
@@ -147,11 +148,23 @@ function PrintPreparation({
   );
   const [selectedForm, setSelectedForm] = useQueryState('form', parseAsString);
   const [selectedForms, setSelectedForms] = useQueryState('forms', parseAsArrayOf(parseAsString));
-  const activeForms = forms.data.filter((form) => form.archived_at === null).reverse();
+  const activeForms = forms.data
+    .filter((form) => form.archived_at === null)
+    .sort((left, right) => {
+      const leftBase = printFormLabelBase(left.label);
+      const rightBase = printFormLabelBase(right.label);
+      return leftBase.length - rightBase.length || leftBase.localeCompare(rightBase);
+    });
+  const hasActiveA = activeForms.some((form) => printFormLabelBase(form.label) === 'A');
   const archivedForms = forms.data.filter((form) => form.archived_at !== null);
-  const savedFormIds = selectedForms ?? activeForms.map((form) => form.id);
-  const availableFormIds = [...new Set(savedFormIds)]
-    .filter((id) => activeForms.some((form) => form.id === id))
+  const savedFormIds =
+    selectedForms === null || (selectedForms.length === 0 && activeForms.length === 1 && hasActiveA)
+      ? activeForms.map((form) => form.id)
+      : selectedForms;
+  const selectedFormIds = new Set(savedFormIds);
+  const availableFormIds = activeForms
+    .filter((form) => selectedFormIds.has(form.id))
+    .map((form) => form.id)
     .slice(0, MAX_ACTIVE_PRINT_FORMS);
   const formIds = availableFormIds;
   const selectedArchivedForm = archivedForms.find((form) => form.id === selectedForm);
@@ -234,6 +247,25 @@ function PrintPreparation({
       },
     }),
   );
+  const ensureInitial = useMutation(
+    trpc.printForms.ensureInitial.mutationOptions({
+      onSuccess: async () => await forms.refetch(),
+    }),
+  );
+  const initialFormRequestedRef = useRef(false);
+  const ensureInitialMutate = ensureInitial.mutate;
+  useEffect(() => {
+    // The first staff visit creates the A slot; the server handles concurrent visits.
+    if (groupWork || hasActiveA || forms.isError || initialFormRequestedRef.current) {
+      return;
+    }
+    initialFormRequestedRef.current = true;
+    ensureInitialMutate();
+  }, [hasActiveA, forms.isError, groupWork, ensureInitialMutate]);
+  useEffect(() => {
+    // Keep the URL on the form actually shown, while preserving valid form deep links.
+    if (formId && formId !== selectedForm) void setSelectedForm(formId);
+  }, [formId, selectedForm, setSelectedForm]);
   const regenerate = useMutation(
     trpc.printForms.regenerate.mutationOptions({
       onSuccess: async () => {
@@ -278,6 +310,7 @@ function PrintPreparation({
     (listedExport ? listedExport.failureMessage : exportStatus.data?.failureMessage) ===
       STALE_PRINT_SNAPSHOT_MESSAGE;
   const busy =
+    ensureInitial.isPending ||
     create.isPending ||
     regenerate.isPending ||
     archive.isPending ||
@@ -625,6 +658,7 @@ function PrintPreparation({
     !isDirty &&
     !groupWork &&
     hasRandomization &&
+    activeForms.length > 0 &&
     activeForms.length < MAX_ACTIVE_PRINT_FORMS;
   const canDownload =
     validForm &&
@@ -639,6 +673,7 @@ function PrintPreparation({
   const previewFormName = formId
     ? `${archivedPreviewForm ? 'Previous Form' : 'Form'} ${formLabel(formId)}`
     : null;
+  const initialFormError = getAppError<PrintFormsError['ensureInitial']>(ensureInitial.error);
 
   async function downloadBooklet(studentCount: number) {
     setCopies(studentCount);
@@ -709,6 +744,24 @@ function PrintPreparation({
       <h1 ref={printHeadingRef} className="h4 mb-3" tabIndex={-1}>
         Print assessment
       </h1>
+      {ensureInitial.isPending && <Alert variant="info">Creating the A form…</Alert>}
+      {initialFormError && (
+        <Alert variant="danger" className="d-flex align-items-center justify-content-between gap-2">
+          <span>
+            Could not create the A form.{' '}
+            {renderAppError(initialFormError, { UNKNOWN: ({ message }) => message })}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline-danger"
+            disabled={ensureInitial.isPending}
+            onClick={() => ensureInitial.mutate()}
+          >
+            Try again
+          </Button>
+        </Alert>
+      )}
       <AppErrorAlert
         error={getAppError<PrintFormsError['create']>(create.error)}
         render={{ UNKNOWN: ({ message }) => message }}
@@ -956,7 +1009,10 @@ function PrintPreparation({
                               placement="top"
                               tooltip={{
                                 props: { id: `print-archive-${id}` },
-                                body: `Archive Form ${label}`,
+                                body:
+                                  printFormLabelBase(label) === 'A'
+                                    ? `Form ${label} cannot be archived. Regenerate it to replace it.`
+                                    : `Archive Form ${label}`,
                               }}
                             >
                               <Button
@@ -965,6 +1021,7 @@ function PrintPreparation({
                                 variant="outline-secondary"
                                 aria-label={`Archive Form ${label}`}
                                 disabled={
+                                  printFormLabelBase(label) === 'A' ||
                                   activeForms.length === 1 ||
                                   busy ||
                                   isDirty ||
@@ -1000,8 +1057,8 @@ function PrintPreparation({
                       </p>
                     )}
                     <p className="small text-muted mt-2 mb-0">
-                      Regenerate creates a newly labeled form and archives the original. Previous
-                      forms remain available below.
+                      Regenerate keeps the letter and adds the next number, such as A2. It archives
+                      the original, which remains available below.
                     </p>
                   </Card.Body>
                 </Card>
@@ -1651,7 +1708,11 @@ function PrintPreparation({
                   />
                   <h3 className="h5">Your printable assessment starts here</h3>
                   <p className="text-muted mb-0">
-                    Choose your layout, then create a preview.
+                    {ensureInitial.isPending
+                      ? 'Creating the A form and its preview.'
+                      : ensureInitial.isError
+                        ? 'Use Try again above to create the A form.'
+                        : 'Choose your layout, then create a preview.'}
                     <br />
                     Review the questions before downloading.
                   </p>
@@ -1709,9 +1770,9 @@ function PrintPreparation({
           {pendingFormAction?.action === 'regenerate' ? (
             <p className="mb-0">
               This will archive Form {pendingFormAction.label} and create a new form with fresh
-              randomization. The new form gets the next label, which may skip letters because labels
-              are never reused. Form {pendingFormAction.label} will remain in Previous forms with
-              its original questions and settings.
+              randomization. The new form keeps the letter and gets the next number. Form{' '}
+              {pendingFormAction.label} will remain in Previous forms with its original questions
+              and settings.
             </p>
           ) : (
             <p className="mb-0">

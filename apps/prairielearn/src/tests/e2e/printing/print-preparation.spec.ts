@@ -71,13 +71,15 @@ async function openPrintPreparation(
 ) {
   const assessment = await assessmentFor(courseInstanceId, tid);
   await page.goto(
-    `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/print?forms=`,
+    `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/print`,
   );
   return assessment;
 }
 
 async function preparePreview(page: Page) {
-  await page.getByRole('button', { name: 'Create preview', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible({
+    timeout: 120_000,
+  });
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 }
 
@@ -130,11 +132,11 @@ test('keeps multiple export links after another file is queued and the page relo
   await expect(keyLink).toBeVisible({ timeout: 120_000 });
 });
 
-test('recovers when creating the first preview fails', async ({ page, courseInstance }) => {
-  await page.route('**/printForms.create', (route) => route.abort('failed'), {
-    times: 1,
-  });
-  const assessment = await openPrintPreparation(page, courseInstance.id);
+test('creates Form A on first visit and recovers if automatic creation fails', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await assessmentFor(courseInstance.id, 'exam18-lockpoints');
   const attemptsBefore = await queryScalar(
     sql.count_assessment_instances,
     { assessment_id: assessment.id },
@@ -145,20 +147,17 @@ test('recovers when creating the first preview fails', async ({ page, courseInst
     { assessment_id: assessment.id },
     z.number(),
   );
+  expect(formsBefore).toBe(0);
+  await page.route('**/printForms.ensureInitial', (route) => route.abort('failed'), {
+    times: 1,
+  });
+  await openPrintPreparation(page, courseInstance.id, 'exam18-lockpoints');
 
-  const createPreview = page.getByRole('button', { name: 'Create preview', exact: true });
-  await createPreview.click();
-  await expect(page.getByRole('alert')).toBeVisible();
-  await expect(createPreview).toBeEnabled();
-  await expect(createPreview).toBeFocused();
-  await page.getByRole('alert').getByRole('button').click();
-  await expect
-    .poll(() => page.evaluate(() => document.activeElement?.matches('h1, a[href*="/exports/"]')))
-    .toBe(true);
-
-  await createPreview.click();
+  const creationAlert = page.getByRole('alert').filter({ hasText: 'Could not create the A form.' });
+  await expect(creationAlert).toBeVisible();
+  await creationAlert.getByRole('button', { name: 'Try again' }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: /^Form A(?: Previewing)?$/ })).toBeVisible();
   expect(
     await queryScalar(sql.count_print_forms, { assessment_id: assessment.id }, z.number()),
   ).toBe(formsBefore + 1);
@@ -466,12 +465,15 @@ test('combines assessment copies with custom covers and appends every form’s a
   });
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
   const originalLabel = await printFormLabel(page, originalFormId);
+  expect(originalLabel).toMatch(/^A(?:[2-9]|[1-9]\d+)?$/);
   const originalQuestions = await selectPrintFormQuestions(originalFormId);
   await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
   const regenerateDialog = page.getByRole('dialog', {
     name: `Regenerate Form ${originalLabel}`,
   });
-  await expect(regenerateDialog.getByText(/labels are never reused/)).toBeVisible();
+  await expect(
+    regenerateDialog.getByText(/keeps the letter and gets the next number/),
+  ).toBeVisible();
   await regenerateDialog.getByRole('button', { name: 'Cancel' }).click();
   expect(new URL(page.url()).searchParams.get('form')).toBe(originalFormId);
   await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
@@ -479,6 +481,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(originalFormId);
   const replacementId = new URL(page.url()).searchParams.get('form')!;
   const replacementLabel = await printFormLabel(page, replacementId);
+  expect(replacementLabel).toMatch(/^A(?:[2-9]|[1-9]\d+)?$/);
   expect(replacementLabel).not.toBe(originalLabel);
   await expect(
     page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
@@ -501,6 +504,9 @@ test('combines assessment copies with custom covers and appends every form’s a
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(replacementId);
   const newId = new URL(page.url()).searchParams.get('form')!;
   const newLabel = await printFormLabel(page, newId);
+  await expect(
+    page.getByRole('button', { name: `Archive Form ${replacementLabel}` }),
+  ).toBeDisabled();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeFocused();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toHaveAttribute(
     'aria-pressed',
@@ -755,7 +761,6 @@ test('keeps existing forms available when randomization is disabled', async ({
     await syncCourse(testCoursePath);
     await openPrintPreparation(page, courseInstance.id);
     await expect(page.getByRole('heading', { name: 'Print forms', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Create preview', exact: true }).click();
     await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
     await page.getByRole('button', { name: 'Add form', exact: true }).click();
     await expect(
