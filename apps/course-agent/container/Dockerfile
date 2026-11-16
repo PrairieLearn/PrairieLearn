@@ -4,8 +4,8 @@ FROM docker.io/cloudflare/sandbox:1.0.2 AS sandbox
 # release's app-server package: the server, its code-mode host, ripgrep, and bubblewrap. Update
 # the version and checksum together; the checksum is the asset's digest on its GitHub release.
 FROM debian:bookworm-slim AS codex
-ADD --checksum=sha256:cce5802264a44d082da894ff2f2ba695a6ade722bc62a1ad0902153667063401 \
-  https://github.com/openai/codex/releases/download/rust-v0.163.0/codex-app-server-package-x86_64-unknown-linux-musl.tar.gz /tmp/codex.tgz
+ADD --checksum=sha256:469687d392cf35359c4c1997f156724e08132fbb6ba128a6cc4b53dc276b869e \
+  https://github.com/openai/codex/releases/download/rust-v0.167.1/codex-app-server-package-x86_64-unknown-linux-musl.tar.gz /tmp/codex.tgz
 RUN mkdir /opt/codex && tar -xzf /tmp/codex.tgz -C /opt/codex
 
 FROM debian:bookworm-slim
