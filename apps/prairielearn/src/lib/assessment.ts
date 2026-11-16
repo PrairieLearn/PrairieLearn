@@ -13,6 +13,7 @@ import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import {
   computeAssessmentInstanceScoreByZone,
   updateAssessmentInstanceGrade,
+  updateAssessmentInstancesScorePending,
 } from './assessment-grading.js';
 import {
   type Assessment,
@@ -524,7 +525,9 @@ export async function setAssessmentInstanceScore(
       assessment_instance_id,
       score_perc,
       points,
-      authn_user_id,
+    });
+    await updateAssessmentInstancesScorePending([assessment_instance_id], authn_user_id, {
+      log: 'always',
     });
   });
 }
@@ -545,7 +548,9 @@ export async function setAssessmentInstancePoints(
       assessment_instance_id,
       score_perc,
       points,
-      authn_user_id,
+    });
+    await updateAssessmentInstancesScorePending([assessment_instance_id], authn_user_id, {
+      log: 'always',
     });
   });
 }
