@@ -1,13 +1,19 @@
--- BLOCK select_question_for_file
+-- BLOCK select_questions_for_files
 SELECT
-  *
+  file_path,
+  (
+    SELECT
+      to_jsonb(q.*)
+    FROM
+      questions AS q
+    WHERE
+      q.course_id = $course_id
+      AND q.deleted_at IS NULL
+      AND starts_with(file_path, 'questions/' || q.qid || '/')
+    ORDER BY
+      length(q.qid)
+    LIMIT
+      1
+  ) AS question
 FROM
-  questions
-WHERE
-  course_id = $course_id
-  AND deleted_at IS NULL
-  AND qid = ANY ($qids::text[])
-ORDER BY
-  length(qid)
-LIMIT
-  1;
+  unnest($file_paths::text[]) AS files (file_path);

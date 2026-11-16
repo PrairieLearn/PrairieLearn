@@ -1,3 +1,4 @@
+import { execa } from 'execa';
 import fs from 'fs-extra';
 import z from 'zod';
 
@@ -10,18 +11,19 @@ import { IdSchema } from '@prairielearn/zod';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
-  getOrUpdateCourseCommitHash,
-  recordSuccessfulCourseSync,
+  selectCourseById,
   updateCourseCommitHash,
 } from '../models/course.js';
-import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
-import { CURRENT_SYNC_VERSION } from '../sync/version.js';
+import { flushElementCache } from '../question-servers/freeform.js';
+import * as courseDB from '../sync/course-db.js';
+import { getQuestionContentPlan } from '../sync/questionContent.js';
+import { checkSharingConfigurationValid, syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 import * as chunks from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User, UserSchema } from './db-types.js';
 import { REPOSITORY_ROOT_PATH } from './paths.js';
-import { type ServerJobResult, createServerJob } from './server-jobs.js';
+import { type ServerJob, type ServerJobResult, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -55,6 +57,86 @@ export async function getCourseOwners(course_id: string): Promise<User[]> {
   return await sqldb.queryRows(sql.select_owners, { course_id }, UserSchema);
 }
 
+/** Requires the course lock. Uploads precede the transaction that activates their references. */
+export async function syncCourseFromDisk({
+  course,
+  startGitHash,
+  job,
+  courseData,
+  editedPaths = [],
+  forceFull = false,
+}: {
+  course: Course;
+  startGitHash: string | null;
+  job: ServerJob;
+  courseData?: courseDB.CourseData;
+  editedPaths?: string[];
+  forceFull?: boolean;
+}): Promise<{ status: 'complete'; hadJsonErrors: boolean } | { status: 'sharing_error' }> {
+  const endGitHash = await getCourseCommitHash(course.path);
+  if (startGitHash) {
+    const revision = await execa('git', ['cat-file', '-e', `${startGitHash}^{commit}`], {
+      cwd: course.path,
+      reject: false,
+    });
+    if (revision.exitCode !== 0) startGitHash = null;
+  }
+  const qids =
+    config.fileEditorUseGit && !forceFull
+      ? await getQuestionContentPlan({
+          course,
+          oldHash: startGitHash,
+          newHash: endGitHash,
+          editedPaths,
+        })
+      : null;
+
+  if (qids !== null) {
+    job.info(`Syncing question content: ${qids.join(', ') || 'no changes'}`);
+    const prepared =
+      config.chunksGenerator && qids.length > 0
+        ? await chunks.prepareQuestionContentChunks({
+            coursePath: course.path,
+            courseId: course.id,
+            qids,
+          })
+        : undefined;
+    await sqldb.runInTransactionAsync(async () => {
+      if (prepared) await chunks.applyPreparedChunks(course.id, prepared);
+      await updateCourseCommitHash(course);
+    });
+    if (prepared) chunks.logChunkChangesToJob(prepared.changes, job);
+    if (config.devMode) flushElementCache();
+    return { status: 'complete', hadJsonErrors: false };
+  }
+
+  job.info('Using full course sync');
+  const data = courseData ?? (await courseDB.loadFullCourse(course.id, course.path));
+  if (!(await checkSharingConfigurationValid(course, data, job))) {
+    return { status: 'sharing_error' };
+  }
+  const prepared = config.chunksGenerator
+    ? await chunks.prepareChunksForCourse({
+        coursePath: course.path,
+        courseId: course.id,
+        courseData: data,
+        oldHash: startGitHash,
+        newHash: endGitHash,
+        regenerateAll: !startGitHash || forceFull || !config.fileEditorUseGit,
+      })
+    : undefined;
+  const result = await sqldb.runInTransactionAsync(async () => {
+    const result = await syncDiskToSqlWithLock(course, job, data);
+    if (result.status !== 'complete') return result;
+    if (prepared) await chunks.applyPreparedChunks(course.id, prepared);
+    await updateCourseCommitHash(course);
+    return result;
+  });
+  if (result.status !== 'complete') return { status: 'sharing_error' };
+  if (prepared) chunks.logChunkChangesToJob(prepared.changes, job);
+  return { status: 'complete', hadJsonErrors: result.hadJsonErrors };
+}
+
 export async function pullAndUpdateCourse({
   course,
   userId,
@@ -78,7 +160,7 @@ export async function pullAndUpdateCourse({
   }
 
   const jobPromise = serverJob.execute(async (job) => {
-    const { path, branch, repository, commit_hash } = course;
+    const { path, branch, repository } = course;
 
     if (!path) {
       job.fail('Path is not set for this course. Exiting...');
@@ -130,11 +212,7 @@ export async function pullAndUpdateCourse({
         } else {
           // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
-          startGitHash = await getOrUpdateCourseCommitHash({
-            id: course.id,
-            path,
-            commit_hash,
-          });
+          startGitHash = (await selectCourseById(course.id)).commit_hash;
 
           job.info('Updating to latest remote origin address');
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);
@@ -168,41 +246,14 @@ export async function pullAndUpdateCourse({
           await job.exec('git', ['reset', '--hard', `origin/${branch}`], gitOptions);
         }
 
-        // After either cloning or fetching and resetting from Git, we'll load the
-        // current commit hash. Note that we don't commit this to the database until
-        // after we've synced the changes to the database and generated chunks. This
-        // ensures that if the sync fails, we'll sync from the same starting commit
-        // hash next time.
-        const endGitHash = await getCourseCommitHash(path);
-
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(course, job);
+        const syncResult = await syncCourseFromDisk({ course, startGitHash, job });
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
           }
           job.fail('Sync completely failed due to invalid question sharing edit.');
           return;
-        }
-
-        if (config.chunksGenerator) {
-          const chunkChanges = await chunks.updateChunksForCourse({
-            coursePath: path,
-            courseId: course.id,
-            courseData: syncResult.courseData,
-            oldHash: startGitHash,
-            newHash: endGitHash,
-          });
-          chunks.logChunkChangesToJob(chunkChanges, job);
-        }
-
-        const commitHash = await updateCourseCommitHash({ id: course.id, path });
-        if (!syncResult.hadJsonErrors) {
-          await recordSuccessfulCourseSync(course.id, {
-            commitHash,
-            version: CURRENT_SYNC_VERSION,
-            chunksGenerated: config.chunksGenerator,
-          });
         }
 
         if (syncResult.hadJsonErrors) {

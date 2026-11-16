@@ -2,85 +2,71 @@ import path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { config } from '../lib/config.js';
 import { type Course, QuestionSchema } from '../lib/db-types.js';
-
-import { CURRENT_SYNC_VERSION } from './version.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export interface QuestionContentScope {
-  qid: string;
-  relativeFilePath: string;
-}
-
-/** Requires the course lock and the baseline loaded before its database invalidation. */
-export async function getQuestionContentScope(
-  course: Course,
-  filePath: string,
-  currentHash: string,
-): Promise<QuestionContentScope | null> {
-  const previous = course.last_successful_sync;
-  if (
-    previous?.commitHash !== currentHash ||
-    previous.commitHash !== course.commit_hash ||
-    previous.version !== CURRENT_SYNC_VERSION ||
-    previous.chunksGenerated !== config.chunksGenerator
-  ) {
-    return null;
-  }
-
-  const relativeFilePath = path.relative(course.path, filePath);
-  const parts = relativeFilePath.split(path.sep);
-  if (parts[0] !== 'questions' || !contains(course.path, filePath)) return null;
-
-  const qids = parts.slice(1, -1).map((_, index) => parts.slice(1, index + 2).join('/'));
-  const question = await queryOptionalRow(
-    sql.select_question_for_file,
-    { course_id: course.id, qids },
-    QuestionSchema,
-  );
-  if (!question?.qid) return null;
-
-  if (relativeFilePath === path.join('questions', question.qid, 'info.json')) return null;
-
-  // Symlinked content could alias a metadata file despite a content-looking path.
-  const realCoursePath = await fs.realpath(course.path);
-  const realFilePath = await fs.realpath(filePath);
-  if (realFilePath !== path.join(realCoursePath, relativeFilePath)) return null;
-  if (!(await fs.lstat(filePath)).isFile()) return null;
-
-  return { qid: question.qid, relativeFilePath };
-}
-
-/** Verify that checkout resets, hooks, or other changes did not widen the operation. */
-export async function isQuestionContentOnlyChange({
-  coursePath,
+/** Requires the course lock and a checkout restored to the final revision. */
+export async function getQuestionContentPlan({
+  course,
   oldHash,
   newHash,
-  scope,
+  editedPaths = [],
 }: {
-  coursePath: string;
-  oldHash: string;
+  course: Course;
+  oldHash: string | null;
   newHash: string;
-  scope: QuestionContentScope;
-}): Promise<boolean> {
-  if (oldHash === newHash) return false;
-  // Git mode 120000 identifies a symlink. A metadata symlink elsewhere in the
-  // course could read the edited content file, widening the scope of the edit.
-  const { stdout: trackedFiles } = await execa('git', ['ls-files', '--stage', '-z', '--', '.'], {
-    cwd: coursePath,
-  });
-  if (trackedFiles.split('\0').some((entry) => entry.startsWith('120000 '))) return false;
-  const { stdout } = await execa(
+  editedPaths?: string[];
+}): Promise<string[] | null> {
+  if (!oldHash) return null;
+  const diff = await execa(
     'git',
     ['diff', '--relative', '--no-renames', '--name-status', '-z', oldHash, newHash, '--', '.'],
-    { cwd: coursePath },
+    { cwd: course.path, reject: false },
   );
-  const changes = stdout.split('\0');
-  return changes.length === 3 && changes[0] === 'M' && changes[1] === scope.relativeFilePath;
+  if (diff.exitCode !== 0) return null;
+
+  const files = new Set<string>();
+  const changes = diff.stdout.split('\0').filter(Boolean);
+  for (let index = 0; index < changes.length; index += 2) {
+    if (!['M', 'A', 'D'].includes(changes[index])) return null;
+    files.add(changes[index + 1]);
+  }
+  // A reverted edit can have an empty net diff but still need reconciliation.
+  for (const file of editedPaths) {
+    if (!contains(course.path, file)) return null;
+    files.add(path.relative(course.path, file));
+  }
+  if (files.size === 0) return [];
+  if ([...files].some((file) => !file.startsWith('questions/'))) return null;
+
+  // A metadata symlink can make a content edit affect metadata elsewhere.
+  const { stdout: trackedFiles } = await execa('git', ['ls-files', '--stage', '-z', '--', '.'], {
+    cwd: course.path,
+  });
+  if (trackedFiles.split('\0').some((entry) => entry.startsWith('120000 '))) return null;
+
+  const rows = await queryRows(
+    sql.select_questions_for_files,
+    { course_id: course.id, file_paths: [...files] },
+    z.object({ file_path: z.string(), question: QuestionSchema.nullable() }),
+  );
+  const qids = new Set<string>();
+  const realCoursePath = await fs.realpath(course.path);
+  for (const { file_path: file, question } of rows) {
+    if (!question?.qid || file === `questions/${question.qid}/info.json`) return null;
+    const absolutePath = path.join(course.path, file);
+    if (!contains(course.path, absolutePath)) return null;
+    if (await fs.pathExists(absolutePath)) {
+      if ((await fs.realpath(absolutePath)) !== path.join(realCoursePath, file)) return null;
+      if (!(await fs.lstat(absolutePath)).isFile()) return null;
+    }
+    qids.add(question.qid);
+  }
+  return [...qids];
 }

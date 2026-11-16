@@ -4,19 +4,14 @@ import { Octokit } from '@octokit/rest';
 import fs from 'fs-extra';
 
 import { logger } from '@prairielearn/logger';
+import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import {
-  insertCourse,
-  recordSuccessfulCourseSync,
-  updateCourseCommitHash,
-} from '../models/course.js';
-import { syncDiskToSql } from '../sync/syncFromDisk.js';
-import { CURRENT_SYNC_VERSION } from '../sync/version.js';
+import { getLockNameForCoursePath, insertCourse } from '../models/course.js';
 
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
+import { syncCourseFromDisk } from './course.js';
 import { type Course, type User } from './db-types.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -480,32 +475,14 @@ export async function createCourseRepoJob(
     });
 
     job.info('Sync git repository to database');
-    const syncResult = await syncDiskToSql(inserted_course, job);
+    const syncResult = await namedLocks.doWithLock(
+      getLockNameForCoursePath(inserted_course.path),
+      {},
+      () =>
+        syncCourseFromDisk({ course: inserted_course, startGitHash: null, job, forceFull: true }),
+    );
     if (syncResult.status !== 'complete') {
-      // Sync should never fail when creating a brand new repository, if we hit this
-      // then we have a problem.
       throw new Error('Sync failed on brand new course repository');
-    }
-
-    // If we have chunks enabled, then create associated chunks for the new course
-    if (config.chunksGenerator) {
-      job.info('Create course chunks');
-      const chunkChanges = await updateChunksForCourse({
-        coursePath: inserted_course.path,
-        courseId: inserted_course.id,
-        courseData: syncResult.courseData,
-      });
-      logChunkChangesToJob(chunkChanges, job);
-    }
-
-    job.info('Update course commit hash');
-    const commitHash = await updateCourseCommitHash(inserted_course);
-    if (!syncResult.hadJsonErrors) {
-      await recordSuccessfulCourseSync(inserted_course.id, {
-        commitHash,
-        version: CURRENT_SYNC_VERSION,
-        chunksGenerated: config.chunksGenerator,
-      });
     }
   };
 

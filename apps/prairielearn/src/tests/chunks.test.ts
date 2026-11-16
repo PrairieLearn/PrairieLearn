@@ -759,7 +759,7 @@ describe('chunks', () => {
     });
 
     // See https://github.com/PrairieLearn/PrairieLearn/issues/12873
-    it('creates clientFilesCourseInstance chunk for new course instance id after UUID change', async () => {
+    it('replaces instance chunks after a UUID change even when metadata is invalid', async () => {
       const courseDir = tempTestCourseDir.path;
 
       // Generate initial chunks for the test course.
@@ -779,7 +779,6 @@ describe('chunks', () => {
         ),
       );
 
-      // Change only the UUID in infoCourseInstance.json for Sp15
       const infoCourseInstancePath = path.join(
         courseDir,
         'courseInstances',
@@ -788,26 +787,24 @@ describe('chunks', () => {
       );
       const infoCiJson = await fs.readJson(infoCourseInstancePath);
       infoCiJson.uuid = '22222222-2222-4222-8222-222222222222';
+      infoCiJson.longName = 123;
       await fs.writeJson(infoCourseInstancePath, infoCiJson, { spaces: 2 });
 
       // Sync course to DB so that the course_instance row is replaced (soft-delete old, insert new)
-      const { logger } = makeMockLogger();
-      await syncDiskToSql(course, logger);
-
-      // Fetch the (new) course instance ID by long_name; this should now differ from the previous id
-      const newCourseInstanceId = await sqldb.queryScalar(
-        sql.select_course_instance,
-        { long_name: 'Spring 2015' },
-        IdSchema,
-      );
-      assert.notEqual(newCourseInstanceId, courseInstanceId);
-
-      // Regenerate chunks. After the fix, this should create a new chunk for newCourseInstanceId
-      await chunksLib.updateChunksForCourse({
+      const prepared = await chunksLib.prepareChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
       });
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(course, logger);
+
+      const instance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
+      assert.isNotNull(instance.sync_errors);
+      const newCourseInstanceId = instance.id;
+      assert.notEqual(newCourseInstanceId, courseInstanceId);
+
+      await sqldb.runInTransactionAsync(() => chunksLib.applyPreparedChunks(course.id, prepared));
 
       // Re-read chunks from DB
       databaseChunks = await chunksLib.selectChunksForCourse(course.id);
@@ -958,7 +955,7 @@ describe('chunks', () => {
     });
 
     // See https://github.com/PrairieLearn/PrairieLearn/issues/12873
-    it('creates clientFilesAssessment chunk for new assessment id after UUID change', async () => {
+    it('replaces assessment chunks after a UUID change even when metadata is invalid', async () => {
       const courseDir = tempTestCourseDir.path;
 
       // Generate initial chunks for the test course.
@@ -976,7 +973,6 @@ describe('chunks', () => {
         ),
       );
 
-      // Change only the UUID in infoAssessment.json for exam1-automaticTestSuite
       const infoAssessmentPath = path.join(
         courseDir,
         'courseInstances',
@@ -988,9 +984,15 @@ describe('chunks', () => {
       const infoJson = await fs.readJson(infoAssessmentPath);
       // Set a new UUID value to simulate a UUID rotation
       infoJson.uuid = '11111111-1111-4111-8111-111111111111';
+      infoJson.title = 123;
       await fs.writeJson(infoAssessmentPath, infoJson, { spaces: 2 });
 
       // Sync course to DB so that the assessment row is replaced (soft-delete old, insert new)
+      const prepared = await chunksLib.prepareChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData: await courseDB.loadFullCourse(course.id, courseDir),
+      });
       const { logger } = makeMockLogger();
       await syncDiskToSql(course, logger);
 
@@ -1002,12 +1004,7 @@ describe('chunks', () => {
       );
       assert.notEqual(newAssessmentId, assessmentId);
 
-      // Regenerate chunks. Current buggy behavior: this will NOT create a new chunk for newAssessmentId
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId: course.id,
-        courseData: await courseDB.loadFullCourse(course.id, courseDir),
-      });
+      await sqldb.runInTransactionAsync(() => chunksLib.applyPreparedChunks(course.id, prepared));
 
       // Re-read chunks from DB
       databaseChunks = await chunksLib.selectChunksForCourse(course.id);
@@ -1017,8 +1014,6 @@ describe('chunks', () => {
           (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId,
         ),
       );
-      // After the fix: a chunk should exist for the new assessment id.
-      // Today (pre-fix): this assertion will fail because we don't regenerate the chunk.
       assert.isOk(
         databaseChunks.find(
           (chunk) =>
@@ -1083,52 +1078,74 @@ describe('chunks', () => {
       assert.equal(resolvedContent, '# Shared library code\n');
     });
 
-    it('no-op update does not create duplicate chunks when IDs unchanged', async () => {
+    it('regenerates existing instance and assessment chunks when no diff is available', async () => {
       const courseDir = tempTestCourseDir.path;
+      const courseData = await courseDB.loadFullCourse(course.id, courseDir);
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData,
+      });
+      const assets = [
+        'courseInstances/Sp15/clientFilesCourseInstance/regeneration.txt',
+        'courseInstances/Sp15/assessments/exam1-automaticTestSuite/clientFilesAssessment/regeneration.txt',
+      ];
+      for (const asset of assets) await fs.outputFile(path.join(courseDir, asset), 'Updated asset');
+      const prepared = await chunksLib.prepareChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData,
+        regenerateAll: true,
+      });
+      expect(prepared.changes.updatedChunks).toEqual(
+        expect.arrayContaining([
+          { type: 'clientFilesCourseInstance', courseInstanceName: 'Sp15' },
+          {
+            type: 'clientFilesAssessment',
+            courseInstanceName: 'Sp15',
+            assessmentName: 'exam1-automaticTestSuite',
+          },
+        ]),
+      );
+      await sqldb.runInTransactionAsync(() => chunksLib.applyPreparedChunks(course.id, prepared));
+      await chunksLib.ensureChunksForCourseAsync(course.id, [
+        { type: 'clientFilesCourseInstance', courseInstanceId },
+        { type: 'clientFilesAssessment', courseInstanceId, assessmentId },
+      ]);
+      const runtime = chunksLib.getRuntimeDirectoryForCourse(course);
+      for (const asset of assets) {
+        assert.equal(await fs.readFile(path.join(runtime, asset), 'utf8'), 'Updated asset');
+      }
+    });
 
-      // Generate initial chunks for the test course.
+    it('preserves chunks when instance and assessment titles change without identity changes', async () => {
+      const courseDir = tempTestCourseDir.path;
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
       });
-
-      // Capture baseline chunk set and counts
-      const initialChunks = await chunksLib.selectChunksForCourse(course.id);
-      const initialCount = initialChunks.length;
-      const countBy = (pred: (c: any) => boolean) => initialChunks.filter(pred).length;
-
-      const initialCourseCount = countBy((c) => c.type === 'clientFilesCourse');
-      const initialCiCount = countBy(
-        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
-      );
-      const initialAssessCount = countBy(
-        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
-      );
-
-      // Run update again with no changes
-      await chunksLib.updateChunksForCourse({
+      const before = await chunksLib.selectChunksForCourse(course.id);
+      const changedFiles = [
+        'courseInstances/Sp15/infoCourseInstance.json',
+        'courseInstances/Sp15/assessments/exam1-automaticTestSuite/infoAssessment.json',
+      ];
+      for (const file of changedFiles) {
+        const infoPath = path.join(courseDir, file);
+        const info = await fs.readJson(infoPath);
+        if (file.endsWith('infoCourseInstance.json')) info.longName = 'New instance title';
+        else info.title = 'New assessment title';
+        await fs.writeJson(infoPath, info);
+      }
+      const prepared = await chunksLib.prepareChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
+        changedFiles,
       });
-
-      // Fetch again and ensure counts are unchanged
-      const afterChunks = await chunksLib.selectChunksForCourse(course.id);
-      const afterCount = afterChunks.length;
-      assert.equal(afterCount, initialCount);
-
-      const afterCourseCount = afterChunks.filter((c) => c.type === 'clientFilesCourse').length;
-      const afterCiCount = afterChunks.filter(
-        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
-      ).length;
-      const afterAssessCount = afterChunks.filter(
-        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
-      ).length;
-
-      assert.equal(afterCourseCount, initialCourseCount);
-      assert.equal(afterCiCount, initialCiCount);
-      assert.equal(afterAssessCount, initialAssessCount);
+      assert.isEmpty(prepared.generatedChunks);
+      await sqldb.runInTransactionAsync(() => chunksLib.applyPreparedChunks(course.id, prepared));
+      assert.deepEqual(await chunksLib.selectChunksForCourse(course.id), before);
     });
   });
 });
