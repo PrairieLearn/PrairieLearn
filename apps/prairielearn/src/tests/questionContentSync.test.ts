@@ -784,6 +784,17 @@ describe('content-only question save', () => {
           (await save(infoPath, JSON.stringify({ ...shared, title: 123 }))).run(),
         ).rejects.toThrow('One or more JSON files');
         const load = vi.spyOn(courseDB, 'loadFullCourse');
+        await expect(
+          (
+            await save(
+              infoPath,
+              JSON.stringify({ ...original, title: 'Recovered title', gradingMethod: 'External' }),
+            )
+          ).run(),
+        ).rejects.toThrow('One or more JSON files');
+        expect(load).toHaveBeenCalled();
+        assert.isTrue((await memberships())[0].in_set);
+        load.mockClear();
         await (
           await save(infoPath, JSON.stringify({ ...original, title: 'Recovered title' }))
         ).run();
