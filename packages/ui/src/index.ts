@@ -1,6 +1,3 @@
-// Augment @tanstack/react-table types
-import './react-table.js';
-
 export {
   TanstackTable,
   TanstackTableCard,
