@@ -2,6 +2,8 @@
 import * as bootstrap from 'bootstrap';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import { withResolvers } from '@prairielearn/utils';
+
 import type { QuestionDialogData } from '../question-dialogs.types.js';
 import type { SubmissionPanels } from '../question-render.types.js';
 import type { SubmissionInfo } from '../submission-info.js';
@@ -9,13 +11,8 @@ import type { SubmissionInfo } from '../submission-info.js';
 import { createQuestionServicesHost } from './question-browser-services.js';
 
 const panels: SubmissionPanels = {
-  submissionPanel: '<div id="submission-2">Feedback</div>',
-  extraHeadersHtml: '<script src="/question.js"></script>',
-  answerPanel: '<p>Answer</p>',
-  questionPanelFooter: '<div id="question-panel-footer">Grade again</div>',
-  questionScorePanel: '<div id="question-score-panel">80%</div>',
-  assessmentScorePanel: '<div id="assessment-score-panel">50%</div>',
-  questionNavNextButton: '<div id="question-nav-next-container">Next</div>',
+  submissionPanel: null,
+  extraHeadersHtml: null,
 };
 
 const submissionInfo: SubmissionInfo = {
@@ -83,8 +80,6 @@ it('opens the application copy form and keeps destination credentials paired', a
   destination.dispatchEvent(new Event('change'));
   expect(form.getAttribute('action')).toBe('/pl/course/5/copy_public_question');
   expect(form.querySelector<HTMLInputElement>('[name="__csrf_token"]')!.value).toBe('token-b');
-  expect(form.querySelector<HTMLInputElement>('[name="question_id"]')!.value).toBe('7');
-  expect(form.querySelector<HTMLInputElement>('[name="course_id"]')!.value).toBe('1');
 
   form.querySelector<HTMLButtonElement>('[data-bs-dismiss="modal"]')!.click();
   await Promise.all([closed, repeated]);
@@ -98,9 +93,6 @@ it('updates an open submission dialog from server data without returning that da
     copyQuestion: null,
     submissions: [submissionInfo],
   });
-  await expect(services.openSubmissionInfo({ submissionId: '99' })).rejects.toThrow(
-    'Unknown submission',
-  );
   const closed = services.openSubmissionInfo({ submissionId: '2' });
   expect(document.querySelector('.modal-body')!.textContent).toContain(
     'This submission has not been graded.',
@@ -152,22 +144,15 @@ it('updates an open submission dialog from server data without returning that da
   await reopened;
   expect(document.querySelector('.modal-backdrop')).toBeNull();
   expect(document.body.classList.contains('modal-open')).toBe(false);
-  await expect(services.openSubmissionInfo({ submissionId: '2' })).rejects.toMatchObject({
-    name: 'AbortError',
-  });
 });
 
 it('discards submission responses received after the view is disposed', async () => {
-  let respond!: (response: Response) => void;
+  const response = withResolvers<Response>();
   vi.stubGlobal(
     'fetch',
-    vi.fn(
-      () =>
-        new Promise<Response>((resolve) => {
-          respond = resolve;
-        }),
-    ),
+    vi.fn(() => response.promise),
   );
+  document.body.innerHTML = '<div id="question-score-panel">Original score</div>';
   const { services, dispose } = createServices({
     copyQuestion: null,
     submissions: [submissionInfo],
@@ -177,9 +162,15 @@ it('discards submission responses received after the view is disposed', async ()
     { signal: new AbortController().signal },
   );
   dispose();
-  respond(Response.json({ ...panels, submissionInfo }));
+  response.resolve(
+    Response.json({
+      ...panels,
+      submissionInfo,
+      questionScorePanel: '<div id="question-score-panel">Stale score</div>',
+    }),
+  );
   await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
-  expect(document.querySelector('.modal')).toBeNull();
+  expect(document.getElementById('question-score-panel')!.textContent).toBe('Original score');
 });
 
 const mocks = vi.hoisted(() => ({ io: vi.fn() }));

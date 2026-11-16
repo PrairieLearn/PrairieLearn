@@ -54,12 +54,13 @@ test('submission dialogs restore focus after a pending history render replaces t
   await oldestSubmission.getByRole('button', { name: 'Toggle submission details' }).click();
   const route = await pendingRender.promise;
   const trigger = oldestSubmission.getByRole('button', { name: 'Submission info' });
+  const originalTrigger = await trigger.evaluateHandle((element) => element);
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Submission info', exact: true });
   await expect(dialog).toBeVisible();
 
   await route.continue();
-  await expect(oldestSubmission.getByText('Loading...', { exact: true })).toHaveCount(0);
+  await expect.poll(() => originalTrigger.evaluate((element) => element.isConnected)).toBe(false);
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(trigger).toBeFocused();

@@ -1,5 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { withResolvers } from '@prairielearn/utils';
+
 import type { StatusMessageSubmission } from '../externalGradingSocket.types.js';
 
 import {
@@ -25,22 +27,14 @@ function connect(services: QuestionBrowserServices) {
   return { ...client, host, disposeHost };
 }
 
-function deferredPanels() {
-  let resolve!: (panels: QuestionContentPanels) => void;
-  const promise = new Promise<QuestionContentPanels>((done) => {
-    resolve = done;
-  });
-  return { promise, resolve };
-}
-
 const panels = (text: string): QuestionContentPanels => ({
   submissionPanel: text,
   extraHeadersHtml: null,
 });
 
 it('matches concurrent responses to requests across real ports and propagates failures', async () => {
-  const first = deferredPanels();
-  const second = deferredPanels();
+  const first = withResolvers<QuestionContentPanels>();
+  const second = withResolvers<QuestionContentPanels>();
   const renderSubmission = vi
     .fn<QuestionBrowserServices['renderSubmission']>()
     .mockReturnValueOnce(first.promise)
@@ -66,7 +60,7 @@ it('matches concurrent responses to requests across real ports and propagates fa
 });
 
 it('rejects cancellation locally and aborts host work', async () => {
-  const result = deferredPanels();
+  const result = withResolvers<QuestionContentPanels>();
   const renderSubmission = vi
     .fn<QuestionBrowserServices['renderSubmission']>()
     .mockReturnValue(result.promise);
@@ -125,11 +119,8 @@ it('delivers initial status, unsubscribes, and rejects pending work when the hos
 });
 
 it('waits for dialog closure and rejects dialog requests on failure or disposal', async () => {
-  let close!: () => void;
-  const closed = new Promise<void>((resolve) => {
-    close = resolve;
-  });
-  const openCopyQuestion = vi.fn(() => closed);
+  const closed = withResolvers<undefined>();
+  const openCopyQuestion = vi.fn(() => closed.promise);
   const openSubmissionInfo = vi
     .fn<QuestionBrowserServices['openSubmissionInfo']>()
     .mockRejectedValueOnce(new Error('Internal details'))
@@ -144,7 +135,7 @@ it('waits for dialog closure and rejects dialog requests on failure or disposal'
   const copy = services.openCopyQuestion().then(onClosed);
   await vi.waitFor(() => expect(openCopyQuestion).toHaveBeenCalledOnce());
   expect(onClosed).not.toHaveBeenCalled();
-  close();
+  closed.resolve(undefined);
   await copy;
   expect(onClosed).toHaveBeenCalledOnce();
 
