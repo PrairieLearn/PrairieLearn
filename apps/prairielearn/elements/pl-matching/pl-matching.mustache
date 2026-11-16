@@ -1,10 +1,16 @@
 {{#question}}
-    <div id="{{name}}-container" class="pl-matching-container pl-matching-container-{{options_placement}}" aria-label="{{aria_label}}" data-answer-name="{{name}}" data-max-response-per-option="{{max_response_per_option}}">
+    <div 
+        id="{{name}}-container" 
+        class="pl-matching-container pl-matching-container-{{options_placement}}" 
+        aria-label="{{aria_label}}" 
+        data-answers-name="{{name}}" 
+        data-max-response-per-option="{{max_response_per_option}}"
+    >
         <div class="pl-matching-statements">
             {{#statements}}
                 <div class="pl-matching-statement">
                     <div class="pl-matching-statement-select">
-                        <select name="{{name}}" class="form-select" {{^editable}}disabled{{/editable}} aria-labelledby="statement-label-{{statement_id}}">
+                        <select id="{{name}}-select-{{statement_id}}" name="{{name}}" class="form-select" {{^editable}}disabled{{/editable}} aria-labelledby="{{name}}-statement-label-{{statement_id}}">
                             {{#options}}
                                 <option 
                                     {{selected}}
@@ -17,7 +23,7 @@
                             {{/options}}
                         </select>
                     </div>
-                    <div class="pl-matching-statement-text" id="statement-label-{{statement_id}}">
+                    <div class="pl-matching-statement-text" id="{{name}}-statement-label-{{statement_id}}">
                         {{{html}}}
                     </div>
                     {{#display_score_badge}}
@@ -67,7 +73,7 @@
         {{/show_help_text}}
     </div>
     {{#reset_button}}
-        <button type="button" class="btn btn-outline-secondary btn-sm pl-matching-reset-btn" data-answers-name="{{name}}">
+        <button id="{{name}}-reset-btn" type="button" class="btn btn-outline-secondary btn-sm pl-matching-reset-btn" data-answers-name="{{name}}">
             Reset Above Dropdown
         </button>
     {{/reset_button}}

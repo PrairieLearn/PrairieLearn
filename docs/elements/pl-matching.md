@@ -4,7 +4,7 @@ Given a list of statements, select a matching option for each entry from a dropd
 
 ## Sample element
 
-![Screenshot of the pl-matching element, the dropdown view](pl-matching-display-dropdown.png)
+![Screenshot of the pl-matching element, the dropdown view](imgs/pl-matching-display-dropdown.png)
 
 ### Default Dropdown Display
 
@@ -20,7 +20,7 @@ Given a list of statements, select a matching option for each entry from a dropd
 
 ### Radio-Matrix Display
 
-![Screenshot of the pl-matching element, the radio-matrix view](pl-matching-display-radio-matrix.png)
+![Screenshot of the pl-matching element, the radio-matrix view](imgs/pl-matching-display-radio-matrix.png)
 
 ```html title="question.html"
 <pl-matching answers-name="string_value" display="radio-matrix">
