@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
+import type {
+  ResolvedAssessmentQuestionStructureRow,
+  StaffAssessmentQuestionRow,
+} from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type {
   QuestionAlternativeForm,
@@ -93,116 +96,83 @@ describe('questionDisplayName', () => {
 });
 
 describe('buildHierarchicalAssessment', () => {
-  const course = { id: 'course-1' } as StaffCourse;
-
-  it('builds zones with questions from flat rows', () => {
-    const rows: StaffAssessmentQuestionRow[] = [
+  it('preserves zones, alternative pools, and unavailable question references', () => {
+    const sharedZone = {
+      id: 'z1',
+      number: 1,
+      title: 'Shared questions',
+      max_points: 10,
+      json_allow_real_time_grading: false,
+    };
+    const localZone = { id: 'z2', number: 2, title: 'Local questions' };
+    const alternativePool = {
+      id: 'ag2',
+      number: 2,
+      json_has_alternatives: true,
+      number_choose: 1,
+      json_points: 6,
+    };
+    const rows = [
       {
-        question: { qid: 'q1', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: { number: 1, title: 'Zone 1' },
+        qid: '@shared/standalone',
+        zone: sharedZone,
         alternative_pool: {
-          number: 1,
           id: 'ag1',
+          number: 1,
           json_has_alternatives: false,
-          number_choose: 1,
+          json_points: 5,
+          json_max_points: 10,
         },
-        assessment_question: { number: 1 },
-        start_new_alternative_pool: true,
-      } as StaffAssessmentQuestionRow,
+        assessment_question: { number: 1, json_comment: 'Shared standalone' },
+      },
       {
-        question: { qid: 'q2', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: { number: 1, title: 'Zone 1' },
-        alternative_pool: {
-          number: 2,
-          id: 'ag2',
-          json_has_alternatives: false,
-          number_choose: 1,
-        },
-        assessment_question: { number: 2 },
-        start_new_alternative_pool: true,
-      } as StaffAssessmentQuestionRow,
-    ];
-
-    const result = buildHierarchicalAssessment(course, rows);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].title).toBe('Zone 1');
-    expect(result[0].questions).toHaveLength(2);
-    expect(result[0].questions[0].id).toBe('q1');
-    expect(result[0].questions[1].id).toBe('q2');
-  });
-
-  it('collects alternatives within the same alternative pool', () => {
-    const rows: StaffAssessmentQuestionRow[] = [
+        qid: '@shared/alternative',
+        zone: localZone,
+        alternative_pool: alternativePool,
+        assessment_question: { number: 2, number_in_alternative_group: 1, json_points: 3 },
+      },
       {
-        question: { qid: 'alt1', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: { number: 1, title: 'Zone 1' },
-        alternative_pool: {
-          number: 1,
-          json_has_alternatives: true,
-          number_choose: 1,
-        },
-        assessment_question: { number: 1, number_in_alternative_group: 1 },
-        start_new_alternative_pool: true,
-      } as StaffAssessmentQuestionRow,
+        qid: 'local-alternative',
+        zone: localZone,
+        alternative_pool: alternativePool,
+        assessment_question: { number: 3, number_in_alternative_group: 2 },
+      },
       {
-        question: { qid: 'alt2', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: { number: 1, title: 'Zone 1' },
-        alternative_pool: {
-          number: 1,
-          json_has_alternatives: true,
-          number_choose: 1,
-        },
-        assessment_question: { number: 2, number_in_alternative_group: 2 },
-        start_new_alternative_pool: false,
-      } as StaffAssessmentQuestionRow,
-    ];
+        qid: 'local-standalone',
+        zone: localZone,
+        alternative_pool: { id: 'ag3', number: 3, json_has_alternatives: false },
+        assessment_question: { number: 4 },
+      },
+    ] as unknown as ResolvedAssessmentQuestionStructureRow[];
 
-    const result = buildHierarchicalAssessment(course, rows);
+    const result = buildHierarchicalAssessment(rows, new Map());
 
-    expect(result).toHaveLength(1);
-    expect(result[0].questions).toHaveLength(1);
-    expect(result[0].questions[0].alternatives).toHaveLength(2);
-    expect(result[0].questions[0].alternatives![0].id).toBe('alt1');
-    expect(result[0].questions[0].alternatives![1].id).toBe('alt2');
-  });
-
-  it('preserves zone overrides and standalone question comments', () => {
-    const rows: StaffAssessmentQuestionRow[] = [
+    expect(result).toMatchObject([
       {
-        question: { qid: 'q1', course_id: 'course-1' },
-        course: { sharing_name: 'test' },
-        zone: {
-          number: 1,
-          title: 'Zone 1',
-          json_allow_real_time_grading: false,
-        },
-        alternative_pool: {
-          number: 1,
-          id: 'ag1',
-          json_has_alternatives: false,
-          number_choose: 1,
-          json_allow_real_time_grading: false,
-        },
-        assessment_question: {
-          number: 1,
-          json_comment: { note: 'standalone question comment' },
-        },
-        start_new_alternative_pool: true,
-      } as unknown as StaffAssessmentQuestionRow,
-    ];
-
-    const result = buildHierarchicalAssessment(course, rows);
-
-    expect(result[0].allowRealTimeGrading).toBe(false);
-    expect(result[0].questions[0].allowRealTimeGrading).toBe(false);
-    expect(result[0].questions[0].comment).toEqual({
-      note: 'standalone question comment',
-    });
+        title: 'Shared questions',
+        maxPoints: 10,
+        allowRealTimeGrading: false,
+        questions: [
+          {
+            id: '@shared/standalone',
+            points: 5,
+            maxPoints: 10,
+            comment: 'Shared standalone',
+          },
+        ],
+      },
+      {
+        title: 'Local questions',
+        questions: [
+          {
+            numberChoose: 1,
+            points: 6,
+            alternatives: [{ id: '@shared/alternative', points: 3 }, { id: 'local-alternative' }],
+          },
+          { id: 'local-standalone' },
+        ],
+      },
+    ]);
   });
 });
 

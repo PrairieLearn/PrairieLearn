@@ -55,7 +55,7 @@ Resume directly awaits recovery and rejects overlapping recovery or unfinished e
 
 The first execution in a sandbox starts Codex app-server under the dedicated agent user with an authenticated WebSocket listener. The Conversation DO connects through the private CourseSandbox binding. The sandbox forwards the upgrade to the container port, injecting a fresh per-runner capability token; the runner receives only its SHA-256 hash. The public Worker does not route requests to this endpoint. Tokens remain outside the checkpoint directory and are discarded with the runner.
 
-JSON-RPC messages preserve Codex's wire format, with one object per WebSocket text message. A small transport adapter validates envelopes and adds/removes the version field expected by `vscode-jsonrpc`. The library owns request correlation and notification/server-request dispatch; there is no PL-owned RPC dispatcher. Outgoing requests are checked against types generated from the pinned runtime. Incoming replies and subscribed notifications use Zod schemas for the fields the adapter consumes; additional data is ignored. Initialization and interrupt acknowledgments require only a JSON object. The chat adapter subscribes only to the text, reasoning, and completion events it needs. The experimental protocol also registers a validated `item/tool/call` handler for `request_changes`, which answers as soon as the snapshot is saved. No native request waits on a person: Codex keeps pending tool calls only in memory and cancels them when a turn or process ends.
+JSON-RPC messages preserve Codex's wire format, with one object per WebSocket text message. A small transport adapter validates envelopes and adds/removes the version field expected by `vscode-jsonrpc`. The library owns request correlation and notification/server-request dispatch; there is no PL-owned RPC dispatcher. Outgoing requests are checked against types generated from the pinned runtime. Incoming replies and subscribed notifications use Zod schemas for the fields the adapter consumes; additional data is ignored. Initialization and interrupt acknowledgments require only a JSON object. The chat adapter subscribes only to the text, reasoning, and completion events it needs. The experimental protocol also registers a validated `item/tool/call` handler for the Worker's dynamic tools: `request_changes`, which answers as soon as the snapshot is saved, and `offer_page`, which answers once PrairieLearn resolves the page or with an error the model can act on, and the course data tools `list_course_datasets` and `get_course_data`, which answer with PrairieLearn's reply or an error the model can act on. No native request waits on a person: Codex keeps pending tool calls only in memory and cancels them when a turn or process ends.
 
 A malformed message or invalid consumed field in a reply or subscribed notification fails the connection and rejects pending requests. Unsupported server requests receive an error; unknown notifications and late responses are ignored. Timeouts and disconnects do not retry a potentially accepted command. An interrupt response acknowledges the request; terminal confirmation and process cleanup are still required before admitting another execution after Stop. Normal turn completion retains the connection. A new connection after DO recovery replaces any orphaned runner before resuming its saved native thread.
 
@@ -71,9 +71,19 @@ Each Codex tool call (a command, a file change, or any other tool: MCP and dynam
 
 History keeps a bounded copy: command text up to 2,000 characters, output up to 4,000 (its start and end), arguments up to 1,000, each diff up to 4,000, and 50 files per change. Paths in the course checkout are stored relative to the course root. Once a message's tool calls exceed 300,000 characters, later calls in it keep their labels but no output, diffs, or arguments, so the message stays well within a Durable Object row; Codex's own thread keeps the full record. A successful `request_changes` call has no part, because its review card shows it; a failed one does, so the instructor sees why. Catch-up omits tool calls except a one-line list of the files each completed change touched.
 
+## Page location
+
+Each user message may carry `metadata.location` (`PageLocationSchema`): the page the instructor was viewing, named by its path, navigation key, and course items, never its title, which can name students. The browser supplies it, so the turn passes it to Codex as `untrusted` `additionalContext` rather than in the message text. Catch-up replays text, so it labels each replayed staff line with its page.
+
 ## Input requests
 
 The agent asks staff for decisions or missing information with Codex's `request_user_input_async` tool, which returns at once and completes an unstreamed agent message carrying the prompts. The Worker shows it as a `data-input-request` part matching `InputRequestPartSchema`. Nothing waits for an answer: staff's next message is the answer, whether sent from the input request card or typed, and it is submitted like any other message. The part is never rewritten, and catch-up includes the prompts so a restored thread knows what the next message answers.
+
+## Opening pages for the instructor
+
+PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conversation: the instructor navigation tabs a course owner always sees, each with its key (the same vocabulary as the page location), label, and params. PrairieLearn defines each param's name, description, and whether it is required, so a page that takes a new kind of name needs no Worker change. It travels in the JSON body for GitHub conversations and in the `X-PL-Pages` header for local ones, whose body is the course archive. `CreateConversationInput` is strict, so the Worker must deploy before a PrairieLearn that sends a catalog. A conversation created without one has no `offer_page` tool.
+
+`offer_page` is a native dynamic tool, registered when a thread starts, with the catalog's keys as its `page` enum and the catalog's params as its `params` object. The DO resolves a target with `POST /pl/api/v1/course/:course_id/agent_navigation`, authenticated with `PL_SERVICE_TOKEN` and the conversation's ID, so PrairieLearn looks the names up as the conversation's user. A page or name PrairieLearn does not know fails the tool call with PrairieLearn's message. Otherwise the DO emits a `data-navigation` part (`NavigationPartSchema`) carrying the resolved URL, label, and subtitle, which the chat shows as a link. The page changes only when the instructor follows it.
 
 ## Reviews
 
@@ -120,6 +130,16 @@ Invariants:
 ### Subsequent edits
 
 For Git-backed courses, the agent fetches and reconciles published changes before further edits; PrairieLearn does not reset its sandbox checkout. Denial and failed saves preserve private sandbox edits. A conflict asks the agent to fetch and reconcile current repository contents, then submit a fresh review; the previous approval does not authorize the revised proposal. Settled review cards show their result and diagnostics; their diffs are not available after the agent receives the result.
+
+## Attachments
+
+A message refers to each attachment with a `file` part whose URL is `upload:<id>`. Bytes never enter chat history: the browser uploads each file first, and the Worker stores it under `uploads/<conversation>/<id>` in the checkpoint bucket.
+
+- A conversation holds at most 100 uploads totaling 200 MB, counting uploads that were never sent, because a starting sandbox copies in every earlier attachment. The conversation's Durable Object counts its uploads in R2 once, then reserves room for each upload before it is stored and returns the room if storing fails, so concurrent uploads can't overshoot the cap.
+- The browser controls message parts, so persistence keeps only `file` parts with an upload URL, at most 10 per message. Keys are built from the conversation's own name, so a message can only refer to that conversation's uploads.
+- Before admitting a message, the conversation checks that its uploads exist and reads their first bytes to find images. A missing upload refuses the message, which counts as handled like any other refusal.
+- Each turn copies its message's attachments to `/uploads/<id>/<name>` as root-owned, read-only files; the image creates `/uploads` root-owned, so the agent can't swap it for a link that root writes through. A turn that starts a sandbox, including a checkpoint restore, also copies every earlier attachment, skipping uploads that have expired. The directory is outside `/workspace`, so checkpoints don't copy attachments, and outside the course checkout, so review capture never includes them.
+- Codex has no input for arbitrary files, so the prompt lists every attachment's path in the format the Codex desktop app sends (`# Files mentioned by the user:` … `## My request:`). Images also go to Codex as `localImage` input. Catch-up text lists earlier attachments.
 
 ## Local course sources
 
