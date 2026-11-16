@@ -10,6 +10,7 @@ import {
 } from './question-browser-services.transport.js';
 import type { QuestionBrowserServices } from './question-browser-services.types.js';
 import { createQuestionDialogs } from './question-dialogs.js';
+import { isStaleGradingStatus } from './question-grading-status.js';
 import { updateQuestionPagePanels } from './question-page-panels.js';
 
 /** Application implementation; endpoints and credentials never cross the port. */
@@ -119,31 +120,29 @@ export function createQuestionServicesHost({
           if (msg == null) return;
           if (gradingSocket !== socket || abortController.signal.aborted || !isCurrent()) return;
           if (msg.variant_id !== variantId) return;
-          latestSubmissions ??= new Map();
-          for (const submission of msg.submissions) {
-            latestSubmissions.set(submission.id, submission);
-          }
-          subscriptions.forEach(({ listener }) => listener(msg.submissions));
+          const latest = (latestSubmissions ??= new Map());
+          const updates = msg.submissions.filter((submission) => {
+            if (isStaleGradingStatus(submission, latest.get(submission.id))) {
+              return false;
+            }
+            latest.set(submission.id, submission);
+            return true;
+          });
+          subscriptions.forEach(({ listener }) => listener(updates));
         };
-        // A live update can arrive while the server is preparing the initial snapshot.
-        let updatedSinceConnect = new Set<string>();
+        let connection = 0;
         socket.on('connect', () => {
-          updatedSinceConnect = new Set();
-          const updated = updatedSinceConnect;
+          const currentConnection = ++connection;
           socket.emit(
             'init',
             { variant_id: variantId, variant_token: variantToken },
             (msg: StatusMessage | null) => {
-              if (!msg || updated !== updatedSinceConnect) return;
-              onStatus({ ...msg, submissions: msg.submissions.filter((s) => !updated.has(s.id)) });
+              if (currentConnection !== connection) return;
+              onStatus(msg);
             },
           );
         });
-        socket.on('change:status', (msg: StatusMessage) => {
-          if (msg.variant_id !== variantId) return;
-          msg.submissions.forEach((s) => updatedSinceConnect.add(s.id));
-          onStatus(msg);
-        });
+        socket.on('change:status', onStatus);
       }
       if (latestSubmissions) listener(Array.from(latestSubmissions.values()));
 

@@ -4,6 +4,7 @@ import type {
   QuestionBrowserServices,
   QuestionContentPanels,
 } from './question-browser-services.types.js';
+import { isStaleGradingStatus } from './question-grading-status.js';
 
 interface RenderRequest {
   controller: AbortController;
@@ -105,11 +106,9 @@ export function createQuestionSubmissions({
         for (const status of updates) {
           const state = states.get(status.id);
           if (!state) continue;
-          // Empty DOM attributes and omitted socket fields both mean no grading job.
+          if (isStaleGradingStatus(status, state.status)) continue;
           const previousJobId = state.status.grading_job_id || undefined;
           const jobId = status.grading_job_id || undefined;
-          // Concurrent server lookups can deliver an older job after its replacement.
-          if (previousJobId && (!jobId || BigInt(jobId) < BigInt(previousJobId))) continue;
           let restartHistory = false;
           if (previousJobId !== jobId) {
             restartHistory = state.request?.purpose === 'history';

@@ -80,10 +80,11 @@ it('supersedes history with grading, deduplicates updates, and waits for all pen
   expect(unsubscribe).toHaveBeenCalledOnce();
 });
 
-it('retries a failed grading render with score panels before closing the subscription', async () => {
+it('retries grading with score panels despite late same-job statuses', async () => {
   const { view, notify, unsubscribe, render, onError, onRender } = setup([queued]);
   render.mockRejectedValueOnce(new Error('Network failure')).mockResolvedValueOnce(feedback);
   notify([{ ...queued, grading_job_status: 'graded' }]);
+  notify([{ ...queued, grading_job_status: 'grading' }]);
   await vi.waitFor(() => expect(onError).toHaveBeenCalledExactlyOnceWith('1'));
   expect(unsubscribe).not.toHaveBeenCalled();
 
@@ -142,6 +143,7 @@ it('ignores older-job statuses while a newer grading result is loading', async (
   render.mockReturnValueOnce(result.promise);
   const graded = { ...queued, grading_job_id: '12', grading_job_status: 'graded' as const };
   notify([graded]);
+  notify([{ ...graded, grading_job_status: 'grading' }]);
   notify([queued]);
   notify([{ ...queued, grading_job_id: undefined, grading_job_status: 'none' }]);
   expect(onStatus).toHaveBeenLastCalledWith(graded);

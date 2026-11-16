@@ -285,47 +285,51 @@ it('keeps feedback for different submissions without letting late responses roll
   dispose();
 });
 
-it('keeps live grading updates ahead of the initial snapshot and ignores acknowledgments after disposal', () => {
-  const socket = {
-    on: vi.fn<(event: string, listener: unknown) => void>(),
-    emit: vi.fn<
-      (
-        event: string,
-        message: unknown,
-        acknowledge: (message: StatusMessage | null) => void,
-      ) => void
-    >(),
-    removeAllListeners: vi.fn(),
-    close: vi.fn(),
-  };
-  vi.mocked(io).mockReturnValue(socket as unknown as ReturnType<typeof io>);
-  const { services, dispose } = createServices({ copyQuestion: null, submissions: [] });
-  const listener = vi.fn();
-  services.subscribeToGradingStatus(listener);
-  const connect = socket.on.mock.calls.find(([event]) => event === 'connect')![1] as () => void;
-  const change = socket.on.mock.calls.find(([event]) => event === 'change:status')![1] as (
-    message: StatusMessage,
-  ) => void;
-  connect();
-  const acknowledge = socket.emit.mock.calls[0][2];
-  acknowledge(null);
-  expect(listener).not.toHaveBeenCalled();
-  const graded = { id: '2', grading_job_id: '4', grading_job_status: 'graded' as const };
-  change({ variant_id: '3', submissions: [graded] });
-  const other = { ...graded, id: '5', grading_job_status: 'queued' as const };
-  acknowledge({
-    variant_id: '3',
-    submissions: [{ ...graded, grading_job_status: 'queued' }, other],
-  });
-  expect(listener.mock.calls).toEqual([[[graded]], [[other]]]);
+it.each(['4', '5'])(
+  'merges snapshot job %s with live statuses and ignores obsolete acknowledgments',
+  (snapshotJobId) => {
+    const socket = {
+      on: vi.fn<(event: string, listener: unknown) => void>(),
+      emit: vi.fn<
+        (
+          event: string,
+          message: unknown,
+          acknowledge: (message: StatusMessage | null) => void,
+        ) => void
+      >(),
+      removeAllListeners: vi.fn(),
+      close: vi.fn(),
+    };
+    vi.mocked(io).mockReturnValue(socket as unknown as ReturnType<typeof io>);
+    const { services, dispose } = createServices({ copyQuestion: null, submissions: [] });
+    const listener = vi.fn();
+    services.subscribeToGradingStatus(listener);
+    const connect = socket.on.mock.calls.find(([event]) => event === 'connect')![1] as () => void;
+    const change = socket.on.mock.calls.find(([event]) => event === 'change:status')![1] as (
+      message: StatusMessage,
+    ) => void;
+    connect();
+    const acknowledge = socket.emit.mock.calls[0][2];
+    acknowledge(null);
+    expect(listener).not.toHaveBeenCalled();
+    const graded = { id: '2', grading_job_id: '4', grading_job_status: 'graded' as const };
+    const other = { ...graded, id: '5', grading_job_status: 'queued' as const };
+    change({ variant_id: '3', submissions: [graded, other] });
+    const completed = { ...graded, id: '5', grading_job_id: snapshotJobId };
+    acknowledge({
+      variant_id: '3',
+      submissions: [{ ...graded, grading_job_status: 'queued' }, completed],
+    });
+    expect(listener.mock.calls).toEqual([[[graded, other]], [[completed]]]);
 
-  connect();
-  acknowledge({ variant_id: '3', submissions: [other] });
-  expect(listener).toHaveBeenCalledTimes(2);
-  dispose();
-  socket.emit.mock.calls[1][2]({ variant_id: '3', submissions: [graded] });
-  change({ variant_id: '3', submissions: [graded] });
-  expect(listener).toHaveBeenCalledTimes(2);
-  expect(socket.removeAllListeners).toHaveBeenCalledOnce();
-  expect(socket.close).toHaveBeenCalledOnce();
-});
+    connect();
+    acknowledge({ variant_id: '3', submissions: [other] });
+    expect(listener).toHaveBeenCalledTimes(2);
+    dispose();
+    socket.emit.mock.calls[1][2]({ variant_id: '3', submissions: [graded] });
+    change({ variant_id: '3', submissions: [graded] });
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(socket.removeAllListeners).toHaveBeenCalledOnce();
+    expect(socket.close).toHaveBeenCalledOnce();
+  },
+);
