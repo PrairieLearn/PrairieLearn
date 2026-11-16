@@ -46,11 +46,11 @@ def make_question_data(
 @pytest.mark.parametrize(
     ("submission", "expected"),
     [
-        ("R", sympy.S.Reals),
-        ("Q", sympy.S.Rationals),
-        ("Z", sympy.S.Integers),
-        ("N", sympy.S.Naturals),
-        ("C", sympy.S.Complexes),
+        ("RR", sympy.S.Reals),
+        ("QQ", sympy.S.Rationals),
+        ("ZZ", sympy.S.Integers),
+        ("NN", sympy.S.Naturals0),
+        ("CC", sympy.S.Complexes),
     ],
 )
 def test_named_sets_parse_and_grade(submission: str, expected: sympy.Set) -> None:
@@ -70,7 +70,7 @@ def test_named_sets_parse_and_grade(submission: str, expected: sympy.Set) -> Non
 
 
 def test_set_operations_grade_by_symbolic_equivalence() -> None:
-    element_html = build_element_html('correct-answer="R - {0}"', 'syntax="interval"')
+    element_html = build_element_html('correct-answer="RR - {0}"', 'syntax="interval"')
     data = make_question_data(submitted_answers={"test": "(-infty, 0) U (0, infty)"})
 
     set_symbolic_input.prepare(element_html, data)
@@ -118,7 +118,7 @@ def test_rejects_non_set_and_constructor_syntax(submission: str) -> None:
     assert "test" in data["format_errors"]
 
 
-@pytest.mark.parametrize("attribute", ['variables="R"', 'custom-functions="Q"'])
+@pytest.mark.parametrize("attribute", ['variables="RR"', 'custom-functions="QQ"'])
 def test_named_set_names_are_reserved(attribute: str) -> None:
     element_html = build_element_html(attribute)
     data = make_question_data()
@@ -236,8 +236,8 @@ def test_formula_editor_renders_named_set_keyboard_configuration(
     monkeypatch.chdir(Path(__file__).parent)
     element_html = build_element_html(
         'formula-editor="true"',
-        'correct-answer="R - {0}"',
-        'initial-value="R"',
+        'correct-answer="RR - {0}"',
+        'initial-value="RR"',
     )
     data = make_question_data()
 
@@ -272,7 +272,7 @@ def test_formula_editor_renders_interval_keyboard_configuration(
 
 def test_answer_panel_renders_named_set(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(Path(__file__).parent)
-    element_html = build_element_html('correct-answer="C"')
+    element_html = build_element_html('correct-answer="CC"')
     data = make_question_data(panel="answer", editable=False)
     set_symbolic_input.prepare(element_html, data)
 

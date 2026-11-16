@@ -71,7 +71,7 @@ See example question for details.
 
 !!! warning
 
-    `allow-sets="true"` is deprecated. Existing questions keep their current parsing and grading behavior, but new questions should use [`pl-set-symbolic-input`](pl-set-symbolic-input.md). To migrate, replace the element tag, remove `allow-sets`, and verify that the correct answer uses the dedicated element's documented syntax. The new element intentionally rejects constructor calls and scalar-valued roots, and reserves `R`, `Q`, `Z`, `N`, and `C` for named sets.
+    `allow-sets="true"` is deprecated. Existing questions keep their current parsing and grading behavior, but new questions should use [`pl-set-symbolic-input`](pl-set-symbolic-input.md). To migrate, replace the element tag, remove `allow-sets`, and verify that the correct answer uses the dedicated element's documented syntax. The new element intentionally rejects constructor calls and scalar-valued roots, and reserves `RR`, `QQ`, `ZZ`, `NN`, and `CC` for named sets.
 
 If `allow-sets="true"`, the following additional layer of syntax is enabled:
 
