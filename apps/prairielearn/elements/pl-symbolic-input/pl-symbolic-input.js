@@ -473,7 +473,8 @@
         ],
         [
           ...onlyIfSets('[separator]'),
-          { class: 'small', latex: '|#0|', insert: '|{#0}|' },
+          // Paired fences keep implicit fraction insertion inside the absolute value.
+          { class: 'small', latex: '|#0|', insert: '\\left|{#0}\\right|' },
           { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#0}\\right)' },
           { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#0}\\right)' },
           '[separator]',
@@ -734,7 +735,7 @@
         value: '{#@}\\cdot',
       },
       '|': {
-        value: '|{#0}|',
+        value: '\\left|{#0}\\right|',
       },
       sqrt: {
         value: '\\sqrt{#0}',

@@ -4,8 +4,13 @@ import { z } from 'zod';
 
 import {
   COURSE_DIR,
+  CourseDataQuerySchema,
   type InputRequestPart,
   MAX_SENT_FILES_PER_CALL,
+  type NavigationPart,
+  type NavigationTarget,
+  NavigationTargetSchema,
+  type PageCatalog,
   type ToolCall,
 } from '@prairielearn/course-agent-types';
 
@@ -49,12 +54,12 @@ const ItemEvent = z.object({
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
 /**
- * `request_changes` shows as a review card and `send_files` as the files themselves; only a
- * failed call needs its own entry.
+ * `request_changes` shows as a review card, navigation as its own part, and `send_files` as the
+ * files themselves; only a failed call needs a tool entry.
  */
-const SelfDisplayingToolItem = z.object({
+const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'send_files']),
+  tool: z.enum(['request_changes', 'offer_page', 'send_files']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -74,6 +79,17 @@ const SendFilesArguments = z.strictObject({
     .max(MAX_SENT_FILES_PER_CALL)
     .describe('Paths of the files to send, absolute or relative to the course directory.'),
 });
+const ListCourseDatasetsArguments = z.strictObject({});
+const CourseDataArguments = CourseDataQuerySchema.extend({
+  dataset: z.string().describe('Dataset to download, from list_course_datasets.'),
+});
+export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
+
+/** Serves the course data tools; replies go to the model. */
+export interface CourseDataTools {
+  listCourseDatasets(): Promise<ToolReply>;
+  getCourseData(request: CourseDataRequest): Promise<ToolReply>;
+}
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
  * prompts are shown only through this item. Codex calls them questions.
@@ -141,6 +157,9 @@ export class CodexAppServerClient {
 
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
+    private courseData: CourseDataTools,
+    /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
+    private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
     private sendFiles: (paths: string[]) => Promise<ToolReply>,
   ) {}
 
@@ -272,20 +291,51 @@ export class CodexAppServerClient {
       throw new Error('Invalid dynamic tool call');
     }
     switch (call.data.tool) {
+      case listCourseDatasetsTool.name: {
+        const request = ListCourseDatasetsArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseData.listCourseDatasets());
+      }
+      case courseDataTool.name: {
+        const request = CourseDataArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseData.getCourseData(request.data));
+      }
       case sendFilesTool.name: {
         const request = SendFilesArguments.safeParse(call.data.arguments);
         if (!request.success) return invalidArguments(request.error);
         return await replyWithError(() => this.sendFiles(request.data.paths));
       }
       case requestChangesTool.name: {
-        if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
-          throw new Error('Invalid request_changes call');
-        }
-        return await this.onReview({ ...call.data, arguments: {} });
+        // The tool is offered only when reviews are handled, so this call is a protocol error.
+        if (!this.onReview) throw new Error('Review handling is not configured');
+        const request = RequestChangesArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await this.onReview({ ...call.data, arguments: request.data });
       }
+      case 'offer_page':
+        return await this.offerPage(call.data.callId, call.data.arguments);
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
+  }
+
+  private async offerPage(callId: string, args: unknown): Promise<ToolReply> {
+    const target = NavigationTargetSchema.safeParse(withoutEmptyParams(args));
+    if (!target.success) return invalidArguments(target.error);
+    return await replyWithError(async () => {
+      const controller = this.controller;
+      const navigation = await this.resolveNavigation(target.data);
+      // The chat shows this part as a button that opens the page when the instructor clicks it.
+      // A turn stopped during the lookup may already have given way to the next one's response.
+      if (this.controller === controller) {
+        this.emit({ type: 'data-navigation', id: `navigation:${callId}`, data: navigation });
+      }
+      return {
+        success: true,
+        text: 'The instructor sees a button that opens the page when clicked.',
+      };
+    });
   }
 
   private fail(error: Error) {
@@ -320,7 +370,12 @@ export class CodexAppServerClient {
     }
   }
 
-  async thread(config: { model: string; instructions: string; threadId: string | null }) {
+  async thread(config: {
+    model: string;
+    instructions: string;
+    threadId: string | null;
+    pages: PageCatalog;
+  }) {
     const settings = {
       model: config.model,
       cwd: COURSE_DIR,
@@ -342,7 +397,13 @@ export class CodexAppServerClient {
           'thread/start',
           {
             ...settings,
-            dynamicTools: [...(this.onReview ? [requestChangesTool] : []), sendFilesTool],
+            dynamicTools: [
+              ...(this.onReview ? [requestChangesTool] : []),
+              listCourseDatasetsTool,
+              courseDataTool,
+              ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
+              sendFilesTool,
+            ],
           } satisfies ThreadStartParams,
           ThreadResult,
         );
@@ -453,10 +514,8 @@ export class CodexAppServerClient {
     if (params.threadId !== this.threadId || (this.turnId && params.turnId !== this.turnId)) {
       return;
     }
-    const selfDisplaying = SelfDisplayingToolItem.safeParse(params.item);
-    if (selfDisplaying.success && (phase === 'started' || selfDisplaying.data.success !== false)) {
-      return;
-    }
+    const card = CardToolItem.safeParse(params.item);
+    if (card.success && (phase === 'started' || card.data.success !== false)) return;
     const call = toolCallFromItem(phase, params.item);
     if (!call) return;
     const id = `tool:${params.item.id}`;
@@ -521,7 +580,7 @@ function invalidArguments(error: z.ZodError): ToolReply {
   return { success: false, text: `Invalid arguments: ${z.prettifyError(error)}` };
 }
 
-/** A failed send is reported to the model rather than failing the turn. */
+/** A failed tool call is reported to the model rather than failing the turn. */
 async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply> {
   try {
     return await call();
@@ -536,6 +595,22 @@ function toolInputSchema(schema: z.ZodType) {
   const { $schema: _schema, ...inputSchema } = z.toJSONSchema(schema);
   return inputSchema as JsonValue;
 }
+
+const listCourseDatasetsTool = {
+  type: 'function',
+  name: 'list_course_datasets',
+  description:
+    "List the datasets of this course's PrairieLearn data that get_course_data can download, with each column's type and meaning.",
+  inputSchema: toolInputSchema(ListCourseDatasetsArguments),
+} satisfies DynamicToolSpec;
+
+const courseDataTool = {
+  type: 'function',
+  name: 'get_course_data',
+  description:
+    "Download the selected columns of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. To narrow results to a course instance, assessment, or question, filter by course_instance_short_name, assessment_tid, or qid, the directory names in the course files; there is no need to look up IDs first. The reply gives the file's path and row count, and says if the file does not hold every matching row.",
+  inputSchema: toolInputSchema(CourseDataArguments),
+} satisfies DynamicToolSpec;
 
 const sendFilesTool = {
   type: 'function',
@@ -552,3 +627,49 @@ const requestChangesTool = {
     'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 } satisfies DynamicToolSpec;
+
+/** The model learns which pages exist from this tool, so the catalog is not repeated in instructions. */
+function navigateTool(pages: PageCatalog): DynamicToolSpec {
+  const lines = pages.map(({ key, label, params }) => {
+    const names = params.map((param) => (param.required ? param.name : `optional ${param.name}`));
+    return `${key}: ${label}${names.length > 0 ? ` (${names.join(', ')})` : ''}`;
+  });
+  // PrairieLearn defines the params, so a page that takes a new kind of name needs no change here.
+  const params = new Map(pages.flatMap((page) => page.params).map((p) => [p.name, p.description]));
+  return {
+    type: 'function',
+    name: 'offer_page',
+    description: [
+      'Show the instructor a button that opens a PrairieLearn page in place of the one they are viewing. Nothing changes until they click it. Pages, with the params each takes:',
+      ...lines,
+    ].join('\n'),
+    inputSchema: {
+      type: 'object',
+      properties: {
+        page: { type: 'string', enum: pages.map((page) => page.key) },
+        params: {
+          type: 'object',
+          properties: Object.fromEntries(
+            [...params].map(([name, description]) => [name, { type: 'string', description }]),
+          ),
+          additionalProperties: false,
+        },
+      },
+      required: ['page'],
+      additionalProperties: false,
+    },
+  };
+}
+
+/** Models often send empty or null values for the params a page does not take. */
+function withoutEmptyParams(args: unknown) {
+  if (!args || typeof args !== 'object' || !('params' in args)) return args;
+  const { params } = args;
+  if (!params || typeof params !== 'object') return { ...args, params: {} };
+  return {
+    ...args,
+    params: Object.fromEntries(
+      Object.entries(params).filter(([, value]) => value !== '' && value !== null),
+    ),
+  };
+}

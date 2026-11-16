@@ -1,7 +1,7 @@
 <pl-question-panel>
     <p>
         <i>
-            Because the Python autograder runs test cases in sequential order, we provide the capability to stop grading early, e.g. if there is some later test case that depends on the successful result of an earlier one.  This can be done implicitly in most checks by passing <code>accuracy_critical=True</code>, or by specifically calling <code>feedback.finish()</code>.
+            Because the Python autograder runs test cases in the order they appear in the test file, you can stop grading early, e.g. if there is some later test case that depends on the successful result of an earlier one.  This question's tests do this with a fixture, applied to every test with <code>pytest.mark.usefixtures</code>, that checks <code>request.session.testsfailed</code> and calls <code>pytest.skip()</code>, so once a test fails, every test after it is skipped and gets 0 points.
         </i>
     </p>
 
@@ -25,7 +25,7 @@
         <pl-variable name="z" type="floating point number">$z=\sqrt{y+1}$</pl-variable>
     </pl-external-grader-variables>
     <pl-file-editor
-        file-name="user_code.py"
+        file-name="student_code.py"
         ace-mode="ace/mode/python"
         source-file-name="tests/initial_code.py"></pl-file-editor>
 </pl-question-panel>

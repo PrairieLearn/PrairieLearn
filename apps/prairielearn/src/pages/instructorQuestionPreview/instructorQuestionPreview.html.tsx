@@ -1,12 +1,15 @@
 import assert from 'node:assert';
 
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 
 import { CalculatorDrawerHeadScripts } from '../../components/CalculatorAssets.js';
 import { CalculatorDrawer, CalculatorDrawerToggle } from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
+import { SyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { ResLocalsQuestionRender } from '../../lib/question-render.types.js';
@@ -21,7 +24,9 @@ export function InstructorQuestionPreview({
   readmeHtml,
   questionCopyTargets,
   resLocals,
+  independentScrolling,
 }: {
+  independentScrolling: boolean;
   normalPreviewUrl: string;
   questionRenderContext: 'manual_grading' | 'ai_grading' | undefined;
   manualGradingPreviewUrl: string;
@@ -33,6 +38,31 @@ export function InstructorQuestionPreview({
 }) {
   assert(resLocals.question.qid !== null);
 
+  const previewAlerts = html`
+    ${
+      questionRenderContext === 'manual_grading'
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear in the manual grading interface.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''
+    }
+    ${
+      questionRenderContext === 'ai_grading'
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear to the AI grader.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''
+    }
+  `;
+
   return PageLayout({
     resLocals,
     pageTitle: 'Question Preview',
@@ -42,9 +72,13 @@ export function InstructorQuestionPreview({
       subPage: 'preview',
     },
     options: {
+      contentContainerClassName: independentScrolling ? 'question-page-layout' : '',
+      // Render sync messages inside the question pane to preserve the sidebar's full height.
+      showSyncErrorsAndWarnings: !independentScrolling,
       pageNote: resLocals.question.qid,
     },
     headContent: html`
+      ${independentScrolling ? compiledStylesheetTag('questionLayout.css') : ''}
       <meta
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
@@ -89,30 +123,29 @@ export function InstructorQuestionPreview({
       storageKey: `calculator-preview-${resLocals.question.id}`,
     }),
     content: html`
-      ${
-        questionRenderContext === 'manual_grading'
-          ? html`
-              <div class="alert alert-primary">
-                You are viewing this question as it will appear in the manual grading interface.
-                <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
-                you are done.
-              </div>
-            `
-          : ''
-      }
-      ${
-        questionRenderContext === 'ai_grading'
-          ? html`
-              <div class="alert alert-primary">
-                You are viewing this question as it will appear to the AI grader.
-                <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
-                you are done.
-              </div>
-            `
-          : ''
-      }
-      <div class="row">
-        <div class="col-lg-9 col-sm-12">
+      ${independentScrolling ? '' : previewAlerts}
+      <div class="row question-page-row">
+        <div
+          class="col-lg-9 col-sm-12 question-page-question"
+          ${independentScrolling ? html`role="region" aria-label="Question" tabindex="0"` : ''}
+        >
+          ${
+            independentScrolling
+              ? html`
+                  ${renderHtml(
+                    <SyncErrorsAndWarnings
+                      authzData={resLocals.authz_data}
+                      exampleCourse={resLocals.course.example_course}
+                      syncErrors={resLocals.question.sync_errors}
+                      syncWarnings={resLocals.question.sync_warnings}
+                      fileEditUrl={`${resLocals.urlPrefix}/question/${resLocals.question.id}/file_edit/questions/${resLocals.question.qid}/info.json`}
+                      context="question"
+                    />,
+                  )}
+                  ${previewAlerts}
+                `
+              : ''
+          }
           ${
             readmeHtml
               ? html`
@@ -163,7 +196,10 @@ export function InstructorQuestionPreview({
           })}
         </div>
 
-        <div class="col-lg-3 col-sm-12">
+        <div
+          class="col-lg-3 col-sm-12 question-page-sidebar"
+          ${independentScrolling ? html`role="region" aria-label="Question information" tabindex="0"` : ''}
+        >
           <div class="card mb-3">
             <div class="card-header bg-secondary text-white">
               <h2>Student view placeholder</h2>

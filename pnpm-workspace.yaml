@@ -20,6 +20,10 @@ overrides:
   # We use Sentry's runtime SDK, not its bundler-plugin entry points. Omit the
   # plugins and their CLI/parser dependencies to reduce install size.
   '@sentry/node>@sentry/bundler-plugins': '-'
+  # We load Paged.js's prebuilt browser bundle, which does not need these packages.
+  'pagedjs@0.4.3>@babel/polyfill': '-'
+  'pagedjs@0.4.3>@babel/runtime': '-'
+  'pagedjs@0.4.3>event-emitter': '-'
 
   # Azure's Bunyan logger only uses stdout/stderr, not rotating log files.
   'bunyan>mv': '-'
@@ -56,6 +60,7 @@ allowBuilds:
   core-js-pure: false
   cpu-features: false
   dtrace-provider: false
+  es5-ext: false
   esbuild: false
   protobufjs: false
   sharp: false
