@@ -6,7 +6,11 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance, updateAssessmentInstance } from '../lib/assessment.js';
 import { VariantSchema } from '../lib/db-types.js';
-import { createPrintForm, nextPrintFormLabel } from '../lib/printing/print-forms.js';
+import {
+  createPrintForm,
+  ensureInitialPrintForm,
+  nextPrintFormLabel,
+} from '../lib/printing/print-forms.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -28,14 +32,20 @@ describe('print forms', { timeout: 60_000 }, () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
-  it.each([
-    [null, 'A'],
-    ['A', 'B'],
-    ['Z', 'AA'],
-    ['AZ', 'BA'],
-    ['ZZ', 'AAA'],
-  ])('assigns the label after %s as %s', (previous, expected) => {
-    expect(nextPrintFormLabel(previous)).toBe(expected);
+  it('versions the first vacant letter slot and handles alphabet rollover', () => {
+    const form = (label: string, archived = false) => ({
+      label,
+      archived_at: archived ? new Date() : null,
+    });
+    expect(nextPrintFormLabel([])).toBe('A');
+    expect(nextPrintFormLabel([form('A')], 'A')).toBe('A2');
+    expect(nextPrintFormLabel([form('A', true), form('A2')], 'A2')).toBe('A3');
+    expect(nextPrintFormLabel([form('A'), form('B'), form('C', true)])).toBe('C2');
+    expect(
+      nextPrintFormLabel(
+        Array.from({ length: 26 }, (_, index) => form(String.fromCharCode(65 + index))),
+      ),
+    ).toBe('AA');
   });
 
   it('saves assessment-shared form versions without creating student records', () =>
@@ -71,8 +81,9 @@ describe('print forms', { timeout: 60_000 }, () => {
         authnUserId: authnUser.id,
       };
 
-      const form = await createPrintForm(options);
-      expect(form.label).toMatch(/^[A-Z]+$/);
+      const form = await ensureInitialPrintForm(options);
+      expect(form.label).toBe('A');
+      expect((await ensureInitialPrintForm(options)).id).toBe(form.id);
       expect(form.archived_at).toBeNull();
       const rows = await selectPrintFormQuestions(form.id);
       expect(rows).toHaveLength(1);
@@ -108,7 +119,8 @@ describe('print forms', { timeout: 60_000 }, () => {
         replacesPrintFormId: form.id,
       });
       expect(regenerated.id).not.toBe(form.id);
-      expect(regenerated.label).not.toBe(form.label);
+      expect(regenerated.label).toBe('A2');
+      expect((await ensureInitialPrintForm(options)).id).toBe(regenerated.id);
       expect(regenerated.archived_at).toBeNull();
       const regeneratedQuestions = await selectPrintFormQuestions(regenerated.id);
       expect(regeneratedQuestions[0].print_form_question.variant_id).not.toBe(variant.id);
@@ -130,12 +142,17 @@ describe('print forms', { timeout: 60_000 }, () => {
       await expect(
         createPrintForm({ ...options, replacesPrintFormId: form.id }),
       ).rejects.toMatchObject({ status: 404 });
+      const formB = await createPrintForm(options);
+      const formC = await createPrintForm(options);
+      expect([formB.label, formC.label]).toEqual(['B', 'C']);
+      await archivePrintForm({ printFormId: formC.id, assessmentId: assessment.id });
+      const replacementC = await createPrintForm(options);
+      expect(replacementC.label).toBe('C2');
       expect(
-        await archivePrintForm({ printFormId: regenerated.id, assessmentId: assessment.id }),
-      ).toMatchObject({ id: regenerated.id, label: regenerated.label });
-      expect(
-        await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
-      ).not.toContainEqual(regenerated);
+        (await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })).map(
+          (activeForm) => activeForm.label,
+        ),
+      ).toEqual(['C2', 'B', 'A2']);
       expect(
         await queryRow(
           sql.count_student_records,
