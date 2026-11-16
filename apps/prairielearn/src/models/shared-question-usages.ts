@@ -1,26 +1,25 @@
-import { z } from 'zod';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
+import type { Question } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/** Called inside the transaction that inserts the submission. */
-export async function insertSharedQuestionUsagesForSubmission(submission_id: string) {
-  await execute(sql.insert_shared_question_usages_for_submission, { submission_id });
-}
+/** Record usage after inserting the submission, in the same transaction. */
+export async function insertSharedQuestionUsagesForSubmission({
+  question,
+  course_id,
+  assessment_instance_id,
+}: {
+  question: Pick<Question, 'copied_from_question_id' | 'course_id'>;
+  course_id: string;
+  assessment_instance_id: string | null;
+}) {
+  if (question.copied_from_question_id == null || assessment_instance_id == null) return;
 
-/**
- * Historical reach from recorded usage, including deleted destination records.
- * Complete lifetime reports must wait until historical backfill is finalized.
- */
-export async function selectSharedQuestionUsageCounts(question_ids: string[]) {
-  return await queryRows(
-    sql.select_shared_question_usage_counts,
-    { question_ids },
-    z.object({
-      question_id: IdSchema,
-      student_count: z.number().int().nonnegative(),
-    }),
-  );
+  await execute(sql.insert_shared_question_usages, {
+    copied_from_question_id: question.copied_from_question_id,
+    question_course_id: question.course_id,
+    destination_course_id: course_id,
+    assessment_instance_id,
+  });
 }

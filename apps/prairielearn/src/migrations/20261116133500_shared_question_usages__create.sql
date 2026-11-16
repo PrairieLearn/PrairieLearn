@@ -6,7 +6,6 @@ CREATE TABLE shared_question_usages (
   destination_course_instance_id bigint NOT NULL,
   destination_assessment_id bigint NOT NULL,
   destination_user_id bigint NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (
     shared_question_id,
     destination_user_id,

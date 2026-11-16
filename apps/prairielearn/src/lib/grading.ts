@@ -158,9 +158,11 @@ async function insertSubmission({
 
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
-    if (question.copied_from_question_id != null && variant.instance_question_id != null) {
-      await insertSharedQuestionUsagesForSubmission(submission_id);
-    }
+    await insertSharedQuestionUsagesForSubmission({
+      question,
+      course_id: variant.course_id,
+      assessment_instance_id: variant.assessment_instance_id,
+    });
 
     if (variant.instance_question_id != null) {
       const instanceQuestion = await sqldb.queryRow(

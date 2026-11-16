@@ -1565,7 +1565,6 @@ export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 export const ServerLoadSchema = null;
 
 export const SharedQuestionUsageSchema = z.object({
-  created_at: DateFromISOString,
   destination_assessment_id: IdSchema,
   destination_course_id: IdSchema,
   destination_course_instance_id: IdSchema,

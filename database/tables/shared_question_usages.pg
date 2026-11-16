@@ -1,5 +1,4 @@
 columns
-    created_at: timestamp with time zone not null default now()
     destination_assessment_id: bigint not null
     destination_course_id: bigint not null
     destination_course_instance_id: bigint not null
