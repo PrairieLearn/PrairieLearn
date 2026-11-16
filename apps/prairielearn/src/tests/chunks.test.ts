@@ -1078,8 +1078,15 @@ describe('chunks', () => {
       assert.equal(resolvedContent, '# Shared library code\n');
     });
 
-    it('regenerates existing instance and assessment chunks when no diff is available', async () => {
+    it('regenerates all chunk types with nested instance names when no diff is available', async () => {
       const courseDir = tempTestCourseDir.path;
+      const instanceName = 'term/assessments/fall';
+      await fs.move(
+        path.join(courseDir, 'courseInstances/Sp15'),
+        path.join(courseDir, 'courseInstances', instanceName),
+      );
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(course, logger);
       const courseData = await courseDB.loadFullCourse(course.id, courseDir);
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
@@ -1087,8 +1094,10 @@ describe('chunks', () => {
         courseData,
       });
       const assets = [
-        'courseInstances/Sp15/clientFilesCourseInstance/regeneration.txt',
-        'courseInstances/Sp15/assessments/exam1-automaticTestSuite/clientFilesAssessment/regeneration.txt',
+        'serverFilesCourse/regeneration.txt',
+        'questions/addNumbers/regeneration.txt',
+        `courseInstances/${instanceName}/clientFilesCourseInstance/regeneration.txt`,
+        `courseInstances/${instanceName}/assessments/exam1-automaticTestSuite/clientFilesAssessment/regeneration.txt`,
       ];
       for (const asset of assets) await fs.outputFile(path.join(courseDir, asset), 'Updated asset');
       const prepared = await chunksLib.prepareChunksForCourse({
@@ -1099,16 +1108,20 @@ describe('chunks', () => {
       });
       expect(prepared.changes.updatedChunks).toEqual(
         expect.arrayContaining([
-          { type: 'clientFilesCourseInstance', courseInstanceName: 'Sp15' },
+          { type: 'serverFilesCourse' },
+          { type: 'question', questionName: 'addNumbers' },
+          { type: 'clientFilesCourseInstance', courseInstanceName: instanceName },
           {
             type: 'clientFilesAssessment',
-            courseInstanceName: 'Sp15',
+            courseInstanceName: instanceName,
             assessmentName: 'exam1-automaticTestSuite',
           },
         ]),
       );
       await sqldb.runInTransactionAsync(() => chunksLib.applyPreparedChunks(course.id, prepared));
       await chunksLib.ensureChunksForCourseAsync(course.id, [
+        { type: 'serverFilesCourse' },
+        { type: 'question', questionId },
         { type: 'clientFilesCourseInstance', courseInstanceId },
         { type: 'clientFilesAssessment', courseInstanceId, assessmentId },
       ]);

@@ -11,7 +11,7 @@ import { type Course, QuestionSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/** Requires the course lock and a checkout restored to the final revision. */
+/** Requires the course lock and final checkout. Returns null when changes require full sync. */
 export async function getQuestionContentPlan({
   course,
   oldHash,
@@ -45,7 +45,7 @@ export async function getQuestionContentPlan({
   if (files.size === 0) return [];
   if ([...files].some((file) => !file.startsWith('questions/'))) return null;
 
-  // A metadata symlink can make a content edit affect metadata elsewhere.
+  // Git mode 120000 identifies symlinks, which can redirect content edits into metadata.
   const { stdout: trackedFiles } = await execa('git', ['ls-files', '--stage', '-z', '--', '.'], {
     cwd: course.path,
   });

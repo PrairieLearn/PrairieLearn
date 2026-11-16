@@ -491,6 +491,7 @@ interface DiffChunksOptions {
   courseId: string;
   courseData: CourseData;
   changedFiles: string[];
+  regenerateAll?: boolean;
 }
 
 interface ChunksDiff {
@@ -509,6 +510,7 @@ async function diffChunks({
   courseId,
   courseData,
   changedFiles,
+  regenerateAll = false,
 }: DiffChunksOptions): Promise<ChunksDiff> {
   const rawCourseChunks = await getAllChunksForCourse(courseId);
 
@@ -598,7 +600,10 @@ async function diffChunks({
     'serverFilesCourse',
   ] as const) {
     const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
-    if (hasChunkDirectory && (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])) {
+    if (
+      hasChunkDirectory &&
+      (regenerateAll || !existingCourseChunks[chunkType] || changedCourseChunks[chunkType])
+    ) {
       updatedChunks.push({ type: chunkType });
     } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
       deletedChunks.push({ type: chunkType });
@@ -607,7 +612,11 @@ async function diffChunks({
 
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
-    if (!existingCourseChunks.questions.has(qid) || changedCourseChunks.questions.has(qid)) {
+    if (
+      regenerateAll ||
+      !existingCourseChunks.questions.has(qid) ||
+      changedCourseChunks.questions.has(qid)
+    ) {
       updatedChunks.push({
         type: 'question',
         questionName: qid,
@@ -686,7 +695,8 @@ async function diffChunks({
         changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCourseInstanceChunk ||
+        (regenerateAll ||
+          !existingCourseInstanceChunk ||
           changedCourseInstanceChunk ||
           courseInstanceIdMismatch ||
           instanceIdentityChanged)
@@ -724,7 +734,8 @@ async function diffChunks({
           changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          (!hasExistingAssessment ||
+          (regenerateAll ||
+            !hasExistingAssessment ||
             hasChangedAssessment ||
             assessmentIdMismatch ||
             assessmentIdentityChanged)
@@ -1001,30 +1012,12 @@ export async function prepareChunksForCourse({
     if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
     return [];
   });
-  if (regenerateAll) {
-    resolvedChangedFiles.push(
-      'elements/.',
-      'elementExtensions/.',
-      'serverFilesCourse/.',
-      'clientFilesCourse/.',
-    );
-    for (const qid of Object.keys(courseData.questions)) {
-      resolvedChangedFiles.push(`questions/${qid}/info.json`);
-    }
-    for (const [ciid, instance] of Object.entries(courseData.courseInstances)) {
-      resolvedChangedFiles.push(`courseInstances/${ciid}/clientFilesCourseInstance/.`);
-      for (const tid of Object.keys(instance.assessments)) {
-        resolvedChangedFiles.push(
-          `courseInstances/${ciid}/assessments/${tid}/clientFilesAssessment/.`,
-        );
-      }
-    }
-  }
   const changes = await diffChunks({
     coursePath,
     courseId,
     courseData,
     changedFiles: resolvedChangedFiles,
+    regenerateAll,
   });
   return {
     changes,
@@ -1091,6 +1084,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
       coursePath: courseDir,
       courseId: String(course_id),
       courseData,
+      regenerateAll: true,
     };
     const chunkChanges = await updateChunksForCourse(chunkOptions);
     logChunkChangesToJob(chunkChanges, job);

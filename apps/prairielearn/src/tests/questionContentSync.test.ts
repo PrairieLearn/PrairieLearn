@@ -22,7 +22,7 @@ import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';
 import { ChunkSchema, QuestionSchema, type User } from '../lib/db-types.js';
-import { computeEncodedFileContentHash } from '../lib/editorUtil.js';
+import { getOriginalHash } from '../lib/editorUtil.js';
 import { FileModifyEditor, classifyEditOutcome } from '../lib/editors.js';
 import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import * as courseModel from '../models/course.js';
@@ -90,13 +90,12 @@ describe('content-only question save', () => {
 
   async function save(targetPath = filePath, content = '<p>Updated</p>') {
     const course = await selectCourseById(courseId);
-    const previous = await fs.readFile(targetPath, 'utf8');
     const editor = new FileModifyEditor({
       locals: { course, user, authz_data: { has_course_permission_edit: true, authn_user: user } },
       container: { rootPath: courseDir, invalidRootPaths: [] },
       filePath: targetPath,
       editContents: b64EncodeUnicode(content),
-      origHash: computeEncodedFileContentHash(b64EncodeUnicode(previous)),
+      origHash: (await getOriginalHash(targetPath))!,
     });
     const job = await editor.prepareServerJob();
     return {
@@ -335,7 +334,7 @@ describe('content-only question save', () => {
     );
   });
 
-  it('retries accumulated content after an upload failure without requiring full sync', async () => {
+  it('recovers both question chunks when another question is edited after an upload failure', async () => {
     config.chunksGenerator = true;
     const previousCommit = (await selectCourseById(courseId)).commit_hash;
     const upload = vi
@@ -346,10 +345,30 @@ describe('content-only question save', () => {
     assert.equal(classifyEditOutcome((await operation.result()).data), 'sync_failed');
     assert.equal((await selectCourseById(courseId)).commit_hash, previousCommit);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
-    const next = await save(filePath, '<p>Another update</p>');
+    const next = await save(
+      path.join(courseDir, 'questions', util.QUESTION_ID, 'question.html'),
+      '<p>Another question</p>',
+    );
     await next.run();
     expect(load).not.toHaveBeenCalled();
     expect(upload).toHaveBeenCalledTimes(2);
+    config.chunksConsumer = true;
+    config.chunksConsumerDirectory = path.join(fixture.baseDir, 'runtime');
+    for (const [questionQid, content] of [
+      [qid, '<p>Updated</p>'],
+      [util.QUESTION_ID, '<p>Another question</p>'],
+    ]) {
+      const question = await selectQuestionByQid({ course_id: courseId, qid: questionQid });
+      await chunks.ensureChunksForCourseAsync(courseId, {
+        type: 'question',
+        questionId: question.id,
+      });
+      const runtime = chunks.getRuntimeDirectoryForCourse({ id: courseId, path: courseDir });
+      assert.equal(
+        await fs.readFile(path.join(runtime, 'questions', questionQid, 'question.html'), 'utf8'),
+        content,
+      );
+    }
     assert.equal(
       (await selectCourseById(courseId)).commit_hash,
       await getCourseCommitHash(courseDir),
@@ -379,7 +398,9 @@ describe('content-only question save', () => {
       path.join(fixture.courseOriginDir, 'questions', qid, 'question.html'),
       '<p>Remote only</p>',
     );
-    await commitOriginAndSync(fixture, 'Remote edit');
+    await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+    await execa('git', ['commit', '-m', 'Remote edit'], { cwd: fixture.courseOriginDir });
+    assert.equal(await fs.readFile(filePath, 'utf8'), originContents);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const { jobPromise } = await pullAndUpdateCourse({
       course: await selectCourseById(courseId),
@@ -393,6 +414,18 @@ describe('content-only question save', () => {
       await getCourseCommitHash(courseDir),
     );
     assert.lengthOf(await util.dumpTableWithSchema('chunks', ChunkSchema), 1);
+    const question = await selectQuestionByQid({ course_id: courseId, qid });
+    config.chunksConsumer = true;
+    config.chunksConsumerDirectory = path.join(fixture.baseDir, 'runtime');
+    await chunks.ensureChunksForCourseAsync(courseId, {
+      type: 'question',
+      questionId: question.id,
+    });
+    const runtime = chunks.getRuntimeDirectoryForCourse({ id: courseId, path: courseDir });
+    assert.equal(
+      await fs.readFile(path.join(runtime, 'questions', qid, 'question.html'), 'utf8'),
+      '<p>Remote only</p>',
+    );
   });
 
   it.each(['upload', 'database'])(
