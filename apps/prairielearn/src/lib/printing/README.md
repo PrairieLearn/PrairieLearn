@@ -36,7 +36,7 @@ The renderer connects to one Cloudflare browser on first use and runs up to four
 
 Set both `printingCloudflareAccountId` and `printingCloudflareApiToken` on every server that handles print requests to use Cloudflare Browser Run. If both are unset, the renderer uses local Chromium. A missing or empty value in either setting is a configuration error. The token needs Browser Run Edit permission. Without Cloudflare credentials, a Playwright-compatible Chromium executable must be installed locally for development and tests.
 
-Cloudflare renders require an explicit `browserOrigin`; a missing or empty value fails before connecting to the browser. In production, pass the application's public origin from `config.serverCanonicalHost`. The Cloudflare browser loads public files under `config.assetsPrefix` directly from that origin. Protected assets are fetched from the application server's local listener and fulfilled through Playwright.
+Cloudflare renders require an explicit `browserOrigin`; a missing or empty value fails before connecting to the browser. In production, pass the application's public origin from `config.serverCanonicalHost`, so the Cloudflare browser can load public files under `config.assetsPrefix` directly from that origin. Protected assets are fetched from the application server's local listener and fulfilled through Playwright.
 
 Cloudflare development also requires `config.serverCanonicalHost` to be configured. The renderer fulfills navigation with the supplied HTML and proxies all assets to the application server, so Cloudflare does not need to reach the local server. Local Chromium ignores `browserOrigin` and uses `url` directly.
 
@@ -66,7 +66,7 @@ Omit the `cover` option to start with questions on the first page.
 
 ### PrairieLearn endpoint parameters
 
-Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. Regenerating creates a new labeled form and archives the old one. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
+Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. Regenerating archives a form and creates the next numbered version of its letter, such as A2; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
 The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
 
@@ -74,7 +74,7 @@ The form resource is `/pl/course_instance/:course_instance_id/instructor/assessm
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
-The form's saved label appears on covers and footers. Labels progress from `A` through `Z`, then `AA`, `AB`, and so on; query parameters cannot change them.
+The form's saved label appears on covers and footers. New forms use the first available letter among up to 26 active slots. Archiving a slot makes its letter available again with the next numbered version, such as C2. Query parameters cannot change labels.
 
 `include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
 
