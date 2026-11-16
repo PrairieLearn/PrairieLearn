@@ -68,6 +68,9 @@ const uploadProxy = createProxy((response) => {
   response.headers['content-security-policy'] =
     "default-src 'none'; frame-ancestors 'none'; sandbox";
   response.headers['x-content-type-options'] = 'nosniff';
+  // Only the owner may see an upload, so a browser must ask again, as another user on a shared
+  // computer or after losing access would be refused.
+  response.headers['cache-control'] = 'private, no-cache';
 });
 
 /** Send upgrades through the same session/authentication/RBAC chain as HTTP. */

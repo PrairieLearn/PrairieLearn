@@ -2,7 +2,7 @@ import { type FileUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { type DragEvent, type ReactNode, useCallback, useState } from 'react';
-import { Button } from 'react-bootstrap';
+import { Button, CloseButton, Modal } from 'react-bootstrap';
 
 import {
   MAX_ATTACHMENTS_PER_MESSAGE,
@@ -141,12 +141,16 @@ async function makeThumbnail(file: File) {
   }
 }
 
-/** A preview is optional, so a failed one leaves a file tile in its place. */
+/**
+ * A preview is optional, so a failed one leaves a file tile in its place. The message waits for
+ * it, so a stalled request gives up rather than holding up the send.
+ */
 async function uploadThumbnail(url: string, csrfToken: string, thumbnail: Blob) {
   await fetch(url, {
     method: 'POST',
     headers: { 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/octet-stream' },
     body: thumbnail,
+    signal: AbortSignal.timeout(10_000),
   }).catch(() => null);
 }
 
@@ -218,6 +222,7 @@ function AttachmentTile({
   percent = null,
   previewUrl = null,
   downloadUrl = null,
+  onView,
   onRemove,
 }: {
   filename: string;
@@ -227,13 +232,17 @@ function AttachmentTile({
   percent?: number | null;
   previewUrl?: string | null;
   downloadUrl?: string | null;
+  /** Opens a sent image in the viewer; an image without a preview downloads instead. */
+  onView?: () => void;
   onRemove?: () => void;
 }) {
   // Uploads from before previews existed, and images the browser couldn't decode, have none.
   const [previewFailed, setPreviewFailed] = useState(false);
+  const previewing = previewUrl !== null && !problem && !previewFailed;
+  const viewable = previewing && onView !== undefined;
   const content = (
     <div className="position-relative h-100 overflow-hidden rounded-3">
-      {previewUrl && !problem && !previewFailed ? (
+      {previewing ? (
         <img
           src={previewUrl}
           alt=""
@@ -265,7 +274,10 @@ function AttachmentTile({
       )}
       {downloadUrl && (
         <div className="course-agent-attachment-overlay course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fs-5">
-          <i className="bi bi-download" aria-hidden="true" />
+          <i
+            className={clsx('bi', viewable ? 'bi-arrows-angle-expand' : 'bi-download')}
+            aria-hidden="true"
+          />
         </div>
       )}
     </div>
@@ -280,7 +292,16 @@ function AttachmentTile({
       )}
       title={filename}
     >
-      {downloadUrl ? (
+      {viewable ? (
+        <button
+          type="button"
+          className="d-block w-100 h-100 p-0 border-0 bg-transparent text-reset"
+          aria-label={`View ${filename}`}
+          onClick={onView}
+        >
+          {content}
+        </button>
+      ) : downloadUrl ? (
         <a
           href={downloadUrl}
           download={filename}
@@ -341,7 +362,52 @@ export function DraftAttachmentList({
   );
 }
 
-/** A sent message's attachments, shown above its text. Each one downloads when clicked. */
+/** A sent image, viewed in the browser at full size. */
+interface ViewedImage {
+  filename: string;
+  url: string;
+}
+
+function ImageViewer({
+  image,
+  show,
+  onHide,
+}: {
+  image: ViewedImage | null;
+  show: boolean;
+  onHide: () => void;
+}) {
+  return (
+    <Modal show={show} size="xl" centered onHide={onHide}>
+      {image && (
+        <>
+          <Modal.Header className="gap-2">
+            <Modal.Title as="h2" className="h6 text-truncate me-auto">
+              {image.filename}
+            </Modal.Title>
+            <a
+              href={image.url}
+              download={image.filename}
+              className="btn btn-sm btn-outline-secondary text-nowrap"
+            >
+              <i className="bi bi-download me-1" aria-hidden="true" />
+              Download
+            </a>
+            <CloseButton aria-label="Close" className="ms-0" onClick={onHide} />
+          </Modal.Header>
+          <Modal.Body className="course-agent-image-viewer d-flex justify-content-center p-2">
+            <img src={image.url} alt={image.filename} className="mw-100" />
+          </Modal.Body>
+        </>
+      )}
+    </Modal>
+  );
+}
+
+/**
+ * A sent message's attachments, shown above its text. An image with a preview opens in a viewer,
+ * and anything else downloads when clicked.
+ */
 export function SentAttachments({
   message,
   uploadsUrl,
@@ -354,22 +420,40 @@ export function SentAttachments({
     const id = attachmentIdOf(part.url);
     return id ? [{ part, url: `${uploadsUrl}/${id}` }] : [];
   });
+  // The image stays set while the viewer fades out, so it doesn't empty first.
+  const [viewed, setViewed] = useState<ViewedImage | null>(null);
+  const [viewing, setViewing] = useState(false);
   if (files.length === 0) return null;
   return (
-    <ul
-      className="list-unstyled d-flex flex-wrap justify-content-end gap-2 m-0"
-      aria-label="Attachments"
-    >
-      {files.map(({ part, url }) => (
-        <AttachmentTile
-          key={part.url}
-          filename={part.filename ?? 'File'}
-          label={typeLabel(part.mediaType, part.filename ?? '')}
-          previewUrl={part.mediaType.startsWith('image/') ? `${url}/thumbnail` : null}
-          downloadUrl={url}
-        />
-      ))}
-    </ul>
+    <>
+      <ul
+        className="list-unstyled d-flex flex-wrap justify-content-end gap-2 m-0"
+        aria-label="Attachments"
+      >
+        {files.map(({ part, url }) => {
+          const filename = part.filename ?? 'File';
+          const image = part.mediaType.startsWith('image/');
+          return (
+            <AttachmentTile
+              key={part.url}
+              filename={filename}
+              label={typeLabel(part.mediaType, part.filename ?? '')}
+              previewUrl={image ? `${url}/thumbnail` : null}
+              downloadUrl={url}
+              onView={
+                image
+                  ? () => {
+                      setViewed({ filename, url });
+                      setViewing(true);
+                    }
+                  : undefined
+              }
+            />
+          );
+        })}
+      </ul>
+      <ImageViewer image={viewed} show={viewing} onHide={() => setViewing(false)} />
+    </>
   );
 }
 

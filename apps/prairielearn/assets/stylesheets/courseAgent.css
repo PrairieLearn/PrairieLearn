@@ -110,6 +110,11 @@
   }
 }
 
+.course-agent-image-viewer img {
+  max-height: 80vh;
+  object-fit: contain;
+}
+
 .course-agent-drop-target {
   inset: 0.5rem;
   z-index: 1;
