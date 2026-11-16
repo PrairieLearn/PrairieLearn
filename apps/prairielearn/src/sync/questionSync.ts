@@ -180,9 +180,19 @@ export async function getQuestionSyncPlan({
       if (!loaded?.data || loaded.errors.length > 0) return null;
       const validated = QuestionJsonSchema.safeParse(loaded.data);
       if (!validated.success) return null;
-      const { title: _oldTitle, tags: oldTags, topic: oldTopic, ...oldMetadata } = parsed.data;
-      const { title: _newTitle, tags: newTags, topic: newTopic, ...newMetadata } = loaded.data;
-      if (!isDeepStrictEqual(oldMetadata, newMetadata)) return null;
+      const {
+        title: _oldTitle,
+        tags: oldTags,
+        topic: oldTopic,
+        ...oldRemainingFields
+      } = parsed.data;
+      const {
+        title: _newTitle,
+        tags: newTags,
+        topic: newTopic,
+        ...newRemainingFields
+      } = loaded.data;
+      if (!isDeepStrictEqual(oldRemainingFields, newRemainingFields)) return null;
       const tagsChanged = !isDeepStrictEqual(oldTags, newTags);
       const topicChanged = oldTopic !== newTopic;
       if (!tagsChanged && !topicChanged) {
