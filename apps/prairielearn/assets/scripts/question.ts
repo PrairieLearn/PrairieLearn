@@ -79,15 +79,20 @@ onDocumentReady(() => {
         const services = browserServices.get(container);
         if (!button || !services) return;
         let triggerSelector: string;
-        if (button.dataset.questionDialog === 'copy-question') {
-          triggerSelector = 'button[data-question-dialog="copy-question"]';
-          await services.openCopyQuestion();
-        } else if (button.dataset.questionDialog === 'submission-info') {
-          const submissionId = button.dataset.submissionId!;
-          triggerSelector = `button[data-question-dialog="submission-info"][data-submission-id="${CSS.escape(submissionId)}"]`;
-          await services.openSubmissionInfo({ submissionId });
-        } else {
-          return;
+        try {
+          if (button.dataset.questionDialog === 'copy-question') {
+            triggerSelector = 'button[data-question-dialog="copy-question"]';
+            await services.openCopyQuestion();
+          } else if (button.dataset.questionDialog === 'submission-info') {
+            const submissionId = button.dataset.submissionId!;
+            triggerSelector = `button[data-question-dialog="submission-info"][data-submission-id="${CSS.escape(submissionId)}"]`;
+            await services.openSubmissionInfo({ submissionId });
+          } else {
+            return;
+          }
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') return;
+          throw error;
         }
         if (!container.isConnected) return;
         // Rendering a submission can replace the trigger while its dialog is open.
