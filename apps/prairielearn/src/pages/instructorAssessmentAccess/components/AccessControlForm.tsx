@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Form } from 'react-bootstrap';
-import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { FormProvider, useFieldArray, useForm, useFormState, useWatch } from 'react-hook-form';
 
 import { SplitPane, StickySaveBar, type StickySaveBarAlert } from '@prairielearn/ui';
 
@@ -21,10 +21,10 @@ import { OverrideRuleContent } from './OverrideRuleContent.js';
 import { AppliesToField } from './fields/AppliesToField.js';
 import {
   type AccessControlFormData,
-  type OverrideData,
   type TargetType,
   createDefaultOverrideFormData,
   formDataToJson,
+  getOverrideName,
   isOverrideEditable,
   jsonToDefaultRuleFormData,
   jsonToOverrideFormData,
@@ -42,7 +42,7 @@ const accessControlFormInitialRightWidth = 560;
 type SelectedRule = { type: 'default' } | { type: 'override'; index: number } | null;
 
 function getOverrideLimitPolicy(
-  overrides: OverrideData[],
+  targetTypes: TargetType[],
   canEditEnrollmentRules: boolean,
 ): {
   nextTargetType: TargetType;
@@ -51,10 +51,10 @@ function getOverrideLimitPolicy(
     currentTargetType: TargetType,
   ) => Partial<Record<TargetType, string | null>>;
 } {
-  const enrollmentOverrideCount = overrides.filter(
-    (override) => override.appliesTo.targetType === 'enrollment',
+  const enrollmentOverrideCount = targetTypes.filter(
+    (targetType) => targetType === 'enrollment',
   ).length;
-  const studentLabelOverrideCount = overrides.length - enrollmentOverrideCount;
+  const studentLabelOverrideCount = targetTypes.length - enrollmentOverrideCount;
   const enrollmentLimitReached = enrollmentOverrideCount >= MAX_ENROLLMENT_ACCESS_CONTROL_RULES;
   const studentLabelLimitReached =
     studentLabelOverrideCount >= MAX_STUDENT_LABEL_ACCESS_CONTROL_RULES;
@@ -81,6 +81,35 @@ function getOverrideLimitPolicy(
           : null,
     }),
   };
+}
+
+function SelectedOverrideTitle({ index }: { index: number }) {
+  const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
+    name: `overrides.${index}.appliesTo`,
+  });
+  return getOverrideName(appliesTo, index);
+}
+
+/**
+ * Subscribes to form state separately so that validation updates re-render
+ * only the save bar, not the whole form.
+ */
+function AccessControlSaveBar({ isSaving, onCancel }: { isSaving: boolean; onCancel: () => void }) {
+  const { isDirty, isValid } = useFormState<AccessControlFormData>();
+  const saveDisabledReason = !isDirty
+    ? 'No changes to save'
+    : !isValid
+      ? 'Fix validation errors before saving'
+      : null;
+
+  return (
+    <StickySaveBar
+      visible={isDirty}
+      isSaving={isSaving}
+      saveDisabledReason={saveDisabledReason}
+      onCancel={onCancel}
+    />
+  );
 }
 
 export function AccessControlForm({
@@ -117,31 +146,21 @@ export function AccessControlForm({
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
 
   const displayTimezone = courseInstance.display_timezone;
-  const defaultRule = initialData[0]
-    ? jsonToDefaultRuleFormData(initialData[0], displayTimezone)
-    : jsonToDefaultRuleFormData({}, displayTimezone);
-  const overrides = initialData.slice(1).map((o) => jsonToOverrideFormData(o, displayTimezone));
+  // Converting every rule is expensive with many overrides, and the result is
+  // only used for the form's initial values.
+  const [defaultValues] = useState<AccessControlFormData>(() => ({
+    defaultRule: jsonToDefaultRuleFormData(initialData[0] ?? {}, displayTimezone),
+    overrides: initialData.slice(1).map((o) => jsonToOverrideFormData(o, displayTimezone)),
+  }));
 
   const methods = useForm<AccessControlFormData, AccessControlFormResolverContext>({
     mode: 'onChange',
     resolver: accessControlFormResolver,
     context: { displayTimezone },
-    defaultValues: {
-      defaultRule,
-      overrides,
-    },
+    defaultValues,
   });
 
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    subscribe,
-    trigger,
-    formState: { isDirty, isValid },
-  } = methods;
+  const { control, handleSubmit, setValue, getValues, reset, subscribe, trigger } = methods;
 
   // Re-validate the whole form after every value change. With a resolver,
   // react-hook-form only updates the displayed error for the field that
@@ -177,8 +196,20 @@ export function AccessControlForm({
     name: 'overrides',
   });
 
-  const watchedData = watch();
-  const overrideLimitPolicy = getOverrideLimitPolicy(watchedData.overrides, canEditEnrollmentRules);
+  // Re-render only when override target types change; watching the whole form
+  // here would re-render every rule summary on each keystroke. The values are
+  // read with `getValues` because react-hook-form reports add/remove/move to
+  // watchers one render late, while `useFieldArray` re-renders this component
+  // immediately.
+  useWatch({
+    control,
+    name: 'overrides',
+    compute: (overrides) => overrides.map((override) => override.appliesTo.targetType),
+  });
+  const overrideTargetTypes = getValues('overrides').map(
+    (override) => override.appliesTo.targetType,
+  );
+  const overrideLimitPolicy = getOverrideLimitPolicy(overrideTargetTypes, canEditEnrollmentRules);
 
   const handleFormSubmit = async (data: AccessControlFormData) => {
     if (!canEditAccessSettings) return;
@@ -188,29 +219,27 @@ export function AccessControlForm({
   };
 
   const addOverride = () => {
-    const newOverride = createDefaultOverrideFormData(watchedData.defaultRule);
+    const newOverride = createDefaultOverrideFormData(getValues('defaultRule'));
     newOverride.appliesTo.targetType = overrideLimitPolicy.nextTargetType;
     if (newOverride.appliesTo.targetType === 'student_label') {
-      const firstEnrollmentIndex = watchedData.overrides.findIndex(
-        (override) => override.appliesTo.targetType === 'enrollment',
-      );
+      const firstEnrollmentIndex = overrideTargetTypes.indexOf('enrollment');
       const insertIndex =
-        firstEnrollmentIndex === -1 ? watchedData.overrides.length : firstEnrollmentIndex;
+        firstEnrollmentIndex === -1 ? overrideTargetTypes.length : firstEnrollmentIndex;
       insertOverride(insertIndex, newOverride);
       setSelectedRule({ type: 'override', index: insertIndex });
     } else {
       appendOverride(newOverride);
-      setSelectedRule({ type: 'override', index: watchedData.overrides.length });
+      setSelectedRule({ type: 'override', index: overrideTargetTypes.length });
     }
   };
 
   const handleOverrideTargetTypeChange = (index: number, targetType: TargetType) => {
-    if (watchedData.overrides[index].appliesTo.targetType === targetType) return;
+    if (overrideTargetTypes[index] === targetType) return;
 
-    const labelCount = watchedData.overrides.filter(
-      (o, i) => i !== index && o.appliesTo.targetType === 'student_label',
+    const labelCount = overrideTargetTypes.filter(
+      (t, i) => i !== index && t === 'student_label',
     ).length;
-    const newIndex = targetType === 'student_label' ? labelCount : watchedData.overrides.length - 1;
+    const newIndex = targetType === 'student_label' ? labelCount : overrideTargetTypes.length - 1;
 
     if (newIndex !== index) {
       moveOverride(index, newIndex);
@@ -228,21 +257,27 @@ export function AccessControlForm({
     setSelectedRule({ type: 'override', index: newIndex });
   };
 
-  const handleDeleteOverride = (deletedIndex: number) => {
-    if (selectedRule?.type === 'override') {
-      if (selectedRule.index === deletedIndex) {
-        setSelectedRule(null);
-      } else if (selectedRule.index > deletedIndex) {
-        setSelectedRule({ type: 'override', index: selectedRule.index - 1 });
-      }
-    }
-    removeOverride(deletedIndex);
-  };
+  // The summary memoizes its override cards, so the callbacks passed to them
+  // must stay stable across renders.
+  const handleDeleteOverride = useCallback(
+    (deletedIndex: number) => {
+      setSelectedRule((selectedRule) => {
+        if (selectedRule?.type !== 'override') return selectedRule;
+        if (selectedRule.index === deletedIndex) return null;
+        if (selectedRule.index > deletedIndex) {
+          return { type: 'override', index: selectedRule.index - 1 };
+        }
+        return selectedRule;
+      });
+      removeOverride(deletedIndex);
+    },
+    [removeOverride],
+  );
 
   const handleMoveOverride = (fromIndex: number, toIndex: number) => {
     const permissions = { canEditAccessSettings, canEditEnrollmentRules };
-    const fromEditable = isOverrideEditable(watchedData.overrides[fromIndex], permissions);
-    const toEditable = isOverrideEditable(watchedData.overrides[toIndex], permissions);
+    const fromEditable = isOverrideEditable(getValues(`overrides.${fromIndex}`), permissions);
+    const toEditable = isOverrideEditable(getValues(`overrides.${toIndex}`), permissions);
     if (!fromEditable || !toEditable) return;
 
     moveOverride(fromIndex, toIndex);
@@ -258,45 +293,23 @@ export function AccessControlForm({
     }
   };
 
-  const getOverrideName = (index: number): string => {
-    if (index >= watchedData.overrides.length) return `Override ${index + 1}`;
-    const override = watchedData.overrides[index];
-    const appliesTo = override.appliesTo;
-
-    if (appliesTo.targetType === 'student_label') {
-      const studentLabels = appliesTo.studentLabels;
-      if (studentLabels.length === 0) return `Override ${index + 1}`;
-      if (studentLabels.length === 1) return studentLabels[0].name;
-      if (studentLabels.length === 2) {
-        return `${studentLabels[0].name} and ${studentLabels[1].name}`;
-      }
-      const remaining = studentLabels.length - 2;
-      return `${studentLabels[0].name}, ${studentLabels[1].name}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
-    } else {
-      const enrollments = appliesTo.enrollments;
-      if (enrollments.length === 0) return `Override ${index + 1}`;
-      const getName = (e: (typeof enrollments)[0]) => e.name || e.uid;
-      if (enrollments.length === 1) return getName(enrollments[0]);
-      if (enrollments.length === 2) {
-        return `${getName(enrollments[0])} and ${getName(enrollments[1])}`;
-      }
-      const remaining = enrollments.length - 2;
-      return `${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
-    }
-  };
-
-  const saveDisabledReason = !isDirty
-    ? 'No changes to save'
-    : !isValid
-      ? 'Fix validation errors before saving'
-      : null;
+  const handleEditOverride = useCallback(
+    (index: number) => setSelectedRule({ type: 'override', index }),
+    [],
+  );
 
   const rightTitle =
-    selectedRule?.type === 'default'
-      ? 'Defaults'
-      : selectedRule?.type === 'override'
-        ? getOverrideName(selectedRule.index)
-        : undefined;
+    selectedRule?.type === 'default' ? (
+      'Defaults'
+    ) : selectedRule?.type === 'override' ? (
+      // The selected index can point past the end of the list, e.g. after
+      // discarding changes that added the selected override.
+      selectedRule.index < overrideTargetTypes.length ? (
+        <SelectedOverrideTitle index={selectedRule.index} />
+      ) : (
+        `Override ${selectedRule.index + 1}`
+      )
+    ) : undefined;
 
   const rightHeaderAction = selectedRule ? (
     <button
@@ -311,7 +324,7 @@ export function AccessControlForm({
 
   const selectedRuleCanEdit =
     selectedRule?.type === 'override'
-      ? isOverrideEditable(watchedData.overrides[selectedRule.index], {
+      ? isOverrideEditable(getValues(`overrides.${selectedRule.index}`), {
           canEditAccessSettings,
           canEditEnrollmentRules,
         })
@@ -330,7 +343,7 @@ export function AccessControlForm({
       </AccessControlEditabilityProvider>
     ) : selectedRule?.type === 'override' ? (
       (() => {
-        if (selectedRule.index >= watchedData.overrides.length) {
+        if (selectedRule.index >= overrideTargetTypes.length) {
           return null;
         }
         return (
@@ -342,7 +355,7 @@ export function AccessControlForm({
                 canEditAccessSettings={canEditAccessSettings}
                 canEditEnrollmentRules={canEditEnrollmentRules}
                 targetTypeDisabledReasons={overrideLimitPolicy.getTargetTypeDisabledReasons(
-                  watchedData.overrides[selectedRule.index].appliesTo.targetType,
+                  overrideTargetTypes[selectedRule.index],
                 )}
                 onTargetTypeChange={(targetType) =>
                   handleOverrideTargetTypeChange(selectedRule.index, targetType)
@@ -394,9 +407,6 @@ export function AccessControlForm({
                 <div className="container py-3">
                   <AccessControlSummary
                     displayTimezone={courseInstance.display_timezone}
-                    getOverrideName={getOverrideName}
-                    defaultRule={watchedData.defaultRule}
-                    overrides={watchedData.overrides}
                     selectedOverrideIndex={
                       selectedRule?.type === 'override' ? selectedRule.index : null
                     }
@@ -416,7 +426,7 @@ export function AccessControlForm({
                       reset(
                         {
                           defaultRule: jsonToDefaultRuleFormData({}, displayTimezone),
-                          overrides: watch('overrides'),
+                          overrides: getValues('overrides'),
                         },
                         {
                           // Keep original defaults so the form stays dirty and the save button enables.
@@ -424,16 +434,11 @@ export function AccessControlForm({
                         },
                       )
                     }
-                    onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
+                    onEditOverride={handleEditOverride}
                   />
                 </div>
                 {canEditAccessSettings && (
-                  <StickySaveBar
-                    visible={isDirty}
-                    isSaving={isSaving}
-                    saveDisabledReason={saveDisabledReason}
-                    onCancel={() => reset()}
-                  />
+                  <AccessControlSaveBar isSaving={isSaving} onCancel={() => reset()} />
                 )}
               </>
             ),

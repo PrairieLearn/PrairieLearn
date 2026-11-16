@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { memo } from 'react';
 import { Alert, Button, Form, InputGroup } from 'react-bootstrap';
 import {
   type FieldArrayWithId,
@@ -119,6 +120,49 @@ function getDeadlineLimitDisabledTitle(type: 'early' | 'late', count: number): s
   return `A rule can have at most ${MAX_ACCESS_CONTROL_EARLY_OR_LATE_DEADLINES_PER_RULE} ${type} deadlines.`;
 }
 
+// Memoized on the raw date strings: formatting dates is relatively expensive,
+// and every row re-renders whenever any deadline in the rule changes.
+const DeadlineTimeRange = memo(function DeadlineTimeRange({
+  prefix,
+  start,
+  end,
+  displayTimezone,
+}: {
+  prefix: string;
+  start: string | null;
+  end: string;
+  displayTimezone: string;
+}) {
+  if (!start) {
+    return (
+      <>
+        {prefix} –{' '}
+        <FriendlyDate
+          date={Temporal.PlainDateTime.from(end)}
+          timezone={displayTimezone}
+          options={{ includeTz: false }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <FriendlyDate
+        date={Temporal.PlainDateTime.from(start)}
+        timezone={displayTimezone}
+        options={{ includeTz: false }}
+      />{' '}
+      –{' '}
+      <FriendlyDate
+        date={Temporal.PlainDateTime.from(end)}
+        timezone={displayTimezone}
+        options={{ includeTz: false }}
+      />
+    </>
+  );
+});
+
 function DeadlineArrayInput({
   type,
   fieldArrayName,
@@ -171,37 +215,13 @@ function DeadlineArrayInput({
     if (!deadline?.date) return null;
 
     const anchorDate = isEarly ? releaseDate : dueDate;
-    const start = (index > 0 ? deadlines[index - 1].date : null) ?? anchorDate;
-    const end = deadline.date;
-
-    if (!start) {
-      const prefix = isEarly ? 'While accessible' : 'After due date';
-      return (
-        <>
-          {prefix} –{' '}
-          <FriendlyDate
-            date={Temporal.PlainDateTime.from(end)}
-            timezone={displayTimezone}
-            options={{ includeTz: false }}
-          />
-        </>
-      );
-    }
-
     return (
-      <>
-        <FriendlyDate
-          date={Temporal.PlainDateTime.from(start)}
-          timezone={displayTimezone}
-          options={{ includeTz: false }}
-        />{' '}
-        –{' '}
-        <FriendlyDate
-          date={Temporal.PlainDateTime.from(end)}
-          timezone={displayTimezone}
-          options={{ includeTz: false }}
-        />
-      </>
+      <DeadlineTimeRange
+        prefix={isEarly ? 'While accessible' : 'After due date'}
+        start={(index > 0 ? deadlines[index - 1].date : null) ?? anchorDate ?? null}
+        end={deadline.date}
+        displayTimezone={displayTimezone}
+      />
     );
   };
 
