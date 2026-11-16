@@ -3,12 +3,14 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
+import clsx from 'clsx';
 import {
   type KeyboardEvent,
   type ReactNode,
   type SyntheticEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -675,6 +677,26 @@ function Composer({
   onStop?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
+  // the height.
+  useLayoutEffect(() => {
+    if (textareaRef.current) fitToText(textareaRef.current);
+  }, [draft]);
+  // The text rewraps when the box's width changes, such as when the window or panel is resized.
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    let width = textarea.clientWidth;
+    const observer = new ResizeObserver(() => {
+      // Fitting changes the height, which this also observes.
+      if (textarea.clientWidth === width) return;
+      width = textarea.clientWidth;
+      fitToText(textarea);
+    });
+    observer.observe(textarea);
+    return () => observer.disconnect();
+  }, []);
   const invalidAttachment = hasInvalidAttachment(attachments);
   const submit = (event: SyntheticEvent) => {
     event.preventDefault();
@@ -688,79 +710,93 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
-      <DraftAttachmentList
-        attachments={attachments}
-        sending={pending}
-        onRemove={onRemoveAttachment}
-      />
-      <Form.Control
-        as="textarea"
-        rows={3}
-        value={draft}
-        placeholder={placeholder}
-        aria-label="Message"
-        disabled={pending}
-        onChange={(event) => onDraftChange(event.target.value)}
-        onKeyDown={onKeyDown}
-        onPaste={(event) => {
-          if (pending || event.clipboardData.files.length === 0) return;
-          // Copied cells and rich text carry an image of themselves beside their text; paste the text.
-          if (
-            event.clipboardData.getData('text/plain') &&
-            event.clipboardData.getData('text/html')
-          ) {
-            return;
-          }
-          event.preventDefault();
-          onAttach([...event.clipboardData.files]);
-        }}
-      />
-      <div className="d-flex align-items-center gap-2 mt-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          hidden
-          onChange={(event) => {
-            onAttach([...(event.target.files ?? [])]);
-            event.target.value = '';
+      <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
+        <DraftAttachmentList
+          attachments={attachments}
+          sending={pending}
+          onRemove={onRemoveAttachment}
+        />
+        <Form.Control
+          ref={textareaRef}
+          as="textarea"
+          rows={2}
+          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
+          value={draft}
+          placeholder={placeholder}
+          aria-label="Message"
+          disabled={pending}
+          onChange={(event) => onDraftChange(event.target.value)}
+          onKeyDown={onKeyDown}
+          onPaste={(event) => {
+            if (pending || event.clipboardData.files.length === 0) return;
+            // Copied cells and rich text carry an image of themselves beside their text; paste the text.
+            if (
+              event.clipboardData.getData('text/plain') &&
+              event.clipboardData.getData('text/html')
+            ) {
+              return;
+            }
+            event.preventDefault();
+            onAttach([...event.clipboardData.files]);
           }}
         />
-        <Button
-          variant="link"
-          size="sm"
-          className="course-agent-icon-button"
-          aria-label="Attach files"
-          disabled={pending}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <i className="bi bi-plus-lg" aria-hidden="true" />
-        </Button>
-        <div className="d-flex align-items-center gap-2 ms-auto">
-          {children}
-          {onStop ? (
-            <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
-              <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-              Stop
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              size="sm"
-              aria-label={sendLabel}
-              disabled={!draft.trim() || disabled || pending || invalidAttachment}
-            >
-              {pending ? (
-                <Spinner animation="border" size="sm" aria-hidden="true" />
-              ) : (
-                <i className="bi bi-send" aria-hidden="true" />
-              )}
-            </Button>
-          )}
+        <div className="d-flex align-items-center gap-2 px-2 pb-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(event) => {
+              onAttach([...(event.target.files ?? [])]);
+              event.target.value = '';
+            }}
+          />
+          <Button
+            variant="link"
+            size="sm"
+            className="course-agent-icon-button"
+            aria-label="Attach files"
+            disabled={pending}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <i className="bi bi-plus-lg" aria-hidden="true" />
+          </Button>
+          <div className="d-flex align-items-center gap-2 ms-auto">
+            {children}
+            {onStop ? (
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                disabled={stopDisabled}
+                onClick={onStop}
+              >
+                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+                Stop
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="sm"
+                aria-label={sendLabel}
+                disabled={!draft.trim() || disabled || pending || invalidAttachment}
+              >
+                {pending ? (
+                  <Spinner animation="border" size="sm" aria-hidden="true" />
+                ) : (
+                  <i className="bi bi-send" aria-hidden="true" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </Form>
   );
+}
+
+function fitToText(textarea: HTMLTextAreaElement) {
+  textarea.style.height = 'auto';
+  textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
 function reviewInHistory(messages: UIMessage[], reviewId: string) {
