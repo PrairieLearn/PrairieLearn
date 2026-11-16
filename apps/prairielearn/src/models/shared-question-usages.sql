@@ -54,7 +54,7 @@ FROM
   ancestry
   CROSS JOIN participants p
 WHERE
-  ancestry.course_id != $question_course_id
+  ancestry.course_id != $destination_course_id
   AND p.user_id IS NOT NULL
   -- Order conflicting keys consistently across concurrent submissions.
 ORDER BY

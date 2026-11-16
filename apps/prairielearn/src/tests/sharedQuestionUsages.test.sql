@@ -21,7 +21,8 @@ INSERT INTO
     enrollment_code
   )
 VALUES
-  (1, 2, 'destination', 'UTC', 'destination');
+  (1, 2, 'destination', 'UTC', 'destination'),
+  (2, 1, 'source', 'UTC', 'source');
 
 INSERT INTO
   questions (id, course_id)
@@ -31,7 +32,8 @@ VALUES
 INSERT INTO
   assessments (id, course_instance_id)
 VALUES
-  (1, 1);
+  (1, 1),
+  (2, 2);
 
 INSERT INTO
   team_configs (id, course_instance_id, assessment_id)
@@ -61,7 +63,8 @@ INSERT INTO
 VALUES
   (1, 1, 1, NULL, 1, TRUE),
   (2, 1, NULL, 1, 1, TRUE),
-  (3, 1, 3, NULL, 1, FALSE);
+  (3, 1, 3, NULL, 1, FALSE),
+  (4, 2, 1, NULL, 1, TRUE);
 
 -- BLOCK select_usages
 SELECT

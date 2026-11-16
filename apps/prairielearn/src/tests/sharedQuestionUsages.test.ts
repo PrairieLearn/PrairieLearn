@@ -17,13 +17,15 @@ describe('Shared question usage', () => {
   });
   afterAll(helperDb.after);
 
-  it('deduplicates individual/group usage and retains history after deletion', async () => {
-    const record = (assessment_instance_id: string) =>
+  it('excludes same-course usage, deduplicates participants, and retains history', async () => {
+    const record = (assessment_instance_id: string, course_id = '2') =>
       insertSharedQuestionUsagesForSubmission({
-        question: { course_id: '2', copied_from_question_id: '1' },
-        course_id: '2',
+        question: { copied_from_question_id: '1' },
+        course_id,
         assessment_instance_id,
       });
+    await record('4', '1'); // The copy is referenced back in the source course.
+    assert.isEmpty(await selectUsages());
     await record('1');
     await record('1');
     assert.lengthOf(await selectUsages(), 1);
@@ -32,14 +34,15 @@ describe('Shared question usage', () => {
     const usages = await selectUsages();
     assert.deepEqual(
       usages.map((u) => [
+        u.shared_question_id,
         u.destination_user_id,
         u.destination_course_id,
         u.destination_course_instance_id,
         u.destination_assessment_id,
       ]),
       [
-        ['1', '2', '1', '1'],
-        ['2', '2', '1', '1'],
+        ['1', '1', '2', '1', '1'],
+        ['1', '2', '2', '1', '1'],
       ],
     );
     await execute(sql.delete_history);
