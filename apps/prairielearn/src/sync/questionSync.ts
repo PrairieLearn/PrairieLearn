@@ -18,16 +18,28 @@ import { type QuestionJson, QuestionJsonSchema } from '../schemas/infoQuestion.j
 
 import { getDefaultTagsInUse, loadInfoFile, loadQuestionInfo } from './course-db.js';
 import { deduplicateByName } from './deduplicate.js';
+import * as questions from './fromDisk/questions.js';
 import { syncQuestionTags } from './fromDisk/tags.js';
 import { syncTopics } from './fromDisk/topics.js';
 import { type InfoFile } from './infofile.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+interface QuestionCatalogSync {
+  tagsChanged: boolean;
+  topicChanged: boolean;
+  courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
+}
+
 export type QuestionSyncChange =
   | { kind: 'content'; qid: string }
   | { kind: 'title'; qid: string; title: string }
-  | { kind: 'recover'; qid: string; info: InfoFile<QuestionJson> }
+  | {
+      kind: 'recover';
+      qid: string;
+      info: InfoFile<QuestionJson>;
+      catalogs: QuestionCatalogSync | null;
+    }
   | {
       kind: 'metadata';
       qid: string;
@@ -135,21 +147,30 @@ export async function getQuestionSyncPlan({
             return null;
           }
         }
+        let catalogs: QuestionCatalogSync | null = null;
         if (info.data && info.errors.length === 0) {
           const [tags, topics] = await Promise.all([
             selectTagsByQuestionId(question.id),
             selectTopicsByCourseId(course.id),
           ]);
-          // Catalog changes use their own sync paths. Recovery here only
-          // reapplies metadata whose external dependencies are unchanged.
-          if (
-            !isDeepStrictEqual(new Set(tags.map((tag) => tag.name)), new Set(info.data.tags)) ||
-            topics.find((topic) => topic.id === question.topic_id)?.name !== info.data.topic
-          ) {
-            return null;
+          const tagsChanged = !isDeepStrictEqual(
+            new Set(tags.map((tag) => tag.name)),
+            new Set(info.data.tags),
+          );
+          const topicChanged =
+            topics.find((topic) => topic.id === question.topic_id)?.name !== info.data.topic;
+          if (tagsChanged || topicChanged) {
+            const courseInfo = await loadInfoFile({
+              coursePath: course.path,
+              filePath: 'infoCourse.json',
+            });
+            if (!courseInfo?.data || courseInfo.errors.length > 0) return null;
+            const courseMetadata = CourseJsonSchema.safeParse(courseInfo.data);
+            if (!courseMetadata.success) return null;
+            catalogs = { tagsChanged, topicChanged, courseMetadata: courseMetadata.data };
           }
         }
-        plan.set(question.qid, { kind: 'recover', qid: question.qid, info });
+        plan.set(question.qid, { kind: 'recover', qid: question.qid, info, catalogs });
         continue;
       }
       const loaded = await loadInfoFile<Record<string, unknown>>({
@@ -201,36 +222,8 @@ export async function syncQuestionMetadata(
 ) {
   await runInTransactionAsync(async () => {
     const question = await selectQuestionByQid({ course_id: course.id, qid: change.qid });
-    if (change.tagsChanged) {
-      const knownNames = new Set(
-        await selectTagNamesForOtherQuestions({ course_id: course.id, question_id: question.id }),
-      );
-      change.metadata.tags.forEach((name) => knownNames.add(name));
-      const courseTags = deduplicateByName(
-        change.courseMetadata.tags ?? [],
-        getDefaultTagsInUse(knownNames),
-      ).entries;
-      await syncQuestionTags({
-        courseId: course.id,
-        courseTags,
-        questionTags: [{ questionId: question.id, tags: change.metadata.tags }],
-        knownNames,
-        isInfoCourseValid: true,
-        deleteUnused: true,
-      });
-    }
+    await syncQuestionCatalogs(course, question.id, change.metadata, change);
     if (change.topicChanged) {
-      const knownNames = new Set(
-        await selectTopicNamesForOtherQuestions({ course_id: course.id, question_id: question.id }),
-      );
-      knownNames.add(change.metadata.topic);
-      await syncTopics({
-        courseId: course.id,
-        courseTopics: deduplicateByName(change.courseMetadata.topics).entries,
-        knownNames,
-        isInfoCourseValid: true,
-        deleteUnused: true,
-      });
       await syncQuestionTopic({
         course_id: course.id,
         qid: change.qid,
@@ -244,5 +237,58 @@ export async function syncQuestionMetadata(
         title: change.metadata.title,
       });
     }
+  });
+}
+
+async function syncQuestionCatalogs(
+  course: Course,
+  questionId: string,
+  metadata: Pick<QuestionJson, 'tags' | 'topic'>,
+  catalogs: QuestionCatalogSync,
+) {
+  if (catalogs.tagsChanged) {
+    const knownNames = new Set(
+      await selectTagNamesForOtherQuestions({ course_id: course.id, question_id: questionId }),
+    );
+    metadata.tags.forEach((name) => knownNames.add(name));
+    const courseTags = deduplicateByName(
+      catalogs.courseMetadata.tags ?? [],
+      getDefaultTagsInUse(knownNames),
+    ).entries;
+    await syncQuestionTags({
+      courseId: course.id,
+      courseTags,
+      questionTags: [{ questionId, tags: metadata.tags }],
+      knownNames,
+      isInfoCourseValid: true,
+      deleteUnused: true,
+    });
+  }
+  if (catalogs.topicChanged) {
+    const knownNames = new Set(
+      await selectTopicNamesForOtherQuestions({ course_id: course.id, question_id: questionId }),
+    );
+    knownNames.add(metadata.topic);
+    await syncTopics({
+      courseId: course.id,
+      courseTopics: deduplicateByName(catalogs.courseMetadata.topics).entries,
+      knownNames,
+      isInfoCourseValid: true,
+      deleteUnused: true,
+    });
+  }
+}
+
+/** Requires the course lock; recovery shares the chunk activation transaction. */
+export async function syncRecoveredQuestion(
+  course: Course,
+  change: Extract<QuestionSyncChange, { kind: 'recover' }>,
+) {
+  await runInTransactionAsync(async () => {
+    if (change.catalogs && change.info.data) {
+      const question = await selectQuestionByQid({ course_id: course.id, qid: change.qid });
+      await syncQuestionCatalogs(course, question.id, change.info.data, change.catalogs);
+    }
+    await questions.sync(course.id, { questions: { [change.qid]: change.info } }, 'metadata');
   });
 }

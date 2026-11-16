@@ -45,6 +45,8 @@ import { insertInstitution } from '../models/institution.js';
 import * as questionModel from '../models/question.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectSharingSetsForQuestion } from '../models/sharing-set.js';
+import { selectTagsByQuestionId } from '../models/tags.js';
+import { selectTopicsByCourseId } from '../models/topics.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 import * as courseDB from '../sync/course-db.js';
 
@@ -598,22 +600,27 @@ describe('content-only question save', () => {
     ).rejects.toThrow('One or more JSON files');
     const infoPath = path.join(path.dirname(filePath), 'info.json');
     const original = await fs.readJson(infoPath);
+    const pending = {
+      ...original,
+      singleVariant: true,
+      tags: ['numeric', 'recovery-tag'],
+      topic: 'Recovery topic',
+    };
     await expect(
-      (
-        await save(infoPath, JSON.stringify({ ...original, title: 123, singleVariant: true }))
-      ).run(),
+      (await save(infoPath, JSON.stringify({ ...pending, title: 123 }))).run(),
     ).rejects.toThrow('One or more JSON files');
-    const before = await util.dumpTableWithSchema('questions', QuestionSchema);
+    const beforeMetadata = await metadataSnapshot();
+    const before = beforeMetadata[3];
     const beforeChunks = await util.dumpTableWithSchema('chunks', ChunkSchema);
     const previousCommit = (await selectCourseById(courseId)).commit_hash;
     assert.isFalse((await selectQuestionByQid({ course_id: courseId, qid })).single_variant);
-    const fixed = JSON.stringify({ ...original, title: 'Recovered title', singleVariant: true });
+    const fixed = JSON.stringify({ ...pending, title: 'Recovered title' });
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const checkpoint = vi
       .spyOn(courseModel, 'updateCourseCommitHash')
       .mockRejectedValueOnce(new Error('Checkpoint failed'));
     await expect((await save(infoPath, fixed)).run()).rejects.toThrow('Checkpoint failed');
-    assert.deepEqual(await util.dumpTableWithSchema('questions', QuestionSchema), before);
+    assert.deepEqual(await metadataSnapshot(), beforeMetadata);
     assert.deepEqual(await util.dumpTableWithSchema('chunks', ChunkSchema), beforeChunks);
     assert.equal((await selectCourseById(courseId)).commit_hash, previousCommit);
     checkpoint.mockRestore();
@@ -623,6 +630,15 @@ describe('content-only question save', () => {
     assert.equal(recovered.title, 'Recovered title');
     assert.isTrue(recovered.single_variant);
     assert.isNull(recovered.sync_errors);
+    assert.sameMembers(
+      (await selectTagsByQuestionId(recovered.id)).map((tag) => tag.name),
+      pending.tags,
+    );
+    assert.equal(
+      (await selectTopicsByCourseId(courseId)).find((topic) => topic.id === recovered.topic_id)
+        ?.name,
+      pending.topic,
+    );
     assert.sameDeepMembers(
       await util.dumpTableWithSchema('questions', QuestionSchema),
       before.map((question) => (question.qid === qid ? recovered : question)),
@@ -828,7 +844,7 @@ describe('content-only question save', () => {
   }
 
   it.each(['tags', 'topic'] as const)(
-    'matches full sync through the %s lifecycle',
+    'matches full sync through the %s lifecycle and error recovery',
     async (field) => {
       const infoPath = path.join(path.dirname(filePath), 'info.json');
       const load = vi.spyOn(courseDB, 'loadFullCourse');
@@ -836,8 +852,15 @@ describe('content-only question save', () => {
         field === 'tags'
           ? [['test', 'numeric', 'zz-new', 'zz-new'], []]
           : ['zz-new-topic', '', 'Another test'];
-      for (const value of values) {
+      for (const [index, value] of values.entries()) {
         const info = await fs.readJson(infoPath);
+        if (index === 1) {
+          // oxlint-disable-next-line vitest/no-conditional-expect -- Exercise recovery on removal, and ordinary saves on the other lifecycle steps.
+          await expect(
+            (await save(infoPath, JSON.stringify({ ...info, title: 123, [field]: value }))).run(),
+          ).rejects.toThrow('One or more JSON files');
+          load.mockClear();
+        }
         const operation = await save(
           infoPath,
           JSON.stringify({ ...info, title: 'Updated alongside metadata', [field]: value }),
