@@ -18,6 +18,7 @@ import {
   getSharedTopic,
   hasAltPoolChooseExceedsCount,
   hasPointsMismatch,
+  hasUnavailableQuestions,
   questionHasTitle,
 } from '../../utils/questions.js';
 
@@ -60,6 +61,7 @@ export function TreeQuestionBlockNode({
   } = state;
   const { setSelectedItem, dispatch, onAddToAltPool, onDeleteQuestion } = actions;
   const hasAlternatives = zoneQuestionBlock.alternatives != null;
+  const membershipLocked = hasUnavailableQuestions(zoneQuestionBlock, questionMetadata);
   const isCollapsed = collapsedPools.has(zoneQuestionBlock.trackingId);
   const toggleCollapse = () =>
     dispatch({ type: 'TOGGLE_POOL_COLLAPSE', trackingId: zoneQuestionBlock.trackingId });
@@ -67,13 +69,16 @@ export function TreeQuestionBlockNode({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: zoneQuestionBlock.trackingId,
     data: { type: 'question', hasAlternatives, qid: zoneQuestionBlock.id },
-    disabled: !editMode,
+    disabled: {
+      draggable: !editMode || (!hasAlternatives && membershipLocked),
+      droppable: !editMode,
+    },
   });
 
   const { setNodeRef: mergeDropRef, isOver: isMergeOver } = useDroppable({
     id: `${zoneQuestionBlock.trackingId}-merge`,
     data: { type: 'merge-zone', altPoolTrackingId: zoneQuestionBlock.trackingId },
-    disabled: !editMode || !hasAlternatives || isCollapsed,
+    disabled: !editMode || !hasAlternatives || isCollapsed || membershipLocked,
   });
 
   const draggableStyle = makeDraggableStyle({ isDragging, transform, transition });
@@ -359,7 +364,7 @@ export function TreeQuestionBlockNode({
                   })
                 }
                 onDelete={
-                  editMode
+                  editMode && !membershipLocked
                     ? () =>
                         onDeleteQuestion(
                           zoneQuestionBlock.trackingId,
@@ -399,7 +404,7 @@ export function TreeQuestionBlockNode({
           </div>
         </div>
       )}
-      {!isCollapsed && editMode && (
+      {!isCollapsed && editMode && !membershipLocked && (
         <div className="border-bottom py-2" style={{ paddingLeft: '4.5rem' }}>
           <button
             type="button"
