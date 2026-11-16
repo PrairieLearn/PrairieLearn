@@ -55,6 +55,13 @@ serialized_named_sets: Final[FrozenDict[str, sympy.Set]] = FrozenDict({
     "Naturals": sympy.S.Naturals,
     "Complexes": sympy.S.Complexes,
 })
+mathlive_named_sets: Final[FrozenDict[str, sympy.Set]] = FrozenDict({
+    "RR": sympy.S.Reals,
+    "QQ": sympy.S.Rationals,
+    "ZZ": sympy.S.Integers,
+    "NN": sympy.S.Naturals0,
+    "CC": sympy.S.Complexes,
+})
 set_domain_names: Final = frozenset({
     "Complexes",
     "Integers",

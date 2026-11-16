@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import keyword
+import math
+import re
 import unicodedata
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -14,7 +16,12 @@ from lark import Lark, Token, Transformer
 from lark.exceptions import UnexpectedInput, UnexpectedToken
 from sympy.logic.boolalg import Boolean
 
-from prairielearn.internal import sympy_constants, sympy_evaluation, sympy_source
+from prairielearn.internal import (
+    mathjson,
+    sympy_constants,
+    sympy_evaluation,
+    sympy_source,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -691,6 +698,284 @@ class _Lowerer:
         raise AssertionError(expression)
 
 
+_MATHJSON_FUNCTIONS = {
+    "Abs": "abs",
+    "Arccos": "arccos",
+    "Arcosh": "acosh",
+    "Arcsin": "arcsin",
+    "Arctan": "arctan",
+    "Arctan2": "arctan2",
+    "Arsinh": "asinh",
+    "Artanh": "atanh",
+    "Cos": "cos",
+    "Cosh": "cosh",
+    "Cot": "cot",
+    "Csc": "csc",
+    "Exp": "exp",
+    "Ln": "ln",
+    "Log": "log",
+    "Max": "max",
+    "Min": "min",
+    "Sec": "sec",
+    "Sign": "sgn",
+    "Sin": "sin",
+    "Sinh": "sinh",
+    "Sqrt": "sqrt",
+    "Tan": "tan",
+    "Tanh": "tanh",
+}
+_MATHJSON_SYMBOLS = {
+    "ComplexNumbers": "Complexes",
+    "ComplexInfinity": "zoo",
+    "ExponentialE": "e",
+    "ImaginaryUnit": "i",
+    "Integers": "Integers",
+    "NaN": "nan",
+    "NonNegativeIntegers": "Naturals0",
+    "Pi": "pi",
+    "RationalNumbers": "Rationals",
+    "RealNumbers": "Reals",
+}
+_MATHJSON_NUMBER = re.compile(
+    r"^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$"
+)
+
+
+class _MathJsonDecoder:
+    def __init__(self, source: sympy_source.MappedText) -> None:
+        self.source = source
+
+    def _span(self, value: object) -> sympy_source.SourceSpan:
+        if isinstance(value, dict):
+            offsets = value.get("sourceOffsets")
+            if (
+                isinstance(offsets, list | tuple)
+                and len(offsets) == 2
+                and all(isinstance(offset, int) for offset in offsets)
+            ):
+                start = min(max(offsets[0], 0), len(self.source.raw_text))
+                end = min(max(offsets[1], start), len(self.source.raw_text))
+                return sympy_source.SourceSpan(start, end)
+        return sympy_source.SourceSpan(0, len(self.source.raw_text))
+
+    def _raise(self, value: object) -> Never:
+        span = self._span(value)
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.ParseDiagnostic(span.start), self.source, span
+        )
+
+    def _name(self, text: str, span: sympy_source.SourceSpan) -> _Name:
+        return _Name(text, span, len(text) * (span,))
+
+    def _operator(self, text: str, span: sympy_source.SourceSpan) -> _Operator:
+        return _Operator(text, span)
+
+    def _decode_text(self, value: str, span: sympy_source.SourceSpan) -> _Expression:
+        if value == "EmptySet":
+            return _FiniteSet((), span)
+        if value in {"PositiveInfinity", "+Infinity", "Infinity"}:
+            return self._name("infty", span)
+        if value in {"NegativeInfinity", "-Infinity"}:
+            return _Unary(self._operator("-", span), self._name("infty", span), span)
+        if value in _MATHJSON_SYMBOLS:
+            value = _MATHJSON_SYMBOLS[value]
+        if _MATHJSON_NUMBER.fullmatch(value):
+            return _Number(value, span)
+        if value.startswith(("'", '"')):
+            self._raise(value)
+        return self._name(value, span)
+
+    def _chain(
+        self, operator: str, values: list[object], span: sympy_source.SourceSpan
+    ) -> _Expression:
+        if not values:
+            self._raise(values)
+        result = self.decode(values[0])
+        for value in values[1:]:
+            result = _Binary(
+                result,
+                self._operator(operator, span),
+                self.decode(value),
+                span,
+            )
+        return result
+
+    def _interval_endpoint(self, value: object) -> tuple[_Expression, bool]:
+        if isinstance(value, list) and value and value[0] == "Open":
+            if len(value) != 2:
+                self._raise(value)
+            return self.decode(value[1]), True
+        return self.decode(value), False
+
+    @staticmethod
+    def _delimiter(value: object) -> tuple[str, str] | None:
+        if isinstance(value, dict):
+            value = value.get("str")
+        if not isinstance(value, str):
+            return None
+        marker = value.strip("'\"").replace(" ", "")
+        if marker == "(,)":
+            return "(", ")"
+        if marker == "[,]":
+            return "[", "]"
+        return None
+
+    def _sequence(self, value: object) -> list[object] | None:
+        if isinstance(value, list) and value and value[0] == "Sequence":
+            return value[1:]
+        if isinstance(value, dict) and isinstance(value.get("fn"), list):
+            return self._sequence(value["fn"])
+        return None
+
+    def _decode_function(
+        self, value: list[object], span: sympy_source.SourceSpan
+    ) -> _Expression:
+        if not value or not isinstance(value[0], str):
+            self._raise(value)
+        head = value[0]
+        arguments = value[1:]
+        if head == "Error" or head in {"ErrorCode", "Nothing"}:
+            self._raise(value)
+        if head == "Add":
+            return self._chain("+", arguments, span)
+        if head == "Subtract":
+            if len(arguments) == 1:
+                return _Unary(
+                    self._operator("-", span), self.decode(arguments[0]), span
+                )
+            return self._chain("-", arguments, span)
+        if head == "Negate":
+            if len(arguments) != 1:
+                self._raise(value)
+            return _Unary(self._operator("-", span), self.decode(arguments[0]), span)
+        if head in {"Multiply", "InvisibleOperator"}:
+            return self._chain("*", arguments, span)
+        if head == "Divide":
+            if len(arguments) < 2:
+                self._raise(value)
+            return self._chain("/", arguments, span)
+        if head == "Power":
+            if len(arguments) != 2:
+                self._raise(value)
+            return _Binary(
+                self.decode(arguments[0]),
+                self._operator("**", span),
+                self.decode(arguments[1]),
+                span,
+            )
+        if head == "Rational":
+            if len(arguments) != 2:
+                self._raise(value)
+            return _Binary(
+                self.decode(arguments[0]),
+                self._operator("/", span),
+                self.decode(arguments[1]),
+                span,
+            )
+        if head == "Factorial":
+            if len(arguments) != 1:
+                self._raise(value)
+            return _Factorial(
+                self.decode(arguments[0]), self._operator("!", span), span
+            )
+        if head == "Set":
+            return _FiniteSet(tuple(map(self.decode, arguments)), span)
+        if head == "Union":
+            return self._chain("cup", arguments, span)
+        if head == "Intersection":
+            return self._chain("cap", arguments, span)
+        if head == "SetMinus":
+            if len(arguments) != 2:
+                self._raise(value)
+            return self._chain("-", arguments, span)
+        if head == "Interval":
+            if len(arguments) != 2:
+                self._raise(value)
+            left, left_open = self._interval_endpoint(arguments[0])
+            right, right_open = self._interval_endpoint(arguments[1])
+            return _Interval(
+                left,
+                right,
+                self._operator("(" if left_open else "[", span),
+                self._operator(")" if right_open else "]", span),
+                span,
+            )
+        if head == "List":
+            return _Delimited(
+                tuple(map(self.decode, arguments)),
+                self._operator("[", span),
+                self._operator("]", span),
+                span,
+            )
+        if head == "Tuple":
+            return _Delimited(
+                tuple(map(self.decode, arguments)),
+                self._operator("(", span),
+                self._operator(")", span),
+                span,
+            )
+        if head == "Delimiter":
+            if len(arguments) == 1:
+                return _Group(self.decode(arguments[0]), span)
+            sequence = self._sequence(arguments[0])
+            delimiter = self._delimiter(arguments[1]) if len(arguments) == 2 else None
+            if sequence is None or delimiter is None:
+                self._raise(value)
+            left, right = delimiter
+            return _Delimited(
+                tuple(map(self.decode, sequence)),
+                self._operator(left, span),
+                self._operator(right, span),
+                span,
+            )
+        if head == "Apply":
+            if not arguments:
+                self._raise(value)
+            function_value, *arguments = arguments
+            if isinstance(function_value, dict):
+                function_value = function_value.get("sym")
+            if not isinstance(function_value, str):
+                self._raise(value)
+            function = self._name(function_value, span)
+            return _Call(function, tuple(map(self.decode, arguments)), span)
+
+        function_name = _MATHJSON_FUNCTIONS.get(head, head)
+        function = self._name(function_name, span)
+        return _Call(function, tuple(map(self.decode, arguments)), span)
+
+    def decode(self, value: object) -> _Expression:
+        span = self._span(value)
+        if value is True:
+            return self._name("True", span)
+        if value is False:
+            return self._name("False", span)
+        if isinstance(value, int):
+            return _Number(str(value), span)
+        if isinstance(value, float):
+            if not math.isfinite(value):
+                self._raise(value)
+            return _Number(str(value), span)
+        if isinstance(value, str):
+            return self._decode_text(value, span)
+        if isinstance(value, dict):
+            if isinstance(value.get("fn"), list):
+                return self._decode_function(value["fn"], span)
+            if isinstance(value.get("sym"), str):
+                return self._decode_text(value["sym"], span)
+            if isinstance(value.get("num"), str):
+                return self._decode_text(value["num"], span)
+            self._raise(value)
+        if isinstance(value, list):
+            return self._decode_function(value, span)
+        self._raise(value)
+
+
+def _decode_mathjson(
+    value: mathjson.MathJsonExpression, source: sympy_source.MappedText
+) -> _Expression:
+    return _MathJsonDecoder(source).decode(value)
+
+
 @dataclass(frozen=True, slots=True)
 class _Evaluated:
     value: sympy.Basic | bool
@@ -1205,6 +1490,25 @@ def _parse_and_evaluate(
         parsed = _parse(source, start)
         lowerer = _Lowerer(source, context)
         lowered = lowerer.lower(parsed)
+    except sympy_evaluation.ExpressionEvaluationError:
+        raise
+    except RecursionError as exc:
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.ParseDiagnostic(-1), source, cause=exc
+        ) from None
+    except (TypeError, AttributeError) as exc:
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.EvaluationFailureDiagnostic(), source, cause=exc
+        ) from None
+    return _evaluate_lowered(source, context, lowered), lowered
+
+
+def _evaluate_lowered(
+    source: sympy_source.MappedText,
+    context: sympy_evaluation.EvaluationContext,
+    lowered: _Expression,
+) -> sympy_evaluation.SympyValue:
+    try:
         evaluator = Evaluator(source, context)
         result = cast(sympy_evaluation.SympyValue, evaluator.evaluate(lowered).value)
     except sympy_evaluation.ExpressionEvaluationError:
@@ -1226,7 +1530,7 @@ def _parse_and_evaluate(
             sympy_evaluation.InvalidSymbolDiagnostic(invalid_name),
             source,
         )
-    return result, lowered
+    return result
 
 
 def parse_and_evaluate(
@@ -1246,4 +1550,22 @@ def parse_and_evaluate_with_structure(
 ) -> tuple[sympy_evaluation.SympyValue, str]:
     """Parse and evaluate normalized source, returning its lowered structure."""
     result, lowered = _parse_and_evaluate(source, context, start)
+    return result, lowered.to_structure()
+
+
+def evaluate_mathjson_with_structure(
+    value: mathjson.MathJsonExpression,
+    source: sympy_source.MappedText,
+    context: sympy_evaluation.EvaluationContext,
+) -> tuple[sympy_evaluation.SympyValue, str]:
+    """Decode MathJSON to lowered IR and evaluate it without invoking Lark."""
+    try:
+        lowered = _decode_mathjson(value, source)
+    except sympy_evaluation.ExpressionEvaluationError:
+        raise
+    except RecursionError as exc:
+        raise sympy_evaluation.ExpressionEvaluationError(
+            sympy_evaluation.ParseDiagnostic(-1), source, cause=exc
+        ) from None
+    result = _evaluate_lowered(source, context, lowered)
     return result, lowered.to_structure()

@@ -7,11 +7,13 @@ from prairielearn.sympy_utils import ...
 
 import ast
 import html
+import json
 import re
 import string
 import unicodedata
 from collections import deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
@@ -31,6 +33,7 @@ from typing import (
 import sympy
 from sympy.printing.str import StrPrinter
 
+from prairielearn.internal import mathjson as internal_mathjson
 from prairielearn.internal import sympy_constants as const
 from prairielearn.internal import sympy_evaluation, sympy_expression, sympy_source
 from prairielearn.misc_utils import full_unidecode
@@ -85,6 +88,7 @@ __all__ = [
     "point_to_error",
     "sympy_check",
     "sympy_to_json",
+    "sympy_to_raw_mathjson",
     "try_parse_string_as_sympy",
     "try_parse_symbolic_submission",
     "validate_names_for_conflicts",
@@ -154,6 +158,11 @@ def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
         and isinstance(json.get("_assumptions", {}), dict)
         and isinstance(json.get("_custom_functions", []), list)
     )
+
+
+def sympy_to_raw_mathjson(expr: sympy.Basic) -> str:
+    """Serialize the supported symbolic-input subset as raw MathJSON."""
+    return internal_mathjson.sympy_to_raw_mathjson(expr)
 
 
 class LocalsForEval(TypedDict):
@@ -1021,6 +1030,45 @@ def _evaluate_normalized_source(
     simplify_set_operations: bool | None = None,
     delimited_syntax: sympy_evaluation.DelimitedSyntax = "interval",
 ) -> tuple[sympy.Expr, str]:
+    context = _make_evaluation_context(
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+        resolved_name_overrides=resolved_name_overrides,
+        simplify_set_operations=simplify_set_operations,
+        delimited_syntax=delimited_syntax,
+    )
+    try:
+        result, structure = sympy_expression.parse_and_evaluate_with_structure(
+            source, context, parser_start
+        )
+    except sympy_evaluation.ExpressionEvaluationError as exc:
+        _raise_evaluation_error(exc)
+
+    _check_evaluated_result(
+        result,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+    )
+    return cast(sympy.Expr, result), structure
+
+
+def _make_evaluation_context(
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+    resolved_name_overrides: Mapping[str, Any] | None,
+    simplify_set_operations: bool | None,
+    delimited_syntax: sympy_evaluation.DelimitedSyntax,
+) -> sympy_evaluation.EvaluationContext:
     legacy_untyped_names = frozenset(resolved_name_overrides or ())
     legacy_untyped_functions = frozenset(
         name
@@ -1028,7 +1076,7 @@ def _evaluate_normalized_source(
         if name in locals_for_eval["functions"]
         and locals_for_eval["functions"][name] != const.set_functions[name]
     )
-    context = sympy_evaluation.EvaluationContext.from_locals_for_eval(
+    return sympy_evaluation.EvaluationContext.from_locals_for_eval(
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
@@ -1039,13 +1087,17 @@ def _evaluate_normalized_source(
         legacy_untyped_names=legacy_untyped_names,
         legacy_untyped_functions=legacy_untyped_functions,
     )
-    try:
-        result, structure = sympy_expression.parse_and_evaluate_with_structure(
-            source, context, parser_start
-        )
-    except sympy_evaluation.ExpressionEvaluationError as exc:
-        _raise_evaluation_error(exc)
 
+
+def _check_evaluated_result(
+    result: sympy_evaluation.SympyValue,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+) -> None:
     sympy_check(
         cast(sympy.Basic, result),
         locals_for_eval,
@@ -1053,6 +1105,45 @@ def _evaluate_normalized_source(
         allow_sets=allow_sets,
         allow_extra_symbols=allow_extra_symbols,
         check_evaluated_complex=not simplify_expression and not allow_complex,
+    )
+
+
+def _evaluate_mathjson_source(
+    value: internal_mathjson.MathJsonExpression,
+    source: _MappedText,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+    resolved_name_overrides: Mapping[str, Any] | None = None,
+    simplify_set_operations: bool | None = None,
+    delimited_syntax: sympy_evaluation.DelimitedSyntax = "interval",
+) -> tuple[sympy.Expr, str]:
+    context = _make_evaluation_context(
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+        resolved_name_overrides=resolved_name_overrides,
+        simplify_set_operations=simplify_set_operations,
+        delimited_syntax=delimited_syntax,
+    )
+    try:
+        result, structure = sympy_expression.evaluate_mathjson_with_structure(
+            value, source, context
+        )
+    except sympy_evaluation.ExpressionEvaluationError as exc:
+        _raise_evaluation_error(exc)
+    _check_evaluated_result(
+        result,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
     )
     return cast(sympy.Expr, result), structure
 
@@ -1243,6 +1334,7 @@ def _convert_source_to_sympy_with_source(
     simplify_set_operations: bool | None = None,
     allow_set_functions: bool = True,
     delimited_syntax: sympy_evaluation.DelimitedSyntax = "interval",
+    mathjson_value: internal_mathjson.MathJsonExpression | None = None,
 ) -> tuple[sympy.Expr, str]:
     """
     Convert a string to a sympy expression, with optional restrictions on
@@ -1306,6 +1398,8 @@ def _convert_source_to_sympy_with_source(
 
     if allow_sets and allow_set_functions:
         locals_for_eval["functions"].update(const.set_functions)
+    if allow_sets:
+        locals_for_eval["variables"].update(const.mathlive_named_sets)
 
     if additional_variables is not None:
         locals_for_eval["variables"].update(additional_variables)
@@ -1319,7 +1413,21 @@ def _convert_source_to_sympy_with_source(
     for name in name_validation.normalized_custom_functions:
         locals_for_eval["functions"][name] = sympy.Function(name)
 
-    # Do the conversion
+    # Do the conversion. Structured formula-editor input is already tokenized, so
+    # it enters after text normalization, Lark parsing, and implicit-name lowering.
+    if mathjson_value is not None:
+        return _evaluate_mathjson_source(
+            mathjson_value,
+            source or _MappedText.from_raw_text(expr),
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+            resolved_name_overrides=resolved_name_overrides,
+            simplify_set_operations=simplify_set_operations,
+            delimited_syntax=delimited_syntax,
+        )
     if source is None:
         return _evaluate_with_source(
             expr,
@@ -1680,6 +1788,7 @@ class _SymbolicInputNormalizationError(Exception):
 class SymbolicSubmissionParseSuccess:
     expr: sympy.Expr | Literal[""]
     json: SympyJson | Literal[""]
+    mathjson: str | None = None
 
 
 type _SymbolicInputNormalizationResult = _MappedText | SympyParseFailure
@@ -2095,12 +2204,63 @@ def _try_normalize_symbolic_input(
         return _parse_failure_from_exception(text, exc, allow_complex=allow_complex)
 
 
+def _try_parse_mathjson_as_sympy(
+    raw_mathjson: str,
+    source_text: str,
+    variables: Iterable[str] | None,
+    *,
+    allow_complex: bool = False,
+    allow_hidden: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+    simplify_expression: bool = True,
+    assumptions: AssumptionsDictT | None = None,
+    additional_variables: Mapping[str, sympy.Basic | complex] | None = None,
+    parser_start: sympy_expression.ParserStart = "symbolic_start",
+    simplify_set_operations: bool | None = None,
+    allow_set_functions: bool = True,
+    delimited_syntax: sympy_evaluation.DelimitedSyntax = "interval",
+) -> SympyParseResult:
+    """Validate and evaluate raw MathJSON without invoking the text parser."""
+    try:
+        value = json.loads(raw_mathjson)
+    except (json.JSONDecodeError, TypeError):
+        return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
+    if value is None:
+        return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
+
+    try:
+        parsed, _ = _convert_source_to_sympy_with_source(
+            None,
+            source_text,
+            variables,
+            allow_hidden=allow_hidden,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig_functions,
+            custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions,
+            additional_variables=additional_variables,
+            parser_start=parser_start,
+            simplify_set_operations=simplify_set_operations,
+            allow_set_functions=allow_set_functions,
+            delimited_syntax=delimited_syntax,
+            mathjson_value=cast(internal_mathjson.MathJsonExpression, value),
+        )
+    except Exception as exc:
+        return _parse_failure_from_exception(source_text, exc, allow_complex=allow_complex)
+    return SympyParseSuccess(parsed)
+
+
 def try_parse_symbolic_submission(
     submission: str | None,
     variables: Iterable[str] | None,
     *,
     formula_editor: bool = False,
     formula_editor_latex: str | None = None,
+    formula_editor_mathjson: str | None = None,
     allow_blank: bool = False,
     blank_value: str = "0",
     allow_complex: bool = False,
@@ -2117,20 +2277,10 @@ def try_parse_symbolic_submission(
 
     variable_list = list(variables or ())
     custom_function_list = list(custom_functions)
-    normalized = _try_normalize_symbolic_input(
-        submission,
-        variable_list,
-        custom_function_list,
-        formula_editor=formula_editor,
-        latex=formula_editor_latex,
-        allow_trig_functions=allow_trig_functions,
-        allow_complex=allow_complex,
-        allow_sets=allow_sets,
+    use_mathjson = bool(
+        formula_editor and formula_editor_mathjson and formula_editor_mathjson.strip()
     )
-    if isinstance(normalized, SympyParseFailure):
-        return normalized
-
-    if all(char.value.isspace() for char in normalized.chars):
+    if not submission.strip():
         if not allow_blank:
             return SympyParseFailure("No submitted answer.")
         if not blank_value.strip():
@@ -2147,7 +2297,33 @@ def try_parse_symbolic_submission(
             simplify_expression=simplify_expression,
             assumptions=assumptions,
         )
+    elif use_mathjson:
+        assert formula_editor_mathjson is not None
+        result = _try_parse_mathjson_as_sympy(
+            formula_editor_mathjson,
+            formula_editor_latex or submission,
+            variable_list,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig_functions,
+            custom_functions=custom_function_list,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions,
+        )
     else:
+        normalized = _try_normalize_symbolic_input(
+            submission,
+            variable_list,
+            custom_function_list,
+            formula_editor=formula_editor,
+            latex=formula_editor_latex,
+            allow_trig_functions=allow_trig_functions,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+        )
+        if isinstance(normalized, SympyParseFailure):
+            return normalized
         try:
             parsed, _ = _convert_source_to_sympy_with_source(
                 normalized,
@@ -2186,7 +2362,13 @@ def try_parse_symbolic_submission(
             "Your answer was simplified to this, which contains an invalid expression: "
             f"$${sympy.latex(result.expr)}$$"
         )
-    return SymbolicSubmissionParseSuccess(result.expr, submission_json)
+    serialized_mathjson = formula_editor_mathjson if use_mathjson else None
+    if formula_editor and serialized_mathjson is None:
+        with suppress(TypeError):
+            serialized_mathjson = internal_mathjson.sympy_to_raw_mathjson(result.expr)
+    return SymbolicSubmissionParseSuccess(
+        result.expr, submission_json, serialized_mathjson
+    )
 
 
 def validate_string_as_sympy(
@@ -2357,6 +2539,8 @@ def _validate_and_normalize_names(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
     )
+    if allow_sets:
+        builtins.update(const.mathlive_named_sets)
     set_ops = tuple(const.set_operators.keys())
 
     def _conflicts(name: str) -> bool:
