@@ -113,7 +113,17 @@ router.get(
       authn_user: res.locals.authn_user,
       question: res.locals.question,
     });
-    res.send(PublicQuestionPreview({ resLocals: res.locals, questionCopyTargets }));
+    res.send(
+      PublicQuestionPreview({
+        independentScrolling: await features.enabled('question-hosting-update', {
+          institution_id: res.locals.course.institution_id,
+          course_id: res.locals.course.id,
+          user_id: res.locals.authn_user.id,
+        }),
+        resLocals: res.locals,
+        questionCopyTargets,
+      }),
+    );
   }),
 );
 

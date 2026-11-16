@@ -88,6 +88,31 @@
   margin-bottom: 0;
 }
 
+.course-agent-page-link {
+  background-color: var(--bs-body-bg);
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+
+.course-agent-page-link:hover,
+.course-agent-page-link:focus-visible {
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-primary-border-subtle) !important;
+}
+
+.course-agent-page-link-text {
+  /* Lets long names truncate instead of widening the card. */
+  min-width: 0;
+}
+
+.course-agent-page-link-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--bs-primary-text-emphasis);
+  background-color: var(--bs-primary-bg-subtle);
+}
+
 body:has(.course-agent-panel) .app-main {
   min-width: 0;
 }

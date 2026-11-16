@@ -1284,6 +1284,14 @@
       "default": 1,
       "type": "number"
     },
+    "courseAgentRateLimitDollars": {
+      "default": 50,
+      "type": "number"
+    },
+    "courseAgentWebSearchCallCostDollars": {
+      "default": 0.01,
+      "type": "number"
+    },
     "administratorOpenAiApiKey": {
       "default": null,
       "type": ["string", "null"]

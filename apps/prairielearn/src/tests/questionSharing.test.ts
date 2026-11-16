@@ -2,6 +2,8 @@ import * as path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import type { ComponentProps } from 'react';
+import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -27,6 +29,7 @@ import {
 } from '../models/question.js';
 import { selectOptionalSharingSetByName } from '../models/sharing-set.js';
 import { selectUserByUid } from '../models/user.js';
+import type { AssessmentQuestionsEditor } from '../pages/instructorAssessmentQuestions/components/AssessmentEditor.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 import type { SharingError } from '../trpc/course/sharing.js';
@@ -325,9 +328,17 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
 
     test('Fail to access shared question, because permission has not yet been granted', async () => {
-      // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
       const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
-      assert(!(await res.text()).includes(SHARING_QUESTION_QID));
+      const editor = res.$('div[data-component="AssessmentQuestionsEditor"]');
+      assert.include(editor.text(), `@${SHARING_COURSE_SHARING_NAME}/${SHARING_QUESTION_QID}`);
+      assert.include(editor.text(), 'Unavailable locally');
+      assert.lengthOf(editor.find('a[href*="/question/"]'), 0);
+      assert.notInclude(await res.text(), sharingCourseData.questions[SHARING_QUESTION_QID].title);
+
+      const props = superjson.parse<ComponentProps<typeof AssessmentQuestionsEditor>>(
+        res.$('script[data-component-props][data-component="AssessmentQuestionsEditor"]').text(),
+      );
+      assert.isEmpty(props.questionRows);
 
       // Question can be accessed through the owning course
       const questionId = (
