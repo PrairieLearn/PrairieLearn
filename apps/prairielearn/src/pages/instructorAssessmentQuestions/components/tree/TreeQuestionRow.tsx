@@ -20,6 +20,7 @@ import type {
 import {
   compactPoints,
   computeQuestionTotalPoints,
+  hasUnavailableQuestions,
   questionHasTitle,
   toAssessmentForPicker,
 } from '../../utils/questions.js';
@@ -264,7 +265,11 @@ export function TreeQuestionRow({
       <DragHandle
         attributes={draggableAttributes}
         listeners={draggableListeners}
-        disabled={!editMode}
+        disabled={
+          !editMode ||
+          !questionData ||
+          (isAlternative && hasUnavailableQuestions(zoneQuestionBlock, state.questionMetadata))
+        }
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">
@@ -297,6 +302,13 @@ export function TreeQuestionRow({
               issueQid={questionData.question.qid}
               className="ms-1"
               onClick={(e) => e.stopPropagation()}
+            />
+          )}
+          {!questionData && (
+            <WarningIndicator
+              tooltipId={`unavailable-${question.trackingId}`}
+              label="Unavailable locally"
+              body="This question is unavailable in this PrairieLearn instance. Its assessment settings will be preserved when saving."
             />
           )}
           {hasManualGradingAutoPointsWarning && (

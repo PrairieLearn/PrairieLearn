@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './usage.js';
+
 export type ConversationLifecycle =
   // No live container. The next message initializes a sandbox or restores the committed checkpoint.
   | { status: 'offline' }
@@ -17,7 +19,10 @@ export type ConversationLifecycle =
   | {
       status: 'blocked';
       reason: 'startup_failed' | 'runtime_failed' | 'checkpoint_failed' | 'cleanup_failed';
-    };
+    }
+  // The user reached the hourly usage limit. Resume clears it once retryAt passes; it does not
+  // continue an interrupted task.
+  | { status: 'blocked'; reason: 'usage_limit'; retryAt: string };
 
 /**
  * Public sandbox lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.
@@ -41,9 +46,37 @@ export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['r
  */
 export const COURSE_DIR = '/workspace/session/course';
 
+/**
+ * The PrairieLearn pages the agent can open, built by PrairieLearn from its instructor navigation
+ * when a conversation is created. `key` uses the same vocabulary as `PageLocationSchema.page`.
+ * PrairieLearn defines each page's params and what they name, so a page that takes a new kind of
+ * name needs no Worker change.
+ */
+export const PageCatalogSchema = z
+  .array(
+    z.strictObject({
+      key: z.string().min(1).max(100),
+      label: z.string().min(1).max(100),
+      params: z
+        .array(
+          z.strictObject({
+            name: z.string().min(1).max(50),
+            description: z.string().min(1).max(300),
+            required: z.boolean(),
+          }),
+        )
+        .max(10),
+    }),
+  )
+  .max(200);
+
+export type PageCatalog = z.infer<typeof PageCatalogSchema>;
+
 export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
+  // Optional so the Worker can deploy before PrairieLearn starts sending it.
+  pages: PageCatalogSchema.optional(),
 });
 
 // Leave room for base64 encoding within the Durable Object's 2 MB storage-entry limit.
@@ -304,3 +337,77 @@ export const InputRequestPartSchema = z.object({
 });
 
 export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;
+
+/** Operators that compare a column with one value. */
+export const COURSE_DATA_COMPARISONS = ['eq', 'lt', 'lte', 'gt', 'gte'] as const;
+
+/** The most values an `in` filter takes; a longer list is better filtered after downloading. */
+export const COURSE_DATA_MAX_IN_VALUES = 1000;
+
+const CourseDataValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+
+/**
+ * A request for rows of one course dataset. PrairieLearn validates it with `column` limited to the
+ * dataset's columns; the course agent uses it with any column name as its tool's arguments.
+ */
+export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: Column) {
+  return z.strictObject({
+    filters: z
+      .array(
+        z.discriminatedUnion('op', [
+          z.strictObject({
+            column,
+            op: z.enum(COURSE_DATA_COMPARISONS),
+            value: CourseDataValueSchema,
+          }),
+          z.strictObject({
+            column,
+            op: z.literal('in'),
+            value: z.array(CourseDataValueSchema).min(1).max(COURSE_DATA_MAX_IN_VALUES),
+          }),
+        ]),
+      )
+      .optional()
+      .describe('Conditions that every row must meet.'),
+    select: z
+      .array(column)
+      .min(1)
+      .describe(
+        'Columns to include. Large columns are slower to read, so select only those needed.',
+      ),
+    order: z
+      .array(z.strictObject({ column, direction: z.enum(['asc', 'desc']) }))
+      .optional()
+      .describe('Sort order, most significant first.'),
+    limit: z.number().int().positive().optional().describe('Maximum number of rows.'),
+  });
+}
+
+export const CourseDataQuerySchema = courseDataQuerySchema(z.string());
+
+export type CourseDataQuery = z.infer<typeof CourseDataQuerySchema>;
+
+/**
+ * A page the agent opens for the instructor: a key from the conversation's page catalog and the
+ * values of that page's params.
+ */
+export const NavigationTargetSchema = z.strictObject({
+  page: z.string().min(1).max(100),
+  params: z.record(z.string().min(1).max(50), z.string().min(1).max(500)).default({}),
+});
+
+export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
+
+/**
+ * A `data-navigation` part: the agent offered a page, which the instructor opens by clicking it.
+ * PrairieLearn resolved the target to these before the part was written, so history renders
+ * without a lookup. Unknown fields are stripped, so either side can add one before the other.
+ */
+export const NavigationPartSchema = z.object({
+  label: z.string().max(100),
+  /** What the page belongs to, such as `Assessment · Sp26 / hw01`. QIDs and TIDs are paths. */
+  subtitle: z.string().max(4000),
+  url: z.string().startsWith('/pl/').max(4000),
+});
+
+export type NavigationPart = z.infer<typeof NavigationPartSchema>;
