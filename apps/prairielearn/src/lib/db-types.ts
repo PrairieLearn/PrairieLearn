@@ -1590,6 +1590,15 @@ export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
 export const ServerLoadSchema = null;
 
+export const SharedQuestionUsageSchema = z.object({
+  destination_assessment_id: IdSchema,
+  destination_course_id: IdSchema,
+  destination_course_instance_id: IdSchema,
+  destination_user_id: IdSchema,
+  shared_question_id: IdSchema,
+});
+export type SharedQuestionUsage = z.infer<typeof SharedQuestionUsageSchema>;
+
 export const SharingSetSchema = z.object({
   course_id: IdSchema,
   description: z.string().nullable(),
@@ -1923,6 +1932,7 @@ export const TableNames = [
   'rubrics',
   'saml_providers',
   'server_loads',
+  'shared_question_usages',
   'sharing_set_courses',
   'sharing_set_questions',
   'sharing_sets',

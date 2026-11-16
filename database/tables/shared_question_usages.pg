@@ -1,0 +1,9 @@
+columns
+    destination_assessment_id: bigint not null
+    destination_course_id: bigint not null
+    destination_course_instance_id: bigint not null
+    destination_user_id: bigint not null
+    shared_question_id: bigint not null
+
+indexes
+    shared_question_usages_pkey: PRIMARY KEY (shared_question_id, destination_user_id, destination_course_id, destination_course_instance_id, destination_assessment_id) USING btree (shared_question_id, destination_user_id, destination_course_id, destination_course_instance_id, destination_assessment_id)
