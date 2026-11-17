@@ -306,7 +306,7 @@ export class CodexAppServerClient {
         this.emit({ type: 'data-reload', id: `reload:${call.data.callId}`, data: {} });
         return {
           success: true,
-          text: 'The instructor sees a button that reloads their page when clicked.',
+          text: 'The instructor sees a "Reload this page" button; do not describe it.',
         };
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
