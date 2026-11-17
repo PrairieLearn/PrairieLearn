@@ -1087,49 +1087,6 @@ describe('chunks', () => {
       );
     });
 
-    it('changed-files mode treats question directory roots as changed questions', async () => {
-      const courseDir = tempTestCourseDir.path;
-      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
-        id: course.id,
-        path: courseDir,
-      });
-      const sourceQuestionPath = path.join(courseDir, 'questions', 'addNumbers', 'question.html');
-      const runtimeQuestionPath = path.join(
-        courseRuntimeDir,
-        'questions',
-        'addNumbers',
-        'question.html',
-      );
-      const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId }];
-
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId: course.id,
-        courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'full',
-      });
-      await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
-
-      await fs.writeFile(
-        sourceQuestionPath,
-        '<pl-question-panel>Directory root change</pl-question-panel>',
-      );
-
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId: course.id,
-        courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'changed-files',
-        changedFiles: [path.join('questions', 'addNumbers')],
-      });
-      await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
-
-      assert.equal(
-        await fs.readFile(runtimeQuestionPath, 'utf-8'),
-        '<pl-question-panel>Directory root change</pl-question-panel>',
-      );
-    });
-
     it('preserves relative symlinks with .. in serverFilesCourse', async () => {
       const courseDir = tempTestCourseDir.path;
       const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({

@@ -30,7 +30,7 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
 import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import { type ChunkUpdateMode, logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
 import {
@@ -59,17 +59,6 @@ import { type ServerJob, type ServerJobExecutor, createServerJob } from './serve
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
-
-type ChunkUpdateMode =
-  | {
-      mode: 'changed-files';
-      changedFiles: string[];
-    }
-  | {
-      mode: 'git-diff';
-      oldHash: string;
-      newHash: string;
-    };
 
 function todayAsDatetimeLocal(
   timezone: string,
@@ -115,7 +104,7 @@ async function syncCourseFromDisk(
   }
 
   if (config.fileEditorUseGit) {
-    course.commit_hash = await updateCourseCommitHash(course);
+    await updateCourseCommitHash(course);
   }
 
   // JSON errors mean individual entities failed to sync (e.g., a question has

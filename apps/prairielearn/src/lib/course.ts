@@ -188,15 +188,11 @@ export async function pullAndUpdateCourse({
             coursePath: path,
             courseId: course.id,
             courseData: syncResult.courseData,
+            // Without a starting commit (e.g. a fresh clone), we can't tell which
+            // existing chunks are stale, so rebuild all of them.
             ...(startGitHash
-              ? {
-                  mode: 'git-diff' as const,
-                  oldHash: startGitHash,
-                  newHash: endGitHash,
-                }
-              : {
-                  mode: 'full' as const,
-                }),
+              ? { mode: 'git-diff', oldHash: startGitHash, newHash: endGitHash }
+              : { mode: 'full' }),
           });
           chunks.logChunkChangesToJob(chunkChanges, job);
         }

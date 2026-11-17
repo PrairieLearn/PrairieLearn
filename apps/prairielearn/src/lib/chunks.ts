@@ -390,18 +390,14 @@ export function identifyChunksFromChangedFiles(
       // deeply-nested directories is the root of a particular question.
       const pathComponents = changedFile.split(path.sep).slice(1);
       // Progressively join more and more path components until we get
-      // something that corresponds to an actual question
+      // something that corresponds to an actual question. The path itself may
+      // be a question directory (e.g. when a file editor creates a question).
       let questionId: string | null = null;
-      const exactQuestionId = path.join(...pathComponents);
-      if (exactQuestionId in courseData.questions) {
-        questionId = exactQuestionId;
-      } else {
-        for (let i = 1; i < pathComponents.length; i++) {
-          const candidateQuestionId = path.join(...pathComponents.slice(0, i));
-          if (candidateQuestionId in courseData.questions) {
-            questionId = candidateQuestionId;
-            break;
-          }
+      for (let i = 1; i <= pathComponents.length; i++) {
+        const candidateQuestionId = path.join(...pathComponents.slice(0, i));
+        if (candidateQuestionId in courseData.questions) {
+          questionId = candidateQuestionId;
+          break;
         }
       }
       if (questionId) {
@@ -909,31 +905,23 @@ export function getRuntimeDirectoryForCourse(course: CourseWithRuntimeDirectory)
   }
 }
 
-interface BaseUpdateChunksForCourseOptions {
+/**
+ * Determines which chunks are rebuilt. Chunks that don't exist yet are always
+ * built, and chunks whose files were deleted are always removed.
+ */
+export type ChunkUpdateMode =
+  /** Rebuild chunks affected by files changed between two commits. */
+  | { mode: 'git-diff'; oldHash: string; newHash: string }
+  /** Rebuild chunks affected by the given course-relative file paths. */
+  | { mode: 'changed-files'; changedFiles: string[] }
+  /** Rebuild every chunk, e.g. to recover from chunks that are out of date. */
+  | { mode: 'full' };
+
+type UpdateChunksForCourseOptions = {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
-}
-
-interface UpdateChunksForCourseGitDiffOptions extends BaseUpdateChunksForCourseOptions {
-  mode: 'git-diff';
-  oldHash: string;
-  newHash: string;
-}
-
-interface UpdateChunksForCourseChangedFilesOptions extends BaseUpdateChunksForCourseOptions {
-  mode: 'changed-files';
-  changedFiles: string[];
-}
-
-interface UpdateChunksForCourseFullOptions extends BaseUpdateChunksForCourseOptions {
-  mode: 'full';
-}
-
-type UpdateChunksForCourseOptions =
-  | UpdateChunksForCourseGitDiffOptions
-  | UpdateChunksForCourseChangedFilesOptions
-  | UpdateChunksForCourseFullOptions;
+} & ChunkUpdateMode;
 
 export async function updateChunksForCourse(
   options: UpdateChunksForCourseOptions,
@@ -1038,13 +1026,12 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     job.verbose('Loaded course data');
 
     job.info(chalk.bold('Generating all chunks'));
-    const chunkOptions = {
+    const chunkChanges = await updateChunksForCourse({
       coursePath: courseDir,
       courseId: String(course_id),
       courseData,
-      mode: 'full' as const,
-    };
-    const chunkChanges = await updateChunksForCourse(chunkOptions);
+      mode: 'full',
+    });
     logChunkChangesToJob(chunkChanges, job);
     job.verbose('Generated all chunks');
   });
