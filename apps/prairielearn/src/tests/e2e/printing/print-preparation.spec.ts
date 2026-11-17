@@ -237,10 +237,14 @@ test('prepares an assessment and key with consistent variants and downloads', as
   );
   await page.getByRole('button', { name: 'Print', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Paper and layout', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Back to Questions', exact: true })).toHaveAttribute(
+  const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
+  await expect(
+    breadcrumb.getByRole('link', { name: 'Assessment questions', exact: true }),
+  ).toHaveAttribute(
     'href',
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
+  await expect(breadcrumb.getByRole('heading', { name: 'Print assessment' })).toBeVisible();
   await formsLoaded;
   await openPrintPreparation(page, courseInstance.id);
   await page.getByLabel('Additional student information').fill('Section');

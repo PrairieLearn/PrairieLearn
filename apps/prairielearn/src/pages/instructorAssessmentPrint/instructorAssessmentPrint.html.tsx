@@ -730,15 +730,22 @@ function PrintPreparation({
       {automaticExportIds.map((id) => (
         <AutomaticExportDownload key={id} printExportId={id} onFinished={finishAutomaticExport} />
       ))}
-      <a
-        className="small mb-3 align-self-start"
-        href={`/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/questions`}
-      >
-        <i className="bi bi-arrow-left me-1" aria-hidden="true" /> Back to Questions
-      </a>
-      <h1 ref={printHeadingRef} className="h4 mb-3" tabIndex={-1}>
-        Print assessment
-      </h1>
+      <nav aria-label="breadcrumb" className="mb-3">
+        <ol className="breadcrumb mb-0">
+          <li className="breadcrumb-item">
+            <a
+              href={`/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/questions`}
+            >
+              Assessment questions
+            </a>
+          </li>
+          <li className="breadcrumb-item active" aria-current="page">
+            <h1 ref={printHeadingRef} className="d-inline fs-6 fw-normal mb-0" tabIndex={-1}>
+              Print assessment
+            </h1>
+          </li>
+        </ol>
+      </nav>
       {ensureInitial.isPending && <Alert variant="info">Creating the A form…</Alert>}
       {initialFormError && (
         <Alert variant="danger" className="d-flex align-items-center justify-content-between gap-2">
