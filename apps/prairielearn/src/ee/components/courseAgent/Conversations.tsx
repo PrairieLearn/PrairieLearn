@@ -971,6 +971,13 @@ function Message({
         work.items.push(reply.part);
       }
       reply = { key, part };
+      // The agent service says so when the model labels its updates, which saves waiting to see.
+      const metadata: { update?: unknown } | undefined = part.providerMetadata?.courseAgent;
+      if (metadata?.update === true) {
+        work ??= { key, items: [] };
+        work.items.push(part);
+        reply = null;
+      }
       continue;
     }
     const navigation = navigationOf(part);

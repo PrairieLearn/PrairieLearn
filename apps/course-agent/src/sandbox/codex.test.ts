@@ -461,6 +461,42 @@ describe('course agent turns', () => {
     expect(courseData.getCourseData).toHaveBeenCalledTimes(2);
   });
 
+  it('marks text that Codex labels as commentary, so the chat can tell an update from the reply', async () => {
+    const { sandbox, native, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const ids = { threadId: 'thread', turnId: 'turn' };
+    for (const [id, phase] of [
+      ['update', 'commentary'],
+      ['reply', 'final_answer'],
+    ]) {
+      const item = { type: 'agentMessage', id, text: '', phase };
+      emit({ method: 'item/started', params: { ...ids, item } });
+      emit({ method: 'item/agentMessage/delta', params: { ...ids, itemId: id, delta: 'Hi' } });
+      emit({ method: 'item/completed', params: { ...ids, item: { ...item, text: 'Hi' } } });
+    }
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    await turn.finished;
+    const chunks: UIMessageChunk[] = [];
+    for await (const chunk of turn.stream) chunks.push(chunk);
+    expect(chunks.filter((chunk) => chunk.type === 'text-start')).toEqual([
+      {
+        type: 'text-start',
+        id: 'text:update',
+        providerMetadata: { courseAgent: { update: true } },
+      },
+      { type: 'text-start', id: 'text:reply' },
+    ]);
+  });
+
   it('shows input the agent requests as an input request part', async () => {
     const { sandbox, native, emit } = runner();
     const accepted = Promise.withResolvers<undefined>();

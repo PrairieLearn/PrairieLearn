@@ -32,6 +32,8 @@ import { MESSAGE_TOOL_CHARS, clip, toolCallFromItem } from './tool-calls.js';
 /** How much of a running command's latest output the chat shows, and how often it is refreshed. */
 const LIVE_OUTPUT_CHARS = 600;
 const LIVE_OUTPUT_INTERVAL_MS = 300;
+/** Marks a text part as an update, which the chat folds in with the agent's work. */
+const UPDATE_METADATA = { courseAgent: { update: true } };
 const MAX_PLAN_STEPS = 30;
 const PLAN_STEP_CHARS = 200;
 
@@ -164,6 +166,8 @@ export class CodexAppServerClient {
   /** Codex cannot list a new thread's history until its first user message. */
   private newThread = false;
   private parts = new Map<string, 'text' | 'reasoning'>();
+  /** Messages Codex labels as written along the way, not as the reply. Not every model says. */
+  private updates = new Set<string>();
   /** Calls Codex has started but not finished, by history part ID. */
   private runningTools = new Map<string, ToolCall>();
   /** The latest output of running commands, by history part ID, and what has yet to be shown. */
@@ -186,6 +190,7 @@ export class CodexAppServerClient {
     this.terminal = Promise.withResolvers<undefined>();
     this.turnId = null;
     this.parts.clear();
+    this.updates.clear();
     this.runningTools.clear();
     this.clearLiveOutput();
     if (this.toolChars.messageId !== messageId) this.toolChars = { messageId, used: 0 };
@@ -247,7 +252,11 @@ export class CodexAppServerClient {
     onNotification('item/commandExecution/outputDelta', TextDelta, (params) =>
       this.outputDelta(params),
     );
-    onNotification('item/started', ItemEvent, (params) => this.toolCall('started', params));
+    onNotification('item/started', ItemEvent, (params) => {
+      const { item } = params;
+      if (item.type === 'agentMessage' && item.phase === 'commentary') this.updates.add(item.id);
+      this.toolCall('started', params);
+    });
     onNotification('item/completed', ItemEvent, (params) => {
       this.toolCall('completed', params);
       const { threadId, turnId, item } = params;
@@ -540,7 +549,15 @@ export class CodexAppServerClient {
     const id = `${type}:${params.itemId}`;
     if (!this.parts.has(id)) {
       this.parts.set(id, type);
-      this.controller.enqueue({ type: type === 'text' ? 'text-start' : 'reasoning-start', id });
+      this.controller.enqueue(
+        type === 'reasoning'
+          ? { type: 'reasoning-start', id }
+          : {
+              type: 'text-start',
+              id,
+              ...(this.updates.has(params.itemId) ? { providerMetadata: UPDATE_METADATA } : {}),
+            },
+      );
     }
     this.controller.enqueue({
       type: type === 'text' ? 'text-delta' : 'reasoning-delta',
