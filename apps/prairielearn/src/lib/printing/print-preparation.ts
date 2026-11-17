@@ -111,12 +111,12 @@ export async function inspectPrintPreparationQuestions(
             throw error;
           }
           concerns.push(
-            'Could not inspect this question’s source. Review its preview before printing.',
+            'This question could not be checked for print issues. Review its preview before printing.',
           );
         }
       } else {
         concerns.push(
-          'Could not inspect this question’s source. Review its preview before printing.',
+          'This question could not be checked for print issues. Review its preview before printing.',
         );
       }
       return [question.id, [...new Set(concerns)]];
