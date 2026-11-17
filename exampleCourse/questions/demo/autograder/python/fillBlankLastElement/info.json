@@ -7,7 +7,7 @@
   "singleVariant": true,
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "image": "prairielearn/grader-python",
+    "image": "prairielearn/grader-python-pytest:lite",
     "timeout": 60
   }
 }
