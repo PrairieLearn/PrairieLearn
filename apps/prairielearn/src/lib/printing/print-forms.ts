@@ -131,6 +131,8 @@ async function createPrintFormInternal({
     throw new HttpStatusError(400, 'This assessment has no questions to print.');
   }
 
+  // Variant generation runs question code, so keep it outside the assessment lock and recheck
+  // the form state once the lock is held.
   const questions: Omit<PrintFormQuestion, 'id' | 'print_form_id'>[] = [];
   for (const selected of selectedQuestions) {
     const variant = await ensureVariant({
