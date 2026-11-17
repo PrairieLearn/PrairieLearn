@@ -2,10 +2,13 @@ import type { UIMessage, UIMessageChunk } from 'ai';
 
 import {
   InputRequestPartSchema,
+  NavigationPartSchema,
   type RequestChangesResult,
   ToolCallSchema,
   UserMessageMetadataSchema,
 } from '@prairielearn/course-agent-types';
+
+import { attachmentOf, attachmentPath } from './attachments.js';
 
 /** Keep the newest turns within a bound that leaves room for the current request. */
 const MAX_CATCH_UP_CHARS = 32_000;
@@ -38,7 +41,13 @@ export function historyBefore(history: UIMessage[], message: UIMessage | null) {
 export function summarizeReview(result: RequestChangesResult) {
   if (result.decision === 'denied') return 'The instructor denied the submitted changes.';
   const approved = 'The instructor approved the submitted changes';
-  const sync = result.sync.status === 'failed' ? ', but the course sync failed' : '';
+  // The agent offers the page that shows the changes only once they are synced, so say so.
+  const sync =
+    result.sync.status === 'failed'
+      ? ', but the course sync failed'
+      : result.sync.status === 'succeeded'
+        ? ' and the course synced'
+        : '';
   switch (result.publication.status) {
     case 'published':
       return `${approved}; they were published${sync}.`;
@@ -187,6 +196,14 @@ function describePart(part: UIMessage['parts'][number]) {
       return describeInputRequest(part.data);
     case 'data-tool':
       return describeFileChange(part.data);
+    case 'data-navigation': {
+      const navigation = NavigationPartSchema.safeParse(part.data).data;
+      return navigation ? `[Offered to open ${navigation.label} (${navigation.subtitle}).]` : '';
+    }
+    case 'file': {
+      const attachment = attachmentOf(part);
+      return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';
+    }
     default:
       return '';
   }

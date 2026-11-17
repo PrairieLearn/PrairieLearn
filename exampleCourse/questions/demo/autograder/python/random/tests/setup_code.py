@@ -1,17 +1,11 @@
 import random
 
-import numpy.random
+import numpy as np
 
+# The grader doesn't seed student code, so pick a seed here and let the test
+# reuse it to compute the expected answer.
+seed = random.randrange(2**32)
+np.random.seed(seed)
 
-def random_random():
-    return numpy.random.rand()
-
-
-random.random = random_random
-
-
-def random_uniform(a, b):
-    return (numpy.random.rand() * (a - b)) + b
-
-
-random.uniform = random_uniform
+random.random = np.random.random_sample
+random.uniform = np.random.uniform

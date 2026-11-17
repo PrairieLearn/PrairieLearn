@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './usage.js';
+
 export type ConversationLifecycle =
   // No live container. The next message initializes a sandbox or restores the committed checkpoint.
   | { status: 'offline' }
@@ -17,7 +19,10 @@ export type ConversationLifecycle =
   | {
       status: 'blocked';
       reason: 'startup_failed' | 'runtime_failed' | 'checkpoint_failed' | 'cleanup_failed';
-    };
+    }
+  // The user reached the hourly usage limit. Resume clears it once retryAt passes; it does not
+  // continue an interrupted task.
+  | { status: 'blocked'; reason: 'usage_limit'; retryAt: string };
 
 /**
  * Public sandbox lifecycle. Offline, waiting_for_user, and blocked are stable across DO wakes.
@@ -43,16 +48,24 @@ export const COURSE_DIR = '/workspace/session/course';
 
 /**
  * The PrairieLearn pages the agent can open, built by PrairieLearn from its instructor navigation
- * when a conversation is created. `key` uses the same vocabulary as `PageLocationSchema.page`,
- * `params` are the names a page requires, and `file` marks pages that browse a directory's files.
+ * when a conversation is created. `key` uses the same vocabulary as `PageLocationSchema.page`.
+ * PrairieLearn defines each page's params and what they name, so a page that takes a new kind of
+ * name needs no Worker change.
  */
 export const PageCatalogSchema = z
   .array(
     z.strictObject({
       key: z.string().min(1).max(100),
       label: z.string().min(1).max(100),
-      params: z.array(z.enum(['courseInstance', 'assessment', 'question'])),
-      file: z.boolean(),
+      params: z
+        .array(
+          z.strictObject({
+            name: z.string().min(1).max(50),
+            description: z.string().min(1).max(300),
+            required: z.boolean(),
+          }),
+        )
+        .max(10),
     }),
   )
   .max(200);
@@ -254,10 +267,34 @@ export const ToolCallSchema = z
         output: ClipSchema.nullable(),
         error: z.string().nullable(),
       }),
+      /** Codex summarized earlier history to free context; the summary is not shown. */
+      z.object({ kind: z.literal('compaction') }),
     ]),
   );
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
+
+// Each attachment is uploaded on its own before the message that references it is sent.
+export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
+// A sandbox copies in every earlier attachment when it starts, so a conversation's total is capped.
+export const MAX_CONVERSATION_ATTACHMENT_BYTES = 200 * 1024 * 1024;
+export const MAX_CONVERSATION_ATTACHMENTS = 100;
+
+export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
+
+// Conversation and upload IDs are lowercase UUIDs that the Worker generates.
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+export const UUID_PATTERN = new RegExp(`^${UUID}$`);
+const ATTACHMENT_URL = new RegExp(`^upload:(${UUID})$`);
+
+/** A message's file part points at its upload with this URL rather than carrying the contents. */
+export const attachmentUrl = (uploadId: string) => `upload:${uploadId}`;
+
+/** The upload a file part's URL points at, or null for any other URL, such as a data URL. */
+export function attachmentIdOf(url: string) {
+  return ATTACHMENT_URL.exec(url)?.[1] ?? null;
+}
 
 /**
  * The PrairieLearn page an instructor was viewing when they sent a message. `page` is the page's
@@ -301,38 +338,6 @@ export const InputRequestPartSchema = z.object({
 
 export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;
 
-/**
- * A page the agent opens for the instructor. `page` is a key from the conversation's page catalog,
- * and the names are the ones course files use.
- */
-export const NavigationTargetSchema = z.strictObject({
-  page: z.string().min(1).max(100),
-  courseInstance: z.string().min(1).max(500).optional(),
-  assessment: z.string().min(1).max(500).optional(),
-  question: z.string().min(1).max(500).optional(),
-  /** For pages that browse files: a path inside the page's own directory. */
-  file: z.string().min(1).max(1000).optional(),
-});
-
-export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
-
-/**
- * A `data-navigation` part: the agent asked the instructor's browser to change pages. PrairieLearn
- * resolved `target` to `url` before the part was written, and `label` is the catalog's label for
- * the page, so history renders without either lookup.
- */
-export const NavigationPartSchema = z.discriminatedUnion('action', [
-  z.strictObject({
-    action: z.literal('open'),
-    target: NavigationTargetSchema,
-    label: z.string().max(100),
-    url: z.string().max(4000),
-  }),
-  z.strictObject({ action: z.literal('refresh') }),
-]);
-
-export type NavigationPart = z.infer<typeof NavigationPartSchema>;
-
 /** Operators that compare a column with one value. */
 export const COURSE_DATA_COMPARISONS = ['eq', 'lt', 'lte', 'gt', 'gte'] as const;
 
@@ -364,7 +369,12 @@ export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: 
       )
       .optional()
       .describe('Conditions that every row must meet.'),
-    select: z.array(column).optional().describe('Columns to include. Omit for all columns.'),
+    select: z
+      .array(column)
+      .min(1)
+      .describe(
+        'Columns to include. Large columns are slower to read, so select only those needed.',
+      ),
     order: z
       .array(z.strictObject({ column, direction: z.enum(['asc', 'desc']) }))
       .optional()
@@ -376,3 +386,28 @@ export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: 
 export const CourseDataQuerySchema = courseDataQuerySchema(z.string());
 
 export type CourseDataQuery = z.infer<typeof CourseDataQuerySchema>;
+
+/**
+ * A page the agent opens for the instructor: a key from the conversation's page catalog and the
+ * values of that page's params.
+ */
+export const NavigationTargetSchema = z.strictObject({
+  page: z.string().min(1).max(100),
+  params: z.record(z.string().min(1).max(50), z.string().min(1).max(500)).default({}),
+});
+
+export type NavigationTarget = z.infer<typeof NavigationTargetSchema>;
+
+/**
+ * A `data-navigation` part: the agent offered a page, which the instructor opens by clicking it.
+ * PrairieLearn resolved the target to these before the part was written, so history renders
+ * without a lookup. Unknown fields are stripped, so either side can add one before the other.
+ */
+export const NavigationPartSchema = z.object({
+  label: z.string().max(100),
+  /** What the page belongs to, such as `Assessment · Sp26 / hw01`. QIDs and TIDs are paths. */
+  subtitle: z.string().max(4000),
+  url: z.string().startsWith('/pl/').max(4000),
+});
+
+export type NavigationPart = z.infer<typeof NavigationPartSchema>;

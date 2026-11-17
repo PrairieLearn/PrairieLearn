@@ -1,90 +1,31 @@
 import type { UIMessage } from 'ai';
-import { useEffect } from 'react';
-import { z } from 'zod';
 
 import { type NavigationPart, NavigationPartSchema } from '@prairielearn/course-agent-types';
 
-const HANDLED_KEY = 'course-agent:navigation-handled';
-const MAX_HANDLED = 100;
-
 export function navigationOf(part: UIMessage['parts'][number]) {
-  if (part.type !== 'data-navigation' || !('id' in part) || !part.id) return null;
-  const data = NavigationPartSchema.safeParse(part.data).data;
-  return data ? { id: part.id, navigation: data } : null;
-}
-
-function readHandled(): string[] {
-  try {
-    return z
-      .array(z.string())
-      .catch([])
-      .parse(JSON.parse(sessionStorage.getItem(HANDLED_KEY) ?? '[]'));
-  } catch {
-    return [];
-  }
+  if (part.type !== 'data-navigation') return null;
+  return NavigationPartSchema.safeParse(part.data).data ?? null;
 }
 
 /**
- * Marks a part as acted on. Changing pages reconnects the chat, which replays the live reply
- * afterwards, so this record keeps the same part from acting again.
+ * A page the agent offered to open. The page changes only when the instructor follows the link, so
+ * the agent cannot discard their unsaved work or send them somewhere they did not choose.
  */
-function claim(id: string) {
-  const handled = readHandled();
-  if (handled.includes(id)) return false;
-  sessionStorage.setItem(HANDLED_KEY, JSON.stringify([...handled, id].slice(-MAX_HANDLED)));
-  return true;
-}
-
-/** Acts on navigation parts that arrive in the live reply, once each. */
-export function useAgentNavigation({
-  message,
-  live,
-}: {
-  message: UIMessage | undefined;
-  live: boolean;
-}) {
-  // Changing pages is a browser side effect of a part streaming in; history never replays it.
-  useEffect(() => {
-    if (!live || !message) return;
-    for (const part of message.parts) {
-      const found = navigationOf(part);
-      if (found && claim(found.id)) {
-        if (found.navigation.action === 'refresh') window.location.reload();
-        else window.location.assign(found.navigation.url);
-        // Anything after a page change belongs to the next page load.
-        return;
-      }
-    }
-  });
-}
-
-function describeTarget({ target, label }: Extract<NavigationPart, { action: 'open' }>) {
-  const subject =
-    target.file ??
-    (target.assessment
-      ? `assessment ${target.assessment}`
-      : target.question
-        ? `question ${target.question}`
-        : target.courseInstance
-          ? `course instance ${target.courseInstance}`
-          : null);
-  return subject ? `${label} (${subject})` : label;
-}
-
-export function NavigationNotice({ navigation }: { navigation: NavigationPart }) {
+export function NavigationCard({ navigation }: { navigation: NavigationPart }) {
   return (
-    <div className="small text-muted d-flex align-items-center gap-1">
-      {navigation.action === 'refresh' ? (
-        <>
-          <i className="bi bi-arrow-clockwise" aria-hidden="true" />
-          Reloaded the page
-        </>
-      ) : (
-        <>
-          <i className="bi bi-box-arrow-up-right" aria-hidden="true" />
-          Opened <a href={navigation.url}>{describeTarget(navigation)}</a>
-        </>
-      )}
-    </div>
+    <a
+      href={navigation.url}
+      className="course-agent-page-link border rounded p-2 d-flex align-items-center gap-2 text-body text-decoration-none"
+      aria-label={`Open ${navigation.label} (${navigation.subtitle})`}
+    >
+      <span className="course-agent-page-link-icon rounded d-flex align-items-center justify-content-center flex-shrink-0">
+        <i className="bi bi-window" aria-hidden="true" />
+      </span>
+      <span className="course-agent-page-link-text d-flex flex-column flex-grow-1">
+        <span className="fw-semibold text-truncate">{navigation.label}</span>
+        <span className="small text-muted text-truncate">{navigation.subtitle}</span>
+      </span>
+      <i className="bi bi-arrow-right text-primary flex-shrink-0" aria-hidden="true" />
+    </a>
   );
 }

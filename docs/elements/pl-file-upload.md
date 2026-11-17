@@ -49,7 +49,7 @@ The `file-patterns` and `optional-file-patterns` attributes support a number of 
 
 !!! note
 
-    Pattern matching is case-insensitive, so a pattern like `file[0-9a-z].txt` also matches uppercase characters (e.g. "fileX.txt").
+    Pattern matching is case-insensitive, so a pattern like `file[0-9a-z].txt` also matches uppercase characters (e.g. "fileX.txt"). Files matched by a pattern keep the case of the uploaded file name.
 
 | File pattern       | Allowed :white_check_mark:                        | Disallowed :x:                   |
 | ------------------ | ------------------------------------------------- | -------------------------------- |

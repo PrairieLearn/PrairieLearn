@@ -16,9 +16,15 @@ import {
   ReviewSnapshotSchema,
 } from '@prairielearn/course-agent-types';
 
+import {
+  type Attachment,
+  UPLOADS_DIR,
+  attachmentPath,
+  uploadKey,
+} from '../conversation/attachments.js';
 import { logEvent } from '../monitoring.js';
 
-import { modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
+import { codexRequestKind, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
 const SESSION = '/workspace/session';
 // Downloaded course data and the agent's analysis scripts.
@@ -126,8 +132,6 @@ export class CourseAgentGitHubOutbound extends WorkerEntrypoint<
   }
 }
 
-const OPENAI_API = 'https://api.openai.com';
-
 /**
  * Only the conversation's pinned model and web browsing are available; the API key stays outside
  * the container. OpenAI runs searches and reads pages, so the container never connects to other
@@ -135,7 +139,7 @@ const OPENAI_API = 'https://api.openai.com';
  */
 export class CourseAgentModelOutbound extends WorkerEntrypoint<
   Env,
-  { model: string; sandboxId: string }
+  { model: string; sandboxId: string; conversationId: string; executionId: string }
 > {
   override async fetch(request: Request) {
     const url = new URL(request.url);
@@ -147,16 +151,8 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
     return new Response('Forbidden', { status: 403 });
   }
 
-  private openai(path: string, body: unknown) {
-    return fetch(`${OPENAI_API}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      redirect: 'manual',
-    });
+  private get conversation() {
+    return this.env.Conversation.getByName(this.ctx.props.conversationId);
   }
 
   private async responses(request: Request) {
@@ -164,17 +160,24 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
       model?: string;
       input?: { role?: string }[];
       tools?: unknown;
+      background?: unknown;
+      service_tier?: unknown;
     };
     if (body.model !== this.ctx.props.model) return new Response('Forbidden', { status: 403 });
     const refusal = modelRequestRefusal(body);
     if (refusal) return new Response(refusal, { status: 403 });
+    const compaction = codexRequestKind(body) === 'compaction';
     // Later requests in a turn end with tool output; only the role is read, never the content.
-    const firstOfTurn = body.input?.at(-1)?.role === 'user';
+    // Local compaction ends with a user-role summarization prompt, so it is excluded by kind.
+    const firstOfTurn = !compaction && body.input?.at(-1)?.role === 'user';
     const started = Date.now();
     if (firstOfTurn) logEvent('model_request_sent', { sandboxId: this.ctx.props.sandboxId });
-    const response = await this.openai('/v1/responses', body);
-    if (firstOfTurn) {
-      logEvent('model_response_started', {
+    const response = await this.conversation.proxyModelRequest(
+      JSON.stringify(body),
+      this.ctx.props.executionId,
+    );
+    if (firstOfTurn || compaction) {
+      logEvent(compaction ? 'model_compaction_started' : 'model_response_started', {
         sandboxId: this.ctx.props.sandboxId,
         status: response.status,
         elapsedMs: Date.now() - started,
@@ -192,8 +195,11 @@ export class CourseAgentModelOutbound extends WorkerEntrypoint<
       return Response.json({ output: prepared.refusal });
     }
     const started = Date.now();
-    const response = await this.openai('/v1/alpha/search', prepared.forward);
-    // OpenAI bills hosted search per call; the response carries no usage to meter.
+    const response = await this.conversation.proxySearchRequest(
+      JSON.stringify(prepared.forward),
+      prepared.operations,
+      this.ctx.props.executionId,
+    );
     logEvent('web_search', {
       sandboxId: this.ctx.props.sandboxId,
       operations: prepared.operations,
@@ -268,12 +274,6 @@ export class CourseSandbox extends DurableObject<Env> {
         this.ctx.exports.CourseAgentGitHubOutbound({ props: { repository: config.repository } }),
       );
     }
-    await this.container.interceptOutboundHttp(
-      'model.internal:80',
-      this.ctx.exports.CourseAgentModelOutbound({
-        props: { model: config.model, sandboxId: this.ctx.id.name },
-      }),
-    );
     if (checkpoint) {
       await this.backups.restore(checkpoint);
       // The agent owns its home and may have deleted .codex.
@@ -311,6 +311,19 @@ export class CourseSandbox extends DurableObject<Env> {
   /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
   private async lockSession() {
     await this.exec(['chown', 'root:root', SESSION]);
+  }
+
+  /**
+   * Route the model through the conversation for this turn. Each turn gets a new execution ID, so
+   * a request made after its turn ends is refused until the next turn starts.
+   */
+  async authorizeModel(config: { model: string; conversationId: string; executionId: string }) {
+    await this.container.interceptOutboundHttp(
+      'model.internal:80',
+      this.ctx.exports.CourseAgentModelOutbound({
+        props: { ...config, sandboxId: this.ctx.id.name },
+      }),
+    );
   }
 
   /** Unpack the local snapshot or clone the repository into a freshly prepared workspace. */
@@ -379,6 +392,24 @@ export class CourseSandbox extends DurableObject<Env> {
       );
     }
     await this.lockSession();
+  }
+
+  /**
+   * Copy uploaded attachments into the sandbox as root-owned files the agent can read but not
+   * change. Uploads that have since expired are skipped; a new message's were checked on arrival.
+   */
+  async writeAttachments(conversationId: string, attachments: Attachment[]) {
+    const paths = attachments.map(attachmentPath);
+    await this.exec(['mkdir', '-p', ...paths.map((path) => path.slice(0, path.lastIndexOf('/')))]);
+    // A restored sandbox copies every earlier attachment, so the copies run concurrently.
+    const files = new Files(this.container);
+    await Promise.all(
+      attachments.map(async (attachment, index) => {
+        const upload = await this.env.CHECKPOINTS.get(uploadKey(conversationId, attachment.id));
+        if (upload) await files.writeFile(paths[index], upload.body);
+      }),
+    );
+    await this.exec(['chmod', '-R', 'a+rX,go-w', UPLOADS_DIR]);
   }
 
   /**
@@ -678,7 +709,7 @@ export class CourseSandbox extends DurableObject<Env> {
   }
 
   /** Saves downloaded course data outside the course checkout; returns the file path. */
-  async writeCourseData(dataset: string, contents: string) {
+  async writeCourseData(dataset: string, contents: ReadableStream<Uint8Array>) {
     const path = `${COURSE_DATA}/${dataset}-${crypto.randomUUID().slice(0, 8)}.jsonl`;
     await new Files(this.container).writeFile(path, contents, { user: AGENT_UID_GID });
     return path;

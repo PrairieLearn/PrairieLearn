@@ -23,6 +23,10 @@ import {
   selectOptionalCourseAgentConversation,
   updateCourseAgentConversationTitle,
 } from '../../ee/models/course-agent-conversation.js';
+import {
+  CourseAgentConversationUsageSchema,
+  selectCourseAgentConversationUsage,
+} from '../../ee/models/course-agent-usage-report.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
@@ -92,6 +96,19 @@ export const courseAgentRouter = t.router({
     return z.array(StaffCourseAgentConversationSchema).parse(conversations);
   }),
 
+  usage: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema }))
+    .output(CourseAgentConversationUsageSchema)
+    .query(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      return selectCourseAgentConversationUsage(conversation.id);
+    }),
+
   resume: courseAgentProcedure
     .input(z.object({ conversationId: IdSchema }))
     .output(z.strictObject({ recovered: z.literal(true) }))
@@ -111,7 +128,10 @@ export const courseAgentRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       const agentConversationId = await run(async () => {
         if (config.devMode && !config.fileEditorUseGit) {
-          return createLocalCourseAgentConversation(ctx.course.path, buildPageCatalog());
+          return createLocalCourseAgentConversation(
+            ctx.course.path,
+            buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+          );
         } else {
           const repository = parseGithubRepository(ctx.course.repository ?? '');
           if (!repository || !ctx.course.branch) {
@@ -130,7 +150,10 @@ export const courseAgentRouter = t.router({
               message: 'The course repository or branch is invalid.',
             });
           }
-          return createCourseAgentConversation({ ...binding.data, pages: buildPageCatalog() });
+          return createCourseAgentConversation({
+            ...binding.data,
+            pages: buildPageCatalog({ course: ctx.course, authz_data: ctx.authz_data }),
+          });
         }
       });
       const conversation = await insertCourseAgentConversation({
@@ -163,10 +186,10 @@ export const courseAgentRouter = t.router({
 
 export interface CourseAgentError {
   List: never;
+  Usage: never;
   Create: never;
   Resume: never;
   GetReview: never;
   PostReviewDecision: never;
-  ResolveNavigation: never;
   SetTitle: never;
 }

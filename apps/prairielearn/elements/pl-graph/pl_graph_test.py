@@ -97,3 +97,10 @@ def test_render_missing_file_error() -> None:
 
     with pytest.raises(ValueError, match="Unknown file path"):
         graph.render(element_html, data)
+
+
+def test_render_empty_content_error() -> None:
+    data = {"options": {}, "extensions": []}
+
+    with pytest.raises(ValueError, match="did not produce a graph"):
+        graph.render("<pl-graph>  </pl-graph>", data)
