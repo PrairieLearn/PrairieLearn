@@ -24,7 +24,7 @@ import {
   type ConversationState,
   type InputRequestPart,
   InputRequestPartSchema,
-  type ToolCall,
+  type PlanPart,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
 import { formatInterval } from '@prairielearn/formatter';
@@ -35,7 +35,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
-import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
+import { TextPart } from '../ai/ChatParts.js';
 
 import {
   type DraftAttachment,
@@ -50,8 +50,9 @@ import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, navigationOf } from './Navigation.js';
+import { PlanChecklist, planOf } from './Plan.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
-import { RunningToolCallLabel, ToolCalls } from './ToolCalls.js';
+import { RunningToolCallLabel, type Step, Steps, reasoningHeading } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 import { currentPageLocation } from './pageLocation.js';
@@ -287,9 +288,11 @@ function PendingStatus({ label }: { label: string }) {
 function ActivityStatus({
   startingSandbox,
   message,
+  plan,
 }: {
   startingSandbox: boolean;
   message: UIMessage | undefined;
+  plan: PlanPart | null;
 }) {
   const [startedAt] = useState(() => Date.now());
   const [now, setNow] = useState(startedAt);
@@ -305,7 +308,7 @@ function ActivityStatus({
         {startingSandbox ? 'Starting sandbox…' : 'The course agent is working…'}
       </span>
       <span className="text-truncate course-agent-shimmer" aria-hidden="true">
-        {startingSandbox ? 'Starting sandbox…' : <ActivityLabel message={message} />}
+        {startingSandbox ? 'Starting sandbox…' : <ActivityLabel message={message} plan={plan} />}
       </span>
       <span className="flex-shrink-0" aria-hidden="true">
         {formatInterval(now - startedAt)}
@@ -314,23 +317,32 @@ function ActivityStatus({
   );
 }
 
-/** The agent's latest step: the call it is running, what it is reasoning about, or its reply. */
-function ActivityLabel({ message }: { message: UIMessage | undefined }) {
-  if (message?.role !== 'assistant') return 'Thinking…';
+/**
+ * The agent's latest step: the call it is running, what it is reasoning about, or its reply.
+ * Between steps it is working on whichever step of its plan is in progress.
+ */
+function ActivityLabel({
+  message,
+  plan,
+}: {
+  message: UIMessage | undefined;
+  plan: PlanPart | null;
+}) {
+  const thinking = `${plan?.steps.find((step) => step.status === 'inProgress')?.text ?? 'Thinking'}…`;
+  if (message?.role !== 'assistant') return thinking;
   for (let i = message.parts.length - 1; i >= 0; i--) {
     const part = message.parts[i];
     const call = toolCallOf(part);
-    if (call) return call.status === 'running' ? <RunningToolCallLabel call={call} /> : 'Thinking…';
+    if (call) return call.status === 'running' ? <RunningToolCallLabel call={call} /> : thinking;
     if (part.type === 'reasoning' && part.text.trim()) {
-      // Codex heads each section of a reasoning summary with a bold title.
-      const heading = [...part.text.matchAll(/\*\*(.+?)\*\*/g)].at(-1)?.[1];
-      return heading ? `${heading}…` : 'Thinking…';
+      const heading = reasoningHeading(part.text);
+      return heading ? `${heading}…` : thinking;
     }
     if (part.type === 'text' && part.text.trim()) {
-      return part.state === 'streaming' ? 'Writing…' : 'Thinking…';
+      return part.state === 'streaming' ? 'Writing…' : thinking;
     }
   }
-  return 'Thinking…';
+  return thinking;
 }
 
 function Chat({
@@ -531,6 +543,7 @@ function Chat({
     (responseActive || lifecycle?.status === 'waiting_for_agent') &&
     !connectionFailed &&
     !connectionError;
+  const plan = working ? planOf(messages.at(-1)) : null;
   // The server reports the turn's lifecycle before the SDK marks the response active.
   const startingSandbox =
     !connectionFailed &&
@@ -617,7 +630,11 @@ function Chat({
               />
             )}
           {(startingSandbox || working) && (
-            <ActivityStatus startingSandbox={startingSandbox} message={messages.at(-1)} />
+            <ActivityStatus
+              startingSandbox={startingSandbox}
+              message={messages.at(-1)}
+              plan={plan}
+            />
           )}
           {lifecycle?.status === 'blocked' && (
             <BlockedNotice
@@ -657,6 +674,7 @@ function Chat({
           )}
         </div>
       </div>
+      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
@@ -894,14 +912,17 @@ function Message({
       </div>
     );
   }
-  // Consecutive tool calls render together so runs of the same kind can be grouped.
-  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
+  // Consecutive steps render together so runs of the same kind can be grouped.
+  type Segment = { key: string } & ({ steps: Step[] } | { part: UIMessage['parts'][number] });
   const segments: Segment[] = [];
   message.parts.forEach((part, index) => {
-    const call = toolCallOf(part);
+    const text = part.type === 'text' || part.type === 'reasoning' ? part.text.trim() : null;
+    // The plan is pinned above the message box, and like empty text it must not split a run.
+    if (part.type === 'data-plan' || text === '') return;
+    const step = toolCallOf(part) ?? (part.type === 'reasoning' ? part : null);
     const last = segments.at(-1);
-    if (call && last && 'calls' in last) last.calls.push(call);
-    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
+    if (step && last && 'steps' in last) last.steps.push(step);
+    else segments.push({ key: `part-${index}`, ...(step ? { steps: [step] } : { part }) });
   });
   // Reviews and input requests end the agent's turn, so their cards go at the end of that turn:
   // before the marker of the turn that continues this message (a review result's delivery), or at
@@ -929,13 +950,14 @@ function Message({
     );
   const rendered: ReactNode[] = [];
   let cards: Card[] = [];
-  for (const segment of segments) {
-    if ('calls' in segment) {
+  for (const [index, segment] of segments.entries()) {
+    if ('steps' in segment) {
       rendered.push(
-        <ToolCalls
+        <Steps
           key={segment.key}
-          calls={segment.calls}
+          steps={segment.steps}
           live={live}
+          settled={!live || index < segments.length - 1}
           onExpand={onToolCallExpand}
         />,
       );
@@ -943,10 +965,8 @@ function Message({
     }
     const { key, part } = segment;
     const navigation = navigationOf(part);
-    if (part.type === 'text' && part.text.trim()) {
+    if (part.type === 'text') {
       rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} />);
-    } else if (part.type === 'reasoning' && part.text.trim()) {
-      rendered.push(<ReasoningBlock key={key} part={part} />);
     } else if (navigation) {
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
     } else if (part.type === 'data-review') {

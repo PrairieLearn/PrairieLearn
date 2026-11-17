@@ -69,6 +69,10 @@ A Worker/DO restart loses the native connection. SDK-recorded output remains rea
 
 Each Codex tool call (a command, a file change, or any other tool: MCP and dynamic tools, web searches, and Codex items this version does not know) is a `data-tool` part with ID `tool:<Codex item ID>` and data matching `ToolCallSchema` in `@prairielearn/course-agent-types`. The Worker writes it when Codex starts the item and replaces it when Codex completes it. A call still running when the stream closes is rewritten as `interrupted`. A stream can also end without that rewrite (a cancelled response or a lost Worker), so the browser treats a `running` call in any message that is no longer streaming as interrupted. The part stores Codex's fields, and the browser derives labels from them, so label changes apply to existing history.
 
+While a command runs, the Worker rewrites its `data-tool` part a few times a second with the end of the output so far, so the chat can show that a long command is getting somewhere. Completion replaces that with the clipped full output.
+
+The agent keeps a plan for longer work with the `show_plan` dynamic tool, which takes the whole plan each time. The Worker shows it as a `data-plan` part matching `PlanPartSchema`, with ID `plan:<Codex turn ID>`, replaced on every call. The chat pins it above the message box while the turn runs.
+
 History keeps a bounded copy: command text up to 2,000 characters, output up to 4,000 (its start and end), arguments up to 1,000, each diff up to 4,000, and 50 files per change. Paths in the course checkout are stored relative to the course root. Once a message's tool calls exceed 300,000 characters, later calls in it keep their labels but no output, diffs, or arguments, so the message stays well within a Durable Object row; Codex's own thread keeps the full record. A successful `request_changes` call has no part, because its review card shows it; a failed one does, so the instructor sees why. Catch-up omits tool calls except a one-line list of the files each completed change touched.
 
 ## Page location

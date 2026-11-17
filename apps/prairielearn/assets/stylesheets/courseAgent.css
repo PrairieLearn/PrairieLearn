@@ -135,6 +135,16 @@
   background-color: transparent !important;
 }
 
+/* Each line is cut off rather than wrapped, so the block keeps a steady height as output arrives. */
+.course-agent-live-output {
+  padding-left: 0.5rem;
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: pre;
+  border-left: 2px solid var(--bs-border-color);
+}
+
 @keyframes course-agent-shimmer {
   from {
     background-position: 110% 0;
