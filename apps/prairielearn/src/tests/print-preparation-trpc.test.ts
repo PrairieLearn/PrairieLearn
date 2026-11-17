@@ -813,7 +813,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: 'booklet PDF for 1 student',
+      label: 'Booklet PDF for 1 student',
       failureMessage:
         '“invalid-cover.pdf” could not be read. Upload a valid PDF without password protection.',
     });
