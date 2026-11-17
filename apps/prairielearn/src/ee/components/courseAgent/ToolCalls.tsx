@@ -498,7 +498,7 @@ export function Work({
   );
   // A lone step says more as its own line than as "1 step".
   if (settled && rows.length === 1) return rendered[0];
-  const calls = items.filter(isCall).length;
+  const calls = items.filter(isCall);
   const updates = items.filter((item): item is TextUIPart => !isCall(item) && item.type === 'text');
   const update = updates.at(-1);
   return (
@@ -508,15 +508,20 @@ export function Work({
           icon="bi-list-ul"
           running={false}
           label={
-            calls === 0
+            calls.length === 0
               ? settled
                 ? 'Thought it through'
                 : 'Thinking'
               : settled
-                ? `Worked through ${count(calls, 'step')}`
-                : `Working · ${count(calls, 'step')}`
+                ? `Worked through ${count(calls.length, 'step')}`
+                : `Working · ${count(calls.length, 'step')}`
           }
-          note={null}
+          // Failed steps are routine and stay in the details; a turn cut short is worth saying.
+          note={
+            calls.some((call) => statusOf(call, live) === 'interrupted')
+              ? { text: 'Stopped', failed: false }
+              : null
+          }
         />
       }
       // While it works, the agent's latest update says where it has got to.
