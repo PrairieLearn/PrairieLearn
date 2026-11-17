@@ -227,7 +227,7 @@ router.get(
     if (!isBrowserRenderingAvailable()) {
       throw new HttpStatusError(
         404,
-        'Printable document rendering is not configured on this server',
+        'Print previews and downloads are unavailable right now. Contact PrairieLearn support.',
       );
     }
 
@@ -241,12 +241,6 @@ router.get(
       excludedQuestionNumbers: layout.excludedQuestionNumbers,
       document,
     });
-    if (printingResult.questionHtmls.length === 0) {
-      throw new HttpStatusError(
-        422,
-        'No questions could be rendered for this printable assessment',
-      );
-    }
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
     const warnings = describeOmittedQuestions(printingResult.questionResults);
 

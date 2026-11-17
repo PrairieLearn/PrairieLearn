@@ -45,7 +45,7 @@ test('reports omitted questions and exports the selected Word content', async ({
     'broken_variant',
     'unsupported_question_type',
   ]);
-  expect(warnings[1].message).toContain("older question format that can't be printed");
+  expect(warnings[1].message).toContain('question type that printing does not support');
   for (const warning of warnings) {
     expect(warning).toMatchObject({
       question_number: expect.any(String),
@@ -112,6 +112,25 @@ test('reports omitted questions and exports the selected Word content', async ({
   for (const label of ['Name', 'Section', 'Student ID', 'Date', `Form ${printForm.label}`]) {
     expect(documentXml).toContain(label);
   }
+});
+
+test('shows the omitted questions when none can be printed', async ({ page, courseInstance }) => {
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam24-printingOmittedQuestion');
+  await page.goto(
+    `${printUrl}/preview?paper_size=Letter&include_cover=false&exclude_question=1&exclude_question=2`,
+  );
+  await waitForPrintablePage(page);
+  expect((await readWarnings(page)).map((warning) => warning.code)).toEqual([
+    'broken_variant',
+    'unsupported_question_type',
+  ]);
+  await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '0');
+
+  await page.goto(
+    `${printUrl}/preview?paper_size=Letter&include_cover=false&exclude_question=1&exclude_question=2&document=answer_key`,
+  );
+  await waitForPrintablePage(page);
+  await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '0');
 });
 
 test('prints representative controls, editable Word content, and an ordered answer key', async ({

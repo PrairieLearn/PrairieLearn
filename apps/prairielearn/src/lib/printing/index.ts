@@ -124,8 +124,8 @@ export function describeOmittedQuestions(
         qid: result.qid,
         message:
           result.code === UNSUPPORTED_QUESTION_FAILURE_CODE
-            ? `${label} uses an older question format that can't be printed and is omitted from the printable documents.`
-            : `${label} could not be rendered due to an error in question code and is omitted from the printable documents.`,
+            ? `${label} uses a question type that printing does not support.`
+            : `${label} could not be printed because it has an error.`,
       },
     ];
   });
