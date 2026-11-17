@@ -294,12 +294,14 @@ function exhaustedFailureMessage(format: PrintExportWork['format']) {
 
 /** Republishes pending exports whose Redis job was lost, failed, or interrupted. */
 export async function processQueuedPrintExports(): Promise<void> {
-  const currentQueue = getQueue();
-  if (!currentQueue) return;
+  if (!config.nonVolatileRedisUrl) return;
   // Exports that no worker finished before they would expire, such as when no host runs a
   // worker, would otherwise stay pending and be republished forever.
   await failStalePrintExports();
   const pending = await selectPendingPrintExports();
+  if (pending.length === 0) return;
+  const currentQueue = getQueue();
+  if (!currentQueue) return;
   for (const { id, course_id } of pending) {
     if (shutdownController.signal.aborted) return;
     // Completed and failed jobs are removed from Redis, so they also read as unknown.
