@@ -58,7 +58,8 @@ const INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'ima
 
 /**
  * Uploaded files are served from PrairieLearn's origin, so none may render as a page here,
- * whatever the agent service sends: an image may display, and anything else downloads.
+ * whatever the agent service sends: an image may display, and anything else downloads. They are
+ * never cached, so every read passes the conversation owner check.
  */
 const uploadProxy = createProxy((response) => {
   const type = response.headers['content-type'];
@@ -68,6 +69,7 @@ const uploadProxy = createProxy((response) => {
   response.headers['content-security-policy'] =
     "default-src 'none'; frame-ancestors 'none'; sandbox";
   response.headers['x-content-type-options'] = 'nosniff';
+  response.headers['cache-control'] = 'no-store';
 });
 
 /** Send upgrades through the same session/authentication/RBAC chain as HTTP. */

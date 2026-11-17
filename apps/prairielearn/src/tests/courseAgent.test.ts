@@ -310,10 +310,12 @@ describe('Course agent access and conversation privacy', () => {
       expect(download.headers.get('Content-Type')).toBe('application/octet-stream');
       expect(download.headers.get('Content-Disposition')).toBe('attachment');
       expect(download.headers.get('Content-Security-Policy')).toContain('sandbox');
+      expect(download.headers.get('Cache-Control')).toBe('no-store');
 
       const preview = await fetch(`${uploadUrl}/thumbnail`);
       expect(preview.headers.get('Content-Type')).toBe('image/png');
       expect(preview.headers.get('Content-Disposition')).toBe('inline');
+      expect(preview.headers.get('Cache-Control')).toBe('no-store');
       expect(Buffer.from(await preview.arrayBuffer())).toEqual(PNG);
     });
   });
