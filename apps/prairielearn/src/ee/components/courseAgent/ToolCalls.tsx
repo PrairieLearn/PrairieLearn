@@ -1,4 +1,4 @@
-import type { ReasoningUIPart } from 'ai';
+import type { ReasoningUIPart, TextUIPart } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useState } from 'react';
 
@@ -7,12 +7,16 @@ import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 import { Disclosure } from '../ai/ChatParts.js';
 import { MemoizedMarkdown } from '../ai/MemoizedMarkdown.js';
 
-/** One thing the agent did on the way to its reply: a tool call, or reasoning between calls. */
-export type Step = ToolCall | ReasoningUIPart;
+/**
+ * One thing the agent did on the way to its reply: a tool call, reasoning between calls, or an
+ * update it wrote along the way.
+ */
+export type WorkItem = ToolCall | ReasoningUIPart | TextUIPart;
 
-const isCall = (step: Step): step is ToolCall => 'kind' in step;
+const isCall = (item: WorkItem): item is ToolCall => 'kind' in item;
 
-const LIVE_OUTPUT_LINES = 4;
+/** Where the sandbox keeps the agent's skills, which staff cannot see. */
+const SKILLS_DIR = '/etc/codex/skills/';
 
 type Verb =
   | 'read'
@@ -288,12 +292,12 @@ function Row({
 }
 
 /** The end of a running command's output, so a long command shows that it is getting somewhere. */
-function LiveOutput({ call }: { call: ToolCall | undefined }) {
+export function LiveOutput({ call, lines: count = 4 }: { call?: ToolCall | null; lines?: number }) {
   if (call?.kind !== 'command' || !call.output?.text.trim()) return null;
   const lines = call.output.text
     .trimEnd()
     .split('\n')
-    .slice(-LIVE_OUTPUT_LINES)
+    .slice(-count)
     // A progress bar rewrites its line; only the last rewrite is on screen.
     .map((line) => line.split('\r').at(-1));
   return (
@@ -303,14 +307,39 @@ function LiveOutput({ call }: { call: ToolCall | undefined }) {
   );
 }
 
-/** What a running call is doing, for the chat's status line. */
-export function RunningToolCallLabel({ call }: { call: ToolCall }) {
-  const { verb, subject } = describe(call);
-  return (
-    <>
-      {VERBS[verb][0]} {subject}…
-    </>
-  );
+/**
+ * What a running call is doing, for the chat's status line. Many staff are not technical, so it
+ * names files but never shows a command.
+ */
+export function runningLabel(call: ToolCall): string {
+  const name = (path: string) => path.split('/').at(-1);
+  switch (call.kind) {
+    case 'command': {
+      const { key } = category(call);
+      if (key === 'read') {
+        const paths = call.actions.flatMap((action) =>
+          action.type === 'read' ? [action.path] : [],
+        );
+        if (paths.every((path) => path.startsWith(SKILLS_DIR))) return 'Checking guidance';
+        return paths.length === 1 ? `Reading ${name(paths[0])}` : `Reading ${paths.length} files`;
+      }
+      if (key === 'list') return 'Looking through the course files';
+      if (key === 'search') return 'Searching the course files';
+      return 'Running a command';
+    }
+    case 'fileChange': {
+      const total = call.changes.length + call.omittedChanges;
+      if (total !== 1) return `Editing ${total} files`;
+      const [{ change, path }] = call.changes;
+      const verb = change === 'add' ? 'Creating' : change === 'delete' ? 'Deleting' : 'Editing';
+      return `${verb} ${name(path)}`;
+    }
+    case 'tool':
+      if (call.server !== 'web') return 'Getting information';
+      return call.tool === 'search' ? 'Searching the web' : 'Reading a web page';
+    case 'compaction':
+      return 'Summarizing earlier conversation';
+  }
 }
 
 function ToolCallRow({
@@ -425,86 +454,85 @@ function CallGroup({
   );
 }
 
-/** "Read 3 files, ran 2 commands", counting each kind of call in the order it first happened. */
-function countCalls(calls: ToolCall[]) {
-  const counts = new Map<string, { call: ToolCall; n: number }>();
-  for (const call of calls) {
-    const { key } = category(call);
-    const entry = counts.get(key);
-    if (entry) entry.n += 1;
-    else counts.set(key, { call, n: 1 });
-  }
-  return [...counts.values()]
-    .map(({ call, n }) => category(call).group(n))
-    .map((phrase, i) => (i === 0 ? phrase : phrase[0].toLowerCase() + phrase.slice(1)))
-    .join(', ');
-}
-
 /**
- * The agent's consecutive steps from one message, with calls of the same kind grouped. Once the
- * agent has moved on, the steps fold into one line so the chat reads as its replies.
+ * Everything the agent did before a reply, folded into one line so the chat reads as its replies.
+ * Opening it shows each step, with calls of the same kind grouped.
  */
-export function Steps({
-  steps,
+export function Work({
+  items,
   live,
   settled,
+  showUpdate,
   onExpand,
 }: {
-  steps: Step[];
-  /** Whether the steps' message is still streaming; otherwise a running call was cut off. */
+  items: WorkItem[];
+  /** Whether the message is still streaming; otherwise a running call was cut off. */
   live: boolean;
-  /** Whether the agent has moved on from these steps. */
+  /** Whether this work is over. */
   settled: boolean;
+  /** Whether to show the agent's latest update under the line while it works. */
+  showUpdate: boolean;
   /** Called before a row opens, which makes the chat taller. */
   onExpand?: () => void;
 }) {
-  const rows: (ToolCall[] | ReasoningUIPart)[] = [];
-  for (const step of steps) {
+  const rows: (ToolCall[] | ReasoningUIPart | TextUIPart)[] = [];
+  for (const item of items) {
     const last = rows.at(-1);
-    if (!isCall(step)) rows.push(step);
-    else if (Array.isArray(last) && category(last[0]).key === category(step).key) last.push(step);
-    else rows.push([step]);
+    if (!isCall(item)) rows.push(item);
+    else if (Array.isArray(last) && category(last[0]).key === category(item).key) last.push(item);
+    else rows.push([item]);
   }
   // Rows only ever append to a streaming message, so their positions identify them.
   const rendered = rows.map((row, i) =>
     Array.isArray(row) ? (
       // oxlint-disable-next-line react/no-array-index-key
       <CallGroup key={i} group={row} live={live} onExpand={onExpand} />
-    ) : (
+    ) : row.type === 'reasoning' ? (
       // oxlint-disable-next-line react/no-array-index-key
       <ReasoningRow key={i} part={row} live={live} onExpand={onExpand} />
+    ) : (
+      // oxlint-disable-next-line react/no-array-index-key
+      <Update key={i} text={row.text} />
     ),
   );
-  if (!settled || rows.length < 2) {
-    return <div className="d-flex flex-column gap-1">{rendered}</div>;
-  }
-  const calls = steps.filter(isCall);
-  const thoughts = steps.filter((step): step is ReasoningUIPart => !isCall(step));
-  // A lone call keeps its own line, which says more than "Ran 1 command".
-  const only = calls.length === 1 ? describe(calls[0]) : null;
+  // A lone step says more as its own line than as "1 step".
+  if (settled && rows.length === 1) return rendered[0];
+  const calls = items.filter(isCall).length;
+  const updates = items.filter((item): item is TextUIPart => !isCall(item) && item.type === 'text');
+  const update = updates.at(-1);
   return (
     <Row
       summary={
         <Summary
-          icon={only ? category(calls[0]).icon : 'bi-list-ul'}
+          icon="bi-list-ul"
+          running={false}
           label={
-            only ? (
-              <>
-                {VERBS[only.verb][1]} {only.subject}
-              </>
-            ) : calls.length > 0 ? (
-              countCalls(calls)
-            ) : (
-              (reasoningHeading(thoughts.at(-1)!.text) ?? 'Thinking')
-            )
+            calls === 0
+              ? settled
+                ? 'Thought it through'
+                : 'Thinking'
+              : settled
+                ? `Worked through ${count(calls, 'step')}`
+                : `Working · ${count(calls, 'step')}`
           }
-          {...groupSummary(calls, live)}
+          note={null}
         />
       }
+      // While it works, the agent's latest update says where it has got to.
+      tail={!settled && showUpdate && update && <Update text={update.text} indented />}
       onExpand={onExpand}
     >
       {rendered}
     </Row>
+  );
+}
+
+/** Something the agent wrote along the way, which is not part of its reply. */
+function Update({ text, indented = false }: { text: string; indented?: boolean }) {
+  return (
+    <div className={clsx('markdown-body small text-body-secondary', indented && 'ms-4 mt-1')}>
+      <MemoizedMarkdown content={text} />
+    </div>
   );
 }
 

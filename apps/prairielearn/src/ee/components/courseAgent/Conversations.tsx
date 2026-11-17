@@ -2,7 +2,7 @@ import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
-import { type UIMessage } from 'ai';
+import { type TextUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import {
   type KeyboardEvent,
@@ -24,7 +24,6 @@ import {
   type ConversationState,
   type InputRequestPart,
   InputRequestPartSchema,
-  type PlanPart,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
 import { formatInterval } from '@prairielearn/formatter';
@@ -52,7 +51,7 @@ import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, navigationOf } from './Navigation.js';
 import { PlanChecklist, planOf } from './Plan.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
-import { RunningToolCallLabel, type Step, Steps, reasoningHeading } from './ToolCalls.js';
+import { LiveOutput, Work, type WorkItem, reasoningHeading, runningLabel } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 import { currentPageLocation } from './pageLocation.js';
@@ -235,7 +234,7 @@ function ConversationPicker({
             {create.isPending ? (
               <div className="d-flex flex-column gap-3">
                 <UserMessage text={create.variables.text} />
-                <PendingStatus label="Starting sandbox…" />
+                <PendingStatus label="Getting ready…" />
               </div>
             ) : (
               <p className="text-muted text-center my-4">
@@ -288,12 +287,11 @@ function PendingStatus({ label }: { label: string }) {
 function ActivityStatus({
   startingSandbox,
   message,
-  plan,
 }: {
   startingSandbox: boolean;
   message: UIMessage | undefined;
-  plan: PlanPart | null;
 }) {
+  const call = latestCall(message);
   const [startedAt] = useState(() => Date.now());
   const [now, setNow] = useState(startedAt);
   // Advances the elapsed time once a second.
@@ -302,47 +300,44 @@ function ActivityStatus({
     return () => clearInterval(interval);
   }, []);
   return (
-    <div className="d-flex gap-2 small text-body-secondary" role="status">
+    <div className="small text-body-secondary" role="status">
       {/* The label changes with every step and the time every second, too often to announce. */}
       <span className="visually-hidden">
-        {startingSandbox ? 'Starting sandbox…' : 'The course agent is working…'}
+        {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
       </span>
-      <span className="text-truncate course-agent-shimmer" aria-hidden="true">
-        {startingSandbox ? 'Starting sandbox…' : <ActivityLabel message={message} plan={plan} />}
-      </span>
-      <span className="flex-shrink-0" aria-hidden="true">
-        {formatInterval(now - startedAt)}
-      </span>
+      <div className="d-flex gap-2" aria-hidden="true">
+        <span className="text-truncate course-agent-shimmer">
+          {startingSandbox ? 'Getting ready' : activityLabel(message)}…
+        </span>
+        <span className="flex-shrink-0">{formatInterval(now - startedAt)}</span>
+      </div>
+      {call?.status === 'running' && <LiveOutput call={call} lines={1} />}
     </div>
   );
 }
 
-/**
- * The agent's latest step: the call it is running, what it is reasoning about, or its reply.
- * Between steps it is working on whichever step of its plan is in progress.
- */
-function ActivityLabel({
-  message,
-  plan,
-}: {
-  message: UIMessage | undefined;
-  plan: PlanPart | null;
-}) {
-  const thinking = `${plan?.steps.find((step) => step.status === 'inProgress')?.text ?? 'Thinking'}…`;
-  if (message?.role !== 'assistant') return thinking;
+/** The call the agent made last, if nothing has followed it. */
+function latestCall(message: UIMessage | undefined) {
+  if (message?.role !== 'assistant') return null;
   for (let i = message.parts.length - 1; i >= 0; i--) {
     const part = message.parts[i];
     const call = toolCallOf(part);
-    if (call) return call.status === 'running' ? <RunningToolCallLabel call={call} /> : thinking;
-    if (part.type === 'reasoning' && part.text.trim()) {
-      const heading = reasoningHeading(part.text);
-      return heading ? `${heading}…` : thinking;
-    }
-    if (part.type === 'text' && part.text.trim()) {
-      return part.state === 'streaming' ? 'Writing…' : thinking;
-    }
+    if (call) return call;
+    if ((part.type === 'text' || part.type === 'reasoning') && part.text.trim()) return null;
   }
-  return thinking;
+  return null;
+}
+
+/**
+ * What the agent is doing now, in plain words: the call it is running, the reply it is writing,
+ * or what it is thinking about. The plan above the message box already shows its current step.
+ */
+function activityLabel(message: UIMessage | undefined) {
+  const call = latestCall(message);
+  if (call?.status === 'running') return runningLabel(call);
+  const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
+  if (part?.type === 'text' && part.state === 'streaming') return 'Writing';
+  return (part?.type === 'reasoning' && reasoningHeading(part.text)) || 'Thinking';
 }
 
 function Chat({
@@ -630,11 +625,7 @@ function Chat({
               />
             )}
           {(startingSandbox || working) && (
-            <ActivityStatus
-              startingSandbox={startingSandbox}
-              message={messages.at(-1)}
-              plan={plan}
-            />
+            <ActivityStatus startingSandbox={startingSandbox} message={messages.at(-1)} />
           )}
           {lifecycle?.status === 'blocked' && (
             <BlockedNotice
@@ -912,18 +903,6 @@ function Message({
       </div>
     );
   }
-  // Consecutive steps render together so runs of the same kind can be grouped.
-  type Segment = { key: string } & ({ steps: Step[] } | { part: UIMessage['parts'][number] });
-  const segments: Segment[] = [];
-  message.parts.forEach((part, index) => {
-    const text = part.type === 'text' || part.type === 'reasoning' ? part.text.trim() : null;
-    // The plan is pinned above the message box, and like empty text it must not split a run.
-    if (part.type === 'data-plan' || text === '') return;
-    const step = toolCallOf(part) ?? (part.type === 'reasoning' ? part : null);
-    const last = segments.at(-1);
-    if (step && last && 'steps' in last) last.steps.push(step);
-    else segments.push({ key: `part-${index}`, ...(step ? { steps: [step] } : { part }) });
-  });
   // Reviews and input requests end the agent's turn, so their cards go at the end of that turn:
   // before the marker of the turn that continues this message (a review result's delivery), or at
   // the end of the message.
@@ -950,36 +929,70 @@ function Message({
     );
   const rendered: ReactNode[] = [];
   let cards: Card[] = [];
-  for (const [index, segment] of segments.entries()) {
-    if ('steps' in segment) {
+  // What the agent does before a reply folds into one line. Text it writes is its reply unless
+  // the agent carries on afterwards, which makes that text an update along the way.
+  let work: { key: string; items: WorkItem[] } | null = null;
+  let reply: { key: string; part: TextUIPart } | null = null;
+  const flush = (settled: boolean) => {
+    if (work) {
       rendered.push(
-        <Steps
-          key={segment.key}
-          steps={segment.steps}
+        <Work
+          key={work.key}
+          items={work.items}
           live={live}
-          settled={!live || index < segments.length - 1}
+          settled={settled}
+          // The reply under it, which may yet turn out to be an update, is the latest word.
+          showUpdate={!reply}
           onExpand={onToolCallExpand}
         />,
       );
+    }
+    if (reply) {
+      rendered.push(<TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} />);
+    }
+    work = null;
+    reply = null;
+  };
+  for (const [index, part] of message.parts.entries()) {
+    const key = `part-${index}`;
+    if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) continue;
+    const step = toolCallOf(part) ?? (part.type === 'reasoning' ? part : null);
+    if (step) {
+      work ??= { key: reply?.key ?? key, items: [] };
+      if (reply) work.items.push(reply.part);
+      reply = null;
+      work.items.push(step);
       continue;
     }
-    const { key, part } = segment;
-    const navigation = navigationOf(part);
     if (part.type === 'text') {
-      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} />);
-    } else if (navigation) {
+      // More text after it also makes it an update; the plan tool, for one, leaves no step between.
+      if (reply) {
+        work ??= { key: reply.key, items: [] };
+        work.items.push(reply.part);
+      }
+      reply = { key, part };
+      continue;
+    }
+    const navigation = navigationOf(part);
+    if (navigation) {
+      flush(true);
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
     } else if (part.type === 'data-review') {
+      flush(true);
       const { reviewId } = ReviewPartSchema.parse(part.data);
       if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId });
     } else if (part.type === 'data-input-request') {
+      flush(true);
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
     } else if (part.type === 'data-turn') {
+      flush(true);
       rendered.push(...cards.map(renderCard));
       cards = [];
     }
   }
+  // Until the turn ends, text that looks like the reply may be followed by more work.
+  flush(!live);
   rendered.push(...cards.filter((card) => card.kind === 'review' || !turnRunning).map(renderCard));
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;

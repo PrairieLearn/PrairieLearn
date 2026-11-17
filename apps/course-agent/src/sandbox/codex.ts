@@ -45,6 +45,12 @@ const TextDelta = z.object({
   itemId: z.string(),
   delta: z.string(),
 });
+const SummaryPartAdded = z.object({
+  threadId: z.string(),
+  turnId: z.string(),
+  itemId: z.string(),
+  summaryIndex: z.number(),
+});
 const TurnCompleted = z.object({
   threadId: z.string(),
   turn: z.object({
@@ -234,6 +240,10 @@ export class CodexAppServerClient {
     onNotification('item/reasoning/summaryTextDelta', TextDelta, (params) =>
       this.delta('reasoning', params),
     );
+    // A summary's sections arrive as separate parts, each starting with its own heading.
+    onNotification('item/reasoning/summaryPartAdded', SummaryPartAdded, (params) => {
+      if (params.summaryIndex > 0) this.delta('reasoning', { ...params, delta: '\n\n' });
+    });
     onNotification('item/commandExecution/outputDelta', TextDelta, (params) =>
       this.outputDelta(params),
     );
