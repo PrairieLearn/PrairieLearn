@@ -278,8 +278,11 @@ describe('question QID sync with real Git and a course subdirectory', () => {
       );
       const after = await captureDatabaseSnapshot();
       assert.sameDeepMembers(after.assessmentQuestions, before.assessmentQuestions);
-      const activeChunks = await dumpTableWithSchema('chunks', ChunkSchema);
-      assert.lengthOf(activeChunks, beforeChunks.length);
+      const activeChunks = await chunks.selectChunksForCourse('1');
+      assert.lengthOf(
+        activeChunks,
+        beforeChunks.filter((chunk) => chunk.superseded_at === null).length,
+      );
       assert.notInclude(
         activeChunks.map((chunk) => chunk.question_id),
         null,
