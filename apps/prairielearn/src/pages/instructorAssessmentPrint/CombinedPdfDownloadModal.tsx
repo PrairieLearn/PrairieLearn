@@ -79,9 +79,11 @@ export function CombinedPdfDownloadModal({
         {preparing && (
           <p role="status" className="mb-0">
             <Spinner size="sm" className="me-2" aria-hidden="true" />
-            {progress
+            {progress && progress.completed > 0
               ? `Checking documents ${progress.completed} of ${progress.total}…`
-              : 'Checking forms and page counts…'}
+              : document === 'assessment'
+                ? 'Preparing assessment…'
+                : 'Preparing answer keys…'}
           </p>
         )}
         {pageCount !== null && (
