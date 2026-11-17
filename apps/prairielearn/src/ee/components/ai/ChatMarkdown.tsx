@@ -35,22 +35,9 @@ function MathExpression({ tex, display }: { tex: string; display: boolean }) {
   );
 }
 
-// Streamdown has no unstyled mode. Unless a tag is overridden in `components`,
-// Streamdown renders it with its own component, which adds Tailwind utility
-// classes (a heading is `<h1 class="mt-6 mb-2 font-semibold text-3xl">`). We
-// don't ship Tailwind, so that goes wrong in two ways:
-//
-// - Most of those classes don't exist here, so the styling they stand for is
-//   silently missing. Bold text is a `<span class="font-semibold">`, not a
-//   `<strong>`, so it isn't bold at all.
-// - Some of them (`mb-2`, `px-4`, `py-2`) do exist in Bootstrap with different
-//   values, so headings, lists, and table cells get spacing nobody chose.
-//
-// These are the tags Streamdown restyles that need nothing special. Each is
-// overridden with its own tag name, which renders the bare element and leaves
-// it to the same Bootstrap and `.markdown-body` styles as the rest of
-// PrairieLearn. Tags that need more than that (`table`, `img`, `a`, and code)
-// have their own entries in `components`.
+// Streamdown styles these tags with Tailwind utility classes, which are
+// missing or mean something else in our Bootstrap app, so each is replaced
+// with the plain tag.
 const PLAIN_TAGS = [
   'h1',
   'h2',
