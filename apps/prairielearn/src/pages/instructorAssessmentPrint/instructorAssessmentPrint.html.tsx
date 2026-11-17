@@ -25,7 +25,10 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { PrintIdentityFieldsTextSchema } from '../../lib/client/printing/print-cover.js';
-import { printFormLabelBase } from '../../lib/client/printing/print-form-label.js';
+import {
+  nextPrintFormLabel,
+  printFormLabelBase,
+} from '../../lib/client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
 import {
   MAX_COVER_BYTES,
@@ -2189,10 +2192,11 @@ function PrintPreparation({
         <Modal.Body>
           {pendingFormAction?.action === 'regenerate' ? (
             <p className="mb-0">
-              This will archive Form {pendingFormAction.label} and create a new form
-              {hasRandomization ? ' with fresh randomization' : ''}. The new form keeps the letter
-              and gets the next number. Form {pendingFormAction.label} will remain in Previous forms
-              with its chosen questions and settings.
+              This will replace 'Form {pendingFormAction.label}' with 'Form{' '}
+              {nextPrintFormLabel(forms.data, pendingFormAction.label)}'
+              {hasRandomization ? ' applying fresh randomization' : ''}. 'Form{' '}
+              {pendingFormAction.label}' will remain available in <strong>Previous forms</strong>{' '}
+              with its chosen questions and settings for reference.
             </p>
           ) : (
             <p className="mb-0">

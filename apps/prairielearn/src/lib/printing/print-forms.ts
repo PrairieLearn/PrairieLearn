@@ -11,7 +11,7 @@ import {
   selectActivePrintFormsForAssessment,
   selectPrintFormsForAssessment,
 } from '../../models/print-form.js';
-import { printFormLabelBase } from '../client/printing/print-form-label.js';
+import { nextPrintFormLabel, printFormLabelBase } from '../client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../client/printing/print-form-limits.js';
 import {
   type Assessment,
@@ -27,44 +27,6 @@ import { ensureVariant, getQuestionCourse } from '../question-variant.js';
 import { DEFAULT_PRINT_SETTINGS, type PrintSettings } from './print-settings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-function nextLetter(previous: string): string {
-  const letters = previous.split('');
-  for (let index = letters.length - 1; index >= 0; index--) {
-    if (letters[index] !== 'Z') {
-      letters[index] = String.fromCharCode(letters[index].charCodeAt(0) + 1);
-      return letters.join('');
-    }
-    letters[index] = 'A';
-  }
-  return `A${letters.join('')}`;
-}
-
-export function nextPrintFormLabel(
-  forms: Pick<PrintForm, 'label' | 'archived_at'>[],
-  replacesLabel?: string,
-): string {
-  let base: string;
-  if (replacesLabel) {
-    base = printFormLabelBase(replacesLabel);
-  } else {
-    const activeBases = new Set(
-      forms
-        .filter((form) => form.archived_at === null)
-        .map((form) => printFormLabelBase(form.label)),
-    );
-    base = 'A';
-    while (activeBases.has(base)) base = nextLetter(base);
-  }
-
-  let latestVersion = 0;
-  for (const form of forms) {
-    if (printFormLabelBase(form.label) === base) {
-      latestVersion = Math.max(latestVersion, Number(form.label.slice(base.length)) || 1);
-    }
-  }
-  return latestVersion === 0 ? base : `${base}${latestVersion + 1}`;
-}
 
 function assertCanCreatePrintForm(activeForms: PrintForm[], replacesPrintFormId?: string) {
   if (replacesPrintFormId) {

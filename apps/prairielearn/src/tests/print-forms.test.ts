@@ -5,12 +5,9 @@ import { execute, loadSqlEquiv, queryRow, queryRows, queryScalars } from '@prair
 import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance, updateAssessmentInstance } from '../lib/assessment.js';
+import { nextPrintFormLabel } from '../lib/client/printing/print-form-label.js';
 import { VariantSchema } from '../lib/db-types.js';
-import {
-  createPrintForm,
-  ensureInitialPrintForm,
-  nextPrintFormLabel,
-} from '../lib/printing/print-forms.js';
+import { createPrintForm, ensureInitialPrintForm } from '../lib/printing/print-forms.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
