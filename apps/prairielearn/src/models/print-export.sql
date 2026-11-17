@@ -6,6 +6,7 @@ INSERT INTO
     authn_user_id,
     format,
     filename,
+    label,
     input_key
   )
 VALUES
@@ -15,6 +16,7 @@ VALUES
     $authn_user_id,
     $format,
     $filename,
+    $label,
     $input_key
   )
 RETURNING
@@ -77,7 +79,6 @@ SET
   finished_at = CURRENT_TIMESTAMP,
   output_key = $output_key,
   size_bytes = $size_bytes,
-  label = $label,
   failure_message = $failure_message
 WHERE
   id = $id

@@ -484,6 +484,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         status: 'pending',
         format: 'pdf',
         downloadUrl: null,
+        label: `Form ${label} PDF`,
       });
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledOnce();
@@ -673,7 +674,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: null,
+      label: expect.any(String),
       failureMessage:
         '“invalid-cover.pdf” could not be read. Upload a valid PDF without password protection.',
     });
@@ -761,7 +762,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: null,
+      label: expect.any(String),
       failureMessage:
         'The export stopped repeatedly while rendering. Try fewer forms or contact support.',
     });

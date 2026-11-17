@@ -133,9 +133,7 @@ async function publishPrintExport({
 
 function getPrintExportLabel(work: PrintExportWork): string {
   if (work.format === 'docx') {
-    const form = work.snapshot.formLabel
-      ? `Form ${work.snapshot.formLabel}`
-      : `Form ID ${work.snapshot.assetScope.printFormId}`;
+    const form = `Form ${work.snapshot.formLabel}`;
     return work.document === 'answer_key'
       ? `${form} answer key Word document`
       : `${form} Word document`;
@@ -191,6 +189,7 @@ export async function queuePrintExport({
       authnUserId: owner.authnUserId,
       format: work.format,
       filename: work.filename,
+      label: getPrintExportLabel(work),
       inputKey,
     });
   } catch (error) {
@@ -231,7 +230,6 @@ async function processPrintExport(printExportId: string) {
       status: 'succeeded',
       outputKey,
       sizeBytes: packet.length,
-      label: getPrintExportLabel(work),
     });
     if (!finished) await deleteFromS3(bucket, outputKey);
   } catch (error) {

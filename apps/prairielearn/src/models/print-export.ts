@@ -19,6 +19,7 @@ export async function insertPrintExport({
   authnUserId,
   format,
   filename,
+  label,
   inputKey,
 }: {
   assessmentId: string;
@@ -26,6 +27,7 @@ export async function insertPrintExport({
   authnUserId: string;
   format: PrintExport['format'];
   filename: string;
+  label: string;
   inputKey: string;
 }): Promise<string> {
   return await queryScalar(
@@ -36,6 +38,7 @@ export async function insertPrintExport({
       authn_user_id: authnUserId,
       format,
       filename,
+      label,
       input_key: inputKey,
     },
     IdSchema,
@@ -82,7 +85,7 @@ export async function releasePrintExport(id: string) {
 export async function finishPrintExport(
   id: string,
   result:
-    | { status: 'succeeded'; outputKey: string; sizeBytes: number; label: string }
+    | { status: 'succeeded'; outputKey: string; sizeBytes: number }
     | { status: 'failed'; failureMessage: string },
 ): Promise<boolean> {
   const updated = await execute(sql.finish_print_export, {
@@ -90,7 +93,6 @@ export async function finishPrintExport(
     status: result.status,
     output_key: result.status === 'succeeded' ? result.outputKey : null,
     size_bytes: result.status === 'succeeded' ? result.sizeBytes : null,
-    label: result.status === 'succeeded' ? result.label : null,
     failure_message: result.status === 'failed' ? result.failureMessage : null,
   });
   return updated > 0;
