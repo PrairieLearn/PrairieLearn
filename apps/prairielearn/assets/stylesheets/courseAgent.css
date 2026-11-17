@@ -114,6 +114,37 @@
   margin-bottom: 0;
 }
 
+/* A highlight sweeps across the label of whatever the agent is doing now. */
+.course-agent-shimmer {
+  color: transparent;
+  background: linear-gradient(
+      90deg,
+      var(--bs-secondary-color) 35%,
+      var(--bs-emphasis-color) 50%,
+      var(--bs-secondary-color) 65%
+    )
+    0 0 / 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: course-agent-shimmer 1.5s linear infinite;
+}
+
+/* The gradient shows only through transparent text, and a chip's own background would cover it. */
+.course-agent-shimmer code {
+  color: transparent !important;
+  background-color: transparent !important;
+}
+
+@keyframes course-agent-shimmer {
+  from {
+    background-position: 110% 0;
+  }
+
+  to {
+    background-position: -110% 0;
+  }
+}
+
 .course-agent-page-link {
   background-color: var(--bs-body-bg);
   transition:
@@ -217,6 +248,11 @@ body:has(.course-agent-panel-animate) .app-main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Slowed rather than stopped, as Bootstrap does for spinners, so work in progress stays visible. */
+  .course-agent-shimmer {
+    animation-duration: 3s;
+  }
+
   .course-agent-panel-animate,
   body:has(.course-agent-panel-animate) .app-main {
     transition: none;

@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import { type ReactNode, useState } from 'react';
-import { Spinner } from 'react-bootstrap';
 
 import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
@@ -197,7 +196,7 @@ function statusNote(call: ToolCall, live: boolean) {
   return status === 'failed' ? { text: 'Failed', failed: true } : null;
 }
 
-/** The collapsed line: icon or spinner, label, and status in text as well as colour. */
+/** The collapsed line: icon, label, and status in text as well as colour. */
 function Summary({
   icon,
   running,
@@ -213,22 +212,15 @@ function Summary({
 }) {
   return (
     <span className="d-flex align-items-center gap-2 small overflow-hidden flex-grow-1">
-      {/* One fixed-width slot, sized to the icon, keeps the spinner and icons in a column. */}
+      {/* One fixed-width slot, sized to the icon, keeps the icons in a column. */}
       <span
         className="d-inline-flex justify-content-center flex-shrink-0"
         style={{ width: '1.25em' }}
         aria-hidden="true"
       >
-        {running ? (
-          <Spinner
-            animation="border"
-            style={{ width: '1em', height: '1em', borderWidth: '0.15em' }}
-          />
-        ) : (
-          <i className={clsx('bi', icon, note?.failed && 'text-danger')} />
-        )}
+        <i className={clsx('bi', icon, note?.failed && 'text-danger')} />
       </span>
-      <span className="text-truncate">{label}</span>
+      <span className={clsx('text-truncate', running && 'course-agent-shimmer')}>{label}</span>
       {/* The spaces separate words in the button's accessible name; flex layout drops them. */}
       {meta && <span className="flex-shrink-0"> {meta}</span>}
       {running && <span className="visually-hidden"> (in progress)</span>}
@@ -263,6 +255,16 @@ function Row({
     >
       <div className="d-flex flex-column gap-1 mt-1 mb-2 ms-4">{children}</div>
     </Disclosure>
+  );
+}
+
+/** What a running call is doing, for the chat's status line. */
+export function RunningToolCallLabel({ call }: { call: ToolCall }) {
+  const { verb, subject } = describe(call);
+  return (
+    <>
+      {VERBS[verb][0]} {subject}…
+    </>
   );
 }
 

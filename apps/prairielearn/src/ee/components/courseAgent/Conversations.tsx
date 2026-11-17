@@ -27,7 +27,7 @@ import {
   type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
-import { run } from '@prairielearn/run';
+import { formatInterval } from '@prairielearn/formatter';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -51,7 +51,7 @@ import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, navigationOf } from './Navigation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
-import { ToolCalls } from './ToolCalls.js';
+import { RunningToolCallLabel, ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 import { currentPageLocation } from './pageLocation.js';
@@ -280,6 +280,59 @@ function PendingStatus({ label }: { label: string }) {
   );
 }
 
+/**
+ * What the agent is doing now and for how long, shown for as long as it works. It stays mounted
+ * from the sandbox starting to the turn ending, so the time covers both.
+ */
+function ActivityStatus({
+  startingSandbox,
+  message,
+}: {
+  startingSandbox: boolean;
+  message: UIMessage | undefined;
+}) {
+  const [startedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(startedAt);
+  // Advances the elapsed time once a second.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <div className="d-flex gap-2 small text-body-secondary" role="status">
+      {/* The label changes with every step and the time every second, too often to announce. */}
+      <span className="visually-hidden">
+        {startingSandbox ? 'Starting sandbox…' : 'The course agent is working…'}
+      </span>
+      <span className="text-truncate course-agent-shimmer" aria-hidden="true">
+        {startingSandbox ? 'Starting sandbox…' : <ActivityLabel message={message} />}
+      </span>
+      <span className="flex-shrink-0" aria-hidden="true">
+        {formatInterval(now - startedAt)}
+      </span>
+    </div>
+  );
+}
+
+/** The agent's latest step: the call it is running, what it is reasoning about, or its reply. */
+function ActivityLabel({ message }: { message: UIMessage | undefined }) {
+  if (message?.role !== 'assistant') return 'Thinking…';
+  for (let i = message.parts.length - 1; i >= 0; i--) {
+    const part = message.parts[i];
+    const call = toolCallOf(part);
+    if (call) return call.status === 'running' ? <RunningToolCallLabel call={call} /> : 'Thinking…';
+    if (part.type === 'reasoning' && part.text.trim()) {
+      // Codex heads each section of a reasoning summary with a bold title.
+      const heading = [...part.text.matchAll(/\*\*(.+?)\*\*/g)].at(-1)?.[1];
+      return heading ? `${heading}…` : 'Thinking…';
+    }
+    if (part.type === 'text' && part.text.trim()) {
+      return part.state === 'streaming' ? 'Writing…' : 'Thinking…';
+    }
+  }
+  return 'Thinking…';
+}
+
 function Chat({
   courseId,
   conversationId,
@@ -474,25 +527,10 @@ function Chat({
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
-  const showThinking = run(() => {
-    if (
-      !(responseActive || lifecycle?.status === 'waiting_for_agent') ||
-      connectionFailed ||
-      connectionError
-    ) {
-      return false;
-    }
-    const lastMessage = messages.at(-1);
-    if (lastMessage?.role !== 'assistant') {
-      return true;
-    }
-    return !lastMessage.parts.some((part) => {
-      if (part.type === 'text' || part.type === 'reasoning') {
-        return part.text.trim().length > 0;
-      }
-      return toolCallOf(part) !== null || navigationOf(part) !== null;
-    });
-  });
+  const working =
+    (responseActive || lifecycle?.status === 'waiting_for_agent') &&
+    !connectionFailed &&
+    !connectionError;
   // The server reports the turn's lifecycle before the SDK marks the response active.
   const startingSandbox =
     !connectionFailed &&
@@ -500,7 +538,6 @@ function Chat({
     (lifecycle?.status === 'starting' ||
       ((lifecycle === null || lifecycle.status === 'offline') &&
         (awaitingStart || responseActive)));
-  const pendingLabel = startingSandbox ? 'Starting sandbox…' : showThinking ? 'Thinking…' : null;
   const showInitialText =
     initialText !== undefined && !messages.some((message) => message.role === 'user');
   const awaitingReviewId =
@@ -579,7 +616,9 @@ function Chat({
                 canResume={awaitingReviewId === lifecycle.reviewId}
               />
             )}
-          {pendingLabel && <PendingStatus label={pendingLabel} />}
+          {(startingSandbox || working) && (
+            <ActivityStatus startingSandbox={startingSandbox} message={messages.at(-1)} />
+          )}
           {lifecycle?.status === 'blocked' && (
             <BlockedNotice
               state={lifecycle}
