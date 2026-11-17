@@ -1759,7 +1759,7 @@ export async function loadQuestionInfo(courseId: string, coursePath: string, qid
     filePath: path.join('questions', qid, 'info.json'),
     schema: schemas.infoQuestion,
     zodSchema: schemas.QuestionJsonSchema,
-    validate: (question) => validateQuestion({ qid, question, sharingEnabled }),
+    validate: (question) => validateQuestion({ question, sharingEnabled }),
   });
   if (info && qid.startsWith('@')) {
     infofile.addError(info, "Question IDs are not allowed to begin with '@'");
