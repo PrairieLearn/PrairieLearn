@@ -19,3 +19,4 @@ export {
   enqueueBatchedMigration,
   finalizeBatchedMigration,
 } from './batched-migrations-runner.js';
+export { selectTableIdBounds } from './table-bounds.js';

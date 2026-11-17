@@ -4,15 +4,21 @@
   "title": "Homework to test Active Rule",
   "set": "Homework",
   "number": "8",
-  "allowAccess": [
-    { "startDate": "2020-01-01T00:00:01", "endDate": "2020-12-31T23:59:59", "credit": 100 },
-    { "startDate": "2030-01-01T00:00:01", "endDate": "2030-12-31T23:59:59", "credit": 75 },
-    { "startDate": "2000-01-01T00:00:01", "endDate": "2024-12-31T23:59:59", "active": false },
+  "accessControl": [
     {
-      "startDate": "2025-01-01T00:00:01",
-      "endDate": "2039-12-31T23:59:59",
-      "active": false,
-      "showClosedAssessment": false
+      "dateControl": {
+        "release": { "date": "2020-01-01T00:00:01" },
+        "due": { "date": "2020-12-31T23:59:59" },
+        "lateDeadlines": [{ "date": "2030-12-31T23:59:59", "credit": 75 }]
+      },
+      "afterComplete": {
+        "questions": {
+          "hidden": true,
+          "visibleFromDate": "2040-01-01T00:00:01",
+          "visibleUntilDate": "2049-12-31T23:59:59"
+        }
+      },
+      "beforeRelease": { "listed": true }
     }
   ],
   "zones": [

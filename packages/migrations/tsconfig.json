@@ -1,11 +1,3 @@
 {
-  "extends": "@prairielearn/tsconfig/tsconfig.package.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "types": ["node"],
-    // Use native ESM.
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext"
-  }
+  "extends": "@prairielearn/tsconfig/tsconfig.package-node.json"
 }

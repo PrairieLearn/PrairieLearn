@@ -5,7 +5,7 @@
 
 import os
 
-c = get_config()  # type: ignore # noqa: F821
+c = get_config()  # type: ignore # ruff:ignore[undefined-name]
 
 c.ServerApp.base_url = "/"
 if "WORKSPACE_BASE_URL" in os.environ:
@@ -21,7 +21,7 @@ c.ServerApp.allow_origin = "*"
 # RTC appears to be broken in the current version of `jupyter-collaboration`:
 # https://github.com/jupyterlab/jupyter-collaboration/issues/162
 # This opt-in will only be useful once the underlying issue is resolved.
-enable_rtc = bool(os.environ.get("ENABLE_REAL_TIME_COLLABORATION", False))
+enable_rtc = bool(os.environ.get("ENABLE_REAL_TIME_COLLABORATION", False))  # ruff:ignore[invalid-envvar-default]
 c.YDocExtension.disable_rtc = not enable_rtc
 
 # `LAUNCH_FILE_NAME` can be set to open a specific file when the workspace is opened.

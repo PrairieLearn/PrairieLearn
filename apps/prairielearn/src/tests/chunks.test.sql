@@ -33,10 +33,12 @@ WHERE
   qid = $qid
   AND deleted_at IS NULL;
 
--- BLOCK select_all_chunks
-SELECT
-  *
-FROM
-  chunks
+-- BLOCK prepare_history_baseline
+UPDATE chunks
+SET
+  created_at = CASE
+    WHEN type = 'clientFilesCourse' THEN NULL
+    ELSE $created_at::timestamptz
+  END
 WHERE
   course_id = $course_id;

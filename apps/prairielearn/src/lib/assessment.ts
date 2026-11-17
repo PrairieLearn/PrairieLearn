@@ -4,6 +4,7 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { formatDate, formatInterval } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -18,6 +19,7 @@ import {
   type AssessmentInstance,
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
+  CourseInstanceSchema,
   CourseSchema,
   QuestionSchema,
   type User,
@@ -31,10 +33,10 @@ import { createServerJob } from './server-jobs.js';
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export const InstanceLogSchema = z.object({
+const InstanceLogSchema = z.object({
   event_name: z.string(),
   event_color: z.string(),
-  event_date: z.date(),
+  event_date: DateFromISOString,
   auth_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: z.string().nullable(),
@@ -43,37 +45,18 @@ export const InstanceLogSchema = z.object({
   variant_number: z.number().nullable(),
   variant_seed: z.string().nullable(),
   submission_id: z.string().nullable(),
-  data: z.record(z.any()).nullable(),
+  data: z.record(z.string(), z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
   client_fingerprint_number: z.number().nullable(),
-  formatted_date: z.string(),
-  date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
+  assessment_instance_date: DateFromISOString,
+  display_timezone: CourseInstanceSchema.shape.display_timezone,
 });
-export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
-
-/**
- * Check that an assessment_instance_id really belongs to the given assessment_id
- *
- * @param assessment_instance_id - The assessment instance to check.
- * @param assessment_id - The assessment it should belong to.
- * @returns Throws an error if the assessment instance doesn't belong to the assessment.
- */
-export async function checkBelongs(
-  assessment_instance_id: string,
-  assessment_id: string,
-): Promise<void> {
-  if (
-    (await sqldb.queryOptionalScalar(
-      sql.check_belongs,
-      { assessment_instance_id, assessment_id },
-      IdSchema,
-    )) == null
-  ) {
-    throw new error.HttpStatusError(403, 'access denied');
-  }
-}
+export type InstanceLogEntry = Omit<
+  z.infer<typeof InstanceLogSchema>,
+  'display_timezone' | 'assessment_instance_date'
+>;
 
 /**
  * Render the "text" property of an assessment.
@@ -170,6 +153,29 @@ export async function makeAssessmentInstance({
 }
 
 /**
+ * Randomly selects the assessment questions an instance of the assessment should
+ * contain, honoring each alternative group's and zone's `number_choose`. Questions
+ * already in the given assessment instance are kept in preference to others.
+ *
+ * @param params.assessment_id - The assessment to select questions from.
+ * @param params.assessment_instance_id - The instance whose existing questions take priority, if any.
+ * @returns The IDs of the selected assessment questions.
+ */
+export async function selectAssessmentQuestionIdsForInstance({
+  assessment_id,
+  assessment_instance_id,
+}: {
+  assessment_id: string;
+  assessment_instance_id: string | null;
+}): Promise<string[]> {
+  return await sqldb.queryScalars(
+    sql.select_assessment_question_ids_for_instance,
+    { assessment_id, assessment_instance_id },
+    IdSchema,
+  );
+}
+
+/**
  * Add new questions to the assessment instance and regrade it if necessary.
  *
  * @param assessment_instance_id - The assessment instance to grade.
@@ -197,9 +203,13 @@ export async function updateAssessmentInstance(
     }
 
     // Insert any new questions not previously in the assessment instance
+    const assessmentQuestionIds = await selectAssessmentQuestionIdsForInstance({
+      assessment_id: assessmentInstance.assessment_id,
+      assessment_instance_id,
+    });
     const newInstanceQuestionIds = await sqldb.queryScalars(
       sql.insert_instance_questions,
-      { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
+      { assessment_instance_id, assessment_question_ids: assessmentQuestionIds, authn_user_id },
       IdSchema,
     );
 
@@ -388,6 +398,7 @@ const InstancesToGradeSchema = z.object({
  *
  * @param params
  * @param params.assessment_id - The assessment to grade.
+ * @param params.assessment_instance_ids - If provided, only grade these instances; otherwise grade all open instances.
  * @param params.user_id - The current user performing the update.
  * @param params.authn_user_id - The current authenticated user.
  * @param params.close - Whether to close the assessment instances after grading.
@@ -397,6 +408,7 @@ const InstancesToGradeSchema = z.object({
  */
 export async function gradeAllAssessmentInstances({
   assessment_id,
+  assessment_instance_ids = null,
   user_id,
   authn_user_id,
   close,
@@ -404,6 +416,11 @@ export async function gradeAllAssessmentInstances({
   ignoreRealTimeGradingDisabled,
 }: {
   assessment_id: string;
+  /**
+   * If provided, restricts grading to these assessment instance ids; otherwise
+   * grades every open instance for the assessment.
+   */
+  assessment_instance_ids?: string[] | null;
   user_id: string;
   authn_user_id: string;
   close: boolean;
@@ -416,7 +433,7 @@ export async function gradeAllAssessmentInstances({
 
   const serverJob = await createServerJob({
     type: 'grade_all_assessment_instances',
-    description: 'Grade all assessment instances for ' + assessment_label,
+    description: `${close ? 'Grade and close' : 'Grade'} all assessment instances for ${assessment_label}`,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: course_id,
@@ -429,7 +446,7 @@ export async function gradeAllAssessmentInstances({
 
     const instances = await sqldb.queryRows(
       sql.select_instances_to_grade,
-      { assessment_id },
+      { assessment_id, assessment_instance_ids },
       InstancesToGradeSchema,
     );
     job.info(instances.length === 1 ? 'One instance found' : instances.length + ' instances found');
@@ -533,6 +550,35 @@ export async function setAssessmentInstancePoints(
   });
 }
 
+function formatLogEntryValues({
+  display_timezone,
+  assessment_instance_date,
+  ...row
+}: z.infer<typeof InstanceLogSchema>): InstanceLogEntry {
+  if (row.event_name === 'Open') {
+    const dateLimit = DateFromISOString.nullable().parse(row.data?.date_limit);
+    if (dateLimit == null) {
+      row.data = {
+        ...row.data,
+        date_limit: 'Unlimited',
+        time_limit: 'Unlimited',
+        remaining_time: 'Unlimited',
+      };
+    } else {
+      row.data = {
+        ...row.data,
+        date_limit: formatDate(dateLimit, display_timezone),
+        time_limit: formatInterval(dateLimit.getTime() - assessment_instance_date.getTime()),
+        remaining_time: formatInterval(dateLimit.getTime() - row.event_date.getTime()),
+      };
+    }
+  } else if (row.event_name === 'Time limit expiry') {
+    const dateLimit = DateFromISOString.parse(row.data?.date_limit);
+    row.data = { ...row.data, date_limit: formatDate(dateLimit, display_timezone) };
+  }
+  return row;
+}
+
 /**
  * Selects a log of all events associated to an assessment instance.
  *
@@ -548,7 +594,7 @@ export async function selectAssessmentInstanceLog(
   const log: InstanceLogEntry[] = await sqldb.queryRows(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
-    InstanceLogSchema,
+    InstanceLogSchema.transform(formatLogEntryValues),
   );
   const fingerprintNumbers: Record<string, number> = {};
   let i = 1;
@@ -571,12 +617,8 @@ export async function selectAssessmentInstanceLogCursor(
   return sqldb.queryCursor(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
-    InstanceLogSchema,
+    InstanceLogSchema.transform(formatLogEntryValues),
   );
-}
-
-async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
-  await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
 }
 
 export async function updateAssessmentQuestionStatsForAssessment(
@@ -588,7 +630,9 @@ export async function updateAssessmentQuestionStatsForAssessment(
       { assessment_id },
       IdSchema,
     );
-    await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
+    await async.eachSeries(assessment_questions, async (assessment_question_id) => {
+      await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
+    });
     await sqldb.execute(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
@@ -614,10 +658,12 @@ export async function deleteAssessmentInstance(
 export async function deleteAllAssessmentInstancesForAssessment(
   assessment_id: string,
   authn_user_id: string,
+  assessment_instance_ids: string[] | null = null,
 ): Promise<void> {
   await sqldb.execute(sql.delete_all_assessment_instances_for_assessment, {
     assessment_id,
     authn_user_id,
+    assessment_instance_ids,
   });
 }
 

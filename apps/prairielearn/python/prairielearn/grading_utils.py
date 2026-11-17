@@ -7,29 +7,28 @@ from prairielearn import ...
 
 import math
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, assert_never
 
 import numpy as np
 import numpy.typing as npt
 from numpy.typing import ArrayLike
-from typing_extensions import assert_never
 
 from prairielearn.question_utils import QuestionData
-from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
+from prairielearn.timeout_utils import SignalTimeout, TimeoutState
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_dd(*args: Any, **kwargs: Any) -> bool:  # ruff:ignore[undocumented-public-function, invalid-function-name]
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_sf(*args: Any, **kwargs: Any) -> bool:  # ruff:ignore[undocumented-public-function, invalid-function-name]
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # noqa: D103, N802
+def is_correct_ndarray2D_ra(*args: Any, **kwargs: Any) -> bool:  # ruff:ignore[undocumented-public-function, invalid-function-name]
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
@@ -154,13 +153,15 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 
 def check_answers_names(data: QuestionData, name: str) -> None:
-    """Check that answers names are distinct using property in data dict.
+    """Check that answers names are provided and distinct using property in data dict.
 
     Updates the data dictionary with the name if it is not already present.
 
     Raises:
         KeyError: If the name is already present in the data dictionary.
     """
+    if name.strip() == "":
+        raise KeyError('"answers-name" attribute cannot be empty')
     if name in data["answers_names"]:
         raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
     data["answers_names"][name] = True
@@ -242,7 +243,7 @@ def grade_answer_parameterized(
     feedback_content: str | None = None
 
     if timeout is not None:
-        with ThreadingTimeout(timeout) as ctx:
+        with SignalTimeout(timeout) as ctx:
             result, feedback_content = grade_function(submitted_answer)
         timed_out = ctx.state == TimeoutState.TIMED_OUT
     else:

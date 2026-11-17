@@ -7,7 +7,7 @@ from prairielearn.misc_utils import escape_unicode_string, full_unidecode
     [
         ("café", "cafe"),
         ("naïve", "naive"),
-        ("−5", "-5"),  # Unicode minus to normal minus  # noqa: RUF001
+        ("−5", "-5"),  # Unicode minus to normal minus  # ruff:ignore[ambiguous-unicode-character-string]
         ("résumé", "resume"),
         ("über", "uber"),
         ("test", "test"),

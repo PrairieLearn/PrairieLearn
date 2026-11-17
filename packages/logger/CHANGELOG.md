@@ -1,5 +1,63 @@
 # @prairielearn/logger
 
+## 4.0.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 4.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.0
+
+### Major Changes
+
+- 9757f58: Replace Winston with Pino and support reopening file destinations without restarting the process.
+
+### Patch Changes
+
+- 00945c2: Format console logs for readability while preserving JSON file logs.
+
+## 3.1.7
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.1.6
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.1.5
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.1.4
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 3.1.3
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.1.2
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 3.1.1
 
 ### Patch Changes

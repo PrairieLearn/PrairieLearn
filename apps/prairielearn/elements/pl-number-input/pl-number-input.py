@@ -1,13 +1,14 @@
+import pathlib
 import random
 from decimal import Decimal, InvalidOperation
 from enum import Enum
-from typing import Any
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-from typing_extensions import assert_never
+from prairielearn.to_precision import to_precision
 
 
 class DisplayType(Enum):
@@ -46,35 +47,12 @@ ANSWER_INSUFFICIENT_PRECISION_WARNING = (
 ANSWER_BLANK_CORRECT_FEEDBACK = "The correct answer used for grading was blank."
 NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
 
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-number-input.json"
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "correct-answer",
-        "label",
-        "aria-label",
-        "suffix",
-        "display",
-        "comparison",
-        "rtol",
-        "atol",
-        "digits",
-        "allow-complex",
-        "show-help-text",
-        "size",
-        "show-correct-answer",
-        "show-placeholder",
-        "allow-fractions",
-        "allow-blank",
-        "blank-value",
-        "custom-format",
-        "placeholder",
-        "show-score",
-        "initial-value",
-    ]
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element(element, SCHEMA_PATH)
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
@@ -104,7 +82,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
-) -> str:
+) -> str | None:
     correct_answer = pl.from_json(data["correct_answers"].get(name, None))
     if correct_answer is not None and correct_answer != "":
         # Get format and comparison parameters
@@ -216,9 +194,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_help_text = pl.get_boolean_attrib(
         element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
     )
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(
+    raw_answer_or_initial_value = data["raw_submitted_answers"].get(name)
+    if raw_answer_or_initial_value is None:
+        raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         )
     partial_score = data["partial_scores"].get(name, {"score": None})
@@ -242,7 +220,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_score": show_score,
             "parse_error": parse_error,
             display.value: True,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
         }
 
         if score is not None:
@@ -261,11 +239,28 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
                 raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
+            # Hide the default atol since it's too small to be useful context
+            # for students. Show any explicitly-set non-zero value.
+            show_atol = pl.has_attrib(element, "atol") and atol > 0
+            example_true = 100
+            rtol_term = f"{example_true * rtol:g}"
+            atol_term = f"{atol:g}"
+            if rtol > 0 and show_atol:
+                example_eps = f"({rtol_term} + {atol_term})"
+            elif rtol > 0:
+                example_eps = rtol_term
+            else:
+                example_eps = atol_term
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": f"{rtol:g}",
-                "atol": f"{atol:g}",
+                "rtol_pct": f"{(rtol * 100):g}",
+                "nonzero_rtol": rtol != 0,
+                "atol": atol_term,
+                "show_atol": show_atol,
+                "show_tolerance": rtol != 0 or show_atol,
+                "example_true": example_true,
+                "example_eps": example_eps,
             }
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
@@ -275,7 +270,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "format": True,
                 "sigfig": True,
                 "digits": f"{digits:d}",
-                "comparison_eps": 0.51 * (10 ** -(digits - 1)),
+                "comparison_eps": to_precision(0.51 * (10 ** -(digits - 1)), 2),
                 "digits_plural": digits > 1,
             }
         elif comparison is ComparisonType.DECDIG:
@@ -286,7 +281,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "format": True,
                 "decdig": True,
                 "digits": f"{digits:d}",
-                "comparison_eps": 0.51 * (10 ** -(digits - 0)),
+                "comparison_eps": to_precision(0.51 * (10 ** -(digits - 0)), 2),
                 "digits_plural": digits > 1,
             }
         else:
@@ -330,6 +325,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
+        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "label": label,
@@ -352,14 +348,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["submitted_answer"] = ("{:" + custom_format + "}").format(
                     submitted_answer
                 )
+            if submitted_raw_answer is not None:
+                html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                    submitted_raw_answer,
+                    aria_label or name,
+                    show_if_ascii_only=False,
+                )
 
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        elif raw_submitted_answer is not None:
+        elif submitted_raw_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                raw_submitted_answer
+                submitted_raw_answer
             )
+
         # Add true answer to be able to display it in the submitted answer panel
         if show_correct_answer:
             html_params["correct_answer"] = format_true_ans(element, data, name)
@@ -577,12 +580,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    allow_complex = pl.get_boolean_attrib(
-        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
-    )
-    allow_fractions = pl.get_boolean_attrib(
-        element, "allow-fractions", ALLOW_FRACTIONS_DEFAULT
-    )
     show_correct = pl.get_boolean_attrib(
         element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
     )
@@ -625,15 +622,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         )
         feedback = None
 
-        def formatted_answer(answer: float) -> str:
-            return str(
-                pl.string_fraction_to_number(
-                    str(answer),
-                    allow_fractions=allow_fractions,
-                    allow_complex=allow_complex,
-                )
-            )
-
         # If the empty answer is correct, use 0 as an arbitrary starting point for incorrect answers
         if correct_answer_converted == "blank":
             answer = random.choice([-1.1, 1.1])
@@ -644,7 +632,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             eps = np.absolute(correct_answer_converted) * rtol + atol
             # eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1.1, 1.1])
-            submitted_answer_precision = get_string_precision(formatted_answer(answer))
+            submitted_answer_precision = get_string_precision(str(answer))
             feedback = (
                 ANSWER_INSUFFICIENT_PRECISION_WARNING
                 if submitted_answer_precision > rtol
@@ -662,9 +650,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             eps = 0.51 * (10**-n)
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])
-            submitted_answer_precision = get_string_significant_digits(
-                formatted_answer(answer)
-            )
+            submitted_answer_precision = get_string_significant_digits(str(answer))
 
             feedback = (
                 ANSWER_INSUFFICIENT_PRECISION_WARNING
@@ -677,9 +663,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             eps = 0.51 * (10**-digits)
             eps += random.uniform(1, 10)
             answer = correct_answer + eps * random.choice([-1, 1])
-            submitted_answer_precision = get_string_decimal_digits(
-                formatted_answer(answer)
-            )
+            submitted_answer_precision = get_string_decimal_digits(str(answer))
             feedback = (
                 ANSWER_INSUFFICIENT_PRECISION_WARNING
                 if submitted_answer_precision < digits

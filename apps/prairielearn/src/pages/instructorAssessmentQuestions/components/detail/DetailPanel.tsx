@@ -1,4 +1,7 @@
+import type { AppError } from '@prairielearn/trpc/client';
+
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
+import type { AssessmentQuestionsError } from '../../../../trpc/assessment/assessment-questions.js';
 import {
   type CourseQuestionForPicker,
   type DetailActions,
@@ -7,6 +10,7 @@ import {
   type ZoneAssessmentForm,
   assertStandaloneQuestion,
 } from '../../types.js';
+import { hasUnavailableQuestions } from '../../utils/questions.js';
 import { findQuestionByTrackingId } from '../../utils/zoneLookup.js';
 
 import { AltPoolDetailPanel } from './AltPoolDetailPanel.js';
@@ -24,6 +28,7 @@ export function DetailPanel({
   courseQuestionsLoading,
   questionsInAssessment,
   disabledQids,
+  readOnlyQids,
   currentChangeQid,
   currentAssessmentId,
   isPickingQuestion,
@@ -40,10 +45,11 @@ export function DetailPanel({
   courseQuestionsLoading: boolean;
   questionsInAssessment: Map<string, string[]>;
   disabledQids: Set<string>;
+  readOnlyQids: Set<string>;
   currentChangeQid?: string;
   currentAssessmentId: string;
   isPickingQuestion?: boolean;
-  pickerError: Error | null;
+  pickerError: AppError<AssessmentQuestionsError['QuestionByQid']> | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
 }) {
@@ -90,7 +96,9 @@ export function DetailPanel({
           idPrefix={`question-${question.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
-          onPickQuestion={actions.onPickQuestion}
+          onPickQuestion={
+            hasUnavailableQuestions(question, questionMetadata) ? undefined : actions.onPickQuestion
+          }
           onResetButtonClick={actions.onResetButtonClick}
           onFormValidChange={actions.onFormValidChange}
         />
@@ -121,7 +129,9 @@ export function DetailPanel({
           idPrefix={`alt-${alternative.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
-          onPickQuestion={actions.onPickQuestion}
+          onPickQuestion={
+            hasUnavailableQuestions(block, questionMetadata) ? undefined : actions.onPickQuestion
+          }
           onResetButtonClick={actions.onResetButtonClick}
           onFormValidChange={actions.onFormValidChange}
         />
@@ -157,6 +167,7 @@ export function DetailPanel({
           isLoading={courseQuestionsLoading}
           questionsInAssessment={questionsInAssessment}
           disabledQids={disabledQids}
+          readOnlyQids={readOnlyQids}
           currentChangeQid={currentChangeQid}
           courseId={state.courseId}
           courseInstanceId={state.courseInstanceId}

@@ -1,12 +1,12 @@
+import pathlib
 import random
 from enum import Enum
-from typing import Any
+from typing import Any, assert_never
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class DisplayType(Enum):
@@ -30,28 +30,12 @@ INITIAL_VALUE_DEFAULT = None
 
 INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
 
+SCHEMA_PATH = pathlib.Path(__file__).parent / "schemas" / "pl-integer-input.json"
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "correct-answer",
-        "label",
-        "aria-label",
-        "suffix",
-        "display",
-        "size",
-        "show-help-text",
-        "base",
-        "allow-blank",
-        "blank-value",
-        "placeholder",
-        "initial-value",
-        "show-score",
-    ]
-
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element(element, SCHEMA_PATH)
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
@@ -102,9 +86,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     parse_error = data["format_errors"].get(name)
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(
+    raw_answer_or_initial_value = data["raw_submitted_answers"].get(name)
+    if raw_answer_or_initial_value is None:
+        raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         )
     score = data["partial_scores"].get(name, {"score": None}).get("score")
@@ -147,8 +131,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "parse_error": parse_error,
-            "use_numeric": 1 <= base <= 10,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
         }
 
         if show_score and score is not None:
@@ -158,6 +141,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
+        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "label": label,
@@ -165,6 +149,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "default_base": base in (BASE_DEFAULT, 0),
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
+            display.value: True,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -195,13 +180,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             html_params["suffix"] = suffix
             html_params["a_sub"] = a_sub_display
+            if submitted_raw_answer is not None:
+                html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                    submitted_raw_answer,
+                    aria_label or name,
+                    show_if_ascii_only=False,
+                )
 
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        elif raw_submitted_answer is not None:
+        elif submitted_raw_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                raw_submitted_answer
+                submitted_raw_answer
             )
 
         if show_score and score is not None:
@@ -228,6 +219,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "label": label,
             "a_tru": a_tru_str,
             "suffix": suffix,
+            display.value: True,
         }
 
         return chevron.render(template, html_params).strip()

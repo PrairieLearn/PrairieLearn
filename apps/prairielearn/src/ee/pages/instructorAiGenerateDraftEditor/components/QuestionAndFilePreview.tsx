@@ -72,6 +72,7 @@ async function syncQuestionAssets(extraHeadersHtml: string): Promise<void> {
       if (!href || node.getAttribute('rel') !== 'stylesheet') return;
 
       const existing = document.head.querySelector<HTMLLinkElement>(
+        // getVariantAssetKey() escapes selector values and provides a fallback when CSS.escape() is unavailable.
         `link[rel="stylesheet"][href="${getVariantAssetKey(href)}"]`,
       );
 
@@ -119,6 +120,7 @@ async function syncQuestionAssets(extraHeadersHtml: string): Promise<void> {
       if (!src) return;
 
       const existing = document.head.querySelector<HTMLScriptElement>(
+        // getVariantAssetKey() escapes selector values and provides a fallback when CSS.escape() is unavailable.
         `script[src="${getVariantAssetKey(src)}"]`,
       );
       if (existing) {
@@ -253,12 +255,12 @@ function useQuestionHtml({
     if (!wrapperRef.current) return;
 
     const wrapper = wrapperRef.current;
-    wrapper.addEventListener('submit', handleSubmit, true);
-    wrapper.addEventListener('click', handleNewVariantButtonClick, true);
+    wrapper.addEventListener('submit', handleSubmit, { capture: true });
+    wrapper.addEventListener('click', handleNewVariantButtonClick, { capture: true });
 
     return () => {
-      wrapper.removeEventListener('submit', handleSubmit, true);
-      wrapper.removeEventListener('click', handleNewVariantButtonClick, true);
+      wrapper.removeEventListener('submit', handleSubmit, { capture: true });
+      wrapper.removeEventListener('click', handleNewVariantButtonClick, { capture: true });
     };
   }, [wrapperRef, handleSubmit, handleNewVariantButtonClick]);
 

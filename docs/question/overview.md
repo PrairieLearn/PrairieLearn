@@ -12,6 +12,8 @@ A question is made up of three main components:
 2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [question template documentation](template.md) for more details.
 3. **`server.py`**: This is where you write the logic for generating random values, grading student responses, and any other server-side code. This file is optional, but it is necessary for any question that has non-trivial randomization or custom grading behavior. Reference the [server documentation](server.md) for more details.
 
+You can also include an optional `README.md` file directly in the question directory. PrairieLearn renders it as Markdown above the question on the instructor **Preview** page; it is not visible to students. Use it to document the question's intent, variants, or maintenance notes.
+
 ## Creating a question
 
 To create a new question through the PrairieLearn web interface:
@@ -80,30 +82,31 @@ The `info.json` file for each question defines properties of the question. For e
   "title": "Newton's third law",
   "topic": "Forces",
   "tags": ["secret", "Fa18"],
-  "authors": [{ "name": "John Doe", "email": "doe@example.org", "orcid": "0000-0000-0000-0001" }],
+  "authors": ["doe@example.org"],
   "type": "v3",
   "comment": "You can add comments to JSON files using this property."
 }
 ```
 
-| Property                 | Type    | Description                                                                                                                                                                                                                                                                                                        |
-| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `uuid`                   | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                                                                                                                                                                                            |
-| `type`                   | enum    | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)                                                                                                                                                                                                                                   |
-| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                                                                                                                                                                                                         |
-| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                                                                                                                                                                   |
-| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                                                                                                                                                                     |
-| `authors`                | array   | Authors of the question. Each author entry can have a `name`, and must contain at least one of the following attributes: `email`, `orcid` ([ORCID identifier](https://orcid.org)), or `originCourse` (course sharing name; see [Question Sharing](#question-sharing) for details). (Optional; default: no authors) |
-| `gradingMethod`          | enum    | The grading method used for auto-grading this question. Valid values: `Internal`, `External`, or `Manual` (for manual-only questions). (Optional; default: `Internal`)                                                                                                                                             |
-| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                                                                                                                                                                                                           |
-| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                                                                                                                                                                                                                  |
-| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                                                                                                                                                                   |
-| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                                                                                                                                                                         |
-| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                                                                                                                                                              |
-| `preferences`            | object  | A schema defining [question preferences](preferences.md) that can be overridden per-assessment. (Optional; default: none)                                                                                                                                                                                          |
-| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                                                                                                              |
-| `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                                                                                                        |
-| `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                                                                                                         |
+| Property                 | Type    | Description                                                                                                                                                                                                                     |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `uuid`                   | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                                                                                                         |
+| `type`                   | enum    | Type of the question. Must be `"v3"` for new-style questions. (Required; no default)                                                                                                                                            |
+| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                                                                                                                      |
+| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                                                                                |
+| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                                                                                  |
+| `authors`                | array   | UIDs of the question authors, as an array of nonblank strings. UIDs need not match existing accounts or routable email addresses. Surrounding whitespace is trimmed and duplicates are ignored. (Optional; default: no authors) |
+| `gradingMethod`          | enum    | The grading method used for auto-grading this question. Valid values: `Internal`, `External`, or `Manual` (for manual-only questions). (Optional; default: `Internal`)                                                          |
+| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                                                                                                                        |
+| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                                                                                                                               |
+| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                                                                                |
+| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](../externalGrading.md). (Optional; default: none)                                                                                                      |
+| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                                                                           |
+| `preferences`            | object  | A schema defining [question preferences](preferences.md) that can be overridden per-assessment. (Optional; default: none)                                                                                                       |
+| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                                                                           |
+| `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                                                                                     |
+| `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                                                                                      |
+| `copiedFrom`             | string  | Identifies the source of a copied question. See [Question-copy provenance](../contentSharing.md#question-copy-provenance). (Optional; default: none)                                                                            |
 
 !!! note "Local development note"
 
@@ -121,7 +124,21 @@ Any question that is marked with `"shareSourcePublicly": true` will be considere
 
 ### Question Authorship
 
-Future versions of PrairieLearn may provide the ability to track the usage of shared questions. To ensure that questions remain associated with their original author(s) and course, we recommend including `authors` information in the `info.json` file. The `orcid` attribute in particular allows authors to be uniquely identified, even after changing their affiliation or email address. The `originCourse` attribute can be used to associate questions with courses by providing their [sharing name](../contentSharing.md#sharing-names). This allows a wider number of course staff to be credited with contributing to a question, and might allow them to track question usage in a future version of PrairieLearn.
+List the UIDs or ORCID URLs of the people who contributed to this question in `authors` (at most 100 entries):
+
+```json
+{
+  "authors": ["mwest@illinois.edu", "https://orcid.org/0000-0002-1825-0097"]
+}
+```
+
+UIDs are identifiers, not display names or necessarily email addresses. Any UID may be credited, even if the person has no PrairieLearn account or is no longer on course staff. UIDs are stored as declared and are not automatically changed when an account's UID changes. Update the question's `info.json` if an author's UID changes.
+
+Use the full ORCID URL in the form `https://orcid.org/0000-0002-1825-0097`. It is displayed as a link without verifying ownership or connecting it to a PrairieLearn account. A UID and an ORCID for the same person remain separate entries.
+
+Authors can also be added and removed on the question's **Settings** page, including using **Add myself**. Names are shown only for current course staff; other authors are displayed by UID. Editing authors and saving settings writes the identifier array to `info.json` through the normal course file editor.
+
+The old object format (`name`, `email`, `orcid`, and `originCourse`) is no longer supported. Replace legacy objects with UID strings or full ORCID URLs in `info.json`; they are not converted automatically during sync.
 
 ### Question Dependencies
 
@@ -146,12 +163,12 @@ The different types of dependency properties available are summarized in this ta
 | ---------------------------- | ------------------------------------------------------------------------------------------------- |
 | `nodeModulesStyles`          | The styles required by this question, relative to `[PrairieLearn directory]/node_modules`.        |
 | `nodeModulesScripts`         | The scripts required by this question, relative to `[PrairieLearn directory]/node_modules`.       |
-| `clientFilesQuestionStyles`  | The scripts required by this question relative to the question's `clientFilesQuestion` directory. |
+| `clientFilesQuestionStyles`  | The styles required by this question relative to the question's `clientFilesQuestion` directory.  |
 | `clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory. |
 | `clientFilesCourseStyles`    | The styles required by this question relative to `[course directory]/clientFilesCourse`.          |
 | `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
-Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
+Additional details about how to access these fields from `server.py` can be found in the [clientFiles and serverFiles documentation](../clientServerFiles.md#accessing-files-from-serverpy-question-code).
 
 !!! warning
 
@@ -168,7 +185,7 @@ While it is recommended that all questions contain random parameters, sometimes 
 
 By default, all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct, the student will be awarded 50% of the available points.
 
-To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](../elements/index.md) also provide more fine-grained control over partial credit.
+To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. This setting only affects points obtained from auto-grading (internal or external grading), and does not affect manual grading or AI grading. Some [question elements](../elements/index.md) also provide more fine-grained control over partial credit.
 
 In general, it is _strongly_ recommended to leave partial credit enabled for all questions.
 
@@ -209,7 +226,7 @@ The `question.html` is regular HTML, with a few special features:
 
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
-5. Special layout elements like `<pl-question-panel>` and `<pl-answer-panel>` can be used to show content to students in different contexts.
+5. Special layout elements like [`<pl-question-panel>`](../elements/pl-question-panel.md) and [`<pl-answer-panel>`](../elements/pl-answer-panel.md) can be used to show content to students in different contexts.
 
 !!! info
 
@@ -221,6 +238,7 @@ The `server.py` file for each question creates randomized question variants by g
 
 ```python title="server.py"
 import random
+
 
 def generate(data):
     # Generate random parameters

@@ -5,13 +5,14 @@ import { Alert, Modal } from 'react-bootstrap';
 import { Controller, useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
 import { assertNever } from '@prairielearn/utils';
 
 import { ColorPicker } from '../../../components/ColorPicker.js';
-import { getAppError } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
+import { MAX_STUDENT_LABEL_NAME_LENGTH } from '../../../schemas/infoCourseInstance.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import type { StudentLabelError } from '../../../trpc/courseInstance/student-labels.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
@@ -95,9 +96,7 @@ export function LabelModifyModal({
 
     if (uids.length > 0) {
       try {
-        const result = await queryClient.fetchQuery(
-          trpc.studentLabels.checkUids.queryOptions({ uids }),
-        );
+        const result = await queryClient.query(trpc.studentLabels.checkUids.queryOptions({ uids }));
         if (result.unenrolledUids.length > 0) {
           setStage({ type: 'confirming', unknownUids: result.unenrolledUids });
           return;
@@ -226,7 +225,17 @@ export function LabelModifyModal({
               className={clsx('form-control', errors.name && 'is-invalid')}
               aria-invalid={!!errors.name}
               aria-errormessage={errors.name ? 'label-name-error' : undefined}
-              {...register('name', { required: 'Label name is required' })}
+              {...register('name', {
+                validate: (value) => {
+                  const trimmed = value.trim();
+                  if (trimmed.length === 0) return 'Label name is required';
+                  if (trimmed.includes(';')) return 'Student label names cannot contain semicolons';
+                  if (trimmed.length > MAX_STUDENT_LABEL_NAME_LENGTH) {
+                    return `Label name must be at most ${MAX_STUDENT_LABEL_NAME_LENGTH} characters.`;
+                  }
+                  return true;
+                },
+              })}
             />
             {errors.name && (
               <div id="label-name-error" className="invalid-feedback d-block">

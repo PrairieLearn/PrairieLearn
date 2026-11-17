@@ -7,6 +7,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/react/server';
+import { JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { TagsTopicsTable } from '../../components/TagsTopicsTable.js';
@@ -14,8 +15,9 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
 import { TopicSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -25,7 +27,7 @@ const router = Router();
 
 router.get(
   '/',
-  typedAsyncHandler<'course'>(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const pageContext = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -55,6 +57,8 @@ router.get(
               allowEdit={allowEdit}
               origHash={origHash}
               csrfToken={pageContext.__csrf_token}
+              courseId={pageContext.course.id}
+              courseInstanceId={res.locals.course_instance?.id}
             />
           </Hydrate>
         ),
@@ -84,24 +88,23 @@ router.post(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );
 
-      const body = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           orig_hash: z.string(),
-          data: z.string().transform((s) =>
-            z
-              .array(
-                TopicSchema.pick({
-                  name: true,
-                  color: true,
-                  description: true,
-                  json_comment: true,
-                  implicit: true,
-                }),
-              )
-              .parse(JSON.parse(s)),
+          data: JsonFromStringSchema.pipe(
+            z.array(
+              TopicSchema.pick({
+                name: true,
+                color: true,
+                description: true,
+                json_comment: true,
+                implicit: true,
+              }),
+            ),
           ),
-        })
-        .parse(req.body);
+        }),
+      );
 
       const origHash = body.orig_hash;
       const resolveTopics = body.data

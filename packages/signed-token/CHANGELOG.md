@@ -1,5 +1,59 @@
 # @prairielearn/signed-token
 
+## 4.0.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 4.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.0
+
+### Major Changes
+
+- 5734fd1: Allow prefix-based CSRF tokens to authenticate against caller-defined claims.
+
+## 3.2.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.2.0
+
+### Minor Changes
+
+- 4f719d4: Support ordered key rings so new tokens use the primary key and existing tokens can be verified with fallback keys.
+
+## 3.1.7
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.1.5
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.1.4
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 3.1.3
 
 ### Patch Changes

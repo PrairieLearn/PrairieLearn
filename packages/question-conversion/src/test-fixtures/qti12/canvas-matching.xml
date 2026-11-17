@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="assess4" title="Matching Quiz">
+    <section ident="root_section">
+      <item ident="q1" title="Match Terms">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>matching_question</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>points_possible</fieldlabel>
+              <fieldentry>1.0</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        <presentation>
+          <material>
+            <mattext texttype="text/html">&lt;div&gt;&lt;p&gt;Match terms with definitions&lt;/p&gt;&lt;/div&gt;</mattext>
+          </material>
+          <response_lid ident="response_1">
+            <material>
+              <mattext texttype="text/plain">Big O</mattext>
+            </material>
+            <render_choice>
+              <response_label ident="opt1">
+                <material>
+                  <mattext>Upper Bound</mattext>
+                </material>
+              </response_label>
+              <response_label ident="opt2">
+                <material>
+                  <mattext>Lower Bound</mattext>
+                </material>
+              </response_label>
+              <response_label ident="opt3">
+                <material>
+                  <mattext>Tight Bound</mattext>
+                </material>
+              </response_label>
+            </render_choice>
+          </response_lid>
+          <response_lid ident="response_2">
+            <material>
+              <mattext texttype="text/plain">Big Theta</mattext>
+            </material>
+            <render_choice>
+              <response_label ident="opt1">
+                <material>
+                  <mattext>Upper Bound</mattext>
+                </material>
+              </response_label>
+              <response_label ident="opt2">
+                <material>
+                  <mattext>Lower Bound</mattext>
+                </material>
+              </response_label>
+              <response_label ident="opt3">
+                <material>
+                  <mattext>Tight Bound</mattext>
+                </material>
+              </response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <outcomes>
+            <decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/>
+          </outcomes>
+          <respcondition>
+            <conditionvar>
+              <varequal respident="response_1">opt1</varequal>
+            </conditionvar>
+            <setvar varname="SCORE" action="Add">50</setvar>
+          </respcondition>
+          <respcondition>
+            <conditionvar>
+              <varequal respident="response_2">opt3</varequal>
+            </conditionvar>
+            <setvar varname="SCORE" action="Add">50</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>

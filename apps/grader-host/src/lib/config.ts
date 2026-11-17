@@ -5,7 +5,9 @@ import { z } from 'zod';
 import {
   ConfigLoader,
   type ConfigSource,
+  makeConductorConfigSource,
   makeImdsConfigSource,
+  makeKmsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 
@@ -46,7 +48,32 @@ export const ConfigSchema = z.object({
   postgresqlPassword: z.string().nullable().default(null),
   postgresqlPoolSize: z.number().default(2),
   postgresqlIdleTimeoutMillis: z.number().default(30000),
+  postgresqlSsl: z
+    .union([
+      z.boolean(),
+      // A subset of the options that can be provided to the `TLSSocket` constructor.
+      // https://node-postgres.com/features/ssl
+      z
+        .object({
+          rejectUnauthorized: z.boolean().default(true),
+          ca: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          key: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          cert: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+        })
+        .strict(),
+    ])
+    .default(false),
   autoScalingGroupName: z.string().nullable().default(null),
+  autoScalingTerminatingLifecycleHookName: z.string().nullable().default(null),
   // Will be automatically detected when running in EC2.
   instanceId: z.string().default('server'),
   sentryDsn: z.string().nullable().default(null),
@@ -86,7 +113,7 @@ function makeAutoScalingGroupConfigSource(): ConfigSource {
       // but this client will really only be used once, typically at application
       // startup.
       //
-      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      // oxlint-disable-next-line @prairielearn/aws-client-shared-config
       const autoscaling = new AutoScaling({ region: existingConfig.awsRegion as string });
       const data = await autoscaling.describeAutoScalingInstances({
         InstanceIds: [existingConfig.instanceId as string],
@@ -116,7 +143,7 @@ function makeQueueUrlConfigSource(): ConfigSource {
       // about reusing credentials here, since this client will only be used
       // once at application startup.
       //
-      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      // oxlint-disable-next-line @prairielearn/aws-client-shared-config
       const sqs = new SQSClient({ region: existingConfig.awsRegion as string });
 
       for (const prefix of queuePrefixes) {
@@ -150,9 +177,11 @@ export const config = loader.config;
 
 export async function loadConfig() {
   await loader.loadAndValidate([
+    makeConductorConfigSource(),
     makeProductionConfigSource(),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
+    makeKmsConfigSource(),
     makeAutoScalingGroupConfigSource(),
     makeQueueUrlConfigSource(),
   ]);

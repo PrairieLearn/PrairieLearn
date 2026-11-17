@@ -39,10 +39,7 @@ function anonymizeJSON(contents) {
     }
 
     if (instance['uids']) {
-      const newUids = [];
-      for (const uid of instance.uids) {
-        newUids.push(getUUID(newUserUids, uid));
-      }
+      const newUids = Array.from(instance.uids, (uid) => getUUID(newUserUids, uid));
       instance.uids = newUids;
     }
   }
@@ -50,19 +47,16 @@ function anonymizeJSON(contents) {
 }
 
 function anonymizeFile(filename, contents) {
-  if (filename.endsWith('_instances.json')) {
-    return anonymizeJSON(contents);
-  } else if (filename.endsWith('_instance_questions.json')) {
-    return anonymizeJSON(contents);
-  } else if (filename.endsWith('_access_rules.json')) {
-    return anonymizeJSON(contents);
-  } else if (filename.endsWith('_submissions.json')) {
-    return anonymizeJSON(contents);
-  } else if (filename.endsWith('_log.json')) {
-    return anonymizeJSON(contents);
-  } else if (filename === 'assessments.json') {
-    return anonymizeJSON(contents);
-  } else if (filename === 'gradebook.json') {
+  if (
+    [
+      '_instances.json',
+      '_instance_questions.json',
+      '_access_rules.json',
+      '_submissions.json',
+      '_log.json',
+    ].some((suffix) => filename.endsWith(suffix)) ||
+    ['assessments.json', 'gradebook.json'].includes(filename)
+  ) {
     return anonymizeJSON(contents);
   } else if (filename === 'download_log.txt') {
     return contents;

@@ -1,6 +1,13 @@
 {
   "uuid": "3d4ef390-5e04-4a7d-9dce-6cf8f5c17311",
-  "allowAccess": [{ "credit": 100 }],
+  "accessControl": [
+    {
+      "dateControl": {
+        "release": { "date": "2000-01-01T00:00:00" }
+      },
+      "afterComplete": { "questions": { "hidden": false } }
+    }
+  ],
   "type": "Exam",
   "title": "Exam with lockpoints",
   "set": "Exam",

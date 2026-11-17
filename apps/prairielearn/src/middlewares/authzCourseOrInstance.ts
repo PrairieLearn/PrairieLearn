@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { type Result, withBrand } from '@prairielearn/utils';
@@ -22,12 +22,8 @@ import {
 } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
-import {
-  type EnumCourseInstanceRole,
-  type EnumCourseRole,
-  InstitutionSchema,
-  UserSchema,
-} from '../lib/db-types.js';
+import { InstitutionSchema, UserSchema } from '../lib/db-types.js';
+import { getModeForRequest } from '../lib/exam-mode.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
@@ -233,30 +229,34 @@ async function getOverrideUserData({
             <code>${requestedUid}</code>, when no such user exists. All requested changes to the
             effective user have been removed.
           </p>
-          ${config.devMode && isAdministrator
-            ? html`
-                <div class="alert alert-warning" role="alert">
-                  In Development Mode,
-                  <a href="/pl/administrator/query/select_or_insert_user">
-                    go here to add the user
-                  </a>
-                  first and then try the emulation again.
-                </div>
-                ${courseInstanceId
-                  ? html`
-                      <p>
-                        To auto-generate many users for testing, see
-                        <a href="/pl/administrator/query/generate_and_enroll_users"
-                          >Generate random users and enroll them in a course instance</a
-                        >
-                        <br />
-                        (Hint your course_instance_id is
-                        <strong>${courseInstanceId}</strong>)
-                      </p>
-                    `
-                  : ''}
-              `
-            : ''}
+          ${
+            config.devMode && isAdministrator
+              ? html`
+                  <div class="alert alert-warning" role="alert">
+                    In Development Mode,
+                    <a href="/pl/administrator/query/select_or_insert_user">
+                      go here to add the user
+                    </a>
+                    first and then try the emulation again.
+                  </div>
+                  ${
+                    courseInstanceId
+                      ? html`
+                          <p>
+                            To auto-generate many users for testing, see
+                            <a href="/pl/administrator/query/generate_and_enroll_users"
+                              >Generate random users and enroll them in a course instance</a
+                            >
+                            <br />
+                            (Hint your course_instance_id is
+                            <strong>${courseInstanceId}</strong>)
+                          </p>
+                        `
+                      : ''
+                  }
+                `
+              : ''
+          }
         `,
       }),
     };
@@ -304,6 +304,7 @@ interface ResLocalsCourseAuthz {
   user: ResLocalsAuthnUser['authn_user'];
   mode: ConstructedCourseOrInstanceSuccessContext['authzData']['mode'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
+  is_institution_administrator: boolean;
   course_role: ConstructedCourseOrInstanceSuccessContext['authzData']['course_role'];
   has_course_permission_preview: boolean;
   has_course_permission_view: boolean;
@@ -347,6 +348,8 @@ export interface ResLocalsCourse {
   course_has_course_instances: boolean;
   question_sharing_enabled: boolean;
   is_administrator: boolean;
+  /** Set by the course agent panel middleware (EE) on instructor pages. */
+  course_agent_panel?: HtmlSafeString;
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
@@ -380,7 +383,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     overrides: {
       // We allow unit tests to override the req_mode. Unit tests may also override
       // the user (middlewares/authn.ts) and the req_date (middlewares/date.ts).
-      mode: config.devMode ? req.cookies.pl_test_mode : null,
+      mode: await getModeForRequest(req, res),
     },
   });
 
@@ -570,11 +573,12 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       return {
         authzData: withBrand<PlainAuthzData>({
           user: effectiveUserData ? effectiveUserData.user : authnAuthzData.user,
-          course_role: 'None' as EnumCourseRole,
+          is_institution_administrator: false,
+          course_role: 'None',
           ...calculateCourseRolePermissions('None'),
           ...(req.params.course_instance_id
             ? {
-                course_instance_role: 'None' as EnumCourseInstanceRole,
+                course_instance_role: 'None',
                 has_student_access: false,
                 has_student_access_with_enrollment: false,
                 ...calculateCourseInstanceRolePermissions('None'),
@@ -658,6 +662,10 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     user: effectiveAuthzData.user,
     mode: effectiveAuthzData.mode,
     is_administrator: effectiveUserData?.is_administrator ?? res.locals.is_administrator,
+    // Emulating an institution administrator must not grant an Owner extra privileges.
+    is_institution_administrator:
+      authnAuthzData.is_institution_administrator &&
+      effectiveAuthzData.is_institution_administrator,
     course_role: effectiveAuthzData.course_role,
     has_course_permission_preview: effectiveAuthzData.has_course_permission_preview,
     has_course_permission_view: effectiveAuthzData.has_course_permission_view,
@@ -694,7 +702,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   }
 
   // The session middleware does not run for API requests.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  // oxlint-disable-next-line typescript/no-unnecessary-condition
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
 
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({

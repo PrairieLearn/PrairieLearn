@@ -58,7 +58,6 @@ describe('audit-event', () => {
           "id": "1",
           "institution_id": "1",
           "new_row": {
-            "deleted_at": null,
             "email": "student@example.com",
             "id": "1",
             "institution_id": "1",

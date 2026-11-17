@@ -10,6 +10,7 @@ import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
+import { insertSharedQuestionUsagesForSubmission } from '../models/shared-question-usages.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -73,6 +74,7 @@ async function insertSubmission({
   user_id,
   auth_user_id,
   client_fingerprint_id,
+  question,
 }: {
   submitted_answer: Record<string, any> | null;
   raw_submitted_answer: Record<string, any> | null;
@@ -88,6 +90,7 @@ async function insertSubmission({
   user_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
+  question: Question;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
@@ -154,6 +157,12 @@ async function insertSubmission({
     );
 
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
+
+    await insertSharedQuestionUsagesForSubmission({
+      question,
+      course_id: variant.course_id,
+      assessment_instance_id: variant.assessment_instance_id,
+    });
 
     if (variant.instance_question_id != null) {
       const instanceQuestion = await sqldb.queryRow(
@@ -247,6 +256,11 @@ export async function saveSubmission(
     variant,
     question,
     question_course,
+    {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
 
   const studentMessage = 'Error parsing submission';
@@ -267,6 +281,7 @@ export async function saveSubmission(
     ...data,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
+    question,
   });
 }
 
@@ -375,21 +390,28 @@ export async function gradeVariant({
 }): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
-  const submission = await selectSubmissionForGrading(
-    variant.id,
-    check_submission_id,
-    ignoreRealTimeGradingDisabled,
-  );
-  if (submission == null) return;
+  // Keep the selection lock until the job exists so a newer submission's
+  // cancellation pass cannot miss it.
+  const gradingData = await sqldb.runInTransactionAsync(async () => {
+    const submission = await selectSubmissionForGrading(
+      variant.id,
+      check_submission_id,
+      ignoreRealTimeGradingDisabled,
+    );
+    if (submission == null) return null;
 
-  if (!ignoreGradeRateLimit && variant.instance_question_id != null) {
-    const nextGradingAllowedMs = await computeNextAllowedGradingTimeMs({
-      instanceQuestionId: variant.instance_question_id,
-    });
-    if (nextGradingAllowedMs > 0) return;
-  }
+    if (!ignoreGradeRateLimit && variant.instance_question_id != null) {
+      const nextGradingAllowedMs = await computeNextAllowedGradingTimeMs({
+        instanceQuestionId: variant.instance_question_id,
+      });
+      if (nextGradingAllowedMs > 0) return null;
+    }
 
-  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
+    const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
+    return { submission, grading_job };
+  });
+  if (gradingData == null) return;
+  const { submission, grading_job } = gradingData;
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.
@@ -418,6 +440,11 @@ export async function gradeVariant({
       variant,
       question,
       question_course,
+      {
+        userId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: variant_course,
+      },
     );
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 

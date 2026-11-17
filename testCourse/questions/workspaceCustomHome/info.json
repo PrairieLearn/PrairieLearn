@@ -1,0 +1,17 @@
+{
+  "uuid": "17b53928-700f-4e49-b8c2-69249216bb9a",
+  "title": "Workspace demo: custom home directory",
+  "topic": "Workspace",
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-vscode-python",
+    "home": "/home/coder/workspace/subdir",
+    "gradedFiles": ["fibonacci.py"]
+  },
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "image": "prairielearn/grader-python",
+    "timeout": 20
+  }
+}

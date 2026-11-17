@@ -11,8 +11,9 @@ We resolve this with this package, which helps ensure that all AWS SDk clients a
 Create a config provider with `makeAwsConfigProvider`:
 
 ```ts
-import { makeAwsConfigProvider } from '@prairielearn/aws';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
+
+import { makeAwsConfigProvider } from '@prairielearn/aws';
 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),

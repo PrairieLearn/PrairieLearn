@@ -8,7 +8,7 @@ columns
 
 indexes
     lti13_assessments_pkey: PRIMARY KEY (id) USING btree (id)
-    lti13_assessments_assessment_id_key: UNIQUE (assessment_id) USING btree (assessment_id)
+    lti13_assessments_assessment_id_lti13_course_instance_id_key: UNIQUE (assessment_id, lti13_course_instance_id) USING btree (assessment_id, lti13_course_instance_id)
     lti13_assessments_lti13_course_instance_id_lineitem_id_url_key: UNIQUE (lti13_course_instance_id, lineitem_id_url) USING btree (lti13_course_instance_id, lineitem_id_url)
 
 foreign-key constraints

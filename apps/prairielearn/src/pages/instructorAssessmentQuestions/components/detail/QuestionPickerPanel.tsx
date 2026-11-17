@@ -1,14 +1,17 @@
-import { rankItem } from '@tanstack/match-sorter-utils';
 import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { TRPCClientError } from '@trpc/client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
+import { type AppError, getAppError, renderAppError } from '@prairielearn/trpc/client';
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
+import { rankSearchText } from '../../../../lib/client/search.js';
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
-import type { QuestionByQidResult } from '../../../../trpc/assessment/assessment-questions.js';
+import type {
+  AssessmentQuestionsError,
+  QuestionByQidResult,
+} from '../../../../trpc/assessment/assessment-questions.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
 import type { CourseQuestionForPicker } from '../../types.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
@@ -28,6 +31,7 @@ export function QuestionPickerPanel({
   isLoading,
   questionsInAssessment,
   disabledQids,
+  readOnlyQids,
   currentChangeQid,
   isPickingQuestion,
   pickerError,
@@ -43,12 +47,13 @@ export function QuestionPickerPanel({
   isLoading?: boolean;
   questionsInAssessment: Map<string, string[]>;
   disabledQids: Set<string>;
+  readOnlyQids: Set<string>;
   currentChangeQid?: string;
   courseId: string;
   courseInstanceId: string;
   currentAssessmentId?: string;
   isPickingQuestion?: boolean;
-  pickerError: Error | null;
+  pickerError: AppError<AssessmentQuestionsError['QuestionByQid']> | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
   onQuestionSelected: (qid: string) => void;
@@ -76,6 +81,9 @@ export function QuestionPickerPanel({
     ),
     retry: false,
   });
+  const sharedQuestionError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
+    sharedQuestionQuery.error,
+  );
 
   const scrollParentRef = useRef<HTMLDivElement>(null);
 
@@ -108,10 +116,7 @@ export function QuestionPickerPanel({
     return {
       topics: Array.from(topicMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
       tags: Array.from(tagMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
-      assessments: [
-        { id: NOT_IN_ANY_ASSESSMENT_ID, name: 'None' } as FilterItem,
-        ...sortedAssessments,
-      ],
+      assessments: [{ id: NOT_IN_ANY_ASSESSMENT_ID, name: 'None' }, ...sortedAssessments],
     };
   }, [courseQuestions, currentAssessmentId]);
 
@@ -121,8 +126,8 @@ export function QuestionPickerPanel({
 
       const matchesSearch =
         !searchLower ||
-        rankItem(q.qid, searchLower).passed ||
-        rankItem(q.title, searchLower).passed;
+        rankSearchText(q.qid, searchLower).passed ||
+        rankSearchText(q.title, searchLower).passed;
 
       const matchesTopic = selectedTopics.size === 0 || selectedTopics.has(String(q.topic.id));
 
@@ -272,7 +277,10 @@ export function QuestionPickerPanel({
       {pickerError && (
         <div className="alert alert-danger small mx-2 mt-2 mb-0" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-          {pickerError.message || 'Failed to add question. Please try again.'}
+          {renderAppError(pickerError, {
+            QUESTION_NOT_FOUND: ({ message }) => message,
+            UNKNOWN: ({ message }) => message || 'Failed to add question. Please try again.',
+          })}
         </div>
       )}
       {!sharedQuestionMode && (
@@ -297,6 +305,8 @@ export function QuestionPickerPanel({
               const isCurrentChange = currentChangeQid === qid;
               const isDisabled = (disabledQids.has(qid) && !isCurrentChange) || !!isPickingQuestion;
               return (
+                // oxlint doesn't recognize the conditional `role` as making this element interactive.
+                // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
                 <div
                   role={isDisabled ? undefined : 'button'}
                   tabIndex={isDisabled ? undefined : 0}
@@ -345,19 +355,21 @@ export function QuestionPickerPanel({
                 </div>
               );
             })
-          ) : sharedQuestionQuery.isError ? (
-            sharedQuestionQuery.error instanceof TRPCClientError &&
-            sharedQuestionQuery.error.data?.code === 'NOT_FOUND' ? (
-              <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
-                <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
-                <p className="mb-1">Shared question not found.</p>
-              </div>
-            ) : (
-              <div className="d-flex flex-column align-items-center justify-content-center text-danger py-5 text-center px-3">
-                <i className="bi bi-exclamation-circle display-6 mb-2" aria-hidden="true" />
-                <p className="mb-1">Failed to search for a shared question. Try again.</p>
-              </div>
-            )
+          ) : sharedQuestionError ? (
+            renderAppError(sharedQuestionError, {
+              QUESTION_NOT_FOUND: () => (
+                <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
+                  <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
+                  <p className="mb-1">Shared question not found.</p>
+                </div>
+              ),
+              UNKNOWN: () => (
+                <div className="d-flex flex-column align-items-center justify-content-center text-danger py-5 text-center px-3">
+                  <i className="bi bi-exclamation-circle display-6 mb-2" aria-hidden="true" />
+                  <p className="mb-1">Failed to search for a shared question. Try again.</p>
+                </div>
+              ),
+            })
           ) : (
             <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
               <i className="bi bi-share display-6 mb-2" aria-hidden="true" />
@@ -401,6 +413,8 @@ export function QuestionPickerPanel({
                 question.assessments?.filter((a) => a.assessment_id !== currentAssessmentId) ?? [];
 
               return (
+                // oxlint doesn't recognize the conditional `role` as making this element interactive.
+                // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
                 <div
                   key={virtualRow.key}
                   ref={rowVirtualizer.measureElement}
@@ -475,7 +489,7 @@ export function QuestionPickerPanel({
                       </div>
                     )}
                   </div>
-                  {isInAssessment && (
+                  {isInAssessment && !readOnlyQids.has(qid) && (
                     <button
                       type="button"
                       className="btn btn-sm border-0 text-muted ms-1 picker-delete-btn hover-show"

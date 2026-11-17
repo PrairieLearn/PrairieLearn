@@ -1,7 +1,11 @@
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { makeAssessmentInstance } from '../../lib/assessment.js';
 import { insertIssue } from '../../lib/issues.js';
+import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
@@ -16,24 +20,28 @@ async function closeIssue(issueId: string) {
 async function insertTestVariant({
   questionId,
   courseId,
+  courseInstanceId,
+  instanceQuestionId,
   authnUserId,
   userId,
-  variantSeed,
 }: {
   questionId: string;
   courseId: string;
+  courseInstanceId?: string;
+  instanceQuestionId?: string;
   authnUserId: string;
   userId: string;
-  variantSeed?: string;
 }) {
   return await sqldb.queryScalar(
     sql.insert_test_variant,
     {
       question_id: questionId,
       course_id: courseId,
+      course_instance_id: courseInstanceId ?? null,
+      instance_question_id: instanceQuestionId ?? null,
       authn_user_id: authnUserId,
       user_id: userId,
-      variant_seed: variantSeed ?? `test_seed_${Date.now()}`,
+      variant_seed: 'test_seed',
     },
     IdSchema,
   );
@@ -50,6 +58,8 @@ interface TestIssueData {
   studentMessage: string;
   manuallyReported: boolean;
   open: boolean;
+  /** Which course instance (if any) the issue should be associated with. */
+  courseInstance?: 'Sp15' | 'public';
 }
 
 const BASE_TEST_ISSUES: TestIssueData[] = [
@@ -83,9 +93,29 @@ const BASE_TEST_ISSUES: TestIssueData[] = [
     manuallyReported: false,
     open: true,
   },
+  {
+    qid: 'addNumbers',
+    studentMessage: 'Issue 6: addNumbers in Sp15 course instance',
+    manuallyReported: true,
+    open: true,
+    courseInstance: 'Sp15',
+  },
+  {
+    qid: 'addVectors',
+    studentMessage: 'Issue 7: addVectors in public course instance',
+    manuallyReported: true,
+    open: true,
+    courseInstance: 'public',
+  },
 ];
 
-async function createTestIssues(courseId: string) {
+async function createTestIssues({
+  courseId,
+  courseInstanceIdMap,
+}: {
+  courseId: string;
+  courseInstanceIdMap: Record<NonNullable<TestIssueData['courseInstance']>, string>;
+}) {
   const user = await getOrCreateUser(TEST_USER);
 
   const addNumbersQuestion = await selectQuestionByQid({ qid: 'addNumbers', course_id: courseId });
@@ -101,9 +131,11 @@ async function createTestIssues(courseId: string) {
     const variantId = await insertTestVariant({
       questionId: question.id,
       courseId,
+      courseInstanceId: issueData.courseInstance
+        ? courseInstanceIdMap[issueData.courseInstance]
+        : undefined,
       authnUserId: user.id,
       userId: user.id,
-      variantSeed: `seed_${Date.now()}_${Math.random()}`,
     });
 
     const issueId = await insertIssue({
@@ -133,7 +165,17 @@ test.describe('Instructor issues page', () => {
 
   test.beforeAll(async ({ courseInstance }) => {
     issuesUrl = `/pl/course/${courseInstance.course_id}/course_admin/issues`;
-    await createTestIssues(courseInstance.course_id);
+
+    const course = await selectCourseByShortName('QA 101');
+    const publicCourseInstance = await selectCourseInstanceByShortName({
+      course,
+      shortName: 'public',
+    });
+
+    await createTestIssues({
+      courseId: courseInstance.course_id,
+      courseInstanceIdMap: { Sp15: courseInstance.id, public: publicCourseInstance.id },
+    });
   });
 
   test.describe('View issues list', () => {
@@ -210,6 +252,60 @@ test.describe('Instructor issues page', () => {
       await expect(issueItems.first()).toBeVisible();
     });
 
+    test('excluding both known qids returns no issues', async ({ page }) => {
+      await page.goto(issuesUrl);
+
+      const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
+      await searchInput.fill('-qid:addVectors -qid:addNumbers');
+      await searchInput.press('Enter');
+
+      await expect(page.getByTestId('issue-list-item')).toHaveCount(0);
+    });
+
+    test('can search by ci qualifier for a course instance', async ({ page }) => {
+      await page.goto(issuesUrl);
+
+      const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
+      await searchInput.fill('ci:Sp15');
+      await searchInput.press('Enter');
+
+      const issueItems = page.getByTestId('issue-list-item');
+      await expect(issueItems).toHaveCount(1);
+      await expect(issueItems.first()).toContainText('Issue 6:');
+    });
+
+    test('can search with wildcard ci qualifier', async ({ page }) => {
+      await page.goto(issuesUrl);
+
+      const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
+      await searchInput.fill('ci:Sp*');
+      await searchInput.press('Enter');
+
+      const issueItems = page.getByTestId('issue-list-item');
+      await expect(issueItems).toHaveCount(1);
+      await expect(issueItems.first()).toContainText('Issue 6:');
+    });
+
+    test('excluding a course instance includes issues without one or in other course instances', async ({
+      page,
+    }) => {
+      await page.goto(issuesUrl);
+
+      const searchInput = page.getByRole('textbox', { name: 'Search all issues' });
+      await searchInput.fill('-ci:Sp15');
+      await searchInput.press('Enter');
+
+      await expect(page.getByText('Issue 1:', { exact: false })).toBeVisible();
+      await expect(page.getByText('Issue 7:', { exact: false })).toBeVisible();
+
+      const issueItems = page.getByTestId('issue-list-item');
+      const count = await issueItems.count();
+      for (let i = 0; i < count; i++) {
+        const text = await issueItems.nth(i).textContent();
+        expect(text).not.toContain('Issue 6:');
+      }
+    });
+
     test('can clear filters', async ({ page }) => {
       await page.goto(`${issuesUrl}?q=is%3Aopen`);
       await page.getByRole('link', { name: 'Clear filters' }).click();
@@ -272,7 +368,6 @@ test.describe('Instructor issues page', () => {
         courseId: courseInstance.course_id,
         authnUserId: user.id,
         userId: user.id,
-        variantSeed: `cancel_test_${Date.now()}`,
       });
 
       await insertIssue({
@@ -290,13 +385,122 @@ test.describe('Instructor issues page', () => {
       await page.goto(`${issuesUrl}?q=is%3Aopen`);
       const countBefore = await page.getByTestId('issue-list-item').count();
 
+      // Bootstrap ignores dismiss clicks until the show transition finishes, which
+      // is after the modal becomes visible. The promise is wrapped in an object so
+      // that `evaluateHandle` registers the listener without waiting for the event.
+      const modalShown = await page
+        .getByRole('dialog', { name: 'Close matching issues', includeHidden: true })
+        .evaluateHandle((el) => ({
+          shown: new Promise<void>((resolve) =>
+            el.addEventListener('shown.bs.modal', () => resolve(), { once: true }),
+          ),
+        }));
       await page.getByRole('button', { name: 'Close matching issues' }).click();
-      const modal = page.getByRole('dialog', { name: 'Close matching issues' });
-      await expect(modal).toBeVisible();
+      await modalShown.evaluate(({ shown }) => shown);
 
+      const modal = page.getByRole('dialog', { name: 'Close matching issues' });
       await modal.getByRole('button', { name: 'Cancel' }).click();
       await expect(modal).not.toBeVisible();
       await expect(page.getByTestId('issue-list-item')).toHaveCount(countBefore);
     });
   });
+});
+
+test('shows a safe label and only an instructor link for deleted assessments', async ({
+  page,
+  courseInstance,
+}) => {
+  const user = await getOrCreateUser(TEST_USER);
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'exam1-automaticTestSuite',
+  });
+  const question = await selectQuestionByQid({
+    qid: 'addNumbers',
+    course_id: courseInstance.course_id,
+  });
+  const assessmentInstanceId = await makeAssessmentInstance({
+    assessment,
+    user_id: user.id,
+    authn_user_id: user.id,
+    mode: 'Public',
+    time_limit_min: null,
+    date: new Date(),
+    client_fingerprint_id: null,
+  });
+  const instanceQuestionId = await sqldb.queryScalar(
+    sql.select_instance_question_id,
+    {
+      assessment_instance_id: assessmentInstanceId,
+      question_id: question.id,
+    },
+    IdSchema,
+  );
+  const variantId = await insertTestVariant({
+    questionId: question.id,
+    courseId: courseInstance.course_id,
+    courseInstanceId: courseInstance.id,
+    instanceQuestionId,
+    authnUserId: user.id,
+    userId: user.id,
+  });
+  const issueId = await insertIssue({
+    variantId,
+    studentMessage: 'Issue on deleted assessment',
+    instructorMessage: 'test issue for deleted assessment',
+    manuallyReported: true,
+    courseCaused: true,
+    courseData: {},
+    systemData: {},
+    userId: user.id,
+    authnUserId: user.id,
+  });
+  const deletedAt = new Date();
+  const originalAssessmentState = {
+    assessment_id: assessment.id,
+    assessment_set_id: assessment.assessment_set_id,
+    deleted_at: assessment.deleted_at,
+    tid: assessment.tid,
+  };
+
+  try {
+    await sqldb.execute(sql.set_assessment_state, {
+      ...originalAssessmentState,
+      deleted_at: deletedAt,
+    });
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/issues`);
+
+    const issueItem = page
+      .getByTestId('issue-list-item')
+      .filter({ hasText: `#${issueId} reported` });
+    await expect(issueItem.getByText('E1 (deleted)')).toBeVisible();
+    await expect(issueItem.getByRole('link', { name: 'instructor view' })).toHaveAttribute(
+      'href',
+      new RegExp(`\\?variant_id=${variantId}$`),
+    );
+    await expect(
+      issueItem.getByRole('link', {
+        name: /student view|manual grading|assessment details/,
+      }),
+    ).toHaveCount(0);
+
+    await sqldb.execute(sql.set_assessment_state, {
+      ...originalAssessmentState,
+      assessment_set_id: null,
+      deleted_at: deletedAt,
+    });
+    await page.reload();
+    await expect(issueItem.getByText('exam1-automaticTestSuite (deleted)')).toBeVisible();
+
+    await sqldb.execute(sql.set_assessment_state, {
+      ...originalAssessmentState,
+      assessment_set_id: null,
+      deleted_at: deletedAt,
+      tid: null,
+    });
+    await page.reload();
+    await expect(issueItem.getByText('Unknown assessment (deleted)')).toBeVisible();
+  } finally {
+    await sqldb.execute(sql.set_assessment_state, originalAssessmentState);
+  }
 });

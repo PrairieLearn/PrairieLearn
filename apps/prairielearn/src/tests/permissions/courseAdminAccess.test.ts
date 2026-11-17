@@ -1,8 +1,13 @@
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import superjson from 'superjson';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getAppError } from '@prairielearn/trpc/client';
 
+import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
+import { getCourseTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import {
   CourseInstancePermissionSchema,
@@ -12,9 +17,17 @@ import {
   SprocUsersSelectOrInsertSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../../models/course-permissions.js';
+import { insertInstitution } from '../../models/institution.js';
+import { selectUserById } from '../../models/user.js';
+import { createCourseTrpcClient } from '../../trpc/course/client.js';
+import type { CourseStaffError } from '../../trpc/course/course-staff.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
+import { getOrCreateUser, withUser } from '../utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -76,16 +89,58 @@ interface TestContext {
   baseUrl: string;
   pageUrl: string;
   userId: string;
-  __csrf_token: string;
+}
+
+function createTrpcClient({
+  authnUserId = '2',
+  cookie = 'pl_test_user=test_instructor',
+  courseInstanceId,
+}: { authnUserId?: string; cookie?: string; courseInstanceId?: string } = {}) {
+  const siteUrl = `http://localhost:${config.serverPort}`;
+  const csrfToken = generatePrefixCsrfToken(
+    { url: getCourseTrpcUrl('1', courseInstanceId), authn_user_id: authnUserId },
+    config.secretKey,
+  );
+  return createCourseTrpcClient({
+    csrfToken,
+    courseId: '1',
+    courseInstanceId,
+    urlBase: siteUrl,
+    extraHeaders: { cookie },
+  });
+}
+
+function expectSafeStaffUsers(rows: { user: Record<string, unknown> }[]) {
+  for (const { user } of rows) {
+    expect(Object.keys(user).sort()).toEqual([
+      'email',
+      'id',
+      'institution_id',
+      'name',
+      'uid',
+      'uin',
+    ]);
+  }
+  expect(rows.find(({ user }) => user.uid === 'instructor@example.com')).toMatchObject({
+    user: { name: 'Instructor User', uin: '100000000' },
+  });
+}
+
+function expectSafeStaffPage(response: Awaited<ReturnType<typeof helperClient.fetchCheerio>>) {
+  const props = superjson.parse<{ courseUsers: { user: Record<string, unknown> }[] }>(
+    response.$('script[data-component-props][data-component="StaffTable"]').text(),
+  );
+  expectSafeStaffUsers(props.courseUsers);
 }
 
 function runTest(context: TestContext) {
   context.pageUrl = `${context.baseUrl}/course_admin/staff`;
   context.userId = '2';
-
-  const headers = {
-    cookie: 'pl_test_user=test_instructor',
-  };
+  const createClient = (options: Parameters<typeof createTrpcClient>[0] = {}) =>
+    createTrpcClient({
+      courseInstanceId: context.baseUrl.includes('/course_instance/') ? '1' : undefined,
+      ...options,
+    });
 
   const users: TestUser[] = [
     {
@@ -127,7 +182,6 @@ function runTest(context: TestContext) {
   beforeAll(helperServer.before());
 
   beforeAll(async function () {
-    // Insert necessary users.
     for (const user of users) {
       await sqldb.callRow(
         'users_select_or_insert',
@@ -136,7 +190,6 @@ function runTest(context: TestContext) {
       );
     }
 
-    // Make the instructor a course owner.
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -149,487 +202,430 @@ function runTest(context: TestContext) {
 
   afterAll(helperServer.after);
 
-  test.sequential('permissions should match', async () => {
+  test('permissions should match', async () => {
     await checkPermissions(users);
   });
 
-  test.sequential('can add multiple users', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+  test('can add multiple users', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.insertByUserUids.mutate({
+      uids: ['staff03@example.com', 'staff04@example.com'],
+      courseRole: 'Viewer',
     });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="add-users-button"]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_insert_by_user_uids',
-        __csrf_token: context.__csrf_token,
-        uid: ' staff03@example.com ,   ,   staff04@example.com',
-        course_role: 'Viewer',
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff03@example.com', 'Viewer', null);
     updatePermissions(users, 'staff04@example.com', 'Viewer', null);
     await checkPermissions(users);
   });
 
-  test.sequential('can add valid subset of multiple users', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+  test('can add valid subset of multiple users', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.insertByUserUids.mutate({
+      uids: ['staff03@example.com', 'staff05@example.com', new_user],
+      courseRole: 'None',
     });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="add-users-button"]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_insert_by_user_uids',
-        __csrf_token: context.__csrf_token,
-        uid: `staff03@example.com, staff05@example.com, ${new_user}`,
-        course_role: 'None',
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff05@example.com', 'None', null);
     updatePermissions(users, new_user, 'None', null);
     await checkPermissions(users);
   });
 
-  test.sequential('can add course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+  test('can add course instance permission', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: '3',
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
     });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=student-data-access-add-3]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_instance_permissions_insert',
-        __csrf_token: context.__csrf_token,
-        user_id: '3',
-        course_instance_id: '1',
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff03@example.com', 'Viewer', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
-  test.sequential('can delete user', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-permission-button-3',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_delete',
-        __csrf_token: context.__csrf_token,
-        user_id: '3',
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
+  test('can delete another Owner', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateCourseRole.mutate({ userId: '3', courseRole: 'Owner' });
+    await trpc.courseStaff.deleteUser.mutate({ userId: '3' });
     updatePermissions(users, 'staff03@example.com', null, null);
     await checkPermissions(users);
   });
 
-  test.sequential('cannot delete self', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
-    assert.isTrue(response.ok);
-    const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_delete',
-        __csrf_token,
-        user_id: '2',
-      }),
-      headers,
-    });
-    assert.equal(response.status, 403);
+  test('cannot delete self', async () => {
+    const trpc = createClient();
+    try {
+      await trpc.courseStaff.deleteUser.mutate({ userId: context.userId });
+      assert.fail('Expected FORBIDDEN error');
+    } catch (err) {
+      const appError = getAppError<CourseStaffError['DeleteUser']>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'Only administrators can');
+    }
     await checkPermissions(users);
   });
 
-  test.sequential('can change course role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-permission-button-4',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_update_role',
-        __csrf_token: context.__csrf_token,
-        user_id: '4',
-        course_role: 'Owner',
-      }),
-      headers,
+  test('can change course role', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateCourseRole.mutate({
+      userId: '4',
+      courseRole: 'Owner',
     });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff04@example.com', 'Owner', null);
     await checkPermissions(users);
   });
 
-  test.sequential('cannot change course role of self', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
-    assert.isTrue(response.ok);
-    const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_update_role',
-        __csrf_token,
-        user_id: context.userId,
-        course_role: 'None',
-      }),
-      headers,
-    });
-    assert.equal(response.status, 403);
+  test('cannot change course role of self', async () => {
+    const trpc = createClient();
+    try {
+      await trpc.courseStaff.updateCourseRole.mutate({
+        userId: context.userId,
+        courseRole: 'None',
+      });
+      assert.fail('Expected FORBIDDEN error');
+    } catch (err) {
+      const appError = getAppError<CourseStaffError['UpdateCourseRole']>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'Only administrators can');
+    }
     await checkPermissions(users);
   });
 
-  test.sequential('cannot delete self even when emulating another owner', async () => {
-    const headers = {
+  test('cannot delete self even when emulating another owner', async () => {
+    const trpc = createClient({
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
-    };
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
     });
-    assert.isTrue(response.ok);
-    const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_delete',
-        __csrf_token,
-        user_id: context.userId,
-      }),
-      headers,
-    });
-    assert.equal(response.status, 403);
+    try {
+      await trpc.courseStaff.deleteUser.mutate({ userId: context.userId });
+      assert.fail('Expected FORBIDDEN error');
+    } catch (err) {
+      const appError = getAppError<CourseStaffError['DeleteUser']>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'while emulating');
+    }
     await checkPermissions(users);
   });
 
-  test.sequential(
-    'cannot change course role of self even when emulating another owner',
-    async () => {
-      const headers = {
-        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
-      };
-      let response = await helperClient.fetchCheerio(context.pageUrl, {
-        headers,
+  test('cannot change course role of self even when emulating another owner', async () => {
+    const trpc = createClient({
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+    });
+    try {
+      await trpc.courseStaff.updateCourseRole.mutate({
+        userId: context.userId,
+        courseRole: 'None',
       });
-      assert.isTrue(response.ok);
-      const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
-      response = await helperClient.fetchCheerio(context.pageUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'course_permissions_update_role',
-          __csrf_token,
-          user_id: context.userId,
-          course_role: 'None',
-        }),
-        headers,
-      });
-      assert.equal(response.status, 403);
-      await checkPermissions(users);
-    },
-  );
+      assert.fail('Expected FORBIDDEN error');
+    } catch (err) {
+      const appError = getAppError<CourseStaffError['UpdateCourseRole']>(err);
+      assert.isNotNull(appError);
+      assert.include(appError.message, 'while emulating');
+    }
+    await checkPermissions(users);
+  });
 
-  test.sequential('can add user', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+  test('can change instance role of self', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: context.userId,
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
     });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="add-users-button"]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_insert_by_user_uids',
-        __csrf_token: context.__csrf_token,
-        uid: 'staff03@example.com',
-        course_role: 'None',
-      }),
-      headers,
+    updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
+    await checkPermissions(users);
+  });
+
+  test('can change instance role of self when emulating another owner', async () => {
+    const trpc = createClient({
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     });
-    assert.isTrue(response.ok);
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: context.userId,
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
+    await checkPermissions(users);
+  });
+
+  test('can revert own instance role after emulation test', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: context.userId,
+      courseInstanceId: '1',
+      courseInstanceRole: 'None',
+    });
+    updatePermissions(users, 'instructor@example.com', 'Owner', null);
+    await checkPermissions(users);
+  });
+
+  test('can add user', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.insertByUserUids.mutate({
+      uids: ['staff03@example.com'],
+      courseRole: 'None',
+    });
     updatePermissions(users, 'staff03@example.com', 'None', null);
     await checkPermissions(users);
   });
 
-  test.sequential('can add course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+  test('can add course instance permission', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: '3',
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
     });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=student-data-access-add-3]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_instance_permissions_insert',
-        __csrf_token: context.__csrf_token,
-        user_id: '3',
-        course_instance_id: '1',
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff03@example.com', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
-  test.sequential('can update course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-instance-permission-button-3-1',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_instance_permissions_update_role_or_delete',
-        __csrf_token: context.__csrf_token,
-        user_id: '3',
-        course_instance_id: '1',
-        course_instance_role: 'Student Data Editor',
-      }),
-      headers,
+  test('can update course instance permission', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: '3',
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Editor',
     });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff03@example.com', 'None', 'Student Data Editor');
     await checkPermissions(users);
   });
 
-  test.sequential('can add course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+  test('can add course instance permission for another user', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: '5',
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
     });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=student-data-access-add-5]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_instance_permissions_insert',
-        __csrf_token: context.__csrf_token,
-        user_id: '5',
-        course_instance_id: '1',
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff05@example.com', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
-  test.sequential('can delete course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-instance-permission-button-5-1',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_instance_permissions_update_role_or_delete',
-        __csrf_token: context.__csrf_token,
-        user_id: '5',
-        course_instance_id: '1',
-        course_instance_role: 'None',
-      }),
-      headers,
+  test('can delete course instance permission', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: '5',
+      courseInstanceId: '1',
+      courseInstanceRole: 'None',
     });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff05@example.com', 'None', null);
     await checkPermissions(users);
   });
 
-  test.sequential('can delete all course instance permissions', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+  test('can bulk edit student data access', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.bulkEditAccess.mutate({
+      userIds: ['3', '5'],
+      courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
     });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="remove-all-student-data-access-button"]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'remove_all_student_data_access',
-        __csrf_token: context.__csrf_token,
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff03@example.com', 'None', null);
     await checkPermissions(users);
   });
 
-  test.sequential('can add course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+  test('can bulk edit own instance role', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.bulkEditAccess.mutate({
+      userIds: [context.userId],
+      courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'Student Data Viewer' }],
     });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=student-data-access-add-5]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_instance_permissions_insert',
-        __csrf_token: context.__csrf_token,
-        user_id: '5',
-        course_instance_id: '1',
-      }),
-      headers,
+    updatePermissions(users, 'instructor@example.com', 'Owner', 'Student Data Viewer');
+    await checkPermissions(users);
+  });
+
+  test('can bulk edit own instance role back to None', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.bulkEditAccess.mutate({
+      userIds: [context.userId],
+      courseInstanceChanges: [{ courseInstanceId: '1', courseInstanceRole: 'None' }],
     });
-    assert.isTrue(response.ok);
+    updatePermissions(users, 'instructor@example.com', 'Owner', null);
+    await checkPermissions(users);
+  });
+
+  test('can add back course instance permission', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateInstanceRole.mutate({
+      userId: '5',
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Viewer',
+    });
     updatePermissions(users, 'staff05@example.com', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
-  test.sequential('can delete users with no access', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="delete-users-with-no-access-button"]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'delete_no_access',
-        __csrf_token: context.__csrf_token,
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
+  test('can delete users with no access', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.deleteUser.mutate({ userId: '3' });
     updatePermissions(users, 'staff03@example.com', null, null);
+
+    const newUserRow = await sqldb.queryRow(
+      'SELECT id FROM users WHERE uid = $1;',
+      [new_user],
+      z.object({ id: z.string() }),
+    );
+    await trpc.courseStaff.deleteUser.mutate({ userId: newUserRow.id });
     updatePermissions(users, new_user, null, null);
     await checkPermissions(users);
   });
 
-  test.sequential('can delete non-owners', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="delete-non-owners-button"]',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'delete_non_owners',
-        __csrf_token: context.__csrf_token,
-      }),
-      headers,
-    });
-    assert.isTrue(response.ok);
+  test('can bulk delete another Owner', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.updateCourseRole.mutate({ userId: '5', courseRole: 'Owner' });
+    await trpc.courseStaff.bulkDelete.mutate({ userIds: ['5'] });
     updatePermissions(users, 'staff05@example.com', null, null);
     await checkPermissions(users);
   });
 
-  test.sequential('can change course role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      '#course-permission-button-4',
-    );
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_update_role',
-        __csrf_token: context.__csrf_token,
-        user_id: '4',
-        course_role: 'Editor',
-      }),
-      headers,
+  test('can change course role via bulk edit', async () => {
+    const trpc = createClient();
+    await trpc.courseStaff.bulkEditAccess.mutate({
+      userIds: ['4'],
+      courseRole: 'Editor',
     });
-    assert.isTrue(response.ok);
     updatePermissions(users, 'staff04@example.com', 'Editor', null);
     await checkPermissions(users);
   });
 
-  test.sequential('cannot GET if not an owner', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
-    };
+  test('can GET read-only staff page when not an owner', async () => {
     const response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
+      headers: {
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+      },
     });
-    assert.equal(response.status, 403);
+    assert.equal(response.status, 200);
+    assert.notInclude(response.$('body').text(), 'Add users');
+  });
+
+  test('admin of another institution cannot change own course role', async () => {
+    const institutionId = await insertInstitution({
+      shortName: 'Other',
+      longName: 'Other institution',
+      displayTimezone: 'UTC',
+      uidRegexp: null,
+    });
+    await ensureInstitutionAdministrator({
+      institution_id: institutionId,
+      user_id: context.userId,
+      authn_user_id: '1',
+    });
+    await expect(
+      createClient().courseStaff.updateCourseRole.mutate({
+        userId: context.userId,
+        courseRole: 'None',
+      }),
+    ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+    await checkPermissions(users);
+  });
+
+  test.each([
+    ['Owner emulating an institution admin', '2', 'staff04@example.com'],
+    ['Institution admin emulating an Owner', '4', 'instructor@example.com'],
+  ])('%s cannot change own course role', async (_description, authnUserId, effectiveUid) => {
+    await ensureInstitutionAdministrator({
+      institution_id: '1',
+      user_id: '4',
+      authn_user_id: '1',
+    });
+    await withUser(await selectUserById(authnUserId), async () => {
+      const trpc = createClient({
+        authnUserId,
+        cookie: `pl2_requested_uid=${effectiveUid}`,
+      });
+      await expect(
+        trpc.courseStaff.updateCourseRole.mutate({ userId: authnUserId, courseRole: 'None' }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+    });
+    await checkPermissions(users);
+  });
+
+  test('non-Owner staff can list safe user data but cannot edit', async () => {
+    const courseInstanceId = context.baseUrl.includes('/course_instance/') ? '1' : undefined;
+    const courseRole = courseInstanceId ? 'None' : 'Previewer';
+    const user = await getOrCreateUser({
+      uid: `readonly-${courseRole}@example.com`,
+      name: 'Read-only staff',
+      uin: null,
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: user.uid,
+      course_role: courseRole,
+      authn_user_id: '1',
+    });
+    if (courseInstanceId) {
+      await insertCourseInstancePermissions({
+        course_id: '1',
+        user_id: user.id,
+        course_instance_id: courseInstanceId,
+        course_instance_role: 'Student Data Viewer',
+        authn_user_id: '1',
+      });
+    }
+    await withUser(user, async () => {
+      const response = await helperClient.fetchCheerio(context.pageUrl);
+      expect(response.status).toBe(200);
+      expectSafeStaffPage(response);
+      const trpc = createClient({ authnUserId: user.id, cookie: '' });
+      const staff = await trpc.courseStaff.list.query();
+      expectSafeStaffUsers(staff);
+      for (const mutation of [
+        () =>
+          trpc.courseStaff.insertByUserUids.mutate({
+            uids: ['forbidden@example.com'],
+            courseRole: 'Owner',
+          }),
+        () => trpc.courseStaff.updateCourseRole.mutate({ userId: '4', courseRole: 'Owner' }),
+        () =>
+          trpc.courseStaff.updateInstanceRole.mutate({
+            userId: '4',
+            courseInstanceId: '1',
+            courseInstanceRole: 'Student Data Editor',
+          }),
+        () => trpc.courseStaff.deleteUser.mutate({ userId: '4' }),
+        () => trpc.courseStaff.bulkDelete.mutate({ userIds: ['4'] }),
+        () => trpc.courseStaff.bulkEditAccess.mutate({ userIds: ['4'], courseRole: 'Owner' }),
+      ]) {
+        await expect(mutation()).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      }
+      expect(await trpc.courseStaff.list.query()).toEqual(staff);
+    });
+  });
+
+  test('users with no staff permissions cannot view the staff page or list', async () => {
+    const user = await getOrCreateUser({
+      uid: 'not-staff@example.com',
+      name: 'Not staff',
+      uin: null,
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: user.uid,
+      course_role: 'None',
+      authn_user_id: '1',
+    });
+    await withUser(user, async () => {
+      const response = await helperClient.fetchCheerio(context.pageUrl);
+      expect(response.status).toBe(403);
+      const trpc = createClient({ authnUserId: user.id, cookie: '' });
+      await expect(trpc.courseStaff.list.query()).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
+    });
   });
 }
 
-describe('course admin access page through course route', { timeout: 60_000 }, function () {
-  const siteUrl = `http://localhost:${config.serverPort}`;
+describe(
+  'course admin access page through course route',
+  { timeout: 60_000, concurrent: false },
+  function () {
+    const siteUrl = `http://localhost:${config.serverPort}`;
 
-  runTest({
-    siteUrl,
-    baseUrl: `${siteUrl}/pl/course/1`,
-  } as TestContext);
-});
+    runTest({
+      siteUrl,
+      baseUrl: `${siteUrl}/pl/course/1`,
+    } as TestContext);
+  },
+);
 
 describe(
   'course admin access page through course instance route',
-  { timeout: 60_000 },
+  { timeout: 60_000, concurrent: false },
   function () {
     const siteUrl = `http://localhost:${config.serverPort}`;
 

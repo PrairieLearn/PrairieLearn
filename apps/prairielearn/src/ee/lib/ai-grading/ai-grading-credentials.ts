@@ -1,6 +1,6 @@
 import { config } from '../../../lib/config.js';
 import { type CourseInstance, type EnumAiGradingProvider } from '../../../lib/db-types.js';
-import { decryptFromStorage } from '../../../lib/storage-crypt.js';
+import { decryptFromStorage } from '../../../lib/encrypted-storage.js';
 import { selectCredentials } from '../../../models/ai-grading-credentials.js';
 
 interface ResolvedProviderKeys {
@@ -48,7 +48,7 @@ export async function resolveAiGradingKeys(
       keys.openai = { apiKey: decryptedKey, organization: null };
     } else if (cred.provider === 'google') {
       keys.google = { apiKey: decryptedKey };
-    } else {
+    } else if (cred.provider === 'anthropic') {
       keys.anthropic = { apiKey: decryptedKey };
     }
   }

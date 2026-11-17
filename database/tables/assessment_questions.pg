@@ -1,5 +1,6 @@
 columns
     advance_score_perc: double precision
+    ai_grading_last_selected_credential_id: bigint
     ai_grading_last_selected_model: text
     ai_grading_mode: boolean not null default false
     allow_real_time_grading: boolean not null
@@ -64,10 +65,12 @@ columns
 indexes
     assessment_questions_pkey: PRIMARY KEY (id) USING btree (id)
     assessment_questions_question_id_assessment_id_key: UNIQUE (question_id, assessment_id) USING btree (question_id, assessment_id)
+    assessment_questions_ai_grading_credential_idx: USING btree (ai_grading_last_selected_credential_id) WHERE ai_grading_last_selected_credential_id IS NOT NULL
     assessment_questions_alternative_group_id_idx: USING btree (alternative_group_id)
     assessment_questions_assessment_id_idx: USING btree (assessment_id)
 
 foreign-key constraints
+    assessment_questions_ai_grading_credential_fkey: FOREIGN KEY (ai_grading_last_selected_credential_id) REFERENCES course_instance_ai_grading_credentials(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions_alternative_group_id_fkey: FOREIGN KEY (alternative_group_id) REFERENCES alternative_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_questions_manual_rubric_id_fkey: FOREIGN KEY (manual_rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE SET NULL

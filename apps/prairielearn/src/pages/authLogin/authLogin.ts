@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema, parseRequestBody, parseRequestQuery } from '@prairielearn/zod';
 
 import * as authLib from '../../lib/authn.js';
 import { config } from '../../lib/config.js';
@@ -28,17 +29,20 @@ const InstitutionSupportedProvidersSchema = z.object({
   name: AuthnProviderSchema.shape.name,
   is_default: z.boolean(),
 });
-const ServiceSchema = z.string().nullable();
-const InstitutionIdSchema = z.string().nullable();
+const LoginQuerySchema = z.object({
+  institution_id: IdSchema.optional(),
+  service: z.string().nullable().catch(null),
+  unsupported_provider: z.literal('true').optional().catch(undefined),
+});
 
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    const service = ServiceSchema.parse(req.query.service ?? null);
+    const query = parseRequestQuery(req, LoginQuerySchema);
 
     // If an `institution_id` query parameter is provided, we'll only show the
     // login options for that institution.
-    const institutionId = InstitutionIdSchema.parse(req.query.institution_id ?? null);
+    const institutionId = query.institution_id ?? null;
     if (institutionId) {
       // Look up the supported providers for this institution.
       const supportedProviders = await queryRows(
@@ -49,10 +53,10 @@ router.get(
 
       res.send(
         AuthLoginInstitution({
-          showUnsupportedMessage: req.query.unsupported_provider === 'true',
+          showUnsupportedMessage: query.unsupported_provider === 'true',
           institutionId,
           supportedProviders,
-          service,
+          service: query.service,
           resLocals: res.locals,
         }),
       );
@@ -96,11 +100,17 @@ router.get(
       })
       .filter((provider): provider is InstitutionAuthnProvider => provider !== null);
 
-    res.send(AuthLogin({ service, institutionAuthnProviders, resLocals: res.locals }));
+    res.send(
+      AuthLogin({
+        service: query.service,
+        institutionAuthnProviders,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
-const DevLoginParamsSchema = z.object({
+const DevLoginBodySchema = z.object({
   uid: z.string().min(1),
   name: z.string().min(1),
   uin: z.string().nullable().optional().default(null),
@@ -115,7 +125,7 @@ router.post(
     }
 
     if (req.body.__action === 'dev_login') {
-      const body = DevLoginParamsSchema.parse(req.body);
+      const body = parseRequestBody(req, DevLoginBodySchema);
 
       const authnParams = {
         uid: body.uid,

@@ -1,7 +1,7 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { throwAppError } from '@prairielearn/trpc/server';
 
 import {
   StaffCourseSchema,
@@ -15,6 +15,11 @@ import type { CourseQuestionForPicker } from '../../pages/instructorAssessmentQu
 import { requireCoursePermissionPreview, t } from './init.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+export interface AssessmentQuestionsError {
+  CourseQuestions: never;
+  QuestionByQid: { code: 'QUESTION_NOT_FOUND' };
+}
 
 const courseQuestions = t.procedure.use(requireCoursePermissionPreview).query(async (opts) => {
   const courseQuestions = await selectQuestionsForCourse(opts.ctx.course.id, [
@@ -68,7 +73,10 @@ const questionByQid = t.procedure
       );
 
       if (!result) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Shared question not found' });
+        throwAppError<AssessmentQuestionsError['QuestionByQid']>(
+          { code: 'QUESTION_NOT_FOUND', message: 'Shared question not found' },
+          'NOT_FOUND',
+        );
       }
 
       return result;
@@ -83,10 +91,10 @@ const questionByQid = t.procedure
     );
 
     if (!result) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Question not found',
-      });
+      throwAppError<AssessmentQuestionsError['QuestionByQid']>(
+        { code: 'QUESTION_NOT_FOUND', message: 'Question not found' },
+        'NOT_FOUND',
+      );
     }
 
     return result;

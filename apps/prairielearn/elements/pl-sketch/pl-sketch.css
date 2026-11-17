@@ -1,0 +1,13 @@
+.sketchresponse-debug {
+  background-color: hsla(0, 0%, 100%, 0.852);
+  font-family: 'Lucida Console', 'Courier New', monospace;
+  color: black;
+  border-radius: 10px;
+  margin: 20px;
+  padding: 20px;
+}
+
+.js-overlay-toggle {
+  width: 2rem;
+  height: 2rem;
+}

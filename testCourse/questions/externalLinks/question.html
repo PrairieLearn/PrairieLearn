@@ -1,0 +1,62 @@
+<pl-question-panel>
+  <p>
+    This question embeds external links in its content so that LockDown
+    Browser's content-link behavior can be exercised. PrairieLearn is opened
+    in a stemmed (rldbwn) child window with blocked navigation to outside
+    sources, so clicking one of the links below should show
+    <strong>"LINK IS BLOCKED"</strong> on the toolbar rather than navigating
+    away.
+  </p>
+
+  <p>Try opening this YouTube video:</p>
+  <ul>
+    <li>
+      <a href="https://www.youtube.com/watch?v=aircAruvnKk" target="_blank" rel="noopener">
+        https://www.youtube.com/watch?v=aircAruvnKk
+      </a>
+    </li>
+  </ul>
+  <p>
+    A couple of other external links, useful for confirming the same
+    blocked-navigation behavior on different sites:
+  </p>
+  <ul>
+    <li>
+      <a href="https://en.wikipedia.org/wiki/Fibonacci_sequence" target="_blank" rel="noopener">
+        https://en.wikipedia.org/wiki/Fibonacci_sequence
+      </a>
+    </li>
+    <li>
+      <a href="https://docs.prairielearn.com" target="_blank" rel="noopener">
+        https://docs.prairielearn.com
+      </a>
+    </li>
+  </ul>
+
+  <p>The same YouTube video is also embedded directly in this page as an iframe:</p>
+  <p>
+    <iframe
+      width="560"
+      height="315"
+      src="https://www.youtube.com/embed/aircAruvnKk"
+      title="YouTube video player"
+      frameborder="0"
+      allowfullscreen
+    ></iframe>
+  </p>
+
+  <p>Click one of the external links above. What happens?</p>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="link_behavior">
+  <pl-answer correct="true">
+    Navigation was blocked and the toolbar showed "LINK IS BLOCKED".
+  </pl-answer>
+  <pl-answer correct="false">
+    The link opened in a new window and I could browse freely.
+  </pl-answer>
+  <pl-answer correct="false">
+    The link opened in a new window, but only a single further navigation was
+    allowed before being blocked.
+  </pl-answer>
+</pl-multiple-choice>

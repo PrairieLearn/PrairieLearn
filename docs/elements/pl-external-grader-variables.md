@@ -13,7 +13,7 @@ If stored in `data["params"]`, the variables list has the following format:
 ```python
 data["params"]["names_for_user"] = [
     {"name": "var1", "description": "Human-readable description.", "type": "type"},
-    {"name": "var2", "description": "...", "type": "..."}
+    {"name": "var2", "description": "...", "type": "..."},
 ]
 data["params"]["names_from_user"] = [
     {"name": "result1", "description": "...", "type": "..."}
@@ -39,9 +39,13 @@ data["params"]["names_from_user"] = [
 ```python title="server.py"
 def generate(data):
     data["params"]["names_for_user"] = [
-        {"name": "n", "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
+        {
+            "name": "n",
+            "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.",
+            "type": "integer",
+        },
         {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
-        {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
+        {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"},
     ]
 ```
 

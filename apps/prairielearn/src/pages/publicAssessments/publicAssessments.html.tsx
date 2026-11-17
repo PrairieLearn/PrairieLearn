@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import z from 'zod';
 
 import { Hydrate } from '@prairielearn/react/server';
@@ -49,6 +48,15 @@ export function PublicAssessments({
   questionsForCopy: SafeQuestionForCopy[];
   isAdministrator: boolean;
 }) {
+  const assessmentGroups: SafeAssessmentRow[][] = [];
+  rows.forEach((row) => {
+    if (row.start_new_assessment_group || assessmentGroups.length === 0) {
+      assessmentGroups.push([row]);
+    } else {
+      assessmentGroups[assessmentGroups.length - 1].push(row);
+    }
+  });
+
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center">
@@ -81,21 +89,19 @@ export function PublicAssessments({
               <th>Short name</th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((row) => (
-              <Fragment key={row.id}>
-                {row.start_new_assessment_group && (
-                  <tr>
-                    <th colSpan={3} scope="row">
-                      {courseInstance.assessments_group_by === 'Set' ? (
-                        <AssessmentSetHeading assessmentSet={row.assessment_set} />
-                      ) : (
-                        <AssessmentModuleHeading assessmentModule={row.assessment_module} />
-                      )}
-                    </th>
-                  </tr>
-                )}
-                <tr id={`row-${row.id}`}>
+          {assessmentGroups.map((groupRows) => (
+            <tbody key={groupRows[0].id}>
+              <tr>
+                <th colSpan={3} scope="rowgroup">
+                  {courseInstance.assessments_group_by === 'Set' ? (
+                    <AssessmentSetHeading assessmentSet={groupRows[0].assessment_set} />
+                  ) : (
+                    <AssessmentModuleHeading assessmentModule={groupRows[0].assessment_module} />
+                  )}
+                </th>
+              </tr>
+              {groupRows.map((row) => (
+                <tr key={row.id} id={`row-${row.id}`}>
                   <td className="align-middle" style={{ width: '1%' }}>
                     <span className={`badge color-${row.assessment_set.color}`}>{row.label}</span>
                   </td>
@@ -108,9 +114,9 @@ export function PublicAssessments({
                   </td>
                   <td className="align-middle">{row.tid}</td>
                 </tr>
-              </Fragment>
-            ))}
-          </tbody>
+              ))}
+            </tbody>
+          ))}
         </table>
       </div>
     </div>

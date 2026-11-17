@@ -25,7 +25,9 @@ SELECT
 FROM
   assessment_sets AS aset
 WHERE
-  aset.course_id = $course_id;
+  aset.course_id = $course_id
+ORDER BY
+  aset.number;
 
 -- BLOCK select_assessment_modules
 SELECT

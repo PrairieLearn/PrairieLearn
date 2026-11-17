@@ -1,32 +1,30 @@
-import { AsyncHooksContextManager } from '@opentelemetry/context-async-hooks';
-import { tracing } from '@opentelemetry/sdk-node';
-import { afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { propagation } from '@opentelemetry/api';
+import { InMemorySpanExporter } from '@opentelemetry/sdk-trace';
+import { afterAll, afterEach, assert, beforeAll, describe, it } from 'vitest';
 
-import { SpanStatusCode, context, init, instrumented, trace } from './index.js';
+import { SpanStatusCode, context, init, instrumented, shutdown, trace } from './index.js';
 
 describe('instrumented', () => {
-  let contextManager: AsyncHooksContextManager;
-  const exporter = new tracing.InMemorySpanExporter();
-  const spanProcessor = new tracing.SimpleSpanProcessor(exporter);
+  const exporter = new InMemorySpanExporter();
 
   beforeAll(async () => {
     await init({
       openTelemetryEnabled: true,
       openTelemetryExporter: exporter,
       openTelemetrySamplerType: 'always-on',
-      openTelemetrySpanProcessor: spanProcessor,
+      openTelemetrySpanProcessor: 'simple',
     });
   });
 
-  beforeEach(async () => {
-    contextManager = new AsyncHooksContextManager();
-    context.setGlobalContextManager(contextManager.enable());
+  afterEach(() => {
+    exporter.reset();
   });
 
-  afterEach(async () => {
-    await spanProcessor.forceFlush();
-    exporter.reset();
+  afterAll(async () => {
+    await shutdown();
     context.disable();
+    trace.disable();
+    propagation.disable();
   });
 
   it('returns the value from the function', async () => {
@@ -37,7 +35,6 @@ describe('instrumented', () => {
   it('records a span on success', async () => {
     await instrumented('test-success', () => 'foo');
 
-    await spanProcessor.forceFlush();
     const spans = exporter.getFinishedSpans();
     assert.lengthOf(spans, 1);
     assert.equal(spans[0].name, 'test-success');
@@ -59,7 +56,6 @@ describe('instrumented', () => {
     assert.equal(maybeError?.message, 'foo');
 
     // Ensure the correct span was recorded.
-    await spanProcessor.forceFlush();
     const spans = exporter.getFinishedSpans();
     assert.lengthOf(spans, 1);
     assert.equal(spans[0].name, 'test-failure');
@@ -68,14 +64,37 @@ describe('instrumented', () => {
     assert.equal(spans[0].events[0].name, 'exception');
   });
 
-  it('sets up context correctly', async () => {
-    const tracer = trace.getTracer('default');
-    const parentSpan = tracer.startSpan('parentSpan');
-    const parentContext = trace.setSpan(context.active(), parentSpan);
-
-    await instrumented('test', async () => {
-      const childContext = context.active();
-      assert.notStrictEqual(childContext, parentContext);
+  it('preserves parent spans across asynchronous work', async () => {
+    await instrumented('parent', async (parent) => {
+      await Promise.resolve();
+      assert.strictEqual(trace.getSpan(context.active()), parent);
+      await instrumented('child', async () => {
+        await Promise.resolve();
+      });
+      assert.strictEqual(trace.getSpan(context.active()), parent);
     });
+
+    const [child, parent] = exporter.getFinishedSpans();
+    assert.equal(child.parentSpanContext?.spanId, parent.spanContext().spanId);
+    assert.equal(child.spanContext().traceId, parent.spanContext().traceId);
+  });
+
+  it('propagates W3C trace context and baggage', async () => {
+    const headers = {
+      traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
+      baggage: 'example=value',
+    };
+    const extracted = propagation.extract(context.active(), headers);
+    await context.with(extracted, async () => {
+      await instrumented('incoming', async (span) => {
+        const carrier: Record<string, string> = {};
+        propagation.inject(context.active(), carrier);
+        assert.include(carrier.traceparent, span.spanContext().spanId);
+        assert.equal(carrier.baggage, headers.baggage);
+      });
+    });
+    const [span] = exporter.getFinishedSpans();
+    assert.equal(span.parentSpanContext?.spanId, 'b7ad6b7169203331');
+    assert.equal(span.spanContext().traceId, '0af7651916cd43dd8448eb211c80319c');
   });
 });

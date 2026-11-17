@@ -17,7 +17,7 @@ import prairielearn as pl
 from PIL import Image
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = True
-MANUAL_UPLOAD_ENABLED_DEFAULT = False
+MANUAL_UPLOAD_ENABLED_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 
 
@@ -85,16 +85,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if data["panel"] == "question":
             return ""
 
-        uuid = html.escape(pl.get_uuid())
-        name = html.escape(file_name)
-
-        # The AI grading rendering process will recursively strip any nodes that
-        # don't contain text. Usually this is fine, but in this case this node
-        # really only serves to provide a filename and data attribute for the
-        # AI grading system to pick up on.
-        #
-        # To avoid this node being stripped, we just include the filename as text.
-        return f'<div data-image-capture-uuid="{uuid}" data-file-name="{name}">{name}</div>'
+        # This marker is internal to PrairieLearn's AI grading implementation.
+        name = html.escape(file_name, quote=True)
+        return f'<div data-ai-grading-file-name="{name}">{name}</div>'
 
     html_params = {
         "uuid": pl.get_uuid(),

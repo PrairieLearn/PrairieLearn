@@ -8,6 +8,7 @@ import { type NextFunction, type Request, type Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
+import { isTrpcRequest } from '@prairielearn/trpc/express';
 
 import { PageLayout } from '../components/PageLayout.js';
 import { extractPageContext } from '../lib/client/page-context.js';
@@ -49,9 +50,18 @@ export const createAuthzMiddleware =
       return;
     }
 
+    const explanation = errorExplanation ?? getErrorExplanation(oneOfPermissions);
+
     // If we don't have authz data from the request, we fallback to the non-friendly error page.
     // We also do this fallback if we are in a test.
     if (authenticatedAccess && !req.cookies.pl_test_user && hasAuthzData) {
+      // tRPC clients can't parse the HTML AuthzAccessMismatch page; throw so the
+      // error pipeline (pages/error/error.ts) returns a JSON-RPC formatted error.
+      if (isTrpcRequest(req)) {
+        next(new HttpStatusError(403, explanation));
+        return;
+      }
+
       const pageContext = extractPageContext(res.locals, {
         pageType: 'plain',
         accessType: 'student',
@@ -75,7 +85,7 @@ export const createAuthzMiddleware =
           content: (
             <Hydrate>
               <AuthzAccessMismatch
-                errorExplanation={errorExplanation}
+                errorExplanation={explanation}
                 oneOfPermissionKeys={oneOfPermissions}
                 authzData={authzData}
                 authnUser={pageContext.authn_user}
@@ -93,5 +103,5 @@ export const createAuthzMiddleware =
       return;
     }
 
-    next(new HttpStatusError(403, errorExplanation ?? getErrorExplanation(oneOfPermissions)));
+    next(new HttpStatusError(403, explanation));
   };

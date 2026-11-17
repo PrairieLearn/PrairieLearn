@@ -2,17 +2,26 @@ import * as assert from 'node:assert';
 
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 
+import {
+  completeAutoScalingTerminationLifecycleAction,
+  waitForAutoScalingTerminationLifecycleAction,
+} from '@prairielearn/aws';
+import {
+  type AutoScalingTargetLifecycleState,
+  watchAutoScalingTargetLifecycleState,
+} from '@prairielearn/aws-imds';
+
 import { makeAwsClientConfig } from './aws.js';
 import { config } from './config.js';
 import logger from './logger.js';
 
 /**
  * Stores our current state. We do one-way transitions:
- *    null -> Launching -> InService
+ *    null -> Launching -> InService -> Terminating
  * or
  *    null -> Launching -> AbandoningLaunch
  */
-let lifecycleState: 'Launching' | 'InService' | 'AbandoningLaunch' | null = null;
+let lifecycleState: 'Launching' | 'InService' | 'Terminating' | 'AbandoningLaunch' | null = null;
 
 export function getState() {
   return lifecycleState;
@@ -85,22 +94,113 @@ export async function abandonLaunch() {
   }
 }
 
+export function startTerminationWatcher(
+  onTermination: (state: AutoScalingTargetLifecycleState) => void,
+) {
+  if (
+    config.autoScalingGroupName === null ||
+    config.autoScalingTerminatingLifecycleHookName === null
+  ) {
+    logger.info('lifecycle.startTerminationWatcher(): termination hook not configured');
+    return;
+  }
+
+  logger.info('lifecycle.startTerminationWatcher(): watching IMDS for termination');
+  void watchAutoScalingTargetLifecycleState({
+    targetStates: ['Terminated'],
+    onTargetState(state) {
+      logger.info(
+        `lifecycle.startTerminationWatcher(): detected Auto Scaling target state ${state}`,
+      );
+      onTermination(state);
+    },
+    onError(error) {
+      logger.warn(
+        'lifecycle.startTerminationWatcher(): error polling IMDS target lifecycle state; retrying',
+        error,
+      );
+    },
+  });
+}
+
+export function terminating() {
+  if (config.autoScalingGroupName === null) return;
+
+  lifecycleState = 'Terminating';
+  logger.info(`lifecycle.terminating(): changing to state ${lifecycleState}`);
+}
+
+export async function completeTermination(signal: AbortSignal) {
+  if (
+    config.autoScalingGroupName === null ||
+    config.autoScalingTerminatingLifecycleHookName === null
+  ) {
+    logger.info('lifecycle.completeTermination(): termination hook not configured');
+    return;
+  }
+
+  const autoscaling = new AutoScaling(makeAwsClientConfig());
+  try {
+    // Graders begin draining as soon as IMDS reports `Terminated`. Wait until
+    // the regional state reaches `Terminating:Wait` before using the lifecycle
+    // API, which can happen after draining has already finished.
+    await waitForAutoScalingTerminationLifecycleAction({
+      client: autoscaling,
+      instanceId: config.instanceId,
+      signal,
+      onError(error) {
+        logger.error(
+          'lifecycle.completeTermination(): error checking lifecycle state; retrying',
+          error,
+        );
+      },
+    });
+    if (signal.aborted) return;
+
+    logger.info('lifecycle.completeTermination(): lifecycle action is ready');
+    logger.info('lifecycle.completeTermination(): completing lifecycle action');
+    const result = await completeAutoScalingTerminationLifecycleAction({
+      client: autoscaling,
+      autoScalingGroupName: config.autoScalingGroupName,
+      lifecycleHookName: config.autoScalingTerminatingLifecycleHookName,
+      instanceId: config.instanceId,
+      signal,
+      onError(error) {
+        logger.error('lifecycle.completeTermination(): error completing action; retrying', error);
+      },
+    });
+    if (result === 'completed') {
+      logger.info('lifecycle.completeTermination(): completed lifecycle action');
+    } else {
+      logger.info('lifecycle.completeTermination(): lifecycle action was already resolved');
+    }
+  } catch (error) {
+    if (!signal.aborted) throw error;
+  } finally {
+    if (signal.aborted) {
+      logger.info('lifecycle.completeTermination(): stopped waiting after external SIGTERM');
+    }
+  }
+}
+
 function heartbeat() {
   if (config.autoScalingGroupName == null) return;
 
-  if (lifecycleState === 'Launching') {
-    logger.info('lifecycle.heartbeat(): sending heartbeat...');
-    const autoscaling = new AutoScaling(makeAwsClientConfig());
-    const params = {
-      AutoScalingGroupName: config.autoScalingGroupName,
-      LifecycleHookName: 'launching',
-      InstanceId: config.instanceId,
-    };
-    autoscaling.recordLifecycleActionHeartbeat(params, (err: any) => {
-      if (err) return logger.error('lifecycle.heartbeat(): ERROR', err);
-      setTimeout(heartbeat, config.lifecycleHeartbeatIntervalMS);
-    });
-  } else {
+  const lifecycleHookName = lifecycleState === 'Launching' ? 'launching' : null;
+  if (lifecycleHookName === null) {
     logger.info(`lifecycle.heartbeat(): in state ${lifecycleState}, not sending heartbeat`);
+    return;
   }
+
+  logger.info(`lifecycle.heartbeat(): sending heartbeat for ${lifecycleState}...`);
+  const autoscaling = new AutoScaling(makeAwsClientConfig());
+  const params = {
+    AutoScalingGroupName: config.autoScalingGroupName,
+    LifecycleHookName: lifecycleHookName,
+    InstanceId: config.instanceId,
+  };
+  autoscaling.recordLifecycleActionHeartbeat(params, (err: any) => {
+    if (err) logger.error('lifecycle.heartbeat(): ERROR', err);
+    setTimeout(heartbeat, config.lifecycleHeartbeatIntervalMS);
+  });
 }

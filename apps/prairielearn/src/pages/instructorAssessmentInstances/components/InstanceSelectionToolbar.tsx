@@ -1,0 +1,52 @@
+import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances.types.js';
+
+import { AssessmentInstanceActions } from './AssessmentInstanceActions.js';
+import { UploadDropdown } from './UploadDropdown.js';
+
+export function InstanceSelectionToolbar({
+  selectedRows,
+  allRows,
+  clearSelection,
+  courseInstanceId,
+  assessmentId,
+  timezone,
+  onActionSuccess,
+  groupWork,
+  isDevMode,
+}: {
+  selectedRows: AssessmentInstanceActionRow[];
+  allRows: AssessmentInstanceActionRow[];
+  clearSelection: () => void;
+  courseInstanceId: string;
+  assessmentId: string;
+  timezone: string;
+  onActionSuccess: (result: { message: string; action: 'delete' | 'timeLimit' }) => void;
+  groupWork: boolean;
+  isDevMode: boolean;
+}) {
+  const target =
+    selectedRows.length > 0
+      ? { kind: 'selected' as const, instances: selectedRows }
+      : { kind: 'all' as const, instances: allRows };
+
+  return (
+    <div className="d-flex align-items-center gap-2">
+      <AssessmentInstanceActions
+        target={target}
+        courseInstanceId={courseInstanceId}
+        assessmentId={assessmentId}
+        timezone={timezone}
+        onActionSuccess={(result) => {
+          onActionSuccess(result);
+          clearSelection();
+        }}
+      />
+      <UploadDropdown
+        courseInstanceId={courseInstanceId}
+        assessmentId={assessmentId}
+        groupWork={groupWork}
+        isDevMode={isDevMode}
+      />
+    </div>
+  );
+}

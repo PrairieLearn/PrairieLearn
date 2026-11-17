@@ -7,11 +7,13 @@ function makeBaseRule(overrides: Record<string, unknown> = {}) {
     id: '1',
     assessment_id: '100',
     number: 0,
+    uuid: null,
     target_type: 'none' as const,
-    list_before_release: null,
+    before_release_listed: null,
     date_control_release_date: null,
+    date_control_due_credit: null,
     date_control_due_date: null,
-    date_control_due_date_overridden: false,
+    date_control_due_overridden: false,
     date_control_early_deadlines_overridden: false,
     date_control_late_deadlines_overridden: false,
     date_control_after_last_deadline_allow_submissions: null,
@@ -36,7 +38,14 @@ function makeRow(
     enrollments?: { enrollment_id: string; uid: string; name: string | null }[] | null;
     early_deadlines?: { date: string; credit: number }[] | null;
     late_deadlines?: { date: string; credit: number }[] | null;
-    prairietest_exams?: { uuid: string; read_only: boolean }[] | null;
+    prairietest_exams?:
+      | {
+          uuid: string;
+          read_only: boolean;
+          after_complete_questions_hidden?: boolean;
+          after_complete_score_hidden?: boolean;
+        }[]
+      | null;
   } = {},
 ) {
   return {
@@ -45,7 +54,13 @@ function makeRow(
     enrollments: overrides.enrollments ?? null,
     early_deadlines: overrides.early_deadlines ?? null,
     late_deadlines: overrides.late_deadlines ?? null,
-    prairietest_exams: overrides.prairietest_exams ?? null,
+    prairietest_exams:
+      overrides.prairietest_exams?.map((e) => ({
+        uuid: e.uuid,
+        read_only: e.read_only,
+        after_complete_questions_hidden: e.after_complete_questions_hidden ?? false,
+        after_complete_score_hidden: e.after_complete_score_hidden ?? false,
+      })) ?? null,
   };
 }
 
@@ -99,7 +114,7 @@ describe('dbRowToAccessControlJson', () => {
     expect(result.afterComplete?.score).toBeUndefined();
   });
 
-  it('omits credit for main rule afterLastDeadline when not set', () => {
+  it('omits default rule afterLastDeadline when submissions are disabled', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
@@ -108,12 +123,10 @@ describe('dbRowToAccessControlJson', () => {
       }),
     );
 
-    expect(result.dateControl?.afterLastDeadline).toEqual({
-      allowSubmissions: false,
-    });
+    expect(result.dateControl?.afterLastDeadline).toBeUndefined();
   });
 
-  it('omits credit for override afterLastDeadline when submissions disabled', () => {
+  it('omits credit for override afterLastDeadline when submissions are disabled', () => {
     const result = dbRowToAccessControlJson(
       makeRow({
         rule: {
@@ -126,6 +139,34 @@ describe('dbRowToAccessControlJson', () => {
 
     expect(result.dateControl?.afterLastDeadline).toEqual({
       allowSubmissions: false,
+    });
+  });
+
+  it('omits afterLastDeadline when allow_submissions is null', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: null,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toBeUndefined();
+  });
+
+  it('emits afterLastDeadline when allow_submissions is set', () => {
+    const result = dbRowToAccessControlJson(
+      makeRow({
+        rule: {
+          date_control_after_last_deadline_allow_submissions: true,
+          date_control_after_last_deadline_credit: 50,
+        },
+      }),
+    );
+
+    expect(result.dateControl?.afterLastDeadline).toEqual({
+      allowSubmissions: true,
+      credit: 50,
     });
   });
 

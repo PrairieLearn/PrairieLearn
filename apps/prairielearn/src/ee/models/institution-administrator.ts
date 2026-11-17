@@ -22,6 +22,7 @@ export async function ensureInstitutionAdministrator({
     );
 
     if (institution_admin) {
+      // oxlint-disable-next-line typescript/no-deprecated
       await insertAuditLog({
         authn_user_id,
         table_name: 'institution_administrators',
@@ -57,6 +58,7 @@ export async function deleteInstitutionAdministrator({
     );
 
     if (institution_admin) {
+      // oxlint-disable-next-line typescript/no-deprecated
       await insertAuditLog({
         authn_user_id,
         table_name: 'institution_administrators',

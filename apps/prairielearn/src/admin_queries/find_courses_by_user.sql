@@ -21,7 +21,8 @@ WITH
         c.id AS course_id,
         ci.short_name AS course_instance,
         ci.id AS course_instance_id,
-        'Student' AS role
+        'Student' AS role,
+        e.status AS enrollment_status
       FROM
         selected_users AS u
         JOIN enrollments AS e ON (e.user_id = u.id)
@@ -42,7 +43,8 @@ WITH
         c.id AS course_id,
         ci.short_name AS course_instance,
         ci.id AS course_instance_id,
-        cip.course_instance_role::text AS role
+        cip.course_instance_role::text AS role,
+        NULL AS enrollment_status
       FROM
         selected_users AS u
         JOIN course_permissions AS cp ON (cp.user_id = u.id)
@@ -66,7 +68,8 @@ WITH
         c.id AS course_id,
         NULL AS course_instance,
         NULL course_instance_id,
-        'Course Content ' || cp.course_role AS role
+        'Course Content ' || cp.course_role AS role,
+        NULL AS enrollment_status
       FROM
         selected_users AS u
         JOIN course_permissions AS cp ON (cp.user_id = u.id)

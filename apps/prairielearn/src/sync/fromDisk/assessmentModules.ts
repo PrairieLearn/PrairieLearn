@@ -1,5 +1,6 @@
 import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
+import { DEFAULT_ASSESSMENT_MODULE_NAME } from '../../lib/assessment-modules.shared.js';
 import { AssessmentModuleSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
@@ -48,7 +49,7 @@ export async function sync(courseId: string, courseData: CourseData) {
     courseEntities: courseData.course.data?.assessmentModules ?? [],
     extraEntities: [
       {
-        name: 'Default',
+        name: DEFAULT_ASSESSMENT_MODULE_NAME,
         heading: 'Default module',
         implicit: true,
       },

@@ -77,10 +77,12 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: null,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'public',
       // This is only used by score panels, which are not rendered in this context.
@@ -111,7 +113,17 @@ router.get(
       authn_user: res.locals.authn_user,
       question: res.locals.question,
     });
-    res.send(PublicQuestionPreview({ resLocals: res.locals, questionCopyTargets }));
+    res.send(
+      PublicQuestionPreview({
+        independentScrolling: await features.enabled('question-hosting-update', {
+          institution_id: res.locals.course.institution_id,
+          course_id: res.locals.course.id,
+          user_id: res.locals.authn_user.id,
+        }),
+        resLocals: res.locals,
+        questionCopyTargets,
+      }),
+    );
   }),
 );
 

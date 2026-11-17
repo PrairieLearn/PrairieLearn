@@ -48,19 +48,19 @@ export function formatInterval(
   const parts: string[] = [];
 
   if (days > 0) {
-    parts.push(`${sign}${days} ${fullPartNames ? (days === 1 ? 'day' : 'days') : 'd'}`);
+    parts.push(`${sign}${days}${fullPartNames ? (days === 1 ? ' day' : ' days') : 'd'}`);
   }
   if (hours > 0) {
-    parts.push(`${sign}${hours} ${fullPartNames ? (hours === 1 ? 'hour' : 'hours') : 'h'}`);
+    parts.push(`${sign}${hours}${fullPartNames ? (hours === 1 ? ' hour' : ' hours') : 'h'}`);
   }
   if (mins > 0) {
-    parts.push(`${sign}${mins} ${fullPartNames ? (mins === 1 ? 'minute' : 'minutes') : 'min'}`);
+    parts.push(`${sign}${mins}${fullPartNames ? (mins === 1 ? ' minute' : ' minutes') : 'min'}`);
   }
   if (secs > 0) {
-    parts.push(`${sign}${secs} ${fullPartNames ? (secs === 1 ? 'second' : 'seconds') : 's'}`);
+    parts.push(`${sign}${secs}${fullPartNames ? (secs === 1 ? ' second' : ' seconds') : 's'}`);
   }
   if (parts.length === 0) {
-    parts.push(`0 ${fullPartNames ? 'seconds' : 's'}`);
+    parts.push(`0${fullPartNames ? ' seconds' : 's'}`);
   }
 
   return firstOnly ? parts[0] : parts.join(' ');
@@ -103,7 +103,7 @@ export function formatIntervalHM(
   interval: number,
   { signed = false }: { signed?: boolean } = { signed: false },
 ): string {
-  const sign = interval < 0 ? '-' : interval > 0 ? (signed ? '+' : '') : '';
+  const sign = interval < 0 ? '-' : interval > 0 && signed ? '+' : '';
   const hours = Math.floor(Math.abs(interval) / HOUR_IN_MILLISECONDS);
   const mins = Math.floor(Math.abs(interval) / MINUTE_IN_MILLISECONDS) % 60;
   return `${sign}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;

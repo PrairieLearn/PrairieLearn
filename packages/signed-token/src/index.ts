@@ -11,14 +11,43 @@ interface CheckOptions {
   maxAge?: number;
 }
 
-export function generateSignedToken(data: any, secretKey: string) {
+export type SecretKey = string | readonly [string, ...string[]];
+
+interface PrefixCsrfTokenData {
+  url: string;
+  type?: never;
+  [claim: string]: unknown;
+}
+
+type RequireClaim<Data extends PrefixCsrfTokenData> =
+  Exclude<keyof Data, 'url' | 'type'> extends never ? never : Data;
+
+function hasClaim(data: PrefixCsrfTokenData): boolean {
+  return Object.entries(data).some(
+    ([key, value]) => key !== 'url' && key !== 'type' && value !== undefined,
+  );
+}
+
+function getSecretKeys(secretKey: SecretKey): readonly [string, ...string[]] {
+  if (typeof secretKey === 'string') {
+    return [secretKey];
+  }
+  if (secretKey.length === 0) {
+    throw new Error('Secret key ring must contain at least one key');
+  }
+  return secretKey;
+}
+
+export function generateSignedToken(data: any, secretKey: SecretKey) {
   debug(`generateSignedToken(): data = ${JSON.stringify(data)}`);
-  debug(`generateSignedToken(): secretKey = ${secretKey}`);
   const dataJSON = JSON.stringify(data);
   const dataString = base64url.default.encode(dataJSON);
   const dateString = Date.now().toString(36);
   const checkString = dateString + sep + dataString;
-  const signature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
+  const signature = crypto
+    .createHmac('sha256', getSecretKeys(secretKey)[0])
+    .update(checkString)
+    .digest('hex');
   const encodedSignature = base64url.default.encode(signature);
   debug(
     `generateSignedToken(): ${JSON.stringify({
@@ -35,11 +64,10 @@ export function generateSignedToken(data: any, secretKey: string) {
 
 export function getCheckedSignedTokenData(
   token: string,
-  secretKey: string,
+  secretKey: SecretKey,
   options: CheckOptions = {},
 ) {
   debug(`getCheckedSignedTokenData(): token = ${token}`);
-  debug(`getCheckedSignedTokenData(): secretKey = ${secretKey}`);
   debug(`getCheckedSignedTokenData(): options = ${JSON.stringify(options)}`);
   if (typeof token !== 'string') {
     debug('getCheckedSignedTokenData(): FAIL - token is not string');
@@ -58,12 +86,18 @@ export function getCheckedSignedTokenData(
 
   // check the signature
   const checkString = tokenDateString + sep + tokenDataString;
-  const checkSignature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
-  const encodedCheckSignature = base64url.default.encode(checkSignature);
-  if (encodedCheckSignature !== tokenSignature) {
-    debug(
-      `getCheckedSignedTokenData(): FAIL - signature mismatch: checkSig=${encodedCheckSignature} != tokenSig=${tokenSignature}`,
+  const tokenSignatureBuffer = Buffer.from(tokenSignature);
+  const signatureMatches = getSecretKeys(secretKey).some((key) => {
+    const checkSignature = crypto.createHmac('sha256', key).update(checkString).digest('hex');
+    const encodedCheckSignature = base64url.default.encode(checkSignature);
+    const checkSignatureBuffer = Buffer.from(encodedCheckSignature);
+    return (
+      checkSignatureBuffer.length === tokenSignatureBuffer.length &&
+      crypto.timingSafeEqual(checkSignatureBuffer, tokenSignatureBuffer)
     );
+  });
+  if (!signatureMatches) {
+    debug('getCheckedSignedTokenData(): FAIL - signature mismatch');
     return null;
   }
 
@@ -107,12 +141,11 @@ export function getCheckedSignedTokenData(
 export function checkSignedToken(
   token: string,
   data: any,
-  secretKey: string,
+  secretKey: SecretKey,
   options: CheckOptions = {},
 ) {
   debug(`checkSignedToken(): token = ${token}`);
   debug(`checkSignedToken(): data = ${JSON.stringify(data)}`);
-  debug(`checkSignedToken(): secretKey = ${secretKey}`);
   debug(`checkSignedToken(): options = ${JSON.stringify(options)}`);
   debug(`checkSignedToken(): data = ${JSON.stringify(data)}`);
   const tokenData = getCheckedSignedTokenData(token, secretKey, options);
@@ -126,31 +159,39 @@ export function checkSignedToken(
  * Generates a CSRF token that is valid for a URL prefix instead of an exact URL.
  * This is useful for tRPC and similar APIs where a single token should be valid
  * for all sub-routes under a prefix (e.g., `/foo/bar/trpc` is valid for
- * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`).
+ * `/foo/bar/trpc/getUser` and `/foo/bar/trpc/updateUser`). At least one defined
+ * claim is required to prevent claimless tokens.
  */
-export function generatePrefixCsrfToken(
-  data: { url: string; authn_user_id: string },
-  secretKey: string,
+export function generatePrefixCsrfToken<const Data extends PrefixCsrfTokenData>(
+  data: RequireClaim<Data>,
+  secretKey: SecretKey,
 ) {
+  if (Object.hasOwn(data, 'type')) {
+    throw new Error('Prefix CSRF token data cannot contain the reserved "type" claim');
+  }
+  if (!hasClaim(data)) {
+    throw new Error('Prefix CSRF token data must contain at least one defined claim');
+  }
   return generateSignedToken({ ...data, type: 'prefix' }, secretKey);
 }
 
 /**
  * Validates a prefix-based CSRF token. The token's URL must be a prefix of the
- * request URL for validation to succeed.
+ * request URL for validation to succeed. All claims other than the URL must
+ * exactly match the claims in the token, and at least one defined claim must be
+ * present.
  *
  * @param token - The CSRF token to validate
- * @param requestData - The request URL and authenticated user ID
+ * @param requestData - The request URL and claims to validate
  * @param requestData.url - The request URL to validate against
- * @param requestData.authn_user_id - The authenticated user ID to validate against
  * @param secretKey - The secret key used for signing
  * @param options - Optional settings like maxAge
  * @returns true if the token is valid, false otherwise
  */
-export function checkSignedTokenPrefix(
+export function checkSignedTokenPrefix<const Data extends PrefixCsrfTokenData>(
   token: string,
-  requestData: { url: string; authn_user_id: string },
-  secretKey: string,
+  requestData: RequireClaim<Data>,
+  secretKey: SecretKey,
   options: CheckOptions = {},
 ): boolean {
   debug(`checkSignedTokenPrefix(): token = ${token}`);
@@ -159,23 +200,34 @@ export function checkSignedTokenPrefix(
   const tokenData = getCheckedSignedTokenData(token, secretKey, options);
   if (tokenData == null) return false;
 
+  const { type, url: prefixUrl, ...tokenClaims } = tokenData;
+
   // Verify this is a prefix token (prevents token type confusion)
-  if (tokenData.type !== 'prefix') {
+  if (type !== 'prefix') {
     debug('checkSignedTokenPrefix(): FAIL - token type is not prefix');
     return false;
   }
 
-  // Verify user ID matches exactly
-  if (tokenData.authn_user_id !== requestData.authn_user_id) {
-    debug('checkSignedTokenPrefix(): FAIL - authn_user_id mismatch');
+  if (Object.hasOwn(requestData, 'type')) {
+    debug('checkSignedTokenPrefix(): FAIL - request data contains reserved type claim');
+    return false;
+  }
+
+  const { url: requestUrl, ...requestClaims } = requestData;
+
+  if (!hasClaim(requestData)) {
+    debug('checkSignedTokenPrefix(): FAIL - no claims');
+    return false;
+  }
+
+  if (!isEqual(tokenClaims, requestClaims)) {
+    debug('checkSignedTokenPrefix(): FAIL - claims mismatch');
     return false;
   }
 
   // Verify the request URL starts with the token's prefix URL.
   // We treat the prefix as implicitly ending with a trailing slash, so
   // `/test` matches `/test`, `/test/`, and `/test/nested`, but NOT `/testy`.
-  const prefixUrl = tokenData.url;
-  const requestUrl = requestData.url;
   const normalizedPrefix = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
   if (requestUrl !== prefixUrl && !requestUrl.startsWith(normalizedPrefix)) {
     debug(

@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { type LanguageModel, generateObject } from 'ai';
+import { type LanguageModel, Output, generateText } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
@@ -386,18 +386,19 @@ async function evaluateGeneratedQuestion({
     generatedQuestion.push('', 'No Python file was generated.');
   }
 
-  const response = await generateObject({
+  const response = await generateText({
     model,
-    system: systemPrompt,
+    instructions: systemPrompt,
     prompt: generatedQuestion.join('\n'),
-    schema: QuestionGenerationEvaluationSchema,
+    output: Output.object({ schema: QuestionGenerationEvaluationSchema }),
     providerOptions: {
       openai: {
         strictJsonSchema: true,
         reasoningEffort: 'low',
+        reasoningSummary: null,
       } satisfies OpenAIResponsesProviderOptions,
     },
   });
 
-  return response.object;
+  return response.output;
 }

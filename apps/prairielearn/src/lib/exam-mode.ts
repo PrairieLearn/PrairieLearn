@@ -1,12 +1,38 @@
 import type { Request, Response } from 'express';
 import z from 'zod';
 
-import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from './config.js';
 import { type EnumMode } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const ActiveReservationInfoSchema = z.object({
+  exam_mode: z.boolean(),
+  requires_lockdown_browser: z.boolean(),
+  cheating_report_reservation_id: IdSchema.nullable(),
+});
+export type ActiveReservationInfo = z.infer<typeof ActiveReservationInfoSchema>;
+
+export async function selectActiveReservationInfo({
+  ip,
+  date,
+  authn_user_id,
+}: {
+  ip: string | null | undefined;
+  date: Date;
+  authn_user_id: string;
+}): Promise<ActiveReservationInfo> {
+  if (ip == null) throw new Error('IP address is required');
+
+  return await queryRow(
+    sql.select_active_prairietest_reservation,
+    { ip, date, authn_user_id },
+    ActiveReservationInfoSchema,
+  );
+}
 
 export async function getModeForRequest(req: Request, res: Response): Promise<EnumMode> {
   // If we're lucky, `authzCourseOrInstance` has already populated the mode.
@@ -19,6 +45,10 @@ export async function getModeForRequest(req: Request, res: Response): Promise<En
   // duplicate that logic here so that it works in all contexts.
   if (config.devMode && req.cookies.pl_test_mode) {
     return req.cookies.pl_test_mode;
+  }
+
+  if (res.locals.prairietest_reservation_info) {
+    return res.locals.prairietest_reservation_info.exam_mode ? 'Exam' : 'Public';
   }
 
   return await ipToMode({
@@ -37,14 +67,7 @@ export async function ipToMode({
   date: Date;
   authn_user_id: string;
 }): Promise<EnumMode> {
-  // Express's types indicate that `ip` may be undefined in some cases. We want
-  // to ensure that we don't try to proceed without one.
-  if (ip == null) throw new Error('IP address is required');
+  const { exam_mode } = await selectActiveReservationInfo({ ip, date, authn_user_id });
 
-  const hasPrairieTestReservation = await queryScalar(
-    sql.select_active_prairietest_reservation,
-    { ip, date, authn_user_id },
-    z.boolean(),
-  );
-  return hasPrairieTestReservation ? 'Exam' : 'Public';
+  return exam_mode ? 'Exam' : 'Public';
 }

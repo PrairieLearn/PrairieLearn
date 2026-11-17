@@ -2,6 +2,7 @@ columns
     date: timestamp with time zone not null
     id: bigint not null default nextval('pt_sessions_id_seq'::regclass)
     location_id: bigint
+    lockdown_browser_enabled: boolean
 
 indexes
     pt_sessions_pkey: PRIMARY KEY (id) USING btree (id)

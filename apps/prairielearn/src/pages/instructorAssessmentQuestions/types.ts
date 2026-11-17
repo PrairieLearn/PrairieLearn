@@ -9,11 +9,12 @@ import type {
   Tag,
   Topic,
 } from '../../lib/db-types.js';
-import type {
-  EnumAssessmentTool,
-  QuestionAlternativeJsonInput,
-  ZoneAssessmentJsonInput,
-  ZoneQuestionBlockJsonInput,
+import {
+  type CalculatorType,
+  type EnumAssessmentTool,
+  type QuestionAlternativeJsonInput,
+  type ZoneAssessmentJsonInput,
+  type ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
 
 import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
@@ -329,6 +330,12 @@ export interface DetailState {
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;
   assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+  assessmentCalculatorType?: CalculatorType;
+  groupsConfigured: boolean;
+  groupRoles: string[];
+  assessmentCanView: string[] | undefined;
+  assessmentCanSubmit: string[] | undefined;
+  groupsPageUrl: string;
   courseInstanceId: string;
   courseId: string;
   hasCoursePermissionPreview: boolean;

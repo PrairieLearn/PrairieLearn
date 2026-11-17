@@ -46,7 +46,7 @@ function makeZone(
     questions,
     title: `Zone ${trackingId}`,
     ...overrides,
-  } as ZoneAssessmentForm;
+  };
 }
 
 function makeState(overrides?: Partial<EditorState>): EditorState {
@@ -478,7 +478,7 @@ describe('createEditorReducer', () => {
         'shared-qid': { question: { grading_method: 'Internal' } } as any,
       },
       // Picker is open in z2
-      selectedItem: { type: 'picker', zoneTrackingId: tid('z2') as string },
+      selectedItem: { type: 'picker', zoneTrackingId: tid('z2') },
     });
     const reducer = createEditorReducer(initialState);
 

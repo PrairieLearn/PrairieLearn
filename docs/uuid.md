@@ -16,6 +16,7 @@ While UUIDs in PrairieLearn are typically unique (and we recommend using unique 
 - **Course instances** must have unique UUIDs within the same **course**.
 - **Assessments** must have unique UUIDs within the same **course instance**.
 - **Student labels** must have unique UUIDs within the same **course instance**.
+- **Assessment access-control override rules** must have unique UUIDs within the same **assessment**.
 
 Different courses can reuse the same UUIDs without issue, and assessments in different course instances can share UUIDs.
 

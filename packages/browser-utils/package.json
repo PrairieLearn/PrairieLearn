@@ -1,26 +1,25 @@
 {
   "name": "@prairielearn/browser-utils",
-  "version": "2.7.1",
-  "type": "module",
+  "version": "2.7.8",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/browser-utils"
   },
+  "type": "module",
+  "sideEffects": false,
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "csv-stringify": "^6.7.0",
-    "js-base64": "^3.7.8"
+    "csv-stringify": "^6.9.0",
+    "js-base64": "^3.9.4"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "typescript": "^5.9.3"
-  },
-  "sideEffects": false
+    "@typescript/native": "npm:typescript@^7.0.2"
+  }
 }

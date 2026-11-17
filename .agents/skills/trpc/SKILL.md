@@ -1,14 +1,14 @@
 ---
 name: trpc
-description: Conventions for writing tRPC routers and procedures in PrairieLearn.
+description: Conventions for writing tRPC routers and procedures.
 ---
 
 ## Quick reference
 
-- **Adding a procedure to an existing feature?** Find the subrouter file in the appropriate scope directory, add the procedure. No other files need changes.
+- **Adding a procedure to an existing feature?** The subrouter file in the appropriate scope directory is the primary location. Depending on the procedure, also update focused tests, SQL or model functions, safe-output schemas, and the subrouter's typed-error interface.
 - **Adding a new subrouter to an existing scope?** Create a new file in the scope directory, export a router, register it in that scope's `trpc.ts`.
 - **Adding a new scope?** Copy an existing scope directory (e.g. `trpc/assessment/`), adjust the `ResLocalsForPage` type, context fields, URL helper in `lib/client/url.ts`, and mount path in `server.ts`.
-- **Wiring up client-side React?** Follow the pattern in any page that already uses tRPC (e.g. `pages/instructorInstanceAdminSettings/`). Key pieces: `generatePrefixCsrfToken` from `@prairielearn/signed-token` server-side, scope's `client.ts` + `context.ts` + `QueryClientProviderDebug` client-side.
+- **Wiring up client-side React?** Follow the pattern in any page that already uses tRPC (e.g. `pages/instructorInstanceAdminSettings/`). Key pieces: `generatePrefixCsrfToken` from `@prairielearn/signed-token` server-side, the scope's `client.ts` and `context.ts`, and `QueryClientProviderDebug` from `@prairielearn/trpc/react` client-side.
 - **Returning typed errors?** See [Typed errors](#typed-errors).
 
 ## Authorization scopes
@@ -32,6 +32,15 @@ Do **not** create per-page tRPC routers.
 Every scope directory contains: `init.ts`, `trpc.ts`, `client.ts`, `context.ts`, plus one `*.ts` file per subrouter and optional `*.sql` files for scope-specific queries. All routers use `superjson` as the transformer in both `init.ts` and `client.ts`.
 
 See any existing scope (e.g. `trpc/assessment/`) for the exact boilerplate. The files follow a mechanical pattern — `init.ts` creates the tRPC instance and authorization middleware, `trpc.ts` composes subrouters and exports Express middleware via `createExpressMiddleware`, `client.ts` creates the HTTP client with CSRF headers, `context.ts` exports `TRPCProvider`/`useTRPC` via `createTRPCContext`.
+
+Shared infrastructure comes from explicit `@prairielearn/trpc` subpaths:
+
+- `@prairielearn/trpc/server` for `appErrorFormatter` and `throwAppError`.
+- `@prairielearn/trpc/client` for `AppError`, `getAppError`, and `renderAppError`.
+- `@prairielearn/trpc/react` for `AppErrorAlert` and `QueryClientProviderDebug`.
+- `@prairielearn/trpc/express` for tRPC request detection, multipart detection, and pre-adapter error responses.
+
+Do not create a global tRPC initialization factory. Each scope initializes its context-bound `t` in its own `init.ts` with the shared `appErrorFormatter`.
 
 ## Conventions
 
@@ -64,11 +73,34 @@ The CSRF token is generated server-side with `generatePrefixCsrfToken` using the
 
 ## Errors
 
-- **Default to plain `TRPCError`** with a human-readable message. Use `throwAppError` only when the client needs structured metadata (extra fields beyond `message`) or must take structurally different actions per error code. If the error message is static and displayed as-is, a plain `TRPCError` is sufficient — reserve app errors for cases where the client needs dynamic, structured data (e.g., a job sequence ID to link to).
-- **Every subrouter** exports an error interface (empty if no typed errors). See `trpc/courseInstance/student-labels.ts` (typed) and `trpc/administrator/courses.ts` (empty).
-- **`message: string` is automatically included** by `throwAppError` and `getAppError` — do not declare it in error type definitions. Only declare procedure-specific fields (e.g., `jobSequenceId`).
-- **Client must always** use `getAppError<ErrorType>(mutation.error)` — never access raw errors directly. Always handle the `'UNKNOWN'` fallback code (for untyped errors). Never pass raw mutation/query errors as props; pass the resolved `AppError<T>` instead.
-- See `pages/instructorStudentsLabels/components/LabelModifyModal.tsx` (typed client) and `pages/administratorCourses/administratorCourses.html.tsx` (plain client) for examples.
+- **Default to plain `TRPCError`**. Import `throwAppError` from `@prairielearn/trpc/server` and use it only when the client needs extra fields beyond `message` (e.g. `jobSequenceId` to link to logs) or must branch on the code. A code that the client just renders as `message` is indistinguishable from `UNKNOWN` — don't add it.
+- **Every subrouter exports an error interface enumerating each procedure**, with `never` for procedures that have no typed errors:
+  ```ts
+  export interface AssessmentGroupsError {
+    AddGroup: never;
+    EnableGroupWork: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  }
+  ```
+  Don't use `Record<string, never>` or empty `interface XError {}`.
+- **`message: string` is added automatically** by `throwAppError` and `getAppError` — only declare procedure-specific fields.
+- **Client uses `getAppError<XError['Procedure']>(mutation.error)` from `@prairielearn/trpc/client`** — procedure-keyed even when the entry is `never`. Never read raw mutation/query errors.
+- **Render with `<AppErrorAlert>` from `@prairielearn/trpc/react` or `renderAppError` from `@prairielearn/trpc/client`**, not `{appError.message}` directly. The exhaustive renderer map makes it a compile error to forget a variant or silently drop fields like `jobSequenceId`:
+  ```tsx
+  <AppErrorAlert
+    error={copyError}
+    onDismiss={() => copyMutation.reset()}
+    render={{
+      SYNC_JOB_FAILED: ({ message, jobSequenceId }) => (
+        <>
+          {message} <a href={`${urlPrefix}/jobSequence/${jobSequenceId}`}>View job logs</a>
+        </>
+      ),
+      UNKNOWN: ({ message }) => message,
+    }}
+  />
+  ```
+  Use `renderAppError(error, {...})` when you need a `ReactNode` to pass elsewhere (e.g. `StickySaveBar`'s `alert.message`).
+- See `pages/instructorStudentsLabels/components/LabelModifyModal.tsx` (typed) and `pages/administratorCourses/administratorCourses.html.tsx` (`never`-keyed) for examples.
 
 ## Testing
 

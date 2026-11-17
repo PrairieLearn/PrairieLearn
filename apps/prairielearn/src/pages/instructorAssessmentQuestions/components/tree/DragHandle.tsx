@@ -16,7 +16,7 @@ export function DragHandle({
   }
 
   return (
-    // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
     <span
       {...attributes}
       {...listeners}

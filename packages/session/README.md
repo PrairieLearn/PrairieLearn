@@ -9,6 +9,7 @@ The implementation borrows heavily from prior art such as [`express-session`](ht
 
 ```ts
 import express from 'express';
+
 import { createSessionMiddleware, MemoryStore } from '@prairielearn/session';
 
 const app = express();

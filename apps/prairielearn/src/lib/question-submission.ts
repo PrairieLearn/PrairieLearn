@@ -57,6 +57,7 @@ export async function processSubmission(
     authn_user: res.locals.authn_user,
     user: res.locals.user,
     is_administrator: res.locals.is_administrator,
+    publicQuestionPreview: options.publicQuestionPreview,
   });
 
   // This is also checked when we try to save a submission, but if that check

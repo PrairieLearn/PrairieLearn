@@ -5,8 +5,6 @@
   "type": "v3",
   "sharePublicly": true,
   "workspaceOptions": {
-    "image": "prairielearn/workspace-xtermjs",
-    "port": 8080,
-    "home": "/home/prairie"
+    "image": "prairielearn/workspace-xtermjs"
   }
 }

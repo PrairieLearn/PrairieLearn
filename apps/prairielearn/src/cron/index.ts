@@ -106,6 +106,14 @@ export async function init() {
     },
   ];
 
+  if (config.newsFeedUrl) {
+    jobs.push({
+      name: 'fetchNewsItems',
+      module: await import('./fetchNewsItems.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFetchNewsItemsSec,
+    });
+  }
+
   if (isEnterprise()) {
     jobs.push(
       {
@@ -123,6 +131,12 @@ export async function init() {
         module: await import('../ee/cron/chunksHostAutoScaling.js'),
         intervalSec:
           config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
+      },
+      {
+        name: 'courseAgentReviewResults',
+        module: await import('../ee/cron/courseAgentReviewResults.js'),
+        intervalSec:
+          config.cronOverrideAllIntervalsSec || config.cronIntervalCourseAgentReviewResultsSec,
       },
     );
   }
@@ -278,12 +292,7 @@ async function runJobs(jobsList: CronJob[]) {
           span.setStatus({ code: SpanStatusCode.OK });
         } catch (err: any) {
           debug(`runJobs(): error running ${job.name}: ${err}`);
-          logger.error(`cron: ${job.name} failure: ` + String(err), {
-            message: err.message,
-            stack: err.stack,
-            data: JSON.stringify(err.data),
-            cronUuid,
-          });
+          logger.error(`cron: ${job.name} failure`, { err, cronUuid });
 
           Sentry.captureException(err, {
             tags: {

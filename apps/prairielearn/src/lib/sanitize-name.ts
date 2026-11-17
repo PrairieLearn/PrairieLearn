@@ -36,8 +36,7 @@ export function courseInstanceFilenamePrefix(
   course_instance: Pick<CourseInstance, 'short_name'>,
   course: Pick<Course, 'short_name'>,
 ): string {
-  // In practice, course_instance.short_name should never be null.
-  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name!) + '_';
+  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name) + '_';
   return prefix;
 }
 

@@ -4,9 +4,9 @@ site_url: https://docs.prairielearn.com/
 repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme:
   name: material
-  logo: assets/flower-square-nobg.svg
+  logo: assets/prairielearn-logo.png
   custom_dir: docs/overrides
-  favicon: assets/flower-square-256.png
+  favicon: assets/favicon-black.png
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
@@ -47,9 +47,10 @@ theme:
     - navigation.sections
     - navigation.indexes
     - navigation.path
+    # Leave navigation.instant.progress disabled: its unnamed progressbar remains
+    # exposed to assistive technology even while idle.
     - navigation.instant
     - navigation.instant.prefetch
-    - navigation.instant.progress
     - navigation.tracking
     - navigation.footer
     - navigation.indexes
@@ -59,6 +60,8 @@ theme:
     - content.tooltips
     # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#adding-annotations
     - content.code.annotate
+    # https://squidfunk.github.io/mkdocs-material/reference/content-tabs/#linked-content-tabs
+    - content.tabs.link
 plugins:
   - exclude:
       glob:
@@ -148,6 +151,7 @@ markdown_extensions:
 
   - toc:
       permalink: true
+      toc_depth: 3
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=pymdownx+blocks+caption#caption
   - pymdownx.blocks.caption
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown/?h=attribute+list#attribute-lists
@@ -198,30 +202,28 @@ extra:
 
 nav:
   - Overview: 'index.md'
-  - Getting Started:
-      - getting-started/index.md
+  - Getting started:
+      - 'Getting started': 'getting-started/index.md'
       - 'Requesting your course space': 'requestCourse/index.md'
       - 'Concepts': 'concepts/index.md'
-      - 'Quick start': 'getStarted.md'
-      - 'Workshop': 'workshop/index.md'
   - Student Guide:
       - 'Accessibility': 'student-guide/accessibility.md'
   - Instructor Guide:
       - instructor-guide/index.md
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
+      - 'Importing content': 'importingContent.md'
       - 'Course configuration': 'course/index.md'
       - 'Course instances': 'courseInstance/index.md'
       - 'Assessments':
           - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
-          # TODO: unhide once modern access control is generally available.
-          # - 'Modern access control': 'assessment/accessControlModern.md'
           - 'Remote exams': 'assessment/remoteExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':
           - 'Overview': question/overview.md
+          - 'AI question generation': 'question/ai-generation.md'
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
           - 'Preferences': 'question/preferences.md'
@@ -262,12 +264,14 @@ nav:
           - '<span class="muted">pl-</span>python-variable': 'elements/pl-python-variable.md'
           - '<span class="muted">pl-</span>question-panel': 'elements/pl-question-panel.md'
           - '<span class="muted">pl-</span>rich-text-editor': 'elements/pl-rich-text-editor.md'
+          - '<span class="muted">pl-</span>sketch': 'elements/pl-sketch.md'
           - '<span class="muted">pl-</span>string-input': 'elements/pl-string-input.md'
           - '<span class="muted">pl-</span>submission-panel': 'elements/pl-submission-panel.md'
           - '<span class="muted">pl-</span>symbolic-input': 'elements/pl-symbolic-input.md'
           - '<span class="muted">pl-</span>template': 'elements/pl-template.md'
           - '<span class="muted">pl-</span>units-input': 'elements/pl-units-input.md'
           - '<span class="muted">pl-</span>variable-output': 'elements/pl-variable-output.md'
+          - '<span class="muted">pl-</span>workspace': 'elements/pl-workspace.md'
           - '<span class="muted">pl-</span>xss-safe': 'elements/pl-xss-safe.md'
 
       - 'clientFiles and serverFiles': 'clientServerFiles.md'
@@ -289,10 +293,12 @@ nav:
           - 'Questions': python-reference/prairielearn/question_utils.md
           - 'Numerical precision': python-reference/prairielearn/to_precision.md
           - 'Other': python-reference/prairielearn/misc_utils.md
+          - 'Schema': python-reference/prairielearn/element_schemas.md
           - 'SymPy': python-reference/prairielearn/sympy_utils.md
           - 'Timeouts': python-reference/prairielearn/timeout_utils.md
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
+      - 'AI grading': 'aiGrading/index.md'
       - 'Content sharing': 'contentSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
@@ -314,6 +320,7 @@ nav:
       - dev-guide/guide.md
       - 'Migrations': 'dev-guide/migrations/'
       - 'Server configuration': 'dev-guide/configJson.md'
+      - 'Key rotation': 'dev-guide/keyRotation.md'
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'
@@ -330,13 +337,9 @@ nav:
   - Deprecated Features:
       - 'Old v1/v2 question format': 'oldQuestion.md'
       - 'Old PrairieDraw graphics': 'PrairieDraw.md'
+      - 'Legacy assessment access control': 'assessment/accessControlLegacy.md'
 
 not_in_nav: |
-  workshop/lesson1.md
-  workshop/lesson2.md
-  workshop/lesson3.md
-  workshop/lesson4.md
-  workshop/lesson5.md
   schemas/questionOptionsCalculation.md
   schemas/questionOptionsCheckbox.md
   schemas/questionOptionsFile.md

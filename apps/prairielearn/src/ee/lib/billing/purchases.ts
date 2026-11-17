@@ -15,7 +15,7 @@ const sql = loadSqlEquiv(import.meta.url);
  * course instance that the purchase is associated with. This is used to display
  * information about purchases on the user settings page.
  */
-export const PurchaseSchema = z.object({
+const PurchaseSchema = z.object({
   stripe_checkout_session: StripeCheckoutSessionSchema,
   course_instance: CourseInstanceSchema.nullable(),
   course: CourseSchema.nullable(),

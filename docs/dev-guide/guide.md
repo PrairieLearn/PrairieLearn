@@ -153,7 +153,7 @@ If you are adding anything more complex than a basic form page, the automated ac
     questions
   WHERE
     id = $question_id;
-  
+
   -- BLOCK insert_user
   INSERT INTO
     users (uid)
@@ -486,11 +486,11 @@ There are 4 non-overlapping types of roles: "System roles", "Student course inst
 
     This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
 
-For most API/POST handlers, we want to look up or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we institute two checks:
+For most API/POST handlers, we want to look up or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. Route-specific role checks should normally live in middleware or the handler; model functions should focus on ownership and record-belonging checks. To help with this, we institute two checks:
 
 1. Model functions should accept full, typed row objects as parameters. Possession of this object implies the caller is authorized to read the record. For example, updates to the enrollment status should require the caller to pass in the full enrollment row object. We want to make it hard to update an enrollment status using just an enrollment ID (e.g. by sending a POST request to `/api/enrollments/<enrollment_id>/status`, and performing an unvalidated update with `req.params.enrollment_id`).
 
-2. Model functions should require the caller to pass in context about their authorization. In the below example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance.
+2. Ownership-sensitive model functions should require the caller to pass in the context needed to prove ownership or record belonging. In the below example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance.
 
 ```typescript
 const enrollment = await selectEnrollment({
@@ -654,9 +654,15 @@ Alternatively, if you want to check if you _might_ be authorized to perform an a
 
 - All `logger` functions have a mandatory first argument that is a string, and an optional second argument that is an object containing useful information. It is important to always provide a string as the first argument.
 
+## TypeScript versions
+
+Builds and type checks use TypeScript 7 through `pnpm tsc`. The `@typescript/native` dependency is an npm alias for the official `typescript` package.
+
+ESLint and other tools that use the TypeScript compiler API still need TypeScript 6. The `typescript` dependency is an alias for `@typescript/typescript6`, which preserves `import ... from 'typescript'` and provides `pnpm tsc6` for workflows that need the older compiler. Keep this alias when updating TypeScript; replacing it with TypeScript 7 would break API consumers. See the [TypeScript 7 release notes](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0) for the side-by-side setup.
+
 ## Coding style
 
-[ESLint](http://eslint.org/) and [Prettier](https://prettier.io/) are used to enforce consistent code conventions and formatting throughout the codebase. See `.eslintrc.js` and `.prettierrc.json` in the root of the PrairieLearn repository to view our specific configuration. The repo includes an [`.editorconfig`](https://editorconfig.org/) file that most editors will detect and use to automatically configure things like indentation. If your editor doesn't natively support an EditorConfig file, there are [plugins](https://editorconfig.org/#download) available for most other editors.
+[Oxlint](https://oxc.rs/docs/guide/usage/linter) and [ESLint](https://eslint.org/) (for HTML files and one type-aware rule) are used to enforce consistent code conventions, and [Oxfmt](https://oxc.rs/docs/guide/usage/formatter) and [Prettier](https://prettier.io/) (for SQL and shell scripts) are used for formatting. See `oxlint.config.mts`, `eslint.config.mjs`, `.oxfmtrc.json`, and `.prettierrc.json` in the root of the PrairieLearn repository, and the shared rules in `packages/oxlint-config`, to view our specific configuration. The repo includes an [`.editorconfig`](https://editorconfig.org/) file that most editors will detect and use to automatically configure things like indentation. If your editor doesn't natively support an EditorConfig file, there are [plugins](https://editorconfig.org/#download) available for most other editors.
 
 For Python files, [ruff](https://docs.astral.sh/ruff/) is used for autoformatting and enforcing code conventions, and [Pyright](https://github.com/microsoft/pyright) is used for static typechecking. See `pyproject.toml` in the root of the PrairieLearn repository to view our specific configuration. We encourage all new Python code to include type hints for use with the static typechecker, as this makes it easier to read, review, and verify contributions.
 
@@ -735,7 +741,7 @@ Depending on the context, we use different types of assertions.
 
 ## JavaScript equality operator
 
-You should almost always use the `===` operator for comparisons; this is enforced with an ESLint rule.
+You should almost always use the `===` operator for comparisons; this is enforced with an oxlint rule.
 
 The only case where the `==` operator is frequently useful is for comparing entity IDs that may be coming from the client/database/etc. These may be either strings or numbers depending on where they're coming from or how they're fetched. To make it abundantly clear that IDs are being compared, you should use the `idsEqual` utility:
 

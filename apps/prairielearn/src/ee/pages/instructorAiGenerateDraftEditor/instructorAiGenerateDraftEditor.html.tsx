@@ -12,6 +12,7 @@ import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
+import type { ResLocalsQuestionRender } from '../../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.js';
@@ -26,7 +27,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled,
   questionContainerHtml,
 }: {
-  resLocals: ResLocalsForPage<'instructor-question'>;
+  resLocals: ResLocalsForPage<'instructor-question'> & ResLocalsQuestionRender;
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
@@ -61,6 +62,7 @@ export function InstructorAiGenerateDraftEditor({
       // Hide the sidebar by default. We want to maximize the horizontal space for the editor.
       // This will also prevent persisting sidebar state changes.
       forcedInitialNavToggleState: false,
+      showCourseAgentPanel: false,
     },
     headContent: [
       html`<meta
@@ -84,6 +86,7 @@ export function InstructorAiGenerateDraftEditor({
           chatCsrfToken={chatCsrfToken}
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
+          currentUserName={resLocals.authn_user.name}
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}

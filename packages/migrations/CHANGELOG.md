@@ -1,5 +1,118 @@
 # @prairielearn/migrations
 
+## 5.2.7
+
+### Patch Changes
+
+- 0998223: Minor cleanups for oxlint; no behavior changes.
+
+## 5.2.6
+
+### Patch Changes
+
+- 3daebb7: Remove the obsolete Vite development-server directive from migration imports.
+
+## 5.2.5
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 5.2.4
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 5.2.3
+
+### Patch Changes
+
+- Updated dependencies [fce4634]
+  - @prairielearn/postgres@8.0.0
+
+## 5.2.2
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+- Updated dependencies [00945c2]
+- Updated dependencies [9757f58]
+  - @prairielearn/logger@4.0.0
+
+## 5.2.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 5.2.0
+
+### Minor Changes
+
+- 5ca8b69: Add a read-only API for inspecting pending migrations.
+
+## 5.1.2
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
+## 5.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 5.1.0
+
+### Minor Changes
+
+- fd27a2a: Add `selectTableIdBounds` for batched migrations that need to derive ID ranges from table names.
+
+### Patch Changes
+
+- Updated dependencies [fd27a2a]
+  - @prairielearn/postgres@7.1.0
+
+## 5.0.8
+
+### Patch Changes
+
+- 288ff13: Update package metadata for Zod 4 compatibility. Zod is used only internally in these packages (their public APIs expose plain inferred types), so consumers are unaffected.
+- Updated dependencies [288ff13]
+  - @prairielearn/postgres@7.0.0
+
+## 5.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 5.0.6
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 5.0.5
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 5.0.4
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [e80a5a5]
+- Updated dependencies [b6e03e9]
+  - @prairielearn/named-locks@4.0.4
+  - @prairielearn/postgres@6.0.2
+  - @prairielearn/logger@3.1.2
+  - @prairielearn/error@3.0.5
+
 ## 5.0.3
 
 ### Patch Changes

@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "correct": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "depends": {
+      "type": "string"
+    },
+    "distractor-feedback": {
+      "type": "string"
+    },
+    "distractor-for": {
+      "type": "string"
+    },
+    "final": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "indent": {
+      "type": "string",
+      "format": "integer"
+    },
+    "initially-placed": {
+      "type": "string",
+      "format": "boolean"
+    },
+    "ordering-feedback": {
+      "type": "string"
+    },
+    "ranking": {
+      "type": "string",
+      "format": "integer"
+    },
+    "tag": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

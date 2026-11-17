@@ -4,7 +4,6 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { type Course, type CourseInstance, type Institution } from '../../lib/db-types.js';
 import { checkPlanGrants } from '../lib/billing/plan-grants.js';
-import { planGrantsMatchPlanFeatures } from '../lib/billing/plans-types.js';
 import { getPlanGrantsForContext, getPlanNamesFromPlanGrants } from '../lib/billing/plans.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -96,6 +95,59 @@ export async function getEnrollmentCountsForCourseInstance(
   };
 }
 
+export interface EnrollmentCapacity {
+  limit: number;
+  used: number;
+  paid: number;
+  remaining: number;
+  annualLimitSource: 'course' | 'institution' | null;
+}
+
+/** Returns free enrollment capacity, including shared limits over the past year. */
+export async function getEnrollmentCapacity({
+  institution,
+  course,
+  courseInstance,
+}: {
+  institution: Institution;
+  course: Course;
+  courseInstance: CourseInstance;
+}): Promise<EnrollmentCapacity> {
+  const institutionEnrollmentCounts = await getEnrollmentCountsForInstitution({
+    institution_id: institution.id,
+    created_since: '1 year',
+  });
+  const courseEnrollmentCounts = await getEnrollmentCountsForCourse({
+    course_id: course.id,
+    created_since: '1 year',
+  });
+  const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
+    courseInstance.id,
+  );
+
+  const limit =
+    courseInstance.enrollment_limit ??
+    course.course_instance_enrollment_limit ??
+    institution.course_instance_enrollment_limit;
+  const used = courseInstanceEnrollmentCounts.free;
+  const instanceRemaining = limit - used;
+  const institutionRemaining =
+    institution.yearly_enrollment_limit - institutionEnrollmentCounts.free;
+  // The institution's annual limit always applies, even with a course override.
+  const courseRemaining =
+    (course.yearly_enrollment_limit ?? institution.yearly_enrollment_limit) -
+    courseEnrollmentCounts.free;
+  const remaining = Math.max(0, Math.min(instanceRemaining, institutionRemaining, courseRemaining));
+  const annualLimitSource =
+    Math.min(institutionRemaining, courseRemaining) < instanceRemaining
+      ? institutionRemaining <= courseRemaining
+        ? 'institution'
+        : 'course'
+      : null;
+
+  return { limit, used, paid: courseInstanceEnrollmentCounts.paid, remaining, annualLimitSource };
+}
+
 export enum PotentialEnrollmentStatus {
   ALLOWED = 'allowed',
   LIMIT_EXCEEDED = 'limit_exceeded',
@@ -150,7 +202,7 @@ export async function checkPotentialEnterpriseEnrollment({
     user_id: authzData.user.id,
   });
   const planNames = getPlanNamesFromPlanGrants(planGrants);
-  if (planGrantsMatchPlanFeatures(planNames, ['basic'])) {
+  if (planNames.includes('basic')) {
     return PotentialEnrollmentStatus.ALLOWED;
   }
 

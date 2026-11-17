@@ -6,6 +6,17 @@ FROM
 WHERE
   id = $user_id;
 
+-- BLOCK select_user_is_administrator
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      administrators
+    WHERE
+      user_id = $user_id
+  );
+
 -- BLOCK select_user_by_uid
 SELECT
   *
@@ -66,15 +77,6 @@ SELECT
   *
 FROM
   inserted_user;
-
--- BLOCK update_user_uid
-UPDATE users
-SET
-  uid = $uid
-WHERE
-  id = $user_id
-RETURNING
-  *;
 
 -- BLOCK insert_user
 INSERT INTO

@@ -1,0 +1,18 @@
+# Picking an input element when the answer is code or a file.
+
+source: "Where does the file come from?" {
+  shape: diamond
+}
+
+editor_kind: "What kind of editor do students need?" {
+  shape: diamond
+}
+
+pl_file_editor: "pl-file-editor"
+workspace: "Workspace\n(see workspaces docs)"
+pl_file_upload: "pl-file-upload"
+
+source -> editor_kind: "Written in the browser"
+source -> pl_file_upload: "Uploaded from disk"
+editor_kind -> pl_file_editor: "Inline in the question"
+editor_kind -> workspace: "Dedicated environment\n(IDE, terminal, etc.)"

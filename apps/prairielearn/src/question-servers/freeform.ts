@@ -25,7 +25,6 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
-import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -44,11 +43,14 @@ import {
   type ParseSubmission,
   type PrepareResultData,
   type PrepareVariant,
+  type QuestionCaller,
+  type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
   type TestResultData,
 } from './types.js';
+import { type QuestionUserContext, buildQuestionUserContext } from './user-context.js';
 
 const debug = debugfn('prairielearn:freeform');
 
@@ -200,7 +202,6 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     courseElementsCache[course.id]?.commit_hash &&
     courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
@@ -264,15 +265,11 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
     try {
       rawInfo = await fs.readJson(infoPath);
     } catch (err: any) {
-      if (err.code === 'ENOENT') {
+      if (['ENOENT', 'ENOTDIR'].includes(err.code)) {
         // Not an extension directory, skip it.
         return;
-      } else if (err.code === 'ENOTDIR') {
-        // Random file, skip it as well.
-        return;
-      } else {
-        throw err;
       }
+      throw err;
     }
 
     elements[element][extensionDir] = {
@@ -295,7 +292,6 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     courseExtensionsCache[course.id]?.commit_hash &&
     courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
@@ -459,29 +455,29 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   // so we prevent Prettier from reformatting the code to span multiple lines.
   // prettier-ignore
   /**************************************************************************************************************************************/
-  //                       property                 type      presentPhases                         changePhases
+  //                       property                 type      presentPhases                                 changePhases
   /**************************************************************************************************************************************/
-  const err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
-             || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
-             || checkProp('variant_seed',          'integer', allPhases,                            [])
-             || checkProp('options',               'object',  allPhases,                            [])
-             || checkProp('preferences',           'object',  allPhases,                            [])
-             || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
-             || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
-             || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
-             || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
-             || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
-             || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
-             || checkProp('editable',              'boolean', ['render'],                           [])
-             || checkProp('manual_grading',        'boolean', ['render'],                           [])
-             || checkProp('ai_grading',            'boolean', ['render'],                           [])
-             || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('correct_answer_shown',  'boolean', ['render'],                           [])
-             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
-             || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
-             || checkProp('filename',              'string',  ['file'],                             [])
-             || checkProp('test_type',             'string',  ['test'],                             [])
-             || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
+  const err =   checkProp('params',                'object',  allPhases,                                    ['generate', 'prepare', 'parse', 'grade'])
+             || checkProp('correct_answers',       'object',  allPhases,                                    ['generate', 'prepare', 'parse', 'grade'])
+             || checkProp('variant_seed',          'integer', allPhases,                                    [])
+             || checkProp('options',               'object',  allPhases,                                    [])
+             || checkProp('preferences',           'object',  allPhases,                                    [])
+             || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade', 'file'],         ['parse', 'grade'])
+             || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test', 'file'], ['parse', 'grade', 'test'])
+             || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test', 'file'], ['test'])
+             || checkProp('partial_scores',        'object',  ['render', 'grade', 'test', 'file'],          ['grade', 'test'])
+             || checkProp('score',                 'number',  ['render', 'grade', 'test', 'file'],          ['grade', 'test'])
+             || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test', 'file'], ['grade', 'parse', 'test'])
+             || checkProp('editable',              'boolean', ['render'],                                   [])
+             || checkProp('manual_grading',        'boolean', ['render'],                                   [])
+             || checkProp('ai_grading',            'boolean', ['render'],                                   [])
+             || checkProp('panel',                 'string',  ['render'],                                   [])
+             || checkProp('correct_answer_shown',  'boolean', ['render'],                                   [])
+             || checkProp('num_valid_submissions', 'integer', ['render', 'file'],                           [])
+             || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],                   [])
+             || checkProp('filename',              'string',  ['file'],                                     [])
+             || checkProp('test_type',             'string',  ['test'],                                     [])
+             || checkProp('answers_names',         'object',  ['prepare'],                                  ['prepare']);
   if (err) return err;
 
   const extraProps = difference(Object.keys(data), checked);
@@ -824,16 +820,26 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
-  preferences: Record<string, string | number | boolean> = {},
+  preferences: Record<string, string | number | boolean>,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       params: {},
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
-      options: { ...course.options, ...question.options, ...getContextOptions(context) },
+      options: {
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences,
     } satisfies ExecutionData;
 
@@ -860,18 +866,29 @@ export async function prepare(
   question: Question,
   course: Course,
   variant: PrepareVariant,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       answers_names: {},
     } satisfies ExecutionData;
@@ -910,14 +927,16 @@ async function renderPanel({
   course,
   locals,
   context,
+  userContext,
 }: {
   panel: 'question' | 'answer' | 'submission';
   codeCaller: CodeCaller;
   variant: Variant;
   submission: Submission | null;
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
+  userContext: QuestionUserContext;
 }): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
   // broken variant kills all rendering
@@ -956,11 +975,17 @@ async function renderPanel({
     ? locals.questionUrl + `submission/${submission.id}/file`
     : null;
 
+  // This URL may be submission-specific, so it is overridden here if there is a submission.
+  const generatedFilesUrl =
+    panel === 'submission' && submission
+      ? `${locals.questionUrl}generatedFilesQuestion/submission/${submission.id}`
+      : locals.clientFilesQuestionGeneratedFileUrl;
+
   const options = {
     ...variant.options,
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
-    client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
+    client_files_question_dynamic_url: generatedFilesUrl,
     course_element_files_url: assets.courseElementAssetBasePath(
       course.commit_hash,
       locals.urlPrefix,
@@ -977,28 +1002,14 @@ async function renderPanel({
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
     ...getContextOptions(context),
+    user: userContext.user,
+    group: userContext.group,
   };
 
   const data = {
-    // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
-    // so we'll use the submission's values if they exist.
-    //
-    // These should never be null, but that can't be encoded in the schema.
-    params: submission?.params ?? variant.params ?? {},
-    correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
-    submitted_answers: submission?.submitted_answer ?? {},
-    format_errors: submission?.format_errors ?? {},
-    partial_scores: submission?.partial_scores ?? {},
-    score: submission?.score ?? 0,
-    feedback: submission?.feedback ?? {},
-    variant_seed: Number.parseInt(variant.variant_seed, 36),
+    ...extractVariantSubmissionData(submission, variant),
     options,
-    preferences: variant.preferences,
-    raw_submitted_answers: submission?.raw_submitted_answer ?? {},
-    editable: !!(
-      locals.allowAnswerEditing &&
-      !['manual_grading', 'ai_grading'].includes(locals.questionRenderContext)
-    ),
+    editable: locals.allowAnswerEditing && locals.questionRenderContext == null,
     manual_grading: run(() => {
       if (locals.questionRenderContext === 'manual_grading') return true;
       if (locals.questionRenderContext === 'ai_grading') {
@@ -1013,8 +1024,7 @@ async function renderPanel({
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
-    correct_answer_shown: locals.showCorrectAnswer ?? false,
-    num_valid_submissions: variant.num_tries,
+    correct_answer_shown: locals.showCorrectAnswer,
   } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
@@ -1056,6 +1066,26 @@ async function renderPanel({
   };
 }
 
+function extractVariantSubmissionData(submission: Submission | null, variant: Variant) {
+  return {
+    // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
+    // so we'll use the submission's values if they exist.
+    //
+    // These should never be null, but that can't be encoded in the schema.
+    params: submission?.params ?? variant.params ?? {},
+    correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
+    submitted_answers: submission?.submitted_answer ?? {},
+    format_errors: submission?.format_errors ?? {},
+    partial_scores: submission?.partial_scores ?? {},
+    score: submission?.score ?? 0,
+    feedback: submission?.feedback ?? {},
+    variant_seed: Number.parseInt(variant.variant_seed, 36),
+    preferences: variant.preferences,
+    raw_submitted_answers: submission?.raw_submitted_answer ?? {},
+    num_valid_submissions: variant.num_tries,
+  };
+}
+
 async function renderPanelInstrumented({
   panel,
   codeCaller,
@@ -1065,6 +1095,7 @@ async function renderPanelInstrumented({
   course,
   locals,
   context,
+  userContext,
 }: {
   panel: 'question' | 'answer' | 'submission';
   codeCaller: CodeCaller;
@@ -1072,8 +1103,9 @@ async function renderPanelInstrumented({
   variant: Variant;
   question: Question;
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
   context: QuestionProcessingContext;
+  userContext: QuestionUserContext;
 }): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
     span.setAttributes({
@@ -1090,6 +1122,7 @@ async function renderPanelInstrumented({
       course,
       locals,
       context,
+      userContext,
     });
     span.setAttribute('cache.status', result.cacheHit ? 'hit' : 'miss');
     return result;
@@ -1104,6 +1137,7 @@ export async function render({
   submissions,
   course,
   locals,
+  caller,
 }: {
   renderSelection: RenderSelection;
   variant: Variant;
@@ -1111,10 +1145,16 @@ export async function render({
   submission: Submission | null;
   submissions: Submission[];
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
+  caller: QuestionCaller;
 }): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
     const htmls = {
       extraHeadersHtml: '',
       questionHtml: '',
@@ -1140,6 +1180,7 @@ export async function render({
           course,
           locals,
           context,
+          userContext,
         });
 
         courseIssues.push(...newCourseIssues);
@@ -1164,6 +1205,7 @@ export async function render({
               course,
               locals,
               context,
+              userContext,
             });
 
             courseIssues.push(...newCourseIssues);
@@ -1187,6 +1229,7 @@ export async function render({
           course,
           locals,
           context,
+          userContext,
         });
 
         courseIssues.push(...newCourseIssues);
@@ -1518,22 +1561,30 @@ export async function render({
 export async function file(
   filename: string,
   variant: Variant,
+  submission: Submission | null,
   question: Question,
   course: Course,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<Buffer> {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
     if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
-      // These should never be null, but that can't be encoded in the schema.
-      params: variant.params ?? {},
-      correct_answers: variant.true_answer ?? {},
-      variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
-      preferences: variant.preferences,
+      ...extractVariantSubmissionData(submission, variant),
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       filename,
     } satisfies ExecutionData;
 
@@ -1541,7 +1592,7 @@ export async function file(
       {
         course,
         variant,
-        submission: null, // Files aren't associated with any particular submission.
+        submission, // May be null for question/answer panel files.
         data,
         context,
       },
@@ -1572,12 +1623,18 @@ export async function parse(
   variant: Variant,
   question: Question,
   course: Course,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<ParseResultData> {
   return instrumented('freeform.parse', async () => {
     debug('parse()');
     if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1587,7 +1644,12 @@ export async function parse(
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
@@ -1624,6 +1686,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<GradeResultData> {
   return instrumented('freeform.grade', async () => {
     debug('grade()');
@@ -1631,6 +1694,11 @@ export async function grade(
     if (submission.broken) throw new Error('attempted to grade broken submission');
 
     const context = await getContext(question, question_course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course: question_course,
+      caller,
+    });
     const data = {
       // Note that `params` and `true_answer` can change during `parse()`, so we
       // use the submission's values when grading.
@@ -1644,7 +1712,12 @@ export async function grade(
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
@@ -1683,12 +1756,18 @@ export async function test(
   question: Question,
   course: Course,
   test_type: 'correct' | 'incorrect' | 'invalid',
+  caller: QuestionCaller,
 ): QuestionServerReturnValue<TestResultData> {
   return instrumented('freeform.test', async () => {
     debug('test()');
     if (variant.broken_at) throw new Error('attempted to test broken variant');
 
     const context = await getContext(question, course);
+    const userContext = await buildQuestionUserContext({
+      question,
+      course,
+      caller,
+    });
 
     const data = {
       // These should never be null, but that can't be encoded in the schema.
@@ -1699,7 +1778,12 @@ export async function test(
       score: 0,
       feedback: {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
-      options: { ...variant.options, ...getContextOptions(context) },
+      options: {
+        ...variant.options,
+        ...getContextOptions(context),
+        user: userContext.user,
+        group: userContext.group,
+      },
       preferences: variant.preferences,
       raw_submitted_answers: {},
       gradable: true as boolean,
@@ -1788,6 +1872,15 @@ async function getCacheKey(
         // We deliberately exclude large user-controlled objects from the cache key.
         // Whenever these change, the `modified_at` column of `variants` and/or
         // `submissions` will change, which will cause the cache to be invalidated.
+        //
+        // `data.options` is kept because `options.user` / `options.group` can change
+        // without bumping `modified_at`, so they must stay in the key:
+        //   1. the course toggles `questions_receive_user_data`
+        //   2. a user is renamed (uid/uin/name)
+        //   3. group membership or a member's name changes
+        //
+        // `options.user` is the variant owner (not the viewer); on group variants
+        // it is null and `group.members` is ordered deterministically.
         omit(data, [
           'params',
           'correct_answers',

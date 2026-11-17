@@ -9,7 +9,9 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { convertLegacyGroupsToGroupsConfig } from '../../lib/group-config.js';
 import { extractDefaultPreferences } from '../../lib/question-preferences.js';
+import { parseLocalDateTime } from '../../lib/timezones.js';
 import {
   type AssessmentJson,
   EnumAssessmentToolSchema,
@@ -21,7 +23,7 @@ import {
   QuestionPreferencesSchemaJsonSchema,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
-import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
+import { type CourseInstanceData } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -110,7 +112,7 @@ function mergeAndValidatePreferences(
 function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
-  enhancedAccessControlEnabled: boolean,
+  displayTimezone: string,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
@@ -131,8 +133,8 @@ function getParamsForAssessment(
           return null;
         }),
         uids: accessRule.uids ?? null,
-        start_date: accessRule.startDate ?? null,
-        end_date: accessRule.endDate ?? null,
+        start_date: parseLocalDateTime(accessRule.startDate ?? null, displayTimezone),
+        end_date: parseLocalDateTime(accessRule.endDate ?? null, displayTimezone),
         credit: accessRule.credit ?? null,
         time_limit_min: accessRule.timeLimitMin ?? null,
         password: accessRule.password ?? null,
@@ -164,12 +166,18 @@ function getParamsForAssessment(
   let alternativePoolNumber = 0;
   let assessmentQuestionNumber = 0;
 
-  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
-  const allRoleNames = groups.roles.map((role) => role.name);
+  const groups =
+    assessment.groups ??
+    (assessment.groupWork ? convertLegacyGroupsToGroupsConfig(assessment) : null);
+  const allRoleNames = groups?.roles.map((role) => role.name) ?? [];
   const assessmentCanView =
-    groups.rolePermissions.canView.length > 0 ? groups.rolePermissions.canView : allRoleNames;
+    groups && groups.rolePermissions.canView.length > 0
+      ? groups.rolePermissions.canView
+      : allRoleNames;
   const assessmentCanSubmit =
-    groups.rolePermissions.canSubmit.length > 0 ? groups.rolePermissions.canSubmit : allRoleNames;
+    groups && groups.rolePermissions.canSubmit.length > 0
+      ? groups.rolePermissions.canSubmit
+      : allRoleNames;
   const alternativePools = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
     const zoneAllowRealTimeGrading = zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading;
@@ -339,6 +347,7 @@ function getParamsForAssessment(
           // higher ones.
           allow_real_time_grading: alternative.allowRealTimeGrading,
           question_id: questionId,
+          qid: alternative.qid,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
           can_submit: alternative.canSubmit,
@@ -387,12 +396,14 @@ function getParamsForAssessment(
     });
   });
 
-  const groupRoles = groups.roles.map((role) => ({
-    role_name: role.name,
-    minimum: role.minMembers,
-    maximum: role.maxMembers,
-    can_assign_roles: groups.rolePermissions.canAssignRoles.includes(role.name),
-  }));
+  const canAssignRoles = new Set(groups?.rolePermissions.canAssignRoles);
+  const groupRoles =
+    groups?.roles.map((role) => ({
+      role_name: role.name,
+      minimum: role.minMembers,
+      maximum: role.maxMembers,
+      can_assign_roles: canAssignRoles.has(role.name),
+    })) ?? [];
 
   // If any errors were added during zone/question processing treat as error.
   if (infofile.hasErrors(assessmentInfoFile)) return null;
@@ -424,20 +435,20 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    team_work: groups.enabled,
-    group_max_size: groups.maxMembers ?? null,
-    group_min_size: groups.minMembers ?? null,
-    student_group_create: groups.studentPermissions.canCreateGroup,
-    student_group_choose_name: groups.studentPermissions.canNameGroup,
-    student_group_join: groups.studentPermissions.canJoinGroup,
-    student_group_leave: groups.studentPermissions.canLeaveGroup,
+    team_work: groups != null,
+    group_max_size: groups?.maxMembers ?? null,
+    group_min_size: groups?.minMembers ?? null,
+    student_group_create: groups?.studentPermissions.canCreateGroup ?? false,
+    student_group_choose_name: groups?.studentPermissions.canNameGroup ?? true,
+    student_group_join: groups?.studentPermissions.canJoinGroup ?? false,
+    student_group_leave: groups?.studentPermissions.canLeaveGroup ?? false,
 
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
     has_roles: groupRoles.length > 0,
-    json_can_view: groups.rolePermissions.canView,
-    json_can_submit: groups.rolePermissions.canSubmit,
-    modern_access_control: enhancedAccessControlEnabled && assessment.allowAccess == null,
+    json_can_view: groups?.rolePermissions.canView ?? [],
+    json_can_submit: groups?.rolePermissions.canSubmit ?? [],
+    modern_access_control: assessment.allowAccess == null,
     allowAccess,
     zones,
     alternativePools,
@@ -446,6 +457,7 @@ function getParamsForAssessment(
     // Needed when deleting unused alternative pools
     lastAlternativePoolNumber: alternativePoolNumber,
     share_source_publicly: assessment.shareSourcePublicly,
+    show_question_titles: assessment.showQuestionTitles ?? assessment.type === 'Homework',
   };
 }
 
@@ -496,9 +508,9 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
 export async function sync(
   courseId: string,
   courseInstanceId: string,
+  displayTimezone: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
-  enhancedAccessControlEnabled: boolean,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -548,7 +560,7 @@ export async function sync(
   }
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    const params = getParamsForAssessment(assessment, questionIds, enhancedAccessControlEnabled);
+    const params = getParamsForAssessment(assessment, questionIds, displayTimezone);
     return JSON.stringify([
       tid,
       assessment.uuid,
@@ -598,6 +610,8 @@ async function syncAssessmentTools(
     const assessmentId = nameToIdMap?.[tid];
     if (!assessmentId) continue;
 
+    // Preserve existing tools when assessment syncing is skipped due to errors.
+    if (infofile.hasErrors(assessment)) continue;
     assessmentIds.push(assessmentId);
 
     if (assessment.data?.tools) {

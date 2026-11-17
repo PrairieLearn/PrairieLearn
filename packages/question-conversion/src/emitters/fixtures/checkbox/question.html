@@ -1,0 +1,21 @@
+<pl-question-panel>
+<p>Select all prime numbers.</p>
+</pl-question-panel>
+
+<pl-checkbox answers-name="answer" partial-credit="net-correct">
+  <pl-answer correct="true" feedback="&lt;p&gt;2 is the only even prime.&lt;/p&gt;">2</pl-answer>
+  <pl-answer correct="false" feedback="&lt;p&gt;4 = 2 × 2, so it is composite.&lt;/p&gt;">4</pl-answer>
+  <pl-answer correct="true" feedback="&lt;p&gt;5 is prime.&lt;/p&gt;">5</pl-answer>
+</pl-checkbox>
+
+<pl-answer-panel>
+<p>A prime has exactly two positive divisors.</p>
+  {{#feedback.overall}}
+    {{#is_correct}}
+<p>Correct: 2 and 5 are prime.</p>
+    {{/is_correct}}
+    {{^is_correct}}
+<p>Check each number's positive divisors.</p>
+    {{/is_correct}}
+  {{/feedback.overall}}
+</pl-answer-panel>

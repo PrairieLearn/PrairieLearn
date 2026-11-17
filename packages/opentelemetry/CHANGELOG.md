@@ -1,5 +1,84 @@
 # @prairielearn/opentelemetry
 
+## 5.0.0
+
+### Major Changes
+
+- 3fd04e4: Upgrade to OpenTelemetry SDK 3, API 1.10, and the latest instrumentation packages. Replace the deprecated trace SDK packages with `@opentelemetry/sdk-trace` and retain W3C trace context and baggage propagation with an AsyncLocalStorage context manager.
+
+## 4.0.16
+
+### Patch Changes
+
+- 08f657e: Update initialization documentation to reflect that Sentry no longer relies on OpenTelemetry for scope isolation.
+
+## 4.0.15
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 4.0.14
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.13
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 4.0.12
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 4.0.11
+
+### Patch Changes
+
+- 3c3d457: Upgrade dependencies
+
+## 4.0.10
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.0.9
+
+### Patch Changes
+
+- 3350cc5: Bump opentelemetry dependencies
+
+## 4.0.8
+
+### Patch Changes
+
+- 3927197: Update dependencies
+- 895b3b9: Upgrade OpenTelemetry dependencies
+
+## 4.0.7
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- 9aa950a: Upgrade OpenTelemetry dependencies
+
+## 4.0.5
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 4.0.4
 
 ### Patch Changes

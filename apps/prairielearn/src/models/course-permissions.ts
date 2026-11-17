@@ -7,23 +7,54 @@ import {
   queryOptionalRow,
   queryOptionalScalar,
   queryRows,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
+  CourseInstanceSchema,
   type CoursePermission,
   CoursePermissionSchema,
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
   EnumCourseRoleSchema,
   type User,
+  UserSchema,
 } from '../lib/db-types.js';
+import { runWithSharedEnrollmentBarrier } from '../lib/enrollment/barrier.js';
 
 import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+export async function applyCourseStaffPermissions({
+  courseId,
+  authnUserId,
+  updates,
+}: {
+  courseId: string;
+  authnUserId: string;
+  updates: {
+    uid: string;
+    courseRole: z.infer<typeof EnumCourseRoleSchema>;
+    courseInstanceChanges: { courseInstanceId: string; role: EnumCourseInstanceRole }[];
+  }[];
+}) {
+  await runInTransactionAsync(async () => {
+    const params = {
+      course_id: courseId,
+      authn_user_id: authnUserId,
+      updates: JSON.stringify(updates),
+    };
+    await execute(sql.insert_staff_users, { updates: params.updates });
+    await execute(sql.upsert_staff_course_permissions, params);
+    await execute(sql.delete_staff_instance_permissions, params);
+    await execute(sql.upsert_staff_instance_permissions, params);
+  });
+}
 
 /**
  * Inserts course permissions for a user identified by UID. If the user doesn't
@@ -116,59 +147,24 @@ export async function deleteCoursePermissions({
   user_id: string | string[];
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.delete_course_permissions, {
-    course_id,
-    user_ids: Array.isArray(user_id) ? user_id : [user_id],
-    authn_user_id,
-  });
-}
-
-/**
- * Deletes course permissions for all users who are not owners of the course.
- */
-export async function deleteCoursePermissionsForNonOwners({
-  course_id,
-  authn_user_id,
-}: {
-  course_id: string;
-  authn_user_id: string;
-}): Promise<void> {
   await runInTransactionAsync(async () => {
-    const nonOwners = await queryRows(
-      sql.select_and_lock_non_owners,
+    const courseInstanceIds = await queryScalars(
+      sql.select_course_instance_ids_for_course,
       { course_id },
-      CoursePermissionSchema,
+      IdSchema,
     );
-    await deleteCoursePermissions({
-      course_id,
-      user_id: nonOwners.map((user) => user.id),
-      authn_user_id,
-    });
-  });
-}
 
-/**
- * Deletes course permissions for users who have no access to the course
- * (i.e., course_role is 'None' and they have no course instance permissions
- * with a role greater than 'None').
- */
-export async function deleteCoursePermissionsForUsersWithoutAccess({
-  course_id,
-  authn_user_id,
-}: {
-  course_id: string;
-  authn_user_id: string;
-}): Promise<void> {
-  await runInTransactionAsync(async () => {
-    const usersWithoutAccess = await queryRows(
-      sql.select_and_lock_course_permissions_without_access,
-      { course_id },
-      CoursePermissionSchema,
-    );
-    await deleteCoursePermissions({
-      course_id,
-      user_id: usersWithoutAccess.map((user) => user.user_id),
-      authn_user_id,
+    // The delete intentionally rechecks all instances in the course instead of
+    // filtering to this snapshot. A concurrently created instance can therefore
+    // have an enrollment deleted without its barrier, but filtering would leave
+    // stale enrollment after course permission removal. We accept that narrow
+    // race rather than add a course-wide creation mutex.
+    await runWithSharedEnrollmentBarrier(courseInstanceIds, async () => {
+      await execute(sql.delete_course_permissions, {
+        course_id,
+        user_ids: Array.isArray(user_id) ? user_id : [user_id],
+        authn_user_id,
+      });
     });
   });
 }
@@ -214,6 +210,33 @@ export async function insertCourseInstancePermissions({
       course_instance_role,
       authn_user_id,
     });
+  });
+}
+
+/**
+ * Inserts or updates course instance permissions for a user, setting the role
+ * to the exact value provided (unlike {@link insertCourseInstancePermissions},
+ * which only steps up). The user must already have a course_permissions record.
+ */
+export async function upsertCourseInstancePermissionsRole({
+  course_id,
+  course_instance_id,
+  user_id,
+  course_instance_role,
+  authn_user_id,
+}: {
+  course_id: string;
+  course_instance_id: string;
+  user_id: string;
+  course_instance_role: EnumCourseInstanceRole;
+  authn_user_id: string;
+}): Promise<void> {
+  await execute(sql.upsert_course_instance_permissions_role, {
+    course_id,
+    course_instance_id,
+    user_id,
+    course_instance_role,
+    authn_user_id,
   });
 }
 
@@ -268,22 +291,6 @@ export async function deleteCourseInstancePermissions({
 }
 
 /**
- * Deletes all course instance permissions for all instances of a course.
- */
-export async function deleteAllCourseInstancePermissionsForCourse({
-  course_id,
-  authn_user_id,
-}: {
-  course_id: string;
-  authn_user_id: string;
-}): Promise<void> {
-  await execute(sql.delete_all_course_instance_permissions_for_course, {
-    course_id,
-    authn_user_id,
-  });
-}
-
-/**
  * Returns the course instance role for a user in a specific course instance,
  * or null if the user has no course instance permissions.
  */
@@ -317,6 +324,28 @@ export async function selectCoursePermissionForUser({
     { course_id, user_id },
     EnumCourseRoleSchema,
   );
+}
+
+const CourseInstanceRoleRowSchema = z.object({
+  id: CourseInstanceSchema.shape.id,
+  short_name: CourseInstanceSchema.shape.short_name,
+  course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
+  course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
+  course_instance_role_formatted: z.string(),
+});
+
+const CourseUsersRowSchema = z.object({
+  user: UserSchema,
+  course_permission: CoursePermissionSchema,
+  course_instance_roles: CourseInstanceRoleRowSchema.array().nullable(),
+});
+
+/**
+ * Returns all users with course permissions for the given course, along with
+ * their course instance roles and other course instances they have access to.
+ */
+export async function selectCourseUsers({ course_id }: { course_id: string }) {
+  return queryRows(sql.select_course_users, { course_id }, CourseUsersRowSchema);
 }
 
 /**

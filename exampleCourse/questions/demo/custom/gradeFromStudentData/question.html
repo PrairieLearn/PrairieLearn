@@ -1,0 +1,46 @@
+<pl-question-panel>
+  <p>
+    The purpose of this experiment is to estimate the gravitational acceleration $g$ using a simple
+    pendulum.
+  </p>
+
+  <p>
+    Set up the pendulum, displace it from equilibrium by a small angle, and release it. Use a
+    stopwatch to time ten complete swings.
+  </p>
+
+  <hr>
+</pl-question-panel>
+
+<pl-hide-in-panel answer="true">
+  <p>Measure the length of the pendulum (in meters):</p>
+  <pl-number-input answers-name="L" label="$L = $" display="block" show-help-text="false" size="20" suffix="m"></pl-number-input>
+
+  <p>Record the time for ten complete swings (in seconds):</p>
+  <pl-number-input answers-name="t" label="$t = $" display="block" show-help-text="false" size="20" suffix="s"></pl-number-input>
+</pl-hide-in-panel>
+
+<pl-question-panel>
+  <hr>
+  <p><strong>The correct answer for this next parameter will be computed from your recorded values above.</strong></p>
+
+  <p>
+    Use your data to estimate the gravitational acceleration. The period of one swing is $T =
+    t/10$, and for small angles the pendulum satisfies:
+  </p>
+  <p>$g = \frac{4\pi^2 L}{T^2}$</p>
+</pl-question-panel>
+
+<pl-hide-in-panel answer="true">
+  <pl-number-input answers-name="g" label="$g = $" display="block" rtol="1e-3" size="20" suffix="$\rm m/s^2$"></pl-number-input>
+</pl-hide-in-panel>
+
+<pl-answer-panel>
+  <p>The correct answer for $g$ depends on your recorded measurements.</p>
+</pl-answer-panel>
+
+<pl-submission-panel>
+  {{#feedback.g}}
+  <p>{{.}}</p>
+  {{/feedback.g}}
+</pl-submission-panel>

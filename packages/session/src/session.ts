@@ -75,7 +75,13 @@ export function makeSession(
 
   defineStaticProperty<Session['regenerate']>(session, 'regenerate', async () => {
     await store.destroy(sessionId);
-    req.session = makeSession(await generateSessionId(), req, store, null, maxAge);
+    const newSession = makeSession(await generateSessionId(), req, store, null, maxAge);
+    await store.set(
+      newSession.id,
+      newSession,
+      truncateExpirationDate(newSession.getExpirationDate()),
+    );
+    req.session = newSession;
   });
 
   defineStaticProperty<Session['getExpirationDate']>(session, 'getExpirationDate', () => {

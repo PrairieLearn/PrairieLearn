@@ -16,11 +16,19 @@ INSERT INTO
     id,
     uuid,
     course_id,
+    short_name,
     display_timezone,
     enrollment_code
   )
 VALUES
-  ($id, $uuid, $course_id, 'UTC', $enrollment_code);
+  (
+    $id,
+    $uuid,
+    $course_id,
+    $short_name,
+    'UTC',
+    $enrollment_code
+  );
 
 -- BLOCK insert_user
 INSERT INTO

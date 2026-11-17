@@ -2,23 +2,18 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
-  type ConfigSource,
-  makeEnvConfigSource,
+  makeConductorConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
+  makeKmsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
 
+import { getActiveKey } from './key-ring.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
-
-// We don't compare against 'test' since we use the 'MODE' environment variable
-// for running a subset of our tests.
-const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 'development';
-const IS_VITE = (import.meta as any).env?.MODE === 'development';
-export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
 
 const TokenPricingSchema = z.object({
   input: z.number().nonnegative(),
@@ -26,6 +21,31 @@ const TokenPricingSchema = z.object({
   cacheWrite: z.number().nonnegative(),
   output: z.number().nonnegative(),
 });
+
+const CreditPoolLimitRangeSchema = z
+  .object({
+    minMilliDollars: z.number().int(),
+    maxMilliDollars: z.number().int(),
+  })
+  .refine(({ minMilliDollars, maxMilliDollars }) => minMilliDollars <= maxMilliDollars, {
+    message: 'minMilliDollars must be less than or equal to maxMilliDollars',
+  });
+
+function makeKeyRingSchema(keySchema: z.ZodString) {
+  const nonemptyArraySchema = z
+    .array(keySchema)
+    .min(1)
+    .refine((keys): keys is [string, ...string[]] => keys.length > 0);
+  return z
+    .union([keySchema, nonemptyArraySchema])
+    .transform((keys): [string, ...string[]] => (typeof keys === 'string' ? [keys] : keys));
+}
+
+const KeyRingSchema = makeKeyRingSchema(z.string());
+const DatabaseEncryptionKeyRingSchema = makeKeyRingSchema(z.string().regex(/^[0-9a-f]{64}$/i));
+
+// startsWith replaces Zod's URL format, so restore it for generated JSON Schema.
+const HttpsUrlSchema = z.url().startsWith('https://').meta({ format: 'uri' });
 
 export const STANDARD_COURSE_DIRS = [
   '/course',
@@ -40,7 +60,6 @@ export const STANDARD_COURSE_DIRS = [
 ];
 
 export const ConfigSchema = z.object({
-  startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
   postgresqlDatabase: z.string().default('postgres'),
@@ -150,6 +169,9 @@ export const ConfigSchema = z.object({
    * `https://us.prairielearn.com`.
    */
   serverCanonicalHost: z.string().nullable().default(null),
+  /** Cloudflare Browser Run account and API token for printable assessments. */
+  printingCloudflareAccountId: z.string().nullable().default(null),
+  printingCloudflareApiToken: z.string().nullable().default(null),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**
@@ -166,8 +188,12 @@ export const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
+  fileUploadMaxFiles: z.number().default(20),
   fileUploadMaxParts: z.number().default(1000),
-  fileStoreS3Bucket: z.string().default('file-store'),
+  fileStoreS3Bucket: z
+    .string()
+    .nullable()
+    .default(DEV_MODE ? 'file-store' : null),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
   cronActive: z.boolean().default(true),
   /**
@@ -192,7 +218,9 @@ export const ConfigSchema = z.object({
   cronIntervalWorkspaceHostLoadsSec: z.number().default(10),
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
+  cronIntervalCourseAgentReviewResultsSec: z.number().default(60),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
+  cronIntervalFetchNewsItemsSec: z.number().default(5 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
   /**
    * Controls how much history is retained when removing old rows
@@ -207,18 +235,28 @@ export const ConfigSchema = z.object({
   autoFinishAgeMins: z.number().default(6 * 60),
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
-  secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
-  databaseEncryptionKey: z
-    .string()
-    .regex(/^[0-9a-f]{64}$/i)
-    .default('0'.repeat(64)),
-  secretSlackOpsBotEndpoint: z.string().nullable().default(null),
-  secretSlackToken: z.string().nullable().default(null),
-  secretSlackCourseRequestChannel: z.string().nullable().default(null),
+  /**
+   * Ordered signing key ring. The first key signs new artifacts and all keys
+   * are accepted for verification.
+   */
+  secretKey: KeyRingSchema.prefault('THIS_IS_THE_SECRET_KEY'),
+  /**
+   * Ordered storage encryption key ring. The first key encrypts new data and
+   * all keys are available to decrypt existing data.
+   */
+  databaseEncryptionKey: DatabaseEncryptionKeyRingSchema.prefault('0'.repeat(64)),
+  // Slack webhook URLs contain credentials and must be handled as secrets.
+  slackOpsWebhookUrl: z.string().nullable().default(null),
+  slackCourseRequestWebhookUrl: z.string().nullable().default(null),
+  /** Slack invitation shown to course staff in the Get help dialog. */
+  supportSlackUrl: HttpsUrlSchema.nullable().default(null),
+  /** Zoom office-hours link shown to course staff in the Get help dialog. */
+  supportOfficeHoursUrl: HttpsUrlSchema.nullable().default(null),
   githubClientToken: z.string().nullable().default(null),
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
   githubMachineTeam: z.string().default('machine'),
+  githubMachineUser: z.string().nullable().default(null),
   /**
    * Custom SSH command used for git operations (clone, fetch, push).
    * Set to `ssh -o StrictHostKeyChecking=accept-new` to automatically
@@ -295,7 +333,7 @@ export const ConfigSchema = z.object({
   /**
    * This is populated by `lib/aws.js` later.
    */
-  awsServiceGlobalOptions: z.record(z.unknown()).default({}),
+  awsServiceGlobalOptions: z.record(z.string(), z.unknown()).default({}),
   hasShib: z.boolean().default(false),
   hideShibLogin: z.boolean().default(false),
   shibLinkText: z.string().default('Sign in with Illinois'),
@@ -410,7 +448,7 @@ export const ConfigSchema = z.object({
   workspaceMaxGradedFilesCount: z.number().default(100),
   /** Controls the maximum size of all graded files in bytes. */
   workspaceMaxGradedFilesSize: z.number().default(100 * 1024 * 1024),
-  workspaceAutoscalingEnabled: z.boolean().default(true),
+  workspaceAutoscalingEnabled: z.boolean().default(false),
 
   chunksS3Bucket: z.string().default('chunks'),
   /** Enables chunk generation. */
@@ -450,11 +488,12 @@ export const ConfigSchema = z.object({
    */
   isEnterprise: z.boolean().default(false),
   /**
-   * Used to sign JWTs that PrairieLearn provides to PrairieTest for authentication.
-   * PrairieTest should be configured with the same value for
-   * `prairieLearnAuthSecret`.
+   * Ordered shared secret ring used to sign and verify auth JWTs exchanged
+   * between PrairieLearn and PrairieTest in both directions. The first secret
+   * signs new JWTs and all secrets are accepted for verification. PrairieTest
+   * must be configured with the same values in the same order.
    */
-  prairieTestAuthSecret: z.string().default('THIS_SHOULD_MATCH_THE_PT_KEY'),
+  prairieTestSharedAuthSecret: KeyRingSchema.prefault('CHANGE_ME_PRAIRIE_TEST_SHARED_AUTH_SECRET'),
   openTelemetryEnabled: z.boolean().default(false),
   /**
    * Note that the `console` exporter should almost definitely NEVER be used in
@@ -500,20 +539,18 @@ export const ConfigSchema = z.object({
    * the configured value for `serverJobHeartbeatIntervalSec`.
    */
   serverJobsAbandonedTimeoutSec: z.number().default(30),
-  /**
-   * Controls whether or not the course request form will attempt to automatically
-   * create a course if the course request meets certain criteria.
-   */
-  courseRequestAutoApprovalEnabled: z.boolean().default(false),
   devMode: z.boolean().default(DEV_MODE),
+  /**
+   * Whether to compile assets on the fly with esbuild instead of serving them
+   * from the prebuilt `public/build` directory. Defaults to the value of `devMode`.
+   */
+  compiledAssetsDevMode: z.boolean().nullable().default(null),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */
   azureRedirectUrl: z.string().default('<your_redirect_url>'),
   /** Required if the redirect URL uses the HTTP protocol. */
   azureAllowHttpForRedirectUrl: z.boolean().default(false),
-  /** Required. If the app key contains `\`, replace it with `\\`. */
-  azureClientSecret: z.string().default('<your_client_secret>'),
   /**
    * Required to encrypt cookies. Multiple key/iv pairs can be provided for key
    * rotation. The first key/iv pair will be used to encrypt cookies, but all
@@ -530,21 +567,6 @@ export const ConfigSchema = z.object({
     )
     .default([]),
   azureLoggingLevel: z.enum(['error', 'warn', 'info']).default('warn'),
-  /**
-   * If you want to get access_token for a specific resource, you can provide the
-   * resource here; otherwise, set the value to null.
-   * Note that in order to get access_token, the responseType must be 'code', 'code id_token' or 'id_token code'.
-   */
-  azureResourceURL: z.string().nullable().default('https://graph.windows.net'),
-  /**
-   * The URL to which the user will be redirected to destroy the session.
-   */
-  azureDestroySessionUrl: z
-    .string()
-    .nullable()
-    .default(
-      'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
-    ),
   features: z.record(z.string(), z.boolean()).default({}),
   /**
    * Determines if sharing validation should be performed. In essence checks
@@ -572,14 +594,25 @@ export const ConfigSchema = z.object({
    */
   stripeSecretKey: z.string().nullable().default(null),
   /**
-   * A secret key used to sign Stripe webhook events. Only useful for enterprise
-   * installations. See https://stripe.com/docs/webhooks.
+   * A secret key or ordered list of secret keys accepted when verifying Stripe
+   * webhook events. Only useful for enterprise installations. See
+   * https://stripe.com/docs/webhooks.
    */
-  stripeWebhookSigningSecret: z.string().nullable().default(null),
+  stripeWebhookSigningSecret: KeyRingSchema.nullable().prefault(null),
   /**
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  /**
+   * Stripe product ID for AI grading credits. Used to create checkout sessions
+   * for instructor credit purchases.
+   */
+  stripeAiGradingCreditsProductId: z.string().nullable().default(null),
+  /**
+   * Whether Stripe AI grading credit refunds are enabled. When disabled,
+   * refund buttons are hidden and the server rejects all refund requests.
+   */
+  stripeAiGradingCreditsRefundsEnabled: z.boolean().default(false),
   aiGradingOpenAiApiKey: z.string().nullable().default(null),
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
@@ -598,18 +631,38 @@ export const ConfigSchema = z.object({
    */
   aiGradingInfrastructureFeePercent: z.number().min(0).max(1).default(0.2),
   /**
-   * Maximum dollar amount an admin can add to a credit pool in a single adjustment.
+   * Minimum and maximum milli-dollar amounts enforced for admin credit pool
+   * adjustments. Applied on both the client (input validation) and server
+   * (trpc handler). Stored in milli-dollars to match the DB and display helpers.
    */
-  aiGradingCreditPoolMaxAddDollars: z.number().default(10_000),
-  /**
-   * Maximum dollar amount an admin can deduct from a credit pool in a single adjustment.
-   */
-  aiGradingCreditPoolMaxDeductDollars: z.number().default(10_000),
+  aiGradingCreditPoolLimits: z
+    .object({
+      add: CreditPoolLimitRangeSchema,
+      deduct: CreditPoolLimitRangeSchema,
+      setTransferable: CreditPoolLimitRangeSchema,
+      setNonTransferable: CreditPoolLimitRangeSchema.refine(
+        ({ minMilliDollars }) => minMilliDollars >= 0,
+        { message: 'setNonTransferable.minMilliDollars must be non-negative' },
+      ),
+    })
+    .default({
+      add: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
+      deduct: { minMilliDollars: 10, maxMilliDollars: 10_000_000 },
+      setTransferable: { minMilliDollars: -1_000_000_000, maxMilliDollars: 1_000_000_000 },
+      setNonTransferable: { minMilliDollars: 0, maxMilliDollars: 1_000_000_000 },
+    }),
   /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */
   aiQuestionGenerationRateLimitDollars: z.number().default(1),
+  /**
+   * The hourly spending limit for the course agent, in US dollars. This is applied per user,
+   * across courses and conversations.
+   */
+  courseAgentRateLimitDollars: z.number().default(50),
+  /** What the course agent is charged for each web search command, in US dollars. */
+  courseAgentWebSearchCallCostDollars: z.number().default(0.01),
   /**
    * OpenAI credentials for administrator tasks like AI-assisted course request review.
    */
@@ -630,43 +683,86 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
+  /**
+   * Base URL of the course agent service (`apps/course-agent`), e.g.
+   * `http://localhost:8790` in development. The course agent is unavailable
+   * unless both this and `courseAgentServiceToken` are set.
+   */
+  courseAgentServiceUrl: z.string().nullable().default(null),
+  /**
+   * Bearer token that authenticates PrairieLearn to the course agent service,
+   * and the service to PrairieLearn when it reports usage.
+   * Must match the Cloudflare Worker's PL_SERVICE_TOKEN secret, or
+   * PL_SERVICE_TOKEN in its .dev.vars file for local development. Multiple
+   * tokens are supported to allow for rotation; the first token is sent to
+   * the service.
+   */
+  courseAgentServiceToken: KeyRingSchema.nullable().prefault(null),
+  /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
+  newsFeedUrl: z.string().nullable().default(null),
+  /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */
+  newsFeedBlogUrl: z.string().nullable().default(null),
+  /**
+   * List of RSS category tags to filter news items by. Only items with at least one matching category will be shown to users.
+   * If no categories are specified, all items will be shown.
+   */
+  newsFeedCategories: z.array(z.string()).default([]),
   costPerMillionTokens: z
     .object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
-      'gpt-5-mini-2025-08-07': TokenPricingSchema,
       'gpt-5-2025-08-07': TokenPricingSchema,
-      'gpt-5.1-2025-11-13': TokenPricingSchema,
       'gpt-5.2-2025-12-11': TokenPricingSchema,
-      'gemini-2.5-flash': TokenPricingSchema,
+      'gpt-5.4-mini-2026-03-17': TokenPricingSchema,
+      'gpt-5.4-2026-03-05': TokenPricingSchema,
+      'gpt-5.6-luna': TokenPricingSchema,
+      'gpt-6-luna': TokenPricingSchema,
+      'gpt-6-sol': TokenPricingSchema,
+      'gpt-5.6-terra': TokenPricingSchema,
+      'gpt-5.6-sol': TokenPricingSchema,
+      'gpt-6-astra': TokenPricingSchema,
+      'gemini-3.8-flash': TokenPricingSchema,
+      'gemini-3.5-flash': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3.1-pro-preview': TokenPricingSchema,
-      'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
-      'claude-sonnet-4-5': TokenPricingSchema,
+      'claude-sonnet-5': TokenPricingSchema,
+      'claude-sonnet-4-6': TokenPricingSchema,
+      'claude-opus-5': TokenPricingSchema,
+      'claude-opus-4-7': TokenPricingSchema,
+      'claude-fable-5-1': TokenPricingSchema,
     })
     .default({
-      // Prices current as of 2025-11-26. Values obtained from
+      // Prices current as of 2026-09-26. Values obtained from
       // https://developers.openai.com/api/docs/pricing
-      // OpenAI does not charge for cache writes.
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
-      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, cacheWrite: 0, output: 2 },
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
-      'gpt-5.1-2025-11-13': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
       'gpt-5.2-2025-12-11': { input: 1.75, cachedInput: 0.175, cacheWrite: 0, output: 14 },
+      'gpt-5.4-mini-2026-03-17': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 4.5 },
+      'gpt-5.4-2026-03-05': { input: 2.5, cachedInput: 0.25, cacheWrite: 0, output: 15 },
+      'gpt-5.6-luna': { input: 0.2, cachedInput: 0.02, cacheWrite: 0.25, output: 1.2 },
+      'gpt-5.6-terra': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 12 },
+      'gpt-5.6-sol': { input: 4, cachedInput: 0.4, cacheWrite: 5, output: 20 },
+      'gpt-6-astra': { input: 10, cachedInput: 1, cacheWrite: 12.5, output: 50 },
+      'gpt-6-luna': { input: 0.1, cachedInput: 0.01, cacheWrite: 0.125, output: 0.5 },
+      'gpt-6-sol': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 10 },
 
-      // Prices current as of 2025-11-25. Values obtained from
+      // Prices current as of 2026-09-05. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       // Google does not charge for cache writes.
-      'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, cacheWrite: 0, output: 2.5 },
+      'gemini-3.8-flash': { input: 0.75, cachedInput: 0.075, cacheWrite: 0, output: 3.75 },
+      'gemini-3.5-flash': { input: 1.5, cachedInput: 0.15, cacheWrite: 0, output: 9 },
       'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
       'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 
-      // Prices current as of 2025-11-25. Values obtained from
-      // https://www.anthropic.com/pricing#api
+      // Prices current as of 2026-09-05. Values obtained from
+      // https://claude.com/pricing#api
       // Anthropic charges 1.25x the input price for cache writes.
       'claude-haiku-4-5': { input: 1, cachedInput: 0.1, cacheWrite: 1.25, output: 5 },
-      'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
-      'claude-opus-4-5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+      'claude-sonnet-5': { input: 2, cachedInput: 0.2, cacheWrite: 2.5, output: 10 },
+      'claude-sonnet-4-6': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
+      'claude-opus-5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+      'claude-opus-4-7': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
+      'claude-fable-5-1': { input: 10, cachedInput: 0.25, cacheWrite: 12.5, output: 50 },
     }),
   exampleCoursePath: z.string().default('./exampleCourse'),
 });
@@ -677,45 +773,21 @@ const loader = new ConfigLoader(ConfigSchema);
 
 export const config = loader.config;
 
-/**
- * Creates a config source that derives database and Redis settings from
- * CONDUCTOR_WORKSPACE_NAME and CONDUCTOR_PORT.
- * This enables isolated databases per Conductor workspace.
- */
-function makeConductorConfigSource(): ConfigSource<Config> {
-  return {
-    load: async (existingConfig) => {
-      const workspaceName = process.env.CONDUCTOR_WORKSPACE_NAME;
-      if (!workspaceName) return {};
-
-      const dbSuffix = workspaceName
-        .toLowerCase()
-        .replaceAll(/[^a-z0-9_]/g, '_')
-        .slice(0, 50);
-      const port = Number.parseInt(existingConfig.serverPort);
-      // Redis supports DBs 0-15 by default. With CONDUCTOR_PORT allocated in
-      // increments of 10, collisions occur after ~8 workspaces. This is acceptable
-      // since Redis stores transient data while Postgres databases remain fully isolated.
-      const redisDb = (port - 3000) % 16;
-
-      return {
-        postgresqlDatabase: `prairielearn_${dbSuffix}`,
-        redisUrl: `redis://localhost:6379/${redisDb}`,
-      };
-    },
-  };
-}
-
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
-    makeEnvConfigSource<typeof ConfigSchema>({
-      serverPort: 'CONDUCTOR_PORT',
-    }),
-    makeConductorConfigSource(),
+    makeConductorConfigSource({ portConfigKey: 'serverPort' }),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
+    makeKmsConfigSource(),
   ]);
+
+  const { printingCloudflareAccountId: accountId, printingCloudflareApiToken: apiToken } = config;
+  if ((accountId !== null || apiToken !== null) && (!accountId || !apiToken)) {
+    throw new Error(
+      'printingCloudflareAccountId and printingCloudflareApiToken must both be set to use Cloudflare Browser Run',
+    );
+  }
 
   if (config.questionRenderCacheType !== null) {
     logger.warn(
@@ -737,7 +809,7 @@ export async function loadConfig(paths: string[]) {
     }
 
     const defaultKey = ConfigSchema.parse({}).databaseEncryptionKey;
-    if (config.databaseEncryptionKey === defaultKey) {
+    if (config.databaseEncryptionKey.includes(getActiveKey(defaultKey))) {
       throw new Error(
         'databaseEncryptionKey must be set to a secure value in production environments',
       );

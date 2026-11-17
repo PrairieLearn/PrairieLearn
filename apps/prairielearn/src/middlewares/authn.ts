@@ -1,21 +1,24 @@
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as authnLib from '../lib/authn.js';
 import { type LoadUserAuth } from '../lib/authn.types.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
-import { EnrollmentSchema } from '../lib/db-types.js';
-import { insertAuditEvent } from '../models/audit-event.js';
+import { isEnterprise } from '../lib/license.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-
 export default asyncHandler(async (req, res, next) => {
   res.locals.is_administrator = false;
+  res.locals.lockdown_browser = false;
 
   if (req.method === 'OPTIONS') {
     // don't authenticate for OPTIONS requests, as these are just for CORS
@@ -35,13 +38,34 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
+  // The course agent service reads course data with its own credentials, so these requests have
+  // no session. The path matches where server.ts mounts the course data router.
+  const courseAgentData = /^\/pl\/course\/(\d+)\/course_agent\/data(?:\/|$)/.exec(req.path);
+  if (courseAgentData && isEnterprise()) {
+    const { authenticateCourseAgentDataRequest } = await import('../ee/lib/course-agent/authn.js');
+    const agent = await authenticateCourseAgentDataRequest({
+      authorization: req.header('Authorization'),
+      conversationId: req.header('X-Course-Agent-Conversation'),
+      courseId: courseAgentData[1],
+    });
+    if ('error' in agent) {
+      res.status(agent.status).send({ message: agent.error });
+      return;
+    }
+    res.locals.authn_user = agent.user;
+    res.locals.authn_is_administrator = agent.is_administrator;
+    res.locals.is_administrator = agent.is_administrator;
+    next();
+    return;
+  }
+
   // look for load-testing override cookie
   if (req.cookies.load_test_token) {
     const data = getCheckedSignedTokenData(req.cookies.load_test_token, config.secretKey, {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    if (!data?.uuid || typeof data.uuid !== 'string' || !UUID_REGEXP.test(data.uuid)) {
+    if (!data?.uuid || typeof data.uuid !== 'string' || !z.uuid().safeParse(data.uuid).success) {
       throw new Error('invalid load_test_token');
     }
 
@@ -58,22 +82,27 @@ export default asyncHandler(async (req, res, next) => {
       redirect: false,
     });
 
-    // Enroll the load test user in the example course.
-    const enrollment = await sqldb.queryOptionalRow(
-      sql.enroll_user_in_example_course,
+    const loadTestCourseInstance = await sqldb.queryOptionalRow(
+      sql.select_load_test_course_instance,
       { user_id: res.locals.authn_user.id },
-      EnrollmentSchema,
+      z.object({
+        course_instance_id: IdSchema,
+        has_joined_enrollment: z.boolean(),
+      }),
     );
 
-    if (enrollment) {
-      await insertAuditEvent({
-        tableName: 'enrollments',
-        action: 'insert',
+    if (loadTestCourseInstance && !loadTestCourseInstance.has_joined_enrollment) {
+      const courseInstance = await selectCourseInstanceById(
+        loadTestCourseInstance.course_instance_id,
+      );
+
+      // Load-test enrollment is system-initiated setup, so record the system as the audit actor.
+      await ensureUncheckedEnrollment({
+        userId: res.locals.authn_user.id,
+        authzData: dangerousFullSystemAuthz(),
+        courseInstance,
+        requiredRole: ['System'],
         actionDetail: 'implicit_joined',
-        rowId: enrollment.id,
-        newRow: enrollment,
-        agentUserId: res.locals.user.id,
-        agentAuthnUserId: res.locals.authn_user.id,
       });
     }
 
@@ -175,7 +204,14 @@ export default asyncHandler(async (req, res, next) => {
 
   await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
+    preserveLockdownBrowser: true,
   });
+
+  // Surface the LockDown Browser flag recorded on the session at PT->PL
+  // login so pages can gate LDB-specific UI: showing the navbar "End exam"
+  // control and hiding the file-picker form whose OS dialog would let
+  // students open desktop files.
+  res.locals.lockdown_browser = req.session.lockdown_browser ?? false;
 
   next();
 });

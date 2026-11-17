@@ -1,0 +1,1 @@
+ALTER TABLE ai_grading_credit_pool_changes VALIDATE CONSTRAINT chk_credit_ledger_math;

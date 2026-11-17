@@ -1,11 +1,12 @@
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as helperDb from '../tests/helperDb.js';
 
 import { UserSchema } from './db-types.js';
-import { ipToMode } from './exam-mode.js';
+import { ipToMode, selectActiveReservationInfo } from './exam-mode.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -32,15 +33,23 @@ describe('ipToMode tests', function () {
       await expect(ipToMode({ ip: null, date: new Date(), authn_user_id })).rejects.toThrow(
         'IP address is required',
       );
-      await expect(ipToMode({ ip: undefined, date: new Date(), authn_user_id })).rejects.toThrow(
-        'IP address is required',
-      );
+      await expect(
+        ipToMode({
+          ip: undefined,
+          date: new Date(),
+          authn_user_id,
+        }),
+      ).rejects.toThrow('IP address is required');
     });
   });
 
   describe('No reservations', () => {
     it('should return "Public"', async () => {
-      const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+      const result = await ipToMode({
+        ip: '10.0.0.1',
+        date: new Date(),
+        authn_user_id,
+      });
       assert.equal(result, 'Public');
     });
   });
@@ -160,7 +169,11 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -184,7 +197,11 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Public');
         });
       });
@@ -196,7 +213,11 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -236,7 +257,11 @@ describe('ipToMode tests', function () {
           await createCenterExamReservation();
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Public');
         });
       });
@@ -290,7 +315,11 @@ describe('ipToMode tests', function () {
 
           await execute(sql.check_in_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -306,7 +335,11 @@ describe('ipToMode tests', function () {
 
           await execute(sql.start_reservations);
 
-          const result = await ipToMode({ ip: '192.168.0.01', date: new Date(), authn_user_id });
+          const result = await ipToMode({
+            ip: '192.168.0.01',
+            date: new Date(),
+            authn_user_id,
+          });
           assert.equal(result, 'Exam');
         });
       });
@@ -389,7 +422,11 @@ describe('ipToMode tests', function () {
 
         await execute(sql.check_in_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
         assert.equal(result, 'Exam');
       });
     });
@@ -401,7 +438,11 @@ describe('ipToMode tests', function () {
         await execute(sql.check_in_reservations);
         await execute(sql.start_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
         assert.equal(result, 'Exam');
       });
     });
@@ -412,9 +453,201 @@ describe('ipToMode tests', function () {
 
         await execute(sql.start_reservations);
 
-        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
         assert.equal(result, 'Exam');
       });
+    });
+  });
+
+  describe('requires_lockdown_browser', () => {
+    describe('Center exam at LDB-required location', () => {
+      it('should require LDB once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+          await execute(sql.check_in_reservations);
+
+          const { requires_lockdown_browser } = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isTrue(requires_lockdown_browser);
+        });
+      });
+
+      it('should not require LDB before check-in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_lockdown_browser_on_location);
+
+          const { requires_lockdown_browser } = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date: new Date(Date.now() + 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.isFalse(requires_lockdown_browser);
+        });
+      });
+    });
+
+    describe('Course exam with LDB-required session', () => {
+      it('should require LDB once the reservation is active', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_lockdown_browser_on_course_session);
+          await execute(sql.check_in_reservations);
+
+          const { requires_lockdown_browser } = await selectActiveReservationInfo({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isTrue(requires_lockdown_browser);
+        });
+      });
+    });
+  });
+
+  describe('cheating_report_reservation_id', () => {
+    describe('center exam', () => {
+      it('should return the reservation id while PrairieTest considers access open', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_cheating_reports_on_center);
+          await execute(sql.start_reservations);
+
+          const reservation_id = await queryScalar(sql.select_reservation_id, IdSchema);
+          const date = new Date();
+          const activeInfo = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date,
+            authn_user_id,
+          });
+          assert.equal(activeInfo.cheating_report_reservation_id, reservation_id);
+
+          await execute(sql.set_reservation_access_end, { access_end: date });
+          const endedInfo = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date,
+            authn_user_id,
+          });
+          assert.isNull(endedInfo.cheating_report_reservation_id);
+
+          await execute(sql.set_reservation_access_end, { access_end: null });
+          const openEndedInfo = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date,
+            authn_user_id,
+          });
+          assert.equal(openEndedInfo.cheating_report_reservation_id, reservation_id);
+        });
+      });
+
+      it('should return null when the center has not opted in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.start_reservations);
+
+          const info = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isNull(info.cheating_report_reservation_id);
+        });
+      });
+
+      it('should return null after check-in but before access starts', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+          await execute(sql.enable_cheating_reports_on_center);
+          await execute(sql.check_in_reservations);
+
+          const info = await selectActiveReservationInfo({
+            ip: '10.0.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isNull(info.cheating_report_reservation_id);
+        });
+      });
+    });
+
+    describe('course exam', () => {
+      it('should return the reservation id when access is open and the course has opted in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_cheating_reports_on_course);
+          await execute(sql.start_reservations);
+
+          const reservation_id = await queryScalar(sql.select_reservation_id, IdSchema);
+          const info = await selectActiveReservationInfo({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.equal(info.cheating_report_reservation_id, reservation_id);
+        });
+      });
+
+      it('should return null when the course has not opted in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.start_reservations);
+
+          const info = await selectActiveReservationInfo({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isNull(info.cheating_report_reservation_id);
+        });
+      });
+
+      it('should not use the center flag for a course exam', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCourseExamReservation();
+          await execute(sql.enable_cheating_reports_on_center);
+          await execute(sql.start_reservations);
+
+          const info = await selectActiveReservationInfo({
+            ip: '192.168.0.1',
+            date: new Date(),
+            authn_user_id,
+          });
+          assert.isNull(info.cheating_report_reservation_id);
+        });
+      });
+    });
+
+    it('should return null when multiple access windows overlap', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        await createCenterExamReservation();
+        await execute(sql.insert_second_reservation, { user_id: authn_user_id });
+        await execute(sql.enable_cheating_reports_on_center);
+        await execute(sql.start_reservations);
+
+        const info = await selectActiveReservationInfo({
+          ip: '10.0.0.1',
+          date: new Date(),
+          authn_user_id,
+        });
+        assert.isNull(info.cheating_report_reservation_id);
+      });
+    });
+
+    it('should return null when there is no reservation', async () => {
+      const info = await selectActiveReservationInfo({
+        ip: '10.0.0.1',
+        date: new Date(),
+        authn_user_id,
+      });
+      assert.isNull(info.cheating_report_reservation_id);
     });
   });
 });

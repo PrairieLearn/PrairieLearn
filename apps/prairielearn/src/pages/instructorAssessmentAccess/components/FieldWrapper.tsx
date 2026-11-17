@@ -1,32 +1,28 @@
 import type { ReactNode } from 'react';
 import { Button, Card } from 'react-bootstrap';
 
-/**
- * Wrapper for override fields that shows an override/remove button
- * when not overridden.
- */
+import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.js';
+
 export function FieldWrapper({
   isOverridden,
   label,
   onOverride,
   onRemoveOverride,
+  headerToggle,
+  headerAction,
   children,
-  headerContent,
 }: {
-  /** Whether the field is currently overridden */
   isOverridden: boolean;
-  /** Label shown when field is not overridden */
   label: string;
-  /** Called when user clicks Override button */
   onOverride?: () => void;
-  /** Called when user clicks Remove Override button */
   onRemoveOverride?: () => void;
-  /** The field content to render when overridden */
+  headerToggle?: ReactNode;
+  headerAction?: ReactNode;
   children: ReactNode;
-  /** Optional: content to display in the header row next to the Remove override button */
-  headerContent?: ReactNode;
 }) {
+  const ruleEditable = useAccessControlRuleEditable();
   const cardStyle = isOverridden ? {} : { border: '2px dashed var(--bs-border-color)' };
+  const showHeaderActions = headerAction != null || (ruleEditable && onRemoveOverride != null);
 
   return (
     <Card style={cardStyle}>
@@ -34,7 +30,7 @@ export function FieldWrapper({
         {!isOverridden ? (
           <div className="d-flex justify-content-between align-items-center">
             <span className="text-muted">{label}</span>
-            {onOverride && (
+            {ruleEditable && onOverride && (
               <Button
                 size="sm"
                 variant="outline-primary"
@@ -48,17 +44,26 @@ export function FieldWrapper({
           </div>
         ) : (
           <>
-            {(headerContent || onRemoveOverride) && (
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                {headerContent}
-                {onRemoveOverride && (
-                  <Button size="sm" variant="outline-danger" onClick={onRemoveOverride}>
-                    Remove override
-                  </Button>
-                )}
-              </div>
-            )}
-            <div>{children}</div>
+            <div className="d-flex justify-content-between align-items-center gap-3 mb-2 flex-wrap">
+              {headerToggle ?? <strong>{label}</strong>}
+              {showHeaderActions && (
+                <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+                  {headerAction}
+                  {ruleEditable && onRemoveOverride && (
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      className="text-nowrap"
+                      aria-label={`Remove override for ${label}`}
+                      onClick={onRemoveOverride}
+                    >
+                      Remove override
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+            {children}
           </>
         )}
       </Card.Body>

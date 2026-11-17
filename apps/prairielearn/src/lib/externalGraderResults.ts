@@ -30,8 +30,7 @@ const abortController = new AbortController();
 const processingFinished = withResolvers();
 
 export async function init() {
-  // If we're not configured to use AWS, don't try to do anything here
-  if (!config.externalGradingUseAws) return;
+  if (!config.externalGradingUseAws || !config.externalGradingEnableResults) return;
 
   const sqs = new SQSClient(makeAwsClientConfig());
   const queueUrl = await getQueueUrl(sqs, config.externalGradingResultsQueueName);
@@ -62,7 +61,7 @@ export async function init() {
           );
           messages = data.Messages;
         } catch (err) {
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted from another context
+          // oxlint-disable-next-line typescript/no-unnecessary-condition -- aborted from another context
           if (abortController.signal.aborted) {
             processingFinished.resolve(null);
             return;
@@ -104,7 +103,7 @@ export async function init() {
 }
 
 export async function stop() {
-  if (!config.externalGradingUseAws) return;
+  if (!config.externalGradingUseAws || !config.externalGradingEnableResults) return;
 
   if (abortController.signal.aborted) {
     throw new Error('Already stopped');
@@ -184,18 +183,17 @@ async function processMessage(data: {
       // We have the data!
       await processResults(jobId, data.data);
       return;
-    } else {
-      // We should fetch it from S3, and then process it
-      const s3Client = new S3(makeS3ClientConfig());
-      const data = await s3Client.getObject({
-        Bucket: s3Bucket,
-        Key: `${s3RootKey}/results.json`,
-        ResponseContentType: 'application/json',
-      });
-      if (!data.Body) throw new Error('No body in S3 response');
-      await processResults(jobId, await data.Body.transformToString());
-      return;
     }
+
+    // We should fetch it from S3, and then process it
+    const s3Client = new S3(makeS3ClientConfig());
+    const s3Object = await s3Client.getObject({
+      Bucket: s3Bucket,
+      Key: `${s3RootKey}/results.json`,
+      ResponseContentType: 'application/json',
+    });
+    if (!s3Object.Body) throw new Error('No body in S3 response');
+    await processResults(jobId, await s3Object.Body.transformToString());
   } else {
     throw new error.AugmentedError(`Unknown grading event: ${data.event}`, { data });
   }

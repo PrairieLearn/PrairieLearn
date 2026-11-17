@@ -2,6 +2,14 @@ import z from 'zod';
 
 import { BooleanFromCheckboxSchema } from '@prairielearn/zod';
 
+/**
+ * Similar to BooleanFromCheckboxSchema but treats undefined as undefined still.
+ */
+const OptionalBooleanFromCheckboxSchema = z
+  .string()
+  .optional()
+  .transform((s) => (s == null ? undefined : !!s));
+
 export const SettingsFormBodySchema = z.object({
   ciid: z.string(),
   long_name: z.string(),
@@ -14,6 +22,7 @@ export const SettingsFormBodySchema = z.object({
   // type is used to drive the form state on the frontend.
   self_enrollment_enabled_before_date_enabled: BooleanFromCheckboxSchema,
   self_enrollment_enabled_before_date: z.string().optional(),
+  share_source_publicly: OptionalBooleanFromCheckboxSchema,
 });
 
 export type SettingsFormValues = z.infer<typeof SettingsFormBodySchema>;

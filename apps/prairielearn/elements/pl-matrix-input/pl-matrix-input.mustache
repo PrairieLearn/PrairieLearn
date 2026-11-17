@@ -35,9 +35,8 @@
 {{/question}}
 
 {{#submission}}
-{{#error}}
 <span>
-
+{{#error}}
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
@@ -80,9 +79,6 @@
         </a>
     </span>
 {{/missing_input}}
-
-</span>
-
 {{/error}}
 {{^error}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
@@ -91,15 +87,11 @@
 {{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/error}}
+{{{raw_input_popover}}}
+</span>
 {{/submission}}
 
 {{#answer}}
-<script>
-    $(function() {
-        PrairieUtil.initCopyButton('#pl-matrix-input-answer-{{uuid}} .copy-button');
-    });
-</script>
-
 <div id="pl-matrix-input-answer-{{uuid}}" class="card mb-4 pl-matrix-input-answer">
     <div class="card-header">
         <ul class="nav nav-tabs card-header-tabs" role="tablist">
@@ -114,8 +106,9 @@
                     {{#label}}<span>{{{label}}}</span>{{/label}}
                     <code style="white-space: break-spaces;" id="matlab-data-{{uuid}}">{{matlab_data}}</code>
                 </p>
-                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
-                    copy this answer
+                <button type="button" class="btn btn-secondary btn-sm js-copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
+                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                    Copy
                 </button>
             </div>
             <div role="tabpanel" class="tab-pane {{#default_is_python}}active{{/default_is_python}}" id="python-{{uuid}}">
@@ -123,8 +116,9 @@
                     {{#label}}<span>{{{label}}}</span>{{/label}}
                     <code style="white-space: break-spaces;" id="python-data-{{uuid}}">{{python_data}}</code>
                 </p>
-                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
-                    copy this answer
+                <button type="button" class="btn btn-secondary btn-sm js-copy-button" data-clipboard-target="#python-data-{{uuid}}">
+                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                    Copy
                 </button>
             </div>
         </div>

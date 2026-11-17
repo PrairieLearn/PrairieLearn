@@ -1,6 +1,6 @@
-import { format, toZonedTime } from 'date-fns-tz';
 import { z } from 'zod';
 
+import { formatDateISO } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -45,16 +45,8 @@ export function InstructorEffectiveUser({
   // fall back to the course, which is guaranteed to have a display timezone.
   const displayTimezone = course_instance?.display_timezone ?? course.display_timezone;
 
-  const formattedTrueReqDate = format(
-    toZonedTime(true_req_date, displayTimezone),
-    "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
-    { timeZone: displayTimezone },
-  );
-  const formattedReqDate = format(
-    toZonedTime(req_date, displayTimezone),
-    "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
-    { timeZone: displayTimezone },
-  );
+  const formattedTrueReqDate = formatDateISO(true_req_date, displayTimezone);
+  const formattedReqDate = formatDateISO(req_date, displayTimezone);
 
   return PageLayout({
     pageTitle: 'Change Effective User',
@@ -77,14 +69,16 @@ export function InstructorEffectiveUser({
           <p><strong>Authenticated UID:</strong> ${authz_data.authn_user.uid}</p>
           <p><strong>Authenticated name:</strong> ${authz_data.authn_user.name}</p>
           <p><strong>Authenticated course role:</strong> ${authz_data.authn_course_role}</p>
-          ${'authn_course_instance_role' in authz_data
-            ? html`
-                <p>
-                  <strong>Authenticated course instance role:</strong>
-                  ${authz_data.authn_course_instance_role}
-                </p>
-              `
-            : ''}
+          ${
+            'authn_course_instance_role' in authz_data
+              ? html`
+                  <p>
+                    <strong>Authenticated course instance role:</strong>
+                    ${authz_data.authn_course_instance_role}
+                  </p>
+                `
+              : ''
+          }
           <p><strong>Authenticated mode:</strong> ${authz_data.authn_mode}</p>
           <p><strong>Authenticated date:</strong> ${formattedTrueReqDate}</p>
 
@@ -210,67 +204,69 @@ export function InstructorEffectiveUser({
         </div>
       </div>
 
-      ${'course_instance_role' in authz_data
-        ? html`
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white">
-                <h2>Effective course instance role</h2>
-              </div>
+      ${
+        'course_instance_role' in authz_data
+          ? html`
+              <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                  <h2>Effective course instance role</h2>
+                </div>
 
-              <div class="card-body">
-                <p>
-                  <strong>Effective course instance role:</strong>
-                  ${authz_data.course_instance_role}
-                </p>
+                <div class="card-body">
+                  <p>
+                    <strong>Effective course instance role:</strong>
+                    ${authz_data.course_instance_role}
+                  </p>
 
-                <div class="alert alert-secondary mb-0">
-                  <form id="changeCourseInstanceRoleForm" method="POST">
-                    <div class="mb-3">
-                      <label class="form-label" for="changeEffectiveCourseInstanceRole">
-                        Change effective course instance role to:
-                      </label>
-                      <select
-                        class="form-select me-2"
-                        id="changeEffectiveCourseInstanceRole"
-                        name="pl_requested_course_instance_role"
-                      >
-                        ${[...courseRoles.available_course_instance_roles]
-                          .reverse()
-                          .map((available_course_instance_role) =>
-                            available_course_instance_role === authz_data.course_instance_role
-                              ? html`
-                                  <option value="${available_course_instance_role}" selected>
-                                    ${available_course_instance_role} (current)
-                                  </option>
-                                `
-                              : html`
-                                  <option value="${available_course_instance_role}">
-                                    ${available_course_instance_role}
-                                  </option>
-                                `,
-                          )}
-                      </select>
-                    </div>
-                    <input type="hidden" name="__action" value="changeCourseInstanceRole" />
-                    <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                    <button type="submit" class="btn btn-primary">
-                      Change course instance role
-                    </button>
-                  </form>
+                  <div class="alert alert-secondary mb-0">
+                    <form id="changeCourseInstanceRoleForm" method="POST">
+                      <div class="mb-3">
+                        <label class="form-label" for="changeEffectiveCourseInstanceRole">
+                          Change effective course instance role to:
+                        </label>
+                        <select
+                          class="form-select me-2"
+                          id="changeEffectiveCourseInstanceRole"
+                          name="pl_requested_course_instance_role"
+                        >
+                          ${[...courseRoles.available_course_instance_roles]
+                            .reverse()
+                            .map((available_course_instance_role) =>
+                              available_course_instance_role === authz_data.course_instance_role
+                                ? html`
+                                    <option value="${available_course_instance_role}" selected>
+                                      ${available_course_instance_role} (current)
+                                    </option>
+                                  `
+                                : html`
+                                    <option value="${available_course_instance_role}">
+                                      ${available_course_instance_role}
+                                    </option>
+                                  `,
+                            )}
+                        </select>
+                      </div>
+                      <input type="hidden" name="__action" value="changeCourseInstanceRole" />
+                      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                      <button type="submit" class="btn btn-primary">
+                        Change course instance role
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                <div class="card-footer">
+                  <small>
+                    Your <em>course instance role</em> determines the permissions that you have to
+                    view and edit student data in PrairieLearn. It is specific to this course
+                    instance, so you can be a Student Data Editor in one course instance but a
+                    Student Data Viewer in a different course instance.
+                  </small>
                 </div>
               </div>
-
-              <div class="card-footer">
-                <small>
-                  Your <em>course instance role</em> determines the permissions that you have to
-                  view and edit student data in PrairieLearn. It is specific to this course
-                  instance, so you can be a Student Data Editor in one course instance but a Student
-                  Data Viewer in a different course instance.
-                </small>
-              </div>
-            </div>
-          `
-        : ''}
+            `
+          : ''
+      }
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -305,7 +301,7 @@ export function InstructorEffectiveUser({
             The <em>date</em> of the server determines which assessments are available. Changing the
             effective date to something other than the current date allows you to check if homework
             and exam assessments will be available to students when you mean them to be. The date
-            has the format <code>YYYY-MM-DDTHH:MM:SS.SSS</code>, with a suffix that gives the offset
+            has the format <code>YYYY-MM-DDTHH:MM:SS</code>, with a suffix that gives the offset
             from UTC (i.e., the time zone) in the format <code>&plusmn;HH:MM</code>.
           </small>
         </div>

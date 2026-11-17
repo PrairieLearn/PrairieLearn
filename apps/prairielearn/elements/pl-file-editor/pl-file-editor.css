@@ -9,3 +9,15 @@
   overflow-y: auto;
   border-top: 1px solid rgba(0, 0, 0, 0.125);
 }
+
+[id^='file-editor'] .file-editor-preview-stage {
+  /* Keep layout measurable for MathJax without displaying unfinished content.
+     display: none would prevent measurement; fixed positioning avoids page reflow. */
+  position: fixed;
+  top: 0;
+  left: -100000px;
+  box-sizing: border-box;
+  max-height: none;
+  visibility: hidden;
+  pointer-events: none;
+}

@@ -69,7 +69,16 @@ SELECT
   (
     SELECT
       jsonb_agg(
-        jsonb_build_object('uuid', pte.uuid, 'read_only', pte.read_only)
+        jsonb_build_object(
+          'uuid',
+          pte.uuid,
+          'read_only',
+          pte.read_only,
+          'after_complete_questions_hidden',
+          pte.after_complete_questions_hidden,
+          'after_complete_score_hidden',
+          pte.after_complete_score_hidden
+        )
         ORDER BY
           pte.uuid
       )
@@ -93,9 +102,79 @@ ORDER BY
   END,
   aacr.number;
 
+-- BLOCK count_enrollment_access_control_rules
+SELECT
+  count(*)::integer
+FROM
+  assessment_access_control_rules
+WHERE
+  assessment_id = $assessment_id
+  AND target_type = 'enrollment';
+
+-- BLOCK select_enrollment_access_control_target_ids
+SELECT DISTINCT
+  aace.enrollment_id
+FROM
+  assessment_access_control_enrollments AS aace
+  JOIN assessment_access_control_rules AS aacr ON (aacr.id = aace.assessment_access_control_rule_id)
+WHERE
+  aacr.assessment_id = $assessment_id
+ORDER BY
+  aace.enrollment_id;
+
+-- BLOCK select_prairietest_exam_metadata_by_uuids
+SELECT DISTINCT
+  u::text AS uuid,
+  pt_x.id::text AS pt_exam_id,
+  pt_x.name AS pt_exam_name,
+  pt_c.id::text AS pt_course_id,
+  pt_c.name AS pt_course_name,
+  pt_c.term AS pt_course_term,
+  pt_c.end_date < CURRENT_TIMESTAMP AS pt_course_archived,
+  (
+    SELECT
+      COALESCE(
+        jsonb_agg(
+          center
+          ORDER BY
+            center.name,
+            center.term,
+            center.id
+        ),
+        '[]'::jsonb
+      )
+    FROM
+      (
+        SELECT
+          pt_n.id::text AS id,
+          pt_n.name,
+          pt_n.term,
+          pt_n.end_date < CURRENT_TIMESTAMP AS archived
+        FROM
+          pt_center_exams AS pt_nx
+          JOIN pt_center_courses AS pt_nc ON (pt_nc.id = pt_nx.center_course_id)
+          JOIN pt_centers AS pt_n ON (pt_n.id = pt_nc.center_id)
+        WHERE
+          pt_nx.exam_id = pt_x.id
+      ) AS center
+  ) AS pt_centers
+FROM
+  unnest($exam_uuids::uuid[]) AS u
+  LEFT JOIN pt_exams AS pt_x ON (pt_x.uuid = u)
+  LEFT JOIN pt_courses AS pt_c ON (pt_c.id = pt_x.course_id);
+
 -- BLOCK delete_enrollment_rules_by_ids
 DELETE FROM assessment_access_control_rules
 WHERE
   id = ANY ($ids::bigint[])
   AND target_type = 'enrollment'
   AND assessment_id = $assessment_id;
+
+-- BLOCK move_enrollment_rules_to_temporary_numbers
+UPDATE assessment_access_control_rules
+SET
+  number = - number
+WHERE
+  assessment_id = $assessment_id
+  AND target_type = 'enrollment'
+  AND number > 0;

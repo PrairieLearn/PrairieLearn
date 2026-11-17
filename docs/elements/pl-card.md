@@ -19,7 +19,6 @@ Displays question content within a card-styled component. Optionally displays a 
 
 | Attribute        | Type                                   | Default  | Description                            |
 | ---------------- | -------------------------------------- | -------- | -------------------------------------- |
-| `contents`       | string                                 | —        | Raw contents of the card body.         |
 | `footer`         | string                                 | —        | Contents of the card footer.           |
 | `header`         | string                                 | —        | Contents of the card header.           |
 | `img-bottom-alt` | string                                 | —        | Alternative text for the bottom image. |

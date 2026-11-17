@@ -11,7 +11,7 @@ export function AssessmentQuestionHeaders({
     <>
       {question.start_new_zone ? (
         <tr>
-          <th colSpan={nTableCols}>
+          <th colSpan={nTableCols} scope="rowgroup">
             <div className="d-flex align-items-center">
               Zone {question.zone.number}. {question.zone.title}{' '}
               {question.zone.number_choose == null

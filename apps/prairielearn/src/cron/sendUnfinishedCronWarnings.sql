@@ -1,7 +1,7 @@
 -- BLOCK select_unfinished_cron_jobs
 SELECT
   name,
-  format_date_iso8601 (date, NULL) AS formatted_started_at
+  date
 FROM
   cron_jobs
 WHERE

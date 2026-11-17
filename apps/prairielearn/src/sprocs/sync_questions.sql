@@ -139,6 +139,7 @@ BEGIN
         directory = src.qid,
         type = (src.data->>'type')::enum_question_type,
         title = src.data->>'title',
+        authors = jsonb_array_to_text_array(src.data->'authors'),
         options = (src.data->'options')::JSONB,
         client_files = jsonb_array_to_text_array(src.data->'client_files'),
         partial_credit = (src.data->>'partial_credit')::boolean,
@@ -205,16 +206,33 @@ BEGIN
     -- Ensure that all questions have numbers
     WITH
     questions_needing_numbers AS (
-        SELECT id, row_number() OVER () AS index
+        SELECT id, row_number() OVER (ORDER BY id) AS index
         FROM questions
         WHERE
             number IS NULL
             AND course_id = syncing_course_id
-        ORDER BY id
+    ),
+    course_question_count AS (
+        SELECT COUNT(*) AS total
+        FROM questions
+        WHERE course_id = syncing_course_id
+    ),
+    available_numbers AS (
+        SELECT gs.number
+        FROM
+          -- 3-digit numbers are used if the number of questions allows for
+          -- enough unique 3-digit numbers with reasonable gaps.
+          generate_series(100, GREATEST(999, 101 + 2 * (SELECT total FROM course_question_count))) AS gs (number)
+          -- Using anti-join pattern instead of EXCEPT to give Postgres more freedom to optimize the query and potentially reduce resource utilization.
+          LEFT JOIN questions AS q ON (q.course_id = syncing_course_id AND q.number = gs.number)
+        WHERE q.number IS NULL
     ),
     new_numbers AS (
-        SELECT *
-        FROM random_unique(100, 1000, (SELECT array_agg(number) FROM questions WHERE course_id = syncing_course_id))
+        SELECT
+          row_number() OVER (ORDER BY random()) AS index,
+          number
+        FROM available_numbers
+        LIMIT (SELECT COUNT(*) FROM questions_needing_numbers)
     ),
     questions_with_new_numbers AS (
         -- use row_number() as the matching key for the join

@@ -1,5 +1,131 @@
 # @prairielearn/eslint-config
 
+## 3.2.2
+
+### Patch Changes
+
+- f5afff0: Align TypeScript ESLint dependencies with the types pulled in by the JSDoc plugin update to fix incompatible rule and rule tester types during builds.
+
+## 3.2.1
+
+### Patch Changes
+
+- 9f4d854: Update @eslint-react/eslint-plugin to 5.21.0.
+
+## 3.2.0
+
+### Minor Changes
+
+- 83590cf: Upgrade the JSDoc, Unicorn, and React effect lint plugins and align TypeScript ESLint dependencies on version 8.70.1 while preserving existing lint style choices. Node.js 24.15.0 or newer is now required.
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 3.1.6
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.1.5
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+- Updated dependencies [452f675]
+  - @prairielearn/eslint-plugin@4.4.0
+
+## 3.1.4
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
+## 3.1.3
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 3.1.2
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.1.0
+
+### Minor Changes
+
+- d0e7952: enable @typescript-eslint/no-deprecated
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 3.0.3
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.2
+
+### Patch Changes
+
+- 8e04917: Update eslint-plugin-react-you-might-not-need-an-effect to 0.10.2.
+
+## 3.0.1
+
+### Patch Changes
+
+- 3927197: Update dependencies
+- Updated dependencies [9717de9]
+- Updated dependencies [3927197]
+  - @prairielearn/eslint-plugin@4.3.0
+
+## 3.0.0
+
+### Major Changes
+
+- 4a01211: Bump `typescript` peer dependency to `^6.0.0`.
+
+### Minor Changes
+
+- f83d484: Add `require-trpc-permission-middleware` rule that flags any `t.procedure` chain missing a permission middleware (`requireCoursePermission*`, `requireCourseInstancePermission*`, or `requireAdministrator`). The rule is wired up automatically for files under `**/src/trpc/**/*.ts`.
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+- Updated dependencies [382dbd8]
+- Updated dependencies [f83d484]
+  - @prairielearn/eslint-plugin@4.2.0
+
+## 2.1.0
+
+### Minor Changes
+
+- 18391d4: Add rule for noreferrer in target=\_blank links
+- 240b216: Enable the new `@prairielearn/no-hydrate-reslocals` rule as an error.
+
+### Patch Changes
+
+- 393a0ba: Use modern lodash rule config
+- 07dfbca: Disable `checkFromLast` in `unicorn/prefer-array-find` rule since `findLast` is unavailable in our target lib
+- b6e03e9: Upgrade dependencies
+- 6612675: update dependencies
+- Updated dependencies [240b216]
+- Updated dependencies [aaeb317]
+- Updated dependencies [b6e03e9]
+  - @prairielearn/eslint-plugin@4.1.0
+
 ## 2.0.1
 
 ### Patch Changes

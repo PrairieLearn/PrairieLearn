@@ -2,10 +2,11 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
+import { appErrorFormatter } from '@prairielearn/trpc/server';
+
 import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectOptionalStudentLabelById } from '../../models/student-label.js';
-import { appErrorFormatter } from '../app-errors.js';
 
 export async function selectStudentLabelByIdOrNotFound({
   id,
@@ -68,6 +69,13 @@ export const requireCoursePermissionEdit = t.middleware(async (opts) => {
       code: 'FORBIDDEN',
       message: 'Access denied (must be a course editor)',
     });
+  }
+  return opts.next();
+});
+
+export const requireCoursePermissionOwn = t.middleware(async (opts) => {
+  if (!opts.ctx.authz_data.has_course_permission_own) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied (must be a course owner)' });
   }
   return opts.next();
 });

@@ -67,7 +67,7 @@ export function flagUnhealthy(reason: string) {
   globalLogger.error(`A health check failed: ${reason}`);
   healthy = false;
   unhealthyReason = reason;
-  lifecycle.abandonLaunch();
+  void lifecycle.abandonLaunch();
 }
 
 export function isHealthy() {

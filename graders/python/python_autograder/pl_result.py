@@ -36,7 +36,7 @@ class PLTestResult(unittest.TestResult):
         # (but not execute them) so that we show the correct number of points on the grading panel
         self.skip_grading = False
 
-    def startTest(self, test: unittest.TestCase) -> None:  # noqa: N802
+    def startTest(self, test: unittest.TestCase) -> None:  # ruff:ignore[invalid-function-name]
         unittest.TestResult.startTest(self, test)
 
         options = getattr(test, test._testMethodName).__func__.__dict__
@@ -49,7 +49,7 @@ class PLTestResult(unittest.TestResult):
             name = test._testMethodName
         self.results.append({"name": name, "max_points": points, "filename": filename})
 
-    def addSuccess(self, test: Any | unittest.TestCase) -> None:  # noqa: N802
+    def addSuccess(self, test: Any | unittest.TestCase) -> None:  # ruff:ignore[invalid-function-name]
         unittest.TestResult.addSuccess(self, test)
         points = getattr(test, "points", None)
         if points is None:
@@ -57,7 +57,7 @@ class PLTestResult(unittest.TestResult):
         else:
             self.results[-1]["points"] = points * self.results[-1]["max_points"]
 
-    def addError(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
+    def addError(self, test: unittest.TestCase, err: Any) -> None:  # ruff:ignore[invalid-function-name]
         if isinstance(err[1], (GradingComplete, TestComplete)):
             # Either the test suite as a whole or this specific test case was stopped early.
             # There may be points set; if not, set to 0.
@@ -128,7 +128,7 @@ class PLTestResult(unittest.TestResult):
                 self.results[-1]["points"] = 0
                 Feedback.add_feedback(self.error_message + tr_message)
 
-    def addFailure(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
+    def addFailure(self, test: unittest.TestCase, err: Any) -> None:  # ruff:ignore[invalid-function-name]
         unittest.TestResult.addFailure(self, test, err)
         points = getattr(test, "points", None)
         if points is None:
@@ -136,13 +136,13 @@ class PLTestResult(unittest.TestResult):
         else:
             self.results[-1]["points"] = points * self.results[-1]["max_points"]
 
-    def stopTest(self, test: unittest.TestCase) -> None:  # noqa: N802
+    def stopTest(self, test: unittest.TestCase) -> None:  # ruff:ignore[invalid-function-name]
         # Never write output back to the console
         self._mirrorOutput = False
         unittest.TestResult.stopTest(self, test)
 
-    def getResults(self) -> list[dict[str, Any]]:  # noqa: N802
+    def getResults(self) -> list[dict[str, Any]]:  # ruff:ignore[invalid-function-name]
         return self.results
 
-    def getGradable(self) -> bool:  # noqa: N802
+    def getGradable(self) -> bool:  # ruff:ignore[invalid-function-name]
         return self.grading_succeeded

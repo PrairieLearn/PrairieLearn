@@ -62,10 +62,10 @@ def generate(data):
     R3 = random.randrange(20, 100, 5) * ureg.ohm
 
     # Store magnitudes to present to the student
-    params_dict["Vt_quantity"] = int(Vt.magnitude)  # type: ignore
-    params_dict["R1_quantity"] = int(R1.magnitude)  # type: ignore
-    params_dict["R2_quantity"] = int(R2.magnitude)  # type: ignore
-    params_dict["R3_quantity"] = int(R3.magnitude)  # type: ignore
+    params_dict["Vt_quantity"] = int(Vt.magnitude)
+    params_dict["R1_quantity"] = int(R1.magnitude)
+    params_dict["R2_quantity"] = int(R2.magnitude)
+    params_dict["R3_quantity"] = int(R3.magnitude)
 
     # Generate labels for use in diagram, "~L" is the short latex format specifier
     params_dict["Vt_label"] = f"$V_T = {Vt:~L}$"
@@ -105,5 +105,5 @@ def generate(data):
             params_dict["lab"] = "I_T"
             params_dict["placeholder"] = "current + unit"
 
-            It = (Vt / Rt).to_base_units()  # type: ignore
+            It = (Vt / Rt).to_base_units()
             data["correct_answers"]["ans"] = str(It)

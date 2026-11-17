@@ -67,15 +67,16 @@ const rateLimiter = new RedisRateLimiter({
       throw new Error('nonVolatileRedisUrl must be set in config');
     }
 
-    const redis = new Redis(config.nonVolatileRedisUrl);
+    const redis = new Redis<'legacy'>(config.nonVolatileRedisUrl);
     redis.on('error', (err) => {
       logger.error('AI question generation Redis error', err);
 
       // This error could happen during a specific request, but we shouldn't
       // associate it with that request - we just happened to try to set up
       // Redis during a given request. We'll use a fresh scope to capture this.
-      Sentry.withScope((scope) => {
-        scope.clear();
+      const scope = new Sentry.Scope();
+      scope.setClient(Sentry.getCurrentScope().getClient());
+      Sentry.withScope(scope, () => {
         Sentry.captureException(err);
       });
     });

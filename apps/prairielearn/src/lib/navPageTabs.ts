@@ -7,6 +7,21 @@ import { encodeSearchString } from './uri-util.shared.js';
 
 export function getNavPageTabs() {
   const navPagesTabs = {
+    public_assessment: [
+      {
+        activeSubPage: 'file_view',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/file_view`,
+        iconClasses: 'fa fa-edit',
+        tabLabel: 'Files',
+        renderCondition: ({ assessment }) => assessment.share_source_publicly,
+      },
+      {
+        activeSubPage: 'questions',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
+        iconClasses: 'far fa-file-alt',
+        tabLabel: 'Questions',
+      },
+    ],
     public_question: [
       {
         activeSubPage: 'file_view',
@@ -143,6 +158,13 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/groups`,
         iconClasses: 'fas fa-users',
         tabLabel: 'Groups',
+      },
+      {
+        activeSubPage: 'manual_grading',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/manual_grading`,
+        iconClasses: 'fas fa-marker',
+        tabLabel: ({ ai_grading_enabled }) =>
+          ai_grading_enabled ? 'Manual & AI grading' : 'Manual grading',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
@@ -152,34 +174,14 @@ export function getNavPageTabs() {
         tabLabel: 'Questions',
       },
       {
-        activeSubPage: 'question_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/question_statistics`,
-        iconClasses: 'fas fa-table',
-        tabLabel: 'Question stats',
-      },
-      {
-        activeSubPage: 'manual_grading',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/manual_grading`,
-        iconClasses: 'fas fa-marker',
-        tabLabel: 'Manual grading',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
-      },
-      {
-        activeSubPage: 'regrading',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/regrading`,
-        iconClasses: 'fa fa-sync',
-        tabLabel: 'Regrading',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
-      },
-      {
         activeSubPage: 'settings',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/settings`,
         iconClasses: 'fas fa-cog',
         tabLabel: 'Settings',
       },
       {
-        activeSubPage: 'assessment_statistics',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/assessment_statistics`,
+        activeSubPage: 'statistics',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/statistics`,
         iconClasses: 'fas fa-chart-bar',
         tabLabel: 'Statistics',
       },
@@ -188,13 +190,6 @@ export function getNavPageTabs() {
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/instances`,
         iconClasses: 'fas fa-user-graduate',
         tabLabel: 'Students',
-        renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
-      },
-      {
-        activeSubPage: 'uploads',
-        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/uploads`,
-        iconClasses: 'fas fa-upload',
-        tabLabel: 'Uploads',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
     ],
@@ -225,7 +220,6 @@ export function getNavPageTabs() {
         urlSuffix: ({ question }) => `/question/${question.id}/statistics`,
         iconClasses: 'fas fa-chart-bar',
         tabLabel: 'Statistics',
-        renderCondition: ({ course, question }) => question.course_id === course.id,
       },
       {
         activeSubPage: 'issues',
@@ -343,6 +337,12 @@ export function getNavPageTabs() {
       },
     ],
     institution_admin: [
+      {
+        activeSubPage: 'general',
+        urlSuffix: '',
+        iconClasses: 'fa fa-gear',
+        tabLabel: 'General',
+      },
       {
         activeSubPage: 'admins',
         urlSuffix: '/admins',

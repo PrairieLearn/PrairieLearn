@@ -1,3 +1,4 @@
+import fnmatch
 import hashlib
 import importlib
 
@@ -101,8 +102,72 @@ def test_glob_to_regex_fn(glob_pattern: str, expected_output: str) -> None:
     ],
 )
 def test_glob_to_regex_errors(glob_pattern: str) -> None:
-    with pytest.raises(ValueError) as _:  # noqa: PT011
+    with pytest.raises(ValueError) as _:  # ruff:ignore[pytest-raises-too-broad]
         file_upload.glob_to_regex(glob_pattern)
+
+
+@pytest.mark.parametrize(
+    ("pattern", "expected_output"),
+    [
+        ("*.py", "test_file.py"),
+        ("test_?.txt", "test_x.txt"),
+        ("data[0-9].csv", "data0.csv"),
+        ("file[a-z].txt", "filea.txt"),
+        ("report.pdf", "report.pdf"),
+        ("*", "test_file"),
+        ("**", "test_file"),
+        ("**.py", "test_file.py"),
+        ("???.log", "xxx.log"),
+        ("test.[ch]", "test.c"),
+        ("[abc]_file.txt", "a_file.txt"),
+        ("[!a]*.txt", "btest_file.txt"),
+        ("[!abc]_file.txt", "d_file.txt"),
+        ("[!!]test.txt", "atest.txt"),
+        ("[!a-z0-9].txt", "A.txt"),
+        ("[*].txt", "*.txt"),
+        ("[?].txt", "?.txt"),
+        ("[*?].txt", "*.txt"),
+    ],
+)
+def test_generate_filename_from_pattern(pattern: str, expected_output: str) -> None:
+    output = file_upload.generate_filename_from_pattern(pattern)
+    assert output == expected_output
+    assert fnmatch.fnmatch(output, pattern)
+
+
+@pytest.mark.parametrize(
+    ("literal_names", "patterns"),
+    [
+        (["report.pdf"], ["report.pdf"]),
+        (["test_file.py"], ["*.py"]),
+        ([], ["?.txt", "?.txt"]),
+        ([], ["[abc].txt", "[abc].txt"]),
+    ],
+)
+def test_generate_unique_filenames_raises_on_collision(
+    literal_names: list[str], patterns: list[str]
+) -> None:
+    with pytest.raises(ValueError, match="Cannot generate distinct filenames"):
+        file_upload._generate_unique_filenames(literal_names, patterns)
+
+
+@pytest.mark.parametrize(
+    ("literal_names", "patterns", "expected_output"),
+    [
+        ([], ["*.py", "*.py"], ["test_file.py", "test_file_1.py"]),
+        ([], ["**", "**"], ["test_file", "test_file_1"]),
+        (
+            ["foo.txt"],
+            ["*.py", "*.py", "*.txt"],
+            ["foo.txt", "test_file.py", "test_file_1.py", "test_file.txt"],
+        ),
+    ],
+)
+def test_generate_unique_filenames_repeats_wildcard_pattern(
+    literal_names: list[str], patterns: list[str], expected_output: list[str]
+) -> None:
+    output = file_upload._generate_unique_filenames(literal_names, patterns)
+    assert output == expected_output
 
 
 # Function must be backward compatible (i.e., if only file-names is defined, it should
@@ -121,3 +186,43 @@ def test_get_answer_name_parts() -> None:
     outputs = {output1, output2, output3, output4}
 
     assert len(outputs) == 4
+
+
+@pytest.mark.parametrize("extension", ["pdf", "py", "cpp", "java", "txt"])
+def test_render_ai_grading_submission_with_matching_files(extension: str) -> None:
+    output = file_upload.render(
+        f'<pl-file-upload file-patterns="*.{extension}" optional-file-names="notes.png"></pl-file-upload>',
+        {
+            "panel": "submission",
+            "ai_grading": True,
+            "format_errors": {},
+            "submitted_answers": {
+                "_files": [
+                    {"name": f"solution.{extension}", "contents": "filedata"},
+                    {"name": "notes.png", "contents": "imagedata"},
+                    {"name": "ignored.other", "contents": "textdata"},
+                ]
+            },
+        },
+    )
+
+    assert output == (
+        '<div data-ai-grading-file-name="notes.png">notes.png</div>\n'
+        f'<div data-ai-grading-file-name="solution.{extension}">solution.{extension}</div>'
+    )
+
+
+@pytest.mark.parametrize(
+    ("ai_grading", "panel"),
+    [(True, "question"), (True, "answer"), (False, "submission"), (False, "answer")],
+)
+def test_render_other_panels_are_empty(ai_grading: bool, panel: str) -> None:
+    output = file_upload.render(
+        '<pl-file-upload file-patterns="*.pdf"></pl-file-upload>',
+        {
+            "panel": panel,
+            "ai_grading": ai_grading,
+        },
+    )
+
+    assert output == ""

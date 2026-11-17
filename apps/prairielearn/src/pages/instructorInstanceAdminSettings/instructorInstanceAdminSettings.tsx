@@ -10,14 +10,28 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { getCanonicalTimezones } from '@prairielearn/utils/timezone';
+import { parseRequestBody } from '@prairielearn/zod';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import {
+  getPlanGrantsForPartialContexts,
+  getRequiredPlansForCourseInstance,
+  planGrantsMatchFeatures,
+} from '../../ee/lib/billing/plans.js';
+import { getEnrollmentCapacity } from '../../ee/models/enrollment.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { getCourseInstanceTrpcUrl, getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
+import {
+  getCourseInstanceEditErrorUrl,
+  getCourseInstanceTrpcUrl,
+  getSelfEnrollmentLinkUrl,
+} from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR } from '../../lib/course-instances.shared.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   CourseInstanceCopyEditor,
@@ -25,22 +39,39 @@ import {
   CourseInstanceRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOriginalHash,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { isEnterprise } from '../../lib/license.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import {
+  assertCourseInstanceCanBeSharedPublicly,
+  selectNonPublicAssessmentsInCourseInstance,
+} from '../../lib/sharing-validation.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
+import type { EnrollmentAndBillingCardProps } from './components/EnrollmentAndBillingCard.js';
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
+
+const CopyCourseInstanceBodySchema = z.object({
+  short_name: z.string().trim(),
+  long_name: z.string().trim(),
+  start_date: z.string(),
+  end_date: z.string(),
+  self_enrollment_enabled: z.boolean(),
+  self_enrollment_use_enrollment_code: z.boolean(),
+  self_enrollment_restrict_to_institution: z.boolean(),
+  course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
+  access_control_strategy: z.enum(['migrate', 'keep', 'clear']).optional().default('clear'),
+  clear_incompatible: z.boolean().optional().default(false),
+});
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -53,8 +84,6 @@ router.get(
       course,
       institution,
       authz_data,
-      urlPrefix,
-      navPage,
       __csrf_token,
       is_administrator: isAdministrator,
     } = extractPageContext(res.locals, {
@@ -72,6 +101,36 @@ router.get(
       { course_instance_id: courseInstance.id },
       z.number(),
     );
+    let enrollmentAndBilling: EnrollmentAndBillingCardProps | null = null;
+    if (isEnterprise()) {
+      const requiredPlans = await getRequiredPlansForCourseInstance(courseInstance.id);
+      const studentBillingEnabled = requiredPlans.includes('basic');
+      const studentComputeBillingEnabled =
+        requiredPlans.includes('compute') &&
+        !planGrantsMatchFeatures(
+          await getPlanGrantsForPartialContexts({
+            institution_id: institution.id,
+            course_instance_id: courseInstance.id,
+          }),
+          ['external-grading', 'workspaces'],
+        );
+      // Annual limits are server-only fields omitted from the client page context.
+      const capacity = studentBillingEnabled
+        ? null
+        : await getEnrollmentCapacity({
+            institution: res.locals.institution,
+            course: res.locals.course,
+            courseInstance,
+          });
+      enrollmentAndBilling = {
+        studentBillingEnabled,
+        studentComputeBillingEnabled,
+        enrollmentCount,
+        // Large limits are operational safeguards; keep their capacity data server-side.
+        capacity: capacity !== null && capacity.limit < 10_000 ? capacity : null,
+        enrollmentLimitReached: capacity?.remaining === 0,
+      };
+    }
     const host = getCanonicalHost(req);
     const studentLink = new URL(`/pl/course_instance/${courseInstance.id}`, host).href;
     const publicLink = new URL(`/pl/public/course_instance/${courseInstance.id}/assessments`, host)
@@ -84,14 +143,16 @@ router.get(
       }),
       host,
     ).href;
-    const availableTimezones = await getCanonicalTimezones([courseInstance.display_timezone]);
+    const availableTimezones = getCanonicalTimezones({
+      alwaysInclude: [courseInstance.display_timezone],
+    });
 
-    const infoCourseInstancePath = path.join(
+    const fullInfoCourseInstancePath = path.join(
+      course.path,
       'courseInstances',
       courseInstance.short_name,
       'infoCourseInstance.json',
     );
-    const fullInfoCourseInstancePath = path.join(course.path, infoCourseInstancePath);
     const origHash = (await getOriginalHash(fullInfoCourseInstancePath)) ?? '';
 
     const instanceGHLink = courseRepoContentUrl(
@@ -100,6 +161,22 @@ router.get(
     );
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
+
+    const questionSharingEnabled = res.locals.question_sharing_enabled;
+    const nonPublicAssessmentsInCourseInstance =
+      !questionSharingEnabled || courseInstance.share_source_publicly
+        ? []
+        : await selectNonPublicAssessmentsInCourseInstance({
+            course_instance_id: courseInstance.id,
+          });
+
+    const accessControlMigrationNeeded = canEdit
+      ? await sqldb.queryScalar(
+          sql.select_access_control_migration_needed,
+          { course_instance_id: courseInstance.id },
+          z.boolean(),
+        )
+      : false;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -118,14 +195,17 @@ router.get(
           page: 'instance_admin',
           subPage: 'settings',
         },
+        options: {
+          // Disabled so the sticky save/cancel bar can span the full viewport width.
+          // The form content uses its own `container` wrapper for constrained width.
+          contentPadding: false,
+        },
         content: (
           <>
             <Hydrate>
               <InstructorInstanceAdminSettings
                 csrfToken={__csrf_token}
                 trpcCsrfToken={trpcCsrfToken}
-                urlPrefix={urlPrefix}
-                navPage={navPage}
                 canEdit={canEdit}
                 course={course}
                 courseInstance={courseInstance}
@@ -137,9 +217,11 @@ router.get(
                 studentLink={studentLink}
                 publicLink={publicLink}
                 selfEnrollLink={selfEnrollLink}
-                infoCourseInstancePath={infoCourseInstancePath}
-                isDevMode={config.devMode}
                 isAdministrator={isAdministrator}
+                nonPublicAssessmentsInCourseInstance={nonPublicAssessmentsInCourseInstance}
+                questionSharingEnabled={questionSharingEnabled}
+                accessControlMigrationNeeded={accessControlMigrationNeeded}
+                enrollmentAndBilling={enrollmentAndBilling}
               />
             </Hydrate>
             <Hydrate>
@@ -162,7 +244,6 @@ router.post(
     const {
       course_instance: courseInstance,
       course,
-      urlPrefix,
       authz_data: authzData,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
@@ -177,22 +258,11 @@ router.post(
         end_date,
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
+        self_enrollment_restrict_to_institution,
         course_instance_permission,
         access_control_strategy,
-        preserve_incompatible,
-      } = z
-        .object({
-          short_name: z.string().trim(),
-          long_name: z.string().trim(),
-          start_date: z.string(),
-          end_date: z.string(),
-          self_enrollment_enabled: z.boolean(),
-          self_enrollment_use_enrollment_code: z.boolean(),
-          course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
-          access_control_strategy: z.enum(['migrate', 'keep', 'wipe']).optional().default('wipe'),
-          preserve_incompatible: z.boolean().optional().default(false),
-        })
-        .parse(req.body);
+        clear_incompatible,
+      } = parseRequestBody(req, CopyCourseInstanceBodySchema);
 
       if (!short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
@@ -212,22 +282,9 @@ router.post(
         z.object({ short_name: z.string(), long_name: z.string().nullable() }),
       );
       const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
-      const existingLongNames = existingNames
-        .map((name) => name.long_name?.toLowerCase())
-        .filter((name) => name != null);
 
       if (existingShortNames.includes(short_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this short name already exists',
-        );
-      }
-
-      if (existingLongNames.includes(long_name.toLowerCase())) {
-        throw new error.HttpStatusError(
-          400,
-          'A course instance with this long name already exists',
-        );
+        throw new error.HttpStatusError(400, DUPLICATE_COURSE_INSTANCE_SHORT_NAME_ERROR);
       }
 
       const updatedCourseInstance = {
@@ -258,11 +315,20 @@ router.post(
         false,
       );
 
+      const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
+        undefined,
+        self_enrollment_restrict_to_institution,
+        true,
+      );
+
       const resolvedSelfEnrollment =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
+        (selfEnrollmentEnabled ??
+          selfEnrollmentUseEnrollmentCode ??
+          selfEnrollmentRestrictToInstitution) !== undefined
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+              restrictToInstitution: selfEnrollmentRestrictToInstitution,
             }
           : undefined;
 
@@ -279,7 +345,7 @@ router.post(
         },
         accessControlMigration: {
           strategy: access_control_strategy,
-          preserveIncompatible: preserve_incompatible,
+          clearIncompatible: clear_incompatible,
         },
       });
 
@@ -319,7 +385,7 @@ router.post(
         await editor.executeWithServerJob(serverJob);
         res.redirect(`/pl/course/${course.id}/course_admin/instances`);
       } catch {
-        res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(getCourseInstanceEditErrorUrl(courseInstance.id, serverJob.jobSequenceId));
       }
     } else if (req.body.__action === 'update_configuration') {
       const infoCourseInstancePath = path.join(
@@ -349,17 +415,17 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedBody = SettingsFormBodySchema.parse(req.body);
+      const body = parseRequestBody(req, SettingsFormBodySchema);
 
-      courseInstanceInfo.longName = parsedBody.long_name;
+      courseInstanceInfo.longName = body.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
-        parsedBody.display_timezone,
+        body.display_timezone,
         course.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
-        parsedBody.group_assessments_by,
+        body.group_assessments_by,
         'Set',
       );
       // dates from 'datetime-local' inputs are in the format 'YYYY-MM-DDTHH:MM', and we need them to include seconds.
@@ -370,27 +436,27 @@ router.post(
 
       const selfEnrollmentEnabled = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.enabled,
-        parsedBody.self_enrollment_enabled,
+        body.self_enrollment_enabled,
         true,
       );
       const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
-        parsedBody.self_enrollment_use_enrollment_code,
+        body.self_enrollment_use_enrollment_code,
         false,
       );
       const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.restrictToInstitution,
-        parsedBody.self_enrollment_restrict_to_institution,
+        body.self_enrollment_restrict_to_institution,
         true,
       );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
         // We'll only serialize the value if self-enrollment is enabled.
-        parsedBody.self_enrollment_enabled &&
-          parsedBody.self_enrollment_enabled_before_date_enabled &&
-          parsedBody.self_enrollment_enabled_before_date
-          ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
+        body.self_enrollment_enabled &&
+          body.self_enrollment_enabled_before_date_enabled &&
+          body.self_enrollment_enabled_before_date
+          ? parseDateTime(body.self_enrollment_enabled_before_date)
           : undefined,
         undefined,
       );
@@ -418,6 +484,22 @@ router.post(
         };
       } else {
         courseInstanceInfo.selfEnrollment = undefined;
+      }
+      if (res.locals.question_sharing_enabled) {
+        if (body.share_source_publicly && !courseInstance.share_source_publicly) {
+          await assertCourseInstanceCanBeSharedPublicly({
+            course_instance_id: courseInstance.id,
+          });
+        }
+        // Native form POST: an unchecked box is absent, not `false`, so a missing
+        // value means "unchecked" → un-share (allowed for a course instance at any
+        // time). This differs from the assessment settings (tRPC), where a missing
+        // field may be a disabled checkbox whose current value must be preserved.
+        courseInstanceInfo.shareSourcePublicly = propertyValueWithDefault(
+          courseInstanceInfo.shareSourcePublicly,
+          body.share_source_publicly ?? false,
+          false,
+        );
       }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
@@ -458,7 +540,9 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        return res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return res.redirect(
+          getCourseInstanceEditErrorUrl(courseInstance.id, serverJob.jobSequenceId),
+        );
       }
       flash('success', 'Course instance configuration updated successfully');
       res.redirect(req.originalUrl);

@@ -1,0 +1,2 @@
+ALTER TABLE assessment_access_control_rules
+ADD COLUMN date_control_after_last_deadline_overridden boolean NOT NULL DEFAULT false;

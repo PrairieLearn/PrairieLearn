@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 import { hydrateHtml } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
+import { type CreditPoolLimits } from '../../../lib/ai-grading-credits.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
@@ -21,8 +22,8 @@ export function AdministratorInstitutionCourseInstance({
   planGrants,
   aiGradingEnabled,
   trpcCsrfToken,
-  maxAddDollars,
-  maxDeductDollars,
+  refundsEnabled,
+  creditPoolLimits,
   resLocals,
 }: {
   institution: Institution;
@@ -31,8 +32,8 @@ export function AdministratorInstitutionCourseInstance({
   planGrants: PlanGrant[];
   aiGradingEnabled: boolean;
   trpcCsrfToken: string | null;
-  maxAddDollars: number;
-  maxDeductDollars: number;
+  refundsEnabled: boolean;
+  creditPoolLimits: CreditPoolLimits;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   const isDeleted = course_instance.deleted_at !== null;
@@ -58,17 +59,19 @@ export function AdministratorInstitutionCourseInstance({
             </a>
           </li>
           <li class="breadcrumb-item active" aria-current="page">
-            ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
+            ${course_instance.short_name}: ${course_instance.long_name ?? '—'}
           </li>
         </ol>
       </nav>
-      ${isDeleted
-        ? html`<div class="alert alert-danger" role="alert">
-            <strong>This course instance has been deleted.</strong> You cannot make changes to it.
-          </div>`
-        : html`<p>
-            <a href="/pl/course_instance/${course_instance.id}/instructor">View as instructor</a>
-          </p>`}
+      ${
+        isDeleted
+          ? html`<div class="alert alert-danger" role="alert">
+              <strong>This course instance has been deleted.</strong> You cannot make changes to it.
+            </div>`
+          : html`<p>
+              <a href="/pl/course_instance/${course_instance.id}/instructor">View as instructor</a>
+            </p>`
+      }
 
       <h2 class="h4">Limits</h2>
       <form method="POST" class="mb-3">
@@ -119,19 +122,21 @@ export function AdministratorInstitutionCourseInstance({
             the enrollment limit from either the course or the institution (if any) will be used.
           </small>
         </div>
-        ${isDeleted
-          ? ''
-          : html`
-              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <button
-                type="submit"
-                name="__action"
-                value="update_enrollment_limit"
-                class="btn btn-primary"
-              >
-                Save
-              </button>
-            `}
+        ${
+          isDeleted
+            ? ''
+            : html`
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <button
+                  type="submit"
+                  name="__action"
+                  value="update_enrollment_limit"
+                  class="btn btn-primary"
+                >
+                  Save
+                </button>
+              `
+        }
       </form>
 
       <h2 class="h4">Plans</h2>
@@ -143,17 +148,19 @@ export function AdministratorInstitutionCourseInstance({
         csrfToken: resLocals.__csrf_token,
         disabled: isDeleted,
       })}
-      ${aiGradingEnabled && trpcCsrfToken
-        ? hydrateHtml(
-            <AdminCreditPoolSection
-              trpcCsrfToken={trpcCsrfToken}
-              useCustomApiKeys={course_instance.ai_grading_use_custom_api_keys}
-              isDeleted={isDeleted}
-              maxAddDollars={maxAddDollars}
-              maxDeductDollars={maxDeductDollars}
-            />,
-          )
-        : ''}
+      ${
+        aiGradingEnabled && trpcCsrfToken
+          ? hydrateHtml(
+              <AdminCreditPoolSection
+                trpcCsrfToken={trpcCsrfToken}
+                useCustomApiKeys={course_instance.ai_grading_use_custom_api_keys}
+                isDeleted={isDeleted}
+                refundsEnabled={refundsEnabled}
+                creditPoolLimits={creditPoolLimits}
+              />,
+            )
+          : ''
+      }
     `,
   });
 }

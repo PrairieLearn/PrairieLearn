@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { z } from 'zod';
 
-import type { SprocAuthzAssessmentSchema } from '../db-types.js';
+import type { AssessmentAuthzResult } from './authz-result.js';
+import { applyInstanceAccess, resolverResultToAssessmentAuthzResultForInstance } from './authz.js';
+import type { AccessControlResolverResult } from './resolver.js';
 
-import { applyInstanceAccess } from './authz.js';
-
-type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
-
-const baseAssessmentResult: SprocAuthzAssessment = {
+const baseAssessmentResult: AssessmentAuthzResult = {
   authorized: true,
   credit: 100,
   credit_date_string: '2025-03-15T12:00:00Z',
@@ -21,11 +18,51 @@ const baseAssessmentResult: SprocAuthzAssessment = {
   show_before_release: false,
   next_active_time: null,
   access_rules: [],
+  access_timeline: [],
 };
 
-const unauthorizedResult: SprocAuthzAssessment = {
+const unauthorizedResult: AssessmentAuthzResult = {
   ...baseAssessmentResult,
   authorized: false,
+};
+
+const baseResolverResult: AccessControlResolverResult = {
+  authorization: 'granted',
+  credit: 100,
+  creditDateString: '100%',
+  timeLimitMin: null,
+  password: null,
+  submittable: true,
+  visibility: {
+    showQuestions: true,
+    showScore: true,
+  },
+  afterCompleteVisibility: {
+    showQuestions: false,
+    showScore: false,
+  },
+  visibilitySource: 'default',
+  complete: false,
+  examAccessEnd: null,
+  showBeforeRelease: false,
+  accessTimeline: [],
+  nextActiveDate: null,
+};
+
+const prairieTestReviewResult: AccessControlResolverResult = {
+  ...baseResolverResult,
+  authorization: 'requires-completed-instance',
+  credit: 0,
+  creditDateString: 'None',
+  submittable: false,
+  visibility: {
+    showQuestions: false,
+    showScore: false,
+  },
+  afterCompleteVisibility: {
+    showQuestions: true,
+    showScore: true,
+  },
 };
 
 describe('applyInstanceAccess', () => {
@@ -115,5 +152,142 @@ describe('applyInstanceAccess', () => {
 
       expect(result.time_limit_expired).toBe(false);
     });
+  });
+});
+
+describe('resolverResultToAssessmentAuthzResultForInstance', () => {
+  it('does not authorize PrairieTest review without an assessment instance', () => {
+    const result = resolverResultToAssessmentAuthzResultForInstance({
+      result: prairieTestReviewResult,
+      authzMode: 'Public',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: null,
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.authorized).toBe(false);
+  });
+
+  it('authorizes PrairieTest review for a closed assessment instance', () => {
+    const result = resolverResultToAssessmentAuthzResultForInstance({
+      result: prairieTestReviewResult,
+      authzMode: 'Public',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: { open: false, date_limit: null },
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.authorized).toBe(true);
+    expect(result.active).toBe(false);
+    expect(result.show_closed_assessment).toBe(true);
+    expect(result.show_closed_assessment_score).toBe(true);
+  });
+
+  it('does not apply afterComplete score visibility while an instance is open and unexpired', () => {
+    const result = resolverResultToAssessmentAuthzResultForInstance({
+      result: baseResolverResult,
+      authzMode: 'Public',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: { open: true, date_limit: new Date('2025-03-20T00:00:00Z') },
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.show_closed_assessment).toBe(true);
+    expect(result.show_closed_assessment_score).toBe(true);
+    expect(result.active).toBe(true);
+  });
+
+  it('applies afterComplete score visibility when an instance is closed', () => {
+    const result = resolverResultToAssessmentAuthzResultForInstance({
+      result: {
+        ...baseResolverResult,
+        creditDateString: '100% until 12:00, Sat, Mar 15',
+        timeLimitMin: 60,
+        password: 'secret',
+      },
+      authzMode: 'Public',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: { open: false, date_limit: null },
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.show_closed_assessment).toBe(false);
+    expect(result.show_closed_assessment_score).toBe(false);
+    expect(result.active).toBe(false);
+    expect(result.credit_date_string).toBe('None');
+    expect(result.time_limit_min).toBeNull();
+    expect(result.password).toBeNull();
+  });
+
+  it('keeps unmatched Exam-mode denies hidden for closed instances', () => {
+    const result = resolverResultToAssessmentAuthzResultForInstance({
+      result: {
+        ...baseResolverResult,
+        authorization: 'denied',
+        submittable: false,
+        credit: 0,
+        creditDateString: 'None',
+        visibility: {
+          showQuestions: false,
+          showScore: false,
+        },
+        afterCompleteVisibility: {
+          showQuestions: false,
+          showScore: false,
+        },
+        complete: true,
+      },
+      authzMode: 'Exam',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: { open: false, date_limit: null },
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.authorized).toBe(false);
+    expect(result.active).toBe(false);
+    expect(result.show_closed_assessment).toBe(false);
+    expect(result.show_closed_assessment_score).toBe(false);
+  });
+
+  it('applies afterComplete score visibility when the time limit has expired', () => {
+    const result = resolverResultToAssessmentAuthzResultForInstance({
+      result: {
+        ...baseResolverResult,
+        creditDateString: '100% until 12:00, Sat, Mar 15',
+        timeLimitMin: 60,
+        password: 'secret',
+      },
+      authzMode: 'Public',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: { open: true, date_limit: new Date('2025-03-10T00:00:00Z') },
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.show_closed_assessment).toBe(false);
+    expect(result.show_closed_assessment_score).toBe(false);
+    expect(result.active).toBe(false);
+    expect(result.credit_date_string).toBe('None');
+    expect(result.time_limit_min).toBeNull();
+    expect(result.password).toBeNull();
+  });
+
+  it('leaves PrairieTest visibility in control while a reservation is active', () => {
+    const result = resolverResultToAssessmentAuthzResultForInstance({
+      result: {
+        ...baseResolverResult,
+        visibility: {
+          showQuestions: true,
+          showScore: true,
+        },
+        visibilitySource: 'prairieTest',
+      },
+      authzMode: 'Exam',
+      displayTimezone: 'America/Chicago',
+      assessmentInstance: { open: false, date_limit: null },
+      reqDate: new Date('2025-03-15T00:00:00Z'),
+    });
+
+    expect(result.show_closed_assessment).toBe(true);
+    expect(result.show_closed_assessment_score).toBe(true);
   });
 });

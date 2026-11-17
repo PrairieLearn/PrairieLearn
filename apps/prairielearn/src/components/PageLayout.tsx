@@ -1,7 +1,9 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import type { PageLocation } from '@prairielearn/course-agent-types';
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
@@ -12,7 +14,7 @@ import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
-import { AssessmentNavigation } from './AssessmentNavigation.js';
+import { AssessmentNavigation, AssessmentNavigationModal } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
@@ -154,9 +156,13 @@ function UnpublishedBannerComponent({
   navContext: NavContext;
   resLocals: UntypedResLocals;
 }) {
-  if (navContext.type !== 'instructor') return null;
-  if (!navContext.page) return null;
-  if (!['instance_admin', 'assessment', 'students'].includes(navContext.page)) return null;
+  if (
+    navContext.type !== 'instructor' ||
+    !navContext.page ||
+    !['instance_admin', 'assessment', 'students'].includes(navContext.page)
+  ) {
+    return null;
+  }
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
   const { course_instance: courseInstance, urlPrefix } = resLocals;
@@ -220,10 +226,16 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Sets the html and body tag heights to 100% */
+    /**
+     * Fills the available height below navigation. Content can provide its own scroll regions;
+     * with side navigation, the main container remains the scroll parent for overflowing content
+     * (for example, when panes switch to a stacked layout).
+     */
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
+    /** Whether to render sync errors and warnings above the page content. */
+    showSyncErrorsAndWarnings?: boolean;
     /** Additional classes to apply to the main content container. */
     contentContainerClassName?: string;
     /** A note to display after the pageTitle, shown in parenthesis. */
@@ -234,6 +246,10 @@ export function PageLayout({
     dataAttributes?: Record<string, string>;
     /** Whether or not the navbar should be shown. */
     enableNavbar?: boolean;
+    /** Whether the navbar should hide all controls associated with the current session. */
+    hideNavbarSessionControls?: boolean;
+    /** Enables instructor support on pages without a course authorization context. */
+    showInstructorSupport?: boolean;
     /**
      * Forces the side nav to be in a specific state when the page loads,
      * regardless of the user's previous preference.
@@ -244,6 +260,8 @@ export function PageLayout({
     forcedInitialNavToggleState?: boolean;
     /** Whether or not to show the branded page footer. */
     showFooter?: boolean;
+    /** Whether to show the course agent panel. Disable on pages with their own AI chat. */
+    showCourseAgentPanel?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
@@ -258,11 +276,14 @@ export function PageLayout({
     fullWidth: false,
     fullHeight: false,
     contentPadding: true,
+    showSyncErrorsAndWarnings: true,
     contentContainerClassName: '',
     hxExt: '',
     dataAttributes: {},
     enableNavbar: true,
+    hideNavbarSessionControls: false,
     showFooter: false,
+    showCourseAgentPanel: true,
     ...options,
   };
 
@@ -277,11 +298,36 @@ export function PageLayout({
   const sideNavExpanded =
     sideNavEnabled && (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
 
+  // Rendered by the course agent panel middleware (EE) when the user has access.
+  const courseAgentPanel =
+    sideNavEnabled && resolvedOptions.enableNavbar && resolvedOptions.showCourseAgentPanel
+      ? resLocals.course_agent_panel
+      : null;
+
+  // The agent sees the page through its nav key, not the page title, which can name students.
+  // A shared question from another course is flagged, since its files are not in this checkout.
+  const courseAgentPage = courseAgentPanel
+    ? EncodedData(
+        {
+          page: [navContext.page, navContext.subPage].filter((part) => part != null).join('.'),
+          courseInstance: resLocals.course_instance?.short_name ?? undefined,
+          assessment: resLocals.assessment?.tid ?? undefined,
+          question: resLocals.question?.qid ?? undefined,
+          questionFromAnotherCourse:
+            resLocals.question && resLocals.question.course_id !== resLocals.course.id
+              ? true
+              : undefined,
+        } satisfies Omit<PageLocation, 'path'>,
+        'course-agent-page',
+      )
+    : '';
+
   let showContextNavigation = [
     'instructor',
     'administrator_institution',
     'administrator',
     'institution',
+    'public',
   ].includes(navContext.type ?? '');
 
   // If additional navigation capabilities are not needed, such as on the
@@ -322,13 +368,17 @@ export function PageLayout({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({
-          resLocals,
-          pageTitle,
-          pageNote: resolvedOptions.pageNote,
-        })}
-        ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
-        ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
+        ${[
+          HeadContents({
+            resLocals,
+            pageTitle,
+            pageNote: resolvedOptions.pageNote,
+          }),
+          compiledStylesheetTag('pageLayout.css'),
+          courseAgentPanel ? compiledStylesheetTag('courseAgent.css') : '',
+          headContentString,
+          sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : '',
+        ]}
       </head>
       <body
         class="${clsx({
@@ -358,32 +408,39 @@ export function PageLayout({
             resolvedOptions.showFooter && 'flex-grow-1',
           )}"
         >
-          ${resolvedOptions.enableNavbar
-            ? html`<div class="app-top-nav">
-                ${Navbar({
-                  resLocals,
-                  navPage: navContext.page,
-                  navSubPage: navContext.subPage,
-                  navbarType: navContext.type,
-                  sideNavEnabled,
-                })}
-              </div>`
-            : ''}
-          ${sideNavEnabled
-            ? html`
-                <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
-                  <div class="app-side-nav-scroll">
-                    ${SideNav({
-                      resLocals,
-                      page: navContext.page,
-                      subPage: navContext.subPage,
-                      sideNavExpanded,
-                      persistToggleState: resolvedOptions.forcedInitialNavToggleState === undefined,
-                    })}
-                  </div>
-                </nav>
-              `
-            : ''}
+          ${
+            resolvedOptions.enableNavbar
+              ? html`<div class="app-top-nav">
+                  ${Navbar({
+                    resLocals,
+                    navPage: navContext.page,
+                    navbarType: navContext.type,
+                    sideNavEnabled,
+                    hideSessionControls: resolvedOptions.hideNavbarSessionControls,
+                    showInstructorSupport: resolvedOptions.showInstructorSupport,
+                    courseAgentPanel,
+                  })}
+                </div>`
+              : ''
+          }
+          ${
+            sideNavEnabled
+              ? html`
+                  <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
+                    <div class="app-side-nav-scroll">
+                      ${SideNav({
+                        resLocals,
+                        page: navContext.page,
+                        subPage: navContext.subPage,
+                        sideNavExpanded,
+                        persistToggleState:
+                          resolvedOptions.forcedInitialNavToggleState === undefined,
+                      })}
+                    </div>
+                  </nav>
+                `
+              : ''
+          }
           <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
             <div
               class="${clsx(
@@ -401,21 +458,54 @@ export function PageLayout({
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
               )}
-              ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
-                ? AssessmentNavigation({
-                    courseInstanceId: resLocals.course_instance.id,
-                    subPage: navContext.subPage,
-                    assessment: resLocals.assessment,
-                    assessmentSet: resLocals.assessment_set,
-                  })
-                : ''}
-              ${showContextNavigation
-                ? ContextNavigation({
-                    resLocals,
-                    navPage: navContext.page,
-                    navSubPage: navContext.subPage,
-                  })
-                : ''}
+              ${run(() => {
+                const hasSwitcher = Boolean(
+                  resLocals.assessment && resLocals.course_instance && sideNavEnabled,
+                );
+                const contextNav = showContextNavigation
+                  ? ContextNavigation({
+                      resLocals,
+                      navPage: navContext.page,
+                      navSubPage: navContext.subPage,
+                      embedded: hasSwitcher,
+                    })
+                  : '';
+                const hasTabs = contextNav !== '';
+                const switcher = hasSwitcher
+                  ? AssessmentNavigation({
+                      courseInstanceId: resLocals.course_instance.id,
+                      subPage: navContext.subPage,
+                      assessment: resLocals.assessment,
+                      assessmentSet: resLocals.assessment_set,
+                      embedded: hasTabs,
+                    })
+                  : '';
+                // Rendered outside the container-query wrapper
+                const switcherModal = hasSwitcher ? AssessmentNavigationModal() : '';
+
+                // When both the assessment switcher and the tabs are present,
+                // place them side by side in a single bar (switcher on the left,
+                // tabs on the right). The bar switches between this row layout
+                // and a stacked layout based on the *container's* width (a
+                // container query in pageLayout.css), so it accounts for the
+                // side nav width rather than just the viewport. Otherwise,
+                // render whichever one applies on its own.
+                if (hasSwitcher && hasTabs) {
+                  return html`
+                    <div class="assessment-navigation-container">
+                      <div
+                        class="d-flex column-gap-2 row-gap-2 bg-light px-3 assessment-navigation-bar"
+                      >
+                        ${switcher}
+                        <div class="vr assessment-navigation-divider align-self-stretch my-1"></div>
+                        ${contextNav}
+                      </div>
+                    </div>
+                    ${switcherModal}
+                  `;
+                }
+                return html`${switcher}${contextNav}${switcherModal}`;
+              })}
               ${preContentString}
               <main
                 id="content"
@@ -429,16 +519,25 @@ export function PageLayout({
                   resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   resolvedOptions.contentPadding && 'pb-3',
                   resolvedOptions.fullHeight && 'h-100',
+                  resolvedOptions.fullHeight && 'app-content-full-height flex-grow-1',
                 )}"
               >
-                ${renderHtml(
-                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
-                )}
+                ${
+                  resolvedOptions.showSyncErrorsAndWarnings
+                    ? renderHtml(
+                        <SyncErrorsAndWarningsForContext
+                          navContext={navContext}
+                          resLocals={resLocals}
+                        />,
+                      )
+                    : ''
+                }
                 ${contentString}
               </main>
               ${postContentString}
             </div>
           </div>
+          ${courseAgentPage}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

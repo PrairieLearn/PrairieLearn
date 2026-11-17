@@ -1,5 +1,9 @@
 import { memoize } from '@smithy/property-provider';
-import { type AwsCredentialIdentityProvider } from '@smithy/types';
+import type {
+  AwsCredentialIdentity,
+  AwsCredentialIdentityProvider,
+  MemoizedProvider,
+} from '@smithy/types';
 
 interface AwsClientConfig {
   region: string;
@@ -19,7 +23,14 @@ export function makeAwsConfigProvider({
   credentials: AwsCredentialIdentityProvider;
   getClientConfig: () => AwsClientConfig;
   getS3ClientConfig?: () => Record<string, any>;
-}) {
+}): {
+  makeAwsClientConfig: <T extends Record<string, any>>(
+    extraConfig?: T,
+  ) => { region: string; endpoint: any; credentials: MemoizedProvider<AwsCredentialIdentity> } & T;
+  makeS3ClientConfig: <T extends Record<string, any>>(
+    extraConfig?: T,
+  ) => { region: string; endpoint: any; credentials: MemoizedProvider<AwsCredentialIdentity> } & T;
+} {
   // Clients don't share credentials by default, which means that we'll flood
   // the IMDS with requests for credentials if we construct and use a lot of
   // clients in quick succession. IMDS has rate-limiting, so we'll end up failing

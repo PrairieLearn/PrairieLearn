@@ -8,7 +8,7 @@
 # the output CSV file to be generated. The resulting CSV file can then be used
 # to upload the new scores and feedback for each submission.
 
-# ruff: noqa: F841
+# ruff:file-ignore[unused-variable]
 # pyright: reportUnusedVariable=false
 
 import argparse

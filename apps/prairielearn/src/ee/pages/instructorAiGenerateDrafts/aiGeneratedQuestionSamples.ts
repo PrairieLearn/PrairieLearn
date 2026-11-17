@@ -1,4 +1,4 @@
-export type ExamplePrompt = {
+type ExamplePrompt = {
   name: string;
   prompt: string;
   generateVariant: () => SampleQuestionVariant;
@@ -25,7 +25,7 @@ export type ExamplePrompt = {
 
 export type ExamplePromptWithId = ExamplePrompt & { id: keyof typeof examplePrompts };
 
-export const examplePrompts = {
+const examplePrompts = {
   'cities-in-random-country': {
     name: 'Identify cities in a random country',
     prompt:

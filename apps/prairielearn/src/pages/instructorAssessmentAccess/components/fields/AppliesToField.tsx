@@ -1,12 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Alert, Button, Form, ListGroup } from 'react-bootstrap';
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { useFieldArray, useWatch } from 'react-hook-form';
 
 import { StudentLabelBadge } from '../../../../components/StudentLabelBadge.js';
 import { StudentLabelDropdown } from '../../../../components/StudentLabelDropdown.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
+import {
+  MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE,
+  MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE,
+} from '../../../../schemas/accessControl.js';
 import { useTRPC } from '../../../../trpc/assessment/context.js';
+import { useAccessControlRuleEditable } from '../AccessControlEditabilityContext.js';
 import type { AccessControlFormData, EnrollmentTarget, TargetType } from '../types.js';
 
 import { AddStudentsModal } from './AddStudentsModal.js';
@@ -14,17 +19,34 @@ import { AddStudentsModal } from './AddStudentsModal.js';
 export function AppliesToField({
   namePrefix,
   courseInstanceId,
+  targetTypeDisabledReasons,
+  canEditAccessSettings,
+  canEditEnrollmentRules,
+  onTargetTypeChange,
 }: {
   namePrefix: `overrides.${number}`;
   courseInstanceId: string;
+  targetTypeDisabledReasons?: Partial<Record<TargetType, string | null>>;
+  /** Whether the user has page-level permission to edit access settings at all. */
+  canEditAccessSettings: boolean;
+  /** Whether the user has permission to edit enrollment-targeted rules. */
+  canEditEnrollmentRules: boolean;
+  onTargetTypeChange: (targetType: TargetType) => void;
 }) {
-  const { setValue } = useFormContext<AccessControlFormData>();
   const trpc = useTRPC();
+  const ruleEditable = useAccessControlRuleEditable();
+  const showStudentLabelOnlyHint = canEditAccessSettings && !canEditEnrollmentRules;
 
-  const { data: allLabels } = useQuery(trpc.accessControl.studentLabels.queryOptions());
-
-  const appliesTo = useWatch<AccessControlFormData, `overrides.${number}.appliesTo`>({
+  const { targetType, enrollments, studentLabels } = useWatch<
+    AccessControlFormData,
+    `overrides.${number}.appliesTo`
+  >({
     name: `${namePrefix}.appliesTo`,
+  });
+
+  const { data: allLabels } = useQuery({
+    ...trpc.accessControl.studentLabels.queryOptions(),
+    enabled: ruleEditable && targetType === 'student_label',
   });
 
   const { replace: replaceEnrollments, remove: removeEnrollment } = useFieldArray({
@@ -35,23 +57,9 @@ export function AppliesToField({
     name: `${namePrefix}.appliesTo.studentLabels`,
   });
 
-  const handleTargetTypeChange = (newType: TargetType) => {
-    setValue(
-      `${namePrefix}.appliesTo`,
-      {
-        targetType: newType,
-        enrollments: [],
-        studentLabels: [],
-      },
-      { shouldDirty: true },
-    );
-  };
-
   const handleSaveStudents = (students: EnrollmentTarget[]) => {
     replaceEnrollments(students);
   };
-
-  const { targetType, enrollments, studentLabels } = appliesTo;
 
   const handleRemoveEnrollmentByUid = (uid: string) => {
     const index = enrollments.findIndex((s) => s.uid === uid);
@@ -64,14 +72,35 @@ export function AppliesToField({
 
   const excludedStudentLabelIds = new Set(studentLabels.map((sl) => sl.studentLabelId));
   const excludedUids = new Set(enrollments.map((i) => i.uid));
+  const studentLabelLimitReached =
+    studentLabels.length >= MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE;
+  const studentLabelLimitReason = `At most ${MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE} student labels can be selected.`;
+  const enrollmentDisabledReason = targetTypeDisabledReasons?.enrollment ?? undefined;
+  const studentLabelDisabledReason = targetTypeDisabledReasons?.student_label ?? undefined;
 
   const hasNoTargets = enrollments.length === 0 && studentLabels.length === 0;
+  const targetDescription = targetType === 'enrollment' ? 'student' : 'student label';
+  const studentSpecificPermissionMessageId = `${namePrefix}-student-specific-permission-message`;
+  const enrollmentLimitMessageId = `${namePrefix}-target-enrollment-limit-message`;
+  const studentLabelLimitMessageId = `${namePrefix}-target-student-label-limit-message`;
+  const enrollmentDescribedBy = [
+    showStudentLabelOnlyHint ? studentSpecificPermissionMessageId : null,
+    enrollmentDisabledReason ? enrollmentLimitMessageId : null,
+  ]
+    .filter((id) => id != null)
+    .join(' ');
 
   return (
     <div className="mb-3">
       <div className="section-header mb-3">
         <strong>Applies to</strong>
       </div>
+      {showStudentLabelOnlyHint && (
+        <Alert variant="info" className="mb-3" id={studentSpecificPermissionMessageId}>
+          Student-specific overrides require student data editor permissions. You can still create
+          or edit overrides for students with specific labels.
+        </Alert>
+      )}
       <fieldset className="mb-3">
         <legend className="visually-hidden">Target type</legend>
         <Form.Check
@@ -80,16 +109,32 @@ export function AppliesToField({
           name={`${namePrefix}-target-type`}
           label="Specific students"
           checked={targetType === 'enrollment'}
-          onChange={() => handleTargetTypeChange('enrollment')}
+          disabled={!ruleEditable || !canEditEnrollmentRules || enrollmentDisabledReason != null}
+          title={enrollmentDisabledReason}
+          aria-describedby={enrollmentDescribedBy || undefined}
+          onChange={() => onTargetTypeChange('enrollment')}
         />
+        {enrollmentDisabledReason && (
+          <Form.Text id={enrollmentLimitMessageId} className="text-muted d-block ms-4 mt-1 mb-2">
+            {enrollmentDisabledReason}
+          </Form.Text>
+        )}
         <Form.Check
           type="radio"
           id={`${namePrefix}-target-student-label`}
           name={`${namePrefix}-target-type`}
           label="Students by label"
           checked={targetType === 'student_label'}
-          onChange={() => handleTargetTypeChange('student_label')}
+          disabled={!ruleEditable || studentLabelDisabledReason != null}
+          title={studentLabelDisabledReason}
+          aria-describedby={studentLabelDisabledReason ? studentLabelLimitMessageId : undefined}
+          onChange={() => onTargetTypeChange('student_label')}
         />
+        {studentLabelDisabledReason && (
+          <Form.Text id={studentLabelLimitMessageId} className="text-muted d-block ms-4 mt-1 mb-2">
+            {studentLabelDisabledReason}
+          </Form.Text>
+        )}
       </fieldset>
 
       <div>
@@ -104,22 +149,25 @@ export function AppliesToField({
               <span className="small text-muted">
                 {enrollments.length} {enrollments.length === 1 ? 'student' : 'students'}
               </span>
-              <div className="ms-auto">
-                <AddStudentsModal
-                  selectedUids={excludedUids}
-                  renderTrigger={({ onClick }) => (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="text-decoration-none"
-                      onClick={onClick}
-                    >
-                      Select students…
-                    </Button>
-                  )}
-                  onSaveStudents={handleSaveStudents}
-                />
-              </div>
+              {ruleEditable && (
+                <div className="ms-auto">
+                  <AddStudentsModal
+                    selectedUids={excludedUids}
+                    maxStudents={MAX_ACCESS_CONTROL_ENROLLMENTS_PER_RULE}
+                    renderTrigger={({ onClick }) => (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-decoration-none"
+                        onClick={onClick}
+                      >
+                        Select students…
+                      </Button>
+                    )}
+                    onSaveStudents={handleSaveStudents}
+                  />
+                </div>
+              )}
             </div>
             {enrollments.length > 0 && (
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
@@ -135,14 +183,16 @@ export function AppliesToField({
                         </a>
                         {s.name && <span className="text-muted small">{s.name}</span>}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={`Remove ${s.name ?? s.uid}`}
-                        onClick={() => handleRemoveEnrollmentByUid(s.uid)}
-                      >
-                        <i className="bi bi-trash text-danger" aria-hidden="true" />
-                      </Button>
+                      {ruleEditable && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Remove ${s.name ?? s.uid}`}
+                          onClick={() => handleRemoveEnrollmentByUid(s.uid)}
+                        >
+                          <i className="bi bi-trash text-danger" aria-hidden="true" />
+                        </Button>
+                      )}
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
@@ -150,49 +200,63 @@ export function AppliesToField({
             )}
           </div>
         ) : (
-          <div className="d-flex flex-wrap align-items-baseline gap-2">
-            <StudentLabelDropdown
-              labels={allLabels ?? []}
-              selectedIds={excludedStudentLabelIds}
-              buttonLabel="Select labels"
-              onToggle={(label) => {
-                if (excludedStudentLabelIds.has(label.id)) {
-                  handleRemoveStudentLabelById(label.id);
-                } else {
-                  appendStudentLabel({
-                    studentLabelId: label.id,
-                    name: label.name,
-                    color: label.color,
-                  });
-                }
-              }}
-            />
-            {studentLabels.length === 0 ? (
-              <span className="text-muted small">No student labels selected</span>
-            ) : (
-              studentLabels.map((sl) => (
-                <StudentLabelBadge
-                  key={sl.studentLabelId}
-                  label={{ name: sl.name, color: sl.color ?? 'gray1' }}
-                >
-                  <button
-                    type="button"
-                    className="btn p-0 lh-1"
-                    aria-label={`Remove label "${sl.name}"`}
-                    onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+          <div>
+            <div className="d-flex flex-wrap align-items-baseline gap-2">
+              {ruleEditable && (
+                <StudentLabelDropdown
+                  labels={allLabels ?? []}
+                  selectedIds={excludedStudentLabelIds}
+                  buttonLabel="Select labels"
+                  maxSelected={MAX_ACCESS_CONTROL_STUDENT_LABELS_PER_RULE}
+                  onToggle={(label) => {
+                    if (excludedStudentLabelIds.has(label.id)) {
+                      handleRemoveStudentLabelById(label.id);
+                    } else {
+                      appendStudentLabel({
+                        studentLabelId: label.id,
+                        name: label.name,
+                        color: label.color,
+                      });
+                    }
+                  }}
+                />
+              )}
+              {studentLabels.length === 0 ? (
+                <span className="text-muted small">No student labels selected</span>
+              ) : (
+                studentLabels.map((sl) => (
+                  <StudentLabelBadge
+                    key={sl.studentLabelId}
+                    label={{ name: sl.name, color: sl.color ?? 'gray1' }}
                   >
-                    <i className="bi bi-x text-danger" aria-hidden="true" />
-                  </button>
-                </StudentLabelBadge>
-              ))
-            )}
+                    {ruleEditable && (
+                      <button
+                        type="button"
+                        className="btn p-0 lh-1"
+                        aria-label={`Remove label "${sl.name}"`}
+                        onClick={() => handleRemoveStudentLabelById(sl.studentLabelId)}
+                      >
+                        <i className="bi bi-x text-danger" aria-hidden="true" />
+                      </button>
+                    )}
+                  </StudentLabelBadge>
+                ))
+              )}
+            </div>
+            <div className="form-text mt-2">
+              {studentLabelLimitReached
+                ? studentLabelLimitReason
+                : 'Applies to students with any of the selected labels.'}
+            </div>
           </div>
         )}
       </div>
       {hasNoTargets && (
         <Alert variant="warning" className="mt-3 mb-0">
-          This override has no targets. Add at least one{' '}
-          {targetType === 'enrollment' ? 'student' : 'student label'} for this rule to take effect.
+          This override has no targets.{' '}
+          {ruleEditable
+            ? `Add at least one ${targetDescription} for this rule to take effect.`
+            : `A user with permission to edit this override must add at least one ${targetDescription} for this rule to take effect.`}
         </Alert>
       )}
     </div>

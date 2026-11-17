@@ -4,22 +4,15 @@
   "title": "Exam including autograded and manually graded questions",
   "set": "Exam",
   "number": "4",
-  "allowAccess": [
+  "accessControl": [
     {
-      "comment": "students will have access to this timed exam, but will not be able to see their scores or questions once the exam is completed",
-      "credit": 100,
-      "timeLimitMin": 3,
-      "startDate": "2021-01-01T00:00:01",
-      "endDate": "2323-11-07T23:59:59",
-      "showClosedAssessment": false,
-      "showClosedAssessmentScore": false
-    },
-    {
-      "comment": "students will have access to their final total score at a later time, after all the questions are manually graded and scores are uploaded",
-      "credit": 0,
-      "startDate": "2323-11-08T00:00:00",
-      "endDate": "2323-11-15T23:59:59",
-      "showClosedAssessment": false
+      "dateControl": {
+        "release": { "date": "2021-01-01T00:00:01" },
+        "due": { "date": "2323-11-07T23:59:59" },
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 0 },
+        "durationMinutes": 3
+      },
+      "afterComplete": { "score": { "hidden": true, "visibleFromDate": "2323-11-08T00:00:00" } }
     }
   ],
   "zones": [

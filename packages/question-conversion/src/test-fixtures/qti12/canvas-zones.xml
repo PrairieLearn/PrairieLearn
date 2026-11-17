@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="assess-zones" title="Zone Quiz">
+    <qtimetadata>
+      <qtimetadatafield><fieldlabel>cc_maxattempts</fieldlabel><fieldentry>unlimited</fieldentry></qtimetadatafield>
+    </qtimetadata>
+    <section ident="root_section">
+      <section ident="zone1" title="Part 1">
+        <item ident="q1" title="Zone 1 Question">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Which is bigger?</mattext></material>
+            <response_lid ident="response1" rcardinality="Single">
+              <render_choice>
+                <response_label ident="a1"><material><mattext>Cat</mattext></material></response_label>
+                <response_label ident="a2"><material><mattext>Elephant</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <respcondition>
+              <conditionvar><varequal respident="response1">a2</varequal></conditionvar>
+              <setvar varname="SCORE">100</setvar>
+            </respcondition>
+          </resprocessing>
+        </item>
+      </section>
+      <section ident="zone2" title="Part 2">
+        <item ident="q2" title="Zone 2 Question">
+          <itemmetadata>
+            <qtimetadata>
+              <qtimetadatafield><fieldlabel>question_type</fieldlabel><fieldentry>multiple_choice_question</fieldentry></qtimetadatafield>
+            </qtimetadata>
+          </itemmetadata>
+          <presentation>
+            <material><mattext texttype="text/html">Which is smaller?</mattext></material>
+            <response_lid ident="response2" rcardinality="Single">
+              <render_choice>
+                <response_label ident="b1"><material><mattext>Ant</mattext></material></response_label>
+                <response_label ident="b2"><material><mattext>Dog</mattext></material></response_label>
+              </render_choice>
+            </response_lid>
+          </presentation>
+          <resprocessing>
+            <respcondition>
+              <conditionvar><varequal respident="response2">b1</varequal></conditionvar>
+              <setvar varname="SCORE">100</setvar>
+            </respcondition>
+          </resprocessing>
+        </item>
+      </section>
+    </section>
+  </assessment>
+</questestinterop>

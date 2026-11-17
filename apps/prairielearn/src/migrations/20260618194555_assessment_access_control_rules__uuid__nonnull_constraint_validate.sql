@@ -1,0 +1,1 @@
+ALTER TABLE assessment_access_control_rules VALIDATE CONSTRAINT assessment_access_control_rules_uuid_target_type_check;

@@ -1,5 +1,211 @@
 # @prairielearn/ui
 
+## 4.5.0
+
+### Minor Changes
+
+- e003824: Export `OverlayTrigger` from `@prairielearn/ui/overlay-trigger` so eagerly loaded bundles can use it without pulling in the rest of the package.
+
+### Patch Changes
+
+- 1d53679: Add a button for creating custom tags and allow consumers to control pending input text.
+- da082ba: Make table column resize handles easier to grab with a wider drag target and a thin divider that highlights on hover, keyboard focus, and drag.
+
+## 4.4.1
+
+### Patch Changes
+
+- 0998223: Minor cleanups for oxlint; no behavior changes.
+
+## 4.4.0
+
+### Minor Changes
+
+- 0cab990: Allow TagPicker to create typed values.
+
+## 4.3.0
+
+### Minor Changes
+
+- e6c306d: Add accessible Close buttons to click-triggered popovers and include them in focus traps.
+
+## 4.2.0
+
+### Minor Changes
+
+- 32a1f8b: Support async CSV and JSON data providers for table downloads, with shared row eligibility and a pending state.
+
+## 4.1.2
+
+### Patch Changes
+
+- 4e683bf: Respect table filters when downloading selected rows as CSV or JSON, including the selected download count.
+
+## 4.1.1
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- 83590cf: Upgrade @tanstack/match-sorter-utils to version 9, preserving fuzzy matching and ranking behavior in table filters.
+
+## 4.1.0
+
+### Minor Changes
+
+- 7b247e1: Add an opt-in non-virtualized rendering mode to TanstackTable that grows with its content without requiring a bounded height.
+
+## 4.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.0
+
+### Major Changes
+
+- d5c1739: Upgrade TanStack Table to v9. Consumers must create tables and column definitions with the exported `useTanstackTable` and `createTanstackTableColumnHelper`, use v9 pinning state (`{ start, end }` instead of `{ left, right }`), and rely on the built-in row selection handler for Shift-range selection instead of `useShiftClickCheckbox`.
+
+## 3.9.0
+
+### Minor Changes
+
+- 5d5bec7: Add a hook for pruning row selections when table data changes
+
+### Patch Changes
+
+- c36d9f5: Avoid closing the column manager before an adjacent dropdown is activated.
+
+## 3.8.2
+
+### Patch Changes
+
+- 057d37b: Update dependency on typescript-cp
+
+## 3.8.1
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 3.8.0
+
+### Minor Changes
+
+- bb5a7ec: Add opt-in fuzzy search support to multi-select column filters.
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.7.2
+
+### Patch Changes
+
+- 81ad435: Update typescript-cp to remove its transitive tar dependency.
+
+## 3.7.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.7.0
+
+### Minor Changes
+
+- e3c07aa: Add `BooleanColumnFilter` and `applyBooleanFilter` for boolean-valued table columns, and add a `showModeToggle` prop to `MultiSelectColumnFilter`
+
+## 3.6.0
+
+### Minor Changes
+
+- 74672f0: Add an optional `unit` prop to `NumericInputColumnFilter` to show a unit label (e.g. "minutes") in the filter dropdown.
+
+## 3.5.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.5.1
+
+### Patch Changes
+
+- 56efa59: Simplify the sticky save bar button label to "Save".
+
+## 3.5.0
+
+### Minor Changes
+
+- 19b8b6e: Support cell-content-based auto-sizing via `autoSizeSample` on column meta
+- 3070141: Fix `useShiftClickCheckbox` so shift-click range selection works correctly when the table is sorted or filtered. The hook now tracks the last-clicked row's id and computes the range against the current row-model positions, instead of `row.index` (which is the pre-sort data index).
+- 5558c93: Add `mapRowToJsonData` option to `TanstackTableDownloadButton` for proper JSON export formatting.
+- 0a7a8ff: `CategoricalColumnFilter` was removed, and `MultiSelectColumnFilter` now contains the same toggle functionality, with `parseAsMultiSelectFilter` and `applyMultiSelectFilter` helpers.
+  `PresetFilterDropdown` now clears columns by removing them from `columnFilters` rather than writing a sentinel empty value. Consumers whose `onColumnFiltersChange` mirrors filter state elsewhere (e.g., into URL params) must reset state for column IDs that are absent from the new filters.
+- 19b8b6e: Add `extractLeafColumnIds`. Add scroll to CategoricalColumnFilter dropdown. Use useLayoutEffect for indeterminate checkbox state in ColumnManager.
+- 19b8b6e: Fix bug with autosizing table columns - it now uses the filtered row set
+  Add a clear-filters control via `onResetColumnFilters`
+  Add `useColumnFilters` hook to reduce boilerplate and improve typing
+
+### Patch Changes
+
+- d195079: Remove unused SplitPane CSS that forced Bootstrap grid columns in the detail panel to full width.
+
+## 3.4.1
+
+### Patch Changes
+
+- 9ec69b0: Vertically center the icon and label in the `StickySaveBar` save button.
+
+## 3.4.0
+
+### Minor Changes
+
+- 647a35a: Add an `alert` slot to `StickySaveBar` that renders save feedback inside the sticky region, and a `fullWidth` prop that lets the actions row span the full width of full-width pages.
+- 6fd6eab: Replace `StickyActionBar` with new `StickySaveBar` component.
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.3.0
+
+### Minor Changes
+
+- f3e7b53: Add `RadioGroup`, `Radio`, `IndeterminateCheckbox`, and `ExpandableCheckboxGroup` components
+- 24d9afc: Add `RichSelect` component for single-selection dropdowns with descriptions per option
+- a00d61f: Add `useResizeHandle` hook for keyboard-accessible split pane resizers
+- f3e7b53: Add `additionalMenuItems` prop to `TanstackTableDownloadButton` for custom dropdown items
+- 14bb451: Add `SplitPane` component
+- 1e00357: Add `useColumnVisibilityQueryState` hook for URL-persisted column visibility. Add `statusContent` prop to `TanstackTableCard` for custom status text.
+- 07dfbca: Add `StickyActionBar` component for displaying save/cancel actions in a sticky bottom bar
+
+### Patch Changes
+
+- 98f6be5: Removed "autoComplete=true" attrs on CategoricalColumnFilter radio buttons because of noncompliance with accessibility requirements
+- 1e00357: Fix ColumnManager rendering an unnecessary divider when only top content is present.
+- 6ee5647: Fix column manager dropdown closing when clicking checkbox labels
+- a00d61f: Fix inconsistent vertical padding in FilterDropdown list
+- dab7ca0: Fix OverlayTrigger focus trapping when trigger prop is an array
+- dab7ca0: Fix OverlayTrigger returning focus on tooltip dismiss, which created an infinite focus loop for focus-triggered tooltips
+- f3e7b53: Fix Radio component to render a visible radio indicator since react-aria visually hides the native input
+- 0dd8480: Fix resize handle width desync when bounds change dynamically
+- e918ccb: Allow `TanstackTableCsvCell` values to be `string[]`. Array values are joined with `'; '` in CSV exports and serialized as arrays in JSON exports.
+- 1e00357: Hide the View dropdown in TanstackTableCard when no columns are hideable
+- b6e03e9: Upgrade dependencies
+- f8eb106: Replace react-aria-components with react-bootstrap Form.Check in RadioGroup and Radio components
+- e756585: Return no-op onChange handler in useShiftClickCheckbox
+- 07dfbca: Add gap to split pane right panel header to prevent text and buttons from touching at narrow widths
+- d2df970: Make `useModalState` callbacks referentially stable with `useCallback`
+- aaeb317: TagPicker: Fix rendering bugs, and move selected tags outside the `ComboBox` component to avoid nested interactive elements.
+  ComboBox: Refactor implementation
+- 45221b9: Make TanstackTable easier to test
+- aaeb317: Replace the `TagPicker` Select-based workaround with React Aria's released multi-select ComboBox implementation.
+- Updated dependencies [b6e03e9]
+  - @prairielearn/browser-utils@2.7.2
+  - @prairielearn/run@2.0.3
+
 ## 3.2.2
 
 ### Patch Changes

@@ -43,7 +43,8 @@ module.exports = {
       comment: "Depends on a module that cannot be found ('resolved to disk').",
       severity: 'error',
       from: {},
-      to: { couldNotResolve: true },
+      // Cloudflare provides this module at runtime.
+      to: { couldNotResolve: true, pathNot: '^cloudflare:workers$' },
     },
     {
       name: 'no-duplicate-dep-types',
@@ -69,7 +70,7 @@ module.exports = {
       from: {
         path: '(src)',
         pathNot: [
-          '.(spec|test).(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee.md)$',
+          '.(spec|test).(js|jsx|mjs|cjs|ts|tsx|ls|coffee|litcoffee|coffee.md)$',
           'src/tests/',
           'src/ee/tests/',
           '[.]d[.]ts$',
@@ -81,11 +82,10 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '[.]yarn/' },
     tsPreCompilationDeps: true,
     enhancedResolveOptions: {
       exportsFields: ['exports'],
-      conditionNames: ['import', 'require', 'node', 'default'],
+      conditionNames: ['import', 'require', 'node', 'browser', 'default'],
       mainFields: ['module', 'main', 'types', 'typings'],
     },
     reporterOptions: { text: { highlightFocused: true } },

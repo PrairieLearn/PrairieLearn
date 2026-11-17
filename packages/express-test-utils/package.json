@@ -1,22 +1,23 @@
 {
   "name": "@prairielearn/express-test-utils",
-  "version": "2.0.9",
-  "type": "module",
+  "version": "2.0.15",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/express-test-utils"
   },
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@types/express": "^4.17.25 <5"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1"
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

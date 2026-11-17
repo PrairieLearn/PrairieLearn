@@ -1,27 +1,26 @@
 {
   "name": "@prairielearn/cache",
-  "version": "2.1.8",
-  "type": "module",
+  "version": "2.1.19",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/cache"
   },
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ioredis": "^5.10.1",
-    "lru-cache": "^11.2.7",
-    "zod": "^3.25.76"
+    "ioredis": "^6.0.0",
+    "lru-cache": "^11.5.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "typescript": "^5.9.3"
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

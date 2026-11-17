@@ -2,7 +2,7 @@ import { formatDistance } from 'date-fns';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.js';
 import { Pager } from '../../components/Pager.js';
@@ -15,6 +15,7 @@ import {
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import { issueMailtoLink } from '../../lib/issues.shared.js';
 
 export const PAGE_SIZE = 100;
 
@@ -24,7 +25,12 @@ export const IssueRowSchema = IssueSchema.extend({
   display_timezone: CourseInstanceSchema.shape.display_timezone,
   assessment_id: IdSchema.nullable(),
   assessment: z
-    .object({ label: z.string(), assessment_id: IdSchema, color: AssessmentSetSchema.shape.color })
+    .object({
+      label: z.string(),
+      assessment_id: IdSchema,
+      color: AssessmentSetSchema.shape.color,
+      deleted_at: DateFromISOString.nullable(),
+    })
     .nullable(),
   assessment_instance_id: IdSchema.nullable(),
   question_qid: QuestionSchema.shape.qid.nullable(),
@@ -61,6 +67,7 @@ export function InstructorIssues({
   urlPrefix,
   csrfToken,
   hasCoursePermissionEdit,
+  hasCoursePermissionPreview,
 }: {
   issues: IssueComputedRow[];
   filterQuery: string;
@@ -71,6 +78,7 @@ export function InstructorIssues({
   urlPrefix: string;
   csrfToken: string;
   hasCoursePermissionEdit: boolean;
+  hasCoursePermissionPreview: boolean;
 }) {
   const issueCount = issues[0]?.issue_count ?? 0;
 
@@ -149,6 +157,7 @@ export function InstructorIssues({
                 type="submit"
                 data-bs-toggle="tooltip"
                 data-bs-title="Search"
+                aria-label="Search issues"
               >
                 <i className="fa fa-search" aria-hidden="true" />
               </button>
@@ -157,6 +166,7 @@ export function InstructorIssues({
                 href={`${urlPrefix}/course_admin/issues?q=`}
                 data-bs-toggle="tooltip"
                 data-bs-title="Clear filters"
+                aria-label="Clear filters"
               >
                 <i className="fa fa-times" aria-hidden="true" />
               </a>
@@ -186,6 +196,7 @@ export function InstructorIssues({
                 issue={row}
                 urlPrefix={urlPrefix}
                 hasCoursePermissionEdit={hasCoursePermissionEdit}
+                hasCoursePermissionPreview={hasCoursePermissionPreview}
                 csrfToken={csrfToken}
               />
             ))}
@@ -209,21 +220,21 @@ export function InstructorIssues({
 function IssueRow({
   issue,
   urlPrefix,
+  hasCoursePermissionPreview,
   hasCoursePermissionEdit,
   csrfToken,
 }: {
   issue: IssueComputedRow;
   urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
   hasCoursePermissionEdit: boolean;
   csrfToken: string;
 }) {
-  // eslint-disable-next-line @eslint-react/purity -- server-rendered only, no re-renders
+  // oxlint-disable-next-line react/purity -- server-rendered only, no re-renders
   const now = Date.now();
-  const mailtoLink = `mailto:${
-    issue.user_email || issue.user_uid || '-'
-  }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(
-    `Hello ${issue.user_name},\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`,
-  )}`;
+  const mailtoLink = issueMailtoLink(issue);
+  const userUid = issue.user_uid || '-';
+  const userUidLink = mailtoLink ? <a href={mailtoLink}>{userUid}</a> : userUid;
   const questionPreviewUrl = `${urlPrefix}/question/${issue.question_id}/`;
   const studentViewUrl = `/pl/course_instance/${issue.course_instance_id}/instance_question/${issue.instance_question_id}/?variant_id=${issue.variant_id}`;
   const manualGradingUrl = `/pl/course_instance/${issue.course_instance_id}/instructor/assessment/${issue.assessment_id}/manual_grading/instance_question/${issue.instance_question_id}`;
@@ -247,30 +258,57 @@ function IssueRow({
           />
         )}
         <div className="d-block">
-          <strong>{issue.question_qid}</strong>
+          <strong>{issue.question_qid}</strong>{' '}
           {!issue.instance_question_id ? (
             // Issue not associated to an instance question (originates from question preview)
-            <>
-              {' '}
-              (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>instructor view</a>)
-            </>
+            hasCoursePermissionPreview ? (
+              <>
+                (
+                <a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>instructor view</a>
+                )
+              </>
+            ) : (
+              <button
+                type="button"
+                className="badge text-bg-warning badge-sm"
+                data-bs-toggle="tooltip"
+                data-bs-html="true"
+                title="This issue was not raised in an assessment. You do not have access to this question outside of an assessment, so you can't view some of the issue details. Course permissions can be granted by a course owner on the Staff page."
+              >
+                Insufficient permissions
+              </button>
+            )
           ) : issue.showUser ? (
-            <>
-              {' '}
-              (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>
-                instructor view
-              </a>, <a href={studentViewUrl}>student view</a>,{' '}
-              <a href={manualGradingUrl}>manual grading</a>,{' '}
-              <a href={assessmentInstanceUrl}> assessment details</a>)
-            </>
+            (hasCoursePermissionPreview || !issue.assessment?.deleted_at) && (
+              <>
+                (
+                {hasCoursePermissionPreview && (
+                  <a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>
+                    instructor view
+                  </a>
+                )}
+                {!issue.assessment?.deleted_at && (
+                  <>
+                    {hasCoursePermissionPreview && <>, </>}
+                    <a href={studentViewUrl}>student view</a>,{' '}
+                    <a href={manualGradingUrl}>manual grading</a>,{' '}
+                    <a href={assessmentInstanceUrl}> assessment details</a>
+                  </>
+                )}
+                )
+              </>
+            )
           ) : (
             <>
-              {' '}
-              (
-              <a href={`${questionPreviewUrl}?variant_seed=${issue.variant_seed}`}>
-                instructor view
-              </a>
-              ){' '}
+              {hasCoursePermissionPreview && (
+                <>
+                  (
+                  <a href={`${questionPreviewUrl}?variant_seed=${issue.variant_seed}`}>
+                    instructor view
+                  </a>
+                  ){' '}
+                </>
+              )}
               <button
                 type="button"
                 className="badge text-bg-warning badge-sm"
@@ -293,28 +331,34 @@ function IssueRow({
               {formatDistance(issue.date, now, { addSuffix: true })}
             </span>
           )}{' '}
-          {issue.showUser && (
+          {issue.showUser && issue.user_id != null && (
             <>
-              {issue.manually_reported ? 'by' : 'for'} {issue.user_name || '-'} (
-              <a href={mailtoLink}>{issue.user_uid || '-'}</a>)
+              {issue.manually_reported ? 'by' : 'for'} {issue.user_name || '-'} ({userUidLink})
             </>
           )}
         </small>
-        {issue.manually_reported ? (
-          <span className="badge text-bg-info">Manually reported</span>
-        ) : (
-          <span className="badge text-bg-warning">Automatically reported</span>
-        )}
-        {issue.assessment && issue.course_instance_id && (
-          <AssessmentBadge
-            courseInstanceId={issue.course_instance_id}
-            hideLink={issue.hideAssessmentLink}
-            assessment={issue.assessment}
-          />
-        )}
-        {issue.course_instance_short_name && (
-          <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
-        )}
+        <span className="d-inline-flex flex-wrap align-items-center gap-1">
+          {issue.manually_reported ? (
+            <span className="badge text-bg-info">Manually reported</span>
+          ) : (
+            <span className="badge text-bg-warning">Automatically reported</span>
+          )}
+          {issue.assessment &&
+            (issue.assessment.deleted_at ? (
+              <span className="badge color-red3">{issue.assessment.label} (deleted)</span>
+            ) : (
+              issue.course_instance_id && (
+                <AssessmentBadge
+                  courseInstanceId={issue.course_instance_id}
+                  hideLink={issue.hideAssessmentLink}
+                  assessment={issue.assessment}
+                />
+              )
+            ))}
+          {issue.course_instance_short_name && (
+            <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
+          )}
+        </span>
       </div>
       {hasCoursePermissionEdit && (
         <div className="ms-auto ps-4">
@@ -457,6 +501,20 @@ function FilterHelpModal() {
                   <tr>
                     <td>
                       <code>
+                        ci:<em>short_name</em>
+                      </code>
+                    </td>
+                    <td>
+                      Shows all issues associated with a course instance short name like{' '}
+                      <code>short_name</code>; supports <code>*</code> as a wildcard. For example,{' '}
+                      <code>ci:2025F</code> shows all issues associated with the course instance{' '}
+                      <code>2025F</code>, while <code>ci:2025*</code> shows all issues associated
+                      with any course instance that starts with <code>2025</code>.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>
                         qid:<em>QID</em>
                       </code>
                     </td>
@@ -478,7 +536,9 @@ function FilterHelpModal() {
                     <td>
                       Shows all issues that were reported by a user with a UID like <code>UID</code>
                       . For example, <code>user:student@example.com</code> shows all issues that
-                      were reported by <code>student@example.com</code>.
+                      were reported by <code>student@example.com</code>. Searching by UID will only
+                      include issues in course instances where you have permission to see student
+                      data.
                     </td>
                   </tr>
                 </tbody>

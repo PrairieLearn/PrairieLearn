@@ -82,6 +82,7 @@ export function InstructorInfoPanel({
           variant,
           question_is_shared,
           questionContext,
+          hasCoursePermissionPreview: authz_data.has_course_permission_preview,
         }),
         VariantInfo({ variant, timeZone, questionContext }),
         IssueReportButton({ variant, csrfToken, questionContext }),
@@ -127,19 +128,21 @@ function InstanceUserInfo({
             ${instance_group != null ? 'Group details' : 'Student details'}
           </h3>
         </summary>
-        ${instance_group != null
-          ? html`
-              <div class="d-flex flex-wrap">
-                <div class="pe-1">${instance_group.name}</div>
-                <div class="pe-1">(${instance_group_uid_list?.join(', ')})</div>
-              </div>
-            `
-          : html`
-              <div class="d-flex flex-wrap mt-2">
-                <div class="pe-1">${instance_user?.name}</div>
-                <div class="pe-1">${instance_user?.uid}</div>
-              </div>
-            `}
+        ${
+          instance_group != null
+            ? html`
+                <div class="d-flex flex-wrap">
+                  <div class="pe-1">${instance_group.name}</div>
+                  <div class="pe-1">(${instance_group_uid_list?.join(', ')})</div>
+                </div>
+              `
+            : html`
+                <div class="d-flex flex-wrap mt-2">
+                  <div class="pe-1">${instance_user?.name}</div>
+                  <div class="pe-1">${instance_user?.uid}</div>
+                </div>
+              `
+        }
       </details>
     </div>
   `;
@@ -152,6 +155,7 @@ function QuestionInfo({
   variant,
   question_is_shared,
   questionContext,
+  hasCoursePermissionPreview,
 }: {
   course: Course;
   course_instance?: CourseInstance;
@@ -159,6 +163,7 @@ function QuestionInfo({
   variant?: Variant;
   question_is_shared?: boolean;
   questionContext: QuestionContext;
+  hasCoursePermissionPreview: boolean;
 }) {
   if (question == null || variant == null) return '';
 
@@ -186,36 +191,49 @@ function QuestionInfo({
     <div class="d-flex flex-wrap">
       <div class="pe-1">QID:</div>
       <div>
-        ${questionContext === 'public'
-          ? html`<a href="${publicPreviewUrl}?variant_seed=${variant.variant_seed}">
-              ${sharingQid}
-            </a>`
-          : html`<a href="${questionPreviewUrl}">${question.qid}</a>`}
+        ${
+          questionContext === 'public'
+            ? html`<a href="${publicPreviewUrl}?variant_seed=${variant.variant_seed}">
+                ${sharingQid}
+              </a>`
+            : hasCoursePermissionPreview
+              ? html`<a href="${questionPreviewUrl}">${question.qid}</a>`
+              : html`<span>${question.qid}</span>`
+        }
       </div>
     </div>
 
-    ${question_is_shared && course.sharing_name && questionContext !== 'public'
-      ? html`
-          <div class="d-flex flex-wrap">
-            <div class="pe-1">Shared As:</div>
-            ${question.share_publicly || question.share_source_publicly
-              ? html`
-                  <div>
-                    <a href="${publicPreviewUrl}">${sharingQid}</a>
-                  </div>
-                `
-              : html`<div>${sharingQid}</div>`}
-          </div>
-        `
-      : ''}
-    ${question.title?.trim()
-      ? html`
-          <div class="d-flex flex-wrap">
-            <div class="pe-1">Title:</div>
-            <div>${question.title}</div>
-          </div>
-        `
-      : ''}
+    ${
+      question_is_shared &&
+      course.sharing_name &&
+      questionContext !== 'public' &&
+      hasCoursePermissionPreview
+        ? html`
+            <div class="d-flex flex-wrap">
+              <div class="pe-1">Shared As:</div>
+              ${
+                question.share_publicly || question.share_source_publicly
+                  ? html`
+                      <div>
+                        <a href="${publicPreviewUrl}">${sharingQid}</a>
+                      </div>
+                    `
+                  : html`<div>${sharingQid}</div>`
+              }
+            </div>
+          `
+        : ''
+    }
+    ${
+      question.title?.trim()
+        ? html`
+            <div class="d-flex flex-wrap">
+              <div class="pe-1">Title:</div>
+              <div>${question.title}</div>
+            </div>
+          `
+        : ''
+    }
   `;
 }
 
@@ -240,18 +258,20 @@ function VariantInfo({
 
   return html`
     <h3 class="card-title h5">Variant</h3>
-    ${questionContext !== 'public'
-      ? html`
-          <div class="d-flex flex-wrap">
-            <div class="pe-1">Started at:</div>
-            <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
-          </div>
-          <div class="d-flex flex-wrap">
-            <div class="pe-1">Duration:</div>
-            <div>${formatInterval(duration)}</div>
-          </div>
-        `
-      : ''}
+    ${
+      questionContext !== 'public'
+        ? html`
+            <div class="d-flex flex-wrap">
+              <div class="pe-1">Started at:</div>
+              <div>${date ? formatDate(date, timeZone) : '(unknown)'}</div>
+            </div>
+            <div class="d-flex flex-wrap">
+              <div class="pe-1">Duration:</div>
+              <div>${formatInterval(duration)}</div>
+            </div>
+          `
+        : ''
+    }
     <div class="d-flex flex-wrap">
       <details class="pe-1">
         <summary>Show/Hide answer</summary>
@@ -340,35 +360,43 @@ function ManualGradingInfo({
       <div>${instance_question.requires_manual_grading ? 'Requires grading' : 'Graded'}</div>
     </div>
 
-    ${instance_question.requires_manual_grading
-      ? html`
-          <div class="d-flex flex-wrap">
-            <div class="pe-1">Assigned to:</div>
-            <div>
-              ${assignedGrader?.name
-                ? `${assignedGrader.name} (${assignedGrader.uid})`
-                : (assignedGrader?.uid ?? 'Unassigned')}
+    ${
+      instance_question.requires_manual_grading
+        ? html`
+            <div class="d-flex flex-wrap">
+              <div class="pe-1">Assigned to:</div>
+              <div>
+                ${
+                  assignedGrader?.name
+                    ? `${assignedGrader.name} (${assignedGrader.uid})`
+                    : (assignedGrader?.uid ?? 'Unassigned')
+                }
+              </div>
             </div>
-          </div>
-        `
-      : ''}
-    ${lastGrader
-      ? html`
-          <div class="d-flex flex-wrap">
-            <div class="pe-1">Graded by:</div>
-            <div>
-              ${lastGrader.name ? `${lastGrader.name} (${lastGrader.uid})` : lastGrader.uid}
+          `
+        : ''
+    }
+    ${
+      lastGrader
+        ? html`
+            <div class="d-flex flex-wrap">
+              <div class="pe-1">Graded by:</div>
+              <div>
+                ${lastGrader.name ? `${lastGrader.name} (${lastGrader.uid})` : lastGrader.uid}
+              </div>
             </div>
-          </div>
-        `
-      : ''}
-    ${questionContext !== 'manual_grading'
-      ? html`
-          <div class="pb-2">
-            <a href="${manualGradingUrl}">Grade</a>
-          </div>
-        `
-      : ''}
+          `
+        : ''
+    }
+    ${
+      questionContext !== 'manual_grading'
+        ? html`
+            <div class="pb-2">
+              <a href="${manualGradingUrl}">Grade</a>
+            </div>
+          `
+        : ''
+    }
   `;
 }
 

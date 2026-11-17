@@ -1,6 +1,7 @@
 import random
 from enum import Enum
 from sys import get_int_max_str_digits
+from typing import assert_never
 
 import big_o_utils as bou
 import chevron
@@ -8,7 +9,6 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from typing_extensions import assert_never
 
 
 class BigOType(Enum):
@@ -32,7 +32,6 @@ GRADE_FUNCTION_DICT: dict[BigOType, bou.BigOGradingFunctionT] = {
     BigOType.LITTLE_OMEGA: bou.grade_omega_expression,
 }
 
-VARIABLES_DEFAULT = ""
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 ARIA_LABEL_DEFAULT = None
@@ -48,6 +47,44 @@ BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
+MAX_VARIABLES = 7
+
+
+def _get_variables_with_fallback(
+    element: lxml.html.HtmlElement, data: pl.QuestionData
+) -> list[str]:
+    """Resolve the list of variables allowed in the expression.
+
+    If the ``variables`` (or deprecated ``variable``) attribute is specified, those
+    variables are used. Otherwise, the variables are inferred from the free symbols of
+    the correct answer, consistent with ``pl-symbolic-input``.
+
+    Returns:
+        The list of variable names allowed in the expression.
+    """
+    for attrib in ("variables", "variable"):
+        if pl.has_attrib(element, attrib):
+            return [
+                var
+                for var in psu.get_items_list(pl.get_string_attrib(element, attrib))
+                if var
+            ]
+
+    name = pl.get_string_attrib(element, "answers-name")
+    a_true = data["correct_answers"].get(name)
+    if isinstance(a_true, str) and a_true != "":
+        try:
+            a_true_expr = psu.convert_string_to_sympy(
+                a_true,
+                allow_complex=False,
+                allow_trig_functions=False,
+                allow_extra_symbols=True,
+            )
+        except psu.BaseSympyError:
+            return []
+        return sorted(str(symbol) for symbol in a_true_expr.free_symbols)
+
+    return []
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -58,6 +95,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "correct-answer",
         "aria-label",
         "variable",
+        "variables",
         "size",
         "display",
         "show-help-text",
@@ -73,34 +111,43 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    variables = psu.get_items_list(
-        pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
-    )
+    if pl.has_attrib(element, "variable") and pl.has_attrib(element, "variables"):
+        raise ValueError("variable is deprecated, use only 'variables' property")
 
-    if len(variables) > 1:
-        raise ValueError(f"Only one variable is supported for question {name}")
-
+    # Store the correct answer from the attribute first, so it is available when
+    # inferring the variables below.
     if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
+        data["correct_answers"][name] = pl.get_string_attrib(element, "correct-answer")
 
-        a_true = pl.get_string_attrib(element, "correct-answer")
-        # Validate that the answer can be parsed before storing
-        if len(a_true) > 0:
-            try:
-                psu.convert_string_to_sympy(
-                    a_true, variables, allow_complex=False, allow_trig_functions=False
-                )
-            except psu.BaseSympyError as exc:
-                raise ValueError(
-                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
-                ) from exc
+    # If no variable is specified, infer it from the correct answer.
+    variables = _get_variables_with_fallback(element, data)
 
-        data["correct_answers"][name] = a_true
+    if len(variables) > MAX_VARIABLES:
+        raise ValueError("Too many variables specified.")
+
+    # Validate that the answer can be parsed and that the variables attribute
+    # includes all variables needed by the correct answer
+    a_true = data["correct_answers"].get(name)
+    if a_true is not None and len(a_true) > 0:
+        try:
+            psu.convert_string_to_sympy(
+                a_true, variables, allow_complex=False, allow_trig_functions=False
+            )
+        except psu.HasInvalidSymbolError as exc:
+            raise ValueError(
+                f'Correct answer "{a_true}" for "{name}" uses the variable '
+                f'"{exc.symbol}", which is not included in the "variables" attribute.'
+            ) from exc
+        except psu.BaseSympyError as exc:
+            raise ValueError(
+                f'Parsing correct answer "{a_true}" for "{name}" failed.'
+            ) from exc
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-    if data["correct_answers"][name] == "" and (not allow_blank or blank_value != ""):
+    if a_true == "" and (not allow_blank or blank_value != ""):
         raise ValueError(
             "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
         )
@@ -110,9 +157,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
-    variables = psu.get_items_list(
-        pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
-    )
+    variables = _get_variables_with_fallback(element, data)
+
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
@@ -123,12 +169,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     parse_error = data["format_errors"].get(name)
 
-    constants_class = psu._Constants()
-
     operators: list[str] = list(psu.STANDARD_OPERATORS)
-    operators.extend(constants_class.functions.keys())
+    operators.extend(
+        sorted(
+            psu.get_builtin_callable_functions(
+                allow_trig_functions=False,
+                include_helpers=False,
+            )
+        )
+    )
 
-    constants = list(constants_class.variables.keys())
+    constants = sorted(psu.get_builtin_constants(allow_hidden=False))
 
     # Get the info string using these parameters
     info_params = {
@@ -147,6 +198,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error: str | None = data["format_errors"].get(name)
     missing_input = False
     a_sub = None
+    submitted_raw_answer = data["raw_submitted_answers"].get(name)
+    raw_input_popover = None
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
@@ -159,6 +212,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_trig_functions=False,
                 )
             )
+        if data["panel"] == "submission" and submitted_raw_answer is not None:
+            raw_input_popover = pl.render_raw_input_popover(
+                submitted_raw_answer, aria_label or name
+            )
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -169,9 +226,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ).strip()
 
     # Next, get some attributes we will use in multiple places
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
-    if raw_submitted_answer is None:
-        raw_submitted_answer = pl.get_string_attrib(
+    raw_answer_or_initial_value = submitted_raw_answer
+    if raw_answer_or_initial_value is None:
+        raw_answer_or_initial_value = pl.get_string_attrib(
             element, "initial-value", INITIAL_VALUE_DEFAULT
         )
     score = data["partial_scores"].get(name, {}).get("score")
@@ -190,7 +247,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "aria_label": aria_label,
             "placeholder": placeholder,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": raw_answer_or_initial_value,
             "type": bigo_type,
             "parse_error": parse_error,
         }
@@ -202,8 +259,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
-        # No need to escape the raw_submitted_answer,
-        # this gets done automatically by mustache
         html_params = {
             "submission": True,
             "type": bigo_type,
@@ -212,8 +267,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "error": parse_error or missing_input,
             "a_sub": a_sub,
-            "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer": (
+                pl.escape_unicode_string(submitted_raw_answer)
+                if parse_error is not None and submitted_raw_answer is not None
+                else None
+            ),
             "missing_input": missing_input,
+            "raw_input_popover": raw_input_popover,
         }
 
         if show_score and score is not None:
@@ -240,6 +300,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "answer": True,
             "a_tru": sympy.latex(a_tru),
             "type": bigo_type,
+            display.value: True,
         }
 
         return chevron.render(template, html_params).strip()
@@ -250,9 +311,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = psu.get_items_list(
-        pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
-    )
+    variables = _get_variables_with_fallback(element, data)
+
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
@@ -282,9 +342,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = psu.get_items_list(
-        pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
-    )
+    variables = _get_variables_with_fallback(element, data)
+
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     a_tru: str | None = data["correct_answers"].get(name)
 

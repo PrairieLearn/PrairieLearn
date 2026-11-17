@@ -10,7 +10,6 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
-import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import {
   type GenerateResultData,
@@ -19,6 +18,8 @@ import {
   type ParseSubmission,
   type PrepareResultData,
   type PrepareVariant,
+  type QuestionCaller,
+  type QuestionRenderRequiredLocals,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
@@ -127,6 +128,8 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
+  _preferences: Record<string, string | number | boolean>,
+  _caller: QuestionCaller,
 ): QuestionServerReturnValue<GenerateResultData> {
   return await callFunction<GenerateResultData>('generate', course, question, { variant_seed });
 }
@@ -136,6 +139,7 @@ export async function grade(
   variant: Variant,
   question: Question,
   question_course: Course,
+  _caller: QuestionCaller,
 ): QuestionServerReturnValue<GradeResultData> {
   return await callFunction<GradeResultData>('grade', question_course, question, {
     submission,
@@ -155,7 +159,8 @@ export async function render({
   submission: Submission | null;
   submissions: Submission[];
   course: Course;
-  locals: UntypedResLocals;
+  locals: QuestionRenderRequiredLocals;
+  caller: QuestionCaller;
 }): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
@@ -170,6 +175,7 @@ export async function prepare(
   _question: Question,
   _course: Course,
   variant: PrepareVariant,
+  _caller: QuestionCaller,
 ): QuestionServerReturnValue<PrepareResultData> {
   const data = {
     params: variant.params ?? {},
@@ -184,6 +190,7 @@ export async function parse(
   variant: Variant,
   _question: Question,
   _course: Course,
+  _caller: QuestionCaller,
 ): QuestionServerReturnValue<ParseResultData> {
   const data = {
     params: variant.params ?? {},

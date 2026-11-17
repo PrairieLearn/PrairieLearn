@@ -25,7 +25,7 @@ const GradingJobMessageSchema = z.object({
   /** Whether or not the container should have internet access. */
   enableNetworking: z.boolean(),
   /** Environment variables for the container. */
-  environment: z.record(z.string()),
+  environment: z.record(z.string(), z.string()),
   /** The AWS S3 bucket containing this job's files. */
   s3Bucket: z.string(),
   /** The root key for the job's files. */
@@ -56,8 +56,7 @@ async function startHeartbeat(sqs: SQSClient, queueUrl: string, receiptHandle: s
 
   // We want this process to run in the background, so we don't await it.
   // `extendVisibilityTimeout` will handle errors.
-  // eslint-disable-next-line no-floating-promise/no-floating-promise
-  (async () => {
+  void (async () => {
     while (!abortController.signal.aborted) {
       await sleep(config.visibilityTimeoutHeartbeatIntervalSec * 1000, null, { ref: false });
 
@@ -75,7 +74,7 @@ async function startHeartbeat(sqs: SQSClient, queueUrl: string, receiptHandle: s
   return abortController;
 }
 
-async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string) {
+async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string, signal?: AbortSignal) {
   while (true) {
     const data = await sqs.send(
       new ReceiveMessageCommand({
@@ -83,6 +82,7 @@ async function receiveMessageFromQueue(sqs: SQSClient, queueUrl: string) {
         QueueUrl: queueUrl,
         WaitTimeSeconds: 20,
       }),
+      { abortSignal: signal },
     );
     const message = data.Messages?.[0];
     if (!message || !message.Body) continue;
@@ -97,12 +97,12 @@ export async function receiveFromQueue(
   sqs: SQSClient,
   queueUrl: string,
   receiveCallback: (message: GradingJobMessage) => Promise<void>,
+  signal?: AbortSignal,
 ) {
   globalLogger.info('Waiting for next job...');
-  const { parsedMessage, receiptHandle } = await receiveMessageFromQueue(sqs, queueUrl);
+  const { parsedMessage, receiptHandle } = await receiveMessageFromQueue(sqs, queueUrl, signal);
 
   const validatedMessage = GradingJobMessageSchema.parse(parsedMessage);
-
   const heartbeatAbortController = await startHeartbeat(sqs, queueUrl, receiptHandle);
 
   await receiveCallback(validatedMessage)

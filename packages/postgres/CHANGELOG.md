@@ -1,5 +1,89 @@
 # @prairielearn/postgres
 
+## 8.0.3
+
+### Patch Changes
+
+- 5160bea: Use Zod's core schema type in query helpers to reduce typechecking costs while preserving inferred result types.
+
+## 8.0.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 8.0.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 8.0.0
+
+### Major Changes
+
+- fce4634: Bind named array values as a single parameter, matching positional parameters and avoiding PostgreSQL's parameter count limit for large arrays.
+
+  Previously, named arrays expanded into `ARRAY[$1,$2,...]`. Queries relying on the constructor's type inference must now specify an array type, for example `unnest($ids::bigint[])` instead of `unnest($ids)`, or `SELECT $names::text[]` instead of `SELECT $names`. When converting an array to text, cast to the array type first: `$names::text[]::text`.
+
+  Named arrays now use node-postgres array serialization, just like positional arrays. For JSON values, pass `JSON.stringify(value)` and use the appropriate `::jsonb` cast. Positional parameter behavior is unchanged.
+
+## 7.1.3
+
+### Patch Changes
+
+- b98ca1c: Update Unicorn overrides for v73 and address selected correctness-focused lint findings.
+
+## 7.1.2
+
+### Patch Changes
+
+- 38ef3b6: Honor downstream backpressure when streaming rows from a PostgreSQL cursor.
+- df28e68: Bump dependencies
+
+## 7.1.1
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 7.1.0
+
+### Minor Changes
+
+- fd27a2a: Export `escapeIdentifier` for safely constructing SQL queries with dynamic identifiers.
+
+## 7.0.0
+
+### Major Changes
+
+- 288ff13: Upgrade to Zod 4. Zod is part of these packages' public API surface (exported schemas and schema-generic functions such as `ConfigLoader` and the `query*` helpers), so consumers must also upgrade to Zod 4. Additionally, `@prairielearn/postgres` no longer exports the `AnyRowSchema` type alias; use `z.ZodType` instead.
+
+## 6.0.5
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 6.0.4
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 6.0.3
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 6.0.2
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+
 ## 6.0.1
 
 ### Patch Changes

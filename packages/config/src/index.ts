@@ -6,11 +6,11 @@ import { z } from 'zod';
 
 import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
 
-type AbstractConfig = Record<string, unknown>;
+import type { AbstractConfig, ConfigSource } from './types.js';
 
-export interface ConfigSource<T extends AbstractConfig = AbstractConfig> {
-  load: (existingConfig: T) => Promise<Partial<T>>;
-}
+export { makeConductorConfigSource } from './sources/conductor.js';
+export { makeKmsConfigSource } from './sources/kms.js';
+export type { AbstractConfig, ConfigSource } from './types.js';
 
 export function makeLiteralConfigSource(config: AbstractConfig) {
   return {
@@ -69,7 +69,7 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
       // configs between clients in this case. We only want to share configs
       // to avoid spamming the IMDS API when creating lots of clients, but
       // this client will only be used once, typically at application startup.
-      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      // oxlint-disable-next-line @prairielearn/aws-client-shared-config
       const ec2Client = new EC2Client({ region: identity.region });
       const tags = await ec2Client.send(
         new DescribeTagsCommand({
@@ -81,7 +81,7 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
       if (!secretId) return {};
 
       // As above, we don't care about sharing configs between clients.
-      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      // oxlint-disable-next-line @prairielearn/aws-client-shared-config
       const secretsManagerClient = new SecretsManagerClient({ region: identity.region });
       const secretValue = await secretsManagerClient.send(
         new GetSecretValueCommand({ SecretId: secretId }),
@@ -113,7 +113,7 @@ export function makeImdsConfigSource(): ConfigSource {
   };
 }
 
-export class ConfigLoader<Schema extends z.ZodTypeAny> {
+export class ConfigLoader<Schema extends z.ZodType> {
   private readonly schema: Schema;
   private resolvedConfig: z.infer<Schema>;
 
@@ -127,7 +127,7 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   }
 
   async loadAndValidate(sources: ConfigSource<any>[] = []) {
-    let config = this.schema.parse({});
+    let config = this.schema.parse({}) as Record<string, any>;
     // If the config setting is an array, override instead of merge
     const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);
 
@@ -135,8 +135,8 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
       config = mergeWith(config, await source.load(config), mergeRule);
     }
 
-    const parsedConfig = this.schema.parse(config);
-    mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
+    const parsedConfig = this.schema.parse(config) as Record<string, any>;
+    mergeWith(this.resolvedConfig as Record<string, any>, parsedConfig, mergeRule);
   }
 
   reset() {

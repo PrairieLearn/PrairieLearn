@@ -132,10 +132,12 @@ function EditQuestionPointsScoreFormHtml({
         <small>
           This will also recalculate the total points and total score at 100% credit. This change
           will be overwritten if the question is answered again by the student.
-          ${instance_question.status !== 'unanswered'
-            ? html`You may also update the score
-                <a href="${manualGradingUrl}">via the manual grading page</a>.`
-            : ''}
+          ${
+            instance_question.status !== 'unanswered'
+              ? html`You may also update the score
+                  <a href="${manualGradingUrl}">via the manual grading page</a>.`
+              : ''
+          }
         </small>
       </p>
       <div class="text-end">
@@ -249,7 +251,7 @@ function EditQuestionPointsScoreForm({
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -393,12 +395,13 @@ export function EditQuestionPointsScoreButton({
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
     };
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [show]);
 
   return (
     <OverlayTrigger
       popover={{
+        header: `Change question ${findLabel(field)}`,
         body: (
           <EditQuestionPointsScoreForm
             assessmentQuestion={assessmentQuestion}

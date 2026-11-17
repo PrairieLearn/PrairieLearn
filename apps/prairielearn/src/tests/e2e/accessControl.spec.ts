@@ -6,7 +6,6 @@ import type { Locator, Page } from '@playwright/test';
 import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentAccessControlRuleSchema } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
@@ -49,11 +48,6 @@ function getDetailPanel(page: Page): Locator {
   return page.locator('#pl-ui-split-pane-detail');
 }
 
-/** Returns the currently visible modal dialog (e.g. delete confirmation). */
-function getVisibleModal(page: Page): Locator {
-  return page.locator('[aria-modal="true"]');
-}
-
 /** Returns the override card containing the given label text. */
 function getOverrideCard(page: Page, labelText: string): Locator {
   return page.getByTestId('override-card').filter({ hasText: labelText });
@@ -75,7 +69,6 @@ test.describe('Access control UI', () => {
       path.join(TEST_COURSE_PATH, relativePath),
       path.join(testCoursePath, relativePath),
     );
-    await features.enable('enhanced-access-control');
     await syncCourse(testCoursePath);
   });
 
@@ -90,11 +83,21 @@ test.describe('Access control UI', () => {
     await expect(page.getByRole('heading', { name: 'Overrides' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Add override/i })).toBeVisible();
 
+    await expect(page.getByRole('heading', { name: 'Date control' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'After completion' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Time range' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Question visibility' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Score visibility' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Access' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Before release' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Listed for students' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Immediately after completion' })).toBeVisible();
+
     // Verify Section A override card is visible with its student label badge
     await expect(getOverrideCard(page, 'Section A')).toBeVisible();
 
-    // Save button should be disabled (no unsaved changes)
-    await expect(page.getByRole('button', { name: /Save and sync/i })).toBeDisabled();
+    // Save bar is hidden when there are no unsaved changes
+    await expect(page.getByRole('button', { name: 'Save' })).toBeHidden();
   });
 
   test('can add a student-label override, configure it, and save', async ({
@@ -130,20 +133,144 @@ test.describe('Access control UI', () => {
     await expect(getOverrideCard(page, 'Extra time')).toBeVisible();
 
     // Save
-    await page.getByRole('button', { name: /Save and sync/i }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Access control updated successfully.')).toBeVisible();
 
     // Verify DB: new rule with labels
     const records = await getAccessControlRecords(assessment.id);
-    const overrides = records.filter((r) => r.number > 0);
-    expect(overrides.length).toBe(2); // Section A + Extra time
+    const labelOverrides = records.filter((r) => r.number > 0 && r.target_type === 'student_label');
+    expect(labelOverrides.length).toBe(2); // Section A + Extra time
 
-    // Verify disk: accessControl array has 3 rules (main + 2 overrides)
+    // Verify disk: accessControl array has the 2 label-targeted overrides.
     const json = await readAssessmentJson(testCoursePath);
-    expect(json.accessControl).toHaveLength(3);
-    const overrideLabels = json.accessControl.slice(1).map((r: { labels: string[] }) => r.labels);
+    const overrideLabels = json.accessControl
+      .slice(1)
+      .map((r: { labels?: string[] }) => r.labels)
+      .filter((labels: string[] | undefined) => labels !== undefined);
+    expect(overrideLabels).toHaveLength(2);
     expect(overrideLabels).toContainEqual(['Section A']);
     expect(overrideLabels).toContainEqual(['Extra time']);
+  });
+
+  test('keeps default validation errors when adding an override', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    await expect(panel).toBeVisible();
+
+    await panel.getByLabel('PrairieTest').check();
+    await expect(panel.getByText('Exam UUID is required')).toBeVisible();
+
+    const saveButton = page.getByRole('button', { name: 'Save' });
+    await expect(saveButton).toBeDisabled();
+
+    await page.getByRole('button', { name: /Add override/i }).click();
+
+    await expect(panel.getByText('Applies to')).toBeVisible();
+    await expect(saveButton).toBeDisabled();
+    await expect(page.getByText('Exam UUID is required').first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+    await expect(panel.getByText('Exam UUID is required')).toBeVisible();
+  });
+
+  test('clears a release date error when the release mode resolves it', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    await panel.getByLabel('Scheduled for release').check();
+    await panel.getByLabel('Release date').fill('2000-01-01T00:00');
+
+    const errorMessage = 'Release date must be in the future when scheduled for release.';
+    await expect(panel.getByText(errorMessage)).toBeVisible();
+
+    await panel.getByLabel('Released').check();
+    await expect(panel.getByText(errorMessage)).toBeHidden();
+  });
+
+  test('can switch after-due-date submissions from partial credit to practice', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    const afterDueDateSelect = panel.getByRole('button', { name: 'After due date' });
+    const creditInput = panel.getByRole('spinbutton', {
+      name: 'Credit percentage after last deadline',
+    });
+
+    await afterDueDateSelect.click();
+    await page.getByRole('option', { name: /Allow submissions for partial credit/ }).click();
+    await expect(creditInput).toBeVisible();
+
+    // Regression check: switching to practice hides the credit input but must preserve
+    // `credit: 0`, otherwise the mode immediately reverts to partial credit.
+    await afterDueDateSelect.click();
+    await page.getByRole('option', { name: /Allow practice submissions/ }).click();
+
+    await expect(afterDueDateSelect).toContainText('Allow practice submissions');
+    await expect(creditInput).toBeHidden();
+    await expect(panel.getByText('Credit is required')).toBeHidden();
+  });
+
+  test('clears a practice credit error when due-date credit increases', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: ASSESSMENT_TID,
+    });
+    await navigateToAccessPage(page, courseInstance.id, assessment.id);
+
+    await page.getByRole('button', { name: 'Edit' }).first().click();
+
+    const panel = getDetailPanel(page);
+    const afterDueDateSelect = panel.getByRole('button', { name: 'After due date' });
+    await afterDueDateSelect.click();
+    await page.getByRole('option', { name: 'No submissions allowed' }).click();
+
+    await panel.getByRole('button', { name: 'Change', exact: true }).click();
+    const dueCreditInput = panel.getByRole('spinbutton', { name: 'Due date credit percentage' });
+    await dueCreditInput.fill('0');
+
+    await afterDueDateSelect.click();
+    await page.getByRole('option', { name: /Allow practice submissions/ }).click();
+
+    const errorMessage = 'Deadline credits must strictly decrease over time.';
+    await expect(panel.getByText(errorMessage)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    await dueCreditInput.fill('100');
+
+    await expect(page.getByText(errorMessage)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Access control updated successfully.')).toBeVisible();
   });
 
   test('can delete an override', async ({ page, courseInstance, testCoursePath }) => {
@@ -159,21 +286,11 @@ test.describe('Access control UI', () => {
     const initialRecords = await getAccessControlRecords(assessment.id);
     const initialOverrideCount = initialRecords.filter((r) => r.number > 0).length;
 
-    // Click "Remove" on the Section A override
     await sectionACard.getByRole('button', { name: /Remove/i }).click();
-
-    // Confirm deletion in modal
-    const modal = getVisibleModal(page);
-    await expect(modal).toBeVisible();
-    await expect(modal.getByText('Delete override')).toBeVisible();
-    await modal.getByRole('button', { name: 'Delete' }).click();
-    await expect(modal).not.toBeVisible();
-
-    // Verify card removed from page
-    await expect(page.getByText('No overrides configured')).toBeVisible();
+    await expect(sectionACard).toBeHidden();
 
     // Save
-    await page.getByRole('button', { name: /Save and sync/i }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Access control updated successfully.')).toBeVisible();
 
     // Verify DB: override count decreased
@@ -181,10 +298,11 @@ test.describe('Access control UI', () => {
     const overrideCount = records.filter((r) => r.number > 0).length;
     expect(overrideCount).toBe(initialOverrideCount - 1);
 
-    // Verify disk: accessControl array has only 1 rule (main, no overrides)
+    // Verify disk: accessControl array has no label-targeted overrides.
     const json = await readAssessmentJson(testCoursePath);
-    expect(json.accessControl).toHaveLength(1);
-    expect(json.accessControl[0].labels).toBeUndefined();
+    expect(json.accessControl.every((r: { labels?: string[] }) => r.labels === undefined)).toBe(
+      true,
+    );
   });
 
   test('can edit override with duration and question visibility', async ({
@@ -208,7 +326,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Override Time limit' }).click();
 
     // Enable the time limit checkbox (now rendered as a labeled form check)
-    await panel.getByLabel('Time limit').check();
+    await panel.getByRole('checkbox', { name: 'Time limit' }).check();
 
     // Verify duration input shows default of 60
     await expect(panel.getByRole('spinbutton')).toHaveValue('60');
@@ -217,7 +335,7 @@ test.describe('Access control UI', () => {
     await panel.getByRole('button', { name: 'Override Question visibility' }).click();
 
     // Select "Hide questions permanently" from the RichSelect dropdown
-    await panel.getByRole('button', { name: /Question visibility/i }).click();
+    await panel.getByRole('button', { name: 'Question visibility', exact: true }).click();
     await page.getByRole('option', { name: /Hide questions permanently/i }).click();
 
     // Close the detail panel
@@ -225,15 +343,15 @@ test.describe('Access control UI', () => {
 
     // Verify summary shows the changes
     await expect(page.getByText('60 minutes')).toBeVisible();
-    await expect(page.getByText('Questions hidden after completion')).toBeVisible();
+    await expect(page.getByText('Hidden after completion')).toBeVisible();
 
     // Save
-    await page.getByRole('button', { name: /Save and sync/i }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Access control updated successfully.')).toBeVisible();
 
     // Verify DB state
     const records = await getAccessControlRecords(assessment.id);
-    const sectionARule = records.find((r) => r.number > 0);
+    const sectionARule = records.find((r) => r.target_type === 'student_label');
     expect(sectionARule?.date_control_duration_minutes).toBe(60);
     expect(sectionARule?.after_complete_questions_hidden).toBe(true);
 

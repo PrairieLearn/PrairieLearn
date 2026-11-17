@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -17,7 +15,9 @@ import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
-import { updateCourseSharingName } from '../models/course.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseById, updateCourseSharingName } from '../models/course.js';
+import type { AssessmentJsonInput } from '../schemas/infoAssessment.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import {
@@ -67,6 +67,19 @@ interface EditData {
     url?: string;
   };
   trpcCall?: () => Promise<void>;
+  validateInfo?: (infoJson: any) => void | Promise<void>;
+}
+
+function assertNoEnrollmentSpecificAccessControlRules(infoJson: any) {
+  assert.deepEqual(infoJson.accessControl, [
+    {
+      dateControl: {
+        release: {
+          date: '2000-01-01T00:00:00',
+        },
+      },
+    },
+  ]);
 }
 
 function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
@@ -173,6 +186,7 @@ const testEditData: EditData[] = [
     },
     action: 'copy_question',
     info: 'questions/test/question_copy1/info.json',
+    validateInfo: (infoJson) => assert.notProperty(infoJson, 'copiedFrom'),
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -244,7 +258,12 @@ const testEditData: EditData[] = [
     formSelector: 'body',
     trpcCall: async () => {
       const trpcClient = createTrpcClientForAssessment('1');
-      const result = await trpcClient.assessmentSettings.copyAssessment.mutate();
+      const result = await trpcClient.assessmentSettings.copyAssessment.mutate({
+        aid: 'HW1_copy1',
+        title: 'Homework 1 (copy 1)',
+        number: '1',
+        set: 'Homework',
+      });
       const settingsUrl = `${courseInstanceUrl}/assessment/${result.assessmentId}/settings`;
       const res = await fetch(settingsUrl);
       assert.isOk(res.ok);
@@ -252,6 +271,7 @@ const testEditData: EditData[] = [
       currentPage$ = cheerio.load(await res.text());
     },
     info: 'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
+    validateInfo: assertNoEnrollmentSpecificAccessControlRules,
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -332,10 +352,22 @@ const testEditData: EditData[] = [
       end_date: '',
       self_enrollment_enabled: true,
       self_enrollment_use_enrollment_code: false,
+      self_enrollment_restrict_to_institution: false,
       course_instance_permission: 'Student Data Editor',
     },
     isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
+    validateInfo: async (infoJson) => {
+      assert.deepEqual(infoJson.selfEnrollment, { restrictToInstitution: false });
+      const contents = await fs.readFile(
+        path.join(
+          courseRepo.courseDevDir,
+          'courseInstances/Fa18_copy1/assessments/HW1/infoAssessment.json',
+        ),
+        'utf-8',
+      );
+      assertNoEnrollmentSpecificAccessControlRules(JSON.parse(contents));
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -457,6 +489,14 @@ const publicCopyTestData: EditData[] = [
       question_id: 2,
     },
     info: 'questions/shared-publicly/info.json',
+    validateInfo: async (infoJson) => {
+      const sourceCourse = await selectCourseById('2');
+      assert.equal(
+        infoJson.copiedFrom,
+        `${sourceCourse.uuid}/11111111-1111-1111-1111-111111111111/shared-publicly`,
+      );
+      assert.notProperty(infoJson, 'authors');
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -479,7 +519,22 @@ const publicCopyTestData: EditData[] = [
       end_date: '',
       course_instance_permission: 'Student Data Editor',
     },
-    info: 'questions/shared-publicly/info.json',
+    info: 'courseInstances/Fa19/assessments/test/infoAssessment.json',
+    validateInfo: async (infoJson) => {
+      assert.notProperty(infoJson, 'allowAccess');
+      assert.deepEqual(infoJson.accessControl, []);
+      const sourceCourse = await selectCourseById('2');
+      const copiedQuestion = await fs.readJson(
+        path.join(
+          courseRepo.courseDevDir,
+          'questions/test-course/shared-source-publicly/info.json',
+        ),
+      );
+      assert.equal(
+        copiedQuestion.copiedFrom,
+        `${sourceCourse.uuid}/11111111-1111-1111-1111-111111111112/shared-source-publicly`,
+      );
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -541,6 +596,65 @@ describe('test course editor', { timeout: 20_000 }, function () {
       testEditData.forEach((element) => {
         testEdit(element);
       });
+    });
+  });
+
+  describe('Copy assessment with PrairieTest configuration', () => {
+    beforeAll(async () => {
+      courseRepo = await createCourseRepoFixture({
+        populateOrigin: async (originDir) => {
+          await fs.copy(courseTemplateDir, originDir);
+          const assessmentPath = path.join(
+            originDir,
+            'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+          );
+          const sourceAssessment: AssessmentJsonInput = await fs.readJson(assessmentPath);
+          sourceAssessment.accessControl = [
+            {
+              integrations: {
+                prairieTest: {
+                  exams: [{ examUuid: '11111111-1111-4111-8111-111111111111' }],
+                },
+              },
+            },
+          ];
+          await fs.writeJson(assessmentPath, sourceAssessment);
+          await fs.outputJson(
+            path.join(originDir, 'courseInstances/Fa18/assessments/HW1_legacy/infoAssessment.json'),
+            {
+              ...sourceAssessment,
+              uuid: crypto.randomUUID(),
+              accessControl: undefined,
+              allowAccess: [{ examUuid: '11111111-1111-4111-8111-111111111111' }],
+            },
+          );
+        },
+      });
+      await helperServer.before(courseRepo.courseLiveDir)();
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
+    });
+    afterAll(helperServer.after);
+
+    it('removes PrairieTest configuration from the copied assessment', async () => {
+      for (const tid of ['HW1', 'HW1_legacy']) {
+        const assessment = await selectAssessmentByTid({ course_instance_id: '1', tid });
+        const trpcClient = createTrpcClientForAssessment(assessment.id);
+        await trpcClient.assessmentSettings.copyAssessment.mutate({
+          aid: `${tid}_copy1`,
+          title: 'Homework 1 (copy 1)',
+          number: '1',
+          set: 'Homework',
+        });
+
+        const copy: AssessmentJsonInput = await fs.readJson(
+          path.join(
+            courseRepo.courseLiveDir,
+            `courseInstances/Fa18/assessments/${tid}_copy1/infoAssessment.json`,
+          ),
+        );
+        assert.isUndefined(copy.accessControl?.[0].integrations?.prairieTest);
+        assert.isEmpty(copy.allowAccess ?? []);
+      }
     });
   });
 
@@ -733,6 +847,7 @@ function testEdit(params: EditData) {
         const contents = await fs.readFile(path.join(courseRepo.courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
+        await params.validateInfo?.(infoJson);
       });
     }
   });
@@ -750,6 +865,9 @@ async function createSharedCourse() {
       type: 'v3',
       title: 'Shared publicly',
       topic: 'TOPIC HERE',
+      authors: ['author@example.org'],
+      copiedFrom:
+        'ed80830c-fd51-43e3-9f13-6a41e4c7dfd5/cbf5cbf2-6458-4f13-a418-aa4d2b1093ff/upstream',
       sharePublicly: true,
       shareSourcePublicly: true,
     },
@@ -776,6 +894,7 @@ async function createSharedCourse() {
     },
   ];
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].accessControl = [{}];
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
   sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(

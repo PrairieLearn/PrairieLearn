@@ -25,7 +25,7 @@ export const getQuestionFiles = privateProcedure
   )
   .output(
     z.object({
-      files: z.record(z.string()),
+      files: z.record(z.string(), z.string()),
     }),
   )
   .query(async (opts) => {

@@ -35,12 +35,10 @@ WITH
           lc.consumer_key,
           'secret',
           lc.secret,
-          'created',
-          format_date_full_compact (lc.created_at, ci.display_timezone),
-          'deleted',
-          format_date_full_compact (lc.deleted_at, ci.display_timezone),
           'created_at',
-          lc.created_at
+          lc.created_at,
+          'deleted_at',
+          lc.deleted_at
         )
         ORDER BY
           (lc.created_at)
@@ -64,9 +62,7 @@ WITH
           'assessment_id',
           ll.assessment_id,
           'created_at',
-          ll.created_at,
-          'created',
-          format_date_full_compact (ll.created_at, ci.display_timezone)
+          ll.created_at
         )
         ORDER BY
           created_at

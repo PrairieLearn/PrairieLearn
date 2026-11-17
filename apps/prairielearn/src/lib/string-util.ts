@@ -3,6 +3,9 @@
  */
 import { HttpStatusError } from '@prairielearn/error';
 
+export const UUID_REGEXP_INLINE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+export const UUID_REGEXP = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Parses a string of values separated by commas, whitespace, line breaks, or semicolons
  * into an array of unique values.

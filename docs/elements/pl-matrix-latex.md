@@ -14,6 +14,7 @@ $$C = <pl-matrix-latex params-name="matrixC"></pl-matrix-latex>$$
 import prairielearn as pl
 import numpy as np
 
+
 def generate(data):
 
     # Construct a matrix

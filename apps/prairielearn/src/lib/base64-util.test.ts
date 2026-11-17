@@ -41,6 +41,7 @@ describe('base64 encoding/decoding equivalence', () => {
     // Edge cases
     { name: 'empty string', value: '' },
     { name: 'single character', value: 'a' },
+    { name: 'text with binary characters', value: '\x00\x01\x02\x03' },
   ];
 
   it.each(testCases)('Handles $name correctly', ({ value: testStr }) => {

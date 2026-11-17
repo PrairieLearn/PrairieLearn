@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import z from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
+
 import { PageLayout } from '../../components/PageLayout.js';
 import { PublicCourseInstanceSchema, PublicCourseSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
@@ -20,6 +22,13 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   typedAsyncHandler<'public-course-instance'>(async (req, res) => {
+    // Listing all of an instance's assessments is course-instance-level content,
+    // so it requires the instance itself to be shared publicly. Individual shared
+    // assessments are reachable without this via their own share flag.
+    if (!res.locals.course_instance.share_source_publicly) {
+      throw new HttpStatusError(404, 'Not Found');
+    }
+
     const courseInstanceCopyTargets = await getCourseInstanceCopyTargets({
       course: res.locals.course,
       is_administrator: res.locals.is_administrator,

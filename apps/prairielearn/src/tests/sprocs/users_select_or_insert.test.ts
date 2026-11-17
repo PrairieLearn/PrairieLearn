@@ -23,7 +23,7 @@ async function getUserParams(user_id: string | null) {
 }
 
 async function usersSelectOrInsert(
-  user: { uid: string; name: string; uin?: string | null; email?: string | null },
+  user: { uid: string; name: string | null; uin?: string | null; email?: string | null },
   authn_provider_name: string | null = null,
   institution_id: string | null = null,
 ) {
@@ -41,12 +41,12 @@ const baseUser = {
   institution_id: '1',
 };
 
-describe('sproc users_select_or_insert tests', () => {
+describe('sproc users_select_or_insert tests', { concurrent: false }, () => {
   beforeAll(helperDb.before);
 
   afterAll(helperDb.after);
 
-  test.sequential('create new user', async () => {
+  test('create new user', async () => {
     const { user_id } = await usersSelectOrInsert(baseUser);
     assert.equal(user_id, '1');
 
@@ -54,7 +54,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(baseUser, fromdb);
   });
 
-  test.sequential('create new user again, confirm info is the same', async () => {
+  test('create new user again, confirm info is the same', async () => {
     const { user_id } = await usersSelectOrInsert(baseUser);
     assert.equal(user_id, '1');
 
@@ -62,7 +62,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(baseUser, fromdb);
   });
 
-  test.sequential('user 1 updates name', async () => {
+  test('user 1 updates name', async () => {
     const user = {
       ...baseUser,
       name: 'J.R. User',
@@ -75,11 +75,19 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('add an institution for host.com', async () => {
+  test('user 1 preserves name when login omits it', async () => {
+    const { user_id } = await usersSelectOrInsert({ ...baseUser, name: null });
+    assert.equal(user_id, '1');
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual({ ...baseUser, name: 'J.R. User' }, fromdb);
+  });
+
+  test('add an institution for host.com', async () => {
     await sqldb.execute(sql.insert_host_com_institution);
   });
 
-  test.sequential('user 1 updates institution_id', async () => {
+  test('user 1 updates institution_id', async () => {
     const user = {
       ...baseUser,
       name: 'J.R. User',
@@ -93,7 +101,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('user 1 updates uin when uin was null', async () => {
+  test('user 1 updates uin when uin was null', async () => {
     const user = {
       ...baseUser,
       name: 'J.R. User',
@@ -108,7 +116,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('user 1 updates uin when uin was value', async () => {
+  test('user 1 updates uin when uin was value', async () => {
     const user = {
       ...baseUser,
       name: 'J.R. User',
@@ -123,7 +131,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('user 1 updates uid with already present uin', async () => {
+  test('user 1 updates uid with already present uin', async () => {
     const user = {
       ...baseUser,
       name: 'J.R. User',
@@ -139,7 +147,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('user 2 create under Shibboleth', async () => {
+  test('user 2 create under Shibboleth', async () => {
     const user = {
       uid: 'joe@example.com',
       name: 'Joe Bob',
@@ -154,11 +162,11 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('add an institution for example.com', async () => {
+  test('add an institution for example.com', async () => {
     await sqldb.execute(sql.insert_example_com_institution);
   });
 
-  test.sequential('user 2 logs in via Google', async () => {
+  test('user 2 logs in via Google', async () => {
     const user = {
       uid: 'joe@example.com',
       name: 'joe@example.com',
@@ -180,7 +188,7 @@ describe('sproc users_select_or_insert tests', () => {
     );
   });
 
-  test.sequential('user 2 fails to log in via Azure', async () => {
+  test('user 2 fails to log in via Azure', async () => {
     const user = {
       uid: 'joe@example.com',
       name: 'joe@example.com',
@@ -193,7 +201,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.isNull(user_id);
   });
 
-  test.sequential('user 3 create under Google', async () => {
+  test('user 3 create under Google', async () => {
     const user = {
       uid: 'sally@example.com',
       name: 'sally@example.com',
@@ -208,7 +216,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('user 3 logs in via SAML', async () => {
+  test('user 3 logs in via SAML', async () => {
     const user = {
       uid: 'sally@example.com',
       name: 'Sally Ann',
@@ -223,7 +231,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('user 3 logs back in via Google', async () => {
+  test('user 3 logs back in via Google', async () => {
     const user = {
       uid: 'sally@example.com',
       name: 'sally@example.com',
@@ -245,7 +253,7 @@ describe('sproc users_select_or_insert tests', () => {
     );
   });
 
-  test.sequential('user 4 created with wrong netid and correct UIN', async () => {
+  test('user 4 created with wrong netid and correct UIN', async () => {
     const user = {
       uid: 'uin-888899990@example.com',
       name: 'UIN 888899990',
@@ -260,7 +268,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  test.sequential('user 4 logs in with full correct credentials', async () => {
+  test('user 4 logs in with full correct credentials', async () => {
     const user = {
       uid: 'newstudent',
       name: 'Johnny New Student',
@@ -277,7 +285,7 @@ describe('sproc users_select_or_insert tests', () => {
 
   // This test ensures that a malicious IDP cannot create a user with a UID
   // that doesn't match the institution's UID regexp.
-  test.sequential('user 5 logs in with mismatched UID and institution', async () => {
+  test('user 5 logs in with mismatched UID and institution', async () => {
     const user = {
       uid: 'jasmine@not-illinois.edu',
       name: 'Jasmine H. Acker',
@@ -288,7 +296,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   // This test ensures that users in separate institutions can have the same UIN.
-  test.sequential('users 6 and 7 log in with the same UIN', async () => {
+  test('users 6 and 7 log in with the same UIN', async () => {
     const firstUser = {
       uid: 'raj@host.com',
       name: 'Raj Patel',

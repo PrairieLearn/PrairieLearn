@@ -42,7 +42,8 @@ INSERT INTO
     reason,
     user_id,
     ai_grading_job_id,
-    assessment_question_id
+    assessment_question_id,
+    checkout_session_id
   )
 VALUES
   (
@@ -54,7 +55,8 @@ VALUES
     $reason,
     $user_id,
     $ai_grading_job_id,
-    $assessment_question_id
+    $assessment_question_id,
+    $checkout_session_id
   )
 RETURNING
   *;
@@ -85,7 +87,10 @@ WITH
       COUNT(DISTINCT c.ai_grading_job_id)::int AS submission_count,
       'AI grading' AS reason,
       MAX(u.name) AS user_name,
-      MAX(u.uid) AS user_uid
+      MAX(u.uid) AS user_uid,
+      NULL::bigint AS checkout_session_id,
+      NULL::timestamptz AS checkout_session_refunded_at,
+      NULL::bigint AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
@@ -108,7 +113,10 @@ WITH
       1 AS submission_count,
       'AI grading' AS reason,
       u.name AS user_name,
-      u.uid AS user_uid
+      u.uid AS user_uid,
+      NULL::bigint AS checkout_session_id,
+      NULL::timestamptz AS checkout_session_refunded_at,
+      NULL::bigint AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
@@ -127,10 +135,14 @@ WITH
       1 AS submission_count,
       c.reason,
       u.name AS user_name,
-      u.uid AS user_uid
+      u.uid AS user_uid,
+      cs.id AS checkout_session_id,
+      cs.refunded_at AS checkout_session_refunded_at,
+      cs.amount_milli_dollars AS checkout_session_amount_milli_dollars
     FROM
       ai_grading_credit_pool_changes AS c
       LEFT JOIN users AS u ON u.id = c.user_id
+      LEFT JOIN ai_grading_credit_checkout_sessions AS cs ON cs.id = c.checkout_session_id
     WHERE
       c.course_instance_id = $course_instance_id
       AND c.ai_grading_job_id IS NULL
@@ -152,26 +164,30 @@ OFFSET
 WITH
   daily_totals AS (
     SELECT
-      c.created_at::date AS day,
+      (c.created_at AT TIME ZONE 'UTC')::date AS day,
       SUM(ABS(c.delta_milli_dollars)) AS total
     FROM
       ai_grading_credit_pool_changes AS c
     WHERE
       c.course_instance_id = $course_instance_id
-      AND c.created_at >= $start_date::date
-      AND c.created_at < ($end_date::date + '1 day'::interval)
+      AND c.created_at >= $start_date
+      AND c.created_at < (
+        (
+          ($end_date AT TIME ZONE 'UTC')::date + '1 day'::interval
+        ) AT TIME ZONE 'UTC'
+      )
       AND c.delta_milli_dollars < 0
       AND c.ai_grading_job_id IS NOT NULL
     GROUP BY
-      c.created_at::date
+      (c.created_at AT TIME ZONE 'UTC')::date
   )
 SELECT
   d::date AS date,
   COALESCE(daily_totals.total, 0)::bigint AS spending_milli_dollars
 FROM
   generate_series(
-    $start_date::date,
-    $end_date::date,
+    (($start_date AT TIME ZONE 'UTC')::date)::timestamp without time zone,
+    (($end_date AT TIME ZONE 'UTC')::date)::timestamp without time zone,
     '1 day'::interval
   ) AS d
   LEFT JOIN daily_totals ON daily_totals.day = d::date
@@ -180,7 +196,7 @@ ORDER BY
 
 -- BLOCK select_daily_spending_grouped
 SELECT
-  DATE_TRUNC('day', c.created_at)::date AS date,
+  (c.created_at AT TIME ZONE 'UTC')::date AS date,
   CASE $group_by
     WHEN 'user' THEN COALESCE(u.name, u.uid, 'User ' || c.user_id::text)
     WHEN 'assessment' THEN COALESCE(
@@ -206,11 +222,15 @@ FROM
 WHERE
   c.course_instance_id = $course_instance_id
   AND c.created_at >= $start_date
-  AND c.created_at::date <= $end_date::date
+  AND c.created_at < (
+    (
+      ($end_date AT TIME ZONE 'UTC')::date + '1 day'::interval
+    ) AT TIME ZONE 'UTC'
+  )
   AND c.delta_milli_dollars < 0
   AND c.ai_grading_job_id IS NOT NULL
 GROUP BY
-  DATE_TRUNC('day', c.created_at)::date,
+  (c.created_at AT TIME ZONE 'UTC')::date,
   group_label
 ORDER BY
   date ASC,

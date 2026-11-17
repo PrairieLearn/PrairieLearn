@@ -25,17 +25,11 @@ SELECT
   ) AS system_data,
   i.user_id,
   i.variant_id,
-  format_date_full (
-    i.date,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date,
   u.uid AS user_uid,
   u.name AS user_name,
   u.email AS user_email
 FROM
   issues AS i
-  LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
-  JOIN courses AS c ON (c.id = i.course_id)
   LEFT JOIN users AS u ON (u.id = i.user_id)
 WHERE
   i.variant_id = $variant_id
@@ -68,23 +62,23 @@ SELECT
   s.manual_rubric_grading_id,
   s.modified_at,
   to_jsonb(gj) AS grading_job,
-  format_date_full_compact (
-    s.date,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date,
   u.uid AS user_uid
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
-  LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-  LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-  LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN questions AS q ON (q.id = v.question_id)
-  JOIN courses AS c ON (c.id = v.course_id)
   LEFT JOIN LATERAL (
+    -- Only the columns needed to display grading job status and timing.
+    -- Columns like `feedback` can be very large for external grading jobs.
     SELECT
-      *
+      id,
+      grading_method,
+      grading_requested_at,
+      grading_submitted_at,
+      grading_received_at,
+      grading_started_at,
+      grading_finished_at,
+      graded_at,
+      grading_request_canceled_at
     FROM
       grading_jobs
     WHERE
@@ -134,12 +128,11 @@ WITH
       -- need all of these rows to join on question_order
       ai.id IN (
         SELECT
-          iq.assessment_instance_id
+          iqsub.assessment_instance_id
         FROM
           submissions AS s
           JOIN variants AS v ON (v.id = s.variant_id)
-          JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-          JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+          JOIN instance_questions AS iqsub ON (iqsub.id = v.instance_question_id)
         WHERE
           s.id = $unsafe_submission_id
       )
@@ -182,10 +175,6 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
-  format_date_full_compact (
-    s.date,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date,
   u.uid AS user_uid,
   (
     SELECT

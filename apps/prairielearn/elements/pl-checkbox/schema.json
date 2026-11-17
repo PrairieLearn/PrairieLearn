@@ -1,0 +1,10 @@
+{
+  "tag": "pl-checkbox",
+  "schema": "./schemas/pl-checkbox.json",
+  "children": [
+    {
+      "tag": "pl-answer",
+      "schema": "./schemas/pl-answer.json"
+    }
+  ]
+}

@@ -1,32 +1,56 @@
-import type { ReactNode } from 'react';
-import {
-  Radio as AriaRadio,
-  RadioGroup as AriaRadioGroup,
-  type RadioGroupProps as AriaRadioGroupProps,
-  type RadioProps as AriaRadioProps,
-} from 'react-aria-components';
+import { type ReactNode, createContext, use, useId } from 'react';
+import Form from 'react-bootstrap/Form';
 
-export interface RadioGroupProps<T extends string = string> extends Omit<
-  AriaRadioGroupProps,
-  'value' | 'onChange'
-> {
+interface RadioGroupContextValue {
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const RadioGroupContext = createContext<RadioGroupContextValue | null>(null);
+
+export interface RadioGroupProps<T extends string = string> {
+  name?: string;
   value: T;
   onChange: (value: T) => void;
-}
-
-export function RadioGroup<T extends string = string>({ onChange, ...props }: RadioGroupProps<T>) {
-  return <AriaRadioGroup {...props} onChange={(v) => onChange(v as T)} />;
-}
-
-export interface RadioProps extends Omit<AriaRadioProps, 'className' | 'children'> {
   children: ReactNode;
 }
 
-export function Radio({ children, ...props }: RadioProps) {
+export function RadioGroup<T extends string = string>({
+  name,
+  value,
+  onChange,
+  children,
+}: RadioGroupProps<T>) {
+  const autoId = useId();
   return (
-    <AriaRadio {...props} className="form-check">
-      <span className="pl-ui-radio-indicator" aria-hidden="true" />
-      <span className="form-check-label ms-2">{children}</span>
-    </AriaRadio>
+    <RadioGroupContext
+      value={{ name: name ?? autoId, value, onChange: onChange as (v: string) => void }}
+    >
+      {children}
+    </RadioGroupContext>
+  );
+}
+
+export interface RadioProps {
+  value: string;
+  children: ReactNode;
+}
+
+export function Radio({ value, children }: RadioProps) {
+  const context = use(RadioGroupContext);
+  if (!context) {
+    throw new Error('Radio must be used within a RadioGroup');
+  }
+  const id = useId();
+  return (
+    <Form.Check
+      type="radio"
+      id={id}
+      name={context.name}
+      label={children}
+      checked={context.value === value}
+      onChange={() => context.onChange(value)}
+    />
   );
 }

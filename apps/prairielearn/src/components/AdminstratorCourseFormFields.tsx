@@ -5,9 +5,9 @@ import { useFormContext } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger } from '@prairielearn/ui';
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
-import { type Timezone, formatTimezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/context.js';
 
 export interface CourseFormFieldValues {
@@ -67,17 +67,23 @@ export function AdministratorCourseFormFields({
   availableTimezones,
   coursesRoot,
   prefixState,
-  emailDomain,
+  contactEmailDomain,
+  accountUidDomain,
   aiSecretsConfigured,
   autoFilledInstitutionId,
+  repositoryRequired,
+  onInstitutionChange,
 }: {
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
   prefixState: InstitutionPrefixState;
-  emailDomain?: string;
+  contactEmailDomain?: string;
+  accountUidDomain?: string;
   aiSecretsConfigured: boolean;
   autoFilledInstitutionId?: string | null;
+  repositoryRequired: boolean;
+  onInstitutionChange?: (institution: AdminInstitution) => void;
 }) {
   const trpc = useTRPC();
   const {
@@ -120,7 +126,8 @@ export function AdministratorCourseFormFields({
     ...trpc.courseRequests.suggestInstitutionPrefix.queryOptions({
       institutionLongName,
       institutionShortName,
-      emailDomain: emailDomain ?? '',
+      contactEmailDomain: contactEmailDomain ?? '',
+      accountUidDomain: accountUidDomain ?? '',
     }),
     enabled: false,
   });
@@ -184,6 +191,7 @@ export function AdministratorCourseFormFields({
               const selected = institutions.find((i) => i.id === e.target.value);
               if (selected) {
                 setValue('display_timezone', selected.display_timezone);
+                onInstitutionChange?.(selected);
               }
             },
           })}
@@ -246,6 +254,29 @@ export function AdministratorCourseFormFields({
       </div>
 
       <div className="col-md-6">
+        <label className="form-label" htmlFor="courseFormTitle">
+          Title
+        </label>
+        <input
+          type="text"
+          className={clsx('form-control', errors.title && 'is-invalid')}
+          id="courseFormTitle"
+          placeholder="Template course title"
+          aria-invalid={errors.title ? true : undefined}
+          aria-errormessage={errors.title ? 'courseFormTitle-error' : undefined}
+          maxLength={75}
+          {...register('title', {
+            required: 'Enter a title',
+            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
+          })}
+        />
+        {errors.title && (
+          <div id="courseFormTitle-error" className="invalid-feedback">
+            {errors.title.message}
+          </div>
+        )}
+      </div>
+      <div className="col-md-6">
         <label className="form-label" htmlFor="courseFormShortName">
           Short name
         </label>
@@ -273,29 +304,6 @@ export function AdministratorCourseFormFields({
           )}
         </div>
       </div>
-      <div className="col-md-6">
-        <label className="form-label" htmlFor="courseFormTitle">
-          Title
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.title && 'is-invalid')}
-          id="courseFormTitle"
-          placeholder="Template course title"
-          aria-invalid={errors.title ? true : undefined}
-          aria-errormessage={errors.title ? 'courseFormTitle-error' : undefined}
-          maxLength={75}
-          {...register('title', {
-            required: 'Enter a title',
-            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
-          })}
-        />
-        {errors.title && (
-          <div id="courseFormTitle-error" className="invalid-feedback">
-            {errors.title.message}
-          </div>
-        )}
-      </div>
 
       <div className="col-md-6">
         <label className="form-label" htmlFor="courseFormRepositoryName">
@@ -311,7 +319,9 @@ export function AdministratorCourseFormFields({
             aria-errormessage={
               errors.repository_short_name ? 'courseFormRepositoryName-error' : undefined
             }
-            {...register('repository_short_name', { required: 'Enter a repository name' })}
+            {...register('repository_short_name', {
+              required: repositoryRequired && 'Enter a repository name',
+            })}
           />
           {prefixState.status === 'resolved' && !prefixState.prefix && aiSecretsConfigured && (
             <OverlayTrigger
@@ -423,16 +433,17 @@ export function AdministratorCourseFormFields({
               </ReactMarkdown>
               {suggestPrefixQuery.data.sources.length > 0 && (
                 <div className="mt-1">
-                  {[
-                    ...new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
-                  ].map((source, i) => (
-                    <span key={source.url}>
-                      {i > 0 && ' · '}
-                      <a href={source.url} target="_blank" rel="noreferrer">
-                        {source.title ?? source.url}
-                      </a>
-                    </span>
-                  ))}
+                  {Array.from(
+                    new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
+                    (source, i) => (
+                      <span key={source.url}>
+                        {i > 0 && ' · '}
+                        <a href={source.url} target="_blank" rel="noreferrer">
+                          {source.title ?? source.url}
+                        </a>
+                      </span>
+                    ),
+                  )}
                 </div>
               )}
             </div>

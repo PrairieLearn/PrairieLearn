@@ -1,5 +1,72 @@
 # @prairielearn/session
 
+## 4.0.13
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 4.0.12
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.0.11
+
+### Patch Changes
+
+- 73ca8ef: Bump express dependency
+
+## 4.0.10
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 4.0.9
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 4.0.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
+## 4.0.7
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.0.6
+
+### Patch Changes
+
+- e4a5a84: Persist regenerated sessions to the store immediately, mirroring `loadSession()`'s behavior for new sessions. This ensures the new session ID is available to other queries within the same request after `req.session.regenerate()`.
+
+## 4.0.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.0.3
+
+### Patch Changes
+
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+
 ## 4.0.2
 
 ### Patch Changes

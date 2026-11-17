@@ -1,6 +1,8 @@
-import type { ColumnFiltersState, Table } from '@tanstack/react-table';
+import type { ColumnFiltersState, RowData } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { ButtonGroup, Dropdown } from 'react-bootstrap';
+
+import type { TanstackTableInstance } from '../tanstack-table.js';
 
 /**
  * Compares two filter values for deep equality using JSON serialization.
@@ -25,11 +27,11 @@ function getRelevantColumnIds(options: Record<string, ColumnFiltersState>): Set<
 /**
  * Gets the current filter values for the relevant columns from the table.
  */
-function getRelevantFilters<TData>(
-  table: Table<TData>,
+function getRelevantFilters<TData extends RowData>(
+  table: TanstackTableInstance<TData>,
   relevantColumnIds: Set<string>,
 ): ColumnFiltersState {
-  const allFilters = table.getState().columnFilters;
+  const allFilters = table.state.columnFilters;
   return allFilters.filter((f) => relevantColumnIds.has(f.id));
 }
 
@@ -60,16 +62,20 @@ function filtersMatchPreset(current: ColumnFiltersState, preset: ColumnFiltersSt
  * The selected state is derived from the table's current column filters.
  * If no preset matches, a "Custom" option is shown as selected.
  *
- * Currently, this component expects that the filters states are arrays.
+ * When a preset is applied, columns referenced by other presets but absent from
+ * the chosen one are removed from `columnFilters` (TanStack's "no filter"
+ * representation). Consumers that mirror filter state elsewhere (e.g., into URL
+ * params) should treat a column missing from `onColumnFiltersChange`'s argument
+ * as "reset to default".
  */
-export function PresetFilterDropdown<OptionName extends string, TData>({
+export function PresetFilterDropdown<OptionName extends string, TData extends RowData>({
   table,
   options,
   label = 'Filter',
   onSelect,
 }: {
   /** The TanStack Table instance */
-  table: Table<TData>;
+  table: TanstackTableInstance<TData>;
   /** Mapping of option names to their filter configurations */
   options: Record<OptionName, ColumnFiltersState>;
   /** Label prefix for the dropdown button (e.g., "Filter") */
@@ -97,23 +103,10 @@ export function PresetFilterDropdown<OptionName extends string, TData>({
   const handleOptionClick = (optionName: OptionName) => {
     const presetFilters = options[optionName];
 
-    // Get current filters, removing any that are in our relevant columns
-    const currentFilters = table.getState().columnFilters;
+    const currentFilters = table.state.columnFilters;
     const preservedFilters = currentFilters.filter((f) => !relevantColumnIds.has(f.id));
 
-    // For columns not in the preset, explicitly set empty filter to clear them
-    // This ensures the table's onColumnFiltersChange handler can sync the cleared state
-    const clearedFilters = Array.from(relevantColumnIds)
-      .filter((colId) => !presetFilters.some((f) => f.id === colId))
-      .map((colId) => ({
-        id: colId,
-        // TODO: This expects that we are only clearing filters whose state is an array.
-        value: [],
-      }));
-
-    // Combine preserved filters with the new preset filters and cleared filters
-    const newFilters = [...preservedFilters, ...presetFilters, ...clearedFilters];
-    table.setColumnFilters(newFilters);
+    table.setColumnFilters([...preservedFilters, ...presetFilters]);
 
     onSelect?.(optionName);
   };

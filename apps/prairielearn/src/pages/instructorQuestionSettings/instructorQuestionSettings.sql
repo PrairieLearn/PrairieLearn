@@ -52,22 +52,12 @@ FROM
       ci.id
   ) AS result;
 
--- BLOCK select_sharing_sets
-WITH
-  sharing_set_questions AS (
-    SELECT
-      *
-    FROM
-      sharing_set_questions
-    WHERE
-      question_id = $question_id
-  )
+-- BLOCK select_authors
 SELECT
-  ss.id,
-  ss.name,
-  ssq.question_id IS NOT NULL AS in_set
+  u.uid,
+  u.name
 FROM
-  sharing_sets AS ss
-  LEFT OUTER JOIN sharing_set_questions AS ssq ON ssq.sharing_set_id = ss.id
+  course_permissions AS cp
+  JOIN users AS u ON (u.id = cp.user_id)
 WHERE
-  ss.course_id = $course_id;
+  cp.course_id = $course_id;

@@ -1,4 +1,6 @@
-import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { z } from 'zod';
+
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryScalar } from '@prairielearn/postgres';
 
 import { type User, UserSchema } from '../lib/db-types.js';
 import * as faker from '../lib/faker.js';
@@ -7,6 +9,14 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectUserById(user_id: string): Promise<User> {
   return await queryRow(sql.select_user_by_id, { user_id }, UserSchema);
+}
+
+export async function selectOptionalUserById(user_id: string): Promise<User | null> {
+  return await queryOptionalRow(sql.select_user_by_id, { user_id }, UserSchema);
+}
+
+export async function selectUserIsAdministrator(user_id: string): Promise<boolean> {
+  return await queryScalar(sql.select_user_is_administrator, { user_id }, z.boolean());
 }
 
 export async function selectUserByUid(uid: string): Promise<User> {
@@ -36,10 +46,6 @@ export async function selectAndLockUser(user_id: string): Promise<User> {
 
 export async function selectOrInsertUserByUid(uid: string): Promise<User> {
   return await queryRow(sql.select_or_insert_user_by_uid, { uid }, UserSchema);
-}
-
-export async function updateUserUid({ user_id, uid }: { user_id: string; uid: string }) {
-  return await queryRow(sql.update_user_uid, { user_id, uid }, UserSchema);
 }
 
 export async function generateUsers(count: number): Promise<User[]> {

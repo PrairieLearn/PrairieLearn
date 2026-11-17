@@ -5,42 +5,64 @@ import { run } from '@prairielearn/run';
 import { config } from '../lib/config.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { Override } from '../middlewares/authzCourseOrInstance.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 
-import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
+import { Modal } from './Modal.js';
+import type { NavPage, NavbarType } from './Navbar.types.js';
+import { SupportModal } from './SupportModal.js';
 
 export function Navbar({
   resLocals,
   navPage,
-  navSubPage,
   navbarType,
   sideNavEnabled = false,
+  hideSessionControls = false,
+  showInstructorSupport = false,
+  courseAgentPanel,
 }: {
   resLocals: UntypedResLocals;
   navPage?: NavPage;
-  navSubPage?: NavSubPage;
   navbarType?: NavbarType;
   /**
    * Indicates if the side nav is enabled for the current page.
    */
   sideNavEnabled?: boolean;
+  /** Whether to hide all controls associated with the current session. */
+  hideSessionControls?: boolean;
+  /** Enables instructor support on pages without a course authorization context. */
+  showInstructorSupport?: boolean;
+  courseAgentPanel?: HtmlValue;
 }) {
-  const { __csrf_token, course } = resLocals;
-  navPage ??= resLocals.navPage;
-  navSubPage ??= resLocals.navSubPage;
-  navbarType ??= resLocals.navbarType;
+  const navbarResLocals = hideSessionControls ? {} : resLocals;
+  const { __csrf_token, course } = navbarResLocals;
+  navPage ??= navbarResLocals.navPage;
+  navbarType ??= navbarResLocals.navbarType;
+
+  const showSupport =
+    !!navbarResLocals.authn_user &&
+    !navbarResLocals.lockdown_browser &&
+    navbarType !== 'public' &&
+    (showInstructorSupport ||
+      navbarResLocals.authn_is_administrator ||
+      navbarResLocals.is_institution_administrator ||
+      (!course?.example_course &&
+        (navbarResLocals.authz_data?.authn_has_course_permission_preview ||
+          navbarResLocals.authz_data?.authn_has_course_instance_permission_view)));
 
   return html`
-    ${config.devMode && __csrf_token
-      ? // Unit tests often need access to the CSRF token even when the page contains
-        // no form - for example, to confirm that a POST with a prohibited
-        // action is denied. For convenience, we include the CSRF token here, on
-        // all pages. We do this only in devMode and only for the purpose of
-        // testing.
-        html`
-          <!-- DO NOT RELY ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS! -->
-          <span id="test_csrf_token" hidden>${__csrf_token}</span>
-        `
-      : ''}
+    ${
+      config.devMode && __csrf_token
+        ? // Unit tests often need access to the CSRF token even when the page contains
+          // no form - for example, to confirm that a POST with a prohibited
+          // action is denied. For convenience, we include the CSRF token here, on
+          // all pages. We do this only in devMode and only for the purpose of
+          // testing.
+          html`
+            <!-- DO NOT RELY ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS! -->
+            <span id="test_csrf_token" hidden>${__csrf_token}</span>
+          `
+        : ''
+    }
 
     <nav
       class="container-fluid bg-primary visually-hidden-focusable"
@@ -57,83 +79,289 @@ export function Navbar({
       </a>
     </nav>
 
-    ${config.announcementHtml
-      ? html`
-          <div
-            class="alert alert-${config.announcementColor ?? 'primary'} mb-0 rounded-0 text-center"
-          >
-            ${unsafeHtml(config.announcementHtml)}
-          </div>
-        `
-      : ''}
+    ${
+      config.announcementHtml
+        ? html`
+            <div
+              class="alert alert-${config.announcementColor ?? 'primary'} mb-0 rounded-0 text-center"
+            >
+              ${unsafeHtml(config.announcementHtml)}
+            </div>
+          `
+        : ''
+    }
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid position-relative">
-        ${sideNavEnabled
-          ? html`
-              <button
-                id="side-nav-mobile-toggler"
-                class="navbar-toggler"
-                type="button"
-                aria-expanded="false"
-                aria-label="Toggle side nav"
-              >
-                <span class="navbar-toggler-icon"></span>
-              </button>
-            `
-          : ''}
+        ${
+          sideNavEnabled
+            ? html`
+                <button
+                  id="side-nav-mobile-toggler"
+                  class="navbar-toggler"
+                  type="button"
+                  aria-expanded="false"
+                  aria-label="Toggle side nav"
+                >
+                  <span class="navbar-toggler-icon"></span>
+                </button>
+              `
+            : ''
+        }
         <a class="navbar-brand" href="/" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
           </span>
         </a>
-        <button
-          id="course-nav-toggler"
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#course-nav"
-          data-bs-animation="false"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
-        </button>
+        <div class="d-flex d-md-none align-items-center gap-2">
+          ${courseAgentPanel ? html`<div id="course-agent-mobile-launcher" class="d-flex"></div>` : ''}
+          <button
+            id="course-nav-toggler"
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#course-nav"
+            data-bs-animation="false"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
+          </button>
+        </div>
         <div id="course-nav" class="collapse navbar-collapse mobile-collapsed">
           <ul class="nav navbar-nav me-auto" id="main-nav">
             ${NavbarByType({
-              resLocals,
+              resLocals: navbarResLocals,
               navPage,
               navbarType,
             })}
           </ul>
 
-          ${config.devMode
-            ? html`
-                <a
-                  id="navbar-load-from-disk"
-                  class="btn btn-success btn-sm"
-                  href="/pl/loadFromDisk"
-                >
-                  Load from disk
-                </a>
-              `
-            : ''}
-          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          <div class="d-md-flex align-items-md-stretch">
+            ${
+              config.devMode
+                ? html`
+                    <a
+                      id="navbar-load-from-disk"
+                      class="btn btn-success btn-sm mb-2 mb-md-0"
+                      href="/pl/loadFromDisk"
+                    >
+                      Load from disk
+                    </a>
+                  `
+                : ''
+            }
+            ${ReportCheatingControl({ resLocals: navbarResLocals, navPage })}
+            ${EndExamControl({ resLocals: navbarResLocals })}
+            ${
+              showSupport
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-outline-light btn-sm ms-md-2 me-md-2 mb-2 mb-md-0"
+                      style="--bs-btn-color: var(--bs-navbar-color); --bs-btn-border-color: var(--bs-navbar-color)"
+                      data-bs-toggle="modal tooltip"
+                      data-bs-target="#supportModal"
+                      data-bs-title="Get help with PrairieLearn"
+                    >
+                      Get help
+                    </button>
+                  `
+                : ''
+            }
+            ${
+              courseAgentPanel
+                ? html`<div class="d-none d-md-flex flex-shrink-0 me-md-2">
+                    ${courseAgentPanel}
+                  </div>`
+                : ''
+            }
+          </div>
+          ${
+            hideSessionControls
+              ? ''
+              : UserDropdownMenu({ resLocals: navbarResLocals, navPage, navbarType })
+          }
         </div>
       </div>
     </nav>
 
-    ${navbarType === 'instructor' && course?.announcement_html && course.announcement_color
-      ? html`
-          <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
-            ${unsafeHtml(course.announcement_html)}
-          </div>
-        `
-      : ''}
+    ${showSupport ? SupportModal() : ''}
+    ${
+      navbarType === 'instructor' && course?.announcement_html && course.announcement_color
+        ? html`
+            <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
+              ${unsafeHtml(course.announcement_html)}
+            </div>
+          `
+        : ''
+    }
     ${FlashMessages()}
   `;
+}
+
+/**
+ * Renders an "End exam" control when the user is in a LockDown Browser
+ * session. The button opens a confirmation modal whose form POSTs to
+ * `/pl/end-exam`; that handler looks up the student's active
+ * LDB-required reservation, mints a short-lived JWT, calls PT
+ * server-to-server to end the reservation, and redirects into PT's
+ * close flow to exit LockDown Browser.
+ *
+ * PL's CSRF token is bound to the request URL, so we mint one specifically
+ * for `/pl/end-exam` rather than reusing `resLocals.__csrf_token` (which
+ * is bound to the current page's URL and would be rejected on submit).
+ */
+function EndExamControl({ resLocals }: { resLocals: UntypedResLocals }) {
+  if (!resLocals.lockdown_browser) return '';
+  const endExamCsrfToken = generateCsrfToken({
+    url: '/pl/end-exam',
+    authnUserId: resLocals.authn_user.id,
+  });
+  return html`
+    <button
+      type="button"
+      class="btn btn-danger btn-sm ms-2 me-2 mb-2 mb-md-0"
+      data-bs-toggle="modal"
+      data-bs-target="#endExamModal"
+    >
+      End exam
+    </button>
+    ${EndExamModal({ csrfToken: endExamCsrfToken })}
+  `;
+}
+
+function EndExamModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    title: 'End exam',
+    id: 'endExamModal',
+    formAction: '/pl/end-exam',
+    formClass: 'js-end-exam-form',
+    body: html`
+      <p class="js-end-exam-confirm">
+        Are you sure you want to end your exam? Only do this after you have completed your entire
+        exam. This will close LockDown Browser.
+      </p>
+      <div
+        class="js-end-exam-loading d-none d-flex align-items-center text-muted"
+        aria-live="polite"
+      >
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Ending exam…
+      </div>
+      <div class="js-end-exam-error alert alert-danger d-flex mb-0 d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5" aria-hidden="true"></i>
+        <div>
+          <strong>We couldn't end your exam.</strong>
+          <div>
+            This can happen if PrairieTest is temporarily unavailable. Try again, or ask your
+            proctor to end the exam for you.
+          </div>
+        </div>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary js-end-exam-cancel" data-bs-dismiss="modal">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-danger js-end-exam-submit">
+        <span
+          class="spinner-border spinner-border-sm me-1 js-end-exam-submit-spinner d-none"
+          role="status"
+          aria-hidden="true"
+        ></span>
+        <span class="js-end-exam-submit-label">End exam</span>
+      </button>
+    `,
+  });
+}
+
+function ReportCheatingControl({
+  resLocals,
+  navPage,
+}: {
+  resLocals: UntypedResLocals;
+  navPage: NavPage;
+}) {
+  if (
+    navPage !== 'assessment_instance' ||
+    resLocals.authz_result?.mode !== 'Exam' ||
+    resLocals.prairietest_reservation_info?.cheating_report_reservation_id == null
+  ) {
+    return '';
+  }
+  const reportCheatingCsrfToken = generateCsrfToken({
+    url: '/pl/report-cheating',
+    authnUserId: resLocals.authn_user.id,
+  });
+  return html`
+    <button
+      type="button"
+      class="btn btn-outline-light btn-sm ms-2 me-2 mb-2 mb-md-0"
+      data-bs-toggle="modal"
+      data-bs-target="#reportCheatingModal"
+    >
+      Report cheating
+    </button>
+    ${ReportCheatingModal({ csrfToken: reportCheatingCsrfToken })}
+  `;
+}
+
+function ReportCheatingModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    title: 'Report cheating',
+    id: 'reportCheatingModal',
+    formAction: '/pl/report-cheating',
+    formClass: 'js-report-cheating-form',
+    body: html`
+      <div class="js-report-cheating-fields">
+        <p>
+          If you see someone breaking exam rules (for example, using a phone or unauthorized
+          materials), describe what you saw below. Your report goes only to exam staff; other
+          students will not see it.
+        </p>
+        <div class="mb-0">
+          <label class="form-label" for="report-cheating-text">What did you see?</label>
+          <textarea
+            class="form-control"
+            id="report-cheating-text"
+            name="report"
+            rows="4"
+            maxlength="10000"
+            required
+            aria-invalid="false"
+            aria-errormessage="report-cheating-error"
+          ></textarea>
+        </div>
+      </div>
+      <div class="alert alert-success d-none js-report-cheating-success" role="status"></div>
+      <div
+        id="report-cheating-error"
+        class="alert alert-danger d-none js-report-cheating-error"
+        role="alert"
+        aria-live="assertive"
+      ></div>
+      <div class="text-muted d-none js-report-cheating-loading" aria-live="polite">
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Submitting report…
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button
+        type="button"
+        class="btn btn-secondary js-report-cheating-cancel"
+        data-bs-dismiss="modal"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary js-report-cheating-submit">
+        <span class="js-report-cheating-submit-label">Submit report</span>
+      </button>
+    `,
+  });
 }
 
 function NavbarByType({
@@ -228,31 +456,39 @@ function UserDropdownMenu({
           ${displayedName}
         </a>
         <div class="dropdown-menu dropdown-menu-end">
-          ${authn_is_administrator
-            ? html`
-                <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
-                  ${access_as_administrator
-                    ? 'Turn off administrator access'
-                    : 'Turn on administrator access'}
-                </button>
+          ${
+            authn_is_administrator
+              ? html`
+                  <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
+                    ${
+                      access_as_administrator
+                        ? 'Turn off administrator access'
+                        : 'Turn on administrator access'
+                    }
+                  </button>
 
-                <div class="dropdown-divider"></div>
-              `
-            : ''}
+                  <div class="dropdown-divider"></div>
+                `
+              : ''
+          }
           ${ViewTypeMenu({ resLocals })} ${AuthnOverrides({ resLocals, navbarType })}
-          ${authz_data?.mode === 'Exam'
-            ? html`
-                <div class="dropdown-item-text">
-                  Exam mode means you have a checked-in reservation on PrairieTest. Your
-                  interactions with PrairieLearn are limited to your checked-in exam for the
-                  duration of your reservation.
-                </div>
-                <div class="dropdown-divider"></div>
-              `
-            : ''}
-          ${!authz_data || authz_data?.mode === 'Public'
-            ? html`<a class="dropdown-item" href="/pl/request_course">Course Requests</a>`
-            : ''}
+          ${
+            authz_data?.mode === 'Exam'
+              ? html`
+                  <div class="dropdown-item-text">
+                    Exam mode means you have a checked-in reservation on PrairieTest. Your
+                    interactions with PrairieLearn are limited to your checked-in exam for the
+                    duration of your reservation.
+                  </div>
+                  <div class="dropdown-divider"></div>
+                `
+              : ''
+          }
+          ${
+            !authz_data || authz_data?.mode === 'Public'
+              ? html`<a class="dropdown-item" href="/pl/request_course">Course Requests</a>`
+              : ''
+          }
           <a class="dropdown-item" href="/pl/settings">Settings</a>
           <a class="dropdown-item" href="/pl/logout">Log out</a>
         </div>
@@ -283,9 +519,9 @@ function FlashMessages() {
   return flashMessages.map(
     ({ type, message }) => html`
       <div
-        class="alert alert-${globalFlashColors[
-          type
-        ]} border-start-0 border-end-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
+        class="alert alert-${
+          globalFlashColors[type]
+        } border-start-0 border-end-0 rounded-0 mt-0 mb-0 alert-dismissible fade show"
         role="alert"
       >
         ${unsafeHtml(message)}
@@ -408,16 +644,18 @@ function ViewTypeMenu({ resLocals }: { resLocals: UntypedResLocals }) {
   }
 
   return html`
-    ${authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
-      ? html`
-          <a class="dropdown-item" href="${instructorLink}" id="navbar-reset-view">
-            Reset to default staff view
-            <span class="badge text-bg-success">staff</span>
-          </a>
+    ${
+      authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
+        ? html`
+            <a class="dropdown-item" href="${instructorLink}" id="navbar-reset-view">
+              Reset to default staff view
+              <span class="badge text-bg-success">staff</span>
+            </a>
 
-          <div class="dropdown-divider"></div>
-        `
-      : ''}
+            <div class="dropdown-divider"></div>
+          `
+        : ''
+    }
 
     <h6 class="dropdown-header">${headingAuthnViewTypeMenu}</h6>
 
@@ -428,9 +666,11 @@ function ViewTypeMenu({ resLocals }: { resLocals: UntypedResLocals }) {
     >
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
       <span class="ps-3">
-        ${authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
-          ? 'Modified staff'
-          : 'Staff'}
+        ${
+          authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
+            ? 'Modified staff'
+            : 'Staff'
+        }
         view <span class="badge text-bg-success">staff</span>
       </span>
     </a>
@@ -458,35 +698,43 @@ function ViewTypeMenu({ resLocals }: { resLocals: UntypedResLocals }) {
       </span>
     </a>
 
-    ${authz_data.authn_user.uid !== authz_data.user.uid
-      ? html`
-          <div class="dropdown-divider"></div>
-          <h6 class="dropdown-header">${headingViewTypeMenu}</h6>
+    ${
+      authz_data.authn_user.uid !== authz_data.user.uid
+        ? html`
+            <div class="dropdown-divider"></div>
+            <h6 class="dropdown-header">${headingViewTypeMenu}</h6>
 
-          ${authz_data.user_with_requested_uid_has_instructor_access_to_course_instance
-            ? html`
-                <a class="dropdown-item" href="${instructorLink}" id="navbar-user-view-instructor">
-                  <span class="${viewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">
-                    &check;
-                  </span>
-                  <span class="ps-3">Staff view</span>
-                </a>
-              `
-            : ''}
+            ${
+              authz_data.user_with_requested_uid_has_instructor_access_to_course_instance
+                ? html`
+                    <a
+                      class="dropdown-item"
+                      href="${instructorLink}"
+                      id="navbar-user-view-instructor"
+                    >
+                      <span class="${viewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">
+                        &check;
+                      </span>
+                      <span class="ps-3">Staff view</span>
+                    </a>
+                  `
+                : ''
+            }
 
-          <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student">
-            <span class="${viewTypeMenuChecked !== 'student' ? 'invisible' : ''}"> &check; </span>
-            <span class="ps-3">Student view</span>
-          </a>
+            <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student">
+              <span class="${viewTypeMenuChecked !== 'student' ? 'invisible' : ''}"> &check; </span>
+              <span class="ps-3">Student view</span>
+            </a>
 
-          <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student-no-rules">
-            <span class="${viewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
-              &check;
-            </span>
-            <span class="ps-3">Student view without access restrictions</span>
-          </a>
-        `
-      : ''}
+            <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student-no-rules">
+              <span class="${viewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
+                &check;
+              </span>
+              <span class="ps-3">Student view without access restrictions</span>
+            </a>
+          `
+        : ''
+    }
 
     <div class="dropdown-divider"></div>
   `;
@@ -553,38 +801,40 @@ function AuthnOverrides({
       </button>
     </form>
 
-    ${authz_data?.overrides?.length > 0
-      ? html`
-          <div class="dropdown-item-text">
-            <div class="list-group small text-nowrap">
-              ${authz_data.overrides.map(
-                (override: Override) => html`
-                  <div class="list-group-item list-group-item-warning small p-2">
-                    <div class="d-flex flex-row justify-content-between align-items-center">
-                      <div class="p-0 me-4">
-                        <ul class="list-unstyled">
-                          <li class="fw-bold">${override.name}</li>
-                          <li>${override.value}</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <button
-                          class="btn btn-xs btn-warning js-remove-override"
-                          type="button"
-                          data-override-cookie="${override.cookie}"
-                        >
-                          <i class="fas fa-times me-1"></i>
-                          Remove
-                        </button>
+    ${
+      authz_data?.overrides?.length > 0
+        ? html`
+            <div class="dropdown-item-text">
+              <div class="list-group small text-nowrap">
+                ${authz_data.overrides.map(
+                  (override: Override) => html`
+                    <div class="list-group-item list-group-item-warning small p-2">
+                      <div class="d-flex flex-row justify-content-between align-items-center">
+                        <div class="p-0 me-4">
+                          <ul class="list-unstyled">
+                            <li class="fw-bold">${override.name}</li>
+                            <li>${override.value}</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <button
+                            class="btn btn-xs btn-warning js-remove-override"
+                            type="button"
+                            data-override-cookie="${override.cookie}"
+                          >
+                            <i class="fas fa-times me-1"></i>
+                            Remove
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                `,
-              )}
+                  `,
+                )}
+              </div>
             </div>
-          </div>
-        `
-      : ''}
+          `
+        : ''
+    }
 
     <a class="dropdown-item" href="${effectiveUserUrl}">Customize&hellip;</a>
 
@@ -607,13 +857,15 @@ function NavbarButton({
     <li class="nav-item">
       <a class="nav-link ${active ? 'active' : ''}" href="${href}">${text}</a>
     </li>
-    ${showArrow
-      ? html`<li class="nav-item d-none d-lg-block" aria-hidden="true">
-          <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
-            &rarr;
-          </span>
-        </li>`
-      : ''}
+    ${
+      showArrow
+        ? html`<li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>`
+        : ''
+    }
   `;
 }
 
@@ -639,13 +891,15 @@ function NavbarButtons({
         href: '/',
         showArrow: false,
       })}
-      ${resLocals.is_administrator
-        ? NavbarButton({
-            text: 'Global Admin',
-            href: '/pl/administrator/admins',
-            showArrow: false,
-          })
-        : ''}
+      ${
+        resLocals.is_administrator
+          ? NavbarButton({
+              text: 'Global Admin',
+              href: '/pl/administrator/admins',
+              showArrow: false,
+            })
+          : ''
+      }
     `;
   }
 
@@ -727,15 +981,17 @@ function NavbarStudent({ resLocals, navPage }: { resLocals: UntypedResLocals; na
       <a class="nav-link" href="${urlPrefix}/gradebook">Gradebook</a>
     </li>
 
-    ${assessment_instance_label != null && assessment_instance != null
-      ? html`
-          <li class="nav-item ${navPage === 'assessment_instance' ? 'active' : ''}">
-            <a class="nav-link" href="${urlPrefix}/assessment_instance/${assessment_instance.id}">
-              ${assessment_instance_label}
-            </a>
-          </li>
-        `
-      : ''}
+    ${
+      assessment_instance_label != null && assessment_instance != null
+        ? html`
+            <li class="nav-item ${navPage === 'assessment_instance' ? 'active' : ''}">
+              <a class="nav-link" href="${urlPrefix}/assessment_instance/${assessment_instance.id}">
+                ${assessment_instance_label}
+              </a>
+            </li>
+          `
+        : ''
+    }
   `;
 }
 

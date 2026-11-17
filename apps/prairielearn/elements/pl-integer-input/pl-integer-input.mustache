@@ -7,7 +7,7 @@
         <input
             name="{{name}}"
             type="text"
-            inputmode="{{#use_numeric}}numeric{{/use_numeric}}{{^use_numeric}}text{{/use_numeric}}"
+            inputmode="text"
             autocomplete="off"
             autocorrect="off"
             class="form-control pl-integer-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
@@ -70,7 +70,7 @@
 
 
 {{#submission}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{#error}}
 <span>
 
@@ -128,13 +128,16 @@
 {{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/error}}
-{{#inline}}</span>{{/inline}}
+{{{raw_input_popover}}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
 
 {{#answer}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{a_tru}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/answer}}
 
 {{#format}}

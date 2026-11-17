@@ -21,7 +21,6 @@
         { "id": "demo/drawing/buttons", "autoPoints": 2, "maxAutoPoints": 6 },
         { "id": "demo/drawing/customizedButtons", "autoPoints": 2, "maxAutoPoints": 6 },
         { "id": "demo/drawing/extensions", "autoPoints": 2, "maxAutoPoints": 6 },
-        { "id": "demo/drawing/resistorCapacitorCircuit", "autoPoints": 2, "maxAutoPoints": 6 },
         { "id": "element/drawingGallery", "autoPoints": 2, "maxAutoPoints": 6 }
       ]
     }

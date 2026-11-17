@@ -7,6 +7,7 @@ WITH
       courses
     WHERE
       courses.institution_id = $institution_id
+      AND courses.deleted_at IS NULL
   ),
   course_instance_statistics AS (
     SELECT
@@ -16,6 +17,8 @@ WITH
       JOIN courses AS c ON (ci.course_id = c.id)
     WHERE
       c.institution_id = $institution_id
+      AND ci.deleted_at IS NULL
+      AND c.deleted_at IS NULL
   ),
   enrollment_statistics AS (
     SELECT
@@ -26,6 +29,9 @@ WITH
       JOIN courses AS c ON (ci.course_id = c.id)
     WHERE
       c.institution_id = $institution_id
+      AND e.status = 'joined'
+      AND ci.deleted_at IS NULL
+      AND c.deleted_at IS NULL
   )
 SELECT
   course_count,

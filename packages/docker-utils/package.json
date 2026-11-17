@@ -1,34 +1,36 @@
 {
   "name": "@prairielearn/docker-utils",
   "version": "2.0.12",
-  "type": "module",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/docker-utils"
   },
-  "private": true,
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./registry": "./dist/registry.js"
+  },
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.1023.0",
+    "@aws-sdk/client-ecr": "^3.1141.0",
     "@prairielearn/logger": "workspace:^",
-    "date-fns": "^4.1.0"
+    "date-fns": "^4.4.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.12.2",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "@vitest/coverage-v8": "^4.1.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.2"
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.2",
+    "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

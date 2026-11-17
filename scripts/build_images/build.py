@@ -60,6 +60,9 @@ def get_image_path(image: str) -> str:
     if image == "prairielearn":
         return "."
 
+    if image == "course-agent-sandbox":
+        return "apps/course-agent/container"
+
     raise ValueError(f"Cannot build unknown image: {image}")
 
 

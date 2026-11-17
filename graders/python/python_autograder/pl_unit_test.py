@@ -58,9 +58,9 @@ class PLTestCase(unittest.TestCase):
             cls.iter_num,
             cls.ipynb_key,
         )
-        answerTuple = namedtuple("answerTuple", ref_result.keys())  # noqa: PYI024
+        answerTuple = namedtuple("answerTuple", ref_result.keys())  # ruff:ignore[collections-named-tuple]
         cls.ref = answerTuple(**ref_result)
-        studentTuple = namedtuple("studentTuple", student_result.keys())  # noqa: PYI024
+        studentTuple = namedtuple("studentTuple", student_result.keys())  # ruff:ignore[collections-named-tuple]
         cls.st = studentTuple(**student_result)
         cls.plt = plot_value
         if cls.include_plt:

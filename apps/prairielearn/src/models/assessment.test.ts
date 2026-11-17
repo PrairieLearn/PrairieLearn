@@ -35,7 +35,7 @@ describe('assessment model', () => {
       assert.isArray(defaults);
       assert.isAbove(defaults.length, 0);
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       const calculator = defaults.find((t) => t.tool === 'calculator');
       assert.isNotNull(calculator);
       assert.equal(calculator?.enabled, true);
@@ -59,7 +59,7 @@ describe('assessment model', () => {
       assert.isArray(overrides);
       assert.isAbove(overrides.length, 0);
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       const calcOverride = overrides.find((o) => o.tool === 'calculator');
       assert.isNotNull(calcOverride);
       assert.equal(calcOverride?.enabled, false);

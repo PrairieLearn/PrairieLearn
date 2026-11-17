@@ -121,7 +121,7 @@ router.get(
               trpcCsrfToken={trpcCsrfToken}
               hasCoursePermissionEdit={pageContext.authz_data.has_course_permission_edit}
               hasCourseInstancePermissionEdit={
-                pageContext.authz_data.has_course_instance_permission_edit ?? false
+                pageContext.authz_data.has_course_instance_permission_edit
               }
               hasModernPublishing={courseInstance.modern_publishing}
             />

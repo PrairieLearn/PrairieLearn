@@ -2,14 +2,13 @@ import math
 import random
 from enum import Enum
 from html import escape
-from typing import Literal
+from typing import Literal, assert_never
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
 from sympy import Expr
-from typing_extensions import assert_never
 
 
 class ComparisonMode(Enum):
@@ -20,6 +19,7 @@ class ComparisonMode(Enum):
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
+SUFFIX_DEFAULT = None
 ARIA_LABEL_DEFAULT = None
 COMPARISON_DEFAULT = ComparisonMode.RELABS
 RTOL_DEFAULT = 1e-2
@@ -31,12 +31,18 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 
 
+def _matrix_entry_name(name: str, row: int, column: int, column_count: int) -> str:
+    return f"{name}{column_count * row + column + 1}"
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
         "weight",
         "label",
+        "aria-label",
+        "suffix",
         "comparison",
         "rtol",
         "atol",
@@ -79,6 +85,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     allow_partial_credit = pl.get_boolean_attrib(
         element, "allow-partial-credit", ALLOW_PARTIAL_CREDIT_DEFAULT
@@ -117,6 +124,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             n,
             name,
             label=label,
+            suffix=suffix,
             aria_label=aria_label,
             label_uuid=uuid,
             data=data,
@@ -175,6 +183,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "suffix": suffix,
             "editable": editable,
             "info": info,
             "shortinfo": shortinfo,
@@ -202,6 +211,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if parse_error is None:
             a_submitted = pl.from_json(data["submitted_answers"].get(name, None))
+            html_params["suffix"] = suffix
+
             if (
                 a_submitted is not None
                 and isinstance(a_submitted, np.ndarray)
@@ -247,6 +258,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 n,
                 name,
                 label=label,
+                suffix=suffix,
                 aria_label=aria_label,
                 label_uuid=uuid,
                 data=data,
@@ -259,6 +271,22 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     html_params["a_sub"] = sub_latex
             else:
                 html_params["a_sub"] = sub_latex
+
+            raw_submitted_answers = data["raw_submitted_answers"]
+            entry_names = [
+                _matrix_entry_name(name, i, j, n) for i in range(m) for j in range(n)
+            ]
+            if any(entry_name in raw_submitted_answers for entry_name in entry_names):
+                raw_input = [
+                    [
+                        raw_submitted_answers.get(_matrix_entry_name(name, i, j, n), "")
+                        for j in range(n)
+                    ]
+                    for i in range(m)
+                ]
+                html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                    raw_input, aria_label or name
+                )
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
@@ -269,6 +297,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 n,
                 name,
                 label=label,
+                suffix=suffix,
                 aria_label=aria_label,
                 label_uuid=uuid,
                 data=data,
@@ -323,6 +352,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params = {
                 "answer": True,
                 "label": label,
+                "suffix": suffix,
                 "latex_data": latex_data,
             }
 
@@ -364,7 +394,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     invalid_format = False
     for i in range(m):
         for j in range(n):
-            each_entry_name = name + str(n * i + j + 1)
+            each_entry_name = _matrix_entry_name(name, i, j, n)
             a_sub = data["submitted_answers"].get(each_entry_name, None)
             if allow_blank and a_sub is not None and a_sub.strip() == "":
                 a_sub = blank_value
@@ -433,7 +463,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     feedback = {}
     for i in range(m):
         for j in range(n):
-            each_entry_name = name + str(n * i + j + 1)
+            each_entry_name = _matrix_entry_name(name, i, j, n)
             a_sub = data["submitted_answers"].get(each_entry_name, None)
             # Get submitted answer (if it does not exist, score is zero)
             if a_sub is None:
@@ -507,7 +537,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     feedback = {}
     for i in range(m):
         for j in range(n):
-            each_entry_name = name + str(n * i + j + 1)
+            each_entry_name = _matrix_entry_name(name, i, j, n)
 
             if result == "correct":
                 data["raw_submitted_answers"][each_entry_name] = str(a_tru[i, j])
@@ -552,6 +582,7 @@ def create_table_for_html_display(
     n: int,
     name: str,
     label: str | None,
+    suffix: str | None,
     aria_label: str | None,
     label_uuid: str,
     data: pl.QuestionData,
@@ -575,7 +606,7 @@ def create_table_for_html_display(
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         # First row of array
         for j in range(n):
-            each_entry_name = name + str(j + 1)
+            each_entry_name = _matrix_entry_name(name, 0, j, n)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, ""
             )
@@ -596,7 +627,7 @@ def create_table_for_html_display(
         for i in range(1, m):
             display_array += " <tr>"
             for j in range(n):
-                each_entry_name = name + str(n * i + j + 1)
+                each_entry_name = _matrix_entry_name(name, i, j, n)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, ""
                 )
@@ -643,12 +674,12 @@ def create_table_for_html_display(
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         # First row of array
         for j in range(n):
-            each_entry_name = name + str(j + 1)
+            each_entry_name = _matrix_entry_name(name, 0, j, n)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, ""
             )
             display_array += '<td class="allborder">'
-            display_array += escape(raw_submitted_answer)
+            display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
             if feedback_each_entry is not None and isinstance(
                 feedback_each_entry, dict
             ):
@@ -667,6 +698,8 @@ def create_table_for_html_display(
         display_array += (
             f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
+        if suffix is not None:
+            display_array += f'<td rowspan="0">&nbsp;{escape(suffix)}</td>'
         if score_message:
             display_array += f'<td rowspan="0">&nbsp;{score_message}</td>'
         display_array += "</tr>"
@@ -674,14 +707,14 @@ def create_table_for_html_display(
         for i in range(1, m):
             display_array += " <tr>"
             for j in range(n):
-                each_entry_name = name + str(n * i + j + 1)
+                each_entry_name = _matrix_entry_name(name, i, j, n)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, ""
                 )
                 display_array += (
                     f' <td class="allborder" aria-label="Row {i + 1}, Column {j + 1}"> '
                 )
-                display_array += escape(raw_submitted_answer)
+                display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
                 if feedback_each_entry is not None and isinstance(
                     feedback_each_entry, dict
                 ):
@@ -699,6 +732,12 @@ def create_table_for_html_display(
         display_array += "</table>"
 
     elif format_type == "input":
+        described_by_attr = ""
+        if suffix is not None:
+            described_by_attr = (
+                f'aria-describedby="pl-matrix-component-input-{label_uuid}-suffix"'
+            )
+
         display_array = f'<table role="grid" {label_attr}>'
         display_array += "<tr>"
         # Add first row
@@ -707,7 +746,7 @@ def create_table_for_html_display(
         )
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         for j in range(n):
-            each_entry_name = name + str(j + 1)
+            each_entry_name = _matrix_entry_name(name, 0, j, n)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, None
             )
@@ -715,7 +754,7 @@ def create_table_for_html_display(
             value = ""
             if raw_submitted_answer is not None:
                 value = f'value="{escape(raw_submitted_answer)}"'
-            display_array += f'<td><input name="{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" {disabled} {value}/></td>'
+            display_array += f'<td><input name="{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" {described_by_attr} {disabled} {value}/></td>'
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
             f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
@@ -725,7 +764,7 @@ def create_table_for_html_display(
         for i in range(1, m):
             display_array += " <tr>"
             for j in range(n):
-                each_entry_name = name + str(n * i + j + 1)
+                each_entry_name = _matrix_entry_name(name, i, j, n)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, None
                 )
@@ -733,7 +772,7 @@ def create_table_for_html_display(
                 value = ""
                 if raw_submitted_answer is not None:
                     value = f'value="{escape(raw_submitted_answer)}"'
-                display_array += f' <td><input name="{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" {disabled} {value}/></td>'
+                display_array += f' <td><input name="{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" {described_by_attr} {disabled} {value}/></td>'
                 display_array += " </td> "
             display_array += "</tr>"
         display_array += "</table>"

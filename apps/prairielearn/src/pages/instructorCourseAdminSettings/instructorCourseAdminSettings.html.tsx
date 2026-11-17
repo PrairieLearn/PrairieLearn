@@ -1,7 +1,10 @@
+import type { ReactNode } from 'react';
+
+import { type Timezone, formatTimezone } from '@prairielearn/utils/timezone';
+
 import { GitHubButton } from '../../components/GitHubButton.js';
 import type { PageAuthzData } from '../../lib/authz-data-lib.js';
 import type { Course, Institution } from '../../lib/db-types.js';
-import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
 export function InstructorCourseAdminSettings({
   aiQuestionGenerationEnabled,
@@ -13,6 +16,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists,
   coursePathExists,
   csrfToken,
+  githubAccess,
   institution,
   origHash,
   urlPrefix,
@@ -26,10 +30,13 @@ export function InstructorCourseAdminSettings({
   courseInfoExists: boolean;
   coursePathExists: boolean;
   csrfToken: string;
+  githubAccess: ReactNode;
   institution: Institution;
   origHash: string;
   urlPrefix: string;
 }) {
+  const disabled =
+    !courseInfoExists || !authzData.has_course_permission_edit || course.example_course;
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
@@ -51,30 +58,6 @@ export function InstructorCourseAdminSettings({
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="orig_hash" value={origHash} />
           <div className="mb-3">
-            <label className="form-label" htmlFor="short_name">
-              Short Name
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="short_name"
-              name="short_name"
-              defaultValue={course.short_name ?? ''}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
-              required
-            />
-            <small className="form-text text-muted">
-              The short name of the course. Often this is the course rubric and number (e.g., "MATH
-              101" or "PHYS 440").
-            </small>
-          </div>
-          <div className="mb-3">
             <label className="form-label" htmlFor="title">
               Title
             </label>
@@ -84,17 +67,29 @@ export function InstructorCourseAdminSettings({
               id="title"
               name="title"
               defaultValue={course.title ?? ''}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
+              disabled={disabled}
               required
             />
             <small className="form-text text-muted">
               This is the official title of the course, as given in the course catalog.
+            </small>
+          </div>
+          <div className="mb-3">
+            <label className="form-label" htmlFor="short_name">
+              Short name
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              id="short_name"
+              name="short_name"
+              defaultValue={course.short_name ?? ''}
+              disabled={disabled}
+              required
+            />
+            <small className="form-text text-muted">
+              The short name of the course. Often this is the course rubric and number (e.g., "MATH
+              101" or "PHYS 440").
             </small>
           </div>
           <div className="mb-3">
@@ -106,13 +101,7 @@ export function InstructorCourseAdminSettings({
               id="display_timezone"
               name="display_timezone"
               defaultValue={course.display_timezone}
-              disabled={
-                !(
-                  courseInfoExists &&
-                  authzData.has_course_permission_edit &&
-                  !course.example_course
-                )
-              }
+              disabled={disabled}
             >
               {availableTimezones.map((tz) => (
                 <option key={tz.name} value={tz.name}>
@@ -179,12 +168,12 @@ export function InstructorCourseAdminSettings({
               />
               <button
                 type="button"
-                className="btn btn-sm btn-outline-secondary btn-copy"
+                className="btn btn-sm btn-outline-secondary js-copy-button"
                 data-clipboard-text={course.repository}
                 aria-label="Copy repository"
                 disabled={!course.repository}
               >
-                <i className="far fa-clipboard" />
+                <i className="bi bi-clipboard" />
               </button>
             </span>
             <small className="form-text text-muted">
@@ -205,6 +194,7 @@ export function InstructorCourseAdminSettings({
             />
             <small className="form-text text-muted">The git branch used for this course.</small>
           </div>
+          {githubAccess}
           <div className="form-check mb-3">
             <input
               type="checkbox"
@@ -216,6 +206,35 @@ export function InstructorCourseAdminSettings({
             <label className="form-check-label" htmlFor="show_getting_started">
               Show the getting started checklist
             </label>
+          </div>
+          <div className="form-check mb-3">
+            {course.questions_receive_user_data &&
+              (!authzData.has_course_permission_own || course.example_course) && (
+                <input type="hidden" name="questions_receive_user_data" value="on" />
+              )}
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="questions_receive_user_data"
+              name="questions_receive_user_data"
+              defaultChecked={course.questions_receive_user_data}
+              disabled={!authzData.has_course_permission_own || course.example_course}
+            />
+            <label className="form-check-label" htmlFor="questions_receive_user_data">
+              Allow questions to access user identity
+            </label>
+            <div className="small text-muted">
+              When enabled, questions in this course can read the user's identity (and group
+              members). See the{' '}
+              <a
+                href="https://docs.prairielearn.com/question/server/#accessing-user-and-group-identity"
+                target="_blank"
+                rel="noreferrer"
+              >
+                documentation on exposing user identity
+              </a>
+              . Disabling this may break questions that rely on user identity.
+            </div>
           </div>
           {aiQuestionGenerationCourseToggleEnabled && (
             <div className="form-check mb-3">
@@ -275,14 +294,14 @@ function CourseDirectoryMissingAlert({
   if (!coursePathExists) {
     return (
       <div className="alert alert-danger">
-        Course directory not found. You must
+        Course directory not found. You must{' '}
         <a href={`${urlPrefix}/course_admin/syncs`}>sync your course</a>.
       </div>
     );
   } else if (!courseInfoExists) {
     return (
       <form name="add-configuration-form" method="POST" className="alert alert-danger">
-        <code>infoCourse.json</code> is missing. You must
+        <code>infoCourse.json</code> is missing. You must{' '}
         <input type="hidden" name="__csrf_token" value={csrfToken} />
         <button
           name="__action"
@@ -290,7 +309,7 @@ function CourseDirectoryMissingAlert({
           className="btn btn-link btn-link-inline mt-n1 p-0 border-0"
         >
           create this file
-        </button>
+        </button>{' '}
         to edit your course settings.
       </form>
     );

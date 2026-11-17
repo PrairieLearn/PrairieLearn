@@ -85,7 +85,9 @@ FROM
   team_users AS gu
   JOIN users AS u ON (u.id = gu.user_id)
 WHERE
-  gu.team_id = $group_id;
+  gu.team_id = $group_id
+ORDER BY
+  u.uid;
 
 -- BLOCK get_group_roles
 WITH

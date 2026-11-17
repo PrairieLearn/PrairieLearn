@@ -12,6 +12,7 @@ export function PersonalNotesPanel({
   authz_result,
   variantId,
   allowNewUploads = true,
+  lockdownBrowser = false,
   csrfToken,
   context,
 }: {
@@ -21,6 +22,8 @@ export function PersonalNotesPanel({
   authz_result: Record<string, any>;
   variantId?: string;
   allowNewUploads?: boolean;
+  /** Hides the file-picker form; its OS file dialog would let students open desktop files. */
+  lockdownBrowser?: boolean;
   csrfToken: string;
   context: 'question' | 'assessment';
 }) {
@@ -30,59 +33,73 @@ export function PersonalNotesPanel({
         <i class="fas fa-paperclip"></i>
         <h2>&nbsp;Personal Notes</h2>
       </div>
-      ${fileList.length === 0
-        ? html`<div class="card-body"><i>No attached notes</i></div>`
-        : html`
-            <ul class="list-group list-group-flush">
-              ${fileList.map(
-                (file) => html`
-                  <li class="list-group-item d-flex align-items-center">
-                    <a
-                      class="text-break me-2"
-                      href="/pl/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
-                      data-testid="attached-file"
-                    >
-                      ${file.display_filename}
-                    </a>
-                    ${assessment_instance.open &&
-                    authz_result.active &&
-                    authz_result.authorized_edit &&
-                    allowNewUploads &&
-                    file.type === 'student_upload'
+      ${
+        fileList.length === 0
+          ? html`<div class="card-body"><i>No attached notes</i></div>`
+          : html`
+              <ul class="list-group list-group-flush">
+                ${fileList.map(
+                  (file) => html`
+                    <li class="list-group-item d-flex align-items-center">
+                      <a
+                        class="text-break me-2"
+                        href="/pl/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
+                        data-testid="attached-file"
+                      >
+                        ${file.display_filename}
+                      </a>
+                      ${
+                        assessment_instance.open &&
+                        authz_result.active &&
+                        authz_result.authorized_edit &&
+                        allowNewUploads &&
+                        file.type === 'student_upload'
+                          ? html`
+                              <div class="ms-auto">
+                                ${DeletePersonalNoteButton({ file, variantId, csrfToken })}
+                              </div>
+                            `
+                          : ''
+                      }
+                    </li>
+                  `,
+                )}
+              </ul>
+            `
+      }
+      ${
+        allowNewUploads
+          ? html`
+              <div class="card-footer">
+                ${
+                  !assessment_instance.open || !authz_result.active
+                    ? html`
+                        <p class="small mb-0">
+                          Notes can't be added or deleted because the assessment is closed.
+                        </p>
+                      `
+                    : !authz_result.authorized_edit
                       ? html`
-                          <div class="ms-auto">
-                            ${DeletePersonalNoteButton({ file, variantId, csrfToken })}
+                          <div class="alert alert-warning mb-0" role="alert">
+                            You are viewing the ${context} instance of a different user and so are
+                            not authorized to add or delete personal notes.
                           </div>
                         `
-                      : ''}
-                  </li>
-                `,
-              )}
-            </ul>
-          `}
-      ${allowNewUploads
-        ? html`
-            <div class="card-footer">
-              ${!assessment_instance.open || !authz_result.active
-                ? html`
-                    <p class="small mb-0">
-                      Notes can't be added or deleted because the assessment is closed.
-                    </p>
-                  `
-                : !authz_result.authorized_edit
-                  ? html`
-                      <div class="alert alert-warning mb-0" role="alert">
-                        You are viewing the ${context} instance of a different user and so are not
-                        authorized to add or delete personal notes.
-                      </div>
-                    `
-                  : html`
-                      ${AttachFileForm({ variantId, csrfToken })}
-                      ${UploadTextForm({ variantId, csrfToken })}
-                    `}
-            </div>
-          `
-        : ''}
+                      : html`
+                          ${lockdownBrowser ? '' : AttachFileForm({ variantId, csrfToken })}
+                          ${UploadTextForm({
+                            variantId,
+                            csrfToken,
+                            defaultFilename: getAvailableFilename(
+                              fileList.map((file) => file.display_filename),
+                            ),
+                          })}
+                        `
+                }
+              </div>
+            `
+          : ''
+      }
     </div>
   `;
 }
@@ -120,23 +137,24 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
           </div>
           <div class="mb-3">
             <input type="hidden" name="__action" value="attach_file" />
-            ${variantId != null
-              ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
-              : ''}
+            ${
+              variantId != null
+                ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
+                : ''
+            }
             <input type="hidden" name="__csrf_token" value="${csrfToken}" />
             <button type="submit" class="btn btn-primary" disabled>Attach file</button>
           </div>
         </form>
 
-        <script>
-          $(() => {
+        <script type="module">
+          // This script is type="module" so that it is deferred and runs after the DOM is ready.
+          const form = document.querySelector('form.attach-file-form');
+          const fileInput = form.querySelector('#attachFileInput');
+          const submitButton = form.querySelector('button[type="submit"]');
+          fileInput.addEventListener('change', (e) => {
             // Only enable the "submit" button if a file is selected.
-            const form = document.querySelector('form.attach-file-form');
-            const fileInput = form.querySelector('#attachFileInput');
-            const submitButton = form.querySelector('button[type="submit"]');
-            fileInput.addEventListener('change', (e) => {
-              submitButton.disabled = fileInput.files.length === 0;
-            });
+            submitButton.disabled = fileInput.files.length === 0;
           });
         </script>
       </div>
@@ -144,7 +162,15 @@ function AttachFileForm({ variantId, csrfToken }: { variantId?: string; csrfToke
   `;
 }
 
-function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToken: string }) {
+function UploadTextForm({
+  variantId,
+  csrfToken,
+  defaultFilename,
+}: {
+  variantId?: string;
+  csrfToken: string;
+  defaultFilename: string;
+}) {
   return html`
     <div>
       <button
@@ -168,9 +194,9 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
             class="form-control"
             aria-label="Text filename"
             name="filename"
-            value="notes.txt"
+            value="${defaultFilename}"
           />
-          <div class="mb-3">
+          <div class="mt-1 mb-3">
             <textarea
               class="form-control"
               rows="5"
@@ -179,9 +205,11 @@ function UploadTextForm({ variantId, csrfToken }: { variantId?: string; csrfToke
               placeholder="Type or paste text here"
             ></textarea>
           </div>
-          ${variantId != null
-            ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
-            : ''}
+          ${
+            variantId != null
+              ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
+              : ''
+          }
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
           <button type="submit" class="btn btn-sm btn-primary" name="__action" value="attach_text">
             Add note
@@ -206,9 +234,11 @@ function DeletePersonalNoteButton({
       <p>Are you sure you want to delete <strong>${file.display_filename}</strong>?</p>
       <input type="hidden" name="__action" value="delete_file" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      ${variantId != null
-        ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
-        : ''}
+      ${
+        variantId != null
+          ? html`<input type="hidden" name="__variant_id" value="${variantId}" />`
+          : ''
+      }
       <input type="hidden" name="file_id" value="${file.id}" />
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
@@ -232,4 +262,17 @@ function DeletePersonalNoteButton({
       <i class="far fa-trash-alt"></i>
     </button>
   `;
+}
+
+/**
+ * Returns a display filename for notes file that does not collide with any existing name
+ */
+function getAvailableFilename(existingNames: Iterable<string>): string {
+  const taken = new Set(existingNames);
+  if (!taken.has('notes.txt')) return 'notes.txt';
+
+  for (let n = 2; ; n++) {
+    const candidate = `notes${n}.txt`;
+    if (!taken.has(candidate)) return candidate;
+  }
 }

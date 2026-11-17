@@ -18,7 +18,8 @@ import * as tmp from 'tmp-promise';
 import z from 'zod';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
-import { contains } from '@prairielearn/path-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
+import { FileSizeLimitError, contains, readFileWithinDirectory } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { sanitizeObject } from '@prairielearn/sanitize';
@@ -27,6 +28,7 @@ import { withResolvers } from '@prairielearn/utils';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
+import { serializeGradingResultMessage } from './lib/gradingResultMessage.js';
 import * as healthCheck from './lib/healthCheck.js';
 import { type WinstonBufferedLogger, makeJobLogger } from './lib/jobLogger.js';
 import * as lifecycle from './lib/lifecycle.js';
@@ -49,15 +51,50 @@ interface GradingResults {
   message?: string;
 }
 
-// catch SIGTERM and exit after waiting for all current jobs to finish
-let processTerminating = false;
+const workerAbortController = new AbortController();
+const terminationLifecycleActionAbortController = new AbortController();
+let workersFinished: Promise<void> = Promise.resolve();
+
+function startGracefulShutdown({
+  source,
+  waitForLifecycleAction,
+}: {
+  source: string;
+  waitForLifecycleAction: boolean;
+}) {
+  if (workerAbortController.signal.aborted) {
+    globalLogger.info(`Ignoring shutdown trigger from ${source}; shutdown is already in progress`);
+    return;
+  }
+
+  workerAbortController.abort();
+  globalLogger.info(`Starting graceful shutdown (source: ${source}); draining jobs`);
+  lifecycle.terminating();
+  void drainJobsAndExit(waitForLifecycleAction);
+}
+
+async function drainJobsAndExit(waitForLifecycleAction: boolean) {
+  await workersFinished.catch((error) => {
+    globalLogger.error('Error while draining grader workers', error);
+  });
+
+  if (waitForLifecycleAction) {
+    try {
+      await lifecycle.completeTermination(terminationLifecycleActionAbortController.signal);
+    } catch (error) {
+      globalLogger.error('Error completing termination lifecycle action', error);
+    }
+  }
+
+  process.exit(0);
+}
+
 process.on('SIGTERM', () => {
-  globalLogger.info('caught SIGTERM, draining jobs to exit...');
-  processTerminating = true;
-  (function tryToExit() {
-    if (load.getCurrentJobs() === 0) process.exit(0);
-    setTimeout(tryToExit, 1000);
-  })();
+  terminationLifecycleActionAbortController.abort();
+  startGracefulShutdown({
+    source: 'external SIGTERM',
+    waitForLifecycleAction: false,
+  });
 });
 
 async.series(
@@ -83,6 +120,7 @@ async.series(
         password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+        ssl: config.postgresqlSsl,
       };
 
       function idleErrorHandler(err: Error & { data?: { lastQuery?: string } }) {
@@ -95,7 +133,7 @@ async.series(
             last_query: err?.data?.lastQuery ?? undefined,
           },
         });
-        Sentry.close().finally(() => process.exit(1));
+        void Sentry.close().finally(() => process.exit(1));
       }
 
       globalLogger.info(
@@ -121,20 +159,28 @@ async.series(
     },
     async () => {
       await lifecycle.inService();
+      lifecycle.startTerminationWatcher((state) => {
+        startGracefulShutdown({
+          source: `IMDS Auto Scaling target lifecycle state ${state}`,
+          waitForLifecycleAction: true,
+        });
+      });
     },
     async () => {
       globalLogger.info('Initialization complete; beginning to process jobs');
       const sqs = new SQSClient(makeAwsClientConfig());
+      const jobsQueueUrl = config.jobsQueueUrl;
+      if (!jobsQueueUrl) {
+        throw new Error('jobsQueueUrl is not defined');
+      }
+      const receiveNextJob = (callback: (job: GradingJobMessage) => Promise<void>) =>
+        receiveFromQueue(sqs, jobsQueueUrl, callback, workerAbortController.signal);
 
       async function worker() {
         while (true) {
-          if (!healthCheck.isHealthy() || processTerminating) return;
+          if (!healthCheck.isHealthy() || workerAbortController.signal.aborted) return;
 
-          if (!config.jobsQueueUrl) {
-            throw new Error('jobsQueueUrl is not defined');
-          }
-
-          await receiveFromQueue(sqs, config.jobsQueueUrl, async (job) => {
+          await receiveNextJob(async (job) => {
             globalLogger.info(`received ${job.jobId} from queue`);
 
             // Ensure that this job wasn't canceled in the time since job submission.
@@ -156,6 +202,14 @@ async.series(
               },
             );
           }).catch((err) => {
+            if (
+              workerAbortController.signal.aborted &&
+              err instanceof Error &&
+              err.name === 'AbortError'
+            ) {
+              return;
+            }
+
             globalLogger.error('receiveFromQueue error', err);
             Sentry.captureException(err);
           });
@@ -163,10 +217,15 @@ async.series(
       }
 
       // Start an appropriate number of workers
-      await Promise.all(Array.from({ length: config.maxConcurrentJobs }).map(() => worker()));
+      workersFinished = Promise.all(
+        Array.from({ length: config.maxConcurrentJobs }, () => worker()),
+      ).then(() => {});
+      await workersFinished;
     },
   ],
   (err) => {
+    if (workerAbortController.signal.aborted) return;
+
     Sentry.captureException(err, {
       level: 'fatal',
     });
@@ -365,7 +424,9 @@ async function initDocker(context: Context) {
   logger.info(`Pulling latest version of "${image}" image`);
   const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
+  } else {
+    assertSupportedImageRegistry(repository.getRegistryRepo());
   }
   const params = {
     fromImage: repository.getRegistryRepo(),
@@ -471,7 +532,7 @@ async function runJob(
 
   const repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
   }
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);
@@ -563,33 +624,34 @@ async function runJob(
     // Now that the job has completed, let's extract the results
     // First up: results.json
     if (results.succeeded) {
-      await fs.readFile(path.join(tempDir, 'results', 'results.json')).then(
-        (data) => {
-          if (Buffer.byteLength(data) > 1024 * 1024) {
-            // Cap output at 1MB
-            results.succeeded = false;
-            results.message =
-              'The grading results were larger than 1MB. ' +
-              'If the problem persists, please contact course staff or a proctor.';
-            return;
-          }
-
-          try {
-            const parsedResults = JSON.parse(data.toString());
-            results.results = sanitizeObject(parsedResults);
-            results.succeeded = true;
-          } catch (e) {
-            logger.error('Could not parse results.json:', e);
-            results.succeeded = false;
-            results.message = 'Could not parse the grading results.';
-          }
-        },
-        (err) => {
+      const data = await readFileWithinDirectory(
+        tempDir,
+        'results/results.json',
+        1024 * 1024,
+      ).catch((err: unknown) => {
+        results.succeeded = false;
+        if (err instanceof FileSizeLimitError) {
+          results.message =
+            'The grading results were larger than 1MB. ' +
+            'If the problem persists, please contact course staff or a proctor.';
+        } else {
           logger.error('Could not read results.json', err);
-          results.succeeded = false;
           results.message = 'Could not read grading results.';
-        },
-      );
+        }
+        return null;
+      });
+
+      if (data === null) return;
+
+      try {
+        const parsedResults = JSON.parse(data.toString());
+        results.results = sanitizeObject(parsedResults);
+        results.succeeded = true;
+      } catch (e) {
+        logger.error('Could not parse results.json:', e);
+        results.succeeded = false;
+        results.message = 'Could not parse the grading results.';
+      }
     } else {
       if (results.timedOut) {
         results.message = `Your grading job did not complete within the time limit of ${timeout} seconds.\nPlease fix your code before submitting again.`;
@@ -636,15 +698,6 @@ async function uploadResults(context: Context, results: GradingResults) {
   // Send the results back to PrairieLearn now; the archive will
   // be uploaded later
   logger.info('Sending results to PrairieLearn with results');
-  const messageBody = {
-    jobId,
-    event: 'grading_result',
-    // The SQS max message size is 256KB; if our results payload is
-    // larger than 250KB, we won't send results via this and will
-    // instead rely on PL fetching them via S3.
-    data: JSON.stringify(results).length <= 250 * 1024 ? results : undefined,
-  };
-
   if (!config.resultsQueueUrl) {
     throw new Error('resultsQueueUrl is not defined');
   }
@@ -653,7 +706,7 @@ async function uploadResults(context: Context, results: GradingResults) {
   await sqs.send(
     new SendMessageCommand({
       QueueUrl: config.resultsQueueUrl,
-      MessageBody: JSON.stringify(messageBody),
+      MessageBody: serializeGradingResultMessage(jobId, results),
     }),
   );
 }

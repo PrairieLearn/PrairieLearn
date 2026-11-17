@@ -18,6 +18,11 @@ SET
   status = 'joined',
   user_id = $user_id,
   pending_uid = NULL,
+  pending_uin = NULL,
+  pending_name = NULL,
+  pending_email = NULL,
+  pending_lti13_sub = NULL,
+  pending_lti13_course_instance_id = NULL,
   first_joined_at = COALESCE(first_joined_at, now())
 WHERE
   id = $enrollment_id
@@ -180,3 +185,18 @@ FROM
 WHERE
   id = ANY ($enrollment_ids::bigint[])
   AND course_instance_id = $course_instance_id;
+
+-- BLOCK select_enrollments_for_users_in_course
+SELECT
+  to_jsonb(e.*) AS enrollment,
+  to_jsonb(ci.*) AS course_instance
+FROM
+  enrollments AS e
+  JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+WHERE
+  ci.course_id = $course_id
+  AND e.user_id = ANY ($user_ids::bigint[])
+ORDER BY
+  e.user_id,
+  e.course_instance_id,
+  e.id;

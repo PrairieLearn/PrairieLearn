@@ -1,4 +1,4 @@
-import { TRPCError, experimental_standaloneMiddleware, initTRPC } from '@trpc/server';
+import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 import { z } from 'zod';
 
@@ -17,9 +17,16 @@ interface CreditPoolBaseContext {
   authn_user: { id: string };
 }
 
-export const requireAiGradingFeature = experimental_standaloneMiddleware<{
-  ctx: CreditPoolBaseContext;
-}>().create(async (opts) => {
+const t = initTRPC.context<CreditPoolBaseContext>().create({
+  transformer: superjson,
+});
+
+/**
+ * Base procedure that enforces access to the `ai-grading` feature. Routers in
+ * other files attach this check to their own procedures via `.concat()`, which
+ * works as long as their context satisfies {@link CreditPoolBaseContext}.
+ */
+export const aiGradingFeatureProcedure = t.procedure.use(async (opts) => {
   const enabled = await features.enabled('ai-grading', {
     institution_id: opts.ctx.course.institution_id,
     course_id: opts.ctx.course.id,
@@ -36,11 +43,7 @@ export const requireAiGradingFeature = experimental_standaloneMiddleware<{
   return opts.next();
 });
 
-const t = initTRPC.context<CreditPoolBaseContext>().create({
-  transformer: superjson,
-});
-
-const protectedProcedure = t.procedure.use(requireAiGradingFeature);
+const protectedProcedure = aiGradingFeatureProcedure;
 
 export const creditPoolProcedures = {
   creditPool: protectedProcedure.query(async (opts) => {

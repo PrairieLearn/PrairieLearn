@@ -1,9 +1,9 @@
 import random
+from typing import assert_never
 
 import chevron
 import lxml.html
 import prairielearn as pl
-from typing_extensions import assert_never
 
 FEEDBACK_INCORRECT = "You didn't click on the image the correct number of times"
 FEEDBACK_TOOSMALL = "Your number was one too small."

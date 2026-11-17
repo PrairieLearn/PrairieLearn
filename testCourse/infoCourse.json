@@ -1,6 +1,9 @@
 {
   "name": "QA 101",
   "title": "Test Course",
+  "options": {
+    "questionsReceiveUserData": true
+  },
   "assessmentSets": [
     { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
     { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1" }

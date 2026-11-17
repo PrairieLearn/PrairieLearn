@@ -1,6 +1,8 @@
-import type { Column } from '@tanstack/table-core';
+import type { RowData } from '@tanstack/react-table';
 import clsx from 'clsx';
 import Dropdown from 'react-bootstrap/Dropdown';
+
+import type { TanstackTableColumn } from '../tanstack-table.js';
 
 export type NumericColumnFilterValue =
   | {
@@ -18,11 +20,16 @@ export type NumericColumnFilterValue =
  *
  * @param params
  * @param params.column - The TanStack Table column object
+ * @param params.unit - Optional unit label shown in the filter (e.g. "minutes") to
+ * clarify what the entered numbers represent. The column's `filterFn` is
+ * responsible for interpreting values in this unit.
  */
-export function NumericInputColumnFilter<TData, TValue>({
+export function NumericInputColumnFilter<TData extends RowData, TValue>({
   column,
+  unit,
 }: {
-  column: Column<TData, TValue>;
+  column: TanstackTableColumn<TData, TValue>;
+  unit?: string;
 }) {
   const columnId = column.id;
   const value = (column.getFilterValue() as NumericColumnFilterValue | undefined) ?? {
@@ -66,8 +73,12 @@ export function NumericInputColumnFilter<TData, TValue>({
       <Dropdown.Menu className="p-0">
         <div className="p-3" style={{ minWidth: '240px' }}>
           <div className="d-flex align-items-center justify-content-between mb-2">
-            <label className="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>
+            <label
+              className="form-label fw-semibold mb-0 text-nowrap"
+              id={`${columnId}-filter-label`}
+            >
               {label}
+              {unit ? <span className="fw-normal text-muted"> (in {unit})</span> : null}
             </label>
             <button
               type="button"
@@ -169,7 +180,7 @@ export function parseNumericFilter(filterValue: string): {
  * }
  */
 export function numericColumnFilterFn(
-  row: any,
+  row: { getValue: (columnId: string) => unknown },
   columnId: string,
   { filterValue, emptyOnly }: NumericColumnFilterValue,
 ): boolean {

@@ -2,8 +2,9 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
+import { appErrorFormatter } from '@prairielearn/trpc/server';
+
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { appErrorFormatter } from '../app-errors.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'assessment'>;
@@ -67,3 +68,18 @@ export const requireCoursePermissionEdit = t.middleware(async (opts) => {
   }
   return opts.next();
 });
+
+export const requireCoursePermissionEditOrCourseInstancePermissionView = t.middleware(
+  async (opts) => {
+    if (
+      !opts.ctx.authz_data.has_course_permission_edit &&
+      !opts.ctx.authz_data.has_course_instance_permission_view
+    ) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (must be a course editor or student data viewer)',
+      });
+    }
+    return opts.next();
+  },
+);

@@ -4,7 +4,7 @@
 # Version 0.0.2 edited by Harry Dankowicz with additional export of tikz figures
 # Version 0.1.0 edited by Dave Mussulman to convert to PL v3 question types
 
-# ruff: noqa: B023 -- script abuses inline functions; don't lint unbound variables
+# ruff:file-ignore[function-uses-loop-variable] -- script abuses inline functions; don't lint unbound variables
 
 import os
 import re
@@ -48,12 +48,12 @@ log_file = None
 
 
 def init_logging(output_filename):
-    global log_file  # noqa: PLW0603
+    global log_file  # ruff:ignore[global-statement]
     try:
         print(f"Logging information to file: {output_filename}")
         if log_file is not None:
             raise RuntimeError("logging already initialized")
-        log_file = open(output_filename, "w")  # noqa: SIM115
+        log_file = open(output_filename, "w")  # ruff:ignore[open-file-with-context-handler]
     except Exception as exc:
         print(f"ERROR: failed to initialize logging: {exc}")
         sys.exit(1)
@@ -230,7 +230,7 @@ def read_library(input_filename):
     """
     log_and_print(f"Reading library file: {input_filename}")
     try:
-        input_file = open(input_filename)  # noqa: SIM115
+        input_file = open(input_filename)  # ruff:ignore[open-file-with-context-handler]
     except Exception as exc:
         die(f"ERROR: Unable to open library file for reading: {input_filename}: {exc}")
     library_regexps = [

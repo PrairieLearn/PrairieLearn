@@ -5,3 +5,11 @@ FROM
   submissions
 WHERE
   id = $submission_id;
+
+-- BLOCK select_submission
+SELECT
+  *
+FROM
+  submissions
+WHERE
+  id = $submission_id;

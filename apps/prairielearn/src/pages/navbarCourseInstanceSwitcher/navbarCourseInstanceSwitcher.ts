@@ -20,13 +20,12 @@ router.get(
     const course_instances = await selectCourseInstancesWithStaffAccess({
       course,
       authzData,
-      requiredRole: ['Previewer', 'Student Data Viewer'],
     });
 
     res.send(
       NavbarCourseInstanceSwitcher({
         course_instances,
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        // oxlint-disable-next-line typescript/no-unnecessary-condition
         current_course_instance_id: req.params.course_instance_id ?? null,
       }),
     );

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
@@ -67,7 +66,7 @@ describe('Assessment set syncing', () => {
     courseData.course.assessmentSets.unshift(oldAssessmentSet);
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    courseData.course.assessmentSets.splice(0, 1);
+    courseData.course.assessmentSets.shift();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTableWithSchema(
       'assessment_sets',

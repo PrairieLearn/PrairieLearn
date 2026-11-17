@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
@@ -13,7 +13,7 @@ export interface FlashMessage {
   message: string;
 }
 
-export function flashMiddleware() {
+export function flashMiddleware(): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
     const flashStorage = makeFlashStorage(req);
     als.run(flashStorage, () => next());

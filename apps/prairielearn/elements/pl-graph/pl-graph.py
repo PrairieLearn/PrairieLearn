@@ -1,5 +1,7 @@
+import html
 import os
 import re
+import subprocess
 import warnings
 
 import lxml.html
@@ -22,6 +24,8 @@ DIRECTED_DEFAULT = True
 LOG_WARNINGS_DEFAULT = True
 SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = "."
+ARIA_LABEL_DEFAULT = None
+ARIA_DESCRIPTION_DEFAULT = None
 XML_DECLARATION = r"<\?xml[^>\?]*\?>"
 DOCTYPE_DECLARATION = r"<!DOCTYPE svg [^>]*>"
 
@@ -142,6 +146,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "log-warnings",
         "source-file-name",
         "directory",
+        "aria-label",
+        "aria-description",
     ]
 
     # Load attributes from extensions if they have any
@@ -163,6 +169,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ):
         raise ValueError(
             'Existing graph content cannot be added inside html element when "source-file-name" attribute is used.'
+        )
+
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
+    aria_description = pl.get_string_attrib(
+        element, "aria-description", ARIA_DESCRIPTION_DEFAULT
+    )
+    if aria_description and not aria_label:
+        raise ValueError(
+            'The "aria-description" attribute requires an "aria-label" attribute, which provides the graph\'s accessible name.'
         )
 
 
@@ -194,6 +209,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
     directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
+
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
+    aria_description = pl.get_string_attrib(
+        element, "aria-description", ARIA_DESCRIPTION_DEFAULT
+    )
 
     if (
         len(str(element.text)) == 0
@@ -227,22 +247,46 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Read the contents of this element as the data to render
         # we dump the string to json to ensure that newlines are
         # properly encoded
-        graphviz_data = element.text
+        graphviz_data = element.text or ""
 
-    translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
+    # PyGraphviz 2's native renderer bypasses Python's warning filters and uses
+    # CoreFoundation on macOS, which cannot run safely in our forked workers.
+    result = subprocess.run(
+        ["dot", f"-K{engine}", "-Tsvg"],
+        input=graphviz_data.encode(),
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise OSError(result.stderr.decode())
+    # Graphviz exits successfully without output for empty input.
+    if not result.stdout.strip():
+        raise ValueError(
+            "pl-graph did not produce a graph. Check that the graph source is not empty."
+        )
+    if log_warnings and result.stderr:
+        warnings.warn(
+            result.stderr.decode(),
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
-    with warnings.catch_warnings():
-        # Only apply ignore filter if we enable hiding warnings
-        if not log_warnings:
-            warnings.simplefilter("ignore")
+    svg = result.stdout.decode("utf-8", "strict")
+    # https://gitlab.com/graphviz/graphviz/-/merge_requests/3404
+    # We can switch to svg_inline when we have use graphviz >= 10.0.1
+    svg = re.sub(XML_DECLARATION, "", svg)
+    svg = re.sub(DOCTYPE_DECLARATION, "", svg)
 
-        svg_bytes = translated_dotcode.draw(format="svg", prog=engine)
-        if svg_bytes is None:
-            raise TypeError("Graph was not returned.")
-        svg = svg_bytes.decode("utf-8", "strict")
-        # https://gitlab.com/graphviz/graphviz/-/merge_requests/3404
-        # We can switch to svg_inline when we have use graphviz >= 10.0.1
-        svg = re.sub(XML_DECLARATION, "", svg)
-        svg = re.sub(DOCTYPE_DECLARATION, "", svg)
+    # When an author provides a text alternative, expose the whole graph as a
+    # single labeled image. The `role="img"` makes the SVG's descendants
+    # (including Graphviz's per-node/edge <title> elements) presentational, so
+    # screen readers announce the provided text instead of crawling the graph's
+    # internal structure. `role="img"` requires an accessible name, so the image
+    # treatment is gated on `aria-label`; `aria-description` only supplements it.
+    wrapper_attribs = 'class="pl-graph"'
+    if aria_label:
+        wrapper_attribs += f' role="img" aria-label="{html.escape(aria_label)}"'
+        if aria_description:
+            wrapper_attribs += f' aria-description="{html.escape(aria_description)}"'
 
-    return f'<div class="pl-graph">{svg}</div>'
+    return f"<div {wrapper_attribs}>{svg}</div>"

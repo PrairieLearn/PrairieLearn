@@ -5,20 +5,19 @@ from prairielearn import ...
 ```
 """
 
+import functools
 import itertools as it
-import os
 import random
 import string
 import unicodedata
 import uuid
 from collections.abc import Callable, Generator, Iterable
-from typing import TypeVar
 
 from pint import UnitRegistry
 from text_unidecode import unidecode
 
 
-def iter_keys() -> Generator[str, None, None]:
+def iter_keys() -> Generator[str]:
     """A continuous alphabetic list of the form `['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]`.
 
     <https://stackoverflow.com/questions/29351492/how-to-make-a-continuous-alphabetic-list-python-from-a-z-then-from-aa-ab-ac-e/29351603#29351603>
@@ -43,17 +42,20 @@ def index2key(i: int) -> str:
     return next(it.islice(iter_keys(), i, None))
 
 
+@functools.cache
 def get_unit_registry() -> UnitRegistry:
-    """Get a unit registry using cache folder valid on production machines.
+    """Get the shared unit registry.
 
     <https://pint.readthedocs.io/en/stable/index.html>
 
+    The registry is created once per process. The zygote creates it before
+    forking, so each worker inherits a copy instead of paying to build one on
+    every call.
+
     Returns:
-        A process-specific unit registry.
+        A unit registry shared by all callers in this process.
     """
-    pid = os.getpid()
-    cache_dir = f"/tmp/pint_{pid}"
-    return UnitRegistry(cache_folder=cache_dir)
+    return UnitRegistry()
 
 
 def full_unidecode(input_str: str) -> str:
@@ -105,10 +107,7 @@ def get_uuid() -> str:
     return random_char + uuid_string[1:]
 
 
-ListItem = TypeVar("ListItem")
-
-
-def partition(
+def partition[ListItem](
     data: Iterable[ListItem], pred: Callable[[ListItem], bool]
 ) -> tuple[list[ListItem], list[ListItem]]:
     """Implement a partition function, splitting the data into two lists based on the predicate.

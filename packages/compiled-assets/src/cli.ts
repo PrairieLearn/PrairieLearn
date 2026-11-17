@@ -51,7 +51,7 @@ async function writeCompressedAssets(
   const allAssetPaths = getAllAssetPaths(manifest);
 
   await Promise.all(
-    [...allAssetPaths].map(async (assetPath) => {
+    Array.from(allAssetPaths, async (assetPath) => {
       const destinationFilePath = path.resolve(destination, assetPath);
       const contents = await fs.readFile(destinationFilePath);
       const gzipCompressed = await gzip(contents);

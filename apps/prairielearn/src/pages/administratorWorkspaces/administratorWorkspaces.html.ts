@@ -1,16 +1,17 @@
 import { z } from 'zod';
 
+import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { IdSchema } from '@prairielearn/zod';
+import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { WorkspaceHostSchema } from '../../lib/db-types.js';
+import { WorkspaceHostSchema, WorkspaceSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 const WorkspaceWithContextSchema = z.object({
   id: IdSchema,
-  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
-  time_in_state: z.string(),
+  state: WorkspaceSchema.shape.state,
+  time_in_state: IntervalSchema,
   question_name: z.string(),
   course_instance_name: z.string().nullable(),
   course_name: z.string(),
@@ -22,7 +23,7 @@ type WorkspaceHostState = z.infer<typeof WorkspaceHostSchema.shape.state>;
 
 export const WorkspaceHostRowSchema = z.object({
   workspace_host: WorkspaceHostSchema,
-  workspace_host_time_in_state: z.string(),
+  workspace_host_time_in_state: IntervalSchema,
   workspaces: z.array(WorkspaceWithContextSchema),
 });
 type WorkspaceHostRow = z.infer<typeof WorkspaceHostRowSchema>;
@@ -45,15 +46,21 @@ export function AdministratorWorkspaces({
       subPage: 'workspaces',
     },
     preContent: html`
-      <script>
-        $(() => {
-          const toggleButton = document.querySelector('#toggle-all-workspaces');
-          toggleButton.addEventListener('click', () => {
-            const state = toggleButton.dataset.state;
-            $('#content .collapse').collapse(state === 'collapsed' ? 'show' : 'hide');
-            toggleButton.dataset.state = state === 'collapsed' ? 'expanded' : 'collapsed';
-            toggleButton.textContent = state === 'collapsed' ? 'Collapse all' : 'Expand all';
+      <script type="module">
+        // This script has type="module" so it's deferred until after the DOM is loaded.
+        const toggleButton = document.querySelector('#toggle-all-workspaces');
+        toggleButton.addEventListener('click', () => {
+          const state = toggleButton.dataset.state;
+          document.querySelectorAll('#content .collapse').forEach((element) => {
+            const collapse = window.bootstrap.Collapse.getOrCreateInstance(element);
+            if (state === 'collapsed') {
+              collapse.show();
+            } else {
+              collapse.hide();
+            }
           });
+          toggleButton.dataset.state = state === 'collapsed' ? 'expanded' : 'collapsed';
+          toggleButton.textContent = state === 'collapsed' ? 'Collapse all' : 'Expand all';
         });
       </script>
     `,
@@ -88,12 +95,12 @@ export function AdministratorWorkspaces({
                       aria-controls="workspaces-${workspaceHost.id}"
                       >${workspaceHost.hostname}</a
                     >
-                    ${instanceId
-                      ? html`<span class="text-muted me-2">(${instanceId})</span>`
-                      : null}
+                    ${
+                      instanceId ? html`<span class="text-muted me-2">(${instanceId})</span>` : null
+                    }
                     ${WorkspaceHostStateBadge({ state: workspaceHost.state })}
                     <span class="badge text-bg-secondary">
-                      ${workspaceHostRow.workspace_host_time_in_state}
+                      ${formatInterval(workspaceHostRow.workspace_host_time_in_state)}
                     </span>
                   </div>
                   ${Capacity({
@@ -102,45 +109,47 @@ export function AdministratorWorkspaces({
                   })}
                 </div>
                 <div id="workspaces-${workspaceHost.id}" class="collapse">
-                  ${workspaces.length === 0
-                    ? html`
-                        <div class="text-muted my-2">
-                          There are no workspaces running on this host.
-                        </div>
-                      `
-                    : html`
-                        <div class="list-group my-2">
-                          ${workspaces.map((workspace) => {
-                            const maybeCourseInstanceName = workspace.course_instance_name
-                              ? html`(<span title="Course instance"
-                                    >${workspace.course_instance_name}</span
-                                  >)`
-                              : null;
-                            return html`
-                              <div class="list-group-item">
-                                <div class="d-flex align-items-center">
-                                  <span class="me-2" style="font-variant-numeric: tabular-nums;">
-                                    ${workspace.id}
-                                  </span>
-                                  ${WorkspaceStateBadge({ state: workspace.state })}
-                                  <span class="badge text-bg-secondary">
-                                    ${workspace.time_in_state}
-                                  </span>
+                  ${
+                    workspaces.length === 0
+                      ? html`
+                          <div class="text-muted my-2">
+                            There are no workspaces running on this host.
+                          </div>
+                        `
+                      : html`
+                          <div class="list-group my-2">
+                            ${workspaces.map((workspace) => {
+                              const maybeCourseInstanceName = workspace.course_instance_name
+                                ? html`(<span title="Course instance"
+                                      >${workspace.course_instance_name}</span
+                                    >)`
+                                : null;
+                              return html`
+                                <div class="list-group-item">
+                                  <div class="d-flex align-items-center">
+                                    <span class="me-2" style="font-variant-numeric: tabular-nums;">
+                                      ${workspace.id}
+                                    </span>
+                                    ${WorkspaceStateBadge({ state: workspace.state })}
+                                    <span class="badge text-bg-secondary">
+                                      ${formatInterval(workspace.time_in_state)}
+                                    </span>
+                                  </div>
+                                  <div class="text-muted text-small">
+                                    <span class="font-monospace" title="Question"
+                                      >${workspace.question_name}</span
+                                    >
+                                    &bull;
+                                    <span title="Course">${workspace.course_name}</span>
+                                    ${maybeCourseInstanceName} &bull;
+                                    <span title="Institution">${workspace.institution_name}</span>
+                                  </div>
                                 </div>
-                                <div class="text-muted text-small">
-                                  <span class="font-monospace" title="Question"
-                                    >${workspace.question_name}</span
-                                  >
-                                  &bull;
-                                  <span title="Course">${workspace.course_name}</span>
-                                  ${maybeCourseInstanceName} &bull;
-                                  <span title="Institution">${workspace.institution_name}</span>
-                                </div>
-                              </div>
-                            `;
-                          })}
-                        </div>
-                      `}
+                              `;
+                            })}
+                          </div>
+                        `
+                  }
                 </div>
               </div>
             `;

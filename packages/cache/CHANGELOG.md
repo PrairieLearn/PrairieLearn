@@ -1,5 +1,78 @@
 # @prairielearn/cache
 
+## 2.1.19
+
+### Patch Changes
+
+- 5160bea: Specify the default Redis reply mapping explicitly to avoid unnecessary TypeScript inference.
+- Updated dependencies [08f657e]
+  - @prairielearn/sentry@6.0.0
+
+## 2.1.18
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 2.1.17
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 2.1.16
+
+### Patch Changes
+
+- Updated dependencies [00945c2]
+- Updated dependencies [9757f58]
+  - @prairielearn/logger@4.0.0
+
+## 2.1.15
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 2.1.14
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 2.1.13
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 2.1.12
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 2.1.11
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 2.1.10
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 2.1.9
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/logger@3.1.2
+  - @prairielearn/sentry@5.0.4
+
 ## 2.1.8
 
 ### Patch Changes

@@ -24,7 +24,8 @@ export default asyncHandler(async (req, res, next) => {
   if (req.method === 'POST') {
     // NOTE: If you are trying to debug a "CSRF Fail" in a form with file
     // upload, you may have forgotten to special-case the file upload path.
-    // Search for "upload.single('file')" in server.js, for example.
+    // Search for "upload.single('file')" or "upload.array('files')" in
+    // server.js, for example.
 
     const csrfToken = req.headers['x-csrf-token'] ?? req.body?.__csrf_token;
 

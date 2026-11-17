@@ -93,6 +93,7 @@ FROM
 WHERE
   iq.assessment_question_id = $unsafe_assessment_question_id
   AND aq.assessment_id = $assessment_id
+  AND aq.deleted_at IS NULL
   AND iq.requires_manual_grading
   AND iq.assigned_grader IS NULL
   AND iq.status != 'unanswered';
@@ -111,6 +112,7 @@ WHERE
     WHERE
       iq.assessment_question_id = $unsafe_assessment_question_id
       AND aq.assessment_id = $assessment_id
+      AND aq.deleted_at IS NULL
       AND iq.requires_manual_grading
       AND iq.assigned_grader IS NULL
       AND iq.status != 'unanswered'

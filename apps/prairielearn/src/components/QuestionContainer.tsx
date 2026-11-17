@@ -1,4 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
+import { formatDate } from '@prairielearn/formatter';
 import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -6,11 +7,13 @@ import type {
   CounterClockwiseRotationDegrees,
   InstanceQuestionAIGradingInfo,
 } from '../ee/lib/ai-grading/types.js';
+import { formatStudentQuestionTitle } from '../lib/assessment.shared.js';
 import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
+  Course,
   CourseInstance,
   GroupConfig,
   InstanceQuestion,
@@ -18,8 +21,9 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.shared.js';
 import { idsEqual } from '../lib/id.js';
+import { issueMailtoLink } from '../lib/issues.shared.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
@@ -59,14 +63,21 @@ export function QuestionContainer({
     variant,
     variantToken,
     questionJsonBase64,
+    course,
     course_instance,
     authz_data,
     is_administrator,
-    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
   } = resLocals;
+
+  const isAiGradingPreview = questionRenderContext === 'ai_grading';
+  // The AI grader always receives the answer when it is non-blank, regardless of `showCorrectAnswer`.
+  const answerVisible = isAiGradingPreview ? !!answerHtml.trim() : resLocals.showCorrectAnswer;
+  const answerBody = isAiGradingPreview
+    ? AiGradingHtmlPreview(answerHtml.trim())
+    : unsafeHtml(answerHtml);
 
   return html`
     <div
@@ -76,104 +87,119 @@ export function QuestionContainer({
       data-variant-token="${variantToken}"
       data-workspace-id="${variant.workspace_id}"
     >
-      ${question.type !== 'Freeform'
-        ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
-        : ''}
-      ${issues.map((issue: IssueRenderData) =>
-        IssuePanel({ issue, course_instance, authz_data, is_administrator }),
-      )}
-      ${question.type === 'Freeform'
-        ? html`
-            <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({
-                resLocals,
-                questionContext,
-                questionRenderContext,
-                showFooter,
-                manualGradingPreviewUrl,
-                aiGradingPreviewUrl,
-                questionCopyTargets,
-              })}
-            </form>
-          `
-        : QuestionPanel({ resLocals, showFooter, questionContext })}
       ${
-        // The correct answer isn't used when performing AI grading, so we hide
-        // it here to avoid confusion.
-        questionRenderContext !== 'ai_grading'
+        question.type !== 'Freeform'
+          ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
+          : ''
+      }
+      ${issues.map((issue: IssueRenderData) =>
+        IssuePanel({ issue, course, course_instance, authz_data, is_administrator }),
+      )}
+      ${
+        question.type === 'Freeform'
           ? html`
-              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
+              <form class="question-form" name="question-form" method="POST" autocomplete="off">
+                ${QuestionPanel({
+                  resLocals,
+                  questionContext,
+                  questionRenderContext,
+                  showFooter,
+                  manualGradingPreviewUrl,
+                  aiGradingPreviewUrl,
+                  questionCopyTargets,
+                })}
+              </form>
+            `
+          : QuestionPanel({ resLocals, showFooter, questionContext })
+      }
+      ${
+        // The AI grader omits a blank answer, so the preview omits the card entirely.
+        !isAiGradingPreview || answerVisible
+          ? html`
+              <div class="card mb-3 grading-block${answerVisible ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${answerVisible ? answerBody : ''}
                 </div>
               </div>
             `
           : ''
       }
-      ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
-        ? AIGradingExplanation({
-            explanation: aiGradingInfo.explanation,
-            hasImage: aiGradingInfo.hasImage,
-            rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
-          })
-        : ''}
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.prompt
-        ? AIGradingPrompt({
-            prompt: aiGradingInfo.prompt,
-          })
-        : ''}
-      ${submissions.length > 0
-        ? html`
-            ${SubmissionList({
-              resLocals,
-              questionContext,
-              questionRenderContext,
-              submissions: submissions.slice(0, MAX_TOP_RECENTS),
-              submissionHtmls,
-              submissionCount: submissions.length,
-              renderSubmissionSearchParams,
-            })}
-            ${submissions.length > MAX_TOP_RECENTS
-              ? html`
-                  <div class="mb-3 d-flex justify-content-center">
-                    <button
-                      class="btn btn-outline-secondary btn-sm show-hide-btn collapsed"
-                      type="button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#more-submissions-collapser"
-                      aria-expanded="false"
-                      aria-controls="more-submissions-collapser"
-                    >
-                      Show/hide older submissions
-                      <i class="fa fa-angle-up ms-1 expand-icon"></i>
-                    </button>
-                  </div>
+      ${
+        ['instructor', 'manual_grading'].includes(questionContext)
+          ? html`
+              <div class="js-ai-grading-explanation-slot">
+                ${
+                  aiGradingInfo
+                    ? AIGradingExplanation({
+                        model: aiGradingInfo.model,
+                        explanation: aiGradingInfo.explanation,
+                        hasImage: aiGradingInfo.hasImage,
+                        rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
+                      })
+                    : ''
+                }
+              </div>
+              <div class="js-ai-grading-prompt-slot">
+                ${aiGradingInfo?.prompt ? AIGradingPrompt({ prompt: aiGradingInfo.prompt }) : ''}
+              </div>
+            `
+          : ''
+      }
+      ${
+        submissions.length > 0
+          ? html`
+              ${SubmissionList({
+                resLocals,
+                questionContext,
+                questionRenderContext,
+                submissions: submissions.slice(0, MAX_TOP_RECENTS),
+                submissionHtmls,
+                submissionCount: submissions.length,
+                renderSubmissionSearchParams,
+              })}
+              ${
+                submissions.length > MAX_TOP_RECENTS
+                  ? html`
+                      <div class="mb-3 d-flex justify-content-center">
+                        <button
+                          class="btn btn-outline-secondary btn-sm show-hide-btn collapsed"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#more-submissions-collapser"
+                          aria-expanded="false"
+                          aria-controls="more-submissions-collapser"
+                        >
+                          Show/hide older submissions
+                          <i class="fa fa-angle-up ms-1 expand-icon"></i>
+                        </button>
+                      </div>
 
-                  <div id="more-submissions-collapser" class="collapse">
-                    ${SubmissionList({
-                      resLocals,
-                      questionContext,
-                      questionRenderContext,
-                      submissions: submissions.slice(MAX_TOP_RECENTS),
-                      submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
-                      submissionCount: submissions.length,
-                      renderSubmissionSearchParams,
-                    })}
-                  </div>
-                `
-              : ''}
-          `
-        : ''}
+                      <div id="more-submissions-collapser" class="collapse">
+                        ${SubmissionList({
+                          resLocals,
+                          questionContext,
+                          questionRenderContext,
+                          submissions: submissions.slice(MAX_TOP_RECENTS),
+                          submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
+                          submissionCount: submissions.length,
+                          renderSubmissionSearchParams,
+                        })}
+                      </div>
+                    `
+                  : ''
+              }
+            `
+          : ''
+      }
       ${CopyQuestionModal({ resLocals, questionCopyTargets })}
     </div>
   `;
 }
 
-function AIGradingPrompt({ prompt }: { prompt: string }) {
+export function AIGradingPrompt({ prompt }: { prompt: string }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -202,11 +228,13 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({
+export function AIGradingExplanation({
+  model,
   explanation,
   hasImage,
   rotationCorrectionDegrees,
 }: {
+  model: InstanceQuestionAIGradingInfo['model'];
   explanation: string | null;
   hasImage: boolean;
   rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
@@ -215,14 +243,18 @@ function AIGradingExplanation({
     rotationCorrectionDegrees && Object.keys(rotationCorrectionDegrees).length > 0;
 
   return html`
-    <div class="card mb-3 grading-block">
+    <div
+      id="ai-grading-explanation"
+      class="card mb-3 grading-block"
+      style="scroll-margin-top: 10px;"
+    >
       <div
         class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
       >
         <h2>AI grading explanation</h2>
         <button
           type="button"
-          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto"
+          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto flex-shrink-0"
           data-bs-toggle="collapse"
           data-bs-target="#ai-grading-explanation-body"
           aria-expanded="true"
@@ -236,8 +268,8 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          ${hasImage
-            ? rotationCorrectionApplied
+          ${
+            hasImage && rotationCorrectionApplied
               ? html`<div class="alert alert-warning mb-3" role="alert">
                   <p>
                     One or more images were uploaded in a rotated state by the student (this was an
@@ -264,17 +296,24 @@ function AIGradingExplanation({
                     </table>
                   </div>
                 </div>`
-              : html`<div class="alert alert-info mb-3" role="alert">
-                  None of the submitted images required rotation correction.
-                </div>`
-            : ''}
-          ${explanation
-            ? html`
-                <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
+              : ''
+          }
+          ${
+            explanation
+              ? html`
+                  <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
 ${explanation}
 </pre>
-              `
-            : ''}
+                `
+              : ''
+          }
+        </div>
+        <div class="card-footer small text-body-secondary">
+          ${
+            model
+              ? html`Graded with <span class="font-monospace text-break">${model}</span>`
+              : 'Model not recorded'
+          }
         </div>
       </div>
     </div>
@@ -283,11 +322,13 @@ ${explanation}
 
 function IssuePanel({
   issue,
+  course,
   course_instance,
   authz_data,
   is_administrator,
 }: {
   issue: IssueRenderData;
+  course: Course;
   course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
@@ -310,15 +351,19 @@ function IssuePanel({
       idsEqual(course_instance.id, issue.course_instance_id) &&
       authz_data.has_course_instance_permission_view);
 
-  const msgBody = `Hello ${issue.user_name}\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`;
-  const mailtoLink = `mailto:${
-    issue.user_email || issue.user_uid || '-'
-  }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(msgBody)}`;
+  const mailtoLink = issueMailtoLink(issue);
+  const userUid = issue.user_uid || '-';
+  const userUidLink = mailtoLink ? html`<a href="${mailtoLink}">${userUid}</a>` : userUid;
 
   return html`
     <div class="card mb-3">
-      <div class="card-header bg-danger text-white">
+      <div
+        class="card-header ${issue.open === true ? 'bg-danger' : 'bg-secondary'} text-white d-flex flex-wrap align-items-center justify-content-between gap-2"
+      >
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
+        <span class="badge text-bg-light"
+          >${issue.open === null ? 'Unknown' : issue.open ? 'Open' : 'Closed'}</span
+        >
       </div>
 
       <div class="table-responsive">
@@ -327,26 +372,19 @@ function IssuePanel({
           aria-label="Issue information"
         >
           <tbody>
-            ${showUserName
-              ? html`
-                  <tr>
-                    <th>User:</th>
-                    <td>
-                      ${issue.user_name || '-'} (<a href="${mailtoLink}">${issue.user_uid || '-'}</a
-                      >)
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>Student message:</th>
-                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
-                  </tr>
-                  <tr>
-                    <th>Instructor message:</th>
-                    <td>${issue.instructor_message}</td>
-                  </tr>
-                `
-              : authz_data.has_course_permission_preview
+            ${
+              showUserName
                 ? html`
+                    ${
+                      issue.user_id != null
+                        ? html`
+                            <tr>
+                              <th>User:</th>
+                              <td>${issue.user_name || '-'} (${userUidLink})</td>
+                            </tr>
+                          `
+                        : ''
+                    }
                     <tr>
                       <th>Student message:</th>
                       <td style="white-space: pre-wrap;">${issue.student_message}</td>
@@ -356,79 +394,113 @@ function IssuePanel({
                       <td>${issue.instructor_message}</td>
                     </tr>
                   `
-                : html`
-                    <tr>
-                      <th>Message:</th>
-                      <td style="white-space: pre-wrap;">${issue.student_message}</td>
-                    </tr>
-                  `}
+                : authz_data.has_course_permission_preview
+                  ? html`
+                      <tr>
+                        <th>Student message:</th>
+                        <td style="white-space: pre-wrap;">${issue.student_message}</td>
+                      </tr>
+                      <tr>
+                        <th>Instructor message:</th>
+                        <td>${issue.instructor_message}</td>
+                      </tr>
+                    `
+                  : html`
+                      <tr>
+                        <th>Message:</th>
+                        <td style="white-space: pre-wrap;">${issue.student_message}</td>
+                      </tr>
+                    `
+            }
             <tr>
               <th>ID:</th>
               <td>${issue.id}</td>
             </tr>
             <tr>
               <th>Date:</th>
-              <td>${issue.formatted_date}</td>
+              <td>
+                ${formatDate(
+                  issue.date!,
+                  course_instance?.display_timezone ?? course.display_timezone,
+                )}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      ${config.devMode || authz_data.has_course_permission_view
-        ? html`
-            <div class="card-body border border-bottom-0 border-start-0 border-end-0">
-              ${issue.system_data?.courseErrData
-                ? html`
-                    <p><strong>Console log:</strong></p>
-                    <pre class="bg-dark text-white rounded p-3">
-${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
-                    >
-                  `
-                : ''}
-              <p>
-                <strong>Associated data:</strong>
-                <button
-                  type="button"
-                  class="btn btn-xs btn-secondary"
-                  data-bs-toggle="collapse"
-                  href="#issue-course-data-${issue.id}"
-                  aria-expanded="false"
-                  aria-controls="#issue-course-data-${issue.id}"
-                >
-                  Show/hide
-                </button>
-              </p>
-              <div class="collapse" id="issue-course-data-${issue.id}">
-                <pre class="bg-dark text-white rounded p-3">
-${JSON.stringify(issue.course_data, null, '    ')}</pre
-                >
-              </div>
-              ${is_administrator
-                ? html`
-                    <p>
-                      <strong>System data:</strong>
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-secondary"
-                        data-bs-toggle="collapse"
-                        href="#issue-system-data-${issue.id}"
-                        aria-expanded="false"
-                        aria-controls="#issue-system-data-${issue.id}"
-                      >
-                        Show/hide
-                      </button>
-                    </p>
-                    <div class="collapse" id="issue-system-data-${issue.id}">
-                      <pre class="bg-dark text-white rounded p-3">
-${JSON.stringify(issue.system_data, null, '    ')}</pre
-                      >
-                    </div>
-                  `
-                : ''}
-            </div>
-          `
-        : ''}
+      ${
+        config.devMode || authz_data.has_course_permission_view
+          ? html`
+              <ul
+                class="list-group list-group-flush border-top"
+                style="--bs-list-group-item-padding-x: 1.25rem; --bs-list-group-item-padding-y: 0.25rem;"
+              >
+                ${
+                  issue.system_data?.courseErrData
+                    ? html`
+                        <li class="list-group-item">
+                          <p class="mb-2"><strong>Console log:</strong></p>
+                          <pre
+                            class="bg-dark text-white rounded p-3 mb-0"
+                            style="max-height: 60vh;"
+                          >
+${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre>
+                        </li>
+                      `
+                    : ''
+                }
+                ${IssueDataCollapse({
+                  label: 'Associated data',
+                  collapseId: `issue-course-data-${issue.id}`,
+                  data: issue.course_data,
+                })}
+                ${
+                  is_administrator
+                    ? IssueDataCollapse({
+                        label: 'System data',
+                        collapseId: `issue-system-data-${issue.id}`,
+                        data: issue.system_data,
+                      })
+                    : ''
+                }
+              </ul>
+            `
+          : ''
+      }
     </div>
+  `;
+}
+
+function IssueDataCollapse({
+  label,
+  collapseId,
+  data,
+}: {
+  label: string;
+  collapseId: string;
+  data: unknown;
+}) {
+  return html`
+    <li class="list-group-item">
+      <p class="mb-0">
+        <strong>${label}:</strong>
+        <button
+          type="button"
+          class="btn btn-xs btn-secondary"
+          data-bs-toggle="collapse"
+          href="#${collapseId}"
+          aria-expanded="false"
+          aria-controls="${collapseId}"
+        >
+          Show/hide
+        </button>
+      </p>
+      <div class="collapse" id="${collapseId}">
+        <pre class="bg-dark text-white rounded p-3 mt-2 mb-0" style="max-height: 60vh;">
+${JSON.stringify(data, null, '    ')}</pre>
+      </div>
+    </li>
   `;
 }
 
@@ -436,22 +508,34 @@ export function QuestionTitle({
   questionContext,
   question,
   questionNumber,
+  showQuestionTitles,
 }: {
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
+  showQuestionTitles?: boolean;
 }): HtmlValue {
   const hasTitle = !!question.title?.trim();
 
   if (questionContext === 'student_homework') {
-    return hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
-  } else if (questionContext === 'student_exam') {
-    return hasTitle
-      ? `Question ${questionNumber}: ${question.title}`
-      : `Question ${questionNumber}`;
-  } else {
-    return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
+    return formatStudentQuestionTitle({
+      assessmentType: 'Homework',
+      questionNumber,
+      questionTitle: question.title,
+      showQuestionTitles,
+    });
   }
+
+  if (questionContext === 'student_exam') {
+    return formatStudentQuestionTitle({
+      assessmentType: 'Exam',
+      questionNumber,
+      questionTitle: question.title,
+      showQuestionTitles,
+    });
+  }
+
+  return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
 }
 
 interface QuestionFooterResLocals {
@@ -567,124 +651,141 @@ export function QuestionFooterContent({
       <div class="row">
         <div class="col d-flex justify-content-between flex-wrap gap-2">
           <span class="d-flex align-items-center">
-            ${showSaveButton
-              ? html`
-                  <button
-                    type="submit"
-                    class="btn btn-info question-save disable-on-submit order-2"
-                    ${disableSaveButton ? 'disabled' : ''}
-                    ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
-                  >
-                    ${showGradeButton ? 'Save only' : 'Save'}
-                  </button>
-                `
-              : ''}
-            ${showGradeButton
-              ? html`
-                  <button
-                    type="submit"
-                    class="btn btn-primary question-grade disable-on-submit order-1 me-1"
-                    ${disableGradeButton ? 'disabled' : ''}
-                    ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
-                  >
-                    Save &amp; Grade
-                    ${variantAttemptsTotal > 0
-                      ? variantAttemptsLeft > 1
-                        ? html`
-                            <small class="fst-italic ms-2">
-                              ${variantAttemptsLeft} attempts left
-                            </small>
-                          `
-                        : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
-                          ? html`<small class="fst-italic ms-2">Last attempt</small>`
-                          : variantAttemptsLeft === 1
-                            ? html`<small class="fst-italic ms-2">Single attempt</small>`
+            ${
+              showSaveButton
+                ? html`
+                    <button
+                      type="submit"
+                      class="btn btn-info question-save disable-on-submit order-2"
+                      ${disableSaveButton ? 'disabled' : ''}
+                      ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
+                    >
+                      ${showGradeButton ? 'Save only' : 'Save'}
+                    </button>
+                  `
+                : ''
+            }
+            ${
+              showGradeButton
+                ? html`
+                    <button
+                      type="submit"
+                      class="btn btn-primary question-grade disable-on-submit order-1 me-1"
+                      ${disableGradeButton ? 'disabled' : ''}
+                      ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
+                    >
+                      Save &amp; Grade
+                      ${
+                        variantAttemptsTotal > 0
+                          ? variantAttemptsLeft > 1
+                            ? html`
+                                <small class="fst-italic ms-2">
+                                  ${variantAttemptsLeft} attempts left
+                                </small>
+                              `
+                            : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
+                              ? html`<small class="fst-italic ms-2">Last attempt</small>`
+                              : variantAttemptsLeft === 1
+                                ? html`<small class="fst-italic ms-2">Single attempt</small>`
+                                : ''
+                          : questionContext === 'student_homework'
+                            ? html`<small class="fst-italic ms-2">Unlimited attempts</small>`
                             : ''
-                      : questionContext === 'student_homework'
-                        ? html`<small class="fst-italic ms-2">Unlimited attempts</small>`
-                        : ''}
-                  </button>
-                `
-              : ''}
-            ${group_config?.has_roles && !group_role_permissions?.can_submit && group_info
-              ? html`
-                  <button
-                    type="button"
-                    class="btn btn-xs btn-ghost me-1"
-                    data-bs-toggle="popover"
-                    data-bs-content="Your group role (${getRoleNamesForUser(group_info, user).join(
-                      ', ',
-                    )}) is not allowed to submit this question."
-                    aria-label="Submission blocked"
-                  >
-                    <i class="fa fa-lock" aria-hidden="true"></i>
-                  </button>
-                `
-              : ''}
+                      }
+                    </button>
+                  `
+                : ''
+            }
+            ${
+              group_config?.has_roles && !group_role_permissions?.can_submit && group_info
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-ghost me-1"
+                      data-bs-toggle="popover"
+                      data-bs-content="Your group role (${getRoleNamesForUser(
+                        group_info,
+                        user,
+                      ).join(', ')}) is not allowed to submit this question."
+                      aria-label="Submission blocked"
+                    >
+                      <i class="fa fa-lock" aria-hidden="true"></i>
+                    </button>
+                  `
+                : ''
+            }
           </span>
           <div class="d-flex">
-            ${question.type === 'Freeform'
-              ? html`
-                  <input
-                    type="hidden"
-                    name="__variant_id"
-                    value="${variant.id}"
-                    data-skip-unload-check="true"
-                  />
-                `
-              : html`
-                  <input type="hidden" name="postData" class="postData" />
-                  <input type="hidden" name="__action" class="__action" />
-                `}
-            ${showNewVariantButton
-              ? html`
-                  <a
-                    href="${newVariantUrl}"
-                    class="btn btn-primary disable-on-click ms-1 js-new-variant-button"
-                  >
-                    New variant
-                  </a>
-                `
-              : showTryAgainButton
+            ${
+              question.type === 'Freeform'
                 ? html`
-                    <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
-                      ${instance_question_info.previous_variants?.some(
-                        (variant: SimpleVariantWithScore) => variant.open,
-                      )
-                        ? 'Go to latest variant'
-                        : 'Try a new variant'}
+                    <input
+                      type="hidden"
+                      name="__variant_id"
+                      value="${variant.id}"
+                      data-skip-unload-check="true"
+                    />
+                  `
+                : html`
+                    <input type="hidden" name="postData" class="postData" />
+                    <input type="hidden" name="__action" class="__action" />
+                  `
+            }
+            ${
+              showNewVariantButton
+                ? html`
+                    <a
+                      href="${newVariantUrl}"
+                      class="btn btn-primary disable-on-click ms-1 js-new-variant-button"
+                    >
+                      New variant
                     </a>
                   `
-                : hasAttemptsOtherVariants
+                : showTryAgainButton
                   ? html`
-                      <small class="fst-italic align-self-center">
-                        Additional attempts available with new variants
-                      </small>
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-ghost align-self-center ms-1"
-                        data-bs-toggle="popover"
-                        data-bs-container="body"
-                        data-bs-html="true"
-                        data-bs-title="Explanation of new variants"
-                        data-bs-content="${escapeHtml(
-                          NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
-                        )}"
-                        data-bs-placement="auto"
-                      >
-                        <i class="fa fa-question-circle" aria-hidden="true"></i>
-                      </button>
+                      <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
+                        ${
+                          instance_question_info.previous_variants?.some(
+                            (variant: SimpleVariantWithScore) => variant.open,
+                          )
+                            ? 'Go to latest variant'
+                            : 'Try a new variant'
+                        }
+                      </a>
                     `
-                  : ''}
+                  : hasAttemptsOtherVariants
+                    ? html`
+                        <small class="fst-italic align-self-center">
+                          Additional attempts available with new variants
+                        </small>
+                        <button
+                          type="button"
+                          class="btn btn-xs btn-ghost align-self-center ms-1"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-title="Explanation of new variants"
+                          data-bs-content="${escapeHtml(
+                            NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
+                          )}"
+                          data-bs-placement="auto"
+                        >
+                          <i class="fa fa-question-circle" aria-hidden="true"></i>
+                        </button>
+                      `
+                    : ''
+            }
             <div class="d-flex flex-column">
               ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
-              ${assessment_question == null || assessment_question.allow_real_time_grading
-                ? ''
-                : html`
-                    <small class="fst-italic text-end">
-                      This question will be graded after the assessment is finished
-                    </small>
-                  `}
+              ${
+                assessment_question == null || assessment_question.allow_real_time_grading
+                  ? ''
+                  : html`
+                      <small class="fst-italic text-end">
+                        This question will be graded after the assessment is finished
+                      </small>
+                    `
+              }
             </div>
           </div>
         </div>
@@ -722,30 +823,34 @@ function SubmitRateFooter({
     </p>
     <p>
       You can still save your answer as frequently as you like.
-      ${questionContext === 'student_exam'
-        ? 'If your assessment ends before your last saved answer is graded, it will be automatically graded for you.'
-        : ''}
+      ${
+        questionContext === 'student_exam'
+          ? 'If your assessment ends before your last saved answer is graded, it will be automatically graded for you.'
+          : ''
+      }
     </p>
   `;
   return html`
     <div class="row">
       <div class="col d-flex justify-content-between">
         <span class="d-flex">
-          ${allowGradeLeftMs > 0
-            ? html`
-                <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
-                  Grading possible in <span id="submission-suspended-display"></span>
-                  <div id="submission-suspended-progress" class="border border-info"></div>
-                </small>
-                ${EncodedData(
-                  {
-                    serverTimeLimitMS: assessment_question.grade_rate_minutes * 60 * 1000,
-                    serverRemainingMS: allowGradeLeftMs,
-                  },
-                  'submission-suspended-data',
-                )}
-              `
-            : ''}
+          ${
+            allowGradeLeftMs > 0
+              ? html`
+                  <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
+                    Grading possible in <span id="submission-suspended-display"></span>
+                    <div id="submission-suspended-progress" class="border border-info"></div>
+                  </small>
+                  ${EncodedData(
+                    {
+                      serverTimeLimitMS: assessment_question.grade_rate_minutes * 60 * 1000,
+                      serverRemainingMS: allowGradeLeftMs,
+                    },
+                    'submission-suspended-data',
+                  )}
+                `
+              : ''
+          }
         </span>
         <span class="d-flex align-self-center">
           <small class="fst-italic">
@@ -782,11 +887,13 @@ function NewVariantInfo({
       This question allows you to try multiple variants. Each of these variants is equivalent to the
       question you have been presented with, but may include changes in input values, parameters,
       and other settings. Although
-      ${variantAttemptsLeft > 1
-        ? `you have ${variantAttemptsLeft} attempts left`
-        : variantAttemptsTotal > 1
-          ? 'this is your last attempt'
-          : 'you have a single attempt'}
+      ${
+        variantAttemptsLeft > 1
+          ? `you have ${variantAttemptsLeft} attempts left`
+          : variantAttemptsTotal > 1
+            ? 'this is your last attempt'
+            : 'you have a single attempt'
+      }
       with the current variant, you are allowed to try an unlimited number of other variants.
     </p>
   `;
@@ -810,20 +917,26 @@ function AvailablePointsNotes({
 
   return html`
     <small class="fst-italic text-end">
-      ${roundedPoints[0] === 1
-        ? `1 ${additional} point available ${attemptSuffix}`
-        : `${roundedPoints[0]} ${additional} points available ${attemptSuffix}`}
-      ${maxManualPoints > 0
-        ? roundedPoints[0] > maxManualPoints
-          ? html`&mdash; ${Math.round((roundedPoints[0] - maxManualPoints) * 100) / 100}
-            auto-graded, ${maxManualPoints} manually graded`
-          : html`&mdash; manually graded`
-        : ''}
-      ${roundedPoints.length === 2
-        ? html`<br />(following attempt is worth: ${roundedPoints[1]})`
-        : roundedPoints.length > 2
-          ? html`<br />(following attempts are worth: ${roundedPoints.slice(1).join(', ')})`
-          : ''}
+      ${
+        roundedPoints[0] === 1
+          ? `1 ${additional} point available ${attemptSuffix}`
+          : `${roundedPoints[0]} ${additional} points available ${attemptSuffix}`
+      }
+      ${
+        maxManualPoints > 0
+          ? roundedPoints[0] > maxManualPoints
+            ? html`&mdash; ${Math.round((roundedPoints[0] - maxManualPoints) * 100) / 100}
+              auto-graded, ${maxManualPoints} manually graded`
+            : html`&mdash; manually graded`
+          : ''
+      }
+      ${
+        roundedPoints.length === 2
+          ? html`<br />(following attempt is worth: ${roundedPoints[1]})`
+          : roundedPoints.length > 2
+            ? html`<br />(following attempts are worth: ${roundedPoints.slice(1).join(', ')})`
+            : ''
+      }
     </small>
   `;
 }
@@ -863,73 +976,90 @@ function QuestionPanel({
             questionContext,
             question,
             questionNumber: instance_question_info?.question_number,
+            // Student contexts honor the assessment setting; other contexts always render titles.
+            showQuestionTitles:
+              questionContext === 'student_exam' || questionContext === 'student_homework'
+                ? !!resLocals.assessment?.show_question_titles
+                : false,
           })}
         </h1>
         <div class="ms-auto d-flex flex-row gap-1">
           <div class="btn-group">
-            ${showCopyQuestionButton
-              ? html`
-                  <button
-                    class="btn btn-sm btn-outline-light"
-                    type="button"
-                    aria-label="Copy question"
-                    data-bs-toggle="modal"
-                    data-bs-target="#copyQuestionModal"
-                  >
-                    <i class="fa fa-clone"></i>
-                    <span class="d-none d-sm-inline">Copy question</span>
-                  </button>
-                `
-              : ''}
-            ${manualGradingPreviewUrl || aiGradingPreviewUrl
-              ? html`
-                  <div class="btn-group">
+            ${
+              showCopyQuestionButton
+                ? html`
                     <button
-                      class="btn btn-sm btn-outline-light dropdown-toggle"
+                      class="btn btn-sm btn-outline-light"
                       type="button"
-                      aria-expanded="false"
-                      data-bs-toggle="dropdown"
+                      aria-label="Copy question"
+                      data-bs-toggle="modal"
+                      data-bs-target="#copyQuestionModal"
                     >
-                      View&hellip;
+                      <i class="fa fa-clone"></i>
+                      <span class="d-none d-sm-inline">Copy question</span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      ${manualGradingPreviewUrl
-                        ? html`
-                            <li>
-                              <a class="dropdown-item" href="${manualGradingPreviewUrl}">
-                                Manual grading view
-                              </a>
-                            </li>
-                          `
-                        : ''}
-                      ${aiGradingPreviewUrl
-                        ? html`
-                            <li>
-                              <a class="dropdown-item" href="${aiGradingPreviewUrl}">
-                                AI grading view
-                              </a>
-                            </li>
-                          `
-                        : ''}
-                    </ul>
-                  </div>
-                `
-              : ''}
+                  `
+                : ''
+            }
+            ${
+              manualGradingPreviewUrl || aiGradingPreviewUrl
+                ? html`
+                    <div class="btn-group">
+                      <button
+                        class="btn btn-sm btn-outline-light dropdown-toggle"
+                        type="button"
+                        aria-expanded="false"
+                        data-bs-toggle="dropdown"
+                      >
+                        View&hellip;
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        ${
+                          manualGradingPreviewUrl
+                            ? html`
+                                <li>
+                                  <a class="dropdown-item" href="${manualGradingPreviewUrl}">
+                                    Manual grading view
+                                  </a>
+                                </li>
+                              `
+                            : ''
+                        }
+                        ${
+                          aiGradingPreviewUrl
+                            ? html`
+                                <li>
+                                  <a class="dropdown-item" href="${aiGradingPreviewUrl}">
+                                    AI grading view
+                                  </a>
+                                </li>
+                              `
+                            : ''
+                        }
+                      </ul>
+                    </div>
+                  `
+                : ''
+            }
           </div>
         </div>
       </div>
       <div class="card-body overflow-x-auto question-body">
-        ${questionRenderContext === 'ai_grading'
-          ? AiGradingHtmlPreview(questionHtml)
-          : unsafeHtml(questionHtml)}
+        ${
+          questionRenderContext === 'ai_grading'
+            ? AiGradingHtmlPreview(questionHtml)
+            : unsafeHtml(questionHtml)
+        }
       </div>
-      ${showFooter
-        ? QuestionFooter({
-            // TODO: propagate more precise types upwards.
-            resLocals: resLocals as any,
-            questionContext,
-          })
-        : ''}
+      ${
+        showFooter
+          ? QuestionFooter({
+              // TODO: propagate more precise types upwards.
+              resLocals: resLocals as any,
+              questionContext,
+            })
+          : ''
+      }
     </div>
   `;
 }
@@ -959,7 +1089,8 @@ function SubmissionList({
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
       variant_id: resLocals.variant.id,
-      course_instance_id: resLocals.course_instance?.id,
+      course_instance: resLocals.course_instance,
+      course: resLocals.course,
       submission,
       submissionHtml: submissionHtmls[idx],
       submissionCount,
@@ -1027,13 +1158,15 @@ function CopyQuestionModal({
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${questionCopyTargets.length > 0
-        ? html`
-            <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
-              Copy question
-            </button>
-          `
-        : ''}
+      ${
+        questionCopyTargets.length > 0
+          ? html`
+              <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
+                Copy question
+              </button>
+            `
+          : ''
+      }
     `,
   });
 }

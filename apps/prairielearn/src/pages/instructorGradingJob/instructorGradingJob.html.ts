@@ -4,6 +4,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
@@ -46,6 +47,7 @@ export function InstructorGradingJob({
       type: 'instructor',
       page: 'course_instance' in resLocals ? 'instance_admin' : 'course_admin',
     },
+    headContent: compiledScriptTag('instructorGradingJobClient.ts'),
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -94,126 +96,120 @@ export function InstructorGradingJob({
         </div>
       </div>
 
-      ${gradingJobRow.grading_job.s3_bucket && gradingJobRow.grading_job.s3_root_key
-        ? html`
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white">Downloads</div>
-              <div class="table-responsive">
-                <table class="table table-sm table-hover" aria-label="Grading job downloads">
-                  <thead>
-                    <tr>
-                      <th>File</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${resLocals.authz_data.has_course_permission_view
-                      ? html` <tr>
-                            <td>
-                              <a
-                                href="${resLocals.urlPrefix}/grading_job/${gradingJobRow.grading_job
-                                  .id}/file/job.tar.gz"
-                              >
-                                job.tar.gz
-                              </a>
-                            </td>
-                            <td>
-                              Contains all files necessary for grading; this is what is mounted to
-                              <code>/grade</code> when your job is run.
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>
-                              <a
-                                href="${resLocals.urlPrefix}/grading_job/${gradingJobRow.grading_job
-                                  .id}/file/archive.tar.gz"
-                                >archive.tar.gz</a
-                              >
-                            </td>
-                            <td>
-                              A snapshot of <code>/grade</code> after your job has been executed.
-                            </td>
-                          </tr>`
-                      : ''}
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/grading_job/${gradingJobRow.grading_job
-                            .id}/file/results.json"
-                          >results.json</a
-                        >
-                      </td>
-                      <td>
-                        Contains the PrairieLearn-generated results, which includes the contents of
-                        your
-                        <code>results.json</code> as well as some PrairieLearn metadata.
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/grading_job/${gradingJobRow.grading_job
-                            .id}/file/output.log"
-                          >output.log</a
-                        >
-                      </td>
-                      <td>
-                        Contains the raw output from stdout/stderr for your job. Lines beginning
-                        with <code>container&gt;</code> are from your container; the rest are
-                        diagnostic logs from PrairieLearn.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+      ${
+        gradingJobRow.grading_job.s3_bucket && gradingJobRow.grading_job.s3_root_key
+          ? html`
+              <div class="card mb-4">
+                <div class="card-header bg-primary text-white">Downloads</div>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover" aria-label="Grading job downloads">
+                    <thead>
+                      <tr>
+                        <th>File</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${
+                        resLocals.authz_data.has_course_permission_view
+                          ? html` <tr>
+                                <td>
+                                  <a
+                                    href="${resLocals.urlPrefix}/grading_job/${
+                                      gradingJobRow.grading_job.id
+                                    }/file/job.tar.gz"
+                                  >
+                                    job.tar.gz
+                                  </a>
+                                </td>
+                                <td>
+                                  Contains all files necessary for grading; this is what is mounted
+                                  to
+                                  <code>/grade</code> when your job is run.
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <a
+                                    href="${resLocals.urlPrefix}/grading_job/${
+                                      gradingJobRow.grading_job.id
+                                    }/file/archive.tar.gz"
+                                    >archive.tar.gz</a
+                                  >
+                                </td>
+                                <td>
+                                  A snapshot of <code>/grade</code> after your job has been
+                                  executed.
+                                </td>
+                              </tr>`
+                          : ''
+                      }
+                      <tr>
+                        <td>
+                          <a
+                            href="${resLocals.urlPrefix}/grading_job/${
+                              gradingJobRow.grading_job.id
+                            }/file/results.json"
+                            >results.json</a
+                          >
+                        </td>
+                        <td>
+                          Contains the PrairieLearn-generated results, which includes the contents
+                          of your
+                          <code>results.json</code> as well as some PrairieLearn metadata.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <a
+                            href="${resLocals.urlPrefix}/grading_job/${
+                              gradingJobRow.grading_job.id
+                            }/file/output.log"
+                            >output.log</a
+                          >
+                        </td>
+                        <td>
+                          Contains the raw output from stdout/stderr for your job. Lines beginning
+                          with <code>container&gt;</code> are from your container; the rest are
+                          diagnostic logs from PrairieLearn.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          `
-        : ''}
+            `
+          : ''
+      }
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Job Output</div>
         <div class="card-body">
-          ${gradingJobRow.grading_job.s3_bucket && gradingJobRow.grading_job.s3_root_key
-            ? html`
-                <script>
-                  $(() => {
-                    const outputUrl = document.getElementById('job-output').dataset.outputUrl;
-
-                    $.get(outputUrl)
-                      .done(function (data) {
-                        $('#job-output-loading').hide();
-                        $('#job-output').text(data);
-                        $('#job-output').show();
-                      })
-                      .fail(function () {
-                        $('#job-output-loading').hide();
-                        $('#job-output').text('Unable to load grader results');
-                        $('#job-output').show();
-                      });
-                  });
-                </script>
-                <pre
-                  class="bg-dark text-white rounded p-3 mb-0"
-                  id="job-output"
-                  style="display: none;"
-                  data-output-url="${resLocals.urlPrefix}/grading_job/${gradingJobRow.grading_job
-                    .id}/file/output.log"
-                ></pre>
-                <div id="job-output-loading" class="w-100 text-center">
-                  <i class="fa fa-spinner fa-spin fa-2x"></i>
-                </div>
-              `
-            : gradingJobRow.grading_job.output
+          ${
+            gradingJobRow.grading_job.s3_bucket && gradingJobRow.grading_job.s3_root_key
               ? html`
-                  <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
-${gradingJobRow.grading_job.output}</pre
-                  >
+                  <pre
+                    class="bg-dark text-white rounded p-3 mb-0 d-none"
+                    id="job-output"
+                    data-output-url="${resLocals.urlPrefix}/grading_job/${
+                      gradingJobRow.grading_job.id
+                    }/file/output.log"
+                  ></pre>
+                  <div id="job-output-loading" class="w-100 text-center">
+                    <i class="fa fa-spinner fa-spin fa-2x" aria-hidden="true"></i>
+                    <span class="visually-hidden">Loading grading job output…</span>
+                  </div>
                 `
-              : html`
-                  <pre class="bg-dark text-white rounded p-3 mb-0">
-No output was captured for this grading job.</pre
-                  >
-                `}
+              : gradingJobRow.grading_job.output
+                ? html`
+                    <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
+${gradingJobRow.grading_job.output}</pre>
+                  `
+                : html`
+                    <pre class="bg-dark text-white rounded p-3 mb-0">
+No output was captured for this grading job.</pre>
+                  `
+          }
         </div>
       </div>
     `,

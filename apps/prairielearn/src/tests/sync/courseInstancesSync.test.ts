@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
@@ -72,6 +71,24 @@ describe('Course instance syncing', () => {
     await util.syncCourseData(courseDir);
 
     await findSyncedCourseInstance(courseInstanceId);
+  });
+
+  it('syncs a course instance whose JSON UUID uses uppercase hex', async () => {
+    const courseData = util.getCourseData();
+    const shortName = 'uppercaseUuid';
+    courseData.courseInstances[shortName] = {
+      ...makeCourseInstance(),
+      courseInstance: {
+        uuid: 'D4875187-B6B5-4DBC-80FA-CDBAA72CA458',
+        longName: 'Uppercase UUID instance',
+      },
+    };
+
+    const { syncResults } = await util.writeAndSyncCourseData(courseData);
+    assert.equal(syncResults.status, 'complete');
+
+    const synced = await findSyncedUndeletedCourseInstance(shortName);
+    assert.equal(synced.uuid, 'd4875187-b6b5-4dbc-80fa-cdbaa72ca458');
   });
 
   it('syncs access rules', async () => {
@@ -293,6 +310,37 @@ describe('Course instance syncing', () => {
       });
     }
   });
+
+  it.skipIf((process.versions.tz ?? '') < '2026b')(
+    'syncs Vancouver publishing dates using the server timezone data',
+    async () => {
+      const courseData = util.getCourseData();
+      const courseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance;
+      courseInstance.timezone = 'America/Vancouver';
+      courseInstance.allowAccess = undefined;
+      courseInstance.publishing = {
+        startDate: '2026-11-02T16:30:00',
+        endDate: '2026-11-02T17:30:00',
+      };
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      const results = await util.syncCourseData(courseDir);
+      assert.equal(results.status, 'complete');
+
+      const syncedCourseInstance = await selectCourseInstanceByUuid({
+        course: await selectCourseById(results.courseId),
+        uuid: courseInstance.uuid,
+      });
+      assert.equal(
+        syncedCourseInstance.publishing_start_date?.toISOString(),
+        '2026-11-02T23:30:00.000Z',
+      );
+      assert.equal(
+        syncedCourseInstance.publishing_end_date?.toISOString(),
+        '2026-11-03T00:30:00.000Z',
+      );
+    },
+  );
 
   it('soft-deletes and restores course instances', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();

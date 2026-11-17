@@ -1,10 +1,22 @@
-import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
-import { useEffect, useRef } from 'react';
+import { Badge } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
-import { OverlayTrigger, numericColumnFilterFn } from '@prairielearn/ui';
+import {
+  IndeterminateCheckbox,
+  type MultiSelectFilterValue,
+  OverlayTrigger,
+  type TanstackTableCoreInstance,
+  applyMultiSelectFilter,
+  createTanstackTableColumnHelper,
+  numericColumnFilterFn,
+} from '@prairielearn/ui';
 
-import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
+import {
+  StudentLabelsCell,
+  StudentLabelsHeader,
+  applyStudentLabelsFilter,
+} from '../../../../components/StudentLabels.js';
+import type { StaffAssessment, StaffStudentLabel } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import { formatPoints } from '../../../../lib/format.js';
@@ -14,27 +26,14 @@ import { GradingStatusCell } from '../components/GradingStatusCell.js';
 
 import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
 
-const columnHelper = createColumnHelper<InstanceQuestionRow>();
+const columnHelper = createTanstackTableColumnHelper<InstanceQuestionRow>();
 
-/**
- * A checkbox component that properly handles the indeterminate state using a ref and useEffect,
- * since React doesn't support indeterminate as a native attribute.
- */
-function SelectAllCheckbox({ table }: { table: Table<InstanceQuestionRow> }) {
-  const checkboxRef = useRef<HTMLInputElement>(null);
-  const isIndeterminate = table.getIsSomeRowsSelected();
-
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = isIndeterminate;
-    }
-  }, [isIndeterminate]);
-
+function SelectAllCheckbox({ table }: { table: TanstackTableCoreInstance<InstanceQuestionRow> }) {
+  const allSelected = table.getIsAllRowsSelected();
   return (
-    <input
-      ref={checkboxRef}
-      type="checkbox"
-      checked={table.getIsAllRowsSelected()}
+    <IndeterminateCheckbox
+      checked={allSelected}
+      indeterminate={table.getIsSomeRowsSelected() && !allSelected}
       // Prevent browser from autocompleting the checkbox value when you return to the page.
       autoComplete="off"
       onChange={table.getToggleAllRowsSelectedHandler()}
@@ -51,29 +50,12 @@ interface CreateColumnsParams {
   csrfToken: string;
   assessment: StaffAssessment;
   courseInstanceId: string;
-  createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
+  studentLabels: StaffStudentLabel[];
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
   scrollRef: React.RefObject<HTMLDivElement | null> | null;
   displayedStatuses: Record<string, JobItemStatus | undefined>;
 }
-
-export type ColumnId =
-  | 'select'
-  | 'ai_grading_status'
-  | 'index'
-  | 'instance_question_group_name'
-  | 'user_or_group_name'
-  | 'uid'
-  | 'requires_manual_grading'
-  | 'assigned_grader_name'
-  | 'auto_points'
-  | 'manual_points'
-  | 'points'
-  | 'score_perc'
-  | 'last_grader_name'
-  | 'rubric_difference'
-  | 'rubric_grading_item_ids';
 
 export function createColumns({
   aiGradingMode,
@@ -85,11 +67,12 @@ export function createColumns({
   urlPrefix,
   csrfToken,
   courseInstanceId,
-  createCheckboxProps,
+  studentLabels,
   onEditPointsSuccess,
   onEditPointsConflict,
   scrollRef,
 }: CreateColumnsParams) {
+  const studentLabelsById = new Map(studentLabels.map((label) => [label.id, label]));
   const renderPointsCell = (
     row: InstanceQuestionRow,
     field: 'manual_points' | 'auto_points' | 'points',
@@ -106,12 +89,19 @@ export function createColumns({
     />
   );
 
-  return [
+  return columnHelper.columns([
     columnHelper.display({
       id: 'select',
       header: ({ table }) => <SelectAllCheckbox table={table} />,
-      cell: ({ row, table }) => {
-        return <input type="checkbox" {...createCheckboxProps(row, table)} />;
+      cell: ({ row }) => {
+        return (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            onChange={row.getToggleSelectedHandler()}
+          />
+        );
       },
       size: 40,
       minSize: 40,
@@ -125,9 +115,9 @@ export function createColumns({
     columnHelper.accessor((row, index) => index, {
       id: 'index',
       header: 'Instance',
+      size: 200,
       cell: (info) => {
         const row = info.row.original;
-        const rowId = row.instance_question.id;
         return (
           <div className="d-flex align-items-center gap-2">
             <a
@@ -136,45 +126,22 @@ export function createColumns({
               Instance {info.getValue() + 1}
             </a>
             {row.open_issue_count ? (
-              <OverlayTrigger
-                tooltip={{
-                  props: { id: `instance-${rowId}-issue-tooltip` },
-                  body: (
-                    <>
-                      Instance question has {row.open_issue_count} open{' '}
-                      {row.open_issue_count > 1 ? 'issues' : 'issue'}
-                    </>
-                  ),
-                }}
+              <Badge
+                bg="danger"
+                title={`${row.open_issue_count} open ${row.open_issue_count > 1 ? 'issues' : 'issue'}`}
+                pill
               >
-                <button className="btn btn-danger badge rounded-pill">
-                  {row.open_issue_count}
-                </button>
-              </OverlayTrigger>
+                {row.open_issue_count}
+                <span className="visually-hidden">
+                  {' '}
+                  open {row.open_issue_count > 1 ? 'issues' : 'issue'}
+                </span>
+              </Badge>
             ) : null}
             {row.assessment_open ? (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'Assessment instance is still open',
-                  props: { id: `assessment-instance-${rowId}-open-tooltip` },
-                }}
-              >
-                <button
-                  // This is a tricky case: we need an interactive element to trigger the tooltip
-                  // for keyboard users, but we don't want it to be announced as a button by screen
-                  // readers. So we give it role="status" to indicate that it's just a status indicator.
-                  // It's possible there are better ways to handle this?
-                  // eslint-disable-next-line jsx-a11y-x/no-interactive-element-to-noninteractive-role
-                  role="status"
-                  className="btn btn-xs btn-ghost"
-                  aria-label="Assessment instance is still open"
-                >
-                  <i
-                    className="fas fa-exclamation-triangle fa-width-auto text-warning"
-                    aria-hidden="true"
-                  />
-                </button>
-              </OverlayTrigger>
+              <Badge bg="warning" text="dark">
+                <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" /> Open
+              </Badge>
             ) : null}
           </div>
         );
@@ -213,18 +180,10 @@ export function createColumns({
           </span>
         );
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
-        // We have to do this cast because columnId is a string.
-        // See https://github.com/TanStack/table/issues/4142#issuecomment-3518670925.
-        const current =
-          row.getValue<InstanceQuestionRow['instance_question']['instance_question_group_name']>(
-            columnId,
-          );
-        if (!current) {
-          return filterValues.includes('No Group');
-        }
-        return filterValues.includes(current);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.instance_question.instance_question_group_name;
+        const groupName = current ?? 'No Group';
+        return applyMultiSelectFilter(filter, (values) => values.includes(groupName));
       },
       enableHiding: aiGradingMode && instanceQuestionGroups.length > 0,
     }),
@@ -249,9 +208,27 @@ export function createColumns({
       },
     }),
 
+    ...(!assessment.team_work
+      ? [
+          columnHelper.accessor('student_label_ids', {
+            id: 'student_labels',
+            header: StudentLabelsHeader,
+            meta: { label: 'Labels' },
+            cell: (info) => (
+              <StudentLabelsCell labelIds={info.getValue()} studentLabelsById={studentLabelsById} />
+            ),
+            enableSorting: false,
+            enableGlobalFilter: false,
+            filterFn: (row, _columnId, filter: MultiSelectFilterValue) =>
+              applyStudentLabelsFilter(row.original.student_label_ids, filter),
+          }),
+        ]
+      : []),
+
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
       header: 'Grading status',
+      minSize: aiGradingMode ? 220 : 100,
       cell: (info) => {
         return (
           <GradingStatusCell
@@ -262,11 +239,10 @@ export function createColumns({
           />
         );
       },
-      filterFn: ({ getValue }, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
-        const requiresGrading = getValue(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const requiresGrading = row.original.instance_question.requires_manual_grading;
         const status = requiresGrading ? 'Requires grading' : 'Graded';
-        return filterValues.includes(status);
+        return applyMultiSelectFilter(filter, (values) => values.includes(status));
       },
       meta: {
         autoSize: true,
@@ -277,11 +253,10 @@ export function createColumns({
       id: 'assigned_grader_name',
       header: 'Assigned grader',
       cell: (info) => info.getValue() || 'Unassigned',
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
-        const current = row.getValue<InstanceQuestionRow['assigned_grader_name']>(columnId);
-        if (!current) return filterValues.includes('Unassigned');
-        return filterValues.includes(current);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.assigned_grader_name;
+        const grader = current ?? 'Unassigned';
+        return applyMultiSelectFilter(filter, (values) => values.includes(grader));
       },
       meta: {
         autoSize: true,
@@ -373,21 +348,21 @@ export function createColumns({
           return info.getValue();
         }
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
-        const current = row.getValue<InstanceQuestionRow['last_grader_name']>(columnId);
+      filterFn: (row, _columnId, filter: MultiSelectFilterValue) => {
+        const current = row.original.last_grader_name;
         const rowData = row.original;
-
-        if (rowData.instance_question.ai_grading_status !== 'None') {
-          const aiGraderName = generateAiGraderName(rowData.instance_question.ai_grading_status);
-          if (filterValues.includes(aiGraderName)) return true;
-        }
-
-        if (!current) return filterValues.includes('Unassigned');
-
-        return filterValues.includes(current);
+        const aiGraderName =
+          rowData.instance_question.ai_grading_status !== 'None'
+            ? generateAiGraderName(rowData.instance_question.ai_grading_status)
+            : null;
+        const grader = current ?? 'Unassigned';
+        return applyMultiSelectFilter(
+          filter,
+          (values) =>
+            values.includes(grader) || (aiGraderName != null && values.includes(aiGraderName)),
+        );
       },
-      sortingFn: (rowA, rowB) => {
+      sortFn: (rowA, rowB) => {
         const aAiGradingStatus = rowA.original.instance_question.ai_grading_status;
         const bAiGradingStatus = rowB.original.instance_question.ai_grading_status;
 
@@ -407,6 +382,24 @@ export function createColumns({
         return aLastHumanGrader.localeCompare(bLastHumanGrader);
       },
     }),
+
+    columnHelper.accessor(
+      (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? null,
+      {
+        id: 'ai_grading_model',
+        header: 'AI model',
+        size: 220,
+        cell: (info) => (
+          <span className="font-monospace" title={info.getValue() ?? undefined}>
+            {info.getValue() ?? '—'}
+          </span>
+        ),
+        filterFn: (row, columnId, filter: MultiSelectFilterValue) =>
+          applyMultiSelectFilter(filter, (values) =>
+            values.includes(row.getValue<string | null>(columnId) ?? 'None'),
+          ),
+      },
+    ),
 
     // AI agreement column
     columnHelper.accessor((row) => row.instance_question.rubric_difference, {
@@ -481,16 +474,16 @@ export function createColumns({
           </div>
         );
       },
-      filterFn: (row, columnId, filterValues: string[]) => {
-        if (filterValues.length === 0) return true;
+      filterFn: (row, columnId, filter: MultiSelectFilterValue) => {
+        if (filter.values.length === 0) return true;
         const rubricDiff = row.original.instance_question.rubric_difference;
-        if (!rubricDiff || !Array.isArray(rubricDiff)) return false;
-
-        return filterValues.every((description) =>
-          rubricDiff.some((item) => item.description === description),
-        );
+        const matches =
+          !!rubricDiff &&
+          Array.isArray(rubricDiff) &&
+          filter.values.every((d) => rubricDiff.some((item) => item.description === d));
+        return filter.mode === 'include' ? matches : !matches;
       },
-      sortingFn: (rowA, rowB) => {
+      sortFn: (rowA, rowB) => {
         const aDiff = run(() => {
           if (rowA.original.instance_question.rubric_difference == null) return -1;
           return rowA.original.instance_question.rubric_difference.length;
@@ -517,5 +510,5 @@ export function createColumns({
         return filterValues.every((itemId) => rubricItemIds.includes(itemId));
       },
     }),
-  ];
+  ]);
 }

@@ -1,21 +1,20 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
   type CourseInstance,
   Lti13InstanceSchema,
+  type Lti13User,
+  Lti13UserSchema,
   type User,
   UserSchema,
 } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/**
- * Updates (or inserts) a row in the `lti13_users` table.
- */
-export async function updateLti13UserSub({
+export async function insertLti13User({
   user_id,
   lti13_instance_id,
   sub,
@@ -23,12 +22,50 @@ export async function updateLti13UserSub({
   user_id: string;
   lti13_instance_id: string;
   sub: string;
-}) {
-  await execute(sql.update_lti13_users, {
-    user_id,
-    lti13_instance_id,
-    sub,
-  });
+}): Promise<Lti13User> {
+  return await queryRow(
+    sql.insert_lti13_user,
+    { user_id, lti13_instance_id, sub },
+    Lti13UserSchema,
+  );
+}
+
+export async function selectOptionalLti13UserForUser({
+  user_id,
+  lti13_instance_id,
+}: {
+  user_id: string;
+  lti13_instance_id: string;
+}): Promise<Lti13User | null> {
+  return await queryOptionalRow(
+    sql.select_lti13_user_for_user,
+    { user_id, lti13_instance_id },
+    Lti13UserSchema,
+  );
+}
+
+export async function selectAndLockOptionalLti13UserForUser({
+  user_id,
+  lti13_instance_id,
+}: {
+  user_id: string;
+  lti13_instance_id: string;
+}): Promise<Lti13User | null> {
+  return await queryOptionalRow(
+    sql.select_and_lock_lti13_user_for_user,
+    { user_id, lti13_instance_id },
+    Lti13UserSchema,
+  );
+}
+
+export async function updateLti13UserSub({
+  lti13_user_id,
+  sub,
+}: {
+  lti13_user_id: string;
+  sub: string;
+}): Promise<Lti13User> {
+  return await queryRow(sql.update_lti13_user_sub, { lti13_user_id, sub }, Lti13UserSchema);
 }
 
 export async function selectLti13InstanceIdentitiesForCourseInstance({

@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-bootstrap';
 import {
   type FieldErrors,
   type RegisterOptions,
@@ -20,6 +21,7 @@ import type {
   QuestionAlternativeForm,
   QuestionWithId,
   SelectedItem,
+  StandaloneQuestionBlockForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../../types.js';
@@ -38,6 +40,7 @@ import {
 } from '../../utils/formHelpers.js';
 import {
   questionHasTitle,
+  resolveRolePermissionCascade,
   toAssessmentForPicker,
   validatePositiveInteger,
 } from '../../utils/questions.js';
@@ -48,6 +51,7 @@ import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableField } from './InheritableField.js';
+import { InheritableRolesField } from './InheritableRolesField.js';
 
 interface QuestionFormData {
   id?: string;
@@ -62,6 +66,8 @@ interface QuestionFormData {
   gradeRateMinutes?: number;
   forceMaxPoints?: boolean;
   allowRealTimeGrading?: boolean;
+  canView?: string[];
+  canSubmit?: string[];
 }
 
 export function QuestionDetailPanel({
@@ -87,19 +93,25 @@ export function QuestionDetailPanel({
     question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
     alternativeTrackingId?: string,
   ) => void;
-  onPickQuestion: (currentSelection: SelectedItem) => void;
+  onPickQuestion?: (currentSelection: SelectedItem) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
   const {
-    editMode,
+    editMode: canEdit,
     hasCourseInstancePermissionEdit,
     assessmentType,
     constantQuestionValue,
     assessmentDefaults,
     courseInstanceId,
     hasCoursePermissionPreview,
+    groupsConfigured,
+    groupRoles,
+    assessmentCanView,
+    assessmentCanSubmit,
+    groupsPageUrl,
   } = state;
+  const editMode = canEdit && questionData != null;
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
   const hasTitle = questionHasTitle(questionData);
@@ -140,6 +152,17 @@ export function QuestionDetailPanel({
     triesPerVariant: question.triesPerVariant != null,
   }));
 
+  const standaloneQuestion = isAlternative ? null : (question as StandaloneQuestionBlockForm);
+  const canViewParent = resolveRolePermissionCascade([
+    { value: zone?.canView, source: 'zone' },
+    { value: assessmentCanView, source: 'assessment' },
+  ]);
+  const canSubmitParent = resolveRolePermissionCascade([
+    { value: zone?.canSubmit, source: 'zone' },
+    { value: assessmentCanSubmit, source: 'assessment' },
+  ]);
+  const hasRoles = groupRoles.length > 0;
+
   // Compute parent boolean availability before useForm so we can set
   // stable defaults that survive the DOM round-trip without false dirty flags.
   const hasForceMaxPointsParent = isAlternative && zoneQuestionBlock.forceMaxPoints != null;
@@ -163,6 +186,8 @@ export function QuestionDetailPanel({
       gradeRateMinutes: question.gradeRateMinutes ?? undefined,
       forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
       allowRealTimeGrading: question.allowRealTimeGrading ?? undefined,
+      canView: standaloneQuestion?.canView,
+      canSubmit: standaloneQuestion?.canSubmit,
     },
     // Prevent autosave from clobbering in-progress typing. Without this,
     // the autosave feedback loop (edit → save → parent state update →
@@ -227,7 +252,7 @@ export function QuestionDetailPanel({
   }, [trigger, onFormValidChange]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
     onFormValidChange(isValid);
   }, [isValid, onFormValidChange]);
 
@@ -304,6 +329,9 @@ export function QuestionDetailPanel({
     question.maxAutoPoints != null || (isAlternative && zoneQuestionBlock.maxAutoPoints != null);
   const showAutoPointsForManual = isManualGrading && savedAutoPointsSet;
   const showMaxAutoPointsForManual = isManualGrading && savedMaxAutoPointsSet;
+  const legacyPoints = question.points ?? zoneQuestionBlock?.points;
+  const legacyMaxPoints = question.maxPoints ?? zoneQuestionBlock?.maxPoints;
+  const hasLegacyPoints = legacyPoints != null || legacyMaxPoints != null;
 
   const Wrapper = editMode ? 'div' : 'dl';
 
@@ -336,15 +364,15 @@ export function QuestionDetailPanel({
                     {!hasTitle && (
                       <CopyButton
                         text={question.id}
-                        tooltipId="copy-qid"
                         ariaLabel="Copy QID"
-                        className="ms-1"
+                        className="btn-xs btn-ghost ms-1"
                       />
                     )}
                   </>
                 );
               })
             : null}
+          {!questionData && <span className="font-monospace">{question.id}</span>}
         </div>
         {questionData && (
           <div className="d-flex flex-column gap-1">
@@ -356,9 +384,8 @@ export function QuestionDetailPanel({
                 {question.id}
                 <CopyButton
                   text={question.id}
-                  tooltipId="copy-qid"
                   ariaLabel="Copy QID"
-                  className="ms-1"
+                  className="btn-xs btn-ghost ms-1"
                 />
               </span>
             )}
@@ -388,10 +415,17 @@ export function QuestionDetailPanel({
         )}
       </div>
 
+      {!questionData && (
+        <Alert variant="warning" className="small">
+          This question is unavailable in this PrairieLearn instance and cannot be previewed. Its
+          assessment settings will be preserved when saving.
+        </Alert>
+      )}
+
       <DetailSectionHeader>Settings</DetailSectionHeader>
 
       {/* QID field — edit mode only */}
-      {editMode && (
+      {editMode && onPickQuestion && (
         <div className="mb-3">
           <label htmlFor={`${idPrefix}-id`} className="form-label">
             QID
@@ -426,35 +460,60 @@ export function QuestionDetailPanel({
       )}
 
       {/* Points fields */}
+      {hasLegacyPoints && (
+        <>
+          {questionData && (
+            <p className="text-muted small">
+              Point settings are read-only while grading information is unavailable locally.
+            </p>
+          )}
+          <dl className={clsx(editMode ? 'mb-3' : 'mb-2')}>
+            {legacyPoints != null && (
+              <>
+                <dt>Points</dt>
+                <dd>{formatPoints(legacyPoints)}</dd>
+              </>
+            )}
+            {legacyMaxPoints != null && (
+              <>
+                <dt>Max points</dt>
+                <dd>{formatPoints(legacyMaxPoints)}</dd>
+              </>
+            )}
+          </dl>
+        </>
+      )}
       <Wrapper className={clsx(!editMode && 'mb-0')}>
-        <PointsFields
-          assessmentType={assessmentType}
-          editMode={editMode}
-          idPrefix={idPrefix}
-          isAlternative={isAlternative}
-          isManualGrading={isManualGrading}
-          constantQuestionValue={constantQuestionValue}
-          autoPointsValue={autoPointsValue}
-          maxAutoPointsValue={maxAutoPointsValue}
-          manualPointsValue={manualPointsValue}
-          isAutoPointsInherited={isAutoPointsInherited}
-          isMaxAutoPointsInherited={isMaxAutoPointsInherited}
-          isManualPointsInherited={isManualPointsInherited}
-          inheritedAutoPoints={inheritedAutoPoints}
-          inheritedMaxAutoPoints={inheritedMaxAutoPoints}
-          inheritedManualPoints={inheritedManualPoints}
-          autoPointsPlaceholder={autoPointsPlaceholder}
-          register={register}
-          errors={errors}
-          setValue={setValue}
-          resetAndSave={resetAndSave}
-          showAutoPointsForManual={showAutoPointsForManual}
-          showMaxAutoPointsForManual={showMaxAutoPointsForManual}
-          showManualPointsOnlyForAutoGraded={isAutoGradedWithOnlyManualPoints}
-          onFieldOverrideChange={(field, overridden) =>
-            setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
-          }
-        />
+        {!hasLegacyPoints && (
+          <PointsFields
+            assessmentType={assessmentType}
+            editMode={editMode}
+            idPrefix={idPrefix}
+            isAlternative={isAlternative}
+            isManualGrading={isManualGrading}
+            constantQuestionValue={constantQuestionValue}
+            autoPointsValue={autoPointsValue}
+            maxAutoPointsValue={maxAutoPointsValue}
+            manualPointsValue={manualPointsValue}
+            isAutoPointsInherited={isAutoPointsInherited}
+            isMaxAutoPointsInherited={isMaxAutoPointsInherited}
+            isManualPointsInherited={isManualPointsInherited}
+            inheritedAutoPoints={inheritedAutoPoints}
+            inheritedMaxAutoPoints={inheritedMaxAutoPoints}
+            inheritedManualPoints={inheritedManualPoints}
+            autoPointsPlaceholder={autoPointsPlaceholder}
+            register={register}
+            errors={errors}
+            setValue={setValue}
+            resetAndSave={resetAndSave}
+            showAutoPointsForManual={showAutoPointsForManual}
+            showMaxAutoPointsForManual={showMaxAutoPointsForManual}
+            showManualPointsOnlyForAutoGraded={isAutoGradedWithOnlyManualPoints}
+            onFieldOverrideChange={(field, overridden) =>
+              setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
+            }
+          />
+        )}
 
         {/* Tries per variant (Homework only) */}
         {assessmentType === 'Homework' &&
@@ -562,6 +621,58 @@ export function QuestionDetailPanel({
             </Wrapper>
           </>
         )}
+
+      {!isAlternative && groupsConfigured && (
+        <>
+          <DetailSectionHeader>Role permissions</DetailSectionHeader>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view this question."
+                editMode={editMode}
+                isInherited={watch('canView') == null}
+                inheritedValue={canViewParent.value}
+                inheritedFromLabel={canViewParent.source}
+                allRoles={groupRoles}
+                value={watch('canView') ?? []}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canView', canViewParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canView', undefined);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to this question."
+                editMode={editMode}
+                isInherited={watch('canSubmit') == null}
+                inheritedValue={canSubmitParent.value}
+                inheritedFromLabel={canSubmitParent.source}
+                allRoles={groupRoles}
+                value={watch('canSubmit') ?? []}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canSubmit', canSubmitParent.value ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canSubmit', undefined);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
+        </>
+      )}
 
       {/* Advanced fields */}
       <AdvancedFields

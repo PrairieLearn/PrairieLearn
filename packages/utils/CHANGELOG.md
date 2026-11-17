@@ -1,5 +1,78 @@
 # @prairielearn/utils
 
+## 3.3.3
+
+### Patch Changes
+
+- 0998223: Minor cleanups for oxlint; no behavior changes.
+
+## 3.3.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+- ca2bd16: Upgrade yauzl to v3 for ZIP archive entry-count validation.
+
+## 3.3.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.3.0
+
+### Minor Changes
+
+- 9b99f72: Add shared timezone interpretation, formatting, local-calendar, and timezone-catalog utilities under `@prairielearn/utils/timezone`.
+
+## 3.2.3
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.2.2
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.2.1
+
+### Patch Changes
+
+- 1053fc5: Update the archiver test dependency to v8.
+
+## 3.2.0
+
+### Minor Changes
+
+- fdfca12: Add a Node-only `@prairielearn/utils/zip` subpath for zip extraction with entry-count, expanded-size, and symlink validation.
+
+## 3.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 3.1.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.1.3
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 3.1.2
 
 ### Patch Changes

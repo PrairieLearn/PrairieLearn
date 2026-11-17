@@ -15,7 +15,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { JobSequenceSchema, type User } from '../lib/db-types.js';
 import { createCourseRepoJob } from '../lib/github.js';
-import { sendCourseRequestMessage } from '../lib/opsbot.js';
+import { sendCourseRequestMessage } from '../lib/slack.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -47,6 +47,7 @@ const CourseRequestRowSchema = z.object({
   user_name: z.string().nullable(),
   user_uid: z.string(),
   work_email: z.string().nullable(),
+  contact_email: z.string().nullable(),
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
@@ -84,6 +85,7 @@ export async function createCourseFromRequest({
   displayTimezone,
   path,
   repoShortName,
+  githubCourseOwner,
   githubUser,
   authnUser,
 }: {
@@ -94,6 +96,7 @@ export async function createCourseFromRequest({
   displayTimezone: string;
   path: string;
   repoShortName: string;
+  githubCourseOwner: string;
   githubUser: string | null;
   authnUser: User;
 }): Promise<string> {
@@ -112,6 +115,7 @@ export async function createCourseFromRequest({
       display_timezone: displayTimezone,
       path,
       repo_short_name: repoShortName,
+      github_course_owner: githubCourseOwner,
       github_user: githubUser,
       course_request_id: courseRequestId,
     },

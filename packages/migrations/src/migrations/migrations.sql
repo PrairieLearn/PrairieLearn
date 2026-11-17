@@ -28,15 +28,20 @@ ADD COLUMN IF NOT EXISTS timestamp text;
 CREATE UNIQUE INDEX IF NOT EXISTS migrations_project_timestamp_key ON migrations (timestamp, project);
 
 -- BLOCK get_migrations
+-- Migrations always live in public. Do not let the caller's search path select another table.
 SELECT
   id,
   filename,
   index,
   timestamp
 FROM
-  migrations
+  public.migrations
 WHERE
   project = $project;
+
+-- BLOCK migrations_table_exists
+SELECT
+  to_regclass('public.migrations') IS NOT NULL AS exists;
 
 -- BLOCK insert_migration
 INSERT INTO

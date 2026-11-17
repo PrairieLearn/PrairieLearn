@@ -2,13 +2,13 @@ import assert from 'node:assert';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import oauthSignature from 'oauth-signature';
 
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import * as authnLib from '../../lib/authn.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
 import {
@@ -16,8 +16,8 @@ import {
   LtiLinkSchema,
   SprocUsersIsInstructorInCourseInstanceSchema,
 } from '../../lib/db-types.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
-import { selectUserById } from '../../models/user.js';
+import { generateOAuth1Signature } from '../../lib/oauth1.js';
+import { ensureEnrollmentWithoutReconciliation } from '../../models/enrollment.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -64,15 +64,13 @@ router.post(
 
     assert(ltiResult.secret !== null);
 
-    const genSignature = oauthSignature.generate(
-      'POST',
-      ltiRedirectUrl,
+    const genSignature = generateOAuth1Signature({
+      method: 'POST',
+      url: ltiRedirectUrl,
       parameters,
       // TODO: column should be `NOT NULL`
-      ltiResult.secret,
-      undefined,
-      { encodeSignature: false },
-    );
+      consumerSecret: ltiResult.secret,
+    });
     if (genSignature !== signature) {
       throw new HttpStatusError(403, 'Invalid signature');
     }
@@ -131,13 +129,11 @@ router.post(
 
     // Persist the user's authentication data in the session. We do this before
     // checking authorization so that user information is available for any
-    // subsequent requests or redirects (e.g. if `ensureCheckedEnrollment`
-    // redirects to a payment page).
-    req.session.user_id = userId;
-    req.session.authn_provider_name = 'LTI';
-
-    // Check if the user would have access to the course instance.
-    const user = await selectUserById(userId);
+    // subsequent requests or enrollment-related payment redirects.
+    const { user } = await authnLib.loadUser(req, res, {
+      user_id: userId,
+      provider: 'LTI',
+    });
     const { authzData, institution, course, courseInstance } =
       await constructCourseOrInstanceContext({
         user,
@@ -154,7 +150,7 @@ router.post(
 
     if (!authzData.has_student_access_with_enrollment) {
       assert(courseInstance);
-      await ensureEnrollment({
+      await ensureEnrollmentWithoutReconciliation({
         institution,
         course,
         courseInstance,

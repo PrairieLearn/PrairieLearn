@@ -5,7 +5,11 @@
   "set": "Exam",
   "number": "8",
   "allowRealTimeGrading": false,
-  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
+  "accessControl": [
+    {
+      "dateControl": { "durationMinutes": 50, "release": { "date": "2000-01-01T00:00:00" } }
+    }
+  ],
   "zones": [
     {
       "title": "Hard questions",

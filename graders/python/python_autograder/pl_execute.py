@@ -47,7 +47,7 @@ def populate_linecache(fname: str, contents: str) -> None:
 def execute_code(
     fname_ref: str,
     fname_student: str,
-    include_plt: bool = False,  # noqa: FBT001
+    include_plt: bool = False,  # ruff:ignore[boolean-type-hint-positional-argument]
     console_output_fname: str | None = None,
     test_iter_num: int = 0,
     ipynb_key: str = "#grade",
@@ -135,7 +135,7 @@ def execute_code(
         if (not (i == "__builtins__" or isinstance(j, ModuleType))) and (
             i in names_for_user
         ):
-            ref_code[i] = j  # noqa: PERF403 (too complex)
+            ref_code[i] = j  # ruff:ignore[manual-dict-comprehension] (too complex)
     ref_code = deepcopy(ref_code)
 
     # Add any other variables to reference namespace and do not copy
@@ -177,13 +177,13 @@ def execute_code(
         if (not (i == "__builtins__" or isinstance(j, ModuleType))) and (
             i in names_for_user
         ):
-            student_globals[i] = j  # noqa: PERF403 (too complex)
+            student_globals[i] = j  # ruff:ignore[manual-dict-comprehension] (too complex)
     student_globals = deepcopy(student_globals)
 
     # Execute student code
     previous_stdout = sys.stdout
     if console_output_fname:
-        sys.stdout = open(console_output_fname, "w", encoding="utf-8")  # noqa: SIM115
+        sys.stdout = open(console_output_fname, "w", encoding="utf-8")  # ruff:ignore[open-file-with-context-handler]
 
     set_random_seed(seed)
 
@@ -231,7 +231,7 @@ def execute_code(
     ref_result = {}
     for i, j in ref_code.items():
         if not (i.startswith("_") or isinstance(j, ModuleType)):
-            ref_result[i] = j  # noqa: PERF403 (too complex)
+            ref_result[i] = j  # ruff:ignore[manual-dict-comprehension] (too complex)
 
     student_result = {}
     for name in names_from_user:

@@ -101,6 +101,21 @@ export class DockerName {
     this.registry = registry;
   }
 
+  setCacheRegistry(registry: string) {
+    // Preserve existing Docker Hub cache paths, but keep other registries distinct.
+    if (
+      this.registry !== undefined &&
+      !['docker.io', 'index.docker.io', 'registry-1.docker.io'].includes(this.registry)
+    ) {
+      this.repository = this.getRegistryRepo();
+    }
+
+    // Colons are invalid in ECR repository names. Hostnames cannot contain
+    // underscores, so this keeps ports distinct from similarly named hosts.
+    this.repository = this.repository.replace(/^([^/]+):(\d+)\//, '$1__$2/');
+    this.setRegistry(registry);
+  }
+
   getRepository() {
     return this.repository;
   }

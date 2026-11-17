@@ -7,6 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { JobStatusHtml } from '../../components/JobStatus.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { getCourseAdminQuestionsUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { type Course, JobSequenceSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -14,6 +15,8 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 export const ImageRowSchema = z.object({
   image: z.string(),
   questions: z.object({ id: IdSchema, qid: QuestionSchema.shape.qid }).array(),
+  external_grading_questions: z.object({ id: IdSchema, qid: QuestionSchema.shape.qid }).array(),
+  workspace_questions: z.object({ id: IdSchema, qid: QuestionSchema.shape.qid }).array(),
   tag: z.string().optional(),
   imageSyncNeeded: z.boolean().optional(),
   invalid: z.boolean().optional(),
@@ -42,6 +45,7 @@ export function CourseSyncs({
   showAllJobSequences: boolean;
 }) {
   const { course, __csrf_token, urlPrefix } = resLocals;
+  const courseInstanceId = resLocals.course_instance?.id;
 
   return PageLayout({
     resLocals,
@@ -85,30 +89,32 @@ export function CourseSyncs({
                 <th class="align-middle">Remote repository</th>
                 <td class="align-middle">${course.repository ?? html`&mdash;`}</td>
                 <td>
-                  ${config.devMode
-                    ? html`
-                        <span
-                          class="d-inline-block"
-                          tabindex="0"
-                          data-bs-toggle="tooltip"
-                          data-bs-title="Pulling from a remote repository is not supported in development mode."
-                        >
-                          <button type="button" class="btn btn-sm btn-primary" disabled>
-                            <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
-                            Pull from remote git repository
-                          </button>
-                        </span>
-                      `
-                    : html`
-                        <form name="confirm-form" method="POST">
-                          <input type="hidden" name="__action" value="pull" />
-                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
-                            Pull from remote git repository
-                          </button>
-                        </form>
-                      `}
+                  ${
+                    config.devMode
+                      ? html`
+                          <span
+                            class="d-inline-block"
+                            tabindex="0"
+                            data-bs-toggle="tooltip"
+                            data-bs-title="Pulling from a remote repository is not supported in development mode."
+                          >
+                            <button type="button" class="btn btn-sm btn-primary" disabled>
+                              <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                              Pull from remote git repository
+                            </button>
+                          </span>
+                        `
+                      : html`
+                          <form name="confirm-form" method="POST">
+                            <input type="hidden" name="__action" value="pull" />
+                            <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                            <button type="submit" class="btn btn-sm btn-primary">
+                              <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                              Pull from remote git repository
+                            </button>
+                          </form>
+                        `
+                  }
                 </td>
               </tr>
               <tr>
@@ -124,7 +130,7 @@ export function CourseSyncs({
         <div class="card-header bg-primary text-white">
           <h2>Docker images</h2>
         </div>
-        ${ImageTable({ images, course, urlPrefix, __csrf_token })}
+        ${ImageTable({ images, course, courseInstanceId, urlPrefix, __csrf_token })}
       </div>
 
       <div class="card mb-4">
@@ -149,9 +155,11 @@ export function CourseSyncs({
                   <tr>
                     <td>${jobSequence.number}</td>
                     <td>
-                      ${jobSequence.start_date == null
-                        ? html`&mdash;`
-                        : formatDate(jobSequence.start_date, course.display_timezone)}
+                      ${
+                        jobSequence.start_date == null
+                          ? html`&mdash;`
+                          : formatDate(jobSequence.start_date, course.display_timezone)
+                      }
                     </td>
                     <td>${jobSequence.description}</td>
                     <td>${jobSequence.user_uid ?? '(System)'}</td>
@@ -170,14 +178,16 @@ export function CourseSyncs({
             </tbody>
           </table>
         </div>
-        ${!showAllJobSequences && jobSequenceCount > jobSequences.length
-          ? html`
-              <div class="card-footer">
-                Showing ${jobSequences.length} of ${jobSequenceCount} sync jobs.
-                <a href="?all" aria-label="View all sync jobs">View all</a>
-              </div>
-            `
-          : ''}
+        ${
+          !showAllJobSequences && jobSequenceCount > jobSequences.length
+            ? html`
+                <div class="card-footer">
+                  Showing ${jobSequences.length} of ${jobSequenceCount} sync jobs.
+                  <a href="?all" aria-label="View all sync jobs">View all</a>
+                </div>
+              `
+            : ''
+        }
       </div>
     `,
   });
@@ -186,11 +196,13 @@ export function CourseSyncs({
 function ImageTable({
   images,
   course,
+  courseInstanceId,
   urlPrefix,
   __csrf_token,
 }: {
   images: ImageRow[];
   course: Course;
+  courseInstanceId?: string;
   urlPrefix: string;
   __csrf_token: string;
 }) {
@@ -219,65 +231,92 @@ function ImageTable({
                 <td>
                   <div class="d-flex flex-row align-items-center">
                     <span class="me-2">${image.image}</span>
-                    ${image.invalid
-                      ? html`<span class="badge text-bg-danger">Invalid image name</span>`
-                      : ''}
+                    ${
+                      image.invalid
+                        ? html`<span class="badge text-bg-danger">Invalid image name</span>`
+                        : ''
+                    }
                   </div>
                 </td>
                 <td>${image.tag}</td>
                 <td>
-                  ${image.digest
-                    ? html`
-                        <code class="mb-0" title="${image.digest}">
-                          ${image.digest.length <= 24
-                            ? image.digest
-                            : `${image.digest.slice(0, 24)}...`}
-                        </code>
-                      `
-                    : html`&mdash;`}
+                  ${
+                    image.digest
+                      ? html`
+                          <code class="mb-0" title="${image.digest}">
+                            ${
+                              image.digest.length <= 24
+                                ? image.digest
+                                : `${image.digest.slice(0, 24)}...`
+                            }
+                          </code>
+                        `
+                      : html`&mdash;`
+                  }
                 </td>
                 <td>${(image.size ?? 0) > 0 ? filesize(image.size ?? 0) : ''}</td>
                 <td>
-                  ${image.imageSyncNeeded
-                    ? html`<span class="text-warning">Not found in PL registry</span>`
-                    : image.pushed_at
-                      ? formatDate(image.pushed_at, course.display_timezone)
-                      : html`&mdash;`}
+                  ${
+                    image.imageSyncNeeded
+                      ? html`<span class="text-warning">Not found in PL registry</span>`
+                      : image.pushed_at
+                        ? formatDate(image.pushed_at, course.display_timezone)
+                        : html`&mdash;`
+                  }
                 </td>
                 <td>
-                  ${config.cacheImageRegistry
-                    ? html`
-                        <form method="POST">
-                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <input type="hidden" name="__action" value="syncImage" />
-                          <input type="hidden" name="single_image" value="${image.image}" />
-                          <button type="submit" class="btn btn-xs btn-primary">
-                            <i class="fa fa-sync" aria-hidden="true"></i> Sync
-                          </button>
-                        </form>
-                      `
-                    : ''}
+                  ${
+                    config.cacheImageRegistry
+                      ? html`
+                          <form method="POST">
+                            <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                            <input type="hidden" name="__action" value="syncImage" />
+                            <input type="hidden" name="single_image" value="${image.image}" />
+                            <button type="submit" class="btn btn-xs btn-primary">
+                              <i class="fa fa-sync" aria-hidden="true"></i> Sync
+                            </button>
+                          </form>
+                        `
+                      : ''
+                  }
                 </td>
                 <td>
-                  ${image.questions.length > 0
-                    ? html`
-                        ${image.questions.length} question${image.questions.length > 1 ? 's' : ''}
+                  ${
+                    image.questions.length > 0
+                      ? html`
+                          ${QuestionUsageLink({
+                            courseId: course.id,
+                            courseInstanceId,
+                            image: image.image,
+                            questions: image.external_grading_questions,
+                            filterType: 'external_grading_image',
+                            label: 'External grader',
+                          })}
+                          ${QuestionUsageLink({
+                            courseId: course.id,
+                            courseInstanceId,
+                            image: image.image,
+                            questions: image.workspace_questions,
+                            filterType: 'workspace_image',
+                            label: 'Workspace',
+                          })}
 
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-secondary"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-html="true"
-                          data-bs-title="Questions using ${image.image}"
-                          data-bs-content="${escapeHtml(
-                            ListQuestionsPopover({ image, urlPrefix }),
-                          )}"
-                        >
-                          Show
-                        </button>
-                      `
-                    : 'No questions'}
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-secondary"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-title="Questions using ${image.image}"
+                            data-bs-content="${escapeHtml(
+                              ListQuestionsPopover({ image, urlPrefix }),
+                            )}"
+                          >
+                            Show
+                          </button>
+                        `
+                      : 'No questions'
+                  }
                 </td>
               </tr>
             `,
@@ -285,20 +324,55 @@ function ImageTable({
         </tbody>
       </table>
     </div>
-    ${config.cacheImageRegistry
-      ? html`
-          <div class="card-footer">
-            <form name="confirm-form" method="POST">
-              <input type="hidden" name="__action" value="syncImages" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <button type="submit" class="btn btn-sm btn-primary">
-                <i class="fa fa-sync" aria-hidden="true"></i>
-                Sync all images from Docker Hub to PrairieLearn
-              </button>
-            </form>
-          </div>
-        `
-      : ''}
+    ${
+      config.cacheImageRegistry
+        ? html`
+            <div class="card-footer">
+              <form name="confirm-form" method="POST">
+                <input type="hidden" name="__action" value="syncImages" />
+                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                <button type="submit" class="btn btn-sm btn-primary">
+                  <i class="fa fa-sync" aria-hidden="true"></i>
+                  Sync all images to PrairieLearn
+                </button>
+              </form>
+            </div>
+          `
+        : ''
+    }
+  `;
+}
+
+function QuestionUsageLink({
+  courseId,
+  courseInstanceId,
+  image,
+  questions,
+  filterType,
+  label,
+}: {
+  courseId: string;
+  courseInstanceId?: string;
+  image: string;
+  questions: ImageRow['questions'];
+  filterType: 'external_grading_image' | 'workspace_image';
+  label: string;
+}) {
+  if (questions.length === 0) return '';
+
+  return html`
+    <div>
+      ${label}:
+      <a
+        href="${getCourseAdminQuestionsUrl({
+          courseId,
+          courseInstanceId,
+          filter: { type: filterType, value: image },
+        })}"
+      >
+        ${questions.length} question${questions.length > 1 ? 's' : ''}
+      </a>
+    </div>
   `;
 }
 

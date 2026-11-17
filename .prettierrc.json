@@ -4,10 +4,5 @@
   "printWidth": 100,
   "language": "postgresql",
   "paramTypes": "{named: [\"$\"]}",
-  "plugins": [
-    "prettier-plugin-sql",
-    "prettier-plugin-pkg",
-    "prettier-plugin-sh",
-    "prettier-plugin-toml"
-  ]
+  "plugins": ["prettier-plugin-sql", "prettier-plugin-sh"]
 }

@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 import z from 'zod';
 
@@ -76,7 +75,7 @@ async function joinGroup(
   return $;
 }
 
-describe('Group based exam assessments', { timeout: 20_000 }, function () {
+describe('Group based exam assessments', { timeout: 20_000, concurrent: false }, function () {
   beforeAll(helperServer.before());
 
   beforeAll(function () {
@@ -92,43 +91,37 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
   });
 
   describe('instructor access for exam assessment', function () {
-    test.sequential(
-      "should load the group tab for the first assessment's instructor URL",
-      async function () {
-        // Get exam assessment URL using ids from database
-        const assessment = await selectAssessmentByTid({
-          course_instance_id: '1',
-          tid: GROUP_EXAM_1_TID,
-        });
-        const instructorAssessmentsUrlGroupTab =
-          courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/groups';
+    test("should load the group tab for the first assessment's instructor URL", async function () {
+      // Get exam assessment URL using ids from database
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: GROUP_EXAM_1_TID,
+      });
+      const instructorAssessmentsUrlGroupTab =
+        courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/groups';
 
-        // Page should load successfully
-        const res = await fetch(instructorAssessmentsUrlGroupTab);
-        assert.isOk(res.ok);
-      },
-    );
+      // Page should load successfully
+      const res = await fetch(instructorAssessmentsUrlGroupTab);
+      assert.isOk(res.ok);
+    });
 
-    test.sequential(
-      "should load the group tab for the second assessment's instructor URL",
-      async function () {
-        // Get exam assessment URLs using ids from database
-        const assessment = await selectAssessmentByTid({
-          course_instance_id: '1',
-          tid: GROUP_EXAM_2_TID,
-        });
-        const instructorAssessmentsUrlGroupTab =
-          courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/groups';
+    test("should load the group tab for the second assessment's instructor URL", async function () {
+      // Get exam assessment URLs using ids from database
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: GROUP_EXAM_2_TID,
+      });
+      const instructorAssessmentsUrlGroupTab =
+        courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/groups';
 
-        // Page should load successfully
-        const res = await fetch(instructorAssessmentsUrlGroupTab);
-        assert.isOk(res.ok);
-      },
-    );
+      // Page should load successfully
+      const res = await fetch(instructorAssessmentsUrlGroupTab);
+      assert.isOk(res.ok);
+    });
   });
 
   describe('group config correctness', function () {
-    test.sequential('first assessment group config in database is correct', async function () {
+    test('first assessment group config in database is correct', async function () {
       const assessment = await selectAssessmentByTid({
         course_instance_id: '1',
         tid: GROUP_EXAM_1_TID,
@@ -144,7 +137,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       assert.equal(max, 2);
     });
 
-    test.sequential('second assessment group config in database is correct', async function () {
+    test('second assessment group config in database is correct', async function () {
       const assessment = await selectAssessmentByTid({
         course_instance_id: '1',
         tid: GROUP_EXAM_2_TID,
@@ -268,7 +261,6 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
           __action: 'new_instance',
           __csrf_token: secondUserCsrfToken,
         }),
-        follow: 1,
       });
       assert.isOk(response.ok);
       $ = cheerio.load(await response.text());
@@ -285,11 +277,11 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
         courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
 
       // Ensure all group members can access the assessment instance correctly
-      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, null, '#leaveGroupModal');
+      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, null);
       const firstMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(firstMemberResponse.ok);
 
-      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, null, '#leaveGroupModal');
+      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, null);
       const secondMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(secondMemberResponse.ok);
     });
@@ -348,7 +340,6 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
         __action: 'new_instance',
         __csrf_token: secondUserCsrfToken,
       }),
-      follow: 1,
     });
     assert.isOk(response.ok);
     $ = cheerio.load(await response.text());
@@ -368,7 +359,6 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
       studentUsers[1],
       assessmentUrl, // redirects to instance URL
       null,
-      '#leaveGroupModal',
     );
 
     // Leave exam group as second user

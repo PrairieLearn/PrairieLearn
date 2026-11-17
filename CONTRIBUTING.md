@@ -8,6 +8,8 @@ If you're making a small enhancement, fixing a typo, or updating some documentat
 
 If you want to make a larger change, such as implementing a new feature, changing an API, or introducing a new [element](https://docs.prairielearn.com/elements/), you should first start a discussion with the maintainers to make sure that your change would ultimately be accepted. This can be in the form of a GitHub issue or discussion, or for really big features, you can open an [issue with the "RFC" label](https://github.com/PrairieLearn/PrairieLearn/issues?q=label%3ARFC%20). The maintainers will work with you to answer any questions, fill in any gaps, and ensure that your proposed change will integrate well into PrairieLearn.
 
+**Note**: The maintainers are more likely to accept changes submitted by PrairieLearn users. If you are an instructor, a student, a course designer, or are working with a PrairieLearn user in some other capacity, please mention that in your issue or discussion. If you are an instructor and you are not yet a PrairieLearn user, please consider exploring PrairieLearn for your own courses! If you are not involved in education at all, but are interested in contributing to PrairieLearn, please reach out to us in the `#pl-dev` channel on the [PrairieLearn Slack](https://prairielearn.com/slack) to introduce yourself before submitting any work, and explain why you are interested in contributing.
+
 ## Setup
 
 Before you start contributing, you'll need to [fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) the repo.

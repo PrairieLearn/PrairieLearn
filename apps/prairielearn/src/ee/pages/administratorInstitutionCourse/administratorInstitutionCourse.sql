@@ -17,7 +17,10 @@ WITH
     FROM
       course_instances AS ci
       JOIN courses AS c ON (ci.course_id = c.id)
-      LEFT JOIN enrollments AS e ON (ci.id = e.course_instance_id)
+      LEFT JOIN enrollments AS e ON (
+        ci.id = e.course_instance_id
+        AND e.status = 'joined'
+      )
     WHERE
       ci.course_id = $course_id
     GROUP BY

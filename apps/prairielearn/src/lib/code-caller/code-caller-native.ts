@@ -60,6 +60,7 @@ export interface ErrorData {
   outputStderr: string;
   outputBoth: string;
   outputData: string;
+  outputRestart: string;
   stack: string;
   lastCallData: any;
 }
@@ -515,11 +516,18 @@ export class CodeCallerNative implements CodeCaller {
   _timeout() {
     this.debug('enter _timeout()');
     this._checkState([IN_CALL]);
-    this.timeoutID = null;
-    const err = new Error('timeout exceeded, killing CodeCallerNative child');
-    this.child?.kill('SIGTERM');
-    this.state = EXITING;
-    this._callCallback(err);
+    const timeoutID = this.timeoutID;
+    // A stalled event loop can run this timer before reading an already-buffered
+    // reply. Give pipe I/O a chance to finish the call before killing the worker.
+    setImmediate(() => {
+      // The reply may also have started a new call with its own timeout.
+      if (this.state !== IN_CALL || this.timeoutID !== timeoutID) return;
+      this.timeoutID = null;
+      const err = new Error('timeout exceeded, killing CodeCallerNative child');
+      this.child?.kill('SIGTERM');
+      this.state = EXITING;
+      this._callCallback(err);
+    });
     this.debug('exit _timeout()');
   }
 
@@ -533,11 +541,24 @@ export class CodeCallerNative implements CodeCaller {
   _restartTimeout() {
     this.debug('enter _restartTimeout()');
     this._checkState([RESTARTING]);
-    this.timeoutID = null;
-    const err = new Error('restart timeout exceeded, killing CodeCallerNative child');
-    this.child?.kill('SIGTERM');
-    this.state = EXITING;
-    this._callCallback(err);
+    // Defer the kill via setImmediate so any fd 4 data already buffered in
+    // the kernel is delivered first. Per Node's docs, setImmediate "schedules
+    // the 'immediate' execution of the callback after I/O events' callbacks",
+    // which lets _handleStdio4Data transition us out of RESTARTING before
+    // this runs. Without the deferral, the timer can race ahead of the I/O
+    // callback and kill a worker that had already restarted cleanly.
+    // https://nodejs.org/api/timers.html#setimmediatecallback-args
+    setImmediate(() => {
+      // The intervening poll phase may have transitioned us out of RESTARTING — e.g.
+      // _handleStdio4Data finishing the restart, or follow-up code starting
+      // a new call.
+      if (this.state !== RESTARTING) return;
+      const err = new Error('restart timeout exceeded, killing CodeCallerNative child');
+      this.timeoutID = null;
+      this.child?.kill('SIGTERM');
+      this.state = EXITING;
+      this._callCallback(err);
+    });
     this.debug('exit _restartTimeout()');
   }
 
@@ -636,6 +657,7 @@ export class CodeCallerNative implements CodeCaller {
       outputStderr: this.outputStderr.join(''),
       outputBoth: this.outputBoth.join(''),
       outputData: this.outputData.join(''),
+      outputRestart: this.outputRestart,
       stack: errForStack.stack ?? '',
       lastCallData: this.lastCallData,
     };

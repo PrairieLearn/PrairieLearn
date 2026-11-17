@@ -1,9 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
 import { selectQuestionByQid } from '../../models/question.js';
+import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -35,15 +37,14 @@ test.describe('Question settings', () => {
     const originalInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     expect(originalInfo.title).toBe('Add two numbers');
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
-    await expect(saveButton).toBeVisible({ timeout: 10000 });
-
     const titleInput = page.getByLabel('Title');
     await expect(titleInput).toHaveValue('Add two numbers', { timeout: 15000 });
 
     await titleInput.click();
     await titleInput.fill('Updated title from e2e test');
 
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
+    await expect(saveButton).toBeVisible({ timeout: 10000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
 
     await saveButton.click();
@@ -63,9 +64,6 @@ test.describe('Question settings', () => {
     const titleInput = page.getByLabel('Title');
     await expect(titleInput).not.toHaveValue('', { timeout: 15000 });
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
-    await expect(saveButton).toBeVisible();
-
     const topicComboBoxButton = page.getByRole('button', { name: 'Show suggestions' }).first();
     await topicComboBoxButton.click();
 
@@ -73,6 +71,8 @@ test.describe('Question settings', () => {
     await expect(listbox).toBeVisible({ timeout: 5000 });
     await listbox.getByText('Calculus', { exact: true }).click();
 
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
+    await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
@@ -95,12 +95,11 @@ test.describe('Question settings', () => {
     const titleInput = page.getByLabel('Title');
     await expect(titleInput).not.toHaveValue('', { timeout: 15000 });
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
-    await expect(saveButton).toBeVisible();
-
     const singleVariantCheckbox = page.getByLabel('Single variant');
     await singleVariantCheckbox.click();
 
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
+    await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
@@ -125,12 +124,11 @@ test.describe('Question settings', () => {
     const titleInput = page.getByLabel('Title');
     await expect(titleInput).not.toHaveValue('', { timeout: 15000 });
 
-    const saveButton = page.getByRole('button', { name: 'Save' });
-    await expect(saveButton).toBeVisible();
-
     const gradingMethodSelect = page.getByLabel('Grading method');
     await gradingMethodSelect.selectOption('Manual');
 
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
+    await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
@@ -138,5 +136,94 @@ test.describe('Question settings', () => {
 
     const updatedInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     expect(updatedInfo.gradingMethod).toBe('Manual');
+  });
+});
+
+test('validates public registries in both image fields', async ({ page, courseInstance }) => {
+  const question = await selectQuestionByQid({
+    qid: 'addNumbers',
+    course_id: courseInstance.course_id,
+  });
+  await page.goto(`/pl/course/${courseInstance.course_id}/question/${question.id}/settings`);
+  await page.getByLabel('Grading method').selectOption('Internal');
+  await page.getByRole('checkbox', { name: 'Workspace', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'External grading', exact: true }).check();
+
+  const images = page.getByRole('textbox', { name: 'Image', exact: true });
+  await images.nth(0).fill('internal-host:5000/team/image:tag');
+  await images.nth(1).fill('ghcr.io.evil.example/org/image:tag');
+  await expect(images.nth(0)).toHaveAccessibleDescription(/Docker Hub.*ghcr.io.*public.ecr.aws/);
+  await expect(images.nth(1)).toHaveAccessibleDescription(
+    /docker\.io\/org\/image:tag.*ghcr\.io\/org\/image:tag.*Custom registry domains/,
+  );
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(images.nth(0)).toHaveAttribute('aria-invalid', 'true');
+  await expect(images.nth(1)).toHaveAttribute('aria-invalid', 'true');
+
+  await images.nth(0).fill('org/workspace:tag');
+  await images.nth(1).fill('ghcr.io/org/grader:tag');
+  await expect(images.nth(0)).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(images.nth(1)).not.toHaveAttribute('aria-invalid', 'true');
+});
+
+test.describe('Question deletion', () => {
+  test('deletes a question whose removal would leave an assessment with no zones', async ({
+    page,
+    testCoursePath,
+  }) => {
+    const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+    const qid = `singledelete${suffix}`;
+    const assessmentNumber = `5${suffix.slice(0, 4)}`;
+
+    const sourcePath = path.join(testCoursePath, 'questions', 'addNumbers');
+    const targetPath = path.join(testCoursePath, 'questions', qid);
+    await fs.cp(sourcePath, targetPath, { recursive: true });
+    const infoPath = path.join(targetPath, 'info.json');
+    const infoJson = JSON.parse(await fs.readFile(infoPath, 'utf-8'));
+    infoJson.uuid = randomUUID();
+    infoJson.title = 'Single delete fix';
+    await fs.writeFile(infoPath, `${JSON.stringify(infoJson, null, 2)}\n`);
+
+    const assessmentTid = `singledelete${suffix}`;
+    const assessmentDir = path.join(
+      testCoursePath,
+      'courseInstances',
+      'Sp15',
+      'assessments',
+      assessmentTid,
+    );
+    await fs.mkdir(assessmentDir, { recursive: true });
+    const assessmentInfoPath = path.join(assessmentDir, 'infoAssessment.json');
+    await fs.writeFile(
+      assessmentInfoPath,
+      `${JSON.stringify(
+        {
+          uuid: randomUUID(),
+          type: 'Homework',
+          title: 'Single delete fix target',
+          set: 'Homework',
+          number: assessmentNumber,
+          allowAccess: [
+            { credit: 100, startDate: '2014-07-07T00:00:01', endDate: '2034-07-10T23:59:59' },
+          ],
+          zones: [{ title: 'Only zone', questions: [{ id: qid, autoPoints: 1 }] }],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await syncCourse(testCoursePath);
+
+    const question = await selectQuestionByQid({ qid, course_id: '1' });
+    await page.goto(`/pl/course/1/question/${question.id}/settings`);
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    const modal = page.getByRole('dialog').filter({ hasText: qid });
+    await expect(modal).toBeVisible();
+    await modal.getByRole('button', { name: 'Delete', exact: true }).click();
+
+    await page.waitForURL(/\/course_admin\/questions$/);
+    await expect(fs.access(path.join(testCoursePath, 'questions', qid))).rejects.toThrow();
+    const after = JSON.parse(await fs.readFile(assessmentInfoPath, 'utf-8'));
+    expect(after.zones).toHaveLength(0);
   });
 });

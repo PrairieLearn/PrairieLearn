@@ -15,7 +15,7 @@ On the question settings page, the **Preferences** section displays a table wher
 - **Name**: a unique identifier used to reference the preference in code (e.g., `show_hints`).
 - **Type**: `string`, `number`, or `boolean`.
 - **Default**: the value used when the assessment does not provide an override.
-- **Allowed values**: an optional set of allowed values. When set, the default and any assessment override must be one of these values. If left empty (shown as "Any value"), any value matching the type is accepted.
+- **Allowed values**: an optional set of allowed values. When set, the default and any assessment override must be one of these values. If left empty (shown as "Any"), any value matching the type is accepted.
 
 Preferences can be reordered by dragging the handle on the left side of each row.
 
@@ -70,7 +70,6 @@ In `infoAssessment.json`, add a `preferences` object to a question entry. Only t
   "set": "Homework",
   "number": "5",
   "title": "Forces on Earth",
-  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
@@ -105,12 +104,20 @@ Preferences can also be set on individual alternatives within a question alterna
       "preferences": { "gravitational_constant": 9.8 }
     },
     {
-      "id": "forces/fallingObject",
-      "preferences": { "gravitational_constant": 1.6 }
+      "id": "kinematics/projectileRange",
+      "preferences": { "unit_system": "imperial" }
     }
   ]
 }
 ```
+
+## When preference values are saved
+
+Preferences are saved on each question variant when that variant is created, using the question's defaults merged with any assessment overrides. All later uses of that variant read the saved values, including `render()`, grading, and `question.html`. The relevant time is when the **question variant** is created, rather than when the assessment instance is created.
+
+Changing a default in `info.json` or an override in `infoAssessment.json` and syncing affects newly created variants only. Existing variants keep their saved preferences, even after students reload the page or an instructor regrades their submissions. For example, changing `show_hints` from `true` to `false` does not hide hints on variants that were created with `show_hints` set to `true`.
+
+If you add a new preference, existing variants will not contain that key. In Python code that may run on existing variants, use a suitable fallback, such as `data["preferences"].get("show_hints", True)`. This handles a missing key; it does not replace a value already saved on the variant.
 
 ## Using preferences in `question.html`
 
@@ -175,6 +182,7 @@ A question can support different unit systems by defining a preference:
 import random
 import math
 
+
 def generate(data):
     if data["preferences"]["unit_system"] == "SI":
         g = 9.8
@@ -189,7 +197,9 @@ def generate(data):
     data["params"]["v0"] = v0
     data["params"]["angle"] = angle
     data["params"]["unit"] = unit
-    data["correct_answers"]["range"] = round(v0**2 * math.sin(2 * math.radians(angle)) / g, 2)
+    data["correct_answers"]["range"] = round(
+        v0**2 * math.sin(2 * math.radians(angle)) / g, 2
+    )
 ```
 
 Then one assessment can use `"preferences": { "unit_system": "SI" }` and another can use `"preferences": { "unit_system": "imperial" }`, reusing the same question.

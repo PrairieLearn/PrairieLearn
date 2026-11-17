@@ -5,12 +5,10 @@
   "set": "Exam",
   "number": "9",
   "allowRealTimeGrading": false,
-  "allowAccess": [
+  "accessControl": [
     {
-      "credit": 100,
-      "timeLimitMin": 50,
-      "showClosedAssessment": false,
-      "showClosedAssessmentScore": false
+      "dateControl": { "durationMinutes": 50, "release": { "date": "2000-01-01T00:00:00" } },
+      "afterComplete": { "score": { "hidden": true } }
     }
   ],
   "zones": [

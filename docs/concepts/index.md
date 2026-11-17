@@ -79,12 +79,17 @@ def generate(data):
             else:
                 data["correct_answers"]["y"] = 3 * data["params"]["x"]
 
+
         def parse(data):
             if "y" not in data["format_errors"] and data["submitted_answers"]["y"] < 0:
                 data["format_errors"]["y"] = "Negative numbers are not allowed"
 
+
         def grade(data):
-            if math.isclose(data["score"], 0.0) and data["submitted_answers"]["y"] > data["params"]["x"]:
+            if (
+                math.isclose(data["score"], 0.0)
+                and data["submitted_answers"]["y"] > data["params"]["x"]
+            ):
                 data["partial_scores"]["y"]["score"] = 0.5
                 data["score"] = 0.5
                 data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
@@ -146,7 +151,7 @@ Each item in PrairieLearn (questions, assessments, etc.) has associated metadata
 
 ## Next steps
 
-Now that you have an understanding of the key concepts in PrairieLearn, you can learn more about how to [:star: get started :star:](../getStarted.md) creating your course.
+Now that you have an understanding of the key concepts in PrairieLearn, you can learn more about how to [:star: get started :star:](../getting-started/index.md) creating your course.
 
 You can also:
 

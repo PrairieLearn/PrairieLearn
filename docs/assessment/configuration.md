@@ -18,12 +18,13 @@ Each assessment must set the following properties in their `infoAssessment.json`
 
 ## Optional properties
 
-In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`allowAccess`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
+In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`accessControl`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
 
 | Property                                                       | Type    | Description                                                                                                                 |
 | -------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
 | [`module`](#grouping-assessments-by-modules)                   | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (default: `"Default"`)                                      |
-| [`allowAccess`](../assessment/accessControl.md)                | array   | List of access rules. (default: no student access)                                                                          |
+| [`accessControl`](../assessment/accessControl.md)              | array   | Modern access control rules. (default: no student access)                                                                   |
+| [`allowAccess`](../assessment/accessControlLegacy.md)          | array   | Legacy access rules. Prefer `accessControl` for new assessments. (default: no student access)                               |
 | [`zones`](#question-specification)                             | array   | Specification of zones and questions. (default: none)                                                                       |
 | `text`                                                         | string  | HTML text shown on the assessment overview page. (default: none)                                                            |
 | `multipleInstance`                                             | boolean | Whether to allow students to create whole new attempts at the entire assessment. (default: `false`)                         |
@@ -41,6 +42,7 @@ In addition to those properties, the following properties can be used to further
 | `gradeRateMinutes`                                             | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
 | [`groups`](#enabling-group-work-for-collaborative-assessments) | object  | Configuration for group-based assessments. (default: none)                                                                  |
 | [`tools`](#assessment-tools)                                   | object  | Configuration for assessment tools (e.g., calculator). (default: none)                                                      |
+| `showQuestionTitles`                                           | boolean | Whether to show question titles to students. (default: `false` for Exam, `true` for Homework)                               |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
@@ -109,14 +111,11 @@ For more information about how to create your own assessment modules, see the [c
 
 ## Question order randomization
 
-The `shuffleQuestions` parameter controls whether questions on an assessment appear in the same order for all students, or whether this order is randomized for each student. The default value depends on the `type` of the assessment:
+The `shuffleQuestions` option controls the order of questions after [PrairieLearn selects them for an assessment instance](#assessment-instances-question-selection-and-question-order); it does not affect which questions are selected. When `true`, PrairieLearn randomizes question order within each zone for each assessment instance. When `false`, it preserves the relative order of the selected questions from `infoAssessment.json`. The zones themselves always retain their configured order, so questions can change position relative to one another only within the same zone.
 
-| Assessment type | `shuffleQuestions` default | Meaning                                                                                                                                                                                                                        |
-| --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Homework`      | `false`                    | Homeworks default to using the same question order as in `infoAssessment.json` for all students.                                                                                                                               |
-| `Exam`          | `true`                     | Exams default to randomizing the question order individually for each student. This randomization happens within each zone, but the zones themselves always appear in the same order and there is no cross-zone randomization. |
+If `shuffleQuestions` is omitted, it defaults to `false` for `Homework` assessments and `true` for `Exam` assessments.
 
-If a `Homework` is set to shuffle the question order, it will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say "I don't know how to do #427" and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
+When shuffling is enabled for a `Homework` assessment, PrairieLearn also uses each question's course-wide number rather than a number based on its position in the assessment. `#427`, for example, refers to the same course question wherever it appears, giving students and course staff a consistent reference. Varying question order across assessment instances can also make analyses of question difficulty and student behavior less dependent on question position.
 
 ## Question specification
 
@@ -212,7 +211,7 @@ If a question alternative list is specified, some of these questions are first s
 | `triesPerVariant`      | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                                                                                                                                                                                                         |
 | `allowRealTimeGrading` | boolean         | Whether to allow real-time grading for this question (Exams only). (Optional; default `true`)                                                                                                                                                                                                                                                                    |
 | `forceMaxPoints`       | boolean         | Whether to force all students to receive maximum points. See [Regrading](regrading.md). (Optional; default `false`)                                                                                                                                                                                                                                              |
-| `preferences`          | object          | Override values for the question's [preferences](../question/preferences.md). Keys must match the preference names defined in the question's `info.json`. (Optional; default: use question defaults)                                                                                                                                                             |
+| `preferences`          | object          | Override values for the question's [preferences](../question/preferences.md). Keys must match the preference names defined in the question's `info.json`. Changes apply only to newly created question variants. (Optional; default: use question defaults)                                                                                                      |
 
 Slot specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
@@ -235,9 +234,7 @@ By default, when using `maxAutoPoints`, PrairieLearn provides an incentive for s
   "constantQuestionValue": true,
   "zones": [
     {
-      "questions": [
-        /* ... */
-      ]
+      "questions": [/* ... */]
     }
   ]
 }
@@ -443,12 +440,13 @@ The `groups` object supports the following properties:
 
 | Attribute            | Type    | Default | Description                                                                                                                      |
 | -------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `enabled`            | boolean | `true`  | Whether groups are enabled for this assessment.                                                                                  |
 | `minMembers`         | integer | -       | The minimum number of students in a group.                                                                                       |
 | `maxMembers`         | integer | -       | The maximum number of students in a group.                                                                                       |
 | `roles`              | array   | `[]`    | Array of custom user roles in a group. See [Enabling custom group roles](#enabling-custom-group-roles).                          |
 | `studentPermissions` | object  | `{}`    | Student permissions for group management. See below.                                                                             |
 | `rolePermissions`    | object  | `{}`    | Role-based permissions for group assessments. See [Adding permissions for an assessment](#adding-permissions-for-an-assessment). |
+
+The presence of the `groups` object indicates that group work is enabled for the assessment; remove the property to disable group work.
 
 ### Student permissions
 
@@ -456,10 +454,14 @@ The `studentPermissions` object controls what students can do to manage their gr
 
 | Attribute        | Type    | Default | Description                                                                                                |
 | ---------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `canCreateGroup` | boolean | `false` | Allow students to create groups.                                                                           |
-| `canJoinGroup`   | boolean | `false` | Allow students to join other groups by join code.                                                          |
-| `canLeaveGroup`  | boolean | `false` | Allow students to leave groups.                                                                            |
+| `canCreateGroup` | boolean | `true`  | Allow students to create groups.                                                                           |
+| `canJoinGroup`   | boolean | `true`  | Allow students to join other groups by join code.                                                          |
+| `canLeaveGroup`  | boolean | `true`  | Allow students to leave groups.                                                                            |
 | `canNameGroup`   | boolean | `true`  | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+
+??? note "Legacy defaults"
+
+    The previous legacy defaults were `canCreateGroup: false`, `canJoinGroup: false`, `canLeaveGroup: false`, `canNameGroup: true`.
 
 Note that changing an assessment from individual to group-based or vice versa after students have started working on it will cause student work to be lost.
 
@@ -503,9 +505,9 @@ groupB,three@example.com
 groupB,four@example.com
 ```
 
-The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another. The same file is also listed at the bottom of the groups page.
+The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group memberships. This can be used to copy group memberships from one assessment to another. The same file can also be exported from the "Groups" tab by using "Actions" > "Export CSV".
 
-Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
+Alternatively, the "Assign randomly" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
 
 ### Student options for group work
 
@@ -830,17 +832,34 @@ Assessment tools provide students with utilities they can use while working on q
 
 ### Available tools
 
-| Tool                        | Description                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| [`calculator`](#calculator) | A scientific calculator with expression evaluation, history, and deg/rad toggle. |
+| Tool                        | Description                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| [`calculator`](#calculator) | A calculator with Basic, Scientific, and Advanced presets and persistent history. |
 
 #### Calculator
 
-The calculator tool is a scientific calculator with expression evaluation, history, and deg/rad toggle. The calculator history is persistent across the assessment.
+The calculator tool supports expression evaluation and persistent history. By default, it uses the unrestricted Advanced preset, which supports assignments and the evaluation of integrals and derivatives. Instructors can choose a restricted Basic or Scientific preset in the assessment settings or in `infoAssessment.json`. Zone overrides are also available in the question editor.
 
-| Property  | Type    | Description                                           |
-| --------- | ------- | ----------------------------------------------------- |
-| `enabled` | boolean | Whether the calculator is enabled. (default: `false`) |
+| Property  | Type    | Description                                                              |
+| --------- | ------- | ------------------------------------------------------------------------ |
+| `enabled` | boolean | Whether the calculator is enabled. (default: `false`)                    |
+| `type`    | string  | Calculator preset: `"basic"`, `"scientific"`, or `"advanced"` (default). |
+
+- **Basic**: arithmetic, parentheses, fractions, percentages, and the previous answer (the `ans` button). Letter input and constants such as π and e are unavailable.
+- **Scientific**: all Basic operations plus powers, roots, logarithms, trigonometric and inverse trigonometric functions, absolute value, π, e, and the deg/rad toggle.
+- **Advanced**: an unrestricted calculator with alphabet and function panels.
+
+Basic and Scientific each provide a single keypad panel. Both reject integrals, sums, assignments, and arbitrary variables and functions, whether typed or pasted. Custom panel combinations and fine-grained function settings are not currently supported.
+
+```json title="infoAssessment.json"
+{
+  "tools": {
+    "calculator": { "enabled": true, "type": "basic" }
+  }
+}
+```
+
+When the calculator is enabled, use the **Calculator** button to preview the selected preset without saving your changes.
 
 ### Enabling tools for an entire assessment
 
@@ -858,7 +877,7 @@ To enable a tool for all questions in an assessment, add a `tools` property to t
 
 ### Overriding tools per zone
 
-Zone-level tool configuration override the assessment-level configuration on a per-tool basis. For example, you can enable the calculator for the entire assessment but disable it in a specific zone:
+Zone-level tool settings override the assessment-level settings on a per-tool basis. For example, you can enable the calculator for the entire assessment but disable it in a specific zone:
 
 ```json title="infoAssessment.json"
 {
@@ -896,7 +915,7 @@ In this example, the calculator is disabled in "Part 1: No calculator" (zone-lev
 
 See the [Assessment access control page](../assessment/accessControl.md) for details.
 
-By default, an assessment is only accessible to course staff. To allow students to access the assessment, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
+By default, an assessment is only accessible to course staff. To allow students to access the assessment, configure `accessControl` on the assessment **Access** page or in the assessment's `infoAssessment.json` file.
 
 Access control options can also be used to control the open/close dates of assessments and apply penalties for late submissions. Once again, see [Assessment access control page](../assessment/accessControl.md) for details and examples.
 
@@ -980,7 +999,7 @@ Disabling real-time grading changes a number of things about the student experie
 - The "Grade saved answers" button on the assessment overview will only be shown if at least some questions have real-time grading enabled, and when clicked, it will only grade those questions.
 - Score information won't be shown for questions that have real-time grading disabled.
 
-If a [time limit](../assessment/accessControl.md#time-limits) is used and runs out, the assessment will still auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../assessment/accessControl.md#showinghiding-closed-assessments).
+If a [time limit](../assessment/accessControl.md#time-limits) is used and runs out, the assessment will auto-grade any saved answers. Student visibility after closure is controlled by the [After completion](../assessment/accessControl.md#after-completion) settings.
 
 ??? note
 
@@ -1048,13 +1067,27 @@ To disable this requirement, set `"requireHonorCode": false` as a top-level opti
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
 
-The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
+The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting; HTML is not supported. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
 
 For example:
 
 ```json title="infoAssessment.json"
 {
   "honorCode": "I, {{user_name}}, affirm that I will complete this exam with honesty and integrity."
+}
+```
+
+## Question titles
+
+Question titles can help students identify and discuss questions, but may contain topic names or other context intended only for staff. For this reason, `Homework` assessments show question titles to students by default, while `Exam` assessments hide them by default.
+
+This behavior can be overridden by setting `showQuestionTitles` as a top-level option in the `infoAssessment.json` file.
+
+For example:
+
+```json title="infoAssessment.json"
+{
+  "showQuestionTitles": true
 }
 ```
 

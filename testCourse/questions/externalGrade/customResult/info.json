@@ -1,0 +1,11 @@
+{
+  "uuid": "e8ddd75b-f3ff-42c2-ae54-7826331e2e33",
+  "title": "External Grading: Alpine with flexible result",
+  "topic": "Autograder",
+  "tags": ["code", "v3"],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "sharePublicly": true,
+  "externalGradingOptions": { "image": "alpine:latest", "entrypoint": "/grade/tests/grade.sh" }
+}

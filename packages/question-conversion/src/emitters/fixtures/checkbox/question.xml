@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="feedback-checkbox" title="Checkbox feedback">
+    <section ident="root_section">
+      <item ident="checkbox" title="Prime numbers">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>multiple_answers_question</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>points_possible</fieldlabel>
+              <fieldentry>1.0</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        <presentation>
+          <material>
+            <mattext texttype="text/html">&lt;div&gt;&lt;p&gt;Select all prime numbers.&lt;/p&gt;&lt;/div&gt;</mattext>
+          </material>
+          <response_lid ident="response1" rcardinality="Multiple">
+            <render_choice>
+              <response_label ident="answer_1">
+                <material>
+                  <mattext texttype="text/plain">2</mattext>
+                </material>
+              </response_label>
+              <response_label ident="answer_2">
+                <material>
+                  <mattext texttype="text/plain">4</mattext>
+                </material>
+              </response_label>
+              <response_label ident="answer_3">
+                <material>
+                  <mattext texttype="text/plain">5</mattext>
+                </material>
+              </response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <outcomes>
+            <decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal" />
+          </outcomes>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <other />
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="general_fb" />
+          </respcondition>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <varequal respident="response1">answer_1</varequal>
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="answer_1_fb" />
+          </respcondition>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <varequal respident="response1">answer_2</varequal>
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="answer_2_fb" />
+          </respcondition>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <varequal respident="response1">answer_3</varequal>
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="answer_3_fb" />
+          </respcondition>
+          <respcondition continue="No">
+            <conditionvar>
+              <and>
+                <varequal respident="response1">answer_1</varequal>
+                <not>
+                  <varequal respident="response1">answer_2</varequal>
+                </not>
+                <varequal respident="response1">answer_3</varequal>
+              </and>
+            </conditionvar>
+            <setvar action="Set" varname="SCORE">100</setvar>
+            <displayfeedback feedbacktype="Response" linkrefid="correct_fb" />
+          </respcondition>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <other />
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="general_incorrect_fb" />
+          </respcondition>
+        </resprocessing>
+        <itemfeedback ident="general_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;A prime has exactly two positive divisors.&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="answer_1_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;2 is the only even prime.&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="answer_2_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;4 = 2 × 2, so it is composite.&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="answer_3_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;5 is prime.&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="correct_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;Correct: 2 and 5 are prime.&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="general_incorrect_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;Check each number's positive divisors.&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>

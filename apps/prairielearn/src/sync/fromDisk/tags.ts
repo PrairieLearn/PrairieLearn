@@ -114,7 +114,7 @@ export async function sync(
     .filter(([_qid, question]) => !infofile.hasErrors(question))
     .map(([qid, question]) => {
       const dedupedQuestionTagNames = new Set<string>(question.data?.tags);
-      const questionTagIds = [...dedupedQuestionTagNames].map((t) => {
+      const questionTagIds = Array.from(dedupedQuestionTagNames, (t) => {
         const tag = tagIdsByName.get(t);
 
         // This should never happen in practice, but this keeps the type checker

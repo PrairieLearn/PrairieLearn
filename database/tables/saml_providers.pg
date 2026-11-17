@@ -1,4 +1,5 @@
 columns
+    allow_missing_name: boolean not null default false
     certificate: text not null
     email_attribute: text
     family_name_attribute: text

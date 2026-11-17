@@ -10,6 +10,7 @@ import * as helperDb from './helperDb.js';
 const WorkspaceHostSchema = z.object({
   id: z.string(),
   instance_id: z.string(),
+  load_count: z.number().nullable(),
   state: z.string(),
 });
 
@@ -164,6 +165,9 @@ describe('workspaceHost utilities', function () {
 
       const workspace = await selectWorkspace('1');
       assert.equal(workspace.workspace_host_id, '1');
+
+      const workspaceHost = await selectWorkspaceHost(1);
+      assert.equal(workspaceHost.load_count, 1);
 
       const workspaceLogs = await getWorkspaceLogs(1);
       assert.lengthOf(workspaceLogs, 1);

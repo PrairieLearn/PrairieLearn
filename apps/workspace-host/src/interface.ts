@@ -9,7 +9,6 @@ import * as path from 'node:path';
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import archiver from 'archiver';
 import * as async from 'async';
 import { Mutex } from 'async-mutex';
 import bodyParser from 'body-parser';
@@ -17,14 +16,13 @@ import debugfn from 'debug';
 import Docker from 'dockerode';
 import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import { type Entry } from 'fast-glob';
 import minimist from 'minimist';
-import fetch from 'node-fetch';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { assertSupportedImageRegistry } from '@prairielearn/docker-utils/registry';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -66,12 +64,13 @@ const PortOccupiedSchema = z.boolean();
 
 const WorkspaceSettingsRowSchema = z.object({
   workspace_image: z.string(),
-  workspace_port: z.number(),
-  workspace_home: z.string(),
+  workspace_port: z.number().nullable(),
+  workspace_home: z.string().nullable(),
   workspace_graded_files: z.array(z.string()),
   workspace_args: z.string().nullable(),
   workspace_enable_networking: z.boolean().nullable(),
   workspace_environment: z.record(z.string(), z.any()).nullable(),
+  workspace_url_rewrite: z.boolean().nullable(),
 });
 
 // _getWorkspaceSettings transforms WorkspaceSettingsRowSchema into this shape.
@@ -93,12 +92,30 @@ interface Workspace {
   settings: WorkspaceSettings;
 }
 
+class SafeForStudentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SafeForStudentError';
+  }
+}
+
 let server: http.Server | undefined;
 const workspace_server_settings: WorkspaceServerSettings = {};
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
+
+async function updateLoadCount() {
+  const params = { instance_id: workspace_server_settings.instance_id };
+
+  await sqldb.runInTransactionAsync(async () => {
+    // Lock in a separate statement so the recount gets a fresh snapshot after
+    // any concurrent workspace assignment finishes.
+    await sqldb.execute(sql.lock_workspace_host_for_load_count_update, params);
+    await sqldb.execute(sql.update_load_count, params);
+  });
+}
 
 const app = express();
 app.use(Sentry.requestHandler());
@@ -112,9 +129,7 @@ app.get(
 
     let db_status: string | null | undefined;
     try {
-      await sqldb.execute(sql.update_load_count, {
-        instance_id: workspace_server_settings.instance_id,
-      });
+      await updateLoadCount();
       db_status = 'ok';
     } catch {
       db_status = null;
@@ -217,6 +232,7 @@ async
         password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+        ssl: config.postgresqlSsl,
       };
       logger.verbose(
         `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`,
@@ -249,11 +265,13 @@ async
         try {
           await pruneStoppedContainers();
           await pruneRunawayContainers();
-          await sqldb.execute(sql.update_load_count, {
-            instance_id: workspace_server_settings.instance_id,
-          });
+          await updateLoadCount();
+          // Development may share Docker with unrelated workloads.
+          if (config.runningInEc2) {
+            await docker.pruneVolumes();
+          }
         } catch (err) {
-          logger.error('Error pruning containers', err);
+          logger.error('Error pruning containers and volumes', err);
           Sentry.captureException(err);
         }
 
@@ -438,7 +456,7 @@ async function killAndRemoveWorkspace(workspace_id: string | number, container: 
     }
 
     try {
-      await container.remove();
+      await container.remove({ v: true });
     } catch (err) {
       Sentry.captureException(err);
       logger.error('Error removing stopped container', err);
@@ -479,6 +497,23 @@ async function markSelfUnhealthy(reason: Error | string) {
     // This could error if we don't even have a DB connection. In that case, we
     // should let the main server mark us as unhealthy.
     logger.error('Could not mark self as unhealthy', err);
+  }
+}
+
+async function checkDiskSpace() {
+  // Docker Desktop's data directory may not be accessible from this process.
+  if (!config.runningInEc2) return;
+
+  try {
+    const { DockerRootDir } = await docker.info();
+    const { bavail, bsize } = await fs.statfs(DockerRootDir);
+    const availableBytes = bavail * bsize;
+    if (availableBytes < config.workspaceHostMinAvailableDiskMB * 1_000_000) {
+      await markSelfUnhealthy(`Low Docker disk space: ${availableBytes} bytes available`);
+    }
+  } catch (err) {
+    logger.error('Error checking Docker disk space', err);
+    Sentry.captureException(err);
   }
 }
 
@@ -633,23 +668,24 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 
   // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
   workspace_environment['WORKSPACE_BASE_URL'] = `/pl/workspace/${workspace_id}/container/`;
+  // Set networking disabled status for workspaces that have actions that depend on it (e.g., vscode)
+  if (!row.workspace_enable_networking) {
+    workspace_environment['WORKSPACE_NETWORKING_DISABLED'] = '1';
+  }
 
   const settings = {
-    workspace_image: row.workspace_image,
-    workspace_port: row.workspace_port,
-    workspace_home: row.workspace_home,
-    workspace_graded_files: row.workspace_graded_files,
+    ...row,
     workspace_args: row.workspace_args || '',
     workspace_enable_networking: !!row.workspace_enable_networking,
     // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
     workspace_environment: Object.entries(workspace_environment).map(([k, v]) =>
       v === null ? k : `${k}=${v}`,
     ),
-  };
+  } satisfies WorkspaceSettings;
 
   if (config.cacheImageRegistry) {
     const repository = new DockerName(settings.workspace_image);
-    repository.setRegistry(config.cacheImageRegistry);
+    repository.setCacheRegistry(config.cacheImageRegistry);
     const newImage = repository.getCombined();
     logger.info(`Using ${newImage} for ${settings.workspace_image}`);
     settings.workspace_image = newImage;
@@ -659,6 +695,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 }
 
 const ProgressDetailsSchema = z.record(
+  z.string(),
   z.object({
     current: z.number(),
     total: z.number(),
@@ -685,9 +722,13 @@ async function _pullImage(workspace: Workspace) {
   logger.info(`Pulling docker image: ${workspace_image}`);
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
-  // assume we're pulling from the public Docker Hub registry.
+  // assume we're pulling from a public registry.
   const ecr = new ECRClient(makeAwsClientConfig());
   const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
+
+  if (!config.cacheImageRegistry) {
+    assertSupportedImageRegistry(workspace_image);
+  }
 
   let percentDisplayed = false;
   let stream: NodeJS.ReadableStream | undefined;
@@ -750,7 +791,7 @@ async function _pullImage(workspace: Workspace) {
           progressDetailsInit,
           1000 * 60 * 60 * 24 * 30, // 30 days
         );
-        workspaceUtils
+        void workspaceUtils
           .updateWorkspaceMessage(workspace.id, 'Pulling image (100%)', toDatabase)
           .catch((err) => {
             logger.error('Error updating workspace message', err);
@@ -824,7 +865,54 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   // Where we are putting the job files relative to the server (`/jobs` inside Docker container).
   const workspaceJobPath = path.join(jobDirectory, remote_name, 'current');
 
-  const containerPath = settings.workspace_home;
+  const [containerPath, workspacePort] = await run(async () => {
+    // If all three of these are known, inspect is not necessary.
+    if (
+      settings.workspace_home != null &&
+      settings.workspace_port != null &&
+      settings.workspace_url_rewrite != null
+    ) {
+      return [settings.workspace_home, settings.workspace_port];
+    }
+
+    const inspectResults = await docker.getImage(settings.workspace_image).inspect();
+    const labels = inspectResults.Config.Labels;
+    const home = settings.workspace_home ?? labels?.['com.prairielearn.workspace.home'];
+    const portStr = settings.workspace_port ?? labels?.['com.prairielearn.workspace.port'];
+    if (home == null) {
+      throw new SafeForStudentError(
+        'Workspace home directory not specified in question settings or image labels',
+      );
+    }
+    if (portStr == null) {
+      throw new SafeForStudentError(
+        'Workspace port not specified in question settings or image labels',
+      );
+    }
+    const port = Number(portStr);
+    if (Number.isNaN(port) || port <= 0 || port > 65535) {
+      throw new SafeForStudentError('Workspace port is not a valid port number');
+    }
+
+    if (settings.workspace_url_rewrite == null) {
+      // If the url_rewrite setting was not previously set, we'll use the label
+      // value and default to true if not specified. This value is not used
+      // here, but in the proxy middleware logic, so we save it to the database
+      // for later reference.
+      const urlRewrite =
+        labels?.['com.prairielearn.workspace.rewrite-url']?.toLowerCase() ?? 'true';
+
+      if (!['true', 'false'].includes(urlRewrite)) {
+        throw new SafeForStudentError('Workspace URL rewrite setting is not a valid boolean value');
+      }
+      await sqldb.execute(sql.update_workspace_url_rewrite, {
+        workspace_id: workspace.id,
+        url_rewrite: urlRewrite === 'true',
+      });
+    }
+
+    return [home, port];
+  });
   const args = settings.workspace_args.trim();
 
   let networkMode = 'bridge';
@@ -837,14 +925,14 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   }
 
   debug(`Creating docker container for image=${settings.workspace_image}`);
-  debug(`Exposed port: ${settings.workspace_port}`);
+  debug(`Exposed port: ${workspacePort}`);
   debug(`Networking enabled: ${settings.workspace_enable_networking}`);
   debug(`Network mode: ${networkMode}`);
   debug(`Env vars: ${settings.workspace_environment}`);
   debug(
     `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
   );
-  debug(`Port binding: ${settings.workspace_port}:${launch_port}`);
+  debug(`Port binding: ${workspacePort}:${launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
   debug(`Container name: ${local_name}`);
 
@@ -862,13 +950,13 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   const container = await docker.createContainer({
     Image: settings.workspace_image,
     ExposedPorts: {
-      [`${settings.workspace_port}/tcp`]: {},
+      [`${workspacePort}/tcp`]: {},
     },
     Env: settings.workspace_environment,
     User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
     HostConfig: {
       PortBindings: {
-        [`${settings.workspace_port}/tcp`]: [{ HostPort: `${launch_port}` }],
+        [`${workspacePort}/tcp`]: [{ HostPort: `${launch_port}` }],
       },
       Binds: [`${workspacePath}:${containerPath}`],
       Memory: config.workspaceDockerMemory,
@@ -902,9 +990,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     },
   });
 
-  await sqldb.execute(sql.update_load_count, {
-    instance_id: workspace_server_settings.instance_id,
-  });
+  await updateLoadCount();
 
   return container;
 }
@@ -934,6 +1020,9 @@ function safeUpdateWorkspaceState(
 async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
+
+  // Check before pulling or creating a container so failed launches also trigger a check.
+  await checkDiskSpace();
 
   const uuid = crypto.randomUUID();
   const params = {
@@ -996,12 +1085,12 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
       container = await _createContainer(workspace);
-    } catch (err) {
+    } catch (err: any) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
         workspace.id,
         'stopped',
-        'Error creating container. Click "Reboot" to try again.',
+        `Error creating container${err instanceof SafeForStudentError ? `: ${err.message}` : ''}. Click "Reboot" to try again.`,
       );
       return; // don't set host to unhealthy
     }
@@ -1089,54 +1178,25 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 
 async function sendGradedFilesArchive(workspace_id: string | number, res: Response) {
   const workspace = await _getWorkspace(workspace_id);
-  const workspaceSettings = await _getWorkspaceSettings(workspace_id);
+  const { workspace_graded_files } = await _getWorkspaceSettings(workspace_id);
   const timestamp = new Date().toISOString().replaceAll(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
-  let gradedFiles: Entry[] | undefined;
-  try {
-    gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
-      workspaceDir,
-      workspaceSettings.workspace_graded_files,
-      {
-        maxFiles: config.workspaceMaxGradedFilesCount,
-        maxSize: config.workspaceMaxGradedFilesSize,
-      },
-    );
-  } catch (err: any) {
-    res.status(500).send(err.message);
-    return;
-  }
+  await using gradedFiles = await workspaceUtils
+    .openWorkspaceGradedFiles(workspaceDir, workspace_graded_files, {
+      maxFiles: config.workspaceMaxGradedFilesCount,
+      maxSize: config.workspaceMaxGradedFilesSize,
+    })
+    .catch((err: Error) => {
+      res.status(500).send(err.message);
+      return null;
+    });
+  if (gradedFiles == null) return;
 
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
-  const archive = archiver('zip');
-  archive.pipe(res);
-
-  archive.on('error', (err) => {
-    logger.error('Error creating archive', err);
-    Sentry.captureException(err);
-
-    // Since we've probably already sent some data to the client, we can't do
-    // anything to gracefully let them know that we encountered an error.
-    // Instead, we'll just destroy the socket so that they pick up an error
-    // and handle that however they want.
-    res.socket?.destroy();
-  });
-
-  for (const file of gradedFiles) {
-    try {
-      const filePath = path.join(workspaceDir, file.path);
-      archive.file(filePath, { name: file.path });
-      debug(`Sending ${file.path}`);
-    } catch {
-      logger.warn(`Graded file ${file.path} does not exist.`);
-      continue;
-    }
-  }
-
-  await archive.finalize();
+  await workspaceUtils.writeWorkspaceGradedFilesArchive(gradedFiles, res);
 }
 
 async function sendLogs(workspaceId: string | number, res: Response) {

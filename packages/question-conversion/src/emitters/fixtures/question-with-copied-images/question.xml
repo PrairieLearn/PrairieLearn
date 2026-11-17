@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2">
+  <assessment ident="copied-images" title="Copied images">
+    <section ident="root_section">
+      <item ident="question-with-copied-images" title="Question with copied images">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>multiple_answers_question</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>points_possible</fieldlabel>
+              <fieldentry>1.0</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        <presentation>
+          <material>
+            <mattext texttype="text/html">&lt;p&gt;Select every place where this diagram appears. &lt;img src=&quot;https://canvas.example/files/diagram.png?verifier=secret#prompt&quot; alt=&quot;Prompt diagram&quot; width=&quot;240&quot;&gt; &lt;img src=&quot;//canvas.example/files/diagram.png?verifier=secret#duplicate&quot; alt=&quot;Duplicate diagram&quot;&gt;&lt;/p&gt;</mattext>
+          </material>
+          <response_lid ident="response1" rcardinality="Multiple">
+            <render_choice>
+              <response_label ident="answer_1">
+                <material>
+                  <mattext texttype="text/plain">In copied feedback</mattext>
+                </material>
+              </response_label>
+              <response_label ident="answer_2">
+                <material>
+                  <mattext texttype="text/plain">At a remote URL</mattext>
+                </material>
+              </response_label>
+            </render_choice>
+          </response_lid>
+        </presentation>
+        <resprocessing>
+          <outcomes>
+            <decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal" />
+          </outcomes>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <other />
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="general_fb" />
+          </respcondition>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <varequal respident="response1">answer_1</varequal>
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="answer_1_fb" />
+          </respcondition>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <varequal respident="response1">answer_2</varequal>
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="answer_2_fb" />
+          </respcondition>
+          <respcondition continue="No">
+            <conditionvar>
+              <and>
+                <varequal respident="response1">answer_1</varequal>
+                <not>
+                  <varequal respident="response1">answer_2</varequal>
+                </not>
+              </and>
+            </conditionvar>
+            <setvar action="Set" varname="SCORE">100</setvar>
+            <displayfeedback feedbacktype="Response" linkrefid="correct_fb" />
+          </respcondition>
+          <respcondition continue="Yes">
+            <conditionvar>
+              <other />
+            </conditionvar>
+            <displayfeedback feedbacktype="Response" linkrefid="general_incorrect_fb" />
+          </respcondition>
+        </resprocessing>
+        <itemfeedback ident="general_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;The shared diagram is copied once. &lt;img src=&quot;https://canvas.example/files/diagram.png?verifier=secret#general&quot; alt=&quot;General feedback diagram&quot;&gt;&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="answer_1_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;{{imported_per_answer_value}} &lt;span&gt;&amp;#x7b;&amp;#000123;imported_entity_value&amp;rcub;&amp;#x7d;&lt;/span&gt; &lt;code&gt;{{ options.client_files_question_url }}&lt;/code&gt; &lt;img src=&quot;https://canvas.example/files/diagram.png?verifier=secret#answer&quot; class=&quot;answer-feedback&quot; alt=&quot;{{imported_per_answer_value}} &amp;#x7b;&amp;#000123;imported_entity_value&amp;rcub;&amp;#x7d; {{ options.client_files_question_url }} &amp;amp; literal&quot;&gt;&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="answer_2_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;Remote references are replaced during import.&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="correct_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;Correct. &lt;img src=&quot;https://canvas.example/files/diagram.png?verifier=secret#correct&quot; alt=&quot;Correct feedback diagram&quot;&gt;&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+        <itemfeedback ident="general_incorrect_fb">
+          <flow_mat>
+            <material>
+              <mattext texttype="text/html">&lt;p&gt;Try again. &lt;img src=&quot;https://canvas.example/files/diagram.png?verifier=secret#incorrect&quot; alt=&quot;Incorrect feedback diagram&quot;&gt;&lt;/p&gt;</mattext>
+            </material>
+          </flow_mat>
+        </itemfeedback>
+      </item>
+    </section>
+  </assessment>
+</questestinterop>

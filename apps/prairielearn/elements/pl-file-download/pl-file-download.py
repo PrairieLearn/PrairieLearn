@@ -1,9 +1,12 @@
+import html
 import os
+import posixpath
 from enum import Enum
+from typing import assert_never
+from urllib.parse import quote
 
 import lxml.html
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 class FileType(Enum):
@@ -71,7 +74,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     file_directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
 
     # Get label (default is file_name)
-    file_label = pl.get_string_attrib(element, "label", file_name)
+    file_label = pl.get_string_attrib(element, "label", html.escape(file_name))
 
     # Get whether to force a download or open in-browser
     force_download = pl.get_boolean_attrib(
@@ -95,10 +98,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         assert_never(file_type)
 
     # Get full url
-    file_url = os.path.join(base_url, file_name)
+    file_url = posixpath.join(base_url, quote(file_name))
 
     # Create and return html
     if force_download:
         return f'<a href="{file_url}" download>{file_label}</a>'
 
-    return f'<a href="{file_url}" target="_blank">{file_label}</a>'
+    return f'<a href="{file_url}" target="_blank" rel="noopener noreferrer">{file_label}</a>'

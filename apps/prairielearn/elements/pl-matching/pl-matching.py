@@ -10,9 +10,6 @@ WEIGHT_DEFAULT = 1
 FIXED_STATEMENTS_ORDER_DEFAULT = False
 FIXED_OPTIONS_ORDER_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = True
-HIDE_ANSWER_PANEL_DEFAULT = False
-HIDE_HELP_TEXT_DEFAULT = False
-DETAILED_HELP_TEXT_DEFAULT = False
 HIDE_SCORE_BADGE_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
 BLANK_DEFAULT = True
@@ -125,6 +122,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "counter-type",
         "fixed-options-order",
+        "partial-credit",
         "hide-score-badge",
         "options-placement",
     ]
@@ -421,40 +419,36 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             with open("pl-matching.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
     elif data["panel"] == "answer":
-        if not pl.get_boolean_attrib(
-            element, "hide-answer-panel", HIDE_ANSWER_PANEL_DEFAULT
-        ):
-            correct_answer_list = data["correct_answers"].get(name, [])
+        correct_answer_list = data["correct_answers"].get(name, [])
 
-            statement_set = []
-            for i, statement in enumerate(display_statements):
-                form_name = get_form_name(name, statement["key"])
-                correct_answer = correct_answer_list[i]
-                if counter_type == "full-text":
-                    counter = ""
-                else:
-                    counter = f"{get_counter(correct_answer + 1, counter_type)}. "
-                statement_html = {
-                    "option": display_options[correct_answer]["html"],
-                    "statement": statement["html"],
-                    "counter": counter,
-                }
-                statement_set.append(statement_html)
-
-            option_set = []
-            for option in display_options:
-                option_html = {"key": option["key"], "html": option["html"].strip()}
-                option_set.append(option_html)
-
-            html_params = {
-                "answer": True,
-                "statements": statement_set,
-                "options": option_set,
-                "counter_type": counter_type,
-                "no_counters": no_counters,
+        statement_set = []
+        for i, statement in enumerate(display_statements):
+            correct_answer = correct_answer_list[i]
+            if counter_type == "full-text":
+                counter = ""
+            else:
+                counter = f"{get_counter(correct_answer + 1, counter_type)}. "
+            statement_html = {
+                "option": display_options[correct_answer]["html"],
+                "statement": statement["html"],
+                "counter": counter,
             }
-            with open("pl-matching.mustache", encoding="utf-8") as f:
-                html = chevron.render(f, html_params).strip()
+            statement_set.append(statement_html)
+
+        option_set = []
+        for option in display_options:
+            option_html = {"key": option["key"], "html": option["html"].strip()}
+            option_set.append(option_html)
+
+        html_params = {
+            "answer": True,
+            "statements": statement_set,
+            "options": option_set,
+            "counter_type": counter_type,
+            "no_counters": no_counters,
+        }
+        with open("pl-matching.mustache", encoding="utf-8") as f:
+            html = chevron.render(f, html_params).strip()
 
     return html
 

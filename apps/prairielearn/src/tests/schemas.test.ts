@@ -38,13 +38,13 @@ for (const schemaName of Object.keys(ajvSchemas)) {
   describe(`${schemaName} schema`, () => {
     const schema = ajvSchemas[schemaName as keyof typeof ajvSchemas];
     it('compiles', () => {
-      const ajv = new Ajv();
+      const ajv = new Ajv({ formats: { uuid: true } });
       const validate = ajv.compile(schema);
       assert.isFunction(validate);
     });
 
     it('validates', () => {
-      const ajv = new Ajv();
+      const ajv = new Ajv({ formats: { uuid: true } });
       const valid = ajv.validateSchema(schema);
       if (ajv.errors) {
         console.error(ajv.errors);

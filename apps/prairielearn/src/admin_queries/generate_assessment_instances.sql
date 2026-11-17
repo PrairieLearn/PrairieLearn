@@ -11,7 +11,10 @@ FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN courses AS c ON (c.id = ci.course_id)
-  JOIN enrollments AS e ON (e.course_instance_id = ci.id)
+  JOIN enrollments AS e ON (
+    e.course_instance_id = ci.id
+    AND e.status = 'joined'
+  )
   JOIN users AS u ON (u.id = e.user_id)
 WHERE
   a.id = $assessment_id
@@ -36,9 +39,14 @@ FROM
   JOIN teams AS g ON (g.team_config_id = gc.id)
   JOIN LATERAL (
     SELECT
-      *
+      gu.*
     FROM
       team_users AS gu
+      JOIN enrollments AS e ON (
+        e.user_id = gu.user_id
+        AND e.course_instance_id = ci.id
+        AND e.status = 'joined'
+      )
     WHERE
       gu.team_id = g.id
     LIMIT

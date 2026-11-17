@@ -1,5 +1,6 @@
+from typing import assert_never
+
 import prairielearn as pl
-from typing_extensions import assert_never
 
 
 def generate(data):

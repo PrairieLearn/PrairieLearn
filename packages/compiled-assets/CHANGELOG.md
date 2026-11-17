@@ -1,5 +1,102 @@
 # @prairielearn/compiled-assets
 
+## 4.1.17
+
+### Patch Changes
+
+- eeca6f4: Preserve lazy import boundaries in production module preloads while preloading transitive static dependencies.
+
+  Serve dynamically imported ESM chunks through the development asset proxy.
+
+## 4.1.16
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 4.1.15
+
+### Patch Changes
+
+- f61dbe4: Wait for both development asset compiler contexts to finish disposing before `close()` resolves.
+
+## 4.1.14
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.1.13
+
+### Patch Changes
+
+- 73ca8ef: Bump express dependency
+
+## 4.1.12
+
+### Patch Changes
+
+- 439df7c: Use second argument of Array.from
+
+## 4.1.11
+
+### Patch Changes
+
+- 5fcb568: Migrate esbuild target to es2022
+
+## 4.1.10
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 4.1.9
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 4.1.8
+
+### Patch Changes
+
+- 4ad46ed: Remove dev dependency on node-fetch
+
+## 4.1.7
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 4.1.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.1.5
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.1.4
+
+### Patch Changes
+
+- 54a4c6d: Use OS-assigned ports for esbuild development asset servers.
+- 382dbd8: Bump dependencies
+
+## 4.1.3
+
+### Patch Changes
+
+- d482019: Mark `fs/promises` and `module` as external in browser bundles to work around issues with `web-tree-sitter`.
+- e80a5a5: List direct dependencies explicitly
+- b6e03e9: Upgrade dependencies
+- Updated dependencies [b6e03e9]
+  - @prairielearn/html@5.0.3
+
 ## 4.1.2
 
 ### Patch Changes

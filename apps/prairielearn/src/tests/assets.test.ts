@@ -1,7 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as assets from '../lib/assets.js';
@@ -19,12 +18,14 @@ async function getOrLoadElementsInfo() {
   if (!cachedElementsInfo) {
     const elementsInfo: Record<string, any> = {};
 
-    const elements = await fs.readdir(ELEMENTS_PATH);
+    const elements = await fs.readdir(ELEMENTS_PATH, { withFileTypes: true });
 
     for (const element of elements) {
-      const elementInfoPath = path.join(ELEMENTS_PATH, element, 'info.json');
+      if (!element.isDirectory()) continue;
+
+      const elementInfoPath = path.join(ELEMENTS_PATH, element.name, 'info.json');
       const elementInfo = JSON.parse(await fs.readFile(elementInfoPath, 'utf-8'));
-      elementsInfo[element] = elementInfo;
+      elementsInfo[element.name] = elementInfo;
     }
     cachedElementsInfo = elementsInfo;
   }
@@ -35,6 +36,23 @@ async function getOrLoadElementsInfo() {
 describe('Static assets', () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
+
+  it('returns 404 for pnpm-internal paths through the legacy node_modules route', async () => {
+    const res = await fetch(
+      `${SITE_URL}/node_modules/.pnpm/superjson@2.2.6/node_modules/superjson/src/util.ts`,
+      { redirect: 'manual' },
+    );
+
+    assert.equal(res.status, 404);
+  });
+
+  it('redirects valid paths through the legacy node_modules route', async () => {
+    const assetPath = 'superjson/dist/index.js';
+    const res = await fetch(`${SITE_URL}/node_modules/${assetPath}`, { redirect: 'manual' });
+
+    assert.equal(res.status, 302);
+    assert.equal(res.headers.get('location'), assets.nodeModulesAssetPath(assetPath));
+  });
 
   it('serves all element node_modules assets', async () => {
     const elementsInfo = await getOrLoadElementsInfo();

@@ -276,6 +276,10 @@ SET
     ELSE MOD($number + 1, 10)
   END,
   always_show_to_students = COALESCE($always_show_to_students, always_show_to_students),
+  show_to_students = CASE
+    WHEN COALESCE($always_show_to_students, always_show_to_students) THEN 'always'::enum_rubric_item_show_to_students
+    ELSE 'when_selected'::enum_rubric_item_show_to_students
+  END,
   deleted_at = NULL
 WHERE
   id = $id
@@ -293,7 +297,8 @@ INSERT INTO
     explanation,
     grader_note,
     key_binding,
-    always_show_to_students
+    always_show_to_students,
+    show_to_students
   )
 VALUES
   (
@@ -307,7 +312,11 @@ VALUES
       WHEN $number >= 10 THEN NULL
       ELSE MOD($number + 1, 10)
     END,
-    $always_show_to_students
+    $always_show_to_students,
+    CASE
+      WHEN $always_show_to_students THEN 'always'::enum_rubric_item_show_to_students
+      ELSE 'when_selected'::enum_rubric_item_show_to_students
+    END
   );
 
 -- BLOCK select_instance_questions_to_update
@@ -424,6 +433,7 @@ WITH
       JOIN rubric_items AS ri ON (
         ri.id = ari.rubric_item_id
         AND ri.rubric_id = $rubric_id
+        AND ri.deleted_at IS NULL
       )
     RETURNING
       *
@@ -494,7 +504,9 @@ INSERT INTO
     manual_points,
     feedback,
     partial_scores,
-    manual_rubric_grading_id
+    manual_rubric_grading_id,
+    deleted_at,
+    deleted_by
   )
 VALUES
   (
@@ -509,7 +521,15 @@ VALUES
     $manual_points,
     $feedback,
     $partial_scores,
-    $manual_rubric_grading_id
+    $manual_rubric_grading_id,
+    CASE
+      WHEN $modified_at_conflict THEN now()
+      ELSE NULL
+    END,
+    CASE
+      WHEN $modified_at_conflict THEN $authn_user_id::bigint
+      ELSE NULL
+    END
   )
 RETURNING
   id;

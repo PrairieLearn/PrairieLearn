@@ -13,7 +13,10 @@ WITH
     GROUP BY
       i.instance_question_id
   ),
-  latest_submissions AS (
+  -- MATERIALIZED forces these CTEs to be computed once instead of being
+  -- inlined into the outer query's nested loop join, where they would be
+  -- re-executed once per outer row.
+  latest_submissions AS MATERIALIZED (
     SELECT DISTINCT
       ON (iq.id) iq.id AS instance_question_id,
       s.id AS submission_id,
@@ -28,7 +31,7 @@ WITH
       iq.id ASC,
       s.date DESC
   ),
-  rubric_items_agg AS (
+  rubric_items_agg AS MATERIALIZED (
     SELECT
       ls.instance_question_id,
       COALESCE(
@@ -45,13 +48,52 @@ WITH
       )
     GROUP BY
       ls.instance_question_id
+  ),
+  student_label_agg AS (
+    SELECT
+      sle.enrollment_id,
+      jsonb_agg(
+        sle.student_label_id
+        ORDER BY
+          sle.student_label_id
+      ) AS student_label_ids
+    FROM
+      student_label_enrollments AS sle
+      JOIN enrollments AS e ON e.id = sle.enrollment_id
+    WHERE
+      e.course_instance_id = $course_instance_id
+    GROUP BY
+      sle.enrollment_id
+  ),
+  team_members AS (
+    SELECT
+      tu.team_id,
+      jsonb_agg(
+        to_jsonb(tmu.*)
+        ORDER BY
+          tmu.uid
+      ) AS members
+    FROM
+      team_users AS tu
+      JOIN users AS tmu ON tmu.id = tu.user_id
+      JOIN teams AS t ON t.id = tu.team_id
+      JOIN team_configs AS tc ON tc.id = t.team_config_id
+    WHERE
+      tc.assessment_id = $assessment_id
+    GROUP BY
+      tu.team_id
   )
 SELECT
   to_jsonb(iq.*) AS instance_question,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
+  COALESCE(gul.uid_list, ARRAY[u.uid]) AS uid_list,
+  to_jsonb(u.*) AS user,
+  COALESCE(tm.members, '[]'::jsonb) AS group_members,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
   COALESCE(lgu.name, lgu.uid) AS last_grader_name,
+  to_jsonb(agu.*) AS assigned_grader,
+  to_jsonb(lgu.*) AS last_grader,
   to_jsonb(aq.*) AS assessment_question,
   COALESCE(g.name, u.name) AS user_or_group_name,
   ic.open_issue_count,
@@ -62,7 +104,8 @@ SELECT
   -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
   ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
   COALESCE(ri.rubric_grading_item_ids, '[]'::jsonb) AS rubric_grading_item_ids,
-  e.id AS enrollment_id
+  e.id AS enrollment_id,
+  COALESCE(sla.student_label_ids, '[]'::jsonb) AS student_label_ids
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -75,6 +118,8 @@ FROM
     e.user_id = ai.user_id
     AND e.course_instance_id = a.course_instance_id
   )
+  LEFT JOIN team_members AS tm ON (tm.team_id = g.id)
+  LEFT JOIN student_label_agg AS sla ON sla.enrollment_id = e.id
   LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
@@ -101,3 +146,33 @@ SET
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
+
+-- BLOCK select_rubric_settings_context_keys
+SELECT DISTINCT
+  ON (v.id) ARRAY(
+    SELECT
+      jsonb_object_keys(v.params)
+  ) AS params_keys,
+  ARRAY(
+    SELECT
+      jsonb_object_keys(v.true_answer)
+  ) AS true_answer_keys,
+  ARRAY(
+    SELECT
+      jsonb_object_keys(s.submitted_answer)
+  ) AS submitted_answer_keys
+FROM
+  instance_questions AS iq
+  JOIN variants AS v ON v.instance_question_id = iq.id
+  JOIN submissions AS s ON s.variant_id = v.id
+WHERE
+  iq.assessment_question_id = $assessment_question_id
+ORDER BY
+  v.id ASC,
+  s.date DESC,
+  s.id DESC
+  -- We're only retrieving a small subset of the variants, as we only need to
+  -- know common params/answer keys that are not expected to change
+  -- significantly between variants.
+LIMIT
+  5;

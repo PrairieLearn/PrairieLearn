@@ -1,7 +1,7 @@
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import { afterAll, describe, it } from 'vitest';
 
-import rule from '../rules/jsx-no-dollar-interpolation';
+import rule from '../rules/jsx-no-dollar-interpolation.js';
 
 RuleTester.afterAll = afterAll;
 RuleTester.describe = describe;
@@ -34,7 +34,7 @@ ruleTester.run('jsx-no-dollar-interpolation', rule, {
   ],
   invalid: [
     {
-      // eslint-disable-next-line no-template-curly-in-string
+      // oxlint-disable-next-line no-template-curly-in-string
       code: '<div>${message}</div>',
       errors: [
         {

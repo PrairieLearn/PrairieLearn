@@ -1,35 +1,22 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Readable, Transform } from 'node:stream';
+import { Readable } from 'node:stream';
 
 import debugfn from 'debug';
 import { difference, sampleSize } from 'es-toolkit';
-import multipipe from 'multipipe';
 import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
 import { z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];
 
-/**
- * Type constraint for row schemas accepted by query functions.
- * Accepts `z.object(...)`, unions/intersections/discriminated unions of objects,
- * transforms/refinements of any of those, branded variants, and `z.unknown()`
- * as an escape hatch.
- */
-type AnyObjectLikeSchema =
-  | z.AnyZodObject
-  | z.ZodEffects<AnyObjectLikeSchema, any, any>
-  | z.ZodIntersection<AnyObjectLikeSchema, AnyObjectLikeSchema>
-  | z.ZodUnion<Readonly<[AnyObjectLikeSchema, ...AnyObjectLikeSchema[]]>>
-  | z.ZodDiscriminatedUnion<string, z.AnyZodObject[]>;
-export type AnyRowSchema =
-  | AnyObjectLikeSchema
-  | z.ZodBranded<AnyObjectLikeSchema, any>
-  | z.ZodUnknown;
+export interface QueryCursorOptions {
+  /** Stops the cursor, canceling any batch being read on the server, and throws `signal.reason`. */
+  signal?: AbortSignal;
+}
 
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
-  stream: (batchSize: number) => NodeJS.ReadWriteStream;
+  stream: (batchSize: number) => Readable;
 }
 
 export interface PostgresPoolConfig extends pg.PoolConfig {
@@ -109,20 +96,14 @@ function paramsToArray(
   let remainingSql = sql;
   let nParams = 0;
   const map: Record<string, string> = {};
-  let paramsArray: any[] = [];
+  const paramsArray: any[] = [];
   while ((result = re.exec(remainingSql)) !== null) {
     const v = result[1];
     if (!(v in map)) {
       if (!(v in params)) throw new Error(`Missing parameter: ${v}`);
-      if (Array.isArray(params[v])) {
-        map[v] = 'ARRAY[' + params[v].map((_, n) => '$' + (n + nParams + 1)).join(',') + ']';
-        nParams += params[v].length;
-        paramsArray = paramsArray.concat(params[v]);
-      } else {
-        nParams++;
-        map[v] = '$' + nParams;
-        paramsArray.push(params[v]);
-      }
+      nParams++;
+      map[v] = '$' + nParams;
+      paramsArray.push(params[v]);
     }
     processedSql += remainingSql.slice(0, result.index) + map[v];
     remainingSql = remainingSql.slice(result.index + result[0].length);
@@ -142,11 +123,7 @@ function paramsToArray(
  * Escapes the given identifier for use in an SQL query. Useful for preventing
  * SQL injection.
  */
-function escapeIdentifier(identifier: string): string {
-  // Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
-  // https://github.com/brianc/node-postgres/pull/396
-  // https://github.com/brianc/node-postgres/issues/1978
-  // https://www.postgresql.org/docs/current/sql-syntax-lexical.html
+export function escapeIdentifier(identifier: string): string {
   return pg.Client.prototype.escapeIdentifier(identifier);
 }
 
@@ -158,6 +135,33 @@ function assertSingleColumn(result: pg.QueryResult, context: Record<string, any>
     );
   }
   return result.fields[0].name;
+}
+
+/**
+ * Cancels the client's running query with `pg_cancel_backend`. This uses its own connection: a
+ * pool client could be unavailable until this or another canceled query finishes, and inside a
+ * transaction the pool's query functions reuse the busy client.
+ *
+ * A protocol-level CancelRequest wouldn't need a connection slot, but pg 8 sends one only through
+ * the untyped `Client#cancel`, which reads the deprecated `activeQuery`, reports no errors, and
+ * sends the request unencrypted even when the pool uses TLS. So if the server has no free
+ * connection, this cancel fails and the read runs until the query finishes.
+ */
+async function cancelBackend(options: pg.PoolConfig, client: pg.PoolClient) {
+  // pg sets processID on connect but doesn't type it.
+  if (!('processID' in client) || typeof client.processID !== 'number') {
+    throw new Error('Client has no backend process ID');
+  }
+  const canceler = new pg.Client(options);
+  // A socket error is also emitted as an event, which would crash the process without a listener.
+  // The pending connect or query rejects with it too, so it's handled there.
+  canceler.on('error', () => {});
+  await canceler.connect();
+  try {
+    await canceler.query('SELECT pg_cancel_backend($1)', [client.processID]);
+  } finally {
+    await canceler.end();
+  }
 }
 
 function enhanceError(err: Error, sql: string, params: QueryParams): Error {
@@ -652,8 +656,11 @@ export class PostgresPool {
     return result;
   }
 
-  async queryRows<Model extends AnyRowSchema>(sql: string, model: Model): Promise<z.infer<Model>[]>;
-  async queryRows<Model extends AnyRowSchema>(
+  async queryRows<Model extends z.core.$ZodType>(
+    sql: string,
+    model: Model,
+  ): Promise<z.infer<Model>[]>;
+  async queryRows<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -662,7 +669,7 @@ export class PostgresPool {
    * Executes a query with the specified parameters. Returns an array of rows
    * that conform to the given Zod schema.
    */
-  async queryRows<Model extends AnyRowSchema>(
+  async queryRows<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -673,8 +680,8 @@ export class PostgresPool {
     return z.array(model).parse(results.rows);
   }
 
-  async queryRow<Model extends AnyRowSchema>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async queryRow<Model extends AnyRowSchema>(
+  async queryRow<Model extends z.core.$ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async queryRow<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -682,7 +689,7 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Returns exactly one row that conforms to the given Zod schema.
    */
-  async queryRow<Model extends AnyRowSchema>(
+  async queryRow<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -690,14 +697,14 @@ export class PostgresPool {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     const results = await this.queryOneRowAsync(sql, params);
-    return model.parse(results.rows[0]);
+    return z.parse(model, results.rows[0]);
   }
 
-  async queryOptionalRow<Model extends AnyRowSchema>(
+  async queryOptionalRow<Model extends z.core.$ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async queryOptionalRow<Model extends AnyRowSchema>(
+  async queryOptionalRow<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -706,7 +713,7 @@ export class PostgresPool {
    * Executes a query with the specified parameters. Returns either null or a
    * single row that conforms to the given Zod schema, and errors otherwise.
    */
-  async queryOptionalRow<Model extends AnyRowSchema>(
+  async queryOptionalRow<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -717,11 +724,14 @@ export class PostgresPool {
     if (results.rows.length === 0) {
       return null;
     }
-    return model.parse(results.rows[0]);
+    return z.parse(model, results.rows[0]);
   }
 
-  async callRows<Model extends AnyRowSchema>(sql: string, model: Model): Promise<z.infer<Model>[]>;
-  async callRows<Model extends AnyRowSchema>(
+  async callRows<Model extends z.core.$ZodType>(
+    sql: string,
+    model: Model,
+  ): Promise<z.infer<Model>[]>;
+  async callRows<Model extends z.core.$ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -730,7 +740,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters.
    * Errors if the sproc does not return anything.
    */
-  async callRows<Model extends AnyRowSchema>(
+  async callRows<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -741,8 +751,8 @@ export class PostgresPool {
     return z.array(model).parse(results.rows);
   }
 
-  async callRow<Model extends AnyRowSchema>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async callRow<Model extends AnyRowSchema>(
+  async callRow<Model extends z.core.$ZodType>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async callRow<Model extends z.core.$ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -751,7 +761,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters.
    * Returns exactly one row from the sproc that conforms to the given Zod schema.
    */
-  async callRow<Model extends AnyRowSchema>(
+  async callRow<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -759,14 +769,14 @@ export class PostgresPool {
     const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     const results = await this.callOneRowAsync(sql, params);
-    return model.parse(results.rows[0]);
+    return z.parse(model, results.rows[0]);
   }
 
-  async callOptionalRow<Model extends AnyRowSchema>(
+  async callOptionalRow<Model extends z.core.$ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async callOptionalRow<Model extends AnyRowSchema>(
+  async callOptionalRow<Model extends z.core.$ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -775,7 +785,7 @@ export class PostgresPool {
    * Calls the given sproc with the specified parameters. Returns either null
    * or a single row that conforms to the given Zod schema.
    */
-  async callOptionalRow<Model extends AnyRowSchema>(
+  async callOptionalRow<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -786,14 +796,14 @@ export class PostgresPool {
     if (results.rows.length === 0) {
       return null;
     }
-    return model.parse(results.rows[0]);
+    return z.parse(model, results.rows[0]);
   }
 
-  async queryScalars<Model extends z.ZodTypeAny>(
+  async queryScalars<Model extends z.core.$ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model>[]>;
-  async queryScalars<Model extends z.ZodTypeAny>(
+  async queryScalars<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -802,7 +812,7 @@ export class PostgresPool {
    * Executes a query and returns all values from a single column, validated
    * against the given Zod schema. Errors if the query returns more than one column.
    */
-  async queryScalars<Model extends z.ZodTypeAny>(
+  async queryScalars<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -814,8 +824,11 @@ export class PostgresPool {
     return z.array(model).parse(results.rows.map((row) => row[columnName]));
   }
 
-  async queryScalar<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async queryScalar<Model extends z.ZodTypeAny>(
+  async queryScalar<Model extends z.core.$ZodType>(
+    sql: string,
+    model: Model,
+  ): Promise<z.infer<Model>>;
+  async queryScalar<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -825,7 +838,7 @@ export class PostgresPool {
    * against the given Zod schema. Errors if the query does not return exactly
    * one row or returns more than one column.
    */
-  async queryScalar<Model extends z.ZodTypeAny>(
+  async queryScalar<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -834,14 +847,14 @@ export class PostgresPool {
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     const results = await this.queryOneRowAsync(sql, params);
     const columnName = assertSingleColumn(results, { sql, sqlParams: params });
-    return model.parse(results.rows[0][columnName]);
+    return z.parse(model, results.rows[0][columnName]);
   }
 
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.core.$ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
@@ -851,7 +864,7 @@ export class PostgresPool {
    * if no rows are returned. Validated against the given Zod schema. Errors if
    * the query returns more than one row or more than one column.
    */
-  async queryOptionalScalar<Model extends z.ZodTypeAny>(
+  async queryOptionalScalar<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
     maybeModel?: Model,
@@ -863,14 +876,14 @@ export class PostgresPool {
     if (results.rows.length === 0) {
       return null;
     }
-    return model.parse(results.rows[0][columnName]);
+    return z.parse(model, results.rows[0][columnName]);
   }
 
-  async callScalars<Model extends z.ZodTypeAny>(
+  async callScalars<Model extends z.core.$ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model>[]>;
-  async callScalars<Model extends z.ZodTypeAny>(
+  async callScalars<Model extends z.core.$ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -879,7 +892,7 @@ export class PostgresPool {
    * Calls the given sproc and returns all values from a single column, validated
    * against the given Zod schema. Errors if the sproc returns more than one column.
    */
-  async callScalars<Model extends z.ZodTypeAny>(
+  async callScalars<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -891,8 +904,11 @@ export class PostgresPool {
     return z.array(model).parse(results.rows.map((row) => row[columnName]));
   }
 
-  async callScalar<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async callScalar<Model extends z.ZodTypeAny>(
+  async callScalar<Model extends z.core.$ZodType>(
+    sql: string,
+    model: Model,
+  ): Promise<z.infer<Model>>;
+  async callScalar<Model extends z.core.$ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -902,7 +918,7 @@ export class PostgresPool {
    * against the given Zod schema. Errors if the sproc does not return exactly
    * one row or returns more than one column.
    */
-  async callScalar<Model extends z.ZodTypeAny>(
+  async callScalar<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -911,14 +927,14 @@ export class PostgresPool {
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     const results = await this.callOneRowAsync(sql, params);
     const columnName = assertSingleColumn(results, { functionName: sql, sqlParams: params });
-    return model.parse(results.rows[0][columnName]);
+    return z.parse(model, results.rows[0][columnName]);
   }
 
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.core.$ZodType>(
     sql: string,
     model: Model,
   ): Promise<z.infer<Model> | null>;
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.core.$ZodType>(
     sql: string,
     params: any[],
     model: Model,
@@ -928,7 +944,7 @@ export class PostgresPool {
    * null if no rows are returned. Validated against the given Zod schema.
    * Errors if the sproc returns more than one row or more than one column.
    */
-  async callOptionalScalar<Model extends z.ZodTypeAny>(
+  async callOptionalScalar<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: any[] | Model,
     maybeModel?: Model,
@@ -940,7 +956,7 @@ export class PostgresPool {
     if (results.rows.length === 0) {
       return null;
     }
-    return model.parse(results.rows[0][columnName]);
+    return z.parse(model, results.rows[0][columnName]);
   }
 
   /**
@@ -981,15 +997,16 @@ export class PostgresPool {
     return client.query(new Cursor(processedSql, paramsArray));
   }
 
-  async queryCursor<Model extends AnyRowSchema>(
+  async queryCursor<Model extends z.core.$ZodType>(
     sql: string,
     model: Model,
   ): Promise<CursorIterator<z.infer<Model>>>;
 
-  async queryCursor<Model extends AnyRowSchema>(
+  async queryCursor<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
     model: Model,
+    options?: QueryCursorOptions,
   ): Promise<CursorIterator<z.infer<Model>>>;
 
   /**
@@ -997,23 +1014,33 @@ export class PostgresPool {
    * results of the query in batches, which is useful for large result sets.
    * Each row will be parsed by the given Zod schema.
    */
-  async queryCursor<Model extends AnyRowSchema>(
+  async queryCursor<Model extends z.core.$ZodType>(
     sql: string,
     paramsOrSchema: Model | QueryParams,
     maybeModel?: Model,
+    options: QueryCursorOptions = {},
   ): Promise<CursorIterator<z.infer<Model>>> {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
     const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
-    return this.queryCursorInternal(sql, params, model);
+    return this.queryCursorInternal(sql, params, model, options);
   }
 
-  private async queryCursorInternal<Model extends AnyRowSchema>(
+  private async queryCursorInternal<Model extends z.core.$ZodType>(
     sql: string,
     params: QueryParams,
-    model?: Model,
+    model: Model | undefined,
+    { signal }: QueryCursorOptions,
   ): Promise<CursorIterator<z.infer<Model>>> {
     const client = await this.getClientAsync();
     const cursor = await this.queryCursorWithClient(client, sql, params);
+
+    // Postgres ignores a cancel that arrives between reads, so this can run at any time. If the
+    // cancel fails, the read runs to completion instead.
+    let cancellation: Promise<void> | undefined;
+    const cancel = () => {
+      if (!this.pool) return;
+      cancellation = cancelBackend(this.pool.options, client).catch(() => {});
+    };
 
     let iterateCalled = false;
     const iterator: CursorIterator<z.infer<Model>> = {
@@ -1025,8 +1052,10 @@ export class PostgresPool {
         }
         iterateCalled = true;
 
+        signal?.addEventListener('abort', cancel);
         try {
           while (true) {
+            signal?.throwIfAborted();
             const rows = await cursor.read(batchSize);
             if (rows.length === 0) {
               break;
@@ -1039,42 +1068,30 @@ export class PostgresPool {
             }
           }
         } catch (err: any) {
+          if (signal?.aborted) throw signal.reason;
           throw enhanceError(err, sql, params);
         } finally {
+          signal?.removeEventListener('abort', cancel);
           try {
+            // After an error, pg-cursor's close() hangs unless it is called right away.
             await cursor.close();
           } finally {
+            // Wait until the backend is signaled so the cancel can't reach the client's next user.
+            await cancellation;
             client.release();
           }
         }
       },
       stream(batchSize: number) {
-        const transform = new Transform({
-          readableObjectMode: true,
-          writableObjectMode: true,
-          transform(chunk, _encoding, callback) {
-            for (const row of chunk) {
-              this.push(row);
+        return Readable.from(
+          (async function* () {
+            for await (const rows of iterator.iterate(batchSize)) {
+              for (const row of rows) {
+                yield row;
+              }
             }
-            callback();
-          },
-        });
-
-        // TODO: use native `node:stream#compose` once it's stable.
-        const generator = iterator.iterate(batchSize);
-        const pipe = multipipe(Readable.from(generator), transform);
-
-        // When the underlying stream is closed, we need to make sure that the
-        // cursor is also closed. We do this by calling `return()` on the generator,
-        // which will trigger its `finally` block, which will in turn release
-        // the client and close the cursor. The fact that the stream is already
-        // closed by this point means that someone reading from the stream will
-        // never actually see the `null` value that's returned.
-        pipe.once('close', () => {
-          generator.return(null);
-        });
-
-        return pipe;
+          })(),
+        );
       },
     };
     return iterator;

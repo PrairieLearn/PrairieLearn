@@ -34,3 +34,19 @@ def generate(data):
     data["correct_answers"]["ans7"] = f
     data["correct_answers"]["ans8"] = '"Ee"'
     data["correct_answers"]["ans9"] = "I'm\nsorry\nDave."
+
+
+def test(data):
+    # ans10 uses a regular-expression correct answer, so pl-string-input cannot
+    # generate its own test submissions. Provide them here instead.
+    name = "ans10"
+    result = data["test_type"]
+    if result == "correct":
+        data["raw_submitted_answers"][name] = "nitrogen"
+        data["partial_scores"][name] = {"score": 1, "weight": 1}
+    elif result == "incorrect":
+        data["raw_submitted_answers"][name] = "carbon"
+        data["partial_scores"][name] = {"score": 0, "weight": 1}
+    elif result == "invalid":
+        data["raw_submitted_answers"][name] = ""
+        data["format_errors"][name] = "invalid"

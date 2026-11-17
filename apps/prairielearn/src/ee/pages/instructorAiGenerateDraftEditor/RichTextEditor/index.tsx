@@ -1,5 +1,4 @@
-/* eslint perfectionist/sort-sets: error */
-
+// `oxlint.config.mts` keeps the sets in this file sorted; update it if this file moves.
 import { Blockquote } from '@tiptap/extension-blockquote';
 import { Bold } from '@tiptap/extension-bold';
 import { BulletList } from '@tiptap/extension-bullet-list';
@@ -130,7 +129,6 @@ const RichTextEditor = ({
     if (editor) {
       // Shut up linter. This is how we have to do this. `useEditor` doesn't react
       // to changes in the `editable` option after initialization.
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
       editor.setEditable(!isGenerating);
     }
   }, [editor, isGenerating]);

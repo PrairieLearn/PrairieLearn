@@ -1,5 +1,98 @@
 # @prairielearn/eslint-plugin
 
+## 4.4.3
+
+### Patch Changes
+
+- f5afff0: Align TypeScript ESLint dependencies with the types pulled in by the JSDoc plugin update to fix incompatible rule and rule tester types during builds.
+
+## 4.4.2
+
+### Patch Changes
+
+- 83590cf: Align TypeScript ESLint utilities and rule-testing dependencies on version 8.70.1.
+- c71261f: Upgrade all JavaScript dependencies
+
+## 4.4.1
+
+### Patch Changes
+
+- 8151381: Use the `@typescript/typescript6` compatibility package for compiler API access, keeping the TypeScript 6 API available alongside the TypeScript 7 build compiler.
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 4.4.0
+
+### Minor Changes
+
+- 452f675: Allow applications to configure explicit permission middleware names for the tRPC authorization rule.
+
+## 4.3.6
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
+## 4.3.5
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 4.3.4
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 4.3.3
+
+### Patch Changes
+
+- c0a8c3d: Remove stale modern access-control feature-gate examples from tRPC permission middleware docs and tests.
+
+## 4.3.2
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 4.3.1
+
+### Patch Changes
+
+- 0f10d5b: Recognize course/course-instance permission OR-combination middleware in the tRPC permission lint rule.
+
+## 4.3.0
+
+### Minor Changes
+
+- 9717de9: Add a new rule `@prairielearn/html-no-duplicate-id`. It's a variant of `@html-eslint/no-duplicate-id` that ignores tags whose names start with `pl-`, since the `id` attribute on PrairieLearn elements (e.g. `<pl-sketch-tool id="fd">`) is an element-scoped identifier consumed by the parent element, not a DOM id. It also ignores `id` values that contain mustache template parameters.
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 4.2.0
+
+### Minor Changes
+
+- f83d484: Add `require-trpc-permission-middleware` rule that flags any `t.procedure` chain missing a permission middleware (`requireCoursePermission*`, `requireCourseInstancePermission*`, or `requireAdministrator`). The rule is wired up automatically for files under `**/src/trpc/**/*.ts`.
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 4.1.0
+
+### Minor Changes
+
+- 240b216: Add a new rule `@prairielearn/no-hydrate-reslocals` that forbids passing `resLocals` or `locals` (or spreading `res.locals`, `resLocals`, or `locals`) onto a component rendered inside `<Hydrate>` or passed to `hydrateHtml(...)`. All props on a hydrated component are serialized and sent to the client, so these patterns would leak the full server-side locals.
+
+### Patch Changes
+
+- aaeb317: Expand the `no-current-target-in-callback` rule to also flag `event.currentTarget` accesses after `await` in React event handlers.
+- b6e03e9: Upgrade dependencies
+
 ## 4.0.0
 
 ### Major Changes

@@ -4,9 +4,19 @@
     "title": "Homework for file editor test",
     "set": "Homework",
     "number": "1",
-    "allowAccess": [
+    "accessControl": [
         {
-            "credit": 100
+            "dateControl": {
+                "release": {
+                    "date": "2000-01-01T00:00:00"
+                }
+            }
+        },
+        {
+            "uuid": "22222222-2222-4222-8222-222222222222",
+            "dateControl": {
+                "durationMinutes": 120
+            }
         }
     ],
     "zones": [

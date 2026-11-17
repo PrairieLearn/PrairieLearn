@@ -1,0 +1,567 @@
+import { createHash } from 'node:crypto';
+
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+
+import { HttpStatusError } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
+import { generateSignedToken, getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
+
+import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
+import {
+  COURSE_STAFF_CSV_MAX_BYTES,
+  parseCourseStaffCsv,
+  stringifyCourseStaffCsv,
+} from '../../lib/course-staff-csv.js';
+import { computeCourseStaffSyncPreview } from '../../lib/course-staff-sync.js';
+import {
+  type EnumCourseInstanceRole,
+  EnumCourseInstanceRoleSchema,
+  EnumCourseRoleSchema,
+} from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
+import {
+  type CourseInstanceAuthz,
+  selectCourseInstancesWithStaffAccess,
+} from '../../models/course-instances.js';
+import {
+  applyCourseStaffPermissions,
+  deleteCourseInstancePermissions,
+  deleteCoursePermissions,
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+  selectCoursePermissionForUser,
+  selectCourseUsers,
+  updateCoursePermissionsRole,
+  upsertCourseInstancePermissionsRole,
+} from '../../models/course-permissions.js';
+import { selectEnrollmentsForUsersInCourse } from '../../models/enrollment.js';
+
+import {
+  type createContext,
+  requireCoursePermissionOwn,
+  requireCoursePermissionPreviewOrCourseInstancePermissionView,
+  t,
+} from './init.js';
+
+export interface CourseStaffError {
+  List: never;
+  UpdateCourseRole: never;
+  DeleteUser: never;
+  UpdateInstanceRole: never;
+  InsertByUserUids: never;
+  BulkDelete: never;
+  BulkEditAccess: never;
+  Preview: never;
+  Export: never;
+  Sync: never;
+}
+
+const sql = loadSqlEquiv(import.meta.url);
+const MAX_UIDS = 100;
+
+type StaffAuthzData = Awaited<ReturnType<typeof createContext>>['authz_data'];
+
+const InsertableInstanceRoleSchema = z.enum(['Student Data Viewer', 'Student Data Editor']);
+
+function assertCanModifyUser(authzData: StaffAuthzData, userId: string, action: string) {
+  if (
+    idsEqual(userId, authzData.user.id) &&
+    !authzData.is_administrator &&
+    !authzData.is_institution_administrator
+  ) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: `Only administrators can ${action}`,
+    });
+  }
+  if (
+    idsEqual(userId, authzData.authn_user.id) &&
+    !authzData.is_administrator &&
+    !authzData.is_institution_administrator
+  ) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: `Only administrators can ${action} while emulating another user`,
+    });
+  }
+}
+
+async function getAccessibleInstances(ctx: Awaited<ReturnType<typeof createContext>>) {
+  return selectCourseInstancesWithStaffAccess({
+    course: ctx.course,
+    authzData: ctx.authz_data,
+  });
+}
+
+function assertInstanceAccessible(
+  accessibleInstances: CourseInstanceAuthz[],
+  courseInstanceId: string,
+) {
+  if (!accessibleInstances.some((ci) => idsEqual(ci.id, courseInstanceId))) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid requested course instance' });
+  }
+}
+
+async function upsertOrDeleteInstancePermission({
+  courseId,
+  userId,
+  courseInstanceId,
+  courseInstanceRole,
+  authnUserId,
+}: {
+  courseId: string;
+  userId: string;
+  courseInstanceId: string;
+  courseInstanceRole: EnumCourseInstanceRole;
+  authnUserId: string;
+}) {
+  if (courseInstanceRole === 'None') {
+    await deleteCourseInstancePermissions({
+      course_id: courseId,
+      user_id: userId,
+      course_instance_id: courseInstanceId,
+      authn_user_id: authnUserId,
+    });
+  } else {
+    await upsertCourseInstancePermissionsRole({
+      course_id: courseId,
+      user_id: userId,
+      course_instance_id: courseInstanceId,
+      course_instance_role: courseInstanceRole,
+      authn_user_id: authnUserId,
+    });
+  }
+}
+
+// --- Procedures ---
+
+const list = t.procedure
+  .use(requireCoursePermissionPreviewOrCourseInstancePermissionView)
+  .query(async ({ ctx }) => {
+    return (await selectCourseUsers({ course_id: ctx.course.id })).map((row) => ({
+      ...row,
+      user: StaffUserSchema.parse(row.user),
+    }));
+  });
+
+const updateCourseRole = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(
+    z.object({
+      userId: IdSchema,
+      courseRole: EnumCourseRoleSchema,
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    assertCanModifyUser(ctx.authz_data, input.userId, 'change their own course content access');
+    await updateCoursePermissionsRole({
+      course_id: ctx.course.id,
+      user_id: input.userId,
+      course_role: input.courseRole,
+      authn_user_id: ctx.authz_data.authn_user.id,
+    });
+  });
+
+const deleteUser = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(z.object({ userId: IdSchema }))
+  .mutation(async ({ input, ctx }) => {
+    assertCanModifyUser(ctx.authz_data, input.userId, 'remove themselves from the course staff');
+    await deleteCoursePermissions({
+      course_id: ctx.course.id,
+      user_id: input.userId,
+      authn_user_id: ctx.authz_data.authn_user.id,
+    });
+  });
+
+const updateInstanceRole = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(
+    z.object({
+      userId: IdSchema,
+      courseInstanceId: IdSchema,
+      courseInstanceRole: EnumCourseInstanceRoleSchema,
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const accessibleInstances = await getAccessibleInstances(ctx);
+    assertInstanceAccessible(accessibleInstances, input.courseInstanceId);
+
+    await upsertOrDeleteInstancePermission({
+      courseId: ctx.course.id,
+      userId: input.userId,
+      courseInstanceId: input.courseInstanceId,
+      courseInstanceRole: input.courseInstanceRole,
+      authnUserId: ctx.authz_data.authn_user.id,
+    });
+  });
+
+const insertByUserUids = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(
+    z.object({
+      uids: z.array(z.string()).min(1).max(MAX_UIDS),
+      courseRole: EnumCourseRoleSchema,
+      courseInstanceChanges: z
+        .array(
+          z.object({
+            courseInstanceId: IdSchema,
+            courseInstanceRole: InsertableInstanceRoleSchema,
+          }),
+        )
+        .optional(),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    let accessibleInstances: CourseInstanceAuthz[] = [];
+    if (input.courseInstanceChanges && input.courseInstanceChanges.length > 0) {
+      accessibleInstances = await getAccessibleInstances(ctx);
+      for (const change of input.courseInstanceChanges) {
+        assertInstanceAccessible(accessibleInstances, change.courseInstanceId);
+      }
+    }
+
+    const result: Record<
+      'givenCp' | 'notGivenCp' | 'notGivenCip' | 'unknownUsers' | 'errors',
+      string[]
+    > = {
+      givenCp: [],
+      notGivenCp: [],
+      notGivenCip: [],
+      unknownUsers: [],
+      errors: [],
+    };
+
+    for (const uid of input.uids) {
+      let user;
+      try {
+        user = await insertCoursePermissionsByUserUid({
+          course_id: ctx.course.id,
+          uid,
+          course_role: input.courseRole,
+          authn_user_id: ctx.authz_data.authn_user.id,
+        });
+      } catch (err: unknown) {
+        logger.verbose(`Failed to insert course permission for uid: ${uid}`, err);
+        result.notGivenCp.push(uid);
+        result.errors.push(
+          `Failed to give course content access to ${uid}\n(${err instanceof Error ? err.message : String(err)})`,
+        );
+        continue;
+      }
+
+      result.givenCp.push(uid);
+
+      if (user.name == null) {
+        result.unknownUsers.push(uid);
+      }
+
+      if (!input.courseInstanceChanges) continue;
+
+      for (const change of input.courseInstanceChanges) {
+        try {
+          await insertCourseInstancePermissions({
+            course_id: ctx.course.id,
+            user_id: user.id,
+            course_instance_id: change.courseInstanceId,
+            course_instance_role: change.courseInstanceRole,
+            authn_user_id: ctx.authz_data.authn_user.id,
+          });
+        } catch (err: unknown) {
+          logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
+          result.notGivenCip.push(uid);
+          result.errors.push(
+            `Failed to give student data access to ${uid}\n(${err instanceof Error ? err.message : String(err)})`,
+          );
+        }
+      }
+    }
+
+    return result;
+  });
+
+const bulkDelete = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(z.object({ userIds: z.array(IdSchema).min(1) }))
+  .mutation(async ({ input, ctx }) => {
+    for (const userId of input.userIds) {
+      assertCanModifyUser(ctx.authz_data, userId, 'remove themselves from the course staff');
+    }
+    await deleteCoursePermissions({
+      course_id: ctx.course.id,
+      user_id: input.userIds,
+      authn_user_id: ctx.authz_data.authn_user.id,
+    });
+  });
+
+const bulkEditAccess = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(
+    z.object({
+      userIds: z.array(IdSchema).min(1),
+      courseRole: EnumCourseRoleSchema.optional(),
+      courseInstanceChanges: z
+        .array(
+          z.object({
+            courseInstanceId: IdSchema,
+            courseInstanceRole: EnumCourseInstanceRoleSchema,
+          }),
+        )
+        .optional(),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    // Validate course instance changes upfront
+    let accessibleInstances: CourseInstanceAuthz[] = [];
+    if (input.courseInstanceChanges && input.courseInstanceChanges.length > 0) {
+      accessibleInstances = await getAccessibleInstances(ctx);
+      for (const change of input.courseInstanceChanges) {
+        assertInstanceAccessible(accessibleInstances, change.courseInstanceId);
+      }
+    }
+
+    await runInTransactionAsync(async () => {
+      // Apply course role changes
+      if (input.courseRole) {
+        for (const userId of input.userIds) {
+          assertCanModifyUser(ctx.authz_data, userId, 'change their own course content access');
+          await updateCoursePermissionsRole({
+            course_id: ctx.course.id,
+            user_id: userId,
+            course_role: input.courseRole,
+            authn_user_id: ctx.authz_data.authn_user.id,
+          });
+        }
+      }
+
+      // Apply course instance role changes
+      if (input.courseInstanceChanges) {
+        for (const change of input.courseInstanceChanges) {
+          for (const userId of input.userIds) {
+            await upsertOrDeleteInstancePermission({
+              courseId: ctx.course.id,
+              userId,
+              courseInstanceId: change.courseInstanceId,
+              courseInstanceRole: change.courseInstanceRole,
+              authnUserId: ctx.authz_data.authn_user.id,
+            });
+          }
+        }
+      }
+    });
+  });
+
+async function buildStaffSyncPreview(ctx: Awaited<ReturnType<typeof createContext>>, text: string) {
+  try {
+    const csv = await parseCourseStaffCsv(text);
+    const [courseInstances, staff] = await Promise.all([
+      getAccessibleInstances(ctx),
+      selectCourseUsers({ course_id: ctx.course.id }),
+    ]);
+    const result = computeCourseStaffSyncPreview({ csv, courseInstances, staff });
+    for (const row of result.rows) {
+      if (row.action === 'remove' && row.expected) {
+        assertCanModifyUser(
+          ctx.authz_data,
+          row.expected.userId,
+          'remove themselves from the course staff',
+        );
+      } else if (
+        row.action === 'update' &&
+        row.expected &&
+        row.previousCourseRole !== row.courseRole
+      ) {
+        assertCanModifyUser(
+          ctx.authz_data,
+          row.expected.userId,
+          'change their own course content access',
+        );
+      }
+    }
+    const removedUserIds = result.rows.flatMap((row) =>
+      row.action === 'remove' && row.expected ? [row.expected.userId] : [],
+    );
+    const enrollments =
+      removedUserIds.length > 0
+        ? await selectEnrollmentsForUsersInCourse({
+            courseId: ctx.course.id,
+            userIds: removedUserIds,
+          })
+        : [];
+    return {
+      ...result,
+      removalEnrollments: enrollments.map(({ enrollment, course_instance: courseInstance }) => ({
+        enrollmentId: enrollment.id,
+        userId: enrollment.user_id,
+        courseInstanceId: courseInstance.id,
+        shortName: courseInstance.short_name,
+        instanceDeleted: courseInstance.deleted_at !== null,
+        status: enrollment.status,
+      })),
+    };
+  } catch (error) {
+    if (error instanceof HttpStatusError) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+    }
+    throw error;
+  }
+}
+
+function hashStaffSyncData(value: unknown) {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
+const preview = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(z.object({ text: z.string().min(1).max(COURSE_STAFF_CSV_MAX_BYTES) }))
+  .mutation(async ({ input, ctx }) => {
+    const result = await buildStaffSyncPreview(ctx, input.text);
+    return {
+      ...result,
+      confirmationToken: generateSignedToken(
+        {
+          purpose: 'course-staff-sync',
+          courseId: ctx.course.id,
+          userId: ctx.authz_data.user.id,
+          authnUserId: ctx.authz_data.authn_user.id,
+          textHash: hashStaffSyncData(input.text),
+          stateHash: hashStaffSyncData(result),
+        },
+        config.secretKey,
+      ),
+    };
+  });
+
+const sync = t.procedure
+  .use(requireCoursePermissionOwn)
+  .input(
+    z.object({
+      text: z.string().min(1).max(COURSE_STAFF_CSV_MAX_BYTES),
+      confirmationToken: z.string().min(1),
+    }),
+  )
+  .mutation(async ({ input, ctx }) => {
+    const token = z
+      .object({
+        purpose: z.literal('course-staff-sync'),
+        courseId: IdSchema,
+        userId: IdSchema,
+        authnUserId: IdSchema,
+        textHash: z.string(),
+        stateHash: z.string(),
+      })
+      .safeParse(getCheckedSignedTokenData(input.confirmationToken, config.secretKey));
+    if (
+      !token.success ||
+      token.data.courseId !== ctx.course.id ||
+      token.data.userId !== ctx.authz_data.user.id ||
+      token.data.authnUserId !== ctx.authz_data.authn_user.id ||
+      token.data.textHash !== hashStaffSyncData(input.text)
+    ) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Generate a new preview before confirming this CSV.',
+      });
+    }
+    try {
+      return await runInTransactionAsync(async () => {
+        // A concurrent writer must not change reviewed permissions between comparison and commit.
+        await execute(sql.set_serializable_transaction);
+        // Recheck access in the write transaction, since middleware ran before it began.
+        if (!ctx.authz_data.is_administrator && !ctx.authz_data.is_institution_administrator) {
+          const role = await selectCoursePermissionForUser({
+            course_id: ctx.course.id,
+            user_id: ctx.authz_data.user.id,
+          });
+          if (role !== 'Owner') {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'Access denied (must be a course owner)',
+            });
+          }
+        }
+        const result = await buildStaffSyncPreview(ctx, input.text);
+        if (hashStaffSyncData(result) !== token.data.stateHash) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+              'Staff permissions or enrollments changed after the preview. Generate a new preview before applying changes.',
+          });
+        }
+        const updates = result.rows.flatMap((row) =>
+          row.action === 'add' || row.action === 'update'
+            ? [
+                {
+                  uid: row.uid,
+                  courseRole: row.courseRole,
+                  courseInstanceChanges: row.courseInstanceChanges,
+                },
+              ]
+            : [],
+        );
+        const removedUserIds = result.rows.flatMap((row) =>
+          row.action === 'remove' && row.expected ? [row.expected.userId] : [],
+        );
+        if (removedUserIds.length > 0) {
+          // Acquire deletion's enrollment barriers before other permission writes.
+          await deleteCoursePermissions({
+            course_id: ctx.course.id,
+            user_id: removedUserIds,
+            authn_user_id: ctx.authz_data.authn_user.id,
+          });
+        }
+        if (updates.length > 0) {
+          await applyCourseStaffPermissions({
+            courseId: ctx.course.id,
+            authnUserId: ctx.authz_data.authn_user.id,
+            updates,
+          });
+        }
+        return result.summary;
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === '40001' || error.code === '40P01')
+      ) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'Staff data changed while applying the CSV. Generate a new preview and try again.',
+          cause: error,
+        });
+      }
+      throw error;
+    }
+  });
+
+const exportCsv = t.procedure
+  .use(requireCoursePermissionPreviewOrCourseInstancePermissionView)
+  .query(async ({ ctx }) => {
+    const [courseInstances, staff] = await Promise.all([
+      getAccessibleInstances(ctx),
+      selectCourseUsers({ course_id: ctx.course.id }),
+    ]);
+    return {
+      filename: 'course-staff.csv',
+      text: await stringifyCourseStaffCsv({ courseInstances, staff }),
+    };
+  });
+
+export const courseStaffRouter = t.router({
+  list,
+  updateCourseRole,
+  deleteUser,
+  updateInstanceRole,
+  insertByUserUids,
+  bulkDelete,
+  bulkEditAccess,
+  preview,
+  sync,
+  export: exportCsv,
+});

@@ -1,5 +1,77 @@
 # @prairielearn/error
 
+## 3.1.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 3.1.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.1.0
+
+### Minor Changes
+
+- 452f675: Add a shared generator for error correlation IDs.
+
+## 3.0.13
+
+### Patch Changes
+
+- e2ed7cd: Apply additional eslint unicorn rules
+
+## 3.0.12
+
+### Patch Changes
+
+- 00945c2: Deprecate `formatErrorStackSafe` in favor of structured error logging.
+
+## 3.0.11
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.0.10
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.0.9
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.8
+
+### Patch Changes
+
+- f7c23f0: Add `cause` support to `HttpStatusError`, matching native `Error` constructor options.
+
+## 3.0.7
+
+### Patch Changes
+
+- 3927197: Update dependencies
+
+## 3.0.6
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 3.0.4
 
 ### Patch Changes

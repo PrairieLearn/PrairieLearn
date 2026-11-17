@@ -1,11 +1,13 @@
+import { pipeline } from 'node:stream/promises';
+
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { FileSchema } from '../../lib/db-types.js';
 import * as fileStore from '../../lib/file-store.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
@@ -20,7 +22,7 @@ router.get(
   studentAssessmentAccess,
   clientFingerprint,
   logPageView('studentAssessmentInstanceFile'),
-  asyncHandler(async (req, res, next) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     // Assert that the file belongs to this assessment, that the display
     // filename matches, and that the file is not deleted.
     const file = await queryOptionalRow(
@@ -43,7 +45,7 @@ router.get(
     // Ensure the response is interpreted as an "attachment" (file to be downloaded)
     // and not as a webpage.
     res.attachment(file.display_filename);
-    stream.on('error', next).pipe(res);
+    await pipeline(stream, res);
   }),
 );
 

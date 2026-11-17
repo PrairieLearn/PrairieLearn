@@ -1,5 +1,65 @@
 # @prairielearn/aws-imds
 
+## 3.1.3
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 3.1.2
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.1.1
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.1.0
+
+### Minor Changes
+
+- 0ae4ba8: Add utilities for detecting and waiting for EC2 Auto Scaling lifecycle transitions.
+
+## 3.0.8
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.0.7
+
+### Patch Changes
+
+- 8b5bed9: Replace node-fetch with native fetch
+
+## 3.0.6
+
+### Patch Changes
+
+- 288ff13: Update package metadata for Zod 4 compatibility. Zod is used only internally in these packages (their public APIs expose plain inferred types), so consumers are unaffected.
+
+## 3.0.5
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 3.0.2
 
 ### Patch Changes

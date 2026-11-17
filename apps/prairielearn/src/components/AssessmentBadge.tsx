@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { renderHtml } from '@prairielearn/react';
 
 import { type AssessmentUrlParts, getAssessmentUrl } from '../lib/client/url.js';
@@ -8,13 +10,20 @@ export function AssessmentBadge({
   urlPrefix,
   courseInstanceId,
   publicURL = false,
+  prefix,
 }: {
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
+  prefix?: ReactNode;
 } & AssessmentUrlParts) {
   if (hideLink) {
-    return <span className={`badge color-${assessment.color}`}>{assessment.label}</span>;
+    return (
+      <span className={`badge color-${assessment.color}`}>
+        {prefix}
+        {assessment.label}
+      </span>
+    );
   }
 
   const link = getAssessmentUrl(
@@ -34,6 +43,7 @@ export function AssessmentBadge({
 
   return (
     <a href={link} className={`btn btn-badge color-${assessment.color}`}>
+      {prefix}
       {assessment.label}
     </a>
   );

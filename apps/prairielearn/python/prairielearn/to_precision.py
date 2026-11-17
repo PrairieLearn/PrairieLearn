@@ -8,9 +8,7 @@ from prairielearn.to_precision import ...
 __author__ = "William Rusnack github.com/BebeSparkelSparkel linkedin.com/in/williamrusnack williamrusnack@gmail.com"
 
 import math
-from typing import Any, Literal
-
-from typing_extensions import assert_never
+from typing import Any, Literal, assert_never
 
 Notation = Literal["auto", "sci", "std", "standard", "eng", "engineering", "scientific"]
 

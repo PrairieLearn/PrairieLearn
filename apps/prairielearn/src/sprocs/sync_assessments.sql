@@ -95,7 +95,15 @@ BEGIN
     ),
     update_matched_dest_rows AS (
         UPDATE assessments AS dest
-        SET tid = src_tid, uuid = src_uuid, deleted_at = NULL
+        SET
+            tid = src_tid,
+            uuid = src_uuid,
+            deleted_at = NULL,
+            -- Statistics may have become stale while the assessment was deleted.
+            statistics_last_updated_at = CASE
+                WHEN dest.deleted_at IS NOT NULL THEN now() - interval '100 years'
+                ELSE dest.statistics_last_updated_at
+            END
         FROM matched_rows
         WHERE dest.id = dest_id AND dest.course_instance_id = syncing_course_instance_id
     ),
@@ -167,6 +175,7 @@ BEGIN
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
             honor_code = valid_assessment.data->>'honor_code',
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
+            show_question_titles = (valid_assessment.data->>'show_question_titles')::boolean,
             team_work = (valid_assessment.data->>'team_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
@@ -292,15 +301,13 @@ BEGIN
                     (access_rule->>'time_limit_min')::integer,
                     access_rule->>'password',
                     (access_rule->>'exam_uuid')::uuid,
-                    input_date(access_rule->>'start_date', ci.display_timezone),
-                    input_date(access_rule->>'end_date', ci.display_timezone),
+                    (access_rule->>'start_date')::timestamptz,
+                    (access_rule->>'end_date')::timestamptz,
                     (access_rule->>'show_closed_assessment')::boolean,
                     (access_rule->>'show_closed_assessment_score')::boolean,
                     (access_rule->>'active')::boolean,
                     (access_rule->'comment')
-                FROM
-                    assessments AS a
-                    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+                FROM assessments AS a
                 WHERE
                     a.id = new_assessment_id
             )
@@ -455,14 +462,15 @@ BEGIN
 
                     IF (assessment_question->>'question_id')::bigint IS NULL THEN
                         -- During local dev, if a shared question is not present we can insert dummy values
-                        -- into the questions table to enable sync success. This code should never
-                        -- be reached in production.
+                        -- into the questions table to enable sync success. The placeholder keeps the
+                        -- authored `@sharing_name/qid` reference so the assessment editor can preserve it.
+                        -- This code should never be reached in production.
                         IF check_sharing_on_sync THEN
                             RAISE EXCEPTION 'Question ID should not be null';
                         END IF;
 
                         INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
-                        VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
+                        VALUES (syncing_course_id, assessment_question->>'qid', null, null) RETURNING dest.id INTO new_question_id;
                     ELSE
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;

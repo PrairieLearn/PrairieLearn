@@ -74,14 +74,16 @@ export function PlanGrantsEditor({
           `;
         })}
       </ul>
-      ${disabled
-        ? ''
-        : html`
-            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-            <button type="submit" name="__action" value="update_plans" class="btn btn-primary">
-              Save
-            </button>
-          `}
+      ${
+        disabled
+          ? ''
+          : html`
+              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+              <button type="submit" name="__action" value="update_plans" class="btn btn-primary">
+                Save
+              </button>
+            `
+      }
     </form>
   `;
 }

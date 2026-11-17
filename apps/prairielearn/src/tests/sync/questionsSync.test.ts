@@ -1,20 +1,12 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import {
-  AuthorSchema,
-  QuestionAuthorSchema,
-  QuestionSchema,
-  QuestionTagSchema,
-  TagSchema,
-  TopicSchema,
-} from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
+import { QuestionSchema, QuestionTagSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { updateCourseSharingName } from '../../models/course.js';
+import { selectCourseById } from '../../models/course.js';
+import { updateQuestion } from '../../models/question.js';
 import {
   type QuestionJsonInput,
   type TagJsonInput,
@@ -51,28 +43,66 @@ async function findSyncedUndeletedQuestion(qid: string) {
   return syncedQuestion;
 }
 
-async function findAuthorInDatabase(author: {
-  name?: string;
-  email?: string;
-  orcid?: string;
-  originCourseId?: string;
-}) {
-  const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
-  return authors.find(
-    (a) =>
-      a.author_name === (author.name ?? null) &&
-      a.email === (author.email ?? null) &&
-      a.orcid === (author.orcid?.replaceAll('-', '') ?? null) &&
-      a.origin_course === (author.originCourseId ?? null),
-  );
-}
-
 describe('Question syncing', () => {
   beforeAll(helperDb.before);
 
   afterAll(helperDb.after);
 
   beforeEach(helperDb.resetDatabase);
+
+  describe('copiedFrom', () => {
+    it('resolves the correct source course, including a soft-deleted source', async () => {
+      const source = await util.createAndSyncCourseData();
+      const sourceCourse = await selectCourseById(source.syncResults.courseId);
+      const sourceQuestion = await findSyncedQuestion(util.QUESTION_ID);
+      await updateQuestion({ question_id: sourceQuestion.id, patch: { deleted_at: new Date() } });
+
+      const consumingData = util.getCourseData();
+      consumingData.courseInstances = {};
+      consumingData.questions = {
+        copy: {
+          ...source.courseData.questions[util.QUESTION_ID],
+          copiedFrom: `${sourceCourse.uuid}/${sourceQuestion.uuid}/cosmetic/qid`,
+        },
+      };
+      await util.writeAndSyncCourseData(consumingData);
+      const copiedQuestion = await findSyncedQuestion('copy');
+      assert.equal(copiedQuestion.copied_from, consumingData.questions.copy.copiedFrom);
+      assert.equal(copiedQuestion.copied_from_question_id, sourceQuestion.id);
+    });
+
+    it('preserves an unresolved reference and retries on the next consumer sync', async () => {
+      const sourceData = util.getCourseData();
+      const sourceInfo = sourceData.questions[util.QUESTION_ID];
+      sourceData.questions = {};
+      sourceData.courseInstances = {};
+      const source = await util.writeAndSyncCourseData(sourceData);
+      const sourceCourse = await selectCourseById(source.syncResults.courseId);
+      const consumingData = util.getCourseData();
+      consumingData.questions[util.QUESTION_ID].copiedFrom =
+        `${sourceCourse.uuid}/${sourceInfo.uuid}`;
+      const consumer = await withConfig({ checkSharingOnSync: true }, () =>
+        util.writeAndSyncCourseData(consumingData),
+      );
+      const copiedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+      assert.equal(
+        copiedQuestion.copied_from,
+        consumingData.questions[util.QUESTION_ID].copiedFrom,
+      );
+      assert.isNull(copiedQuestion.copied_from_question_id);
+      assert.isEmpty(copiedQuestion.sync_warnings);
+
+      assert(consumer.syncResults.status === 'complete');
+      assert.isEmpty(consumer.syncResults.courseData.questions[util.QUESTION_ID].warnings);
+
+      sourceData.questions.origin = sourceInfo;
+      await util.overwriteAndSyncCourseData(sourceData, source.courseDir);
+      await util.syncCourseData(consumer.courseDir);
+      const sourceQuestion = await findSyncedQuestion('origin');
+      const resolvedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+      assert.equal(resolvedQuestion.copied_from_question_id, sourceQuestion.id);
+    });
+  });
 
   it('allows nesting of questions in subfolders', async () => {
     const courseData = util.getCourseData();
@@ -286,244 +316,57 @@ describe('Question syncing', () => {
     assert.ok(syncedQuestionTag);
   });
 
-  it('syncs authors', async () => {
-    const courseData = util.getCourseData();
-    const newAuthor = {
-      name: 'Example',
-      email: 'example@example.org',
-      orcid: '0000-0000-0000-0001',
-    };
-
-    if (!courseData.questions[util.QUESTION_ID].authors) {
-      courseData.questions[util.QUESTION_ID].authors = [];
-    }
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
-
-    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.ok(originalSyncedQuestion);
-
-    // Check that the author was added to the authors table
-    const author = await findAuthorInDatabase({
-      name: newAuthor.name,
-      email: newAuthor.email,
-      orcid: newAuthor.orcid,
-    });
-    assert.ok(author);
-
-    // Check that the question-author relationship was created
-    const questionAuthors = await util.dumpTableWithSchema(
-      'question_authors',
-      QuestionAuthorSchema,
-    );
-    const questionAuthor = questionAuthors.find(
-      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author.id,
-    );
-    assert.ok(questionAuthor);
-  });
-
-  it('syncs authors with origin course', async () => {
-    await features.enable('question-sharing');
-    const sharingCourseData = util.getCourseData();
-    sharingCourseData.questions = {}; // To prevent duplicate QIDs
-    const sharingCourseSync = await util.writeAndSyncCourseData(sharingCourseData);
-    await updateCourseSharingName({
-      course_id: sharingCourseSync.syncResults.courseId,
-      sharing_name: 'SHARING 101',
-    });
-
-    const consumingCourseData = util.getCourseData();
-    consumingCourseData.course.name = 'CONSUMING 101';
-
-    const newAuthor = {
-      name: 'Example',
-      email: 'example@example.org',
-      orcid: '0000-0000-0000-0001',
-    };
-    const newAuthorWithOriginCourse = {
-      originCourse: 'SHARING 101',
-    };
-
-    if (!consumingCourseData.questions[util.QUESTION_ID].authors) {
-      consumingCourseData.questions[util.QUESTION_ID].authors = [];
-    }
-    consumingCourseData.questions[util.QUESTION_ID].authors.push(
-      newAuthor,
-      newAuthorWithOriginCourse,
-    );
-
-    await util.writeAndSyncCourseData(consumingCourseData);
-
-    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.ok(originalSyncedQuestion);
-    assert.isNull(originalSyncedQuestion.sync_errors);
-
-    // Check that the author was added to the authors table
-    const author1 = await findAuthorInDatabase({
-      name: newAuthor.name,
-      email: newAuthor.email,
-      orcid: newAuthor.orcid,
-    });
-    const author2 = await findAuthorInDatabase({
-      originCourseId: sharingCourseSync.syncResults.courseId,
-    });
-    assert.ok(author1);
-    assert.ok(author2);
-    assert.notDeepEqual(author1, author2);
-
-    // Check that the question-author relationship was created
-    const questionAuthors = await util.dumpTableWithSchema(
-      'question_authors',
-      QuestionAuthorSchema,
-    );
-
-    const questionAuthor1 = questionAuthors.find(
-      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author1.id,
-    );
-    const questionAuthor2 = questionAuthors.find(
-      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author2.id,
-    );
-    assert.ok(questionAuthor1);
-    assert.ok(questionAuthor2);
-  });
-
-  it('records an error if "authors" object is invalid', async () => {
-    const courseData = util.getCourseData();
-    const invalidAuthorTests = [
-      {
-        author: {
-          name: 'Example',
-        },
-        expectedError:
-          /At least one of "email", "orcid", or "originCourse" is required for each author/,
-      },
-      {
-        author: {
-          orcid: '1111-1111-1111-1111',
-        },
-        expectedError: /The author ORCID identifier "1111-1111-1111-1111" has an invalid checksum/,
-      },
-      {
-        author: {
-          email: 'noemail',
-        },
-        expectedError: /The author email address "noemail" is invalid/,
-      },
-      {
-        author: {
-          originCourse: 'NONEXISTENT',
-        },
-        expectedError:
-          /The author origin course with the sharing name "NONEXISTENT" does not exist/,
-      },
-    ];
-
-    for (const testCase of invalidAuthorTests) {
-      await helperDb.resetDatabase();
-      courseData.questions[util.QUESTION_ID].authors = [];
-      courseData.questions[util.QUESTION_ID].authors.push(testCase.author);
-      const courseDir = await util.writeCourseToTempDirectory(courseData);
+  describe('UID authors', () => {
+    it('stores UID and ORCID order and preserves authors on unchanged re-sync', async () => {
+      const data = util.getCourseData();
+      data.questions[util.QUESTION_ID].authors = [
+        ' second-author ',
+        'https://orcid.org/0000-0002-1825-0097',
+        'first-author',
+        'second-author',
+      ];
+      const { courseDir } = await util.writeAndSyncCourseData(data);
+      assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
+        'second-author',
+        'https://orcid.org/0000-0002-1825-0097',
+        'first-author',
+      ]);
       await util.syncCourseData(courseDir);
-      const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
-      const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
-      assert.isDefined(syncedQuestion);
-      assert.isNotNull(syncedQuestion.sync_errors);
-      assert.match(syncedQuestion.sync_errors, testCase.expectedError);
-    }
-  });
-
-  it('syncs authors removed from questions', async () => {
-    const courseData = util.getCourseData();
-    const newAuthor = {
-      name: 'Example',
-      email: 'example@example.org',
-      orcid: '0000-0000-0000-0001',
-    };
-
-    if (!courseData.questions[util.QUESTION_ID].authors) {
-      courseData.questions[util.QUESTION_ID].authors = [];
-    }
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
-
-    // Now remove the author
-    courseData.questions[util.QUESTION_ID].authors = [];
-    await util.overwriteAndSyncCourseData(courseData, courseDir);
-
-    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.isOk(originalSyncedQuestion);
-
-    // Check that the question-author relationship was removed
-    const questionAuthors = await util.dumpTableWithSchema(
-      'question_authors',
-      QuestionAuthorSchema,
-    );
-    const questionAuthor = questionAuthors.find(
-      (qa) => qa.question_id === originalSyncedQuestion.id,
-    );
-    assert.isUndefined(questionAuthor);
-  });
-
-  it('syncs authors that are shared between questions', async () => {
-    const courseData = util.getCourseData();
-    const newAuthor = {
-      name: 'Example',
-      email: 'example@example.org',
-      orcid: '0000-0000-0000-0001',
-    };
-
-    // Add author to first question
-    if (!courseData.questions[util.QUESTION_ID].authors) {
-      courseData.questions[util.QUESTION_ID].authors = [];
-    }
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
-
-    // Add same author to second question
-    if (!courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors) {
-      courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors = [];
-    }
-    courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors.push(newAuthor);
-
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
-
-    const author = await findAuthorInDatabase({
-      name: newAuthor.name,
-      email: newAuthor.email,
-      orcid: newAuthor.orcid,
+      assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, [
+        'second-author',
+        'https://orcid.org/0000-0002-1825-0097',
+        'first-author',
+      ]);
     });
-    assert.isOk(author);
-    // Check that only one author record was created
-    const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
-    assert.equal(
-      authors.filter(
-        (a) =>
-          a.author_name === newAuthor.name &&
-          a.email === newAuthor.email &&
-          a.orcid === newAuthor.orcid.replaceAll('-', ''),
-      ).length,
-      1,
-    );
 
-    // Check that both questions have the author relationship
-    const questionAuthors = await util.dumpTableWithSchema(
-      'question_authors',
-      QuestionAuthorSchema,
-    );
-    const question1 = await findSyncedQuestion(util.QUESTION_ID);
-    const question2 = await findSyncedQuestion(util.ALTERNATIVE_QUESTION_ID);
-    assert.isOk(question1);
-    assert.isOk(question2);
-    const question1Author = questionAuthors.find(
-      (qa) => qa.author_id === author.id && qa.question_id === question1.id,
-    );
-    const question2Author = questionAuthors.find(
-      (qa) => qa.author_id === author.id && qa.question_id === question2.id,
-    );
-    assert.isOk(question1Author);
-    assert.isOk(question2Author);
+    it('rejects legacy author objects without replacing synced authors', async () => {
+      const data = util.getCourseData();
+      data.questions[util.QUESTION_ID].authors = ['existing-author'];
+      const { courseDir } = await util.writeAndSyncCourseData(data);
+      const legacyAuthors = [{ email: 'legacy@example.org', orcid: '0000-0002-1825-0097' }];
+      // @ts-expect-error -- legacy author objects are no longer supported.
+      data.questions[util.QUESTION_ID].authors = legacyAuthors;
+      await util.overwriteAndSyncCourseData(data, courseDir);
+      const question = await findSyncedQuestion(util.QUESTION_ID);
+      assert.include(question.sync_errors, 'authors');
+      assert.deepEqual(question.authors, ['existing-author']);
+      const info = await fs.readJSON(
+        path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'),
+      );
+      assert.deepEqual(info.authors, legacyAuthors);
+    });
+
+    it('replaces authors and clears them when omitted', async () => {
+      const data = util.getCourseData();
+      data.questions[util.QUESTION_ID].authors = ['original'];
+      const { courseDir } = await util.writeAndSyncCourseData(data);
+      data.questions[util.QUESTION_ID].authors = ['renamed'];
+      await util.overwriteAndSyncCourseData(data, courseDir);
+      assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, ['renamed']);
+      delete data.questions[util.QUESTION_ID].authors;
+      await util.overwriteAndSyncCourseData(data, courseDir);
+      assert.deepEqual((await findSyncedQuestion(util.QUESTION_ID)).authors, []);
+    });
   });
 
   it('records an error if "options" object is invalid', async () => {
@@ -558,7 +401,7 @@ describe('Question syncing', () => {
 
   it('records a warning if same UUID is used in multiple questions', async () => {
     const courseData = util.getCourseData();
-    courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
+    courseData.questions[util.ALTERNATIVE_QUESTION_ID] = courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
@@ -569,13 +412,15 @@ describe('Question syncing', () => {
       firstSyncedQuestion.sync_warnings,
       /UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: test2/,
     );
-    const secondSyncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    const secondSyncedQuestion = syncedQuestions.find(
+      (q) => q.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
     assert.isDefined(secondSyncedQuestion);
     assert.isNotNull(secondSyncedQuestion.sync_warnings);
     assert.match(
       secondSyncedQuestion.sync_warnings,
       new RegExp(
-        `UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}`,
+        `UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}\\b`,
       ),
     );
   });
@@ -908,7 +753,7 @@ describe('Question syncing', () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
         ...courseData.questions[util.PREFERENCES_QUESTION_ID].preferences,
-        badField: { type: 'invalid' as any, default: 'hello' as any },
+        badField: { type: 'invalid' as any, default: 'hello' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -920,7 +765,7 @@ describe('Question syncing', () => {
     it('fails with an error when a string default is given for a number type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badNum: { type: 'number', default: 'not-a-number' as any },
+        badNum: { type: 'number', default: 'not-a-number' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -932,7 +777,7 @@ describe('Question syncing', () => {
     it('fails with an error when a number default is given for a string type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badStr: { type: 'string', default: 42 as any },
+        badStr: { type: 'string', default: 42 },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -944,7 +789,7 @@ describe('Question syncing', () => {
     it('fails with an error when a string default is given for a boolean type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badBool: { type: 'boolean', default: 'yes' as any },
+        badBool: { type: 'boolean', default: 'yes' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -981,7 +826,7 @@ describe('Question syncing', () => {
     it('fails with an error when number enum values are given for a string type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badEnumType: { type: 'string', enum: [1, 2] as any, default: 'a' },
+        badEnumType: { type: 'string', enum: [1, 2], default: 'a' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -993,7 +838,7 @@ describe('Question syncing', () => {
     it('fails with an error when string enum values are given for a number type', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        badEnumType: { type: 'number', enum: ['a', 'b'] as any, default: 1 },
+        badEnumType: { type: 'number', enum: ['a', 'b'], default: 1 },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
@@ -1029,7 +874,7 @@ describe('Question syncing', () => {
     it('reports multiple errors for multiple invalid preference fields', async () => {
       const courseData = util.getCourseData();
       courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
-        bad1: { type: 'number', default: 'wrong' as any },
+        bad1: { type: 'number', default: 'wrong' },
         bad2: { type: 'string', enum: ['a'], default: 'b' },
       };
       const courseDir = await util.writeCourseToTempDirectory(courseData);

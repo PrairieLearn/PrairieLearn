@@ -16,6 +16,8 @@ export function getPopoverTriggerForContainer(container: HTMLElement): HTMLEleme
   const popoverId = container.getAttribute('id');
   if (!popoverId) return null;
 
-  const popoverTrigger = document.querySelector<HTMLElement>(`[aria-describedby="${popoverId}"]`);
+  const popoverTrigger = document.querySelector<HTMLElement>(
+    `[aria-describedby="${CSS.escape(popoverId)}"]`,
+  );
   return popoverTrigger;
 }

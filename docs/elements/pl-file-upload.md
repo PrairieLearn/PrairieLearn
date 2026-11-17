@@ -1,7 +1,6 @@
 # `pl-file-upload` element
 
-Provides a way to accept file uploads as part of an answer. They will be stored
-in the format expected by externally graded questions.
+Provides a way to accept file uploads as part of an answer. They will be stored in the format expected by externally graded questions.
 
 !!! note
 
@@ -37,7 +36,8 @@ The `file-patterns` and `optional-file-patterns` attributes support a number of 
 - The `*` placeholder allows an arbitrary number of wildcard characters. For example, `*.txt`
   allows files like "solution.txt", "my_file.txt", and also ".txt".
 - The `[seq]` placeholder allows a single character from the set of options listed inside the square
-  brackets. For example, `file_[abc].txt` allows "file_a.txt", "file_b.txt" and "file_c.txt", but not
+  brackets. For example, `file_[abc].txt` allows "file_a.txt", "file_b.txt" and "file_c.txt" (as well
+  as their uppercase equivalents like "file_A.txt", since matching is case-insensitive), but not
   "file_x.txt".
 - The `[seq]` placeholder also supports ranges like "a-z" or "0-9". For example, `file[0-9].txt`
   allows "file5.txt", but not "filex.txt". Ranges can also be combined. For example,`file[0-9a-z].txt` allows a single alphanumeric
@@ -47,13 +47,17 @@ The `file-patterns` and `optional-file-patterns` attributes support a number of 
 
     `file-patterns` and `optional-file-patterns` accepts [fnmatch](https://docs.python.org/3/library/fnmatch.html) file globs, not regular expressions. Brace expansion (`{foo,bar}.txt`) is not currently supported.
 
+!!! note
+
+    Pattern matching is case-insensitive, so a pattern like `file[0-9a-z].txt` also matches uppercase characters (e.g. "fileX.txt"). Files matched by a pattern keep the case of the uploaded file name.
+
 | File pattern       | Allowed :white_check_mark:                        | Disallowed :x:                   |
 | ------------------ | ------------------------------------------------- | -------------------------------- |
 | `solution?.txt`    | `solution1.txt`, `solution2.txt`, `solutionA.txt` | `solution10.txt`, `solution.txt` |
 | `*.txt`            | `solution.txt`, `my_file.txt`, `.txt`             | `solution.py`, `my_file`         |
 | `file_[abc].txt`   | `file_a.txt`, `file_b.txt`, `file_c.txt`          | `file_x.txt`, `file_ab.txt`      |
 | `file[0-9].txt`    | `file5.txt`, `file0.txt`, `file9.txt`             | `filex.txt`, `file10.txt`        |
-| `file[0-9a-z].txt` | `file5.txt`, `filex.txt`, `file0.txt`             | `fileX.txt`, `file10.txt`        |
+| `file[0-9a-z].txt` | `file5.txt`, `filex.txt`, `fileX.txt`             | `file10.txt`, `file_.txt`        |
 | `[!_]*.py`         | `solution.py`, `my_file.py`                       | `_foo.py`, `file.txt`            |
 
 If file names or patterns overlap, uploaded files are first used to fill the required file names in `file-names`. Next, files that match a required pattern in `file-patterns` are used to fill that pattern. Any remaining uploaded files are accepted if they match either a name in `optional-file-names` or a pattern in `optional-file-patterns`.
@@ -68,6 +72,8 @@ Required files (`file-names` or `file-patterns`) and optional files (`optional-f
 
 The `pl-file-upload` element and the contents of the uploaded file(s) are only displayed by default in the question panel. If the contents are expected to be listed in the submission panel, they should be explicitly added using other elements such as [`pl-file-preview`](pl-file-preview.md) or [`pl-xss-safe`](pl-xss-safe.md).
 
+AI grading supports text and source-code files (including `.py`, `.cpp`, `.java`, and `.txt`) as well as PDF, JPEG, PNG, and WebP files submitted with `pl-file-upload`. Text is decoded from UTF-8 (with or without a byte-order mark) or UTF-16 (with a byte-order mark) and sent with its filename. Other binary formats cause an explicit AI grading error; they can still be used with manual or external grading. Questions can combine `pl-file-upload` with other supported elements such as [`pl-file-editor`](pl-file-editor.md) and [`pl-image-capture`](pl-image-capture.md); each distinct submitted file is sent to the model once. See [supported file formats](../aiGrading/index.md#submitted-file-formats) for encoding details and limitations.
+
 ## Example implementations
 
 - [demo/autograder/codeUpload]
@@ -79,6 +85,7 @@ The `pl-file-upload` element and the contents of the uploaded file(s) are only d
 - [`pl-external-grader-results` to include output from autograded code](pl-external-grader-results.md)
 - [`pl-code` to display blocks of code with syntax highlighting](pl-code.md)
 - [`pl-string-input` for receiving a single string value](pl-string-input.md)
+- [AI grading for file submissions](../aiGrading/index.md)
 
 ---
 

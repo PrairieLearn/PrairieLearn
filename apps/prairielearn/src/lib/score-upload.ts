@@ -1,5 +1,4 @@
 import { isPlainObject } from 'es-toolkit';
-import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -15,6 +14,13 @@ import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/** The subset of an uploaded file that the CSV upload functions need. */
+export interface UploadedCsvFile {
+  buffer: Buffer;
+  originalname: string;
+  size: number;
+}
+
 /**
  * Update question instance scores from a CSV file.
  *
@@ -27,7 +33,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  */
 export async function uploadInstanceQuestionScores(
   assessment: Assessment,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -57,20 +63,17 @@ export async function uploadInstanceQuestionScores(
     let skippedCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvParser = createCsvParser(
-      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
-      {
-        integerColumns: ['instance'],
-        floatColumns: [
-          'score_perc',
-          'points',
-          'manual_score_perc',
-          'manual_points',
-          'auto_score_perc',
-          'auto_points',
-        ],
-      },
-    );
+    const csvParser = createCsvParser(csvFile.buffer, {
+      integerColumns: ['instance'],
+      floatColumns: [
+        'score_perc',
+        'points',
+        'manual_score_perc',
+        'manual_points',
+        'auto_score_perc',
+        'auto_points',
+      ],
+    });
 
     for await (const { info, record } of csvParser) {
       try {
@@ -117,7 +120,7 @@ export async function uploadInstanceQuestionScores(
  */
 export async function uploadAssessmentInstanceScores(
   assessment_id: string,
-  csvFile: Express.Multer.File | null | undefined,
+  csvFile: UploadedCsvFile | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -144,10 +147,10 @@ export async function uploadAssessmentInstanceScores(
     let errorCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvParser = createCsvParser(
-      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
-      { integerColumns: ['instance'], floatColumns: ['score_perc', 'points'] },
-    );
+    const csvParser = createCsvParser(csvFile.buffer, {
+      integerColumns: ['instance'],
+      floatColumns: ['score_perc', 'points'],
+    });
 
     for await (const { info, record } of csvParser) {
       job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);

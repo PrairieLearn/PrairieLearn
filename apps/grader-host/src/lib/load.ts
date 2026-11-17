@@ -41,10 +41,6 @@ export function endJob() {
   if (currentJobs < 0) throw new Error('endJob(): currentJobs < 0');
 }
 
-export function getCurrentJobs() {
-  return currentJobs;
-}
-
 function _getAndResetLoadEstimate() {
   _addIntegratedLoad();
   const nowMS = Date.now();

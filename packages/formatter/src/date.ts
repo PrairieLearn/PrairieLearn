@@ -1,10 +1,27 @@
 import { Temporal, toTemporalInstant } from '@js-temporal/polyfill';
 import { keyBy } from 'es-toolkit';
+import { LRUCache } from 'lru-cache';
 
 type TimePrecision = 'hour' | 'minute' | 'second';
 
+// Native formatters retain substantial memory, so bound reuse across time zones and formats.
+const dateTimeFormatters = new LRUCache<string, Intl.DateTimeFormat>({ max: 1024 });
+
+function getDateTimeFormatter(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const key = JSON.stringify([locale, options]);
+  let formatter = dateTimeFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    dateTimeFormatters.set(key, formatter);
+  }
+  return formatter;
+}
+
 /**
- * Format a date to a human-readable string like '2020-03-27T12:34:56 (CDT)'.
+ * Format a date to a human-readable string like '2020-03-27 12:34:56 (CDT)'.
  *
  * @param date The date to format.
  * @param timeZone The time zone to use for formatting.
@@ -39,13 +56,98 @@ export function formatDate(
     fractionalSecondDigits: includeMs ? 3 : undefined,
     timeZoneName: longTz ? 'long' : 'short',
   };
-  const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
+  const parts = keyBy(getDateTimeFormatter('en-US', options).formatToParts(date), (x) => x.type);
   let dateFormatted = `${parts.year.value}-${parts.month.value}-${parts.day.value} ${parts.hour.value}:${parts.minute.value}:${parts.second.value}`;
   if (includeMs) {
     dateFormatted = `${dateFormatted}.${parts.fractionalSecond.value}`;
   }
   if (includeTz) {
     dateFormatted = `${dateFormatted} (${parts.timeZoneName.value})`;
+  }
+  return dateFormatted;
+}
+
+/**
+ * Format a date in ISO8601 format, like '2020-03-27T12:34:56-05:00'.
+ *
+ * @param date The date to format.
+ * @param timeZone The time zone to use for formatting.
+ * @param options
+ * @param options.includeMs Whether to include milliseconds in the output (default false).
+ * @param options.includeTz Whether to include the time zone in the output (default true).
+ * @returns ISO-formatted string representing the date.
+ */
+export function formatDateISO(
+  date: Date | Temporal.PlainDateTime,
+  timeZone: string,
+  options?: { includeTz?: boolean; includeMs?: boolean },
+): string;
+/**
+ * Format a date in ISO8601 format, like '2020-03-27T12:34:56-05:00'.
+ *
+ * @param date The date to format.
+ * @param timeZone The time zone to use for formatting.
+ * @param options
+ * @param options.includeMs Whether to include milliseconds in the output (default false).
+ * @param options.includeTz Whether to include the time zone in the output (default true).
+ * @returns ISO-formatted string representing the date. If date is null, returns null.
+ */
+export function formatDateISO(
+  date: null,
+  timeZone: string,
+  options?: { includeTz?: boolean; includeMs?: boolean },
+): null;
+/**
+ * Format a date in ISO8601 format, like '2020-03-27T12:34:56-05:00'.
+ *
+ * @param date The date to format.
+ * @param timeZone The time zone to use for formatting.
+ * @param options
+ * @param options.includeMs Whether to include milliseconds in the output (default false).
+ * @param options.includeTz Whether to include the time zone in the output (default true).
+ * @returns ISO-formatted string representing the date. If date is null, returns null.
+ */
+export function formatDateISO(
+  date: Date | Temporal.PlainDateTime | null,
+  timeZone: string,
+  options?: { includeTz?: boolean; includeMs?: boolean },
+): string | null;
+export function formatDateISO(
+  date: Date | Temporal.PlainDateTime | null,
+  timeZone: string,
+  { includeTz = true, includeMs = false }: { includeTz?: boolean; includeMs?: boolean } = {},
+): string | null {
+  if (date == null) return null;
+
+  if (date instanceof Temporal.PlainDateTime) {
+    date = new Date(date.toZonedDateTime(timeZone).epochMilliseconds);
+  }
+
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    fractionalSecondDigits: includeMs ? 3 : undefined,
+    timeZoneName: 'longOffset',
+  };
+  const parts = keyBy(getDateTimeFormatter('en-US', options).formatToParts(date), (x) => x.type);
+  let dateFormatted = `${parts.year.value}-${parts.month.value}-${parts.day.value}T${parts.hour.value}:${parts.minute.value}:${parts.second.value}`;
+  if (includeMs) {
+    dateFormatted = `${dateFormatted}.${parts.fractionalSecond.value}`;
+  }
+  if (includeTz) {
+    // the timeZoneName part in longOffset format is like "GMT-05:00", so we
+    // need to remove the "GMT" part to get the ISO8601 format. If the time zone
+    // is GMT, the timeZoneName part will be "GMT" and we want to replace it
+    // with "+00:00". This format is consistently applied for 'en-US' locale
+    // (tested with Node 24 for all supported time zones).
+    const timeZoneOffset = parts.timeZoneName.value.replace('GMT', '') || '+00:00';
+    dateFormatted = `${dateFormatted}${timeZoneOffset}`;
   }
   return dateFormatted;
 }
@@ -65,7 +167,7 @@ export function formatDateYMD(date: Date, timeZone: string): string {
     month: '2-digit',
     day: '2-digit',
   };
-  const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
+  const parts = keyBy(getDateTimeFormatter('en-US', options).formatToParts(date), (x) => x.type);
   return `${parts.year.value}-${parts.month.value}-${parts.day.value}`;
 }
 
@@ -86,7 +188,7 @@ export function formatDateYMDHM(date: Date, timeZone: string): string {
     hour: '2-digit',
     minute: '2-digit',
   };
-  const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
+  const parts = keyBy(getDateTimeFormatter('en-US', options).formatToParts(date), (x) => x.type);
   return `${parts.year.value}-${parts.month.value}-${parts.day.value} ${parts.hour.value}:${parts.minute.value}`;
 }
 
@@ -98,7 +200,7 @@ export function formatDateYMDHM(date: Date, timeZone: string): string {
  */
 export function formatTz(timeZone: string): string {
   const date = new Date();
-  const parts = new Intl.DateTimeFormat('en-US', {
+  const parts = getDateTimeFormatter('en-US', {
     timeZone,
     timeZoneName: 'short',
   }).formatToParts(date);
@@ -128,7 +230,7 @@ export function formatDateHMS(
     second: '2-digit',
     timeZoneName: 'short',
   };
-  const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
+  const parts = keyBy(getDateTimeFormatter('en-US', options).formatToParts(date), (x) => x.type);
   let dateFormatted = `${parts.hour.value}:${parts.minute.value}:${parts.second.value}`;
   if (includeTz) {
     dateFormatted = `${dateFormatted} (${parts.timeZoneName.value})`;
@@ -163,15 +265,15 @@ export function formatDateWithinRange(
     timeZoneName: 'short',
   };
   const dateParts = keyBy(
-    new Intl.DateTimeFormat('en-US', options).formatToParts(date),
+    getDateTimeFormatter('en-US', options).formatToParts(date),
     (x) => x.type,
   );
   const startParts = keyBy(
-    new Intl.DateTimeFormat('en-US', options).formatToParts(rangeStart),
+    getDateTimeFormatter('en-US', options).formatToParts(rangeStart),
     (x) => x.type,
   );
   const endParts = keyBy(
-    new Intl.DateTimeFormat('en-US', options).formatToParts(rangeEnd),
+    getDateTimeFormatter('en-US', options).formatToParts(rangeEnd),
     (x) => x.type,
   );
 
@@ -194,13 +296,14 @@ export function formatDateWithinRange(
   if (dateY === startY && dateY === endY) {
     const options: Intl.DateTimeFormatOptions = {
       timeZone,
+      hourCycle: 'h23',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     };
     const dateParts = keyBy(
-      new Intl.DateTimeFormat('en-US', options).formatToParts(date),
+      getDateTimeFormatter('en-US', options).formatToParts(date),
       (x) => x.type,
     );
     return `${dateParts.month.value} ${dateParts.day.value}, ${dateParts.hour.value}:${dateParts.minute.value}`;
@@ -268,7 +371,7 @@ function formatDateFriendlyParts(
     second: '2-digit',
     timeZoneName: 'short',
   };
-  const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
+  const parts = keyBy(getDateTimeFormatter('en-US', options).formatToParts(date), (x) => x.type);
 
   // format the date string
 

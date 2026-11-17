@@ -31,11 +31,9 @@ The timestamps for each individual phase of the grading process are recorded and
 
 ## Configuring and enabling external grader support
 
-External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. A minimal configuration for an externally-graded question includes the following two options:
+External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. A minimal configuration for an externally-graded question includes the following option:
 
-- `enabled`: Whether external grading is enabled for the question. Setting this value to `false` can be used as a kill switch if things start breaking.
-
-- `image`: The Docker image that should be used for the question. This can be any image hosted publicly on Docker Hub. This property is required when external grading is enabled.
+- `image`: The public Docker image that should be used for the question. Supported registries are Docker Hub (`docker.io`), GHCR (`ghcr.io`), Quay (`quay.io`), GitLab (`registry.gitlab.com`), and Amazon ECR Public (`public.ecr.aws`). For example, `docker.io/org/image:tag` for Docker Hub or `ghcr.io/org/image:tag` for GHCR. The Docker Hub shorthand `org/image:tag` is also supported. Custom registry domains and explicit ports are not supported. See [Supported registries](dockerImages.md#supported-registries) for details. This property is required when external grading is enabled.
 
 Additional options are available for further customization:
 
@@ -56,7 +54,6 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 ```json title="info.json"
 {
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-python",
     "serverFilesCourse": ["my_libraries/"],
     "timeout": 5
@@ -85,7 +82,7 @@ There are multiple ways to allow students to submit files for external grading:
 - The [`pl-order-blocks` element](./elements/pl-order-blocks.md), using the `grading-method="external"` attribute, allows students to submit code by arranging pre-defined blocks of code in the correct order.
 - The [`pl-rich-text-editor` element](./elements/pl-rich-text-editor.md) allows students to create HTML documents.
 - The [`pl-image-capture` element](./elements/pl-image-capture.md) allows students to submit images taken with their device's camera.
-- For questions using [workspaces](./workspaces/index.md), [the `gradedFiles` option](workspaces/index.md#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
+- For questions using [workspaces](./workspaces/index.md), [the `gradedFiles` option](workspaces/index.md#infojson) identifies workspace files that will be made available to the external grader.
 
 For examples of questions that allow student submissions, you can look at [`PrairieLearn/exampleCourse/questions/demo/autograder/codeEditor`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor) and [`PrairieLearn/exampleCourse/questions/demo/autograder/codeUpload`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload).
 
@@ -145,13 +142,14 @@ In particular, the file system structure of the grader looks like:
 Your grading process must write its results to `/grade/results/results.json`.
 
 - If the submission is gradable, the result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating-point number in the range [0.0, 1.0]. The field `gradable` may be optionally included and set to `true` to indicate that the submission was gradable, though this is not required, as the omission of this field is equivalent to assuming that the input was gradable.
+  - If the question has [partial credit disabled](./question/overview.md#partial-credit), the final score will be set to 100% only if the `score` is 1. If the score is less than 1, it will be set to zero, overriding any partial scores set by the autograder.
 - If the submission is not gradable, the field `gradable` is required, and must be set to `false`. In this case, the `score` field is not needed. This indicates that the submission could not be graded, for example due to a syntax error, or if the input was missing, invalid, or formatted incorrectly. In this case, the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question.
 
 Other than `score` and `gradable`, you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on. Note, though, that this file should be limited to 1 MB, so you must ensure any extensive use of data takes this limit into account.
 
 If `gradable` is set to false, error messages related to the formatting of the answer can be added to the grading results by setting the `format_errors` key. This can be either a string or an array of strings, depending on the number of error messages.
 
-The [`<pl-external-grader-results>` element](./elements/pl-external-grader-results.md) is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here is an example of well-formed results that can be rendered by this element. Note that all fields other than `score` (or `gradable`) are optional.
+The [`<pl-external-grader-results>` element](./elements/pl-external-grader-results.md) is capable of rendering a list of tests with associated test names, descriptions, point values, output, messages, and images. Here is an example of well-formed results that can be rendered by this element. Note that all fields other than `score` (or `gradable`) are optional.
 
 ```json
 {
@@ -199,6 +197,10 @@ The [`<pl-external-grader-results>` element](./elements/pl-external-grader-resul
   ]
 }
 ```
+
+The per-test points display is all-or-nothing: if `points` or `max_points` is omitted on _any_ single test, the detailed per-test points display (badges, colors, and the points list) is disabled for _all_ tests, and a warning banner is shown instead. To get the detailed display, include both `points` and `max_points` on every test.
+
+A test with `max_points` set to `0` is rendered neutrally (gray, with an info icon) rather than as correct or incorrect.
 
 Plots or images can be added to either individual test cases or to the main output by adding [base64-encoded data URLs](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data) to their respective `images` array, as listed in the examples above, provided the resulting file respects the size limit of 1 MB listed above. Each element of the array is expected to be an object containing the following keys:
 

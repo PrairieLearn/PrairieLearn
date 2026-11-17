@@ -9,13 +9,9 @@
   "groups": {
     "minMembers": 1,
     "maxMembers": 5,
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true
-    }
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true }
   },
-  "allowAccess": [{ "credit": 100 }],
+  "accessControl": [{ "dateControl": { "release": { "date": "2000-01-01T00:00:00" } } }],
   "zones": [
     {
       "title": " How Markov chains work?",

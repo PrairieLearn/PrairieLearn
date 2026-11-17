@@ -1,5 +1,63 @@
 # @prairielearn/aws
 
+## 3.2.2
+
+### Patch Changes
+
+- c71261f: Upgrade all JavaScript dependencies
+
+## 3.2.1
+
+### Patch Changes
+
+- 8151381: Build with the official TypeScript 7 release instead of the native preview.
+
+## 3.2.0
+
+### Minor Changes
+
+- 7b5bb27: Retry Auto Scaling termination lifecycle completion while the action remains active.
+
+### Patch Changes
+
+- df28e68: Bump dependencies
+
+## 3.1.0
+
+### Minor Changes
+
+- 0ae4ba8: Add utilities for detecting and waiting for EC2 Auto Scaling lifecycle transitions.
+
+## 3.0.8
+
+### Patch Changes
+
+- 4a0ee46: Bump dependencies
+
+## 3.0.7
+
+### Patch Changes
+
+- e253b31: Migrate package builds and executable links to pnpm.
+
+## 3.0.6
+
+### Patch Changes
+
+- 3f0b326: Upgrade all JavaScript dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- 382dbd8: Bump dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- b6e03e9: Upgrade dependencies
+
 ## 3.0.3
 
 ### Patch Changes

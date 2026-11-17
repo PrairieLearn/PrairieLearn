@@ -4,7 +4,8 @@ SELECT
 FROM
   assessments AS a
 WHERE
-  EXISTS (
+  a.deleted_at IS NULL
+  AND EXISTS (
     SELECT
       *
     FROM

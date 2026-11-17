@@ -1,11 +1,15 @@
 import { type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 
-import type {
+import {
   JobItemStatus,
-  JobProgress,
-  ProgressUpdateMessage,
+  type JobProgress,
+  type JobStatus,
+  type ProgressUpdateMessage,
+  deriveJobStatus,
 } from '../../lib/serverJobProgressSocket.shared.js';
+
+export type JobProgressWithStatus = JobProgress & { status: JobStatus };
 
 /**
  * Manages and retrieves live progress information for server jobs via WebSocket connections.
@@ -45,34 +49,50 @@ export function useServerJobProgress({
       onProgressChange();
       // We do not include onProgressChange in the dependency array because it
       // would cause an infinite loop if the callback is not memoized.
-    }, // eslint-disable-next-line @eslint-react/exhaustive-deps
+    }, // oxlint-disable-next-line react/exhaustive-deps
     [],
   );
+
+  /** Raw progress payloads tagged with the derived JobStatus per job. */
+  const jobsProgressWithStatus = useMemo<Record<string, JobProgressWithStatus>>(() => {
+    const result: Record<string, JobProgressWithStatus> = {};
+    for (const [id, progress] of Object.entries(jobsProgress)) {
+      result[id] = { ...progress, status: deriveJobStatus(progress) };
+    }
+    return result;
+  }, [jobsProgress]);
 
   /**
    * The status to display for a specific job item across all ongoing jobs.
    *
    * If multiple jobs are processing the same item, the least progressed status is shown --
    * from highest to lowest precedence: queued, in_progress, failed, complete.
+   *
+   * When a job is in a stopping/stopped state, its remaining queued items are
+   * dropped from the merge: that job is no longer going to grade them, so any
+   * concurrent job's status for the same item should win. Items the stopping
+   * job already moved past queued (in_progress, failed, complete) still count
+   * — they reflect real grading work that happened before the stop.
    */
   const displayedStatuses = useMemo(() => {
     const merged: Record<string, JobItemStatus> = {};
     if (!enabled) {
       return merged;
     }
-    for (const job of Object.values(jobsProgress)) {
+    for (const job of Object.values(jobsProgressWithStatus)) {
       if (!job.item_statuses) {
         continue;
       }
+      const dropQueued = job.status === 'stopping' || job.status === 'stopped';
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
-        // show least progressed status
+        if (dropQueued && status === JobItemStatus.queued) continue;
         if (!(itemId in merged) || status < merged[itemId]) {
           merged[itemId] = status;
         }
       }
     }
     return merged;
-  }, [jobsProgress, enabled]);
+  }, [jobsProgressWithStatus, enabled]);
 
   useEffect(() => {
     if (
@@ -85,26 +105,31 @@ export function useServerJobProgress({
 
     const socket = io('/server-job-progress');
 
+    // Rooms are lost on disconnect, including when a deployment moves this
+    // connection to another server. Rejoin and refresh cached progress each time.
+    socket.on('connect', () => {
+      for (const [jobSequenceId, token] of Object.entries(ongoingJobSequenceTokens)) {
+        socket.emit(
+          'joinServerJobProgress',
+          {
+            job_sequence_id: jobSequenceId,
+            job_sequence_token: token,
+          },
+          (response: ProgressUpdateMessage | null) => {
+            if (!response?.has_progress_data) {
+              return;
+            }
+
+            setJobsProgressAndEmit((prev) => ({
+              ...prev,
+              [jobSequenceId]: response,
+            }));
+          },
+        );
+      }
+    });
+
     for (const jobSequenceId of Object.keys(ongoingJobSequenceTokens)) {
-      // Join the WebSocket room for this job sequence to receive progress updates.
-      socket.emit(
-        'joinServerJobProgress',
-        {
-          job_sequence_id: jobSequenceId,
-          job_sequence_token: ongoingJobSequenceTokens[jobSequenceId],
-        },
-        (response: ProgressUpdateMessage) => {
-          if (!response.has_progress_data) {
-            return;
-          }
-
-          setJobsProgressAndEmit((prev) => ({
-            ...prev,
-            [jobSequenceId]: response,
-          }));
-        },
-      );
-
       // Listen for progress updates for this job sequence.
       socket.on('serverJobProgressUpdate', (msg: ProgressUpdateMessage) => {
         if (msg.job_sequence_id !== jobSequenceId || !msg.has_progress_data) {
@@ -139,8 +164,9 @@ export function useServerJobProgress({
 
     const jobProgress = jobsProgress[jobSequenceId];
 
-    // Only dismiss if the job is complete.
-    if (jobProgress.num_complete < jobProgress.num_total) {
+    const isTerminal =
+      jobProgress.num_complete >= jobProgress.num_total || jobProgress.stop_state === 'stopped';
+    if (!isTerminal) {
       return;
     }
 
@@ -159,7 +185,7 @@ export function useServerJobProgress({
   }
 
   return {
-    jobsProgress,
+    jobsProgress: jobsProgressWithStatus,
     displayedStatuses,
     handleAddOngoingJobSequence,
     handleDismissCompleteJobSequence,

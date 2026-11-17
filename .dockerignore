@@ -6,14 +6,17 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
+!.oxfmtrc.json
+!oxlint.config.mts
 !.prettierignore
 !.prettierrc.json
-!.yarnrc.yml
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
 !pyproject.toml
 !tsconfig.json
-!turbo.json
-!vitest.config.ts
-!.yarn/
+!turbo.jsonc
+!vitest.config.mts
+!vitest.shared.mts
 !pyproject.toml
 !apps/
 !contrib/
@@ -22,15 +25,13 @@
 !exampleCourse/
 !Makefile
 !package.json
-!yarn.lock
 !packages/
 !scripts/
 !testCourse/
 
 # Forbid specific patterns.
+apps/course-agent/
 .DS_Store
-.yarn/cache
-.yarn/install-state.gz
 /config.json
 apps/*/dist/
 apps/*/config.json

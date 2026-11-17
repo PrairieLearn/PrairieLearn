@@ -1,7 +1,7 @@
 import type { UseMutationResult } from '@tanstack/react-query';
 import Alert from 'react-bootstrap/Alert';
 
-import { type AppError, getAppError } from '../../../../lib/client/errors.js';
+import { type AppError, getAppError } from '@prairielearn/trpc/client';
 
 export function QueryErrors<T>({
   queries,
@@ -20,7 +20,7 @@ export function QueryErrors<T>({
 
     return (
       <Alert
-        // eslint-disable-next-line @eslint-react/no-array-index-key
+        // oxlint-disable-next-line react/no-array-index-key
         key={index}
         variant="danger"
         className="mb-3"

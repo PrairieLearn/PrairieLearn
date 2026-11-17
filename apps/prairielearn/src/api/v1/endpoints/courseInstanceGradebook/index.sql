@@ -33,7 +33,8 @@ WITH
       LEFT JOIN teams AS g ON (g.id = ai.team_id)
       LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
     WHERE
-      a.course_instance_id = $course_instance_id
+      a.deleted_at IS NULL
+      AND a.course_instance_id = $course_instance_id
       AND (
         g.deleted_at IS NULL
         OR g.id IS NULL
@@ -46,8 +47,8 @@ WITH
       aig.score_perc,
       aig.max_points,
       aig.points,
-      format_date_iso8601 (aig.date, ci.display_timezone) AS start_date,
-      DATE_PART('epoch', aig.duration) AS duration_seconds,
+      aig.date,
+      aig.duration,
       aig.id AS assessment_instance_id
     FROM
       assessment_instances_with_groups AS aig
@@ -73,6 +74,7 @@ WITH
         enrollments
       WHERE
         course_instance_id = $course_instance_id
+        AND status = 'joined'
     )
   ),
   course_users AS (
@@ -103,8 +105,8 @@ WITH
       s.score_perc,
       s.max_points,
       s.points,
-      s.start_date,
-      s.duration_seconds,
+      s.date,
+      s.duration,
       s.assessment_instance_id
     FROM
       course_users AS u
@@ -140,10 +142,10 @@ SELECT
       max_points,
       'points',
       points,
-      'start_date',
-      start_date,
-      'duration_seconds',
-      duration_seconds
+      'date',
+      date,
+      'duration',
+      duration
     )
     ORDER BY
       (

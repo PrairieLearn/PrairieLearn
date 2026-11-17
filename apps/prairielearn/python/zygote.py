@@ -1,3 +1,6 @@
+# The zygote specifically uses imports in strange places to facilitate the
+# preloading of commonly-used modules.
+# ruff:file-ignore[unused-import,undocumented-public-module,undocumented-public-function,module-import-not-at-top-of-file]
 # pyright: reportUnusedImport=false
 
 # This program is the glue between python-runner JavaScript code and Python code
@@ -117,10 +120,12 @@ import numpy as np
 import pint
 import prairielearn
 import sklearn
+from _pygraphviz_compat import patch_pygraphviz
 
 mpl.use("PDF")
+patch_pygraphviz()
 
-# Construct initial unit registry to create initial cache file.
+# Construct the unit registry so that forked workers inherit it.
 prairielearn.get_unit_registry()
 
 
@@ -151,7 +156,7 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None  # noqa: PLR1711, RET501
+        return None  # ruff:ignore[useless-return, unnecessary-return-none]
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -287,6 +292,8 @@ def worker_loop() -> None:
                 # fast as possible.
                 os._exit(0)
 
+            assert file is not None
+
             if file.endswith(".js"):
                 # We've shoehorned legacy v2 questions into the v3 code caller
                 # so that we can reuse the same worker processes, and specifically
@@ -378,7 +385,7 @@ def worker_loop() -> None:
 
             mod = mod_cache.get(file_path)
             if mod is None:
-                mod = {}
+                mod = {"__file__": file_path}
 
                 with open(file_path, encoding="utf-8") as inf:
                     # Use `compile` to associate filename with code object, so the
@@ -488,6 +495,7 @@ with open(4, "w", encoding="utf-8") as exitf:
                 import pwd
 
                 user = pwd.getpwnam("executor")
+                os.setgroups([user.pw_gid])
                 os.setgid(user.pw_gid)
                 os.setuid(user.pw_uid)
 
@@ -508,7 +516,10 @@ with open(4, "w", encoding="utf-8") as exitf:
                     # were running as the `executor` user
                     if drop_privileges:
                         # Kill all processes started by `executor`.
-                        os.system("pkill -u executor --signal SIGKILL")
+                        subprocess.run(
+                            ["/usr/bin/pkill", "-u", "executor", "--signal", "SIGKILL"],
+                            check=False,
+                        )
 
                         # Check that all processes are gone. If they're not,
                         # that probably means that someone is trying to escape

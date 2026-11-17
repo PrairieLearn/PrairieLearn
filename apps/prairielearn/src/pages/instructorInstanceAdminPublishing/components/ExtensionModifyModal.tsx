@@ -88,7 +88,7 @@ export function ExtensionModifyModal({
       return 'At least one UID is required';
     }
 
-    const invalidEmails = uids.filter((uid) => !z.string().email().safeParse(uid).success);
+    const invalidEmails = uids.filter((uid) => !z.email().safeParse(uid).success);
 
     if (invalidEmails.length > 0) {
       return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
@@ -146,7 +146,7 @@ export function ExtensionModifyModal({
   });
 
   const onFormSubmit = async (data: ExtensionFormValues) => {
-    void saveMutation.mutate(data);
+    saveMutation.mutate(data);
   };
 
   if (stage.type === 'confirming') {
@@ -182,7 +182,7 @@ export function ExtensionModifyModal({
             disabled={saveMutation.isPending}
             onClick={handleSubmit((data, event) => {
               event?.preventDefault();
-              void saveMutation.mutate(data);
+              saveMutation.mutate(data);
             })}
           >
             {saveMutation.isPending ? 'Saving...' : 'Save anyway'}

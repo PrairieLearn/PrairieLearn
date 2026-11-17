@@ -5,10 +5,12 @@ columns
     after_complete_score_hidden: boolean
     after_complete_score_visible_from_date: timestamp with time zone
     assessment_id: bigint not null
+    before_release_listed: boolean
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer
+    date_control_due_credit: integer
     date_control_due_date: timestamp with time zone
-    date_control_due_date_overridden: boolean not null default false
+    date_control_due_overridden: boolean not null default false
     date_control_duration_minutes: integer
     date_control_duration_minutes_overridden: boolean not null default false
     date_control_early_deadlines_overridden: boolean not null default false
@@ -17,18 +19,21 @@ columns
     date_control_password_overridden: boolean not null default false
     date_control_release_date: timestamp with time zone
     id: bigint not null default nextval('assessment_access_control_rules_id_seq'::regclass)
-    list_before_release: boolean
     number: integer not null
     target_type: enum_assessment_access_control_target_type not null
+    uuid: uuid
 
 indexes
     assessment_access_control_rules_pkey: PRIMARY KEY (id) USING btree (id)
     aacr_assessment_number_target_type_unique: UNIQUE (assessment_id, number, target_type) USING btree (assessment_id, number, target_type)
+    assessment_access_control_rules_assessment_id_uuid_idx: UNIQUE USING btree (assessment_id, uuid) WHERE uuid IS NOT NULL
     assessment_access_control_rules_id_target_type_idx: UNIQUE USING btree (id, target_type)
 
 check constraints
     assessment_access_control_ru_date_control_after_last_dead_check: CHECK (date_control_after_last_deadline_credit >= 0)
     assessment_access_control_ru_date_control_duration_minute_check: CHECK (date_control_duration_minutes > 0)
+    assessment_access_control_rules_date_control_due_credit_check: CHECK (date_control_due_credit >= 0)
+    assessment_access_control_rules_uuid_target_type_check: CHECK ((target_type = 'none'::enum_assessment_access_control_target_type) = (uuid IS NULL))
     check_first_rule_is_none: CHECK ((number = 0) = (target_type = 'none'::enum_assessment_access_control_target_type))
 
 foreign-key constraints

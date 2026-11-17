@@ -81,6 +81,30 @@ There are also utility methods that can make assertions about the results:
 - `queryOneRowAsync`: Throws an error if the result doesn't have exactly one row.
 - `queryZeroOrOneRowAsync`: Throws an error if the result has more than one row.
 
+### Array parameters
+
+Array values use a single bound parameter, for both named and positional parameters. For example, `{ user_ids: [1, 2, 3] }` replaces `$user_ids` with `$1` and lets `pg` serialize the array. Large arrays therefore do not consume one of PostgreSQL's 65,535 query parameters per element.
+
+```sql
+-- BLOCK select_users
+SELECT
+  *
+FROM
+  users
+WHERE
+  id = ANY ($user_ids::bigint[]);
+```
+
+```ts
+import { queryRows } from '@prairielearn/postgres';
+
+const users = await queryRows(sql.select_users, { user_ids: userIds }, UserSchema);
+```
+
+Specify the SQL array type, such as `::bigint[]` or `::text[]`, when the query cannot infer it. In particular, use `unnest($user_ids::bigint[])` instead of `unnest($user_ids)`. Empty arrays are supported with the same type-inference rules.
+
+Array serialization follows the [node-postgres parameter conversion rules](https://node-postgres.com/features/queries). If a value represents JSON rather than a PostgreSQL array, pass `JSON.stringify(value)` and use the appropriate `::jsonb` cast.
+
 ### Stored procedures (sprocs)
 
 There are also functions that make it easy to call a stored procedure with a given set of arguments. Consider a database that has the following sproc defined:
@@ -114,6 +138,7 @@ For increased safety and confidence, you can describe the shape of data you expe
 
 ```ts
 import { z } from 'zod';
+
 import { loadSqlEquiv, queryRows, queryRow, queryOptionalRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -149,6 +174,7 @@ For queries that return a single column, you can use the scalar variants. These 
 
 ```ts
 import { z } from 'zod';
+
 import {
   queryScalar,
   queryScalars,
@@ -195,6 +221,7 @@ For very large queries that don't need to fit in memory all at once, it's possib
 
 ```ts
 import { z } from 'zod';
+
 import { queryCursor } from '@prairielearn/postgres';
 
 const UserSchema = z.object({

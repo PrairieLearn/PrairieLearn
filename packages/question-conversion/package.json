@@ -1,0 +1,52 @@
+{
+  "name": "@prairielearn/question-conversion",
+  "version": "0.1.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/question-conversion"
+  },
+  "bin": {
+    "question-convert": "./dist/bin/convert.js"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./trimmer": "./dist/trimmer/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@prairielearn/logger": "workspace:^",
+    "@prairielearn/public-fetch": "workspace:^",
+    "@prairielearn/utils": "workspace:^",
+    "@vscode/vscode-languagedetection": "^1.0.23",
+    "@zip.js/zip.js": "^2.18.2",
+    "cheerio": "^1.2.0",
+    "commander": "^15.0.0",
+    "domhandler": "^6.0.1",
+    "fast-xml-parser": "^5.12.0",
+    "file-type": "^22.1.1",
+    "he": "^1.2.0",
+    "mime": "^4.1.0",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/he": "^1.2.3",
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.2",
+    "undici": "^8.12.3",
+    "vitest": "^5.0.2",
+    "zod": "^4.6.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

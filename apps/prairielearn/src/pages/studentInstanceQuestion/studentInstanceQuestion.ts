@@ -11,6 +11,7 @@ import { gradeAssessmentInstance } from '../../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { type File } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
@@ -292,10 +293,12 @@ router.get(
 
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
+      course: res.locals.course,
       question: res.locals.question,
       instance_question: res.locals.instance_question,
       variant,
       user: res.locals.user,
+      authn_user: res.locals.authn_user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
@@ -310,6 +313,10 @@ router.get(
 router.get(
   '/',
   typedAsyncHandler<'instance-question'>(async (req, res) => {
+    const independentScrolling = await features.enabledFromLocals(
+      'question-hosting-update',
+      res.locals,
+    );
     let variant_id =
       res.locals.assessment.type === 'Exam' || typeof req.query.variant_id !== 'string'
         ? null
@@ -336,7 +343,9 @@ router.get(
       if (last_variant_id == null) {
         res.status(403).send(
           StudentInstanceQuestion({
+            independentScrolling,
             resLocals: res.locals,
+            renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
             enabledTools,
           }),
@@ -349,7 +358,8 @@ router.get(
         variant_id = last_variant_id;
       }
     }
-    await getAndRenderVariant(variant_id, null, res.locals);
+
+    const renderState = await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView('studentInstanceQuestion', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
@@ -396,7 +406,9 @@ router.get(
       : null;
     res.send(
       StudentInstanceQuestion({
+        independentScrolling,
         resLocals: res.locals,
+        renderState,
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         assignedGrader,
         lastGrader,

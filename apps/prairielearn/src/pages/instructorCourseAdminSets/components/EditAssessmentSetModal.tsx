@@ -36,7 +36,7 @@ export function EditAssessmentSetsModal({
     onExited();
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!assessmentSet) return;
     onSave(assessmentSet);
@@ -155,7 +155,7 @@ export function EditAssessmentSetsModal({
             Cancel
           </button>
           <button className="btn btn-primary" type="submit">
-            Save
+            {data?.mode === 'create' ? 'Add' : 'Ok'}
           </button>
         </Modal.Footer>
       </form>

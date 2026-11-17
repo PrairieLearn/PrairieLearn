@@ -16,6 +16,7 @@ function makeEnrollment({
   name?: string | null;
 }): SyncEnrollmentInfo {
   return {
+    student_label_ids: [],
     enrollment: {
       id: `${uid ?? pendingUid ?? status}-id`,
       status,
@@ -26,30 +27,6 @@ function makeEnrollment({
 }
 
 describe('computeSyncDiff', () => {
-  it('skips lti13_pending enrollments that are on the student list', () => {
-    const diff = computeSyncDiff(
-      ['lti-student@example.com'],
-      [makeEnrollment({ status: 'lti13_pending', uid: 'lti-student@example.com' })],
-    );
-
-    expect(diff.toInvite).toEqual([]);
-    expect(diff.toCancelInvitation).toEqual([]);
-    expect(diff.toRemove).toEqual([]);
-    expect(diff.unchangedCount).toBe(1);
-  });
-
-  it('skips lti13_pending enrollments that are not on the student list', () => {
-    const diff = computeSyncDiff(
-      [],
-      [makeEnrollment({ status: 'lti13_pending', uid: 'lti-student@example.com' })],
-    );
-
-    expect(diff.toInvite).toEqual([]);
-    expect(diff.toCancelInvitation).toEqual([]);
-    expect(diff.toRemove).toEqual([]);
-    expect(diff.unchangedCount).toBe(0);
-  });
-
   it('still invites blocked and removed enrollments that are on the student list', () => {
     const diff = computeSyncDiff(
       ['blocked@example.com', 'removed@example.com'],
@@ -91,4 +68,18 @@ describe('computeSyncDiff', () => {
     expect(diff.toInvite).toHaveLength(1);
     expect(diff.toInvite[0].uid).toBe('new@example.com');
   });
+});
+
+it('ignores label ordering when comparing student labels', () => {
+  const student = {
+    ...makeEnrollment({ status: 'joined', uid: 'a@example.com' }),
+    student_label_ids: ['1', '2'],
+  };
+  const unchanged = computeSyncDiff(
+    ['a@example.com'],
+    [student],
+    new Map([['a@example.com', ['2', '1']]]),
+  );
+  expect(unchanged.toUpdateLabels).toEqual([]);
+  expect(unchanged.unchangedCount).toBe(1);
 });

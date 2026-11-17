@@ -16,6 +16,8 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
+import { getAppError } from '@prairielearn/trpc/client';
+import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter, OverlayTrigger, SplitPane, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
@@ -24,8 +26,13 @@ import type {
   StaffCourse,
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { EnumAssessmentTool, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import { getQuestionCreateUrl } from '../../../lib/client/url.js';
+import {
+  type CalculatorType,
+  type EnumAssessmentTool,
+  type ZoneAssessmentJson,
+} from '../../../schemas/infoAssessment.js';
+import type { AssessmentQuestionsError } from '../../../trpc/assessment/assessment-questions.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessment/context.js';
 import type {
@@ -49,6 +56,7 @@ import type { AssessmentAdvancedDefaults } from '../utils/formHelpers.js';
 import { buildPropsMap, computeChangeTracking } from '../utils/modifiedTracking.js';
 import {
   buildQuestionMetadata,
+  hasUnavailableQuestions,
   normalizeQuestionPoints,
   questionDisplayName,
   toEditorMetadata,
@@ -86,8 +94,10 @@ function useBeforeUnload(enabled: boolean): () => void {
     const handler = (event: BeforeUnloadEvent) => {
       if (disabledRef.current) return;
       event.preventDefault();
+      // MDN recommends setting returnValue for legacy browser support:
+      // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
+      // oxlint-disable-next-line typescript/no-deprecated
       event.returnValue = 'prompt';
-      return 'prompt';
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -135,12 +145,18 @@ interface AssessmentEditorInnerProps {
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentToolDefaults: Partial<Record<EnumAssessmentTool, boolean>>;
+  assessmentCalculatorType?: CalculatorType;
+  groupsConfigured: boolean;
+  groupRoles: string[];
+  assessmentCanView: string[] | undefined;
+  assessmentCanSubmit: string[] | undefined;
+  groupsPageUrl: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
+  courseHasQuestions: boolean;
   csrfToken: string;
   origHash: string;
-  switchViewUrl: string | null;
   questionSharingEnabled: boolean;
   consumePublicQuestionsEnabled: boolean;
   search: string;
@@ -153,12 +169,18 @@ function AssessmentEditorInner({
   jsonZones,
   assessment,
   assessmentToolDefaults,
+  assessmentCalculatorType,
+  groupsConfigured,
+  groupRoles,
+  assessmentCanView,
+  assessmentCanSubmit,
+  groupsPageUrl,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
+  courseHasQuestions,
   csrfToken,
   origHash,
-  switchViewUrl,
   questionSharingEnabled,
   consumePublicQuestionsEnabled,
   search,
@@ -167,8 +189,11 @@ function AssessmentEditorInner({
   const queryClient = useQueryClient();
   const questionByQidMutation = useMutation({
     mutationFn: (qid: string) =>
-      queryClient.fetchQuery(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
+      queryClient.query(trpc.assessmentQuestions.questionByQid.queryOptions({ qid })),
   });
+  const pickerError = getAppError<AssessmentQuestionsError['QuestionByQid']>(
+    questionByQidMutation.error,
+  );
 
   const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
 
@@ -269,7 +294,6 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/set-state-in-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -309,8 +333,23 @@ function AssessmentEditorInner({
     return qidToZones;
   }, [zones]);
 
+  const readOnlyQids = useMemo(() => {
+    const qids = new Set<string>();
+    for (const zone of zones) {
+      for (const question of zone.questions) {
+        if (!hasUnavailableQuestions(question, questionMetadata)) continue;
+        if (question.alternatives) {
+          for (const alternative of question.alternatives) qids.add(alternative.id);
+        } else {
+          qids.add(question.id);
+        }
+      }
+    }
+    return qids;
+  }, [zones, questionMetadata]);
+
   const disabledQids = useMemo(() => {
-    const disabled = new Set<string>();
+    const disabled = new Set(readOnlyQids);
     if (selectedItem?.type === 'picker') {
       const returnTo = selectedItem.returnToSelection;
       if (returnTo?.type === 'alternative') {
@@ -345,7 +384,7 @@ function AssessmentEditorInner({
       }
     }
     return disabled;
-  }, [selectedItem, zones]);
+  }, [selectedItem, zones, readOnlyQids]);
 
   const currentChangeQid = useMemo(() => {
     if (selectedItem?.type !== 'picker' || !selectedItem.returnToSelection) return undefined;
@@ -441,6 +480,7 @@ function AssessmentEditorInner({
   };
 
   const handleQuestionPicked = async (qid: string) => {
+    if (readOnlyQids.has(qid)) return;
     try {
       const questionData = await questionByQidMutation.mutateAsync(qid);
       dispatch({
@@ -503,7 +543,7 @@ function AssessmentEditorInner({
       dispatch({
         type: 'UPDATE_QUESTION',
         questionTrackingId,
-        question: normalized as Partial<QuestionAlternativeForm>,
+        question: normalized,
         alternativeTrackingId,
       });
     } else {
@@ -529,18 +569,30 @@ function AssessmentEditorInner({
   };
 
   const handleRemoveQuestionByQid = (qid: string) => {
+    if (readOnlyQids.has(qid)) return;
     dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
-  const handleAddZone = () => {
+  const createAndAddZone = () => {
     const zone = createZoneWithTrackingId({
       questions: [] as ZoneAssessmentForm['questions'],
       lockpoint: false,
-      canSubmit: [],
-      canView: [],
-    } as Omit<ZoneAssessmentForm, 'trackingId'>);
+    });
     dispatch({ type: 'ADD_ZONE', zone });
+    return zone;
+  };
+
+  const handleAddZone = () => {
+    const zone = createAndAddZone();
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });
+  };
+
+  // Empty-state call-to-action: enter edit mode, create the first zone, and
+  // open the question picker so the user lands directly on adding a question.
+  const handleAddFirstQuestions = () => {
+    setEditMode(true);
+    const zone = createAndAddZone();
+    setSelectedItem({ type: 'picker', zoneTrackingId: zone.trackingId });
   };
 
   const handleUpdateZone = (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => {
@@ -609,13 +661,14 @@ function AssessmentEditorInner({
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPos || !toPos) return;
       if (fromPos.alternativeIndex == null || toPos.alternativeIndex == null) return;
 
       // Only handle within-pool reorder here; cross-pool is handled in handleDragOver
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
       const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+      if (hasUnavailableQuestions(fromBlock, questionMetadata)) return;
       if (fromBlock.trackingId !== toBlock.trackingId) return;
       if (fromPos.alternativeIndex === toPos.alternativeIndex) return;
 
@@ -637,6 +690,8 @@ function AssessmentEditorInner({
     // Merge standalone question into alt pool via merge zone
     if (over.data.current?.type === 'merge-zone') {
       const altPoolTrackingId = over.data.current.altPoolTrackingId as string;
+      const target = findAltPoolByTrackingId(zones, altPoolTrackingId);
+      if (target && hasUnavailableQuestions(target.altPool, questionMetadata)) return;
       dispatch({
         type: 'MERGE_QUESTION_INTO_ALT_POOL',
         questionTrackingId: activeIdStr,
@@ -649,7 +704,7 @@ function AssessmentEditorInner({
     // Question block reorder within same zone
     const fromPosition = positionByStableId[activeIdStr];
     const rawToPosition = positionByStableId[overIdStr];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    // oxlint-disable-next-line typescript/no-unnecessary-condition
     if (!fromPosition || !rawToPosition) return;
 
     // If "over" resolved to an alternative inside an alt pool, use the alt pool's position
@@ -690,12 +745,13 @@ function AssessmentEditorInner({
 
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPos) return;
       // After extraction, the item becomes a question block (no alternativeIndex).
       // dnd-kit's active.data.current.type stays frozen as 'alternative', so guard here.
       if (fromPos.alternativeIndex == null) return;
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
+      if (hasUnavailableQuestions(fromBlock, questionMetadata)) return;
 
       // Alternative dragged over empty zone drop target → extract to zone
       const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
@@ -711,12 +767,13 @@ function AssessmentEditorInner({
       }
 
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!toPos) return;
 
       if (overType === 'alternative' && toPos.alternativeIndex != null) {
         // Alternative dragged over alternative in different pool → cross-pool move
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+        if (hasUnavailableQuestions(toBlock, questionMetadata)) return;
         if (fromBlock.trackingId !== toBlock.trackingId) {
           dispatch({
             type: 'REORDER_ALTERNATIVE',
@@ -747,7 +804,7 @@ function AssessmentEditorInner({
 
     if (activeType === 'question') {
       const fromPosition = positionByStableId[activeIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPosition) return;
       const fromZone = zones[fromPosition.zoneIndex];
 
@@ -764,7 +821,7 @@ function AssessmentEditorInner({
       }
 
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!toPos) return;
 
       // Cross-zone question reorder
@@ -883,7 +940,7 @@ function AssessmentEditorInner({
     // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
     // correctly captures all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
     [zones, selectedItem],
   );
 
@@ -895,6 +952,12 @@ function AssessmentEditorInner({
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
       assessmentToolDefaults,
+      assessmentCalculatorType,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
@@ -907,6 +970,12 @@ function AssessmentEditorInner({
       assessment.constant_question_value,
       assessmentDefaults,
       assessmentToolDefaults,
+      assessmentCalculatorType,
+      groupsConfigured,
+      groupRoles,
+      assessmentCanView,
+      assessmentCanSubmit,
+      groupsPageUrl,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
@@ -937,7 +1006,7 @@ function AssessmentEditorInner({
     // (used by handleQuestionPicked to build metadata), so these deps
     // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
     [zones, selectedItem, courseQuestions, handleDismissBanner],
   );
 
@@ -1071,7 +1140,6 @@ function AssessmentEditorInner({
                   state={treeState}
                   actions={treeActions}
                   isAllExpanded={isAllExpanded}
-                  switchViewUrl={switchViewUrl}
                   editControls={
                     <EditModeToolbar
                       csrfToken={csrfToken}
@@ -1089,9 +1157,14 @@ function AssessmentEditorInner({
                       }}
                     />
                   }
+                  canEdit={canEdit}
+                  canAddQuestions={canEdit && !!origHash}
+                  courseHasQuestions={courseHasQuestions}
+                  questionCreateUrl={getQuestionCreateUrl(courseInstance.id)}
                   onAddZone={handleAddZone}
                   onViewTypeChange={setViewType}
                   onToggleExpandCollapse={toggleExpandCollapse}
+                  onAddFirstQuestions={handleAddFirstQuestions}
                 />
               ),
             }}
@@ -1107,10 +1180,11 @@ function AssessmentEditorInner({
                   courseQuestionsLoading={courseQuestionsQuery.isLoading}
                   questionsInAssessment={questionsInAssessment}
                   disabledQids={disabledQids}
+                  readOnlyQids={readOnlyQids}
                   currentChangeQid={currentChangeQid}
                   currentAssessmentId={assessment.id}
                   isPickingQuestion={questionByQidMutation.isPending}
-                  pickerError={questionByQidMutation.error}
+                  pickerError={pickerError}
                   questionSharingEnabled={questionSharingEnabled}
                   consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
                 />

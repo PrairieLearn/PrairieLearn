@@ -1,16 +1,13 @@
-import { promises as fsPromises } from 'fs';
 import { ok as assert } from 'node:assert';
+import { promises as fsPromises } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
-import archiver from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
-import type { Entry } from 'fast-glob';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import mustache from 'mustache';
-import fetch from 'node-fetch';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
@@ -29,6 +26,7 @@ import {
   CourseSchema,
   QuestionSchema,
   VariantSchema,
+  type Workspace,
   WorkspaceHostSchema,
   WorkspaceSchema,
 } from './db-types.js';
@@ -76,6 +74,7 @@ interface DynamicWorkspaceFile {
 interface InitializeResult {
   sourcePath: string;
   destinationPath: string;
+  version: number;
 }
 
 interface FileGenerationError {
@@ -93,6 +92,12 @@ export class SubmissionFormatError extends Error {
     super(message);
     this.name = 'SubmissionFormatError';
   }
+}
+
+const pendingStartups = new Set<Promise<void>>();
+
+export async function stop() {
+  await Promise.allSettled(pendingStartups);
 }
 
 export function init(): void {
@@ -144,14 +149,17 @@ function connection(socket: Socket) {
   });
 
   socket.on('startWorkspace', () => {
-    startup(workspace_id).catch(async (err) => {
-      logger.error(`Error starting workspace ${workspace_id}`, err);
-      await workspaceUtils.updateWorkspaceState(
-        workspace_id,
-        'stopped',
-        `Error! Click "Reboot" to try again. Detail: ${err}`,
-      );
-    });
+    const promise = startup(workspace_id)
+      .catch(async (err) => {
+        logger.error(`Error starting workspace ${workspace_id}`, err);
+        await workspaceUtils.updateWorkspaceState(
+          workspace_id,
+          'stopped',
+          `Error! Click "Reboot" to try again. Detail: ${err}`,
+        );
+      })
+      .finally(() => pendingStartups.delete(promise));
+    pendingStartups.add(promise);
   });
 
   socket.on('heartbeat', (callback?: (result: any) => void) => {
@@ -199,7 +207,7 @@ async function controlContainer(
 
   if (action === 'getGradedFiles') {
     if (!res.ok) {
-      throw new SubmissionFormatError(((await res.json()) as any).message);
+      throw new SubmissionFormatError((await res.json()).message);
     }
 
     const body = res.body;
@@ -214,27 +222,48 @@ async function controlContainer(
     const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
     debug(`controlContainer: saving ${zipPath}`);
-    const stream = fs.createWriteStream(zipPath);
 
-    return new Promise((resolve, reject) => {
-      stream
-        .on('open', () => {
-          body.pipe(stream);
-        })
-        .on('error', (err) => {
-          reject(err);
-        })
-        .on('finish', () => {
-          resolve(zipPath);
-        });
-    });
+    try {
+      await fsPromises.writeFile(zipPath, body);
+      return zipPath;
+    } catch (error) {
+      await fs.remove(zipPath);
+      throw error;
+    }
   }
 
   if (res.ok) return;
 
   // if there was an error, we should have an error message from the host
-  const json = (await res.json()) as any;
+  const json = await res.json();
   throw new Error(`Error from workspace host: ${json.message}`);
+}
+
+type StartupAction = 'bail' | 'initialize-then-launch' | 'launch-only' | 'noop';
+
+/**
+ * Resolves what `startup()` should do once it has locked the workspace row.
+ * The state and version may have changed since the initial unlocked read —
+ * most notably, a concurrent reset can increment the version while
+ * `initialize()` is running, in which case we must not place the now-stale
+ * files we generated.
+ */
+export function decideStartupAction({
+  initialState,
+  lockedState,
+  initializeVersion,
+  lockedVersion,
+}: {
+  initialState: 'uninitialized' | 'stopped';
+  lockedState: Workspace['state'];
+  initializeVersion: number | null;
+  lockedVersion: number;
+}): StartupAction {
+  if (initialState === 'uninitialized' && lockedState === 'uninitialized') {
+    return initializeVersion === lockedVersion ? 'initialize-then-launch' : 'bail';
+  }
+  if (lockedState === 'stopped') return 'launch-only';
+  return 'noop';
 }
 
 async function startup(workspace_id: string): Promise<void> {
@@ -261,20 +290,27 @@ async function startup(workspace_id: string): Promise<void> {
   // - We don't want multiple hosts trying to assign a host for the same
   //   workspace at the same time.
   let shouldAssignHost = false as boolean;
-  await sqldb.runInTransactionAsync(async () => {
-    // First, lock the workspace row.
-    const workspace = await sqldb.queryRow(
-      sql.select_and_lock_workspace,
-      { workspace_id },
-      WorkspaceSchema,
-    );
+  let movedInitializeFiles = false as boolean;
+  try {
+    await sqldb.runInTransactionAsync(async () => {
+      // First, lock the workspace row.
+      const workspace = await sqldb.queryRow(
+        sql.select_and_lock_workspace,
+        { workspace_id },
+        WorkspaceSchema,
+      );
 
-    // If the initial state was `uninitialized`, we should check if it's
-    // still uninitialized. If so, we'll need to perform a state transition.
-    const shouldTransitionToStopped =
-      state === 'uninitialized' && workspace.state === 'uninitialized';
-    if (shouldTransitionToStopped) {
-      if (initializeResult !== null) {
+      const action = decideStartupAction({
+        initialState: state,
+        lockedState: workspace.state,
+        initializeVersion: initializeResult?.version ?? null,
+        lockedVersion: workspace.version,
+      });
+
+      if (action === 'bail' || action === 'noop') return;
+
+      if (action === 'initialize-then-launch') {
+        assert(initializeResult);
         // First, move any existing directory out of the way to get a clean start. This
         // should never happen in production environments, but when running
         // workspaces locally in development, we may end up trying to reuse the
@@ -303,36 +339,58 @@ async function startup(workspace_id: string): Promise<void> {
         await fs.move(initializeResult.sourcePath, initializeResult.destinationPath, {
           overwrite: true,
         });
-      }
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Initialization complete');
-    }
+        movedInitializeFiles = true;
 
-    // If the workspace is in the stopped state (or we just transitioned to it),
-    // transition to the launching state.
-    if (workspace.state === 'stopped' || shouldTransitionToStopped) {
+        await workspaceUtils.updateWorkspaceState(
+          workspace_id,
+          'stopped',
+          'Initialization complete',
+        );
+      }
+
       await workspaceUtils.updateWorkspaceState(
         workspace_id,
         'launching',
         'Assigning workspace host',
       );
       shouldAssignHost = true;
+    });
+  } finally {
+    // If initialize() created a temp directory but we didn't move it into
+    // place (version changed, another call won the race, or a reboot happened
+    // during initialization), clean it up to avoid stranded directories.
+    if (initializeResult !== null && !movedInitializeFiles) {
+      await fs.remove(initializeResult.sourcePath).catch((err) => {
+        logger.error(
+          `Failed to remove workspace temp directory: ${initializeResult.sourcePath}`,
+          err,
+        );
+      });
     }
-  });
+  }
 
   // Bail out if needed; this should only ever occur if another host is
   // already trying to assign this host to a workspace.
   if (!shouldAssignHost) return;
 
-  let workspace_host_id: string | null = null;
   let attempt = 0;
   while (true) {
     if (attempt > config.workspaceLaunchingRetryAttempts) {
       throw new Error('Time exceeded to deploy more computational resources');
     }
-    workspace_host_id = await assignHost(workspace_id);
-    if (workspace_host_id != null) {
-      break; // success, we got a host
+
+    if (await assignHost(workspace_id)) {
+      // Success, we got a host.
+      break;
     }
+
+    if (!config.workspaceAutoscalingEnabled) {
+      // If no autoscaler is running, there won't be any new hosts after retrying.
+      throw new Error(
+        'No workspace host is available. Ensure the workspace-host process is running ',
+      );
+    }
+
     const t = attempt * config.workspaceLaunchingRetryIntervalSec;
     await workspaceUtils.updateWorkspaceMessage(
       workspace_id,
@@ -341,6 +399,7 @@ async function startup(workspace_id: string): Promise<void> {
     await sleep(config.workspaceLaunchingRetryIntervalSec * 1000);
     attempt++;
   }
+
   await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Sending launch command to host');
   await controlContainer(workspace_id, 'init', { useInitialZip });
 }
@@ -426,7 +485,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     });
   }
 
-  return { sourcePath, destinationPath };
+  return { sourcePath, destinationPath, version: workspace.version };
 }
 
 export async function generateWorkspaceFiles({
@@ -654,6 +713,13 @@ export async function getGradedFiles(workspace_id: string): Promise<string | nul
     return null;
   }
 
+  if (workspace.state === 'launching') {
+    // Startup scripts may replace graded files while the container is launching.
+    throw new SubmissionFormatError(
+      'The workspace is still launching. Please try saving again once it is running.',
+    );
+  }
+
   if (workspace.state === 'running') {
     // Attempt to get the files directly from the host.
     try {
@@ -680,47 +746,29 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   );
   const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
-  const archive = archiver('zip');
   const remoteName = `workspace-${workspace_id}-${workspace_version}`;
   const remoteDir = path.join(config.workspaceHomeDirRoot, remoteName, 'current');
 
-  let gradedFiles: Entry[];
+  await using gradedFiles = await workspaceUtils
+    .openWorkspaceGradedFiles(remoteDir, workspace_graded_files ?? [], {
+      maxFiles: config.workspaceMaxGradedFilesCount,
+      maxSize: config.workspaceMaxGradedFilesSize,
+    })
+    .catch((err: Error) => {
+      // Turn any error into a `SubmissionFormatError` so that it is handled correctly.
+      throw new SubmissionFormatError(err.message);
+    });
+
   try {
-    gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
-      remoteDir,
-      workspace_graded_files ?? [],
-      {
-        maxFiles: config.workspaceMaxGradedFilesCount,
-        maxSize: config.workspaceMaxGradedFilesSize,
-      },
+    await workspaceUtils.writeWorkspaceGradedFilesArchive(
+      gradedFiles,
+      fs.createWriteStream(zipPath),
     );
-  } catch (err: any) {
-    // Turn any error into a `SubmissionFormatError` so that it is handled correctly.
-    throw new SubmissionFormatError(err.message);
+  } catch (error) {
+    await fs.remove(zipPath);
+    throw error;
   }
-
-  // Zip files from filesystem to zip file
-  gradedFiles.forEach((file) => {
-    const remotePath = path.join(remoteDir, file.path);
-    debug(`Zipping graded file ${remotePath} into ${zipPath}`);
-    archive.file(remotePath, { name: file.path });
-  });
-
-  // Write zip file to disk
-  const stream = fs.createWriteStream(zipPath);
-  await new Promise((resolve, reject) => {
-    archive.on('error', (err) => reject(err));
-
-    stream
-      .on('error', (err) => reject(err))
-      .on('finish', () => {
-        debug(`Zipped graded files as ${zipPath} (${archive.pointer()} total bytes)`);
-        resolve(zipPath);
-      });
-
-    archive.pipe(stream);
-    archive.finalize().catch((err) => reject(err));
-  });
+  debug(`Zipped graded files as ${zipPath}`);
   return zipPath;
 }
 

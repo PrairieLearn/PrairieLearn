@@ -1,0 +1,22 @@
+# Picking an input element when the answer is numeric.
+
+kind: "What kind of number?" {
+  shape: diamond
+}
+
+pl_integer_input: "pl-integer-input"
+pl_units_input: "pl-units-input"
+pl_number_input: "pl-number-input"
+
+matrix_format: "How should the matrix be entered?" {
+  shape: diamond
+}
+pl_matrix_component_input: "pl-matrix-component-input"
+pl_matrix_input: "pl-matrix-input"
+
+kind -> pl_integer_input: "Integer"
+kind -> pl_units_input: "Number\nwith a unit"
+kind -> pl_number_input: "Decimal, \nreal or complex number"
+kind -> matrix_format: "Matrix or vector"
+matrix_format -> pl_matrix_component_input: "One input\nper cell"
+matrix_format -> pl_matrix_input: "As code\n(MATLAB / Python literal)"

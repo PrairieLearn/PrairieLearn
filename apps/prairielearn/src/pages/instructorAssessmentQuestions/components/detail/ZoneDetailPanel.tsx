@@ -2,7 +2,10 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { CalculatorPreviewButton } from '../../../../components/CalculatorPreviewButton.js';
+import { CalculatorTypeInput } from '../../../../components/CalculatorTypeInput.js';
 import {
+  type CalculatorType,
   type EnumAssessmentTool,
   EnumAssessmentToolSchema,
 } from '../../../../schemas/infoAssessment.js';
@@ -28,11 +31,13 @@ import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields
 import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableCheckboxField } from './InheritableCheckboxField.js';
+import { InheritableRolesField } from './InheritableRolesField.js';
 
 type ToolFormFields = Record<`tool_${EnumAssessmentTool}`, boolean | undefined>;
 
 interface ZoneFormData extends ToolFormFields {
   title: string;
+  calculatorType?: CalculatorType;
   maxPoints?: number;
   numberChoose?: number;
   bestQuestions?: number;
@@ -41,6 +46,8 @@ interface ZoneFormData extends ToolFormFields {
   advanceScorePerc?: number;
   gradeRateMinutes?: number;
   allowRealTimeGrading?: boolean;
+  canView?: string[];
+  canSubmit?: string[];
 }
 
 export function ZoneDetailPanel({
@@ -60,9 +67,21 @@ export function ZoneDetailPanel({
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
-  const { editMode, assessmentType, assessmentDefaults, assessmentToolDefaults } = state;
+  const {
+    editMode,
+    assessmentType,
+    assessmentDefaults,
+    assessmentToolDefaults,
+    assessmentCalculatorType,
+    groupsConfigured,
+    groupRoles,
+    assessmentCanView,
+    assessmentCanSubmit,
+    groupsPageUrl,
+  } = state;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
+    calculatorType: zone.tools?.calculator?.type,
     maxPoints: zone.maxPoints ?? undefined,
     numberChoose: zone.numberChoose ?? undefined,
     bestQuestions: zone.bestQuestions ?? undefined,
@@ -72,6 +91,8 @@ export function ZoneDetailPanel({
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     // We do this so that `isDirty = false` when the value is inherited.
     allowRealTimeGrading: zone.allowRealTimeGrading ?? undefined,
+    canView: zone.canView,
+    canSubmit: zone.canSubmit,
     ...(Object.fromEntries(
       EnumAssessmentToolSchema.options.map((tool) => [
         `tool_${tool}` as const,
@@ -111,12 +132,12 @@ export function ZoneDetailPanel({
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
-      const tools: Partial<Record<EnumAssessmentTool, { enabled: boolean }>> = {};
+      const tools: ZoneAssessmentForm['tools'] = {};
       let hasToolOverride = false;
       for (const tool of EnumAssessmentToolSchema.options) {
         const value = coerceToBoolean(data[`tool_${tool}`]);
         if (value != null) {
-          tools[tool] = { enabled: value };
+          tools[tool] = { enabled: value, type: data.calculatorType };
           hasToolOverride = true;
         }
       }
@@ -131,6 +152,8 @@ export function ZoneDetailPanel({
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
         allowRealTimeGrading: data.allowRealTimeGrading,
+        canView: data.canView,
+        canSubmit: data.canSubmit,
         tools: hasToolOverride ? tools : undefined,
       });
     },
@@ -145,7 +168,7 @@ export function ZoneDetailPanel({
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch, trigger });
 
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
     onFormValidChange(isValid);
   }, [isValid, onFormValidChange]);
 
@@ -168,6 +191,12 @@ export function ZoneDetailPanel({
   const [overriddenTools, setOverriddenTools] = useState(
     () => new Set(EnumAssessmentToolSchema.options.filter((tool) => zone.tools?.[tool] != null)),
   );
+
+  const watchedCanView = watch('canView');
+  const watchedCanSubmit = watch('canSubmit');
+  const canViewOverridden = watchedCanView != null;
+  const canSubmitOverridden = watchedCanSubmit != null;
+  const hasRoles = groupRoles.length > 0;
 
   const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
@@ -312,39 +341,120 @@ export function ZoneDetailPanel({
           const isInherited = !overriddenTools.has(tool);
           const watchedValue = watch(fieldName);
           return (
-            <InheritableCheckboxField
+            <div
               key={tool}
-              id={`${idPrefix}-tool-${tool}`}
-              label={toolLabel}
-              helpText={`Override the assessment-level ${toolLabel.toLowerCase()} setting for this zone.`}
-              editMode={editMode}
-              isInherited={isInherited}
-              inheritedValue={inheritedValue}
-              inheritedFromLabel="assessment"
-              viewValue={!isInherited ? !!watchedValue : undefined}
-              registerProps={register(fieldName, { setValueAs: coerceToBoolean })}
-              showResetButton={!isInherited}
-              onOverride={() => {
-                setOverriddenTools((prev) => new Set(prev).add(tool));
-                setValue(fieldName, inheritedValue, { shouldDirty: true });
-              }}
-              onReset={() => {
-                setOverriddenTools((prev) => {
-                  const next = new Set(prev);
-                  next.delete(tool);
-                  return next;
-                });
-                resetAndSave(fieldName);
-              }}
-            />
+              className="d-flex flex-wrap align-items-center justify-content-between gap-3"
+            >
+              <InheritableCheckboxField
+                id={`${idPrefix}-tool-${tool}`}
+                label={toolLabel}
+                helpText={`Override the assessment-level ${toolLabel.toLowerCase()} setting for this zone.`}
+                editMode={editMode}
+                isInherited={isInherited}
+                inheritedValue={inheritedValue}
+                inheritedFromLabel="assessment"
+                viewValue={!isInherited ? !!watchedValue : undefined}
+                registerProps={register(fieldName, { setValueAs: coerceToBoolean })}
+                showResetButton={!isInherited}
+                onOverride={() => {
+                  setOverriddenTools((prev) => new Set(prev).add(tool));
+                  setValue('calculatorType', assessmentCalculatorType, {
+                    shouldDirty: true,
+                  });
+                  setValue(fieldName, inheritedValue, { shouldDirty: true });
+                }}
+                onReset={() => {
+                  setOverriddenTools((prev) => {
+                    const next = new Set(prev);
+                    next.delete(tool);
+                    return next;
+                  });
+                  setValue('calculatorType', undefined);
+                  resetAndSave(fieldName);
+                }}
+              />
+              {(isInherited ? inheritedValue : watchedValue) && (
+                <CalculatorPreviewButton
+                  type={
+                    isInherited
+                      ? (assessmentCalculatorType ?? 'advanced')
+                      : (watch('calculatorType') ?? 'advanced')
+                  }
+                />
+              )}
+            </div>
           );
         })}
       </Wrapper>
+      {(watch('tool_calculator') ?? assessmentToolDefaults.calculator) && (
+        <CalculatorTypeInput
+          id={`${idPrefix}-calculator-type`}
+          value={
+            overriddenTools.has('calculator')
+              ? (watch('calculatorType') ?? 'advanced')
+              : (assessmentCalculatorType ?? 'advanced')
+          }
+          disabled={!editMode || !overriddenTools.has('calculator')}
+          onChange={(value) => setValue('calculatorType', value, { shouldDirty: true })}
+        />
+      )}
       {mixedToolsWarning && (
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           {mixedToolsWarning}
         </div>
+      )}
+
+      {groupsConfigured && (
+        <>
+          <DetailSectionHeader>Role permissions</DetailSectionHeader>
+          {hasRoles ? (
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              <InheritableRolesField
+                id={`${idPrefix}-canView`}
+                label="Can view"
+                helpText="Roles allowed to view questions in this zone."
+                editMode={editMode}
+                isInherited={!canViewOverridden}
+                inheritedValue={assessmentCanView}
+                inheritedFromLabel="assessment"
+                allRoles={groupRoles}
+                value={watchedCanView ?? []}
+                onChange={(next) => setValue('canView', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canView', assessmentCanView ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canView', undefined);
+                  resetAndSave('canView');
+                }}
+              />
+              <InheritableRolesField
+                id={`${idPrefix}-canSubmit`}
+                label="Can submit"
+                helpText="Roles allowed to submit answers to questions in this zone."
+                editMode={editMode}
+                isInherited={!canSubmitOverridden}
+                inheritedValue={assessmentCanSubmit}
+                inheritedFromLabel="assessment"
+                allRoles={groupRoles}
+                value={watchedCanSubmit ?? []}
+                onChange={(next) => setValue('canSubmit', next, { shouldDirty: true })}
+                onOverride={() =>
+                  setValue('canSubmit', assessmentCanSubmit ?? groupRoles, { shouldDirty: true })
+                }
+                onReset={() => {
+                  setValue('canSubmit', undefined);
+                  resetAndSave('canSubmit');
+                }}
+              />
+            </Wrapper>
+          ) : (
+            <p className="text-muted small mb-3">
+              No <a href={groupsPageUrl}>custom roles</a> defined for this assessment.
+            </p>
+          )}
+        </>
       )}
 
       <AdvancedFields

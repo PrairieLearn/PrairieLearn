@@ -1,6 +1,6 @@
 import path from 'path';
 
-export { init } from './migrations/index.js';
+export { getPendingMigrations, init, type PendingMigration } from './migrations/index.js';
 
 export {
   type BatchedMigrationRow,
@@ -18,6 +18,7 @@ export {
   selectBatchedMigrationForTimestamp,
   selectRecentJobsWithStatus,
   retryFailedBatchedMigrationJobs,
+  selectTableIdBounds,
 } from './batched-migrations/index.js';
 
 export { extractTimestampFromFilename } from './load-migrations.js';

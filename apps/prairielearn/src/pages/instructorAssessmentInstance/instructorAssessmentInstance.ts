@@ -1,11 +1,12 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
+import { formatDateISO } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import {
   type InstanceLogEntry,
@@ -14,12 +15,17 @@ import {
   setAssessmentInstancePoints,
   setAssessmentInstanceScore,
 } from '../../lib/assessment.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
+import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
+import { config } from '../../lib/config.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
+import { getAssessmentInstanceTimeFields } from '../../trpc/assessment/assessment-instances.js';
+import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import {
   AssessmentInstanceStatsSchema,
@@ -29,11 +35,6 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const DateDurationResultSchema = z.object({
-  assessment_instance_date_formatted: z.string(),
-  assessment_instance_duration: z.string(),
-});
 
 function makeLogCsvFilename(locals: ResLocalsForPage<'assessment-instance'>) {
   return (
@@ -58,31 +59,43 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment-instance'>(async (req, res) => {
+    const { assessment, authn_user, course_instance } = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
     const logCsvFilename = makeLogCsvFilename(res.locals);
-    const assessment_instance_stats = await sqldb.queryRows(
-      sql.assessment_instance_stats,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      AssessmentInstanceStatsSchema,
-    );
+    const [assessment_instance_stats, instance_questions, assessmentInstanceLog] =
+      await Promise.all([
+        sqldb.queryRows(
+          sql.assessment_instance_stats,
+          { assessment_instance_id: res.locals.assessment_instance.id },
+          AssessmentInstanceStatsSchema,
+        ),
+        sqldb.queryRows(
+          sql.select_instance_questions,
+          { assessment_instance_id: res.locals.assessment_instance.id },
+          InstanceQuestionRowSchema,
+        ),
+        selectAssessmentInstanceLog(res.locals.assessment_instance.id, false),
+      ]);
 
-    const dateDurationResult = await sqldb.queryRow(
-      sql.select_date_formatted_duration,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      DateDurationResultSchema,
-    );
-    const assessment_instance_date_formatted =
-      dateDurationResult.assessment_instance_date_formatted;
-    const assessment_instance_duration = dateDurationResult.assessment_instance_duration;
-
-    const instance_questions = await sqldb.queryRows(
-      sql.select_instance_questions,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      InstanceQuestionRowSchema,
-    );
-
-    const assessmentInstanceLog = await selectAssessmentInstanceLog(
-      res.locals.assessment_instance.id,
-      false,
+    const actionRow: AssessmentInstanceActionRow = {
+      assessment_instance: {
+        id: res.locals.assessment_instance.id,
+        open: res.locals.assessment_instance.open,
+        date: res.locals.assessment_instance.date,
+      },
+      ...getAssessmentInstanceTimeFields(res.locals.assessment_instance),
+    };
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: getAssessmentTrpcUrl({
+          courseInstanceId: course_instance.id,
+          assessmentId: assessment.id,
+        }),
+        authn_user_id: authn_user.id,
+      },
+      config.secretKey,
     );
 
     res.send(
@@ -90,10 +103,10 @@ router.get(
         resLocals: res.locals,
         logCsvFilename,
         assessment_instance_stats,
-        assessment_instance_date_formatted,
-        assessment_instance_duration,
         instance_questions,
         assessmentInstanceLog,
+        actionRow,
+        trpcCsrfToken,
       }),
     );
   }),
@@ -133,7 +146,7 @@ router.get(
             }
           }
           return [
-            record.date_iso8601,
+            formatDateISO(record.event_date, res.locals.course_instance.display_timezone),
             record.auth_user_uid,
             fingerprintNumbers.get(record.client_fingerprint?.id) ?? null,
             record.client_fingerprint?.ip_address ?? null,
@@ -152,7 +165,7 @@ router.get(
       });
 
       res.attachment(req.params.filename);
-      await pipeline(cursor.stream(100), stringifier, res);
+      await pipeline(cursor.stream(1), stringifier, res);
     } else {
       throw new HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }

@@ -59,9 +59,11 @@ export function ManualGradingAssessment({
       ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}
     `,
     preContent: html`
-      ${resLocals.authz_data.has_course_instance_permission_edit
-        ? GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })
-        : ''}
+      ${
+        resLocals.authz_data.has_course_instance_permission_edit
+          ? GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })
+          : ''
+      }
     `,
     content: (
       <>
@@ -81,7 +83,7 @@ export function ManualGradingAssessment({
                 // React doesn't let us emit raw event handlers, so
                 // instead we render these buttons inside a `dangerouslySetInnerHTML` block.
 
-                // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+                // oxlint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{
                   __html: html`
                     <form method="POST" class="d-inline">
@@ -139,7 +141,9 @@ export function ManualGradingAssessment({
                   <th>QID</th>
                   <th>Auto Points</th>
                   <th>Manual Points</th>
-                  <th colSpan={2}>Submissions to grade</th>
+                  <th colSpan={2} scope="colgroup">
+                    Submissions to grade
+                  </th>
                   <th>Grading assigned to</th>
                   <th>Graded by</th>
                   <th>Actions</th>
@@ -188,7 +192,7 @@ function AssessmentQuestionRow({
         </a>
         {question.manual_rubric_id != null && (
           // TODO: Fix this
-          // eslint-disable-next-line jsx-a11y-x/anchor-is-valid
+          // oxlint-disable-next-line jsx-a11y/anchor-is-valid
           <a
             href="#"
             className="ms-2 text-info"

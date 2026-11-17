@@ -5,10 +5,9 @@ import os
 import pathlib
 import sys
 from inspect import signature
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, assert_never
 
 import lxml.html
-from typing_extensions import assert_never
 
 from prairielearn.internal.check_data import Phase, check_data
 from prairielearn.internal.traverse import (
@@ -129,7 +128,7 @@ def process(
 
             mod = mod_cache.get(element_controller_path)
             if mod is None:
-                mod = {}
+                mod = {"__file__": str(element_controller_path)}
 
                 with open(element_controller_path, encoding="utf-8") as inf:
                     # Use `compile` to associate filename with code object, so the
@@ -186,7 +185,7 @@ def process(
             if phase == "render":
                 # TODO: validate that return value was a string?
                 return element_value
-            elif phase == "file":
+            elif phase == "file" and element_value is not None:
                 if result is not None:
                     raise RuntimeError("Another element already returned a file")
                 result = element_value

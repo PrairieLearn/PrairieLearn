@@ -1,4 +1,3 @@
-import assert from 'assert';
 import * as path from 'path';
 
 import { Router } from 'express';
@@ -9,30 +8,29 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
-import { DatetimeLocalStringSchema } from '@prairielearn/zod';
+import { DatetimeLocalStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
-import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editorUtil.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
-import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
-  addEnrollmentToPublishingExtension,
   createPublishingExtensionWithEnrollments,
   deletePublishingExtension,
-  removeStudentFromPublishingExtension,
   selectEnrollmentsForPublishingExtension,
   selectPublishingExtensionById,
   selectPublishingExtensionByName,
   updatePublishingExtension,
+  updatePublishingExtensionEnrollments,
 } from '../../models/course-instance-publishing-extensions.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
@@ -157,9 +155,6 @@ router.get(
       has_course_instance_permission_view: hasCourseInstancePermissionView,
     } = authzData;
 
-    assert(hasCourseInstancePermissionEdit !== undefined);
-    assert(hasCourseInstancePermissionView !== undefined);
-
     // Only fetch extensions if user has student data view permission
     const publishingExtensions = hasCourseInstancePermissionView
       ? await selectPublishingExtensionsWithUsersByCourseInstance({
@@ -209,7 +204,6 @@ router.get(
               csrfToken={csrfToken}
               origHash={origHash}
               extensions={publishingExtensions}
-              isDevMode={config.devMode}
             />
           </Hydrate>
         ) : (
@@ -270,23 +264,24 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      const parsedBody = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
           end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
-        })
-        .parse(req.body);
+        }),
+      );
 
       // Update the publishing settings
       const resolvedPublishing = {
         startDate: propertyValueWithDefault(
           courseInstanceInfo.publishing?.startDate,
-          parsedBody.start_date,
+          body.start_date,
           (v: string) => v === '',
         ),
         endDate: propertyValueWithDefault(
           courseInstanceInfo.publishing?.endDate,
-          parsedBody.end_date,
+          body.end_date,
           (v: string) => v === '',
         ),
       };
@@ -340,7 +335,7 @@ router.post(
 
     if (req.body.__action === 'add_extension') {
       const EmailsSchema = z
-        .array(z.string().trim().email())
+        .array(z.string().trim().pipe(z.email()))
         .min(1, 'At least one UID is required');
       const AddExtensionSchema = z.object({
         __action: z.literal('add_extension'),
@@ -365,11 +360,7 @@ router.post(
           EmailsSchema,
         ),
       });
-      const addExtensionBodyResult = AddExtensionSchema.safeParse(req.body);
-      if (!addExtensionBodyResult.success) {
-        throw new error.HttpStatusError(400, 'Invalid request body');
-      }
-      const body = addExtensionBodyResult.data;
+      const body = parseRequestBody(req, AddExtensionSchema);
 
       const enrollments = (
         await selectUsersAndEnrollmentsByUidsInCourseInstance({
@@ -388,8 +379,6 @@ router.post(
         const existingExtension = await selectPublishingExtensionByName({
           name: body.name,
           courseInstance,
-          authzData,
-          requiredRole: ['Student Data Viewer'],
         });
 
         if (existingExtension) {
@@ -405,42 +394,33 @@ router.post(
         name: body.name,
         endDate: plainDateTimeStringToDate(body.end_date, courseInstance.display_timezone),
         enrollments,
-        authzData,
-        requiredRole: ['Student Data Editor'],
       });
 
       res.sendStatus(204);
       return;
     } else if (req.body.__action === 'delete_extension') {
-      const deleteExtensionBodyResult = z
-        .object({
+      const body = parseRequestBody(
+        req,
+        z.object({
           extension_id: z.string().trim().min(1),
-        })
-        .safeParse(req.body);
-      if (!deleteExtensionBodyResult.success) {
-        throw new error.HttpStatusError(400, 'Invalid request body');
-      }
-      const body = deleteExtensionBodyResult.data;
+        }),
+      );
 
       const extension = await selectPublishingExtensionById({
         id: body.extension_id,
         courseInstance,
-        requiredRole: ['Student Data Viewer'],
-        authzData,
       });
 
       await deletePublishingExtension({
         extension,
         courseInstance,
-        authzData,
-        requiredRole: ['Student Data Editor'],
       });
 
       res.sendStatus(204);
       return;
     } else if (req.body.__action === 'edit_extension') {
       const EmailsSchema = z
-        .array(z.string().trim().email('Invalid email format'))
+        .array(z.string().trim().pipe(z.email('Invalid UID format')))
         .min(1, 'At least one UID is required');
       const EditExtensionSchema = z.object({
         __action: z.literal('edit_extension'),
@@ -464,7 +444,7 @@ router.post(
       });
       const editExtensionBodyResult = EditExtensionSchema.safeParse(req.body);
       if (!editExtensionBodyResult.success) {
-        const errorMessages = editExtensionBodyResult.error.errors.map((error) => {
+        const errorMessages = editExtensionBodyResult.error.issues.map((error) => {
           if (error.path.length > 0) {
             const field = error.path.join('.');
             return `${field}: ${error.message}`;
@@ -480,8 +460,6 @@ router.post(
         const existingExtension = await selectPublishingExtensionByName({
           name: body.name,
           courseInstance,
-          authzData,
-          requiredRole: ['Student Data Viewer'],
         });
 
         if (existingExtension && existingExtension.id !== body.extension_id) {
@@ -496,8 +474,6 @@ router.post(
         const extension = await selectPublishingExtensionById({
           id: body.extension_id,
           courseInstance,
-          requiredRole: ['Student Data Viewer'],
-          authzData,
         });
 
         const desiredEnrollments = (
@@ -519,14 +495,10 @@ router.post(
           endDate: body.end_date
             ? plainDateTimeStringToDate(body.end_date, courseInstance.display_timezone)
             : null,
-          authzData,
-          requiredRole: ['Student Data Editor'],
         });
 
         const currentEnrollments = await selectEnrollmentsForPublishingExtension({
           extension,
-          authzData,
-          requiredRole: ['Student Data Viewer'],
         });
         const desiredEnrollmentsIds = new Set(desiredEnrollments.map((e) => e.id));
         const currentEnrollmentsIds = new Set(currentEnrollments.map((e) => e.id));
@@ -535,23 +507,11 @@ router.post(
           (e) => !desiredEnrollmentsIds.has(e.id),
         );
 
-        for (const enrollment of enrollmentsToRemove) {
-          await removeStudentFromPublishingExtension({
-            courseInstancePublishingExtension: extension,
-            enrollment,
-            authzData,
-            requiredRole: ['Student Data Editor'],
-          });
-        }
-
-        for (const enrollment of enrollmentsToAdd) {
-          await addEnrollmentToPublishingExtension({
-            courseInstancePublishingExtension: extension,
-            enrollment,
-            authzData,
-            requiredRole: ['Student Data Editor'],
-          });
-        }
+        await updatePublishingExtensionEnrollments({
+          courseInstancePublishingExtension: extension,
+          enrollmentsToAdd,
+          enrollmentsToRemove,
+        });
       });
 
       res.sendStatus(204);

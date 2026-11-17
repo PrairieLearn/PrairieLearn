@@ -1,33 +1,32 @@
 {
   "name": "@prairielearn/signed-token",
-  "version": "3.1.3",
-  "type": "module",
+  "version": "4.0.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/signed-token"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run"
   },
   "dependencies": {
     "base64url": "^3.0.1",
     "debug": "^4.4.3",
-    "es-toolkit": "^1.45.1"
+    "es-toolkit": "^1.52.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/debug": "^4.1.13",
-    "@types/node": "^24.12.2",
-    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
-    "@vitest/coverage-v8": "^4.1.2",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.2"
+    "@types/node": "^24.19.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^5.0.2",
+    "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

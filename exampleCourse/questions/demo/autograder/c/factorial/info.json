@@ -7,7 +7,6 @@
   "type": "v3",
   "gradingMethod": "External",
   "externalGradingOptions": {
-    "enabled": true,
     "image": "prairielearn/grader-c"
   }
 }

@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectSubmissionById } from '../models/submission.js';
 import { selectUserById } from '../models/user.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -14,7 +15,6 @@ import {
   type CourseInstance,
   type Question,
   type Submission,
-  SubmissionSchema,
   type Variant,
 } from './db-types.js';
 import { gradeVariant, saveSubmission } from './grading.js';
@@ -30,10 +30,12 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * and searching all element attributes for URLs matching the pattern
  * `generatedFilesQuestion/variant/{variantId}/{filename}`.
  */
-function extractDynamicFileUrls(html: string, variantId: string): string[] {
+function extractDynamicFileUrls(html: string, variantId: string) {
   const $ = cheerio.load(html);
-  const pattern = new RegExp(`generatedFilesQuestion/variant/${variantId}/([^?#]+)$`);
-  const filenames = new Set<string>();
+  const variantFilesPattern = new RegExp(`generatedFilesQuestion/variant/${variantId}/([^?#]+)$`);
+  const variantFilenames = new Set<string>();
+  const submissionFilesPattern = /generatedFilesQuestion\/submission\/(\d+)\/([^?#]+)$/;
+  const submissionFilenames: { filename: string; submission_id: string | null }[] = [];
 
   // We intentionally look for more than just `a[href]` and `img[src]` in case
   // other tags or attributes are used to reference dynamic files. For instance,
@@ -42,12 +44,27 @@ function extractDynamicFileUrls(html: string, variantId: string): string[] {
   $('*').each((_, el) => {
     if (!isTag(el)) return;
     for (const value of Object.values(el.attribs)) {
-      const match = value.match(pattern);
-      if (match) filenames.add(match[1].trim());
+      const variantMatch = value.match(variantFilesPattern);
+      if (variantMatch) variantFilenames.add(variantMatch[1].trim());
+      const submissionMatch = value.match(submissionFilesPattern);
+      if (
+        submissionMatch &&
+        !submissionFilenames.some(
+          ({ filename, submission_id }) =>
+            filename === submissionMatch[2].trim() && submission_id === submissionMatch[1],
+        )
+      ) {
+        submissionFilenames.push({
+          filename: submissionMatch[2].trim(),
+          submission_id: submissionMatch[1],
+        });
+      }
     }
   });
 
-  return Array.from(filenames);
+  return submissionFilenames.concat(
+    Array.from(variantFilenames, (filename) => ({ filename, submission_id: null })),
+  );
 }
 
 async function testDynamicFiles({
@@ -87,13 +104,20 @@ async function testDynamicFiles({
   const filenames = extractDynamicFileUrls(allHtml, variant.id);
   if (filenames.length === 0) return;
 
-  for (const filename of filenames) {
+  for (const { filename, submission_id } of filenames) {
     const decodedFilename = decodeURIComponent(filename);
+    const submission = submission_id != null ? await selectSubmissionById({ submission_id }) : null;
     const { courseIssues } = await questionModule.file(
       decodedFilename,
       variant,
+      submission,
       question,
       question_course,
+      {
+        userId: variant.user_id,
+        groupId: variant.team_id,
+        variantCourse: course,
+      },
     );
 
     const studentMessage = 'Error creating file: ' + decodedFilename;
@@ -128,6 +152,10 @@ interface TestQuestionResults {
 export const TEST_TYPES = ['correct', 'incorrect', 'invalid'] as const;
 export type TestType = (typeof TEST_TYPES)[number];
 
+export function questionSupportsTesting(question: Question): boolean {
+  return questionServers.getModule(question.type).test != null;
+}
+
 /**
  * Creates the data for a test submission.
  *
@@ -148,7 +176,7 @@ export async function createTestSubmissionData(
   authn_user_id: string,
 ): Promise<{ data: questionServers.TestResultData; hasFatalIssue: boolean }> {
   const questionModule = questionServers.getModule(question.type);
-  if (!questionModule.test) {
+  if (questionModule.test == null) {
     throw new Error('Question type does not support testing, must be Freeform');
   }
 
@@ -158,6 +186,11 @@ export async function createTestSubmissionData(
     question,
     question_course,
     test_type,
+    {
+      userId: variant.user_id,
+      groupId: variant.team_id,
+      variantCourse: variant_course,
+    },
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
@@ -188,6 +221,7 @@ function compareTestResults(
   expectedData: questionServers.TestResultData,
   hasFatalIssue: boolean,
   submission: Submission,
+  question: Question,
 ): Error[] {
   const courseIssues: Error[] = [];
 
@@ -217,8 +251,13 @@ function compareTestResults(
   if (!submission.gradable || !expectedData.gradable) {
     return courseIssues;
   }
-  checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
-  checkEqual('score', expectedData.score, submission.score);
+  // For manual-only questions, auto-grading is skipped entirely, so the
+  // submission will have null partial_scores and score. Skip comparison
+  // in that case since there's nothing to compare against.
+  if (question.grading_method !== 'Manual') {
+    checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
+    checkEqual('score', expectedData.score, submission.score);
+  }
   return courseIssues;
 }
 
@@ -280,10 +319,10 @@ async function testVariant(
     ignoreGradeRateLimit: true,
     ignoreRealTimeGradingDisabled: true,
   });
-  const submission = await selectSubmission(submission_id);
+  const submission = await selectSubmissionById({ submission_id });
 
   // Step 3: Compare expected results with actual submission
-  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission);
+  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission, question);
   const studentMessage = 'Question test failure';
   const courseData = {
     variant: updated_variant,
@@ -653,8 +692,4 @@ export async function startTestQuestion({
   });
 
   return serverJob.jobSequenceId;
-}
-
-async function selectSubmission(submission_id: string): Promise<Submission> {
-  return await sqldb.queryRow(sql.select_submission_by_id, { submission_id }, SubmissionSchema);
 }

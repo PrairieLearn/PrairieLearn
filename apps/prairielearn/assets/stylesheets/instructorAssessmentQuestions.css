@@ -98,3 +98,12 @@
   outline: 2px solid var(--bs-primary);
   outline-offset: -2px;
 }
+
+.tree-row-warning-indicator::before {
+  content: '';
+  position: absolute;
+  inset: 0.25rem auto 0.25rem 0.25rem;
+  width: 4px;
+  border-radius: 999px;
+  background-color: var(--bs-warning);
+}

@@ -1,0 +1,15 @@
+# Picking an input element when students choose from a fixed set of options.
+
+count: "How many items can be picked?" {
+  shape: diamond
+}
+
+pl_multiple_choice: "pl-multiple-choice"
+pl_checkbox: "pl-checkbox"
+pl_matching: "pl-matching"
+pl_order_blocks: "pl-order-blocks"
+
+count -> pl_multiple_choice: "One"
+count -> pl_checkbox: "Several\nfrom a list"
+count -> pl_matching: "One per prompt,\nfrom a shared list"
+count -> pl_order_blocks: "A subset of them,\nin a particular order"

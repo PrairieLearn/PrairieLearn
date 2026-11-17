@@ -13,6 +13,32 @@
   display: flex;
 }
 
+.pl-drawing-output {
+  min-width: 0;
+}
+
+.pl-drawing-main {
+  display: inline-block;
+}
+
+.pl-drawing-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: calc(
+    1.5rem + var(--bs-card-cap-padding-y, 0.5rem) + var(--bs-card-cap-padding-y, 0.5rem) +
+      var(--bs-card-border-width, var(--bs-border-width))
+  );
+  padding: var(--bs-card-cap-padding-y, 0.5rem) var(--bs-card-cap-padding-x, 1rem);
+  background-color: var(--bs-card-cap-bg, var(--bs-tertiary-bg));
+  border: var(--bs-card-border-width, var(--bs-border-width)) solid
+    var(--bs-card-border-color, var(--bs-border-color-translucent));
+  border-bottom: 0;
+  border-top-left-radius: var(--bs-card-border-radius, var(--bs-border-radius));
+  border-top-right-radius: var(--bs-card-border-radius, var(--bs-border-radius));
+}
+
 .pl-drawing-sidebar {
   margin-left: 20px;
   flex-grow: 1;

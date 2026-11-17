@@ -2,13 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
+import { DRAFT_QID_PREFIX, isDraftQid } from '../../../../lib/draft-question.js';
 import { validateShortName } from '../../../../lib/short-name.js';
-
-export const DRAFT_QID_PREFIX = '__drafts__/';
-
-function isDraftQid(qid: string): boolean {
-  return qid.startsWith(DRAFT_QID_PREFIX);
-}
 
 async function renameDraftQuestion({
   csrfToken,

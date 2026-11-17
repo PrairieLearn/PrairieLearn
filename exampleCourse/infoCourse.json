@@ -4,12 +4,6 @@
   "comment": "Add additional assessment sets here. Default ones are listed here: https://docs.prairielearn.com/course/#assessment-sets.",
   "assessmentSets": [
     {
-      "abbreviation": "W",
-      "name": "Workshop",
-      "heading": "Workshops and Tutorials",
-      "color": "gray1"
-    },
-    {
       "abbreviation": "C",
       "name": "Collection",
       "heading": "Collection of example questions",
@@ -53,11 +47,6 @@
       "name": "Demo",
       "color": "purple1",
       "description": "Demonstration questions showcasing PrairieLearn Features."
-    },
-    {
-      "name": "Workshop Demo",
-      "color": "pink2",
-      "description": "Demonstration questions from the PrairieLearn workshop."
     },
     {
       "name": "Gallery",

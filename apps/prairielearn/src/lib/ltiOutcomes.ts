@@ -1,7 +1,5 @@
 import * as crypto from 'node:crypto';
 
-import fetch from 'node-fetch';
-import oauthSignature from 'oauth-signature';
 import * as xml2js from 'xml2js';
 import z from 'zod';
 
@@ -9,6 +7,8 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { AssessmentInstanceSchema, LtiCredentialSchema, LtiOutcomeSchema } from './db-types.js';
+import { ltiFetch } from './lti-fetch.js';
+import { encodeOAuth1Component, generateOAuth1Signature } from './oauth1.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const parser = new xml2js.Parser({ explicitArray: false });
@@ -97,23 +97,20 @@ export async function updateScore(assessment_instance_id: string) {
     oauth_body_hash: Buffer.from(sha1, 'hex').toString('base64'),
   };
 
-  oauthParams.oauth_signature = oauthSignature.generate(
-    'POST',
-    info.lis_outcome_service_url,
-    oauthParams,
-    info.secret,
-    undefined,
-    { encodeSignature: false },
-  );
+  oauthParams.oauth_signature = generateOAuth1Signature({
+    method: 'POST',
+    url: info.lis_outcome_service_url,
+    parameters: oauthParams,
+    consumerSecret: info.secret,
+  });
 
-  const rfc = new oauthSignature.Rfc3986();
   const stringifiedParameters = Object.entries(oauthParams)
     .map(([key, value]) => {
-      return `${key}="${rfc.encode(value)}"`;
+      return `${key}="${encodeOAuth1Component(value)}"`;
     })
     .join(',');
 
-  const res = await fetch(info.lis_outcome_service_url, {
+  const res = await ltiFetch(info.lis_outcome_service_url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/xml',

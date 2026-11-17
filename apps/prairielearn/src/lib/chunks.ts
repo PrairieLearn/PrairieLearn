@@ -1,10 +1,11 @@
 import assert from 'assert';
 import * as child_process from 'child_process';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
-import { PassThrough as PassThroughStream } from 'stream';
 import * as util from 'util';
 
-import { S3 } from '@aws-sdk/client-s3';
+import { S3, S3ServiceException } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
 import fs from 'fs-extra';
@@ -17,7 +18,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { getLockNameForCoursePath } from '../models/course.js';
+import { getCourseCommitHash, getLockNameForCoursePath } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
 import { type CourseData } from '../sync/course-db.js';
 
@@ -113,7 +114,7 @@ interface ClientFilesAssessmentChunk {
   assessmentId: string;
 }
 
-export interface QuestionChunk {
+interface QuestionChunk {
   type: 'question';
   questionId: string;
 }
@@ -188,7 +189,7 @@ const RawCourseChunkSchema = z.object({
   assessment_uuid: AssessmentSchema.shape.uuid,
   assessment_name: AssessmentSchema.shape.tid,
   course_instance_uuid: CourseInstanceSchema.shape.uuid,
-  course_instance_name: CourseInstanceSchema.shape.short_name,
+  course_instance_name: CourseInstanceSchema.shape.short_name.nullable(),
 });
 
 interface CourseInstanceChunks {
@@ -314,8 +315,10 @@ async function identifyChangedFiles(
   );
   const topLevel = topLevelStdout.trim();
 
+  // Both sides of a rename may belong to independently invalidated chunks. NUL
+  // delimiters keep filenames unambiguous.
   const { stdout: diffStdout } = await util.promisify(child_process.exec)(
-    `git diff --name-only ${oldHash}..${newHash}`,
+    `git diff --no-renames --name-only -z ${oldHash}..${newHash}`,
     {
       cwd: coursePath,
       // This defaults to 1MB of output, however, we've observed in the past that
@@ -326,7 +329,7 @@ async function identifyChangedFiles(
       maxBuffer: 10 * 1024 * 1024,
     },
   );
-  const changedFiles = diffStdout.trim().split('\n');
+  const changedFiles = diffStdout.split('\0').filter((changedFile) => changedFile.length > 0);
 
   // Construct absolute path to all changed files.
   const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
@@ -463,11 +466,31 @@ export function identifyChunksFromChangedFiles(
  */
 async function getAllChunksForCourse(courseId: string) {
   const result = await sqldb.queryRows(
-    sql.select_course_chunks,
+    sql.select_current_course_chunks,
     { course_id: courseId },
     RawCourseChunkSchema,
   );
   return result;
+}
+
+/**
+ * Selects live chunk revisions at a cutoff, or the current state when omitted.
+ * Rows written before history was activated are undated and treated as current
+ * until replaced, so cutoffs must not predate activation.
+ */
+export async function selectChunksForCourse(courseId: string, atDate: Date | null = null) {
+  if (atDate == null) {
+    return await sqldb.queryRows(
+      sql.select_current_course_chunks,
+      { course_id: courseId },
+      ChunkSchema,
+    );
+  }
+  return await sqldb.queryRows(
+    sql.select_course_chunks_at_date,
+    { course_id: courseId, at_date: atDate },
+    ChunkSchema,
+  );
 }
 
 interface DiffChunksOptions {
@@ -481,6 +504,8 @@ interface DiffChunksOptions {
 interface ChunksDiff {
   updatedChunks: ChunkMetadata[];
   deletedChunks: ChunkMetadata[];
+  /** IDs of current rows whose chunk identities are being replaced or deleted. */
+  replacedChunkIds: string[];
 }
 
 /**
@@ -728,7 +753,7 @@ async function diffChunks({
       }
 
       await Promise.all(
-        [...courseInstanceInfo.assessments].map(async (tid) => {
+        Array.from(courseInstanceInfo.assessments, async (tid) => {
           const assessmentExists =
             courseInstanceExists && tid in courseData.courseInstances[ciid].assessments;
           const clientFilesAssessmentExists = await fs.pathExists(
@@ -753,7 +778,15 @@ async function diffChunks({
     }),
   );
 
-  return { updatedChunks, deletedChunks };
+  const replacedPaths = new Set([...updatedChunks, ...deletedChunks].map(pathForChunk));
+  const replacedChunkIds = rawCourseChunks
+    .filter((chunk) =>
+      replacedPaths.has(
+        pathForChunk(chunkMetadataFromDatabaseChunk(DatabaseChunkSchema.parse(chunk))),
+      ),
+    )
+    .map((chunk) => chunk.id);
+  return { updatedChunks, deletedChunks, replacedChunkIds };
 }
 
 async function createAndUploadChunks(
@@ -761,7 +794,11 @@ async function createAndUploadChunks(
   courseId: string,
   chunksToGenerate: ChunkMetadata[],
 ) {
-  const generatedChunks: (ChunkMetadata & { uuid: string })[] = [];
+  const generatedChunks: (ChunkMetadata & {
+    uuid: string;
+    sizeCompressed: number;
+    sizeUncompressed: number;
+  })[] = [];
 
   // Share a single S3 client across all uploads. If we created one client per
   // upload, we'd face a denial of service if someone changed a sufficient number
@@ -775,55 +812,44 @@ async function createAndUploadChunks(
     // Generate a UUId for this chunk
     const chunkUuid = crypto.randomUUID();
 
-    // Let's create a tarball for this chunk and send it off to S3
+    let sizeCompressed = 0;
+    let sizeUncompressed = 0;
+
+    // Count file content represented by the archive, excluding headers and links.
     const tarball = tar.create(
       {
         gzip: true,
         cwd: chunkDirectory,
+        onWriteEntry(entry) {
+          if (entry.type === 'File') {
+            assert(entry.stat);
+            sizeUncompressed += entry.stat.size;
+          }
+        },
       },
       ['.'],
     );
 
-    const passthrough = new PassThroughStream();
-    tarball.pipe(passthrough);
-
-    await new Upload({
+    const body = new Transform({
+      transform(data: Buffer, _encoding, callback) {
+        sizeCompressed += data.length;
+        callback(null, data);
+      },
+    });
+    const upload = new Upload({
       client: s3,
       params: {
         Bucket: config.chunksS3Bucket,
-        Key: `${chunkUuid}.tar.gz`,
-        Body: passthrough,
+        Key: s3KeyForChunk(courseId, chunkUuid),
+        Body: body,
       },
-    }).done();
+    });
+    await Promise.all([pipeline(tarball, body), upload.done()]);
 
-    generatedChunks.push({ ...chunk, uuid: chunkUuid });
+    generatedChunks.push({ ...chunk, uuid: chunkUuid, sizeCompressed, sizeUncompressed });
   });
 
-  // Now that the new chunks have been uploaded, update their status in the database
-  await sqldb.execute(sql.insert_chunks, {
-    course_id: courseId,
-    // Force this to a string; otherwise, our code in `sql-db.js` will try to
-    // convert it into a Postgres `ARRAY[...]` type, which we don't want.
-    chunks: JSON.stringify(generatedChunks),
-  });
-}
-
-/**
- * Deletes the specified chunks from the database. Note that they are not
- * deleted from S3 at this time.
- */
-async function deleteChunks(courseId: string, chunksToDelete: ChunkMetadata[]) {
-  if (chunksToDelete.length === 0) {
-    // Avoid a round-trip to the DB if there's nothing to delete.
-    return;
-  }
-
-  await sqldb.execute(sql.delete_chunks, {
-    course_id: courseId,
-    // Force this to a string; otherwise, our code in `sql-db.js` will try to
-    // convert it into a Postgres `ARRAY[...]` type, which we don't want.
-    chunks: JSON.stringify(chunksToDelete),
-  });
+  return generatedChunks;
 }
 
 /**
@@ -933,7 +959,7 @@ export async function updateChunksForCourse(
     }
   });
 
-  const { updatedChunks, deletedChunks } = await diffChunks({
+  const { updatedChunks, deletedChunks, replacedChunkIds } = await diffChunks({
     coursePath,
     courseId,
     courseData,
@@ -941,10 +967,29 @@ export async function updateChunksForCourse(
     changedFiles,
   });
 
-  await createAndUploadChunks(coursePath, courseId, updatedChunks);
-  await deleteChunks(courseId, deletedChunks);
+  const commitHash = options.mode === 'git-diff' ? await getCourseCommitHash(coursePath) : null;
+  const generatedChunks = await createAndUploadChunks(coursePath, courseId, updatedChunks);
 
-  return { updatedChunks, deletedChunks };
+  // Uploads finish before the transaction, so it only holds row locks briefly.
+  await sqldb.runInTransactionAsync(async () => {
+    await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
+    // Preserve database precision so old and new revisions meet at the same instant.
+    const publishedAt = await sqldb.queryScalar(
+      sql.supersede_chunks,
+      { course_id: courseId, chunk_ids: replacedChunkIds },
+      z.string(),
+    );
+    await sqldb.execute(sql.insert_chunks, {
+      course_id: courseId,
+      // Force this to a string; otherwise, our code in `sql-db.js` will try to
+      // convert it into a Postgres `ARRAY[...]` type, which we don't want.
+      chunks: JSON.stringify(generatedChunks),
+      created_at: publishedAt,
+      commit_hash: commitHash,
+    });
+  });
+
+  return { updatedChunks, deletedChunks, replacedChunkIds };
 }
 
 /**
@@ -1007,6 +1052,10 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
   job.verbose('Released lock');
 
   job.info(chalk.green(`Successfully generated chunks for course ID = ${course_id}`));
+}
+
+function s3KeyForChunk(courseId: string, chunkUuid: string) {
+  return `course-${courseId}/${chunkUuid}.tar.gz`;
 }
 
 const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
@@ -1083,7 +1132,18 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
   await fs.ensureDir(path.dirname(downloadPath));
-  await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
+  try {
+    await downloadFromS3(config.chunksS3Bucket, s3KeyForChunk(courseId, chunk.uuid), downloadPath);
+  } catch (error) {
+    // Missing keys can return 403 when bucket listing isn't permitted.
+    if (
+      !(error instanceof S3ServiceException) ||
+      (error.$metadata.httpStatusCode !== 404 && error.name !== 'AccessDenied')
+    ) {
+      throw error;
+    }
+    await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
+  }
   await fs.move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In

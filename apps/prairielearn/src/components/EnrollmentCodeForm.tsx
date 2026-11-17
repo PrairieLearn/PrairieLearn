@@ -126,9 +126,10 @@ export function EnrollmentCodeForm({
     e.preventDefault();
     const pastedText = e.clipboardData.getData('text') || '';
     const formatted = formatInput(pastedText);
-    const currentField = fields.find((f) => f.field === e.currentTarget.name);
+    const { name, selectionStart } = e.currentTarget;
+    const currentField = fields.find((f) => f.field === name);
     const cursorPosition = run(() => {
-      const cursorPosition = e.currentTarget.selectionStart ?? 0;
+      const cursorPosition = selectionStart ?? 0;
       if (!currentField) {
         return cursorPosition;
       }

@@ -1,12 +1,11 @@
 # PrairieLearn
 
-PrairieLearn is an educational learning platform with a focus on automated assessments.
-This is a monorepo that contains both applications (in `apps/*`) and libraries (in `packages/*`).
+PrairieLearn is an educational learning platform with a focus on automated assessments. This is a monorepo that contains both applications (in `apps/*`) and libraries (in `packages/*`).
 
 ## Tech stack
 
-Frontend: TypeScript / React / Bootstrap / Tanstack
-Backend: TypeScript / Express / Python / PostgreSQL
+- Frontend: TypeScript / React / Bootstrap / TanStack
+- Backend: TypeScript / Express / Python / PostgreSQL
 
 ## Applications
 
@@ -41,13 +40,13 @@ Frequently used packages:
 - NEVER rebase unless specifically requested, always use merge commits.
 - ALWAYS create pull requests as drafts unless specifically requested.
 - When creating pull requests, follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md`.
-- In Claude Code remote sessions, if the target branch is not `master`, commit and push directly to the parent/target branch instead of creating a separate feature branch.
+- In PR descriptions, keep the Testing section high signal. Do not list routine lint/typecheck/test commands just because they were run locally, and do not mention that CI will run. Mention only manual verification, docs rendering, screenshots, special test coverage, or unusual validation that helps reviewers understand the change.
 
 ## Building, type checking, and linting
 
-When working on a task, you should typecheck / lint / format individual files as you go. When you are done, you should typecheck / lint / format all changed files.
+Before finishing, typecheck, lint, and format the changed files using the targeted commands below.
 
-Run `make format-changed` from the root directory to format all files changed on the current branch compared to the default branch, including committed, staged, unstaged, and untracked changes.
+`make format-changed` autofixes and formats all branch changes, including untracked files. Use it only when that entire scope belongs to the task.
 
 ### TypeScript
 
@@ -58,20 +57,21 @@ Typechecking:
 
 Linting:
 
-- Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
+- Individual files: `pnpm oxlint --fix path/to/file.ts`. oxlint runs nearly all JS/TS rules; shared rules are in `packages/oxlint-config` and PrairieLearn-specific overrides are in `oxlint.config.mts`. ESLint only runs `@prairielearn/safe-db-types` on `.tsx` files in `apps/prairielearn` and lints HTML/mustache files; for those, also run `pnpm eslint --fix path/to/file.tsx`.
 - All files: `make lint-js`
-- Check for dead code with `make check-dependencies`.
+- Suppress oxlint rules with `oxlint-disable` comments and ESLint rules with `eslint-disable` comments. Each tool ignores the other's directives, so use the prefix of the tool that reports the error.
+- Check for dead code with `make lint-dependencies`.
 
 Formatting:
 
-- Individual files: `yarn prettier --write path/to/file.ts`
-- All files: `make format-js`
+- Individual files: `pnpm oxfmt path/to/file.ts`
+- All files: `make fix-js`
 
 ### Python
 
 Typechecking:
 
-- Individual files: `yarn pyright path/to/file.py`. Prefer using a skill / LSP / MCP for this to improve performance.
+- Individual files: `pnpm pyright path/to/file.py`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make typecheck-python`
 
 Linting:
@@ -82,12 +82,11 @@ Linting:
 Formatting:
 
 - Individual files: `uv run ruff format path/to/file.py`
-- All files: `make format-python`
+- All files: `make fix-python`
 
 ### Other tools / languages (e.g. SQL, Markdown, Shell)
 
-SQL, shell, markdown, and JSON files should also be formatted with `yarn prettier --write path/to/file.{sql,sh,md,json}`.
-Reference the Makefile for commands to format/lint/typecheck other tools / languages.
+Markdown, JSON, YAML, TOML, CSS, and HTML files should also be formatted with `pnpm oxfmt path/to/file.{md,json,yml,toml,css,html}`. SQL and shell files should be formatted with `pnpm prettier --write path/to/file.{sql,sh}`, since oxfmt doesn't support them. Reference the Makefile for commands to format/lint/typecheck other tools / languages.
 
 ## Database and schema changes
 
@@ -99,26 +98,36 @@ If a migration was created on the current feature branch (i.e., it has not been 
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
+After any migration or `database/` schema-description change, run `apps/prairielearn/src/tests/database.test.ts` after the final edit. Re-run it after renaming a constraint or index: entry ordering in `database/tables/*.pg` is significant and must match the generated database description.
+
 Dropping a sproc (stored procedure) only requires removing the file from `apps/prairielearn/src/sprocs` and updating `apps/prairielearn/src/sprocs/index.ts`. Do not author a migration that uses `DROP FUNCTION`.
 
-**Always prefer existing model functions over one-off raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
-
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
 
-When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
+Use `queryOptional...()` functions from `@prairielearn/postgres` when a row may not exist. The equivalent for model or library functions is to name them `selectOptional...()`.
 
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
 
-### SQL query conventions
-
-- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
-
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
 
+### Models and libraries
+
+`apps/prairielearn/src/models/` and `apps/prairielearn/src/lib/` are organizational conventions for reusable application code, not strict dependency layers. Choose a location based on the helper's primary responsibility:
+
+- Model modules in `apps/prairielearn/src/models/` should map one-to-one to a primary database table and contain operations centered on that table's entity. Do not create a model without a corresponding primary table. A model may join or update related tables and contain entity-specific business rules, but those operations must remain centered on its primary table.
+- Put cross-entity workflows, orchestration, authorization or context helpers, analytics, and other reusable logic without a corresponding primary database table in `apps/prairielearn/src/lib/`. Library modules may execute SQL or call model functions.
+- Before adding a helper or query, extend an existing model or library module that already owns the responsibility when one exists.
+
 ### SQL query conventions
 
-- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
+- Node is authoritative for operations that depend on rule-bearing IANA timezone data, such as parsing civil times, calculating DST-aware boundaries, and grouping or formatting in course or institution timezones. Fixed-UTC timestamp arithmetic, truncation, bucketing, and internal transport serialization may remain in PostgreSQL because UTC has no mutable timezone rules; do not move these operations to Node solely for timezone ownership, especially when doing so adds query round trips. Never rely on the PostgreSQL session timezone for UTC behavior; make UTC explicit.
+- Always prefer existing model functions or library helpers over one-off raw SQL queries. Check `apps/prairielearn/src/models/` and `apps/prairielearn/src/lib/` before writing any database queries. Only write raw queries when no suitable abstraction exists.
+- Prefer selecting whole rows and using canonical `db-types` entities. When selecting all columns from a table as JSON, use `to_jsonb(table.*)` rather than explicit `jsonb_build_object` calls or returning columns explicitly in a SELECT statement because it automatically includes all columns and stays in sync with schema changes and Zod types.
+  - When a query spans multiple tables, model it as a composite object with named canonical `db-types` entities plus any true computed fields, rather than flattening columns or embedding one entity inside another.
+  - Use narrower SQL projections and matching types when the caller does not need large payload columns, especially for queries returning many rows. Omit these columns in SQL; discarding fields in Node does not avoid the transfer or memory cost.
+  - Large-payload watchlist: `ai_grading_jobs.prompt` (can contain base64 submission images) and `completion`; `submissions.submitted_answer`, `raw_submitted_answer`, `true_answer`, `params`, and `feedback`; `variants.params`, `true_answer`, and `options`.
 - When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
+- Many tables (e.g. `courses`, `course_instances`, `assessments`; see `deleted_at` in `database/tables/`) are soft-deleted: deleting only sets a `deleted_at` timestamp, and child rows are generally NOT cascade-deleted. When selecting from or joining these tables, filter with `deleted_at IS NULL` unless the row was already validated as live upstream (e.g. loaded by a middleware like `authzCourseOrInstance` and passed down by primary key) or deleted rows are intentionally needed (e.g. rendering historical submissions, sync code).
 - Never inline SQL strings in TypeScript code. Place SQL queries in a `.sql` file alongside the TypeScript file using `-- BLOCK query_name` delimiters, load them with `sqldb.loadSqlEquiv(import.meta.url)`, and reference them as `sql.query_name`.
 
 ## TypeScript guidance
@@ -127,6 +136,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`. See the [`trpc` skill](./.agents/skills/trpc/SKILL.md) for conventions on authorization scopes, file structure, and client-side patterns.
 - Use `react-hook-form` for form handling.
+- Use the [`express-request-validation` skill](./.agents/skills/express-request-validation/SKILL.md) when validating Express request parameters, query strings, or bodies with Zod.
 - Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
 
@@ -135,11 +145,11 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Information about the current user, course instance, course, etc. is stored in `res.locals` in route handlers. Types for `res.locals` are defined in `apps/prairielearn/src/lib/res-locals.ts`.
 - NEVER use `as any` casts in TypeScript code to avoid type errors.
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
-- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file. Comments should explain _why_, not _what_ — if a comment just restates the code, remove it.
-- Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
+- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file. Comments should explain _why_, not _what_. If a comment just restates the code, remove it.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.
 - When importing library code, prefer top-level imports instead of using dynamic `import()` statements inside functions. Notable exceptions are our `ee` code, and module registration patterns.
+- When formatting dates and intervals, use the functions from `@prairielearn/formatter` to ensure consistent formatting across the application. The timezone should be retrieved from the course instance, the course, or the institution, in this order of preference, using the values from `res.locals` where available.
 
 ### User interface conventions
 
@@ -155,24 +165,28 @@ Integration and unit tests are written with Vitest. End-to-end tests are written
 
 Individual tests:
 
-- For integration and unit tests, use `yarn test path/to/file.test.ts` from the root directory.
-- For end-to-end tests, use `yarn test:e2e path/to/integration.spec.ts` from the root directory.
+- For integration and unit tests, use `pnpm test path/to/file.test.ts` from the root directory.
+- For end-to-end tests, use `pnpm --filter @prairielearn/prairielearn test:e2e path/to/integration.spec.ts` from the root directory.
 
 Avoid running the entire test suite unless necessary, as it can be time-consuming. However, if you must:
 
-- To run all TypeScript tests, use `yarn test` from the root directory
+- To run all TypeScript tests, use `pnpm test` from the root directory
 
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
-To test UI code looks correct, you should try to connect to the development server and screenshot the page with `playwright`. The dev server runs on the port specified by the `CONDUCTOR_PORT` environment variable (if set) or `3000`. If you can't determine the port, ask the user.
+Verify UI changes in a browser against the development server, capturing screenshots when useful. The dev server uses `CONDUCTOR_PORT` if set, otherwise port `3000`.
 
 When writing tests:
 
+- Add tests that protect against realistic regressions in behavior owned by the changed layer. Focus on interactions between components, known regression risks, and complex behavior that is difficult to verify by inspection.
+- Keep test setup and mocking proportionate to the behavior under test. Avoid reproducing straightforward implementation logic, duplicating coverage of shared behavior, or exhaustively testing implausible cases.
+- Choose the smallest effective test scope, weighing regression protection against review, maintenance, and runtime cost.
 - Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
-- Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
-- In e2e tests, don't use CSS class selectors (e.g. `page.locator('.my-class')`). Prefer Playwright's recommended locators: `getByRole`, `getByText`, `getByTestId`, `getByLabel`. Add `data-testid` attributes or `aria-label` to page components when needed.
+- Don't use defensive checks in tests. Tests should fail fast if unexpected data exists.
 - Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
+- To enable a feature flag for a test you can use `withConfig({ features: { 'feature-name': true } }, async () => { ... })`.
+- For Playwright end-to-end test authoring conventions, follow the [`playwright-testing` skill](./.agents/skills/playwright-testing/SKILL.md).
 
 ### Rendering HTML
 
@@ -201,6 +215,12 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 Elements (similar to React components, used to build interactive questions) are written in Python and are located in `apps/prairielearn/elements/`.
 
 When changing element properties or options, you MUST update the corresponding documentation in `docs/elements/<element-name>.md` to match.
+
+When modifying or reviewing element controllers — especially adding fields to `data["params"]` or `data["correct_answers"]` — see the [`element-backwards-compat` skill](./.agents/skills/element-backwards-compat/SKILL.md) for the rules that protect existing variants from breaking.
+
+When changing or reviewing an element's accepted/generated HTML attribute contract, see the [`element-validation` skill](./.agents/skills/element-validation/SKILL.md) to keep schema modules, legacy AI validation, Python render-time checks, and element docs aligned.
+
+When creating a new element or changing an element's runtime dependencies, scripts, styles, or bundled assets, see the [`element-runtime-assets` skill](./.agents/skills/element-runtime-assets/SKILL.md) for the requirement that those assets be browser-loadable as standalone bundles.
 
 ### Testing
 

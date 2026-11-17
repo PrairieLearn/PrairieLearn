@@ -12,7 +12,7 @@ export function generateAiGraderName(
     ai_grading_status === 'Graded' ||
     ai_grading_status === 'LatestRubric'
       ? ''
-      : ' (outdated)')
+      : ' (old rubric)')
   );
 }
 

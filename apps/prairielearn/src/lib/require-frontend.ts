@@ -20,17 +20,7 @@ requirejs.config({
 });
 
 requirejs.onError = function (err: Error) {
-  const data = {
-    errorMsg: err.toString(),
-    stack: err.stack,
-  };
-  for (const e in err) {
-    if (Object.prototype.hasOwnProperty.call(err, e)) {
-      // @ts-expect-error This is legacy code.
-      data[e] = String(err[e]);
-    }
-  }
-  logger.error('requirejs load error', data);
+  logger.error('requirejs load error', err);
 };
 
 export default requirejs;

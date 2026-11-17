@@ -3,6 +3,7 @@ SELECT
   to_jsonb(c.*) AS course,
   to_jsonb(i.*) AS institution,
   to_jsonb(ci.*) AS course_instance,
+  ia.id IS NOT NULL AS is_institution_administrator,
   CASE
   -- If user is institution admin, they have Owner permission
     WHEN ia.id IS NOT NULL THEN 'Owner'

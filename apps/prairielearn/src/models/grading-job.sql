@@ -96,6 +96,7 @@ SELECT
   v.id AS variant_id,
   iq.id AS instance_question_id,
   ai.id AS assessment_instance_id,
+  q.partial_credit,
   EXISTS (
     SELECT
       1
@@ -110,10 +111,38 @@ SELECT
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN questions AS q ON (q.id = v.question_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
   s.id = $submission_id;
+
+-- BLOCK cancel_grading_job
+WITH
+  canceled_job AS (
+    UPDATE grading_jobs
+    SET
+      grading_request_canceled_at = now(),
+      grading_request_canceled_by = NULL
+    WHERE
+      id = $grading_job_id
+    RETURNING
+      *
+  ),
+  updated_submission AS (
+    UPDATE submissions AS s
+    SET
+      grading_requested_at = NULL,
+      modified_at = now()
+    FROM
+      canceled_job AS cj
+    WHERE
+      s.id = cj.submission_id
+  )
+SELECT
+  *
+FROM
+  canceled_job;
 
 -- BLOCK update_grading_job_after_grading
 WITH

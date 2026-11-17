@@ -18,7 +18,7 @@ export function LegacyAccessRuleCard({
   return (
     <>
       <div className="alert alert-warning" role="alert">
-        <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
+        <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy{' '}
         <code>allowAccess</code> system. To use the new publishing system, you must first remove the{' '}
         <code>allowAccess</code> section from your course instance configuration. For more
         information, please see the{' '}
