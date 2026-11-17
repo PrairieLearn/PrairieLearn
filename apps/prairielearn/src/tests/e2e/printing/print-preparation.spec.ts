@@ -154,10 +154,6 @@ test('saves form edits without requiring a preview refresh before form actions',
   const assessment = await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
   const formAId = new URL(page.url()).searchParams.get('form')!;
-  await page.getByRole('button', { name: 'Add form', exact: true }).click();
-  await expect(page.getByRole('button', { name: /^Form B/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Form A', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   const preview = page.getByTitle('Printable document preview', { exact: true });
   const previousPreviewUrl = await preview.getAttribute('src');
 
@@ -174,11 +170,18 @@ test('saves form edits without requiring a preview refresh before form actions',
   await expect(downloadMenu(page)).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeEnabled();
   await expect(page.getByLabel('Paper size')).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Form B', exact: true })).toBeEnabled();
+  await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
+  await page.getByRole('checkbox', { name: 'Include question 2', exact: true }).uncheck();
+  await expect(page.getByRole('button', { name: 'Add form', exact: true })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Regenerate Form A' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Add form', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^Form B/ })).toBeVisible();
+  await expect(page.getByLabel('Paper size')).toHaveValue('A4');
+  await expect(page.getByLabel('Spacing for question 1', { exact: true })).toHaveValue('full');
+  await expect(page.getByRole('checkbox', { name: 'Include question 2' })).not.toBeChecked();
   await expect(page.getByRole('button', { name: 'Archive Form B' })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'Form B', exact: true }).click();
   await page.getByRole('button', { name: 'Form A', exact: true }).click();
   await expect(page.getByLabel('Paper size')).toHaveValue('A4');
 });

@@ -30,7 +30,7 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 current forms, labeled A through Z. New forms take the first available letter. Form A and its later versions (A2, A3, and so on) cannot be archived directly; regenerate one to replace it. Assessments without randomization use a single current form.
+If your assessment uses randomization, select **Add form** to create another form. The new form copies the settings of the form you are viewing, including its question exclusions and spacing, while generating its own questions and random values. You can have up to 26 current forms, labeled A through Z. New forms take the first available letter. Form A and its later versions (A2, A3, and so on) cannot be archived directly; regenerate one to replace it. Assessments without randomization use a single current form.
 
 Select a form to review it and choose its questions and spacing. Changes to those settings save as you make them, so you can switch forms before updating the preview. Save any changes to **Additional student fields** before switching. Select **Update preview** before downloading a form.
 

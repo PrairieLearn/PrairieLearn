@@ -724,8 +724,7 @@ function PrintPreparation({
   }
 
   async function addForm() {
-    const nextSettings = { ...settings, questionSizes: {}, excludedQuestions: [] };
-    const result = await create.mutateAsync({ settings: nextSettings });
+    const result = await create.mutateAsync({ settings });
     switchForm(result.printFormId, result.settings);
     requestFormFocus(result.printFormId, true);
   }
