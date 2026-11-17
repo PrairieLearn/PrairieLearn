@@ -190,6 +190,7 @@ function PrintPreparation({
   const settings = forms.data.find((form) => form.id === formId)?.settings ?? defaultSettings;
   const [selectedQuestion, setSelectedQuestion] = useState<{ number: string } | null>(null);
   const [reviewOnly, setReviewOnly] = useState(false);
+  const [reviewWarningDismissed, setReviewWarningDismissed] = useState(false);
   const [preview, setPreview] = useState<{ url: string; state: PreviewState } | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
   const [preparingPdf, setPreparingPdf] = useState<'packet' | 'booklet' | null>(null);
@@ -916,10 +917,16 @@ function PrintPreparation({
       {savedFormIds.some((id) => archivedForms.some((form) => form.id === id)) && (
         <Alert variant="info">Archived forms were removed from the current selection.</Alert>
       )}
-      {reviewCount > 0 && (
+      {reviewCount > 0 && !reviewWarningDismissed && (
         <Alert
           variant={includedOmittedCount > 0 ? 'danger' : 'warning'}
           className="d-flex flex-wrap align-items-center justify-content-between gap-2"
+          closeLabel="Dismiss question warning"
+          dismissible
+          onClose={() => {
+            setReviewWarningDismissed(true);
+            window.requestAnimationFrame(() => printHeadingRef.current?.focus());
+          }}
         >
           <span>
             {includedOmittedCount > 0

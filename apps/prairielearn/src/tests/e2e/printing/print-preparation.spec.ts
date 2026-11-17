@@ -681,6 +681,12 @@ test('distinguishes paper review flags from broken questions omitted from the do
   await page.getByRole('button', { name: 'Review questions' }).click();
   await expect(firstOmittedQuestion).toBeInViewport();
   await expect(firstOmittedQuestion).toBeFocused();
+  const reviewAlert = page.getByRole('alert').filter({
+    has: page.getByRole('button', { name: 'Review questions' }),
+  });
+  await reviewAlert.getByRole('button', { name: 'Dismiss question warning' }).click();
+  await expect(reviewAlert).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Print assessment' })).toBeFocused();
   await expect(downloadMenu(page)).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeEnabled();
   await page.getByLabel(/Show only items to review/).check();
@@ -700,6 +706,8 @@ test('distinguishes paper review flags from broken questions omitted from the do
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
+  await expect(page.getByText('Review printability', { exact: true }).first()).toBeVisible();
+  await expect(reviewAlert).toHaveCount(0);
   await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
   await page.reload();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
