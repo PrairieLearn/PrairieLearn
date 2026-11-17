@@ -107,7 +107,8 @@ export async function init() {
     {
       name: 'processPrintExports',
       module: await import('./processPrintExports.js'),
-      intervalSec: 5,
+      // Recovery and expiry tolerate a minute of delay; normal exports publish immediately.
+      intervalSec: config.cronOverrideAllIntervalsSec || 60,
     },
   ];
 

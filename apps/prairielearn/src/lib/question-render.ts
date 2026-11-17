@@ -177,12 +177,14 @@ async function render({
     studentMessage,
     courseData,
   );
-  const fatalIssue = courseIssues.find((issue) => issue.fatal);
-  if (throwOnFatalError && fatalIssue) {
-    throw new FatalQuestionRenderError(
-      `Question ${question.qid ?? question.id} could not be rendered.`,
-      { cause: fatalIssue },
-    );
+  if (throwOnFatalError) {
+    const fatalIssue = courseIssues.find((issue) => issue.fatal);
+    if (fatalIssue) {
+      throw new FatalQuestionRenderError(
+        `Question ${question.qid ?? question.id} could not be rendered.`,
+        { cause: fatalIssue },
+      );
+    }
   }
   return data;
 }
