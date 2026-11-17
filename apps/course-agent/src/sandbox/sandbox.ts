@@ -98,11 +98,12 @@ type CourseFilesSource =
 
 /**
  * Where the record of a branch's snapshot is stored. The archive library names each archive
- * itself, so a new sandbox finds its branch's archive through this record. GitHub treats owner
- * and repository names case-insensitively; branch names are exact.
+ * itself, so a new sandbox finds its branch's archive through this record. The repository name
+ * is used exactly as configured: a snapshot's remote URL carries the spelling it was cloned with,
+ * and the GitHub proxy accepts only the spelling of the conversation it serves.
  */
 function repositorySnapshotKey({ repository, branch }: { repository: string; branch: string }) {
-  return `repository-snapshots/${repository.toLowerCase()}@${branch}.json`;
+  return `repository-snapshots/${repository}@${branch}.json`;
 }
 
 // The named types ctx.container.start() accepts; it rejects `basic`.
