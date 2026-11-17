@@ -6,15 +6,16 @@ Download results with the course data tools. `list_course_datasets` describes
 every dataset and column. Filter each download to the assessments you're
 analyzing, and select only the columns you need.
 
-| Dataset                | Use                                                                                                                                                                               |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `course_instances`     | The offerings, with each one's timezone.                                                                                                                                          |
-| `assessments`          | Each offering's copy of the assessment. Match offerings by `tid`, then confirm the questions match.                                                                               |
-| `questions`            | Maps `question_id` to the QID used in course files.                                                                                                                               |
-| `assessment_questions` | Each question's points on the assessment.                                                                                                                                         |
-| `assessment_instances` | One per attempt at the assessment. Keep rows with `include_in_statistics`, which drops staff. `started_at` shows the day, and `duration` the total time.                          |
-| `instance_questions`   | One per question a student was assigned: `score_perc`, `duration`, `highest_submission_score`, and manual and auto points.                                                        |
-| `submissions`          | One per submission, with `score`, `submitted_at`, and `overridden`. Count attempts here, and take the first submission as the earliest `submitted_at` per `instance_question_id`. |
+| Dataset                | Use                                                                                                                                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `course_instances`     | The offerings, with each one's timezone.                                                                                                                                                                                                         |
+| `assessments`          | Each offering's copy of the assessment. Match offerings by `tid`, then confirm the questions match.                                                                                                                                              |
+| `questions`            | Maps `question_id` to the QID used in course files.                                                                                                                                                                                              |
+| `assessment_questions` | Each question's points on the assessment.                                                                                                                                                                                                        |
+| `assessment_instances` | One per attempt at the assessment. Keep rows with `include_in_statistics`, which drops staff. `started_at` shows the day, and `duration` the total time.                                                                                         |
+| `instance_questions`   | One per question a student was assigned: `score_perc`, `duration`, `highest_submission_score`, and manual and auto points.                                                                                                                       |
+| `submissions`          | One per submission, with `score`, `submitted_at`, and `overridden`. Count attempts here, and take the first submission as the earliest `submitted_at` per `instance_question_id`. Also has `partial_scores`, `submitted_answer`, and `feedback`. |
+| `variants`             | One per generated variant, with its `params` and `true_answer`. Join to submissions on `variant_id`.                                                                                                                                             |
 
 Join the datasets on their ID columns, and read them all as text so the IDs
 match. Compute everything as aggregates; the downloads have one row per student
@@ -45,18 +46,31 @@ file, say so.
 
 If `assessments.max_points` is empty, add up each slot's maximum points.
 
+## Answers, parts, and parameters
+
+These columns show where in a question students went wrong. They are large, so
+download them only for the questions a finding depends on, filtered by `qid`:
+
+| To learn                                 | Use                                                                                                               |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Which part of a question loses points    | `submissions.partial_scores`, keyed by answer name. Report the share of students with each part correct.          |
+| Common wrong answers                     | `submissions.submitted_answer`, compared with the variant's `true_answer`. Report counts of each answer.          |
+| Whether some generated values are harder | `variants.params`, joined to submissions on `variant_id`. Compare scores between groups of parameter values.      |
+| Why the grader took points off           | `submissions.feedback`, such as which autograder tests failed, and `format_errors` for answers that didn't parse. |
+
+Submitted answers are student work. Report counts and shares, and never quote a
+free-text answer or anything else that could identify a student. Uploaded files
+aren't included.
+
 ## What course data can't show
 
-Course data has scores and times, but no answer contents. These would each
-settle a question it leaves open, and the instructor can attach them:
+The instructor can attach these, or answer:
 
-| To learn                                           | Ask for                                                                                                          |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Which part of a question loses points              | The all-submissions file from the assessment's **Downloads** page, which has per-part scores and grader feedback |
-| Common wrong answers                               | The same file, which has submitted answers                                                                       |
-| Whether some generated values are harder           | The same file, which has each variant's parameters                                                               |
-| Which rubric items graders applied, and who graded | The same file, which has rubric gradings and graders                                                             |
-| How long the exam was                              | The instructor, when the time limit isn't in `infoAssessment.json`                                               |
+| To learn                                           | Ask for                                                                           |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Which rubric items graders applied, and who graded | The all-submissions file from the assessment's **Downloads** page, which has both |
+| What students uploaded                             | The files themselves, from the same page                                          |
+| How long the exam was                              | The instructor, when the time limit isn't in `infoAssessment.json`                |
 
 ## Known quirks
 

@@ -98,10 +98,11 @@ Then add the evidence that a given candidate needs:
   alternatives for that question. When the alternatives fall into two clear
   groups, compare the groups.
 
-Course data has no answer contents, so it can't show which part of a question
-students lose points on, which wrong answers are common, or whether some
-generated parameters are harder. When a finding depends on one of these, name
-the export that would settle it (see data.md).
+Course data also has each submission's per-part scores, submitted answer, and
+grader feedback, and each variant's generated parameters. When a finding depends
+on which part of a question students lose points on, which wrong answers are
+common, or whether some generated parameters are harder, download those columns
+for the questions involved and check (see data.md).
 
 ## 3. Find candidates, then rule out other explanations
 
@@ -166,10 +167,11 @@ Label each finding's confidence:
 - **Predicted:** found in the source only, with no student data yet.
 - **Unexplained:** the gap is real, but no cause was found.
 
-Most causes will be Likely, because course data can't show where in a question
-students went wrong. For Likely, Predicted and Unexplained findings, name the
-data that would settle it. Add a few words when strength varies, for example:
-"Likely; reversed in one term."
+A gap between alternatives is Observed, but its cause stays Likely until
+per-part scores, submitted answers, or variant parameters show where students
+went wrong. Check them before settling for Likely. For Likely, Predicted and
+Unexplained findings, name the data that would settle it. Add a few words when
+strength varies, for example: "Likely; reversed in one term."
 
 ## 5. Recommend edits
 
