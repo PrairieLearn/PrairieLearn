@@ -1,11 +1,9 @@
-import { config } from '../../../lib/config.js';
+import { randomUUID } from 'node:crypto';
+
+import { deleteFromS3, uploadToS3 } from '../../../lib/aws.js';
 import { features } from '../../../lib/features/index.js';
-import {
-  getPrintableFormQuestionIds,
-  getPrintableQuestionListDigest,
-} from '../../../lib/printing/index.js';
-import { queuePrintExport } from '../../../lib/printing/print-exports.js';
-import { checkPrintSnapshotId } from '../../../lib/printing/print-snapshot-id.js';
+import { getFileStoreS3Bucket } from '../../../lib/file-store.js';
+import { finishPrintExport, insertPrintExport } from '../../../models/print-export.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { expect, test } from '../fixtures.js';
 
@@ -13,11 +11,10 @@ import { createPrintableForm } from './utils.js';
 
 test('hides Print and blocks printable pages when the feature is disabled', async ({
   page,
-  baseURL,
   courseInstance,
 }) => {
-  test.setTimeout(90_000);
   await features.enable('printable-assessments');
+  let outputKey: string | null = null;
   try {
     const { printForm, printUrl } = await createPrintableForm(
       courseInstance,
@@ -28,60 +25,26 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
     const preview = await page.request.get(previewUrl);
     expect(preview.status()).toBe(200);
     const user = await getConfiguredUser();
-    const html = await preview.text();
-    const snapshotId = /data-print-snapshot-id="([^"]+)"/.exec(html)![1];
-    const htmlDigest = checkPrintSnapshotId(
-      {
-        id: snapshotId,
-        printFormId: printForm.id,
-        authnUserId: user.id,
-        search: new URL(previewUrl, baseURL).searchParams,
-        questionListDigest: await getPrintableQuestionListDigest(printForm.id, new Set()),
-      },
-      config.secretKey,
-    )!;
-    const printExportId = await queuePrintExport({
-      owner: {
-        assessmentId: printForm.assessment_id,
-        authnUserId: user.id,
-        courseId: courseInstance.course_id,
-        userId: user.id,
-      },
-      formSelections: [{ printFormId: printForm.id, excludedQuestions: [] }],
-      work: {
-        format: 'pdf',
-        document: 'assessment',
-        copies: 1,
-        filename: 'test-export.pdf',
-        snapshots: [
-          {
-            formLabel: printForm.label,
-            printDocument: 'assessment',
-            localPreviewUrl: new URL(previewUrl, baseURL).href,
-            html,
-            htmlDigest,
-            assetScope: {
-              courseInstanceId: courseInstance.id,
-              assessmentId: printForm.assessment_id,
-              printFormId: printForm.id,
-              printFormQuestionIds: await getPrintableFormQuestionIds(
-                printForm.id,
-                new Map(),
-                new Set(),
-              ),
-              authnUserId: user.id,
-              userId: user.id,
-            },
-          },
-        ],
-        covers: [],
-      },
+    const printExportId = await insertPrintExport({
+      assessmentId: printForm.assessment_id,
+      userId: user.id,
+      authnUserId: user.id,
+      format: 'pdf',
+      filename: 'test-export.pdf',
+      label: 'Form A PDF',
+      inputKey: 'unused',
+    });
+    outputKey = `print-exports/test-${randomUUID()}/output.pdf`;
+    const contents = Buffer.from('%PDF-1.4\n');
+    await uploadToS3(getFileStoreS3Bucket(), outputKey, null, false, contents);
+    await finishPrintExport(printExportId, {
+      status: 'succeeded',
+      outputKey,
+      sizeBytes: contents.length,
     });
     const exportUrl = `${assessmentBase}/print/exports/${printExportId}`;
 
-    await expect
-      .poll(async () => (await page.request.get(exportUrl)).status(), { timeout: 60_000 })
-      .toBe(200);
+    expect((await page.request.get(exportUrl)).status()).toBe(200);
 
     await features.disable('printable-assessments');
 
@@ -94,5 +57,6 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
   } finally {
     // A database grant outranks the config overrides other printing tests on this worker use.
     await features.delete('printable-assessments');
+    if (outputKey) await deleteFromS3(getFileStoreS3Bucket(), outputKey);
   }
 });

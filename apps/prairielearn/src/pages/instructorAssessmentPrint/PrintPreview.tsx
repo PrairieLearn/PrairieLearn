@@ -146,13 +146,14 @@ export function PrintPreview({
   // The frame can finish loading while the preparation page hydrates; observe its document even
   // if React missed the load event.
   useEffect(() => {
+    if (state.status !== 'loading') return;
     const interval = window.setInterval(watchPreview, 250);
     const initialCheck = window.setTimeout(watchPreview, 0);
     return () => {
       window.clearTimeout(initialCheck);
       window.clearInterval(interval);
     };
-  }, [watchPreview]);
+  }, [watchPreview, state.status]);
 
   return (
     <div
