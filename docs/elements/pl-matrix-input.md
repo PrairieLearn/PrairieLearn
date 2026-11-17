@@ -39,7 +39,7 @@ def generate(data):
 | `label`          | string                                | —          | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                    |
 | `rtol`           | number                                | 1e-2       | Relative tolerance for `comparison="relabs"`.                                                                                                                        |
 | `show-help-text` | boolean                               | true       | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
-| `weight`         | integer                               | 1          | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `weight`         | non-negative integer                  | 1          | Weight to use when computing a weighted average score over elements.                                                                                                 |
 
 ## Details
 
