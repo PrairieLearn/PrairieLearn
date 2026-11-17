@@ -17,9 +17,12 @@ import {
   updateCourseCommitHash,
   updateCourseSyncConfiguration,
 } from '../models/course.js';
+import { syncQuestionTitle } from '../models/question.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 import * as courseDB from '../sync/course-db.js';
-import { getQuestionContentPlan } from '../sync/questionContent.js';
+import * as syncQuestions from '../sync/fromDisk/questions.js';
+import * as infofile from '../sync/infofile.js';
+import { getQuestionSyncPlan } from '../sync/questionSync.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import { checkSharingConfigurationValid, syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
@@ -98,9 +101,9 @@ export async function syncCourseFromDisk({
     if (configurationChanged) {
       job.info('Sync configuration changed; reprocessing all course metadata');
     }
-    const qids =
+    const questionChanges =
       config.fileEditorUseGit && !forceFull && !configurationChanged
-        ? await getQuestionContentPlan({
+        ? await getQuestionSyncPlan({
             course,
             oldHash: startGitHash,
             newHash: endGitHash,
@@ -108,8 +111,9 @@ export async function syncCourseFromDisk({
           })
         : null;
 
-    if (qids !== null) {
-      job.info(`Syncing question content: ${qids.join(', ') || 'no changes'}`);
+    if (questionChanges !== null) {
+      const qids = questionChanges.map((change) => change.qid);
+      job.info(`Syncing question changes: ${qids.join(', ') || 'no changes'}`);
       const prepared =
         config.chunksGenerator && qids.length > 0
           ? await chunks.prepareQuestionContentChunks({
@@ -119,13 +123,31 @@ export async function syncCourseFromDisk({
             })
           : undefined;
       await sqldb.runInTransactionAsync(async () => {
+        for (const change of questionChanges) {
+          if (change.kind === 'title') {
+            await syncQuestionTitle({ course_id: course.id, qid: change.qid, title: change.title });
+          } else if (change.kind === 'recover') {
+            job.info(`Reprocessing question metadata: ${change.qid}`);
+            await syncQuestions.sync(
+              course.id,
+              { questions: { [change.qid]: change.info } },
+              'metadata',
+            );
+            for (const error of change.info.errors) job.error(error);
+          }
+        }
         if (prepared) await chunks.applyPreparedChunks(course.id, prepared);
         await updateCourseCommitHash(course);
         await updateCourseSyncConfiguration(course.id, configuration);
       });
       if (prepared) chunks.logChunkChangesToJob(prepared.changes, job);
       if (config.devMode) flushElementCache();
-      return { status: 'complete', hadJsonErrors: false };
+      return {
+        status: 'complete',
+        hadJsonErrors: questionChanges.some(
+          (change) => change.kind === 'recover' && infofile.hasErrors(change.info),
+        ),
+      };
     }
 
     job.info('Using full course sync');

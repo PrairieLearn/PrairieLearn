@@ -25,7 +25,7 @@ import {
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
-import { getQuestionContentPlan } from '../sync/questionContent.js';
+import { getQuestionSyncPlan } from '../sync/questionSync.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -334,7 +334,7 @@ export abstract class Editor {
         let preparedCourseData: PreparedCourseData | undefined;
         let candidateHash: string;
         const prepareCourseData = async (): Promise<PreparedCourseData | undefined> => {
-          const qids = await getQuestionContentPlan({
+          const qids = await getQuestionSyncPlan({
             course: this.course,
             oldHash: startGitHash,
             newHash: await getCourseCommitHash(this.course.path),
@@ -1866,7 +1866,7 @@ export class QuestionRenameEditor extends Editor {
 
       // Only add to pathsToAdd if we haven't already added the question path.
       if (!qidChanging) {
-        pathsToAdd.push(questionPath);
+        pathsToAdd.push(questionInfoPath);
       }
     }
 
