@@ -68,8 +68,7 @@ settle a question it leaves open, and the instructor can attach them:
 - **Manually graded questions.** `duration` and submission scores can be empty
   even when the question was graded. Use `manual_points`, and don't report
   first-submission scores or time for these.
-- **Attempts.** `instance_questions.number_attempts` is unreliable; count rows
-  in `submissions`.
+- **Attempts.** Count a question's attempts as its graded rows in `submissions`.
 - **Exam length** often isn't in PrairieLearn, for example when PrairieTest runs
   the exam. Don't infer it from when attempts closed. Use the 90th percentile of
   total duration as a rough guide, and say it's inferred.

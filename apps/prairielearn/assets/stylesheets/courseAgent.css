@@ -29,6 +29,21 @@
   overflow-wrap: anywhere;
 }
 
+.course-agent-composer {
+  border: var(--bs-border-width) solid var(--bs-border-color);
+}
+
+.course-agent-composer:focus-within {
+  border-color: var(--bs-primary);
+}
+
+.course-agent-composer-input {
+  /* Ten lines plus the vertical padding of .form-control. */
+  max-height: calc(10lh + 0.75rem);
+  overflow-y: auto;
+  resize: none;
+}
+
 .btn.course-agent-icon-button {
   --bs-btn-color: var(--bs-secondary-color);
   --bs-btn-hover-color: var(--bs-body-color);
@@ -71,6 +86,17 @@
   height: 1.25rem;
 }
 
+/*
+ * Touch can't hover, so any device with a touch screen always shows the remove button, as does a
+ * tile that has to be removed before sending.
+ */
+@media not all and (any-pointer: coarse) {
+  .course-agent-attachment:not(:hover, :focus-within, .course-agent-attachment-invalid)
+    .course-agent-attachment-remove {
+    opacity: 0;
+  }
+}
+
 .course-agent-drop-target {
   inset: 0.5rem;
   z-index: 1;
@@ -86,6 +112,31 @@
 
 .course-agent-panel .markdown-body p:last-child {
   margin-bottom: 0;
+}
+
+.course-agent-page-link {
+  background-color: var(--bs-body-bg);
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+
+.course-agent-page-link:hover,
+.course-agent-page-link:focus-visible {
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-primary-border-subtle) !important;
+}
+
+.course-agent-page-link-text {
+  /* Lets long names truncate instead of widening the card. */
+  min-width: 0;
+}
+
+.course-agent-page-link-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--bs-primary-text-emphasis);
+  background-color: var(--bs-primary-bg-subtle);
 }
 
 body:has(.course-agent-panel) .app-main {

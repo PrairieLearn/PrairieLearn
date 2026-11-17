@@ -24,7 +24,12 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export type GradingJobStatus = 'none' | 'canceled' | 'queued' | 'grading' | 'graded' | 'requested';
 
-export function gradingJobStatus(gradingJob: GradingJob | null): GradingJobStatus {
+export function gradingJobStatus(
+  gradingJob: Pick<
+    GradingJob,
+    'grading_request_canceled_at' | 'graded_at' | 'grading_received_at' | 'grading_submitted_at'
+  > | null,
+): GradingJobStatus {
   if (gradingJob == null) return 'none';
   if (gradingJob.grading_request_canceled_at != null) return 'canceled';
   if (gradingJob.graded_at != null) return 'graded';
