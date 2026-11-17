@@ -74,42 +74,6 @@ export function AdministratorSettings({
         </div>
       </div>
 
-      ${
-        isEnterprise() && config.courseAgentServiceUrl
-          ? html`
-              <div class="card mb-4">
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                  <h2>Course agent repository cache</h2>
-                </div>
-                <div class="card-body">
-                  <p>
-                    Stores a copy of each course's repository so that new course agent conversations
-                    restore it instead of cloning from GitHub. Caching a course again replaces its
-                    copy.
-                  </p>
-                  <form name="cache_course_agent_repositories_form" method="POST">
-                    <input type="hidden" name="__action" value="cache_course_agent_repositories" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <div class="mb-3">
-                      <label class="form-label" for="cacheCourseAgentRepositoriesCourseIds">
-                        Course IDs:
-                      </label>
-                      <input
-                        type="text"
-                        class="form-control"
-                        id="cacheCourseAgentRepositoriesCourseIds"
-                        name="course_ids"
-                        placeholder="1,2,3"
-                      />
-                    </div>
-                    <button type="submit" class="btn btn-primary">Cache courses</button>
-                  </form>
-                </div>
-              </div>
-            `
-          : ''
-      }
-
       <!-- Actions -->
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

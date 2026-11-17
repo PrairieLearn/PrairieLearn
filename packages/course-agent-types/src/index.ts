@@ -72,38 +72,12 @@ export const PageCatalogSchema = z
 
 export type PageCatalog = z.infer<typeof PageCatalogSchema>;
 
-/** The GitHub branch a conversation works on, as `owner/name` and a branch name. */
-export const RepositoryBranchSchema = z.strictObject({
+export const CreateConversationInput = z.strictObject({
   repository: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
   branch: z.string().min(1).max(1024),
-});
-
-export const CreateConversationInput = z.strictObject({
-  ...RepositoryBranchSchema.shape,
   // Optional so the Worker can deploy before PrairieLearn starts sending it.
   pages: PageCatalogSchema.optional(),
 });
-
-/**
- * The cached copy of one repository branch that new sandboxes restore instead of cloning, and
- * the build that would replace it. A failed build leaves the previous snapshot in use.
- */
-export const RepositorySnapshotStatusSchema = z.strictObject({
-  build: z.discriminatedUnion('status', [
-    z.strictObject({ status: z.literal('idle') }),
-    z.strictObject({ status: z.literal('building') }),
-    z.strictObject({ status: z.literal('failed'), error: z.string() }),
-  ]),
-  snapshot: z
-    .strictObject({
-      commit: z.string().regex(/^[0-9a-f]{40}$/),
-      bytes: z.number().int().nonnegative(),
-      builtAt: z.iso.datetime(),
-    })
-    .nullable(),
-});
-
-export type RepositorySnapshotStatus = z.infer<typeof RepositorySnapshotStatusSchema>;
 
 // Leave room for base64 encoding within the Durable Object's 2 MB storage-entry limit.
 // TODO: Store review contents in R2 and stream them to PL instead of buffering whole reviews.

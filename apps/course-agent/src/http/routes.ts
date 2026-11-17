@@ -5,14 +5,12 @@ import {
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
   PageCatalogSchema,
-  RepositoryBranchSchema,
   RequestChangesResultSchema,
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
 
 import { uploadKey } from '../conversation/attachments.js';
 import { reportError } from '../monitoring.js';
-import { repositorySnapshotName } from '../sandbox/repository-snapshot.js';
 
 import { isAuthorized } from './auth.js';
 
@@ -75,22 +73,6 @@ app.post('/conversations', async (c) => {
   const { pages, ...source } = input.data;
   await conversation.initialize({ type: 'github', ...source }, pages);
   return c.json({ id }, 201);
-});
-
-// Building a snapshot takes as long as a clone, so the request only starts it and PrairieLearn
-// polls for the result.
-app.post('/repository-snapshots', async (c) => {
-  const input = RepositoryBranchSchema.safeParse(await c.req.json().catch(() => null));
-  if (!input.success) return c.text('Invalid request', 400);
-  const snapshot = c.env.RepositorySnapshot.getByName(repositorySnapshotName(input.data));
-  return c.json(await snapshot.requestBuild(input.data), 202);
-});
-
-app.get('/repository-snapshots', async (c) => {
-  const input = RepositoryBranchSchema.safeParse(c.req.query());
-  if (!input.success) return c.text('Invalid request', 400);
-  const snapshot = c.env.RepositorySnapshot.getByName(repositorySnapshotName(input.data));
-  return c.json(await snapshot.status());
 });
 
 const conversations = new Hono<{ Bindings: Env }>();

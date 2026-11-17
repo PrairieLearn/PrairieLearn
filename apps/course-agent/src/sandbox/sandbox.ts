@@ -25,7 +25,6 @@ import {
 import { logEvent, reportError } from '../monitoring.js';
 
 import { codexRequestKind, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
-import { repositorySnapshotName } from './repository-snapshot.js';
 
 const SESSION = '/workspace/session';
 // Downloaded course data and the agent's analysis scripts.
@@ -90,10 +89,25 @@ export type CourseSource =
   | { type: 'github'; repository: string; branch: string }
   | { type: 'local'; archiveKey: string; directory: string };
 
-/** How a new sandbox got its course files, with the steps a restored snapshot went through. */
+/** How a new sandbox got its course files, and how long each step took. */
 type CourseFilesSource =
-  | { source: 'local' | 'clone' }
+  | { source: 'local' }
+  // `snapshotMs` is null when no snapshot was saved from this clone.
+  | { source: 'clone'; cloneMs: number; snapshotMs: number | null }
   | { source: 'snapshot'; restoreMs: number; fetchMs: number; checkoutMs: number };
+
+// A repository that clones faster than this gains little from a snapshot, and each snapshot is
+// stored until its branch is cloned again. The value is a guess to revisit with production timings.
+const SNAPSHOT_MIN_CLONE_MS = 10_000;
+
+/**
+ * Where the record of a branch's snapshot is stored. The archive library names each archive
+ * itself, so a new sandbox finds its branch's archive through this record. GitHub treats owner
+ * and repository names case-insensitively; branch names are exact.
+ */
+function repositorySnapshotKey({ repository, branch }: { repository: string; branch: string }) {
+  return `repository-snapshots/${repository.toLowerCase()}@${branch}.json`;
+}
 
 // The named types ctx.container.start() accepts; it rejects `basic`.
 // https://developers.cloudflare.com/containers/configuration/scheduling-policy/#choose-an-instance-size-at-runtime
@@ -247,6 +261,7 @@ export class CourseSandbox extends DurableObject<Env> {
   }
 
   // Kept apart from checkpoints, which belong to one conversation and are deleted with it.
+  // A branch's snapshot is shared by every conversation on that branch.
   private get repositorySnapshots() {
     return new DirectoryBackup(this.container, this.ctx.exports.DirectoryBackupGateway, {
       binding: 'CHECKPOINTS',
@@ -403,6 +418,7 @@ export class CourseSandbox extends DurableObject<Env> {
     repository: string;
     branch: string;
   }): Promise<CourseFilesSource> {
+    const started = Date.now();
     // Reviews only need the branch tip, and later fetches still work from a shallow clone.
     // Full history made large course repositories take most of startup to clone.
     await this.exec(
@@ -420,14 +436,42 @@ export class CourseSandbox extends DurableObject<Env> {
       ],
       AGENT_USER,
     );
-    return { source: 'clone' };
+    const cloneMs = Date.now() - started;
+    if (cloneMs < SNAPSHOT_MIN_CLONE_MS) return { source: 'clone', cloneMs, snapshotMs: null };
+    return { source: 'clone', cloneMs, snapshotMs: await this.saveRepositorySnapshot(source) };
   }
 
   /**
-   * Restore the repository's snapshot, if it has one, then fetch and check out the branch tip,
-   * which downloads only what changed since the snapshot was built. The result matches a fresh
-   * clone except that objects the branch no longer uses stay in the object store until the
-   * snapshot is rebuilt. Returns null when the caller should clone instead.
+   * Archive the Git directory of the clone just made, for later sandboxes on this branch to
+   * restore. This must run before the agent does: only then does the directory hold nothing but
+   * what GitHub served. The working tree is left out because it is several times larger and a
+   * sandbox checks it out locally in seconds. Returns how long saving took, or null if it failed.
+   */
+  private async saveRepositorySnapshot(source: { repository: string; branch: string }) {
+    const started = Date.now();
+    try {
+      const key = repositorySnapshotKey(source);
+      const snapshot = await this.repositorySnapshots.backup({ dir: `${SESSION}/course/.git` });
+      // The newest clone becomes the branch's snapshot. A sandbox restoring the one it replaces
+      // fails that restore and clones instead.
+      const previous = await this.env.CHECKPOINTS.get(key);
+      await this.env.CHECKPOINTS.put(key, JSON.stringify(snapshot));
+      if (previous) {
+        await this.repositorySnapshots.delete(await previous.json<DirectoryBackupRecord>());
+      }
+      return Date.now() - started;
+    } catch (error) {
+      // The clone is already in place, so the conversation can start without a snapshot.
+      reportError(error);
+      return null;
+    }
+  }
+
+  /**
+   * Restore the branch's snapshot, if it has one, then fetch and check out the branch tip, which
+   * downloads only what changed since the snapshot was saved. The result matches a fresh clone
+   * except that objects the branch no longer uses stay in the object store. Returns null when the
+   * caller should clone instead.
    */
   private async restoreRepository(source: {
     repository: string;
@@ -436,13 +480,13 @@ export class CourseSandbox extends DurableObject<Env> {
     const course = `${SESSION}/course`;
     const { branch } = source;
     try {
-      const snapshot = await this.env.RepositorySnapshot.getByName(
-        repositorySnapshotName(source),
-      ).current();
-      if (!snapshot) return null;
+      const saved = await this.env.CHECKPOINTS.get(repositorySnapshotKey(source));
+      if (!saved) return null;
       const started = Date.now();
       await this.exec(['mkdir', course], AGENT_USER);
-      await this.repositorySnapshots.restore(snapshot, { dir: `${course}/.git` });
+      await this.repositorySnapshots.restore(await saved.json<DirectoryBackupRecord>(), {
+        dir: `${course}/.git`,
+      });
       const restored = Date.now();
       await this.exec(['git', '-C', course, 'fetch', '--depth', '1', 'origin', branch], AGENT_USER);
       const fetched = Date.now();
@@ -458,45 +502,11 @@ export class CourseSandbox extends DurableObject<Env> {
       };
     } catch (error) {
       // A snapshot only saves time, so one that cannot be looked up, restored, or fetched must
-      // not fail startup. Cloning still works without it.
+      // not fail startup. Cloning still works without it, and a slow clone replaces it.
       reportError(error);
       await this.exec(['rm', '-rf', course]);
       return null;
     }
-  }
-
-  /**
-   * Clone the branch in a container of its own and archive its Git directory. The working tree
-   * is left out: it is several times larger and a sandbox checks it out locally in seconds.
-   */
-  async buildRepositorySnapshot(source: { repository: string; branch: string }) {
-    // An earlier build that never finished may have left its container behind.
-    if (this.container.running) await this.container.destroy();
-    this.container.start({
-      image: this.container.images.courseAgent,
-      enableInternet: false,
-      instance: InstanceTypeSchema.parse(this.env.SANDBOX_INSTANCE_TYPE),
-    });
-    try {
-      await this.container.interceptOutboundHttp(
-        'repository.internal:80',
-        this.ctx.exports.CourseAgentGitHubOutbound({ props: { repository: source.repository } }),
-      );
-      await this.exec(['install', '-d', '-o', AGENT_USER, '-g', AGENT_USER, SESSION]);
-      await this.cloneRepository(source);
-      const head = await this.exec(
-        ['git', '-C', `${SESSION}/course`, 'rev-parse', 'HEAD'],
-        AGENT_USER,
-      );
-      const backup = await this.repositorySnapshots.backup({ dir: `${SESSION}/course/.git` });
-      return { backup, commit: new TextDecoder().decode(head.stdout).trim() };
-    } finally {
-      await this.container.destroy();
-    }
-  }
-
-  async deleteRepositorySnapshot(snapshot: DirectoryBackupRecord) {
-    await this.repositorySnapshots.delete(snapshot);
   }
 
   /**
