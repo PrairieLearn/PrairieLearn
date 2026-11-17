@@ -2,7 +2,7 @@
 
 Course staff with permission to preview assessments can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
 
-For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its chosen questions, their order and random values, and its paper, spacing, and cover settings. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
+For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its chosen questions, their order and random values, and its paper, spacing, and default cover settings. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
 
 ## Prepare an assessment
 

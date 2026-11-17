@@ -130,7 +130,8 @@ router.get(
       await Promise.all([
         features.enabledFromLocals('question-sharing', res.locals),
         features.enabledFromLocals('consume-public-questions', res.locals),
-        features.enabledFromLocals('printable-assessments', res.locals),
+        !pageContext.course.example_course &&
+          features.enabledFromLocals('printable-assessments', res.locals),
       ]);
 
     const canEdit =

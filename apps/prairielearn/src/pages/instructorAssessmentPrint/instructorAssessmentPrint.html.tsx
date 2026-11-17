@@ -1339,8 +1339,8 @@ function PrintPreparation({
                         </p>
                       )}
                       <p className="small text-muted mb-0">
-                        Review flags are suggestions based on question content. Check the preview
-                        for layout and complete instructions.
+                        The list marks printing concerns and questions that could not be included.
+                        Check the preview for layout and complete instructions.
                       </p>
                       {questionSelectionLocked && !archivedPreviewForm && (
                         <p className="small text-muted mb-0 mt-1">
