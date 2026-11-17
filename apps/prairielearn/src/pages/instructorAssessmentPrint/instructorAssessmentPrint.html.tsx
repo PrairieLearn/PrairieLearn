@@ -1204,8 +1204,7 @@ function PrintPreparation({
               >
                 <summary className="h6 mb-0">Recent exports ({recentExports.data.length})</summary>
                 <p className="small text-muted mt-2 mb-2">
-                  Files are available for 24 hours. You can start another download while one is
-                  preparing.
+                  Files are available here for 24 hours once they have been prepared.
                 </p>
                 <ol className="mb-0 ps-3">
                   {recentExports.data.map((item) => (
