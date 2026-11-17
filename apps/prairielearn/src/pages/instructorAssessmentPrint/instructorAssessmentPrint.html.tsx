@@ -1,4 +1,5 @@
 import { QueryClient, skipToken, useMutation, useQuery } from '@tanstack/react-query';
+import { TRPCClientError } from '@trpc/client';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
@@ -187,7 +188,9 @@ function PrintPreparation({
   const validForm = forms.data.some((form) => form.id === formId);
   const [document, setDocument] = useState<PrintDocument>('assessment');
   const defaultSettings = { ...DEFAULT_PRINT_SETTINGS, includeHonorCode: requireHonorCode };
-  const settings = forms.data.find((form) => form.id === formId)?.settings ?? defaultSettings;
+  const currentForm = forms.data.find((form) => form.id === formId);
+  const settings = currentForm?.settings ?? defaultSettings;
+  const questionSelectionLocked = currentForm?.question_selection_locked_at != null;
   const [selectedQuestion, setSelectedQuestion] = useState<{ number: string } | null>(null);
   const [reviewOnly, setReviewOnly] = useState(false);
   const [reviewWarningDismissed, setReviewWarningDismissed] = useState(false);
@@ -480,6 +483,7 @@ function PrintPreparation({
     setAutomaticExportIds((ids) => [...ids, result.printExportId]);
     setRecentExportsOpen(true);
     void recentExports.refetch();
+    void forms.refetch();
   }
 
   const finishAutomaticExport = useCallback((id: string) => {
@@ -730,6 +734,11 @@ function PrintPreparation({
       setRetry((value) => value + 1);
     } catch (error) {
       setPreviewPending(false);
+      if (error instanceof TRPCClientError && error.data?.code === 'CONFLICT') {
+        const latest = await forms.refetch();
+        const saved = latest.data?.find((form) => form.id === formId);
+        if (saved) reset(saved.settings);
+      }
       throw error;
     }
   }
@@ -877,7 +886,7 @@ function PrintPreparation({
         >
           {exportStatus.data?.status === 'succeeded' ? (
             <a href={exportStatus.data.downloadUrl ?? undefined}>
-              Download {exportStatus.data.label ?? 'prepared file'}
+              Download {exportStatus.data.label}
               {exportStatus.data.sizeBytes !== null &&
                 ` (${filesize(exportStatus.data.sizeBytes, { base: 10, round: 1 })})`}
             </a>
@@ -1008,33 +1017,36 @@ function PrintPreparation({
                               Form {label}
                               {id === formId && <span className="float-end">Previewing</span>}
                             </Button>
-                            <OverlayTrigger
-                              placement="top"
-                              tooltip={{
-                                props: { id: `print-regenerate-${id}` },
-                                body: `Regenerate Form ${label} with new randomization`,
-                              }}
-                            >
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline-secondary"
-                                aria-label={`Regenerate Form ${label}`}
-                                disabled={
-                                  busy ||
-                                  isDirty ||
-                                  isSubmitting ||
-                                  download.isPending ||
-                                  groupWork ||
-                                  !hasRandomization
-                                }
-                                onClick={() =>
-                                  setPendingFormAction({ action: 'regenerate', id, label })
-                                }
+                            {(hasRandomization || (formId === id && questionSelectionLocked)) && (
+                              <OverlayTrigger
+                                placement="top"
+                                tooltip={{
+                                  props: { id: `print-regenerate-${id}` },
+                                  body: hasRandomization
+                                    ? `Regenerate Form ${label} with new randomization`
+                                    : `Create a new version of Form ${label} to change its questions`,
+                                }}
                               >
-                                <i className="bi bi-arrow-clockwise" aria-hidden="true" />
-                              </Button>
-                            </OverlayTrigger>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline-secondary"
+                                  aria-label={`Regenerate Form ${label}`}
+                                  disabled={
+                                    busy ||
+                                    isDirty ||
+                                    isSubmitting ||
+                                    download.isPending ||
+                                    groupWork
+                                  }
+                                  onClick={() =>
+                                    setPendingFormAction({ action: 'regenerate', id, label })
+                                  }
+                                >
+                                  <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+                                </Button>
+                              </OverlayTrigger>
+                            )}
                             {printFormLabelBase(label) !== 'A' && (
                               <OverlayTrigger
                                 placement="top"
@@ -1325,6 +1337,12 @@ function PrintPreparation({
                         Review flags are suggestions based on question content. Check the preview
                         for layout and complete instructions.
                       </p>
+                      {questionSelectionLocked && !archivedPreviewForm && (
+                        <p className="small text-muted mb-0 mt-1">
+                          This form’s question selection is fixed now that a download has started.
+                          Regenerate it to change which questions are included.
+                        </p>
+                      )}
                     </div>
                     {reviewCount > 0 && (
                       <Form.Check
@@ -1388,7 +1406,7 @@ function PrintPreparation({
                             className="print-preparation-question-include"
                             aria-label={`Include question ${question.number}`}
                             checked={!excluded}
-                            disabled={settingsLocked}
+                            disabled={settingsLocked || questionSelectionLocked}
                             onChange={(event) => {
                               setValue(
                                 'excludedQuestions',
@@ -1798,10 +1816,10 @@ function PrintPreparation({
         <Modal.Body>
           {pendingFormAction?.action === 'regenerate' ? (
             <p className="mb-0">
-              This will archive Form {pendingFormAction.label} and create a new form with fresh
-              randomization. The new form keeps the letter and gets the next number. Form{' '}
-              {pendingFormAction.label} will remain in Previous forms with its original questions
-              and settings.
+              This will archive Form {pendingFormAction.label} and create a new form
+              {hasRandomization ? ' with fresh randomization' : ''}. The new form keeps the letter
+              and gets the next number. Form {pendingFormAction.label} will remain in Previous forms
+              with its original questions and settings.
             </p>
           ) : (
             <p className="mb-0">

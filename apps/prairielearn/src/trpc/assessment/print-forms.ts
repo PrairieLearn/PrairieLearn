@@ -150,14 +150,24 @@ export const printFormsRouter = t.router({
   updateSettings: assessmentFormProcedure
     .input(z.object({ settings: PrintSettingsSchema }))
     .mutation(async ({ ctx, input }) => {
-      const form = await updatePrintFormSettings({
-        printFormId: input.printFormId,
-        assessmentId: ctx.assessment.id,
-        settings: input.settings,
-      });
-      if (!form) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is no longer active.' });
+      try {
+        const form = await updatePrintFormSettings({
+          printFormId: input.printFormId,
+          assessmentId: ctx.assessment.id,
+          settings: input.settings,
+        });
+        if (!form) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'This print form is no longer active.',
+          });
+        }
+        return StaffPrintFormSchema.parse(form);
+      } catch (error) {
+        if (error instanceof HttpStatusError && error.status === 409) {
+          throw new TRPCError({ code: 'CONFLICT', message: error.message, cause: error });
+        }
+        throw error;
       }
-      return StaffPrintFormSchema.parse(form);
     }),
 });

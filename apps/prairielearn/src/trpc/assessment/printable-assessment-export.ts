@@ -227,7 +227,16 @@ export const printableAssessmentExportRouter = t.router({
           courseId: ctx.course.id,
           userId: ctx.locals.user.id,
         };
-        return { printExportId: await queuePrintExport({ owner, work }) };
+        return {
+          printExportId: await queuePrintExport({
+            owner,
+            work,
+            formSelections: forms.map(({ printFormId, settings }) => ({
+              printFormId,
+              excludedQuestions: settings.excludedQuestions,
+            })),
+          }),
+        };
       } catch (error) {
         if (error instanceof HttpStatusError && error.status === 503) {
           throw new TRPCError({
@@ -270,7 +279,7 @@ export const printableAssessmentExportRouter = t.router({
         downloadUrl:
           printExport.status === 'succeeded' ? `${baseUrl}/print/exports/${printExport.id}` : null,
         sizeBytes: printExport.size_bytes,
-        label: printExport.label ?? printExport.filename,
+        label: printExport.label,
         failureMessage: printExport.failure_message,
       }));
     }),

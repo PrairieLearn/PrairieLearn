@@ -24,6 +24,11 @@ export const PrintSettingsSchema = z.strictObject({
 });
 export type PrintSettings = z.infer<typeof PrintSettingsSchema>;
 
+export function sameExcludedQuestions(left: readonly string[], right: readonly string[]): boolean {
+  const selected = new Set(right);
+  return left.length === right.length && left.every((number) => selected.has(number));
+}
+
 export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   paperSize: 'Letter',
   includeCoverPage: true,

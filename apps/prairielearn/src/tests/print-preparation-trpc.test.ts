@@ -128,6 +128,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const printExportId = await queuePrintExport({
+      formSelections: [],
       owner: {
         assessmentId: assessment.id,
         authnUserId: '1',
@@ -233,6 +234,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         'created_at',
         'id',
         'label',
+        'question_selection_locked_at',
         'settings',
       ]);
       const questions = await api.printForms.questions.query(first);
@@ -533,6 +535,22 @@ describe('print preparation', { timeout: 60_000 }, () => {
           (item) => item.id === printExportId,
         ),
       ).toMatchObject({ status: 'pending', label: `Form ${label} PDF`, downloadUrl: null });
+      expect(
+        (await selectOptionalPrintForm({
+          printFormId: form.printFormId,
+          assessmentId: assessment.id,
+        }))!.question_selection_locked_at,
+      ).not.toBeNull();
+      await expect(
+        api.printForms.updateSettings.mutate({
+          printFormId: form.printFormId,
+          settings: { ...DEFAULT_PRINT_SETTINGS, excludedQuestions: ['1'] },
+        }),
+      ).rejects.toMatchObject({ data: { code: 'CONFLICT' } });
+      await api.printForms.updateSettings.mutate({
+        printFormId: form.printFormId,
+        settings: { ...DEFAULT_PRINT_SETTINGS, paperSize: 'A4' },
+      });
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledOnce();
       expect(render.mock.calls[0][0]).toMatchObject({
@@ -601,6 +619,52 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect((await fetch(url)).status).toBe(404);
   });
 
+  test('rejects a PDF with question exclusions that differ from the saved form', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const form = await api.printForms.create.mutate();
+    const settings = { ...DEFAULT_PRINT_SETTINGS, excludedQuestions: ['1'] };
+    const data = new FormData();
+    data.set(
+      'metadata',
+      JSON.stringify({
+        forms: [{ printFormId: form.printFormId, settings }],
+        copies: 1,
+        document: 'assessment',
+      }),
+    );
+    const html = '<!doctype html><html data-print-status="ready"></html>';
+    const search = new URLSearchParams(printLayoutSearch(settings));
+    search.set('document', 'assessment');
+    data.append('pages', new File([html], 'changed-questions.html'));
+    data.append(
+      'snapshotIds',
+      createPrintSnapshotId(
+        {
+          printFormId: form.printFormId,
+          authnUserId: '1',
+          search,
+          questionListDigest: await printing.getPrintableQuestionListDigest(
+            form.printFormId,
+            new Set(['1']),
+          ),
+          html,
+          source: { html: '', figures: [] },
+        },
+        config.secretKey,
+      ),
+    );
+    await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
+      'This print preview has expired or changed.',
+    );
+    expect(
+      (await selectOptionalPrintForm({
+        printFormId: form.printFormId,
+        assessmentId: assessment.id,
+      }))!.question_selection_locked_at,
+    ).toBeNull();
+  });
+
   test('queues a Word export with its signed source and streams it only to its owner', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
@@ -662,6 +726,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
         format: 'docx',
         downloadUrl: null,
       });
+      expect(
+        (await selectOptionalPrintForm({
+          printFormId: form.printFormId,
+          assessmentId: assessment.id,
+        }))!.question_selection_locked_at,
+      ).not.toBeNull();
       await completePrintExport(assessment.id, printExportId);
       // The cover reads its counts and grading table from the page's root attributes.
       expect(render.mock.calls[0][0]).toMatchObject({
@@ -712,6 +782,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const printExportId = await queuePrintExport({
+      formSelections: [],
       owner: {
         assessmentId: assessment.id,
         authnUserId: '1',

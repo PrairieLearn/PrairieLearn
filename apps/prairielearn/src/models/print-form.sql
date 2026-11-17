@@ -29,6 +29,14 @@ WHERE
 RETURNING
   *;
 
+-- BLOCK lock_print_form_question_selections
+UPDATE print_forms
+SET
+  question_selection_locked_at = COALESCE(question_selection_locked_at, CURRENT_TIMESTAMP)
+WHERE
+  assessment_id = $assessment_id
+  AND id = ANY ($print_form_ids::bigint[]);
+
 -- BLOCK lock_assessment_for_print_forms
 SELECT
   id

@@ -424,6 +424,12 @@ router.post(
       ) +
       '.docx';
     const printExportId = await queuePrintExport({
+      formSelections: [
+        {
+          printFormId: res.locals.print_form.id,
+          excludedQuestions: [...layout.excludedQuestionNumbers],
+        },
+      ],
       owner: {
         assessmentId: res.locals.assessment.id,
         authnUserId: res.locals.authn_user.id,

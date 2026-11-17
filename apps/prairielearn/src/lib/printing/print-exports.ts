@@ -5,6 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { Queue, Worker } from '@prairielearn/prairiemq';
 import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
@@ -17,7 +18,13 @@ import {
   releasePrintExport,
   selectPendingPrintExports,
 } from '../../models/print-export.js';
+import {
+  lockAssessmentForPrintForms,
+  lockPrintFormQuestionSelections,
+  selectPrintFormsForAssessment,
+} from '../../models/print-form.js';
 import { deleteFromS3, getFromS3, uploadToS3 } from '../aws.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../client/printing/print-snapshot.js';
 import { config } from '../config.js';
 import { getFileStoreS3Bucket } from '../file-store.js';
 
@@ -27,6 +34,7 @@ import {
   renderPrintExport,
 } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
+import { sameExcludedQuestions } from './print-settings.js';
 
 import { isBrowserRenderingAvailable } from './index.js';
 
@@ -171,9 +179,11 @@ function printableFailureMessage(error: unknown, format: PrintExportWork['format
 export async function queuePrintExport({
   owner,
   work,
+  formSelections,
 }: {
   owner: { assessmentId: string; authnUserId: string; courseId: string; userId: string };
   work: PrintExportWork;
+  formSelections: { printFormId: string; excludedQuestions: string[] }[];
 }): Promise<string> {
   if (shutdownController.signal.aborted || !getQueue()) {
     throw new HttpStatusError(503, 'Print export queuing is not available on this server.');
@@ -183,14 +193,33 @@ export async function queuePrintExport({
   await uploadToS3(bucket, inputKey, null, false, Buffer.from(JSON.stringify(work)));
   let printExportId: string;
   try {
-    printExportId = await insertPrintExport({
-      assessmentId: owner.assessmentId,
-      userId: owner.userId,
-      authnUserId: owner.authnUserId,
-      format: work.format,
-      filename: work.filename,
-      label: getPrintExportLabel(work),
-      inputKey,
+    printExportId = await runInTransactionAsync(async () => {
+      await lockAssessmentForPrintForms(owner.assessmentId);
+      const savedForms = new Map(
+        (await selectPrintFormsForAssessment({ assessmentId: owner.assessmentId })).map((form) => [
+          form.id,
+          form,
+        ]),
+      );
+      for (const { printFormId, excludedQuestions } of formSelections) {
+        const saved = savedForms.get(printFormId);
+        if (!saved || !sameExcludedQuestions(saved.settings.excludedQuestions, excludedQuestions)) {
+          throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+        }
+      }
+      await lockPrintFormQuestionSelections({
+        assessmentId: owner.assessmentId,
+        printFormIds: formSelections.map(({ printFormId }) => printFormId),
+      });
+      return await insertPrintExport({
+        assessmentId: owner.assessmentId,
+        userId: owner.userId,
+        authnUserId: owner.authnUserId,
+        format: work.format,
+        filename: work.filename,
+        label: getPrintExportLabel(work),
+        inputKey,
+      });
     });
   } catch (error) {
     await deleteFromS3(bucket, inputKey);

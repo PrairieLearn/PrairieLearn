@@ -47,6 +47,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
         courseId: courseInstance.course_id,
         userId: user.id,
       },
+      formSelections: [{ printFormId: printForm.id, excludedQuestions: [] }],
       work: {
         format: 'pdf',
         document: 'assessment',

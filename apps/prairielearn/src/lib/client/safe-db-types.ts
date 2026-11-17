@@ -161,6 +161,7 @@ export const RawStaffPrintFormSchema = RawPrintFormSchema.pick({
   created_at: true,
   id: true,
   label: true,
+  question_selection_locked_at: true,
   settings: true,
 });
 export const StaffPrintFormSchema = RawStaffPrintFormSchema.brand<'StaffPrintForm'>();

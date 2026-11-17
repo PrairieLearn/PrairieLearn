@@ -281,6 +281,7 @@ const minimalStaffPrintForm: z.input<typeof StaffPrintFormSchema> = {
   created_at: new Date(),
   id: '10',
   label: 'A',
+  question_selection_locked_at: null,
   settings: DEFAULT_PRINT_SETTINGS,
 };
 

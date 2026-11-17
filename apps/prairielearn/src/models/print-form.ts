@@ -1,4 +1,6 @@
+import { HttpStatusError } from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -9,7 +11,7 @@ import {
 import { IdSchema } from '@prairielearn/zod';
 
 import { PrintFormSchema } from '../lib/db-types.js';
-import type { PrintSettings } from '../lib/printing/print-settings.js';
+import { type PrintSettings, sameExcludedQuestions } from '../lib/printing/print-settings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -50,6 +52,17 @@ export async function updatePrintFormSettings({
 }) {
   return await runInTransactionAsync(async () => {
     await lockAssessmentForPrintForms(assessmentId);
+    const current = await selectOptionalPrintForm({ printFormId, assessmentId });
+    if (
+      current?.archived_at === null &&
+      current.question_selection_locked_at !== null &&
+      !sameExcludedQuestions(current.settings.excludedQuestions, settings.excludedQuestions)
+    ) {
+      throw new HttpStatusError(
+        409,
+        'This form’s question selection is locked after a download. Regenerate the form to change its questions.',
+      );
+    }
     return await queryOptionalRow(
       sql.update_print_form_settings,
       {
@@ -59,6 +72,19 @@ export async function updatePrintFormSettings({
       },
       PrintFormSchema,
     );
+  });
+}
+
+export async function lockPrintFormQuestionSelections({
+  assessmentId,
+  printFormIds,
+}: {
+  assessmentId: string;
+  printFormIds: string[];
+}) {
+  await execute(sql.lock_print_form_question_selections, {
+    assessment_id: assessmentId,
+    print_form_ids: printFormIds,
   });
 }
 

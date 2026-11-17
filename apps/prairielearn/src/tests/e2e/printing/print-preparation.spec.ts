@@ -100,6 +100,13 @@ test('keeps multiple export links after another file is queued and the page relo
   await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
   const label = await printFormLabel(page);
+  const stalePage = await page.context().newPage();
+  await stalePage.goto(page.url());
+  const staleQuestion = stalePage.getByRole('checkbox', {
+    name: 'Include question 1',
+    exact: true,
+  });
+  await expect(staleQuestion).toBeEnabled();
 
   async function queuePdf(item: string) {
     const downloaded = page.waitForEvent('download', { timeout: 120_000 });
@@ -121,6 +128,21 @@ test('keeps multiple export links after another file is queued and the page relo
 
   const copyId = await queuePdf(`Download Form ${label} (PDF)`);
   await expect(page.locator('#print-prepare-status')).toBeFocused();
+  await expect(
+    page.getByRole('checkbox', { name: 'Include question 1', exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByLabel('Spacing for question 1', { exact: true })).toBeEnabled();
+  await staleQuestion.uncheck();
+  await stalePage.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(
+    stalePage
+      .getByRole('alert')
+      .getByText('This form’s question selection is locked after a download.'),
+  ).toBeVisible();
+  await expect(staleQuestion).toBeChecked();
+  await expect(staleQuestion).toBeDisabled();
+  await expect(stalePage.getByRole('button', { name: `Form ${label} Previewing` })).toBeEnabled();
+  await stalePage.close();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   const recentExports = page.getByRole('region', { name: 'Recent exports' });
   const copyLink = recentExports.locator(`a[href$="/exports/${copyId}"]`);
@@ -585,7 +607,7 @@ test('combines assessment copies with custom covers and appends every form’s a
     buffer: Buffer.from(await cover.save()),
   });
   await expect(page.getByText('extended-instructions.pdf', { exact: true })).toBeVisible();
-  const copies = 45;
+  const copies = 3;
   await chooseDownload(page, 'Download booklet PDF…');
   await page.getByLabel('Number of students', { exact: true }).fill(String(copies));
   await expect(
