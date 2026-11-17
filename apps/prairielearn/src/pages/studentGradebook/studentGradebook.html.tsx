@@ -1,6 +1,7 @@
+import { AssessmentScore } from '../../components/AssessmentScore.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { Scorebar } from '../../components/Scorebar.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { GradingPending } from '../../models/assessment-instance.js';
 
 export interface StudentGradebookTableRow {
   assessment_id: string;
@@ -11,6 +12,7 @@ export interface StudentGradebookTableRow {
   assessment_set_color: string;
   label: string;
   assessment_instance_score_perc: number | null;
+  assessment_instance_grading_pending: GradingPending | null;
   show_closed_assessment_score: boolean;
   start_new_set: boolean;
 }
@@ -94,8 +96,9 @@ export function StudentGradebook({
                       </td>
                       <td className="text-center align-middle">
                         {row.show_closed_assessment_score ? (
-                          <Scorebar
+                          <AssessmentScore
                             score={row.assessment_instance_score_perc}
+                            gradingPending={row.assessment_instance_grading_pending}
                             className="mx-auto"
                           />
                         ) : (

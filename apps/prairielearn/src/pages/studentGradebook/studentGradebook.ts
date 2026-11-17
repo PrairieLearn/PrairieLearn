@@ -40,6 +40,7 @@ function mapRow(
     assessment_set_color: raw.assessment_set.color,
     label: computeLabel(raw),
     assessment_instance_score_perc: raw.assessment_instance.score_perc,
+    assessment_instance_grading_pending: raw.assessment_instance_grading_pending,
     show_closed_assessment_score: raw.show_closed_assessment_score,
     start_new_set,
   };

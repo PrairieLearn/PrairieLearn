@@ -81,3 +81,36 @@ INSERT INTO
     FROM
       results
   );
+
+-- BLOCK select_grading_pending
+-- This mirrors the per-question "pending" badges in `InstanceQuestionPoints`
+-- so that the overall status always agrees with the student's question table.
+SELECT
+  iq.assessment_instance_id,
+  bool_or(iq.requires_manual_grading) AS manual,
+  bool_or(
+    iq.status IN ('saved', 'grading')
+    AND (
+      coalesce(aq.max_auto_points, 0) > 0
+      OR coalesce(aq.max_manual_points, 0) = 0
+    )
+  ) AS auto
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+  JOIN assessments AS a ON (a.id = aq.assessment_id)
+  JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+  JOIN zones AS z ON (z.id = ag.zone_id)
+WHERE
+  iq.assessment_instance_id = ANY ($assessment_instance_ids::bigint[])
+  AND (
+    iq.requires_manual_grading
+    OR iq.status IN ('saved', 'grading')
+  )
+  -- Removed questions are still shown to students on exams.
+  AND (
+    aq.deleted_at IS NULL
+    OR a.type = 'Exam'
+  )
+GROUP BY
+  iq.assessment_instance_id;

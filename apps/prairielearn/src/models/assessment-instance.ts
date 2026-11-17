@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
 
@@ -75,5 +76,36 @@ export async function insertGroupAssessmentInstance({
     sql.insert_group_assessment_instance,
     { assessment_id, team_id, authn_user_id },
     AssessmentInstanceSchema,
+  );
+}
+
+/** Why an assessment instance's score may not yet reflect all submitted work. */
+export interface GradingPending {
+  /** At least one question is waiting for manual grading. */
+  manual: boolean;
+  /** At least one saved answer has not been automatically graded. */
+  auto: boolean;
+}
+
+/**
+ * Returns the grading status of each assessment instance that has ungraded
+ * work. Instances with nothing pending are absent from the result.
+ */
+export async function selectGradingPending(
+  assessment_instance_ids: string[],
+): Promise<Map<string, GradingPending>> {
+  if (assessment_instance_ids.length === 0) return new Map();
+  const rows = await queryRows(
+    sql.select_grading_pending,
+    { assessment_instance_ids },
+    z.object({ assessment_instance_id: IdSchema, manual: z.boolean(), auto: z.boolean() }),
+  );
+  return new Map(
+    rows
+      .filter((row) => row.manual || row.auto)
+      .map(({ assessment_instance_id, manual, auto }) => [
+        assessment_instance_id,
+        { manual, auto },
+      ]),
   );
 }

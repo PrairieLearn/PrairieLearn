@@ -15,6 +15,7 @@ import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzA
 import type { ResLocalsInstanceQuestion } from '../middlewares/selectAndAuthzInstanceQuestion.js';
 import type { ResLocalsInstructorQuestion } from '../middlewares/selectAndAuthzInstructorQuestion.js';
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
+import type { GradingPending } from '../models/assessment-instance.js';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import type { ResLocalsConfig } from './config.js';
@@ -22,6 +23,7 @@ import type { Course, CourseInstance } from './db-types.js';
 
 interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
+  assessment_instance_grading_pending?: GradingPending | null;
 }
 
 interface ResLocalsForPageLookup {
