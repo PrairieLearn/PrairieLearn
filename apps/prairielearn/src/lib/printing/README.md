@@ -6,8 +6,6 @@ Tools for creating printable PDFs and editable Word documents, plus a helper tha
 
 The browser lays out questions and splits them into pages. PDFs use the finished pages. Word documents use question content saved before page breaks are added, along with images of figures. Create one renderer per application process:
 
-The preview response carries a signed snapshot ID covering its HTML, editable Word source, saved print form, generating user, layout query, and selected question identities and order. Export requests verify the ID and current question list; the export worker loads the submitted pages in the browser and compares their normalized HTML with the signed digest before rendering, so the check doesn't block the Node event loop. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
-
 ```ts
 import { config } from './config.js';
 import { PrintRenderer } from './printing/print-renderer.js';
@@ -29,6 +27,8 @@ const pdf = await renderer.renderPdf({
 });
 await renderer.close(); // during shutdown
 ```
+
+The preview response carries a signed snapshot ID covering its HTML, editable Word source, saved print form, generating user, layout query, and selected question identities and order. Export requests verify the ID and current question list; the export worker loads the submitted pages in the browser and compares their normalized HTML with the signed digest before rendering, so the check doesn't block the Node event loop. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
 
 Build `assetScope` from the already authorized course instance, assessment, saved print form, selected print-form question IDs, and user IDs. The renderer uses it to mint a credential for that render.
 
