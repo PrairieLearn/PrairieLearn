@@ -1,28 +1,36 @@
 import clsx from 'clsx';
-import { marked } from 'marked';
-import {
-  createContext,
-  createElement,
-  memo,
-  use,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import ReactMarkdown, { type Components, type UrlTransform } from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { type JSX, createElement, useEffect, useId, useRef, useState } from 'react';
+import type { UrlTransform } from 'react-markdown';
 import remarkMath from 'remark-math';
-import remend from 'remend';
+import {
+  type Components,
+  Streamdown,
+  defaultRehypePlugins,
+  defaultRemarkPlugins,
+  useIsCodeFenceIncomplete,
+} from 'streamdown';
 
 import { loadMathjax, mathjaxTypeset } from '../../../lib/client/mathjax.js';
 
-const CodeFenceIncompleteContext = createContext(false);
+// Streamdown's default renderers are styled with Tailwind, which we don't
+// use. Some of its utility class names (`px-4`, `py-2`, `mb-2`) also exist in
+// Bootstrap with different values, and it renders bold text as a styled
+// `<span>`, so every element is rendered as its plain tag instead and picks
+// up our existing Bootstrap and `.markdown-body` styles.
+function plain(tag: keyof JSX.IntrinsicElements) {
+  return ({
+    node: _node,
+    className: _className,
+    ...props
+  }: {
+    node?: unknown;
+    className?: string;
+  }) => createElement(tag, props);
+}
 
 function MermaidDiagram({ code }: { code: string }) {
   const id = useId();
-  const isIncomplete = use(CodeFenceIncompleteContext);
+  const isIncomplete = useIsCodeFenceIncomplete();
   const [result, setResult] = useState<{ code: string; svg?: string; error?: string } | null>(null);
 
   // Renders the diagram once its code fence has finished streaming. Mermaid is
@@ -110,39 +118,77 @@ function MathExpression({ tex, display }: { tex: string; display: boolean }) {
   );
 }
 
+const PLAIN_TAGS = [
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'hr',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+] as const;
+
 const components: Components = {
-  code: ({ node: _node, className, children, ...props }) => {
-    if (className?.includes('math-inline') && typeof children === 'string') {
+  ...Object.fromEntries(PLAIN_TAGS.map((tag) => [tag, plain(tag)])),
+  strong: plain('strong'),
+  inlineCode: ({ node: _node, className, children, ...props }) => {
+    if (className?.includes('language-math') && typeof children === 'string') {
       return <MathExpression tex={children} display={false} />;
     }
+    return <code {...props}>{children}</code>;
+  },
+  // `pre` is left to Streamdown: it only marks its child as a block, and
+  // `code` then renders the whole code block.
+  code: ({ className, children }) => {
+    if (className?.includes('language-mermaid') && typeof children === 'string') {
+      return <MermaidDiagram code={children} />;
+    }
+    if (className?.includes('language-math') && typeof children === 'string') {
+      return <MathExpression tex={children.trim()} display />;
+    }
     return (
-      <code {...props} className={className}>
-        {children}
-      </code>
+      <pre>
+        <code className={className}>{children}</code>
+      </pre>
     );
   },
-  pre: ({ node, children }) => {
-    const code = node?.children[0];
-    if (code?.type === 'element' && Array.isArray(code.properties.className)) {
-      const text = code.children
-        .map((child) => (child.type === 'text' ? child.value : ''))
-        .join('');
-      if (code.properties.className.includes('language-mermaid')) {
-        return <MermaidDiagram code={text} />;
-      }
-      if (code.properties.className.includes('math-display')) {
-        return <MathExpression tex={text.trim()} display />;
-      }
-    }
-    return <pre>{children}</pre>;
-  },
-  img: ({ node: _node, alt, ...props }) => <img {...props} alt={alt ?? ''} className="img-fluid" />,
-  table: ({ node: _node, ...props }) => (
+  a: ({ node: _node, className: _className, target: _target, rel: _rel, ...props }) =>
+    createElement('a', props),
+  img: ({ node: _node, className: _className, alt, ...props }) => (
+    <img {...props} alt={alt ?? ''} className="img-fluid" />
+  ),
+  table: ({ node: _node, className: _className, ...props }) => (
     <div className="table-responsive mb-3">
       <table {...props} className="table table-sm table-bordered mb-0" />
     </div>
   ),
 };
+
+interface HastNode {
+  type: string;
+  children?: HastNode[];
+}
+
+// Streamdown parses HTML in a message and then sanitizes it, which silently
+// drops any tag it doesn't know. Replies routinely mention elements like
+// `<pl-number-input>` outside of code spans, so HTML is shown as written
+// instead.
+function rehypeHtmlAsText() {
+  const visit = (node: HastNode) => {
+    if (node.type === 'raw') node.type = 'text';
+    node.children?.forEach(visit);
+  };
+  return visit;
+}
 
 // Models usually delimit math with `\(...\)` and `\[...\]`, which markdown
 // reads as escaped brackets. Code is matched first so that it is left alone.
@@ -155,33 +201,13 @@ function normalizeMathDelimiters(markdown: string) {
   });
 }
 
-function hasOpenCodeFence(markdown: string) {
-  return (markdown.match(/^\s*(?:```|~~~)/gm)?.length ?? 0) % 2 === 1;
-}
+const remarkPlugins = [...Object.values(defaultRemarkPlugins), remarkMath];
 
-const remarkPlugins = [remarkGfm, remarkMath];
-
-const MarkdownBlock = memo(function MarkdownBlock({
-  content,
-  urlTransform,
-  codeFenceIncomplete,
-}: {
-  content: string;
-  urlTransform?: UrlTransform;
-  codeFenceIncomplete: boolean;
-}) {
-  return (
-    <CodeFenceIncompleteContext value={codeFenceIncomplete}>
-      <ReactMarkdown
-        components={components}
-        remarkPlugins={remarkPlugins}
-        urlTransform={urlTransform}
-      >
-        {content}
-      </ReactMarkdown>
-    </CodeFenceIncompleteContext>
-  );
-});
+const rehypePlugins = [
+  rehypeHtmlAsText,
+  defaultRehypePlugins.sanitize,
+  defaultRehypePlugins.harden,
+];
 
 export function ChatMarkdown({
   content,
@@ -194,30 +220,21 @@ export function ChatMarkdown({
   urlTransform?: UrlTransform;
   isStreaming?: boolean;
 }) {
-  // Each block is rendered separately so that only the block that is still
-  // streaming is parsed again as text arrives. A link that is still streaming
-  // has no destination yet, so it is shown as text until it is complete.
-  const blocks = useMemo(
-    () =>
-      marked
-        .lexer(remend(normalizeMathDelimiters(content), { linkMode: 'text-only' }))
-        .map((token) => token.raw),
-    [content],
-  );
-
   return (
-    <div className={className}>
-      {blocks.map((block, index) => (
-        <MarkdownBlock
-          // oxlint-disable-next-line react/no-array-index-key
-          key={index}
-          content={block}
-          urlTransform={urlTransform}
-          codeFenceIncomplete={
-            isStreaming && index === blocks.length - 1 && hasOpenCodeFence(block)
-          }
-        />
-      ))}
-    </div>
+    <Streamdown
+      className={className}
+      components={components}
+      controls={false}
+      isAnimating={isStreaming}
+      linkSafety={{ enabled: false }}
+      rehypePlugins={rehypePlugins}
+      remarkPlugins={remarkPlugins}
+      // A link that is still streaming has no destination yet, so it is shown
+      // as text until it is complete.
+      remend={{ linkMode: 'text-only' }}
+      urlTransform={urlTransform}
+    >
+      {normalizeMathDelimiters(content)}
+    </Streamdown>
   );
 }
