@@ -643,6 +643,9 @@ function PrintPreparation({
     includedQuestions?.filter(
       (question) => question.concerns.length || omitted.has(question.number),
     ).length ?? 0;
+  const firstReviewQuestion =
+    includedOmittedQuestions.at(0) ??
+    includedQuestions?.find((question) => question.concerns.length > 0);
   const noQuestionsSelected = questions.isSuccess && includedQuestions?.length === 0;
   const previewHasError =
     currentPreview?.status === 'error' ||
@@ -944,17 +947,16 @@ function PrintPreparation({
             variant="link"
             className="p-0"
             onClick={() => {
-              const firstOmittedQuestion = includedOmittedQuestions.at(0);
-              const target = window.document.getElementById(
-                firstOmittedQuestion
-                  ? `print-preparation-question-${firstOmittedQuestion.number}`
-                  : 'print-preparation-questions',
-              );
+              const target =
+                firstReviewQuestion &&
+                window.document.getElementById(
+                  `print-preparation-question-${firstReviewQuestion.number}`,
+                );
               target?.scrollIntoView({
                 behavior: 'smooth',
-                block: firstOmittedQuestion ? 'center' : 'nearest',
+                block: 'center',
               });
-              if (firstOmittedQuestion) target?.focus({ preventScroll: true });
+              target?.focus({ preventScroll: true });
             }}
           >
             Review questions
@@ -1033,36 +1035,34 @@ function PrintPreparation({
                                 <i className="bi bi-arrow-clockwise" aria-hidden="true" />
                               </Button>
                             </OverlayTrigger>
-                            <OverlayTrigger
-                              placement="top"
-                              tooltip={{
-                                props: { id: `print-archive-${id}` },
-                                body:
-                                  printFormLabelBase(label) === 'A'
-                                    ? `Form ${label} cannot be archived. Regenerate it to replace it.`
-                                    : `Archive Form ${label}`,
-                              }}
-                            >
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline-secondary"
-                                aria-label={`Archive Form ${label}`}
-                                disabled={
-                                  printFormLabelBase(label) === 'A' ||
-                                  activeForms.length === 1 ||
-                                  busy ||
-                                  isDirty ||
-                                  isSubmitting ||
-                                  download.isPending
-                                }
-                                onClick={() =>
-                                  setPendingFormAction({ action: 'archive', id, label })
-                                }
+                            {printFormLabelBase(label) !== 'A' && (
+                              <OverlayTrigger
+                                placement="top"
+                                tooltip={{
+                                  props: { id: `print-archive-${id}` },
+                                  body: `Archive Form ${label}`,
+                                }}
                               >
-                                <i className="bi bi-archive" aria-hidden="true" />
-                              </Button>
-                            </OverlayTrigger>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline-secondary"
+                                  aria-label={`Archive Form ${label}`}
+                                  disabled={
+                                    activeForms.length === 1 ||
+                                    busy ||
+                                    isDirty ||
+                                    isSubmitting ||
+                                    download.isPending
+                                  }
+                                  onClick={() =>
+                                    setPendingFormAction({ action: 'archive', id, label })
+                                  }
+                                >
+                                  <i className="bi bi-archive" aria-hidden="true" />
+                                </Button>
+                              </OverlayTrigger>
+                            )}
                           </div>
                         );
                       })}
@@ -1372,7 +1372,9 @@ function PrintPreparation({
                           id={`print-preparation-question-${question.number}`}
                           role="group"
                           aria-label={`Question ${question.number}: ${question.title}`}
-                          tabIndex={error ? -1 : undefined}
+                          tabIndex={
+                            error || (!excluded && question.concerns.length > 0) ? -1 : undefined
+                          }
                           className={clsx('print-preparation-question', {
                             'bg-danger-subtle': error,
                             'bg-body-tertiary': excluded,

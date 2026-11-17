@@ -516,9 +516,9 @@ test('combines assessment copies with custom covers and appends every form’s a
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(replacementId);
   const newId = new URL(page.url()).searchParams.get('form')!;
   const newLabel = await printFormLabel(page, newId);
-  await expect(
-    page.getByRole('button', { name: `Archive Form ${replacementLabel}` }),
-  ).toBeDisabled();
+  await expect(page.getByRole('button', { name: `Archive Form ${replacementLabel}` })).toHaveCount(
+    0,
+  );
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeFocused();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toHaveAttribute(
     'aria-pressed',
@@ -715,6 +715,14 @@ test('distinguishes paper review flags from broken questions omitted from the do
     await expect(page.getByRole('checkbox', { name: label, exact: true })).not.toBeChecked();
   }
   await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
+  const firstConcernQuestion = page
+    .getByRole('group', { name: /^Question / })
+    .filter({ has: page.getByText('Review printability', { exact: true }) })
+    .first();
+  await expect(firstConcernQuestion).not.toBeInViewport();
+  await page.getByRole('button', { name: 'Review questions' }).click();
+  await expect(firstConcernQuestion).toBeInViewport();
+  await expect(firstConcernQuestion).toBeFocused();
 
   const firstFormId = new URL(page.url()).searchParams.get('form');
   const firstLabel = await printFormLabel(page);
