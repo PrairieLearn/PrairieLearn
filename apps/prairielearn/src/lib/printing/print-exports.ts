@@ -156,7 +156,7 @@ function printableFailureMessage(error: unknown, format: PrintExportWork['format
   if (error instanceof HttpStatusError && error.status === 504) {
     return format === 'docx'
       ? 'The Word document took too long to prepare. Try again.'
-      : 'The PDF took too long to prepare. Try again, or download fewer forms at once.';
+      : 'The PDF took too long to prepare. Try again.';
   }
   if (
     error instanceof PrintPacketError ||
