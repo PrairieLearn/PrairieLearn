@@ -331,7 +331,20 @@ function Chat({
   // The conversation keeps its own mode. A choice made here shows at once instead of waiting for
   // the agent service to report it back.
   const [chosenApprovalMode, setChosenApprovalMode] = useState(initialApprovalMode);
-  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode ?? 'approval_required';
+  // Undefined until the agent service reports the conversation's state.
+  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode;
+  // The service takes a moment to report, so the message box shows the mode this browser last
+  // saw for the conversation instead of flipping from the default. Only a reported mode approves
+  // a review or goes out with a message.
+  const approvalModeKey = `course-agent:approval-mode:${conversationId}`;
+  const [lastSeenApprovalMode] = useState(
+    () => ApprovalModeSchema.safeParse(localStorage.getItem(approvalModeKey)).data,
+  );
+  const shownApprovalMode = approvalMode ?? lastSeenApprovalMode ?? 'approval_required';
+  // Remember the conversation's mode for the next time this browser opens it.
+  useEffect(() => {
+    if (approvalMode) localStorage.setItem(approvalModeKey, approvalMode);
+  }, [approvalMode, approvalModeKey]);
   const { mutate: saveApprovalMode } = useMutation(
     trpc.courseAgent.setApprovalMode.mutationOptions(),
   );
@@ -578,7 +591,7 @@ function Chat({
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
               awaitingReviewId={awaitingReviewId}
-              approvalMode={approvalMode}
+              approvalMode={approvalMode ?? 'approval_required'}
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
@@ -653,7 +666,7 @@ function Chat({
         sendLabel={replyDenies ? 'Deny and send' : undefined}
         pending={sending || deny.isPending}
         attachments={drafts.attachments}
-        approvalMode={approvalMode}
+        approvalMode={shownApprovalMode}
         stopDisabled={!connected || !canStop}
         onApprovalModeChange={changeApprovalMode}
         onAttach={drafts.add}
