@@ -26,6 +26,7 @@ def test_random_values(sandbox: StudentFixture, subtests: pytest.Subtests) -> No
 
 
 def _fib(n: int) -> int:
-    if n <= 1:
-        return n
-    return _fib(n - 1) + _fib(n - 2)
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
