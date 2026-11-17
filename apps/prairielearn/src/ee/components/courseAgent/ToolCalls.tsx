@@ -190,8 +190,7 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
           ),
         };
       }
-      // Many staff are not technical; the command itself is in the row's details.
-      return { verb: 'run', subject: 'a command' };
+      return { verb: 'run', subject: <Code>{unwrapShell(call.command).split('\n')[0]}</Code> };
     }
     case 'fileChange': {
       const meta = changeMeta([call]);
@@ -481,7 +480,8 @@ function CallGroup({
 
 /**
  * Everything the agent did before a reply, folded into one line so the chat reads as its replies.
- * Opening it shows each step, with calls of the same kind grouped.
+ * Many staff are not technical, so commands and file paths show only once the line is opened,
+ * where each step is listed with calls of the same kind grouped.
  */
 export function Work({
   items,
@@ -520,8 +520,6 @@ export function Work({
       <Update key={i} text={row.text} />
     ),
   );
-  // A lone step says more as its own line than as "1 step".
-  if (settled && rows.length === 1) return rendered[0];
   const calls = items.filter(isCall);
   const updates = items.filter((item): item is TextUIPart => !isCall(item) && item.type === 'text');
   const update = updates.at(-1);
