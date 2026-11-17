@@ -2192,11 +2192,11 @@ function PrintPreparation({
         <Modal.Body>
           {pendingFormAction?.action === 'regenerate' ? (
             <p className="mb-0">
-              This will replace 'Form {pendingFormAction.label}' with 'Form{' '}
-              {nextPrintFormLabel(forms.data, pendingFormAction.label)}'
-              {hasRandomization ? ' applying fresh randomization' : ''}. 'Form{' '}
-              {pendingFormAction.label}' will remain available for reference in{' '}
-              <strong>Previous forms</strong> with its chosen questions and settings.
+              This will replace <strong>Form {pendingFormAction.label}</strong> with{' '}
+              <strong>Form {nextPrintFormLabel(forms.data, pendingFormAction.label)}</strong>
+              {hasRandomization ? ' applying fresh randomization' : ''}.{' '}
+              <strong>Form {pendingFormAction.label}</strong> will remain available for reference in
+              the 'Previous forms' section with its chosen questions and settings.
             </p>
           ) : (
             <p className="mb-0">
