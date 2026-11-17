@@ -126,10 +126,19 @@ test('keeps multiple export links after another file is queued and the page relo
   const recentExports = page.getByRole('region', { name: 'Recent exports' });
   const copyLink = recentExports.locator(`a[href$="/exports/${copyId}"]`);
   const keyLink = recentExports.locator(`a[href$="/exports/${keyId}"]`);
+  const summary = recentExports.getByText(/^Recent exports \(/);
+  await expect(summary).toBeVisible();
+  await expect(copyLink).toHaveCount(1);
+  await expect(copyLink).toBeHidden();
+  await summary.click();
   await expect(copyLink).toBeVisible({ timeout: 120_000 });
   await expect(keyLink).toBeVisible({ timeout: 120_000 });
 
   await page.reload();
+  await expect(summary).toBeVisible();
+  await expect(copyLink).toHaveCount(1);
+  await expect(copyLink).toBeHidden();
+  await summary.click();
   await expect(copyLink).toBeVisible({ timeout: 120_000 });
   await expect(keyLink).toBeVisible({ timeout: 120_000 });
 });

@@ -211,7 +211,7 @@ function PrintPreparation({
   const prepareStatusRef = useRef<HTMLDivElement>(null);
   const applyPreviewButtonRef = useRef<HTMLButtonElement>(null);
   const printHeadingRef = useRef<HTMLHeadingElement>(null);
-  const recentExportsRef = useRef<HTMLElement>(null);
+  const recentExportsRef = useRef<HTMLDetailsElement>(null);
   const nextFormFocusRef = useRef<string | null>(null);
   const formToFocusRef = useRef<{ id: string; waitForSelection: boolean } | null>(null);
   const [formFocusRequest, setFormFocusRequest] = useState(0);
@@ -320,9 +320,11 @@ function PrintPreparation({
 
   function focusAfterDismiss() {
     window.requestAnimationFrame(() => {
-      const link =
-        recentExportsRef.current?.querySelector<HTMLAnchorElement>('a[href*="/exports/"]');
-      (link ?? printHeadingRef.current)?.focus();
+      const details = recentExportsRef.current;
+      const link = details?.open
+        ? details.querySelector<HTMLAnchorElement>('a[href*="/exports/"]')
+        : null;
+      (link ?? details?.querySelector('summary') ?? printHeadingRef.current)?.focus();
     });
   }
 
@@ -816,40 +818,42 @@ function PrintPreparation({
         render={{ UNKNOWN: ({ message }) => message }}
       />
       {recentExports.data && recentExports.data.length > 0 && (
-        <section ref={recentExportsRef} aria-label="Recent exports" className="mb-3">
+        <section aria-label="Recent exports" className="mb-3">
           <Card>
             <Card.Body>
-              <h2 className="h6 mb-2">Recent exports</h2>
-              <p className="small text-muted">
-                Files are available for 24 hours. You can start another export while one is
-                preparing.
-              </p>
-              <ol className="mb-0 ps-3">
-                {recentExports.data.map((item) => (
-                  <li key={item.id} className="mb-2">
-                    {item.status === 'succeeded' ? (
-                      <a href={item.downloadUrl ?? undefined}>
-                        Download {item.label}
-                        {item.sizeBytes !== null &&
-                          ` (${filesize(item.sizeBytes, { base: 10, round: 1 })})`}
-                      </a>
-                    ) : (
-                      <span>{item.label}</span>
-                    )}
-                    <span className="small text-muted ms-2">
-                      <FriendlyDate date={item.createdAt} timezone={displayTimezone} />
-                    </span>
-                    {item.status === 'pending' && (
-                      <span className="small text-muted ms-2">Preparing…</span>
-                    )}
-                    {item.status === 'failed' && (
-                      <span className="small text-danger ms-2">
-                        {item.failureMessage ?? 'The file could not be prepared.'}
+              <details ref={recentExportsRef}>
+                <summary className="h6 mb-0">Recent exports ({recentExports.data.length})</summary>
+                <p className="small text-muted mt-2 mb-2">
+                  Files are available for 24 hours. You can start another export while one is
+                  preparing.
+                </p>
+                <ol className="mb-0 ps-3">
+                  {recentExports.data.map((item) => (
+                    <li key={item.id} className="mb-2">
+                      {item.status === 'succeeded' ? (
+                        <a href={item.downloadUrl ?? undefined}>
+                          Download {item.label}
+                          {item.sizeBytes !== null &&
+                            ` (${filesize(item.sizeBytes, { base: 10, round: 1 })})`}
+                        </a>
+                      ) : (
+                        <span>{item.label}</span>
+                      )}
+                      <span className="small text-muted ms-2">
+                        <FriendlyDate date={item.createdAt} timezone={displayTimezone} />
                       </span>
-                    )}
-                  </li>
-                ))}
-              </ol>
+                      {item.status === 'pending' && (
+                        <span className="small text-muted ms-2">Preparing…</span>
+                      )}
+                      {item.status === 'failed' && (
+                        <span className="small text-danger ms-2">
+                          {item.failureMessage ?? 'The file could not be prepared.'}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </details>
             </Card.Body>
           </Card>
         </section>
@@ -1595,7 +1599,7 @@ function PrintPreparation({
                     ) : packet.isError ? (
                       <span className="text-danger">{packet.error.message}</span>
                     ) : exportId && displayedExport?.status === 'succeeded' ? (
-                      'File ready. Download it above.'
+                      'File ready. Open Recent exports above to download it.'
                     ) : exportId && displayedExport?.status === 'failed' ? (
                       <span className="text-danger">
                         {displayedExport.failureMessage ?? 'The file could not be prepared.'}
