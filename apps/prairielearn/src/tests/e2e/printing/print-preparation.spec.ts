@@ -315,9 +315,6 @@ test('prepares an assessment and key with consistent variants and downloads', as
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
-  const formsLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printForms.list'),
-  );
   await page.getByRole('link', { name: 'Print', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Paper and layout', exact: true })).toBeVisible();
   const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
@@ -328,7 +325,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
   await expect(breadcrumb.getByRole('heading', { name: 'Print assessment' })).toBeVisible();
-  await formsLoaded;
+  await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible();
   await openPrintPreparation(page, courseInstance.id);
   await page.getByLabel('Additional student information').fill('Section');
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
@@ -451,11 +448,8 @@ test('prepares homework with matching student copies, answer keys, and Word expo
   await page.goto(
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
-  const formsLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printForms.list'),
-  );
   await page.getByRole('link', { name: 'Print', exact: true }).click();
-  await formsLoaded;
+  await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible();
   await openPrintPreparation(page, courseInstance.id, 'hw15-lockpoints');
   await page.getByLabel('Additional student information').fill('Section');
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
@@ -531,11 +525,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
 
-  const formsLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printForms.list'),
-  );
   await openPrintPreparation(page, courseInstance.id);
-  await formsLoaded;
   await preparePreview(page);
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
   const originalLabel = await printFormLabel(page, originalFormId);
@@ -725,11 +715,8 @@ test('distinguishes paper review flags from broken questions omitted from the do
   page,
   courseInstance,
 }) => {
-  const formsLoaded = page.waitForResponse((response) =>
-    new URL(response.url()).pathname.endsWith('/printForms.list'),
-  );
   await openPrintPreparation(page, courseInstance.id, 'exam23-printing');
-  await formsLoaded;
+  await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible();
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   await expect(page.getByText('Review printability', { exact: true }).first()).toBeVisible({
     timeout: 120_000,

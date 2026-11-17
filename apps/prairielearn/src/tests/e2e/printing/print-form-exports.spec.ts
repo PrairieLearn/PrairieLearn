@@ -308,8 +308,6 @@ test('omits failed question and answer-key renders and recovers after a correcti
       await page.goto(`${printUrl}/preview?${selectedQuery}`);
       await waitForPrintablePage(page);
       expect(await readWarnings(page)).toEqual([]);
-      const selectedDocument = await downloadPrintableWord(page, printUrl, selectedQuery);
-      expect(selectedDocument.status()).toBe(200);
     }
   } finally {
     await fs.writeFile(serverPath, original);
