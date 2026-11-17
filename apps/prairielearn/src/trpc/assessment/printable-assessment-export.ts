@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { load } from 'cheerio';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -15,6 +16,7 @@ import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import {
   type PrintDocument,
+  assertPrintDocumentReady,
   getPrintableFormQuestionIds,
   getPrintableQuestionListDigest,
 } from '../../lib/printing/index.js';
@@ -195,6 +197,20 @@ export const printableAssessmentExportRouter = t.router({
             assetScope,
           };
         });
+        // The worker checks the full signed page. Check its root here to reject exports that
+        // are already known to contain omitted questions.
+        for (const [index, { form, printDocument }] of entries.entries()) {
+          const root = load(`${/<html\b[^>]*>/i.exec(pageHtmls[index])?.[0] ?? '<html>'}</html>`)(
+            'html',
+          );
+          assertPrintDocumentReady({
+            questionCount: Number(root.attr('data-print-question-count')),
+            omittedCount: Number(root.attr('data-print-omitted-question-count')),
+            coverPageCount: 0,
+            document: printDocument,
+            formLabel: form.formLabel,
+          });
+        }
         const prefix = assessmentFilenamePrefix(
           ctx.assessment,
           ctx.locals.assessment_set,

@@ -78,6 +78,26 @@ function packetInput(
   return data;
 }
 
+async function appendPrintSnapshot(data: FormData, printFormId: string, html: string) {
+  const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
+  search.set('document', 'assessment');
+  data.append('pages', new File([html], `form-${printFormId}.html`));
+  data.append(
+    'snapshotIds',
+    createPrintSnapshotId(
+      {
+        printFormId,
+        authnUserId: '1',
+        search,
+        questionListDigest: await printing.getPrintableQuestionListDigest(printFormId, new Set()),
+        html,
+        source: { html: '', figures: [] },
+      },
+      config.secretKey,
+    ),
+  );
+}
+
 async function printAssessment() {
   return await selectAssessmentByTid({
     course_instance_id: '1',
@@ -451,26 +471,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
       assessmentId: assessment.id,
     }))!;
     const data = packetInput(form.printFormId);
-    const html = '<!doctype html><html data-print-status="ready"></html>';
-    const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
-    search.set('document', 'assessment');
-    data.append('pages', new File([html], `form-${label}.html`));
-    data.append(
-      'snapshotIds',
-      createPrintSnapshotId(
-        {
-          printFormId: form.printFormId,
-          authnUserId: '1',
-          search,
-          questionListDigest: await printing.getPrintableQuestionListDigest(
-            form.printFormId,
-            new Set(),
-          ),
-          html,
-          source: { html: '', figures: [] },
-        },
-        config.secretKey,
-      ),
+    await appendPrintSnapshot(
+      data,
+      form.printFormId,
+      '<!doctype html><html data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0"></html>',
     );
     const pdf = Buffer.from('%PDF-1.4\nbackground export\n');
     const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(pdf);
@@ -537,6 +541,40 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
     ).toMatchObject({ status: 'expired', downloadUrl: null });
     expect((await fetch(url)).status).toBe(404);
+  });
+
+  test('rejects a multi-form PDF when another form has omitted questions', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const first = await api.printForms.create.mutate();
+    const second = await api.printForms.create.mutate();
+    const data = new FormData();
+    data.set(
+      'metadata',
+      JSON.stringify({
+        forms: [first, second].map(({ printFormId }) => ({
+          printFormId,
+          settings: DEFAULT_PRINT_SETTINGS,
+        })),
+        copies: 2,
+        document: 'assessment',
+      }),
+    );
+    await appendPrintSnapshot(
+      data,
+      first.printFormId,
+      '<html data-print-question-count="1" data-print-omitted-question-count="0"></html>',
+    );
+    await appendPrintSnapshot(
+      data,
+      second.printFormId,
+      '<html data-print-question-count="1" data-print-omitted-question-count="1"></html>',
+    );
+
+    await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toMatchObject({
+      data: { code: 'BAD_REQUEST' },
+      message: expect.stringContaining(`Form ${second.label} has missing or unprintable questions`),
+    });
   });
 
   test('queues a Word export with its signed source and streams it only to its owner', async () => {
