@@ -175,11 +175,14 @@ export async function pullAndUpdateCourse({
 
           // `-B` creates or resets the local branch to match the remote. The
           // explicit start point also prevents git from treating the branch
-          // name as a path when a file with the same name exists.
+          // name as a path when a file with the same name exists. `--force`
+          // discards local changes like `reset --hard` would; some files (e.g.
+          // ones affected by `.gitattributes` line-ending normalization) can
+          // still appear modified after `git restore`.
           job.info('Check out branch and reset to remote git repository');
           await job.exec(
             'git',
-            ['checkout', '-B', branch, '--track', `origin/${branch}`],
+            ['checkout', '--force', '-B', branch, '--track', `origin/${branch}`],
             gitOptions,
           );
         }
