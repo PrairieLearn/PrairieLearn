@@ -33,3 +33,20 @@ WHERE
     provenance.copied_from,
     provenance.copied_from_question_id
   );
+
+-- BLOCK resolve_copies_of_new_questions
+UPDATE questions AS
+copy
+SET
+  copied_from_question_id = source.id
+FROM
+  questions AS source
+  JOIN courses AS source_course ON source_course.id = source.course_id
+WHERE
+  source.id = ANY ($new_question_ids::bigint[])
+  AND copy.course_id = $course_id
+  AND copy.deleted_at IS NULL
+  AND NULLIF(copy.sync_errors, '') IS NULL
+  AND copy.copied_from_question_id IS NULL
+  AND lower(split_part(copy.copied_from, '/', 1)) = source_course.uuid::text
+  AND lower(split_part(copy.copied_from, '/', 2)) = source.uuid::text;

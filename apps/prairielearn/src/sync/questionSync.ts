@@ -6,7 +6,13 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
-import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRows,
+  queryScalar,
+  queryScalars,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { type Course, QuestionSchema } from '../lib/db-types.js';
 import { selectQuestionByQid, syncQuestionTitle, syncQuestionTopic } from '../models/question.js';
@@ -27,6 +33,10 @@ import {
   getQuestionRenameScope,
   verifyQuestionRename,
 } from './questionRenameSync.js';
+import {
+  hasErroredAssessmentsReferencingQids,
+  isQuestionQidEligibleForSync,
+} from './questionSyncEligibility.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -36,7 +46,18 @@ interface QuestionCatalogSync {
   courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
 }
 
+interface NewQuestionScope {
+  kind: 'create';
+  qid: string;
+  uuid: string;
+  courseId: string;
+}
+
 export type QuestionSyncChange =
+  | (NewQuestionScope & {
+      question: QuestionJson;
+      courseMetadata: Pick<CourseJson, 'tags' | 'topics'>;
+    })
   | (QuestionRenameScope & { oldQid: string; title: string })
   | { kind: 'content'; qid: string }
   | { kind: 'title'; qid: string; title: string }
@@ -62,12 +83,14 @@ export async function getQuestionSyncPlan({
   newHash,
   editedPaths = [],
   renameScope,
+  newQuestion,
 }: {
   course: Course;
   oldHash: string | null;
   newHash: string;
   editedPaths?: string[];
   renameScope?: QuestionRenameScope | null;
+  newQuestion?: { qid: string; uuid: string };
 }): Promise<QuestionSyncChange[] | null> {
   if (!oldHash) return null;
   const diff = await execa(
@@ -132,6 +155,44 @@ export async function getQuestionSyncPlan({
         files.delete(file);
       }
     }
+  }
+  const createdUuids = new Set<string>();
+  const createdQids = new Set<string>();
+  for (const file of addedInfoFiles) {
+    if (!files.has(file)) continue;
+    const qid = file.slice('questions/'.length, -'/info.json'.length);
+    const created = await verifyNewQuestion(
+      course,
+      qid,
+      changes,
+      newQuestion?.qid === qid ? newQuestion.uuid : undefined,
+    );
+    if (!created || createdUuids.has(created.uuid.toLowerCase())) return null;
+    createdUuids.add(created.uuid.toLowerCase());
+    createdQids.add(qid);
+    plan.set(qid, created);
+    for (const changedFile of files) {
+      if (changedFile === `questions/${qid}` || changedFile.startsWith(`questions/${qid}/`)) {
+        files.delete(changedFile);
+      }
+    }
+  }
+  if (createdQids.size > 0) {
+    // Duplicate UUIDs are stored as null; check those source files before accepting new identities.
+    const unidentifiedQids = await queryScalars(
+      sql.select_question_qids_without_uuid,
+      { course_id: course.id },
+      z.string(),
+    );
+    for (const qid of unidentifiedQids) {
+      const info = await loadInfoFile({
+        coursePath: course.path,
+        filePath: `questions/${qid}/info.json`,
+      });
+      if (info?.uuid && createdUuids.has(info.uuid.toLowerCase())) return null;
+    }
+    // A newly available QID can repair an assessment, which still requires full sync.
+    if (await hasErroredAssessmentsReferencingQids(course, createdQids)) return null;
   }
   if ([...files].some((file) => !file.startsWith('questions/'))) return null;
 
@@ -345,5 +406,88 @@ export async function syncRecoveredQuestion(
       await syncQuestionCatalogs(course, question.id, change.info.data, change.catalogs);
     }
     await questions.sync(course.id, { questions: { [change.qid]: change.info } }, 'metadata');
+  });
+}
+
+async function verifyNewQuestion(
+  course: Course,
+  qid: string,
+  changes: string[],
+  expectedUuid?: string,
+): Promise<Extract<QuestionSyncChange, { kind: 'create' }> | null> {
+  if (!isQuestionQidEligibleForSync(qid)) return null;
+  const prefix = `questions/${qid}/`;
+  let addedInfo = false;
+  for (let i = 0; i < changes.length; i += 2) {
+    const file = changes[i + 1];
+    if (!file.startsWith(prefix)) continue;
+    if (changes[i] !== 'A') return null;
+    if (file === `${prefix}info.json`) addedInfo = true;
+    else if (file.endsWith('/info.json')) return null;
+  }
+  if (!addedInfo) return null;
+  const info = await loadQuestionInfo(course.id, course.path, qid);
+  const question = info?.data;
+  if (
+    !question ||
+    info.errors.length > 0 ||
+    info.warnings.length > 0 ||
+    (expectedUuid != null && question.uuid.toLowerCase() !== expectedUuid.toLowerCase()) ||
+    question.sharePublicly ||
+    question.shareSourcePublicly ||
+    question.sharingSets?.length
+  ) {
+    return null;
+  }
+  if (
+    await queryScalar(
+      sql.question_identity_or_path_exists,
+      {
+        course_id: course.id,
+        uuid: question.uuid,
+        qid,
+      },
+      z.boolean(),
+    )
+  ) {
+    return null;
+  }
+  const courseInfo = await loadInfoFile({ coursePath: course.path, filePath: 'infoCourse.json' });
+  const courseMetadata = CourseJsonSchema.safeParse(courseInfo?.data);
+  if (!courseMetadata.success) return null;
+  return {
+    kind: 'create',
+    courseId: course.id,
+    qid,
+    uuid: question.uuid,
+    question,
+    courseMetadata: courseMetadata.data,
+  };
+}
+
+export async function syncNewQuestions(
+  course: Course,
+  changes: Extract<QuestionSyncChange, { kind: 'create' }>[],
+) {
+  if (changes.length === 0) return;
+  await runInTransactionAsync(async () => {
+    const questionInfos = Object.fromEntries(
+      changes.map((change) => [
+        change.qid,
+        { uuid: change.uuid, data: change.question, errors: [], warnings: [] },
+      ]),
+    );
+    // Insert all identities before resolving copiedFrom relationships between them.
+    await questions.sync(course.id, { questions: questionInfos }, 'insert');
+    for (const change of changes) {
+      await syncQuestionMetadata(course, {
+        kind: 'metadata',
+        qid: change.qid,
+        metadata: change.question,
+        tagsChanged: change.question.tags.length > 0,
+        topicChanged: true,
+        courseMetadata: change.courseMetadata,
+      });
+    }
   });
 }

@@ -24,6 +24,7 @@ import * as infofile from '../sync/infofile.js';
 import { type QuestionRenameScope } from '../sync/questionRenameSync.js';
 import {
   getQuestionSyncPlan,
+  syncNewQuestions,
   syncQuestionMetadata,
   syncRecoveredQuestion,
 } from '../sync/questionSync.js';
@@ -82,6 +83,7 @@ export async function syncCourseFromDisk({
   preparedCourseData,
   editedPaths = [],
   renameScope,
+  newQuestion,
   forceFull = false,
 }: {
   course: Course;
@@ -90,6 +92,7 @@ export async function syncCourseFromDisk({
   preparedCourseData?: PreparedCourseData;
   editedPaths?: string[];
   renameScope?: QuestionRenameScope | null;
+  newQuestion?: { qid: string; uuid: string };
   forceFull?: boolean;
 }): Promise<{ status: 'complete'; hadJsonErrors: boolean } | { status: 'sharing_error' }> {
   const configuration = await getSyncConfiguration(course);
@@ -115,6 +118,7 @@ export async function syncCourseFromDisk({
             newHash: endGitHash,
             editedPaths,
             renameScope,
+            newQuestion,
           })
         : null;
 
@@ -133,6 +137,10 @@ export async function syncCourseFromDisk({
             })
           : undefined;
       await sqldb.runInTransactionAsync(async () => {
+        await syncNewQuestions(
+          course,
+          questionChanges.filter((change) => change.kind === 'create'),
+        );
         for (const change of questionChanges) {
           if (change.kind === 'title') {
             await syncQuestionTitle({ course_id: course.id, qid: change.qid, title: change.title });

@@ -74,7 +74,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
 export async function sync(
   courseId: string,
   courseData: Pick<CourseData, 'questions'>,
-  mode: 'full' | 'metadata' = 'full',
+  mode: 'full' | 'metadata' | 'insert' = 'full',
 ): Promise<Record<string, string>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
@@ -93,6 +93,12 @@ export async function sync(
   );
 
   await syncQuestionCopyProvenance(courseId, courseData, result);
+  if (mode === 'insert') {
+    await sqldb.execute(sql.resolve_copies_of_new_questions, {
+      course_id: courseId,
+      new_question_ids: Object.values(result),
+    });
+  }
   return result;
 }
 

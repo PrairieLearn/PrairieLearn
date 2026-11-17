@@ -41,8 +41,17 @@ BEGIN
         (entries->4)::JSONB
     FROM UNNEST(disk_questions_data) AS entries;
 
-    IF sync_mode NOT IN ('full', 'metadata') THEN
+    IF sync_mode NOT IN ('full', 'metadata', 'insert') THEN
         RAISE EXCEPTION 'Unknown question sync mode: %', sync_mode;
+    END IF;
+
+    IF sync_mode = 'insert' AND EXISTS (
+        SELECT 1
+        FROM disk_questions AS src
+        JOIN questions AS dest ON dest.course_id = syncing_course_id
+            AND (dest.uuid = src.uuid OR (dest.qid = src.qid AND dest.deleted_at IS NULL))
+    ) THEN
+        RAISE EXCEPTION 'Cannot insert a question with an existing identity';
     END IF;
 
     IF sync_mode = 'metadata' THEN
@@ -82,7 +91,8 @@ BEGIN
                 src.uuid AS src_uuid,
                 dest.id AS dest_id
             FROM disk_questions AS src LEFT JOIN questions AS dest ON (
-                dest.course_id = syncing_course_id
+                sync_mode != 'insert'
+                AND dest.course_id = syncing_course_id
                 AND (
                     src.uuid = dest.uuid
                     OR (
@@ -108,7 +118,7 @@ BEGIN
         deactivate_unmatched_dest_rows AS (
             UPDATE questions AS dest
             SET deleted_at = now()
-            WHERE dest.id NOT IN (
+            WHERE sync_mode = 'full' AND dest.id NOT IN (
                 SELECT dest_id FROM matched_rows WHERE dest_id IS NOT NULL
             ) AND dest.deleted_at IS NULL AND dest.course_id = syncing_course_id
         ),
@@ -232,7 +242,7 @@ BEGIN
         AND dest.course_id = syncing_course_id
         AND (src.errors IS NOT NULL AND src.errors != '');
 
-    IF sync_mode = 'full' THEN
+    IF sync_mode != 'metadata' THEN
         -- Ensure that all questions have numbers
         WITH
         questions_needing_numbers AS (
@@ -241,6 +251,7 @@ BEGIN
             WHERE
                 number IS NULL
                 AND course_id = syncing_course_id
+                AND (sync_mode = 'full' OR id IN (SELECT value::bigint FROM jsonb_each_text(name_to_id_map)))
         ),
         course_question_count AS (
             SELECT COUNT(*) AS total

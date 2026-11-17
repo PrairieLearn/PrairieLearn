@@ -154,6 +154,7 @@ interface BaseEditorOptionsInternal extends BaseEditorOptions {
 interface WriteResult {
   pathsToAdd: string[];
   commitMessage: string;
+  newQuestion?: { qid: string; uuid: string };
 }
 
 export abstract class Editor {
@@ -302,6 +303,7 @@ export abstract class Editor {
         await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
         const editedPaths = new Set<string>();
         let renameScope: QuestionRenameScope | null = null;
+        let newQuestion: WriteResult['newQuestion'];
 
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
@@ -312,6 +314,7 @@ export abstract class Editor {
           // retry resets to newer remote files. No part may be written before validation.
           await beforeWrite?.(job);
           const writeResult = await this.write();
+          newQuestion = writeResult?.newQuestion;
 
           if (!writeResult) {
             job.info('No files were changed');
@@ -351,6 +354,7 @@ export abstract class Editor {
             newHash: await getCourseCommitHash(this.course.path),
             editedPaths: [...editedPaths],
             renameScope,
+            newQuestion,
           });
           if (qids !== null) return undefined;
           const configuration = await getSyncConfiguration(this.course);
@@ -471,6 +475,7 @@ export abstract class Editor {
               preparedCourseData,
               editedPaths: [...editedPaths],
               renameScope,
+              newQuestion,
             }),
             job,
           );
@@ -1582,6 +1587,7 @@ export class QuestionAddEditor extends Editor {
     }
     return {
       pathsToAdd: [newQuestionPath],
+      newQuestion: { qid, uuid: this.uuid },
       commitMessage: `add question ${qid}`,
     };
   }
@@ -2089,6 +2095,7 @@ export class QuestionCopyEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
+      newQuestion: { qid, uuid: this.uuid },
       commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course_label})` : ''} to ${qid}`,
     };
   }
