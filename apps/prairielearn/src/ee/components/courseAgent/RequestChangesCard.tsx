@@ -205,7 +205,7 @@ function ReviewActions({
       </div>
       <Button
         variant="link"
-        className="course-agent-review-files mt-2"
+        className="course-agent-review-files"
         title="View changes"
         onClick={onViewChanges}
       >
@@ -228,7 +228,7 @@ function ReviewActions({
           <i className="bi bi-chevron-right" aria-hidden="true" />
         </span>
       </Button>
-      <div className="d-flex flex-wrap gap-2 mt-2">
+      <div className="d-flex flex-wrap gap-2">
         <Button
           size="sm"
           className="course-agent-composer-button course-agent-composer-send"

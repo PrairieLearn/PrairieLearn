@@ -109,7 +109,10 @@
   padding: 0.75rem;
 }
 
-/* The changed files open the diff; a grey row keeps them apart from the three choices. */
+/*
+ * The changed files open the diff. The row runs edge to edge as a grey band, so its icon and text
+ * line up with the heading above and the choices below.
+ */
 .btn.course-agent-review-files {
   --bs-btn-color: var(--bs-body-color);
   --bs-btn-bg: var(--bs-tertiary-bg);
@@ -120,14 +123,20 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  width: 100%;
+  width: calc(100% + 1.5rem);
   height: 2.25rem;
-  padding: 0 0.625rem;
+  padding: 0 0.75rem;
+  margin: 0.75rem -0.75rem;
   font-size: 0.875rem;
   text-align: left;
   text-decoration: none;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
+  border: solid var(--bs-border-color);
+  border-width: 1px 0;
+  border-radius: 0;
+}
+
+.btn.course-agent-review-files .bi-file-earmark-diff {
+  font-size: 1rem;
 }
 
 .course-agent-review-view {
