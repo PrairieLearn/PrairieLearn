@@ -95,7 +95,7 @@ export function RequestChangesCard({
   const approvingAutomatically =
     autoApprove && decision.isPending && decision.variables.decision === 'approved';
   return (
-    <div className="border rounded p-2">
+    <div className="course-agent-review border rounded-3">
       {data?.status === 'decided' && data.result ? (
         <ReviewResult result={data.result} />
       ) : (
@@ -196,38 +196,47 @@ function ReviewActions({
   onApproveAlways: () => void;
 }) {
   return (
-    <div className="d-flex flex-wrap align-items-center gap-2">
-      <div className="d-flex align-items-center gap-2">
-        <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
-        <span>Review course changes</span>
-      </div>
-      <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
-        {fileCount === null
-          ? 'View changes'
-          : `View ${fileCount === 1 ? '1 changed file' : `${fileCount} changed files`}`}
-      </Button>
-      <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onDecision('denied')}
-        >
-          Deny
+    <>
+      <div className="d-flex flex-wrap align-items-center column-gap-2 row-gap-1">
+        <div className="d-flex align-items-center gap-2">
+          <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
+          <span>Review course changes</span>
+        </div>
+        <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
+          {fileCount === null
+            ? 'View changes'
+            : `View ${fileCount === 1 ? '1 changed file' : `${fileCount} changed files`}`}
         </Button>
-        <Button size="sm" disabled={disabled || !canApprove} onClick={() => onDecision('approved')}>
+      </div>
+      <div className="course-agent-review-actions d-flex gap-2 mt-2">
+        <Button
+          size="sm"
+          className="course-agent-composer-button course-agent-composer-send"
+          disabled={disabled || !canApprove}
+          onClick={() => onDecision('approved')}
+        >
           Approve once
         </Button>
         <Button
-          variant="outline-secondary"
+          variant="link"
           size="sm"
+          className="course-agent-composer-button course-agent-review-always"
           disabled={disabled || !canApprove}
           onClick={onApproveAlways}
         >
           Always approve
         </Button>
+        <Button
+          variant="link"
+          size="sm"
+          className="course-agent-composer-button course-agent-review-deny"
+          disabled={disabled}
+          onClick={() => onDecision('denied')}
+        >
+          Deny
+        </Button>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -297,15 +306,15 @@ function ReviewChangesModal({
         >
           Deny
         </Button>
-        <Button disabled={actionsDisabled || !canApprove} onClick={() => onDecision('approved')}>
-          Approve once
-        </Button>
         <Button
-          variant="outline-secondary"
+          variant="outline-primary"
           disabled={actionsDisabled || !canApprove}
           onClick={onApproveAlways}
         >
           Always approve
+        </Button>
+        <Button disabled={actionsDisabled || !canApprove} onClick={() => onDecision('approved')}>
+          Approve once
         </Button>
       </Modal.Footer>
     </Modal>
