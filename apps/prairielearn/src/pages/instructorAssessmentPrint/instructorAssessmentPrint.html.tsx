@@ -1341,9 +1341,8 @@ function PrintPreparation({
                   <Card.Body>
                     <h2 className="h6 mb-2">Print forms</h2>
                     <p className="small text-muted">
-                      Each form keeps its chosen questions, random values, and print settings.
-                      Select a form to preview it. Combined PDFs include one copy of each current
-                      form in order.
+                      Each form can contain distinct randomized values, selected questions, and
+                      print settings. Select a form to preview it or make changes.
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
                       {formIds.map((id) => {
