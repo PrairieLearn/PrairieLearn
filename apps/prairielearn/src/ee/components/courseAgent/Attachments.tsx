@@ -1,10 +1,11 @@
 import { type FileUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
-import { type DragEvent, type ReactNode, useCallback, useState } from 'react';
+import { type DragEvent, type ReactNode, useCallback, useId, useState } from 'react';
 import { Button, CloseButton, Modal } from 'react-bootstrap';
 
 import {
+  INLINE_IMAGE_TYPES,
   MAX_ATTACHMENTS_PER_MESSAGE,
   MAX_ATTACHMENT_BYTES,
   THUMBNAIL_PIXELS,
@@ -240,8 +241,9 @@ function AttachmentTile({
   const [previewFailed, setPreviewFailed] = useState(false);
   const previewing = previewUrl !== null && !problem && !previewFailed;
   const viewable = previewing && onView !== undefined;
+  // Spans, since a viewable tile's content sits inside a button.
   const content = (
-    <div className="position-relative h-100 overflow-hidden rounded-3">
+    <span className="d-block position-relative h-100 overflow-hidden rounded-3">
       {previewing ? (
         <img
           src={previewUrl}
@@ -251,7 +253,7 @@ function AttachmentTile({
           onError={() => setPreviewFailed(true)}
         />
       ) : (
-        <div className="d-flex flex-column justify-content-between h-100 p-2">
+        <span className="d-flex flex-column justify-content-between h-100 p-2">
           <span className={clsx('course-agent-attachment-name', problem && 'text-danger')}>
             {filename}
           </span>
@@ -265,22 +267,22 @@ function AttachmentTile({
               {label}
             </span>
           )}
-        </div>
+        </span>
       )}
       {percent !== null && (
-        <div className="course-agent-attachment-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fw-medium">
+        <span className="course-agent-attachment-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fw-medium">
           {percent}%
-        </div>
+        </span>
       )}
       {downloadUrl && (
-        <div className="course-agent-attachment-overlay course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fs-5">
+        <span className="course-agent-attachment-overlay course-agent-attachment-download position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fs-5">
           <i
             className={clsx('bi', viewable ? 'bi-arrows-angle-expand' : 'bi-download')}
             aria-hidden="true"
           />
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   );
   return (
     <li
@@ -377,12 +379,13 @@ function ImageViewer({
   show: boolean;
   onHide: () => void;
 }) {
+  const titleId = useId();
   return (
-    <Modal show={show} size="xl" centered onHide={onHide}>
+    <Modal show={show} size="xl" aria-labelledby={titleId} centered onHide={onHide}>
       {image && (
         <>
           <Modal.Header className="gap-2">
-            <Modal.Title as="h2" className="h6 text-truncate me-auto">
+            <Modal.Title id={titleId} as="h2" className="h6 text-truncate me-auto">
               {image.filename}
             </Modal.Title>
             <a
@@ -433,6 +436,8 @@ export function SentAttachments({
         {files.map(({ part, url }) => {
           const filename = part.filename ?? 'File';
           const image = part.mediaType.startsWith('image/');
+          // Other images may have a preview, but the browser can't display the original.
+          const viewable = INLINE_IMAGE_TYPES.includes(part.mediaType);
           return (
             <AttachmentTile
               key={part.url}
@@ -441,7 +446,7 @@ export function SentAttachments({
               previewUrl={image ? `${url}/thumbnail` : null}
               downloadUrl={url}
               onView={
-                image
+                viewable
                   ? () => {
                       setViewed({ filename, url });
                       setViewing(true);
