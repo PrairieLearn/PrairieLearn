@@ -5,6 +5,7 @@ import {
   CreateConversationInput,
   MAX_ATTACHMENT_BYTES,
   PageCatalogSchema,
+  RepositoryBranchSchema,
   RequestChangesResultSchema,
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
@@ -73,6 +74,24 @@ app.post('/conversations', async (c) => {
   const { pages, ...source } = input.data;
   await conversation.initialize({ type: 'github', ...source }, pages);
   return c.json({ id }, 201);
+});
+
+// An administrator caches a course before its first conversation, or replaces a stale copy. The
+// clone runs in a sandbox of its own, and the response waits for it.
+app.post('/repository-snapshots', async (c) => {
+  const input = RepositoryBranchSchema.safeParse(await c.req.json().catch(() => null));
+  if (!input.success) return c.text('Invalid request', 400);
+  const { repository, branch } = input.data;
+  const sandbox = c.env.CourseSandbox.getByName(
+    `repository-snapshot:${repository.toLowerCase()}@${branch}`,
+  );
+  try {
+    return c.json(await sandbox.cacheRepository(input.data));
+  } catch (error) {
+    // Git's own message tells the administrator what to fix, such as a branch that does not exist.
+    reportError(error);
+    return c.json({ error: error instanceof Error ? error.message : String(error) }, 502);
+  }
 });
 
 const conversations = new Hono<{ Bindings: Env }>();

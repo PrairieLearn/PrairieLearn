@@ -280,10 +280,7 @@ export class CourseSandbox extends DurableObject<Env> {
    * Start an isolated workspace and configure Codex. A checkpoint is restored here; otherwise the
    * caller adds course files with `addCourseFiles()`, which can run while the Codex runner starts.
    */
-  async prepare(
-    config: CourseSource & { model: string },
-    checkpoint: DirectoryBackupRecord | null,
-  ) {
+  async prepare(config: CourseSource, checkpoint: DirectoryBackupRecord | null) {
     if (this.container.running) throw new Error('Refusing to reinitialize a running sandbox');
     const instance = InstanceTypeSchema.parse(this.env.SANDBOX_INSTANCE_TYPE);
     // The default `lite` (256 MiB) is too small for Codex and course tooling, and running out of
@@ -410,10 +407,27 @@ export class CourseSandbox extends DurableObject<Env> {
     return loaded;
   }
 
+  /**
+   * Clone a branch in a sandbox of its own, which saves a fresh snapshot, then remove the
+   * sandbox. This caches a course before its first conversation, or replaces a stale snapshot.
+   */
+  async cacheRepository(source: { repository: string; branch: string }) {
+    // An earlier attempt that never finished may have left its container behind.
+    if (this.container.running) await this.container.destroy();
+    try {
+      await this.prepare({ type: 'github', ...source }, null);
+      const { cloneMs, snapshotMs } = await this.cloneRepository(source);
+      if (snapshotMs === null) throw new Error('The clone could not be saved');
+      return { cloneMs, snapshotMs };
+    } finally {
+      await this.container.destroy();
+    }
+  }
+
   private async cloneRepository(source: {
     repository: string;
     branch: string;
-  }): Promise<CourseFilesSource> {
+  }): Promise<Extract<CourseFilesSource, { source: 'clone' }>> {
     const started = Date.now();
     // Reviews only need the branch tip, and later fetches still work from a shallow clone.
     // Full history made large course repositories take most of startup to clone.

@@ -16,6 +16,17 @@ import { AdministratorSettings } from './administratorSettings.html.js';
 
 const router = Router();
 
+function parseCourseIds(courseIds: string | undefined): string[] {
+  try {
+    return (courseIds ?? '').split(',').map((id) => IdSchema.parse(id.trim()));
+  } catch {
+    throw new error.HttpStatusError(
+      400,
+      `could not split course_ids into an array of integers: ${courseIds}`,
+    );
+  }
+}
+
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
@@ -33,19 +44,18 @@ router.post(
       await cache.reset();
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_chunks') {
-      const course_ids_string: string = req.body.course_ids || '';
-      const authn_user_id: string = res.locals.authn_user.id;
-
-      let course_ids: string[];
-      try {
-        course_ids = course_ids_string.split(',').map((x) => IdSchema.parse(x));
-      } catch {
-        throw new error.HttpStatusError(
-          400,
-          `could not split course_ids into an array of integers: ${course_ids_string}`,
-        );
-      }
-      const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
+      const jobSequenceId = await chunks.generateAllChunksForCourseList(
+        parseCourseIds(req.body.course_ids),
+        res.locals.authn_user.id,
+      );
+      res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'cache_course_agent_repositories' && isEnterprise()) {
+      const { cacheCourseAgentRepositories } =
+        await import('../../ee/lib/course-agent/repository-cache.js');
+      const jobSequenceId = await cacheCourseAgentRepositories(
+        parseCourseIds(req.body.course_ids),
+        res.locals.authn_user.id,
+      );
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'sync_context_documents' && isEnterprise()) {
       if (

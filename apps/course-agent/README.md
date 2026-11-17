@@ -73,6 +73,8 @@ Cloning a large course repository takes most of a new conversation's startup. Af
 
 A later GitHub-backed conversation on the same repository and branch finds the record, restores the archive, fetches the branch tip, and checks it out, so it downloads from GitHub only what changed since the archive was saved. The archive therefore never needs refreshing to stay correct. If the record is missing, or the archive cannot be restored or fetched, the sandbox clones as it would without one, and that clone replaces the archive.
 
+An administrator can cache courses before their first conversation from PrairieLearn's administrator settings page ("Course agent repository cache"), which takes course IDs and runs a job. For each course, the service clones the configured branch in a sandbox of its own, which saves a fresh copy and replaces any existing one. PrairieLearn waits up to five minutes for each clone; a slower one is reported as failed, although the service may still finish it.
+
 Only a sandbox that has just cloned writes an archive, so it holds nothing but what GitHub served. It keeps objects for files the branch has since deleted, and a restored sandbox has them in its object store, until the branch is next cloned. Conversations started from local files are unaffected.
 
 ## Skills

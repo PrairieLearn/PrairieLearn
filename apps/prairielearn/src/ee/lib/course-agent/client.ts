@@ -176,3 +176,25 @@ export async function deliverCourseAgentReviewResult(
   }
   z.strictObject({ outcomeRecorded: z.literal(true) }).parse(await response.json());
 }
+
+/**
+ * Have the service clone a repository branch and save it as the copy that the branch's new
+ * sandboxes restore. This waits for the clone, which can take minutes for a large repository.
+ */
+export async function cacheCourseAgentRepository(binding: { repository: string; branch: string }) {
+  const { url, headers } = buildCourseAgentServiceRequest('repository-snapshots');
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(binding),
+    // Node gives up on a response that has not started within five minutes anyway. The service
+    // may still finish a clone that takes longer.
+    signal: AbortSignal.timeout(5 * 60 * 1000),
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const reason = z.object({ error: z.string() }).safeParse(body).data?.error;
+    throw new error.HttpStatusError(502, reason ?? 'The course agent service failed');
+  }
+  return z.object({ cloneMs: z.number(), snapshotMs: z.number() }).parse(body);
+}

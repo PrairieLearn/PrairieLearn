@@ -40,10 +40,20 @@ function createBucket() {
   };
 }
 
-/** Start a conversation's sandbox and report which commands it ran to get the course files. */
-async function startConversation(bucket: ReturnType<typeof createBucket>) {
+/** A sandbox whose container records the commands it is asked to run. */
+function createSandbox(bucket: ReturnType<typeof createBucket>) {
   const commands: string[] = [];
   const container = {
+    running: false,
+    images: {},
+    start() {
+      container.running = true;
+    },
+    async destroy() {
+      container.running = false;
+    },
+    setInactivityTimeout: async () => {},
+    interceptOutboundHttp: async () => {},
     exec: async (args: string[]) => {
       commands.push(args.join(' '));
       return { output: async () => ({ exitCode: 0, stdout: new Uint8Array() }) };
@@ -52,11 +62,17 @@ async function startConversation(bucket: ReturnType<typeof createBucket>) {
   const sandbox = new CourseSandbox(
     {
       container,
-      exports: {},
+      exports: { CourseAgentGitHubOutbound: () => ({}) },
       blockConcurrencyWhile: async (fn: () => Promise<void>) => fn(),
     } as unknown as DurableObjectState,
-    { CHECKPOINTS: bucket } as unknown as Env,
+    { SANDBOX_INSTANCE_TYPE: 'standard-2', CHECKPOINTS: bucket } as unknown as Env,
   );
+  return { sandbox, commands };
+}
+
+/** Start a conversation's sandbox and report which commands it ran to get the course files. */
+async function startConversation(bucket: ReturnType<typeof createBucket>) {
+  const { sandbox, commands } = createSandbox(bucket);
   await sandbox.addCourseFiles(course);
   return commands;
 }
@@ -88,5 +104,14 @@ describe('a new conversation on a GitHub course', () => {
 
     await startConversation(bucket);
     expect(archives.restore).toHaveBeenLastCalledWith({ id: 'new copy' }, expect.anything());
+  });
+
+  it('restores a copy that an administrator cached ahead of time', async () => {
+    const bucket = createBucket();
+    archives.backup.mockResolvedValue({ id: 'cached ahead' });
+    await createSandbox(bucket).sandbox.cacheRepository(course);
+
+    expect(await startConversation(bucket)).not.toContain(clone);
+    expect(archives.restore).toHaveBeenCalledWith({ id: 'cached ahead' }, expect.anything());
   });
 });
