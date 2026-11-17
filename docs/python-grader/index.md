@@ -85,23 +85,20 @@ Each test case is a function in `tests/test_student.py` whose name starts with `
 import pytest
 from pytest_prairielearn_grader.assertions import assert_fn_equal
 from pytest_prairielearn_grader.fixture import StudentFixture
-from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="Check fib(1)", points=1)
 def test_fib_1(sandbox: StudentFixture) -> None:
     assert_fn_equal(sandbox, "fib", args=(1,), expected=1, description="fib(1)")
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="Check fib(7)", points=2)
 def test_fib_7(sandbox: StudentFixture) -> None:
     assert_fn_equal(sandbox, "fib", args=(7,), expected=13, description="fib(7)")
 ```
 
 - **`@pytest.mark.grading_data(name=..., points=...)`** sets the name that students see and the points the test is worth.
-- **`@pytest.mark.output(level=...)`** sets how much of a failure students see. With `GradingOutputLevel.Friendly`, they see only the assertion's message, without the exception name or traceback.
+- **Failure messages.** By default, students see only the assertion's message, and the traceback from their own code if their function raised an error. To show more, such as the full traceback for advanced students, add `@pytest.mark.output(level="traceback")` to a test or set `output_level` in the [configuration](#configuration).
 - **The `sandbox` fixture** gives the test access to the student's code. Each test that uses it gets a fresh run of the setup code and student code.
 
 ### Querying student code
@@ -114,7 +111,7 @@ def test_fib_7(sandbox: StudentFixture) -> None:
 | `sandbox.query_setup("x")`                     | The value of the variable `x` in the setup code.                                                                                                     |
 | `sandbox.get_accumulated_stdout()`             | Everything the student's code has printed.                                                                                                           |
 
-If the student didn't define a name, `query` and `query_function` raise an error that fails the test with a message saying so. Values sent back from student code have to be serializable: numbers, strings, `None`, lists, dicts, numpy arrays, pandas DataFrames, and matplotlib plots.
+If the student didn't define a name, `query` and `query_function` raise an error that fails the test with a message saying so. After a call times out, later queries on the sandbox fail without running student code, so a slow function can't use up the grading job's time. Values sent back from student code have to be serializable: numbers, strings, `None`, lists, dicts, numpy arrays, pandas DataFrames, and matplotlib plots.
 
 ### Checking answers
 
@@ -150,7 +147,22 @@ def test_multi_step(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
 
 `feedback.set_score_final()` sets a score that stands even if the test fails afterwards, `feedback.add_message()` adds a message for the student, and `feedback.add_image()` shows an image, such as the student's plot, with the test's results.
 
-To give credit for each of several inputs in one test, call `sandbox.query_function_raw`, which returns a status and value instead of failing the test when the student's function raises an error. Count the inputs that pass, using `np.isclose` for floating-point values, and finish with `feedback.set_score_final(num_correct / num_tests)`. Stop at the first timeout, because a late reply would be read as the answer to the next call. The [`demo/autograder/python/fillBlankLastElement`][demo/autograder/python/fillblanklastelement] question does this.
+To give credit for each of several inputs in one test, check each input in a `subtests.test()` block, using pytest's built-in `subtests` fixture. A failed check fails only its block, and the test gets the fraction of blocks that passed. This example is from the [`demo/autograder/python/fillBlankLastElement`][demo/autograder/python/fillblanklastelement] question:
+
+```python title="tests/test_student.py"
+@pytest.mark.grading_data(name="last_element", points=10)
+def test_last_element(sandbox: StudentFixture, subtests: pytest.Subtests) -> None:
+    for _ in range(10):
+        lst = random.sample(range(1000), k=random.randint(1, 20))
+        with subtests.test(f"last_element({lst})"):
+            value, lst_after = sandbox.query_function("_last_element_and_list", lst)
+            assert_equal(value, lst[-1])
+            assert_equal(
+                lst_after, lst, msg="Your function should not modify the input list."
+            )
+```
+
+Students see how many checks passed, such as `7/10 checks passed.`, and the messages of the first few that failed, each after the label passed to `subtests.test()`. If a call times out, the remaining checks fail without running. To give each input its own name and points instead, use `@pytest.mark.parametrize`.
 
 ### Plots
 
@@ -165,7 +177,6 @@ def reference_plot() -> Figure:
     return figure
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="plot", points=1)
 def test_plot(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
     plot = sandbox.query("plot")
@@ -198,7 +209,6 @@ x = random.random()
 ```
 
 ```python title="tests/test_student.py"
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="x_sq", points=10)
 def test_x_sq(sandbox: StudentFixture) -> None:
     x = sandbox.query_setup("x")
@@ -227,7 +237,7 @@ autograder_config = ConfigObject(
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `sandbox_timeout`                                           | Seconds allowed for the setup code and student code to start. The default is 1, so increase it when student code imports large libraries. |
 | `student_code_pattern`                                      | The file name, or glob pattern, of the student's file.                                                                                    |
-| `output_level`                                              | The default output level for all tests, such as `"friendly"`.                                                                             |
+| `output_level`                                              | The output level for all tests, such as `"traceback"`. The default is `"friendly"`.                                                       |
 | `import_whitelist`, `import_blacklist`, `builtin_whitelist` | Which modules, functions and builtins student code can use. `os`, `sys`, `subprocess`, `pathlib` and `shutil` are blocked by default.     |
 | `names_for_user`, `starting_vars`                           | Variables to give student code, when they don't come from `pl-external-grader-variables`.                                                 |
 | `helper_modules`                                            | Modules in `tests/` that setup code, leading code and student code can import.                                                            |
@@ -281,15 +291,15 @@ Put in `params` whatever the question's `server.py` and elements would set, such
 
 ## Example questions
 
-- [demo/autograder/codeEditor]: a function question with partial credit.
+- [demo/autograder/codeEditor]: a function question with partial credit across inputs.
 - [demo/autograder/codeUpload]: grading an uploaded file, with `student_code_pattern`.
 - [demo/autograder/python/square]: setup code and `query_setup`.
 - [demo/autograder/python/random]: checking an answer that depends on random values from setup code.
 - [demo/autograder/python/numpy]: checking a numpy array without showing the answer, and blocking `numpy.linalg.inv` with `import_blacklist`.
 - [demo/autograder/python/pandas]: checking a DataFrame.
-- [demo/autograder/python/randomFunctionName]: parameters from `server.py` and handling timeouts.
+- [demo/autograder/python/randomFunctionName]: parameters from `server.py`.
 - [demo/autograder/python/earlyExit]: skipping the remaining tests after one fails.
-- [demo/autograder/python/fillBlankLastElement]: credit for each input with `query_function_raw`, and trailing code that checks the input isn't modified.
+- [demo/autograder/python/fillBlankLastElement]: credit for each input with `subtests`, and trailing code that checks the input isn't modified.
 - [demo/autograder/python/leadingTrailing]: wrapping a one-line answer in fixed code in `server.py`.
 - [demo/autograder/python/orderBlocksAddNumpy] and [demo/autograder/python/orderBlocksRandomParams]: grading code that students put together with `pl-order-blocks`.
 - [demo/autograder/python/plots]: comparing a plot with `assert_plot_equal` and showing it with `feedback.add_image`.
