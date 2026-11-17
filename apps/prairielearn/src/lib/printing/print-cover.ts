@@ -11,6 +11,7 @@ import {
 import type { PrintDocument } from './index.js';
 
 export const HONOR_CODE_HEADING = 'Academic integrity pledge';
+export const PRINT_FOOTER_SEPARATOR = '\u00a0\u00a0|\u00a0\u00a0';
 
 /** Leaves space for a handwritten name on printed honor-code pledges. */
 export const BLANK_NAME_PLACEHOLDER = '____________________________';
@@ -47,7 +48,7 @@ export function getPrintFooterLabel({
   document: PrintDocument;
   formLabel: string;
 }): string {
-  return `${document === 'answer_key' ? 'Answer key  |  ' : ''}Form ${formLabel}`;
+  return `${document === 'answer_key' ? `Answer key${PRINT_FOOTER_SEPARATOR}` : ''}Form ${formLabel}`;
 }
 
 /**
@@ -127,6 +128,6 @@ export function buildPrintableCover({
     ],
     sections,
     gradingTable: isAnswerKey ? undefined : gradingTable,
-    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}  |  ${getPrintFooterLabel({ document: 'assessment', formLabel })}`,
+    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}${PRINT_FOOTER_SEPARATOR}${getPrintFooterLabel({ document: 'assessment', formLabel })}`,
   };
 }

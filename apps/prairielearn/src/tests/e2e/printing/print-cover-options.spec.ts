@@ -29,10 +29,13 @@ test('uses the shared footer on cover and question pages', async ({ page, course
       }),
     );
     expect(footerContent.length).toBeGreaterThan(1);
+    const separator = '\u00a0\u00a0|\u00a0\u00a0';
     for (const footer of footerContent) {
-      expect(footer.left).toContain('Test Course | Spring 2015');
-      expect(footer.right).toMatch(
-        document === 'answer_key' ? /Answer key\s*\|\s*Form A/ : /Form A/,
+      expect(footer.left).toContain(`Test Course${separator}Spring 2015`);
+      expect(footer.right).toContain(
+        document === 'answer_key'
+          ? `Answer key${separator}Form A${separator}Page `
+          : `Form A${separator}Page `,
       );
     }
     await expect(page.getByRole('article', { name: /cover page/ }).locator('footer')).toHaveCount(

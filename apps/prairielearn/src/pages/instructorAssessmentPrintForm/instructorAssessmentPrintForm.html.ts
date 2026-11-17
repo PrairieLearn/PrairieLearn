@@ -13,6 +13,7 @@ import {
   BLANK_NAME_PLACEHOLDER,
   DEFAULT_ASSESSMENT_INSTRUCTIONS,
   HONOR_CODE_HEADING,
+  PRINT_FOOTER_SEPARATOR,
   answerKeyDescription,
   getPrintCoverFields,
   getPrintFooterLabel,
@@ -21,9 +22,9 @@ import { PRINT_FONT_STYLESHEET_URL } from '../../lib/printing/print-fonts.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 function cssContent(value: string) {
-  // HTML entities are not decoded in a style tag, so escape CSS and HTML delimiters here.
+  // Keep nonbreaking footer spaces while escaping CSS and HTML delimiters in the style tag.
   return unsafeHtml(
-    JSON.stringify(value.replaceAll(/\s+/g, ' '))
+    JSON.stringify(value.replaceAll(/[ \t\r\n\f]+/g, ' '))
       .replaceAll('<', '\\3c ')
       .replaceAll('>', '\\3e ')
       .replaceAll('&', '\\26 '),
@@ -74,7 +75,7 @@ export function InstructorAssessmentPrintForm({
     resLocals.course_instance.long_name ?? resLocals.course_instance.short_name,
   ]
     .filter(Boolean)
-    .join('  |  ');
+    .join(PRINT_FOOTER_SEPARATOR);
   const { width: paperWidth, height: paperHeight } = PAPER_DIMENSIONS[paperSize];
 
   return html`<!doctype html>
@@ -149,7 +150,8 @@ export function InstructorAssessmentPrintForm({
 
             @bottom-right {
               color: #555;
-              content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
+              content: ${cssContent(`${footerLabel}${PRINT_FOOTER_SEPARATOR}Page `)} counter(page)
+                ' of ' counter(pages);
               font-family: 'Plus Jakarta Sans', Arial, sans-serif;
               font-size: 8pt;
             }

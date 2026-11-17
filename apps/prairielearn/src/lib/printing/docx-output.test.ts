@@ -51,7 +51,7 @@ const cover: PrintableCover = {
       signatureLabel: 'Signature',
     },
   ],
-  footer: 'Spring 2015  |  Form ID 13',
+  footer: 'Spring 2015\u00a0\u00a0|\u00a0\u00a0Form ID 13',
 };
 
 const source = {
@@ -162,8 +162,11 @@ describe('createDocxDocument', () => {
     expect(documentXml.match(/<w:pageBreakBefore\/>/g)).toHaveLength(1);
     expect(documentXml).toContain('<w:pgSz w:w="12240" w:h="15840" w:orient="portrait"/>');
     expect(documentXml).toContain('A plotted function');
+    expect(documentXml).toContain('Spring 2015\u00a0\u00a0|\u00a0\u00a0Form ID 13');
     expect(footerXml).toContain('PAGE');
     expect(footerXml).toContain('NUMPAGES');
+    const footer = load(footerXml, { xml: true });
+    expect(footer('w\\:t').first().text()).toContain('Form ID 13\u00a0\u00a0|\u00a0\u00a0Page ');
   });
 
   it('starts with questions without a leading page break when the cover is omitted', async () => {

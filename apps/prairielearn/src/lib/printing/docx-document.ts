@@ -22,6 +22,7 @@ import { assertNever } from '@prairielearn/utils';
 import type { DocxSource } from './docx-browser.js';
 import type { DocxFigure } from './docx-content-context.js';
 import { buildDocxContent } from './docx-content.js';
+import { PRINT_FOOTER_SEPARATOR } from './print-cover.js';
 import type {
   PrintableCover,
   PrintableCoverField,
@@ -316,7 +317,7 @@ function buildFooter(footerLabel: string): Footer {
       new Paragraph({
         alignment: AlignmentType.RIGHT,
         children: [
-          new TextRun({ text: `${footerLabel}  |  Page `, ...footerText }),
+          new TextRun({ text: `${footerLabel}${PRINT_FOOTER_SEPARATOR}Page `, ...footerText }),
           new TextRun({ children: [PageNumber.CURRENT], ...footerText }),
           new TextRun({ text: ' of ', ...footerText }),
           new TextRun({ children: [PageNumber.TOTAL_PAGES], ...footerText }),
