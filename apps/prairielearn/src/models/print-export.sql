@@ -101,7 +101,6 @@ SET
   finished_at = CURRENT_TIMESTAMP,
   output_key = $output_key,
   size_bytes = $size_bytes,
-  label = COALESCE($label, label),
   failure_message = $failure_message
 WHERE
   id = $id

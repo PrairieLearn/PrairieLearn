@@ -825,6 +825,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
+      label: expect.any(String),
       failureMessage:
         'The export stopped repeatedly while rendering. Try fewer forms or contact support.',
     });
