@@ -92,11 +92,6 @@ function bodySize(request: Request, max: number) {
   return request.body && Number.isSafeInteger(size) && size >= 1 && size <= max ? size : null;
 }
 
-// Uploads and thumbnails never change, but each view must pass PrairieLearn's access check, so
-// browsers revalidate with the ETag instead of reusing a cached copy. PrairieLearn decides how
-// they may display.
-const CACHE_CONTROL = 'private, no-cache';
-
 conversations.post('/:id/resume', async (c) => {
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
   try {
@@ -131,18 +126,10 @@ conversations.post('/:id/uploads', async (c) => {
 });
 
 conversations.get('/:id/uploads/:uploadId', async (c) => {
-  const upload = await c.env.CHECKPOINTS.get(
-    uploadKey(c.req.param('id'), c.req.param('uploadId')),
-    {
-      onlyIf: c.req.raw.headers,
-    },
-  );
+  const upload = await c.env.CHECKPOINTS.get(uploadKey(c.req.param('id'), c.req.param('uploadId')));
   if (!upload) return c.notFound();
-  const headers = { ETag: upload.httpEtag, 'Cache-Control': CACHE_CONTROL };
-  if (!('body' in upload)) return new Response(null, { status: 304, headers });
   return new Response(upload.body, {
     headers: {
-      ...headers,
       'Content-Type': 'application/octet-stream',
       'Content-Length': String(upload.size),
     },
@@ -167,13 +154,12 @@ conversations.post('/:id/uploads/:uploadId/thumbnail', async (c) => {
 conversations.get('/:id/uploads/:uploadId/thumbnail', async (c) => {
   const thumbnail = await c.env.CHECKPOINTS.get(
     thumbnailKey(c.req.param('id'), c.req.param('uploadId')),
-    { onlyIf: c.req.raw.headers },
   );
   if (!thumbnail) return c.notFound();
-  const headers = { ETag: thumbnail.httpEtag, 'Cache-Control': CACHE_CONTROL };
-  if (!('body' in thumbnail)) return new Response(null, { status: 304, headers });
   return new Response(thumbnail.body, {
-    headers: { ...headers, 'Content-Type': thumbnail.httpMetadata!.contentType! },
+    headers: {
+      'Content-Type': thumbnail.httpMetadata!.contentType!,
+    },
   });
 });
 
