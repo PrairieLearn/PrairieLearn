@@ -16,11 +16,16 @@
 }
 
 .print-preparation-controls-scroll {
-  max-height: 60dvh;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  scrollbar-gutter: stable;
   padding: 2px;
+}
+
+@media (min-width: 992px) {
+  .print-preparation-controls-scroll {
+    max-height: 60dvh;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+  }
 }
 
 .print-preparation-actions {
@@ -211,6 +216,15 @@
 }
 
 @media (max-width: 575.98px) {
+  .print-preparation-question {
+    grid-template-columns: 2rem fit-content(35%) minmax(0, 1fr);
+  }
+
+  .print-preparation-question-include .form-check-input {
+    width: 2rem;
+    height: 2rem;
+  }
+
   .print-preparation-question-space {
     grid-template-columns: minmax(0, 1fr) auto;
     row-gap: 0.25rem;

@@ -14,7 +14,6 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Button } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
@@ -1138,13 +1137,12 @@ function AssessmentEditorInner({
                         }}
                       />
                       {!editMode && printableAssessmentsAvailable && !groupsConfigured && (
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
+                        <a
+                          className="btn btn-outline-secondary btn-sm"
                           href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print`}
                         >
                           <i className="bi bi-printer me-1" aria-hidden="true" /> Print
-                        </Button>
+                        </a>
                       )}
                     </div>
                   }

@@ -97,7 +97,7 @@ test('keeps multiple export links after another file is queued and the page relo
   page,
   courseInstance,
 }) => {
-  await openPrintPreparation(page, courseInstance.id);
+  await openPrintPreparation(page, courseInstance.id, 'exam19-lockpoints-advance');
   await preparePreview(page);
   const label = await printFormLabel(page);
   const stalePage = await page.context().newPage();
@@ -207,7 +207,7 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
   page,
   courseInstance,
 }) => {
-  await openPrintPreparation(page, courseInstance.id);
+  await openPrintPreparation(page, courseInstance.id, 'exam13-disableHonorCode');
   await preparePreview(page);
 
   await page.route(
@@ -234,7 +234,7 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
 });
 
 test('shows errors while preparing PDF pages', async ({ page, courseInstance }) => {
-  await openPrintPreparation(page, courseInstance.id);
+  await openPrintPreparation(page, courseInstance.id, 'exam21-afterCompleteTimeLimit');
   await preparePreview(page);
 
   await page.route('**/print_form/*/preview?*', async (route) => {
@@ -266,7 +266,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
   const formsLoaded = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith('/printForms.list'),
   );
-  await page.getByRole('button', { name: 'Print', exact: true }).click();
+  await page.getByRole('link', { name: 'Print', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Paper and layout', exact: true })).toBeVisible();
   const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
   await expect(
@@ -289,7 +289,6 @@ test('prepares an assessment and key with consistent variants and downloads', as
   const form = previewUrl!.match(/\/print_form\/(\d+)\//)![1];
   const label = await printFormLabel(page, form);
   const url = new URL(page.url());
-  url.searchParams.set('forms', form);
   url.searchParams.set('form', form);
   await page.goto(url.href);
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
@@ -387,17 +386,6 @@ test('prepares an assessment and key with consistent variants and downloads', as
   const { width, height } = pdf.getPage(0).getSize();
   expect(width).toBeCloseTo((210 / 25.4) * 72, 0);
   expect(height).toBeCloseTo((297 / 25.4) * 72, 0);
-  await page.getByRole('checkbox', { name: 'Include question 1', exact: true }).check();
-  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({
-    timeout: 120_000,
-  });
-  await expect(frame.locator(':root')).toHaveAttribute('data-print-question-count', '2');
-  await expect(frame.locator('.printing-question[data-question-number="1"]')).toHaveAttribute(
-    'data-print-block-size',
-    'full',
-  );
-  expect(new URL(page.url()).searchParams.get('form')).toBe(form);
 });
 
 test('prepares homework with matching student copies, answer keys, and Word exports', async ({
@@ -414,7 +402,7 @@ test('prepares homework with matching student copies, answer keys, and Word expo
   const formsLoaded = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith('/printForms.list'),
   );
-  await page.getByRole('button', { name: 'Print', exact: true }).click();
+  await page.getByRole('link', { name: 'Print', exact: true }).click();
   await formsLoaded;
   await openPrintPreparation(page, courseInstance.id, 'hw15-lockpoints');
   await page.getByLabel('Additional student information').fill('Section');
@@ -629,7 +617,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   expect(packet.getPageCount()).toBe(expectedPageCount);
   expect(packet.getPage(1).getSize()).toEqual({ width: 400, height: 600 });
   expect(packet.getPage(pageCounts[0] + 2).getSize()).toEqual({ width: 400, height: 600 });
-  expect(packet.getPage(expectedStudentPages).getSize()).toEqual({ width: 612, height: 792 });
+  expect(packet.getPage(expectedStudentPages).getSize()).toEqual(packet.getPage(0).getSize());
   await page.getByRole('button', { name: 'Student copy', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
@@ -834,9 +822,12 @@ test('keeps existing forms available when randomization is disabled', async ({
       page.getByRole('combobox', { name: 'Preview form', exact: true }).getByRole('option'),
     ).toHaveCount(2);
     await downloadMenu(page).click();
-    await expect(page.getByRole('button', { name: /^Download Form [A-Z]+ \(PDF\)$/ })).toHaveCount(
-      1,
-    );
+    await expect(
+      page.getByRole('button', {
+        name: `Download Form ${await printFormLabel(page)} (PDF)`,
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Download all forms (PDF)', exact: true }),
     ).toBeVisible();

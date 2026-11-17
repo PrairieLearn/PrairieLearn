@@ -2,7 +2,7 @@ import { QueryClient, skipToken, useMutation, useQuery } from '@tanstack/react-q
 import { TRPCClientError } from '@trpc/client';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
-import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
+import { parseAsString, useQueryState } from 'nuqs';
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -60,6 +60,7 @@ const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
 };
 
 const SNAPSHOT_PREPARATION_BATCH_SIZE = 3;
+const COVER_SIZE_LIMIT = filesize(MAX_COVER_BYTES, { base: 10 });
 
 interface PrintPreparationProps {
   assessmentId: string;
@@ -148,7 +149,6 @@ function PrintPreparation({
     trpc.printForms.list.queryOptions(undefined, { initialData: initialForms }),
   );
   const [selectedForm, setSelectedForm] = useQueryState('form', parseAsString);
-  const [selectedForms, setSelectedForms] = useQueryState('forms', parseAsArrayOf(parseAsString));
   const activeForms = forms.data
     .filter((form) => form.archived_at === null)
     .sort((left, right) => {
@@ -158,13 +158,7 @@ function PrintPreparation({
     });
   const hasActiveA = activeForms.some((form) => printFormLabelBase(form.label) === 'A');
   const archivedForms = forms.data.filter((form) => form.archived_at !== null);
-  const savedFormIds = selectedForms?.length ? selectedForms : activeForms.map((form) => form.id);
-  const selectedFormIds = new Set(savedFormIds);
-  const availableFormIds = activeForms
-    .filter((form) => selectedFormIds.has(form.id))
-    .map((form) => form.id)
-    .slice(0, MAX_ACTIVE_PRINT_FORMS);
-  const formIds = availableFormIds;
+  const formIds = activeForms.map((form) => form.id);
   const selectedArchivedForm = archivedForms.find((form) => form.id === selectedForm);
   const formId =
     selectedForm && (formIds.includes(selectedForm) || selectedArchivedForm)
@@ -303,6 +297,9 @@ function PrintPreparation({
       exportId === null || listedExport ? skipToken : { printExportId: exportId },
       {
         refetchInterval: (query) => (query.state.data?.status === 'pending' ? 2_000 : false),
+        retry: (failureCount, error) =>
+          failureCount < 3 &&
+          !(error instanceof TRPCClientError && error.data?.code === 'NOT_FOUND'),
       },
     ),
   );
@@ -528,16 +525,12 @@ function PrintPreparation({
   async function addForm() {
     const nextSettings = { ...settings, questionSizes: {}, excludedQuestions: [] };
     const result = await create.mutateAsync({ settings: nextSettings });
-    if (selectedForms !== null) void setSelectedForms([...formIds, result.printFormId]);
     switchForm(result.printFormId, result.settings);
     requestFormFocus(result.printFormId, true);
   }
 
   async function regenerateForm(id: string) {
     const result = await regenerate.mutateAsync({ printFormId: id });
-    if (selectedForms !== null) {
-      void setSelectedForms(formIds.map((value) => (value === id ? result.printFormId : value)));
-    }
     switchForm(result.printFormId, result.settings);
     return result.printFormId;
   }
@@ -546,7 +539,6 @@ function PrintPreparation({
     await archive.mutateAsync({ printFormId: id });
     const archivedIndex = formIds.indexOf(id);
     const nextIds = formIds.filter((value) => value !== id);
-    if (selectedForms !== null) void setSelectedForms(nextIds.length > 0 ? nextIds : null);
     const nextId =
       nextIds.at(archivedIndex) ??
       nextIds.at(archivedIndex - 1) ??
@@ -720,7 +712,6 @@ function PrintPreparation({
     try {
       if (!formId) {
         const result = await create.mutateAsync({ settings: values });
-        if (selectedForms !== null) void setSelectedForms([result.printFormId]);
         void setSelectedForm(result.printFormId);
         values = result.settings;
       } else {
@@ -764,7 +755,11 @@ function PrintPreparation({
           </li>
         </ol>
       </nav>
-      {ensureInitial.isPending && <Alert variant="info">Creating the A form…</Alert>}
+      {ensureInitial.isPending && (
+        <Alert variant="info" role="status">
+          Creating the A form…
+        </Alert>
+      )}
       {initialFormError && (
         <Alert variant="danger" className="d-flex align-items-center justify-content-between gap-2">
           <span>
@@ -883,6 +878,9 @@ function PrintPreparation({
           variant={
             exportStatus.data?.status === 'failed' || exportStatus.isError ? 'danger' : 'info'
           }
+          role={
+            exportStatus.isPending || exportStatus.data?.status === 'pending' ? 'status' : 'alert'
+          }
         >
           {exportStatus.data?.status === 'succeeded' ? (
             <a href={exportStatus.data.downloadUrl ?? undefined}>
@@ -925,15 +923,6 @@ function PrintPreparation({
           PDF downloads are not configured on this server. Word downloads may require them for some
           figures.
         </Alert>
-      )}
-      {savedFormIds.some((id) => !forms.data.some((form) => form.id === id)) && (
-        <Alert variant="danger">
-          Unavailable forms were removed from the selection. Review the remaining forms or create a
-          new preview.
-        </Alert>
-      )}
-      {savedFormIds.some((id) => archivedForms.some((form) => form.id === id)) && (
-        <Alert variant="info">Archived forms were removed from the current selection.</Alert>
       )}
       {reviewCount > 0 && !reviewWarningDismissed && (
         <Alert
@@ -1263,7 +1252,7 @@ function PrintPreparation({
                           next.reduce((sum, { file }) => sum + file.size, 0) > MAX_COVER_BYTES
                         ) {
                           setUploadError(
-                            'Files were not added. Use up to 10 PDFs, totaling no more than 10 MB.',
+                            `Files were not added. Use up to ${MAX_COVER_FILES} PDFs, totaling no more than ${COVER_SIZE_LIMIT}.`,
                           );
                         } else {
                           setCoverPages(next);
@@ -1277,8 +1266,8 @@ function PrintPreparation({
                     <Form.Text id="print-cover-pages-help">
                       Every student copy includes all uploaded pages, in this order, before the
                       questions{includeCoverPage ? ' and after the default cover' : ''}. Answer keys
-                      exclude uploaded pages. Up to {MAX_COVER_FILES} PDFs, 10 MB total, and{' '}
-                      {MAX_COVER_PAGES} pages.
+                      exclude uploaded pages. Up to {MAX_COVER_FILES} PDFs, {COVER_SIZE_LIMIT}{' '}
+                      total, and {MAX_COVER_PAGES} pages.
                     </Form.Text>
                   </Form.Group>
                   {coverPages.length > 0 && (

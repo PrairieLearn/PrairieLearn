@@ -21,7 +21,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
   try {
     const { printForm, printUrl } = await createPrintableForm(
       courseInstance,
-      'exam20-assessmentTools',
+      'exam17-mixedRealTimeGrading',
     );
     const assessmentBase = `/pl/course_instance/${courseInstance.id}/instructor/assessment/${printForm.assessment_id}`;
     const previewUrl = `${printUrl}/preview?paper_size=Letter`;
@@ -86,7 +86,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
     await features.disable('printable-assessments');
 
     await page.goto(`${assessmentBase}/questions`);
-    await expect(page.getByRole('button', { name: 'Print', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Print', exact: true })).toHaveCount(0);
 
     expect((await page.request.get(`${assessmentBase}/print`)).status()).toBe(404);
     expect((await page.request.get(exportUrl)).status()).toBe(404);
