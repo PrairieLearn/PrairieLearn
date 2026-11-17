@@ -168,7 +168,8 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
           ),
         };
       }
-      return { verb: 'run', subject: <Code>{unwrapShell(call.command).split('\n')[0]}</Code> };
+      // Many staff are not technical; the command itself is in the row's details.
+      return { verb: 'run', subject: 'a command' };
     }
     case 'fileChange': {
       const meta = changeMeta([call]);

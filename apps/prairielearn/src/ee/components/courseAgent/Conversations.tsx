@@ -978,11 +978,10 @@ function Message({
       flush(true);
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
     } else if (part.type === 'data-review') {
-      flush(true);
+      // Cards wait for the end of the turn, so they do not split the work before the reply.
       const { reviewId } = ReviewPartSchema.parse(part.data);
       if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId });
     } else if (part.type === 'data-input-request') {
-      flush(true);
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
     } else if (part.type === 'data-turn') {
