@@ -99,7 +99,7 @@ export function PrintPreview({
       update({
         status: 'error',
         message:
-          'The preview could not be loaded. Try again or contact support if it keeps failing.',
+          'The preview could not be loaded. Try again or contact support if this issue persists.',
       });
       return;
     }
