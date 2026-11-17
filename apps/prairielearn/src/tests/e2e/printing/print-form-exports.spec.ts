@@ -71,8 +71,8 @@ test('reports omitted questions and exports the selected Word content', async ({
     brokenOnlyQuery.append('exclude_question', number!);
   }
   const emptyPreview = await page.request.get(`${printUrl}/preview?${brokenOnlyQuery}`);
-  expect(emptyPreview.status()).toBe(422);
-  expect(await emptyPreview.text()).toContain('No questions could be rendered');
+  expect(emptyPreview.status()).toBe(200);
+  expect(await emptyPreview.text()).toContain('data-print-question-count="0"');
 
   const retainedQuestionNumber = await page
     .locator('.pagedjs_page .printing-question')
