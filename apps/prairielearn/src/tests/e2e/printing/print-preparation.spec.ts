@@ -11,7 +11,12 @@ import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
 import { selectPrintFormQuestions } from '../../../models/print-form-question.js';
-import { selectOptionalPrintForm, updatePrintFormSettings } from '../../../models/print-form.js';
+import {
+  archivePrintForm,
+  selectActivePrintFormsForAssessment,
+  selectOptionalPrintForm,
+  updatePrintFormSettings,
+} from '../../../models/print-form.js';
 import { syncCourse } from '../../helperCourse.js';
 import { getOrCreateUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
@@ -76,10 +81,14 @@ async function openPrintPreparation(
   return assessment;
 }
 
-async function preparePreview(page: Page) {
+async function waitForFormA(page: Page) {
   await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible({
     timeout: 120_000,
   });
+}
+
+async function preparePreview(page: Page) {
+  await waitForFormA(page);
   const applyPreview = page.getByRole('button', { name: /^(Create|Update) preview$/ });
   if (await applyPreview.isEnabled()) await applyPreview.click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
@@ -521,9 +530,12 @@ test('combines assessment copies with custom covers and appends every form’s a
     .context()
     .addCookies([{ name: 'pl_test_user', value: 'test_instructor', url: baseURL }]);
 
-  // Keep an older shared form active so archive must focus the adjacent form.
-  await openPrintPreparation(page, courseInstance.id);
-  await preparePreview(page);
+  const assessment = await openPrintPreparation(page, courseInstance.id);
+  await waitForFormA(page);
+  for (const form of await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })) {
+    if (/^A\d*$/.test(form.label)) continue;
+    await archivePrintForm({ printFormId: form.id, assessmentId: assessment.id });
+  }
 
   await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
@@ -716,7 +728,7 @@ test('distinguishes paper review flags from broken questions omitted from the do
   courseInstance,
 }) => {
   await openPrintPreparation(page, courseInstance.id, 'exam23-printing');
-  await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible();
+  await waitForFormA(page);
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   await expect(page.getByText('Review printability', { exact: true }).first()).toBeVisible({
     timeout: 120_000,
