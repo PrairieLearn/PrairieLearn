@@ -51,9 +51,6 @@ export const EnumChunkTypeSchema = z.enum([
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
 
-export const EnumCourseAgentApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
-export type EnumCourseAgentApprovalMode = z.infer<typeof EnumCourseAgentApprovalModeSchema>;
-
 export const EnumCourseAgentReviewDecisionSchema = z.enum(['approved', 'denied']);
 export type EnumCourseAgentReviewDecision = z.infer<typeof EnumCourseAgentReviewDecisionSchema>;
 
@@ -738,13 +735,6 @@ export const CourseAgentReviewSchema = z.object({
   stuck_delivery_reported_at: DateFromISOString.nullable(),
 });
 export type CourseAgentReview = z.infer<typeof CourseAgentReviewSchema>;
-
-export const CourseAgentUserSettingsSchema = z.object({
-  approval_mode: EnumCourseAgentApprovalModeSchema,
-  course_id: IdSchema,
-  user_id: IdSchema,
-});
-export type CourseAgentUserSettings = z.infer<typeof CourseAgentUserSettingsSchema>;
 
 export const CourseAgentUsageReportSchema = z.object({
   cost: z.number(),
@@ -1863,7 +1853,6 @@ export const TableNames = [
   'course_agent_conversations',
   'course_agent_reviews',
   'course_agent_usage_reports',
-  'course_agent_user_settings',
   'course_instance_access_rules',
   'course_instance_ai_grading_credentials',
   'course_instance_permissions',

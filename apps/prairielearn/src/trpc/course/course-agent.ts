@@ -28,7 +28,6 @@ import {
   CourseAgentConversationUsageSchema,
   selectCourseAgentConversationUsage,
 } from '../../ee/models/course-agent-usage-report.js';
-import { updateCourseAgentUserSettings } from '../../ee/models/course-agent-user-settings.js';
 import { StaffCourseAgentConversationSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { parseGithubRepository } from '../../lib/github-utils.js';
@@ -168,26 +167,17 @@ export const courseAgentRouter = t.router({
     }),
 
   setApprovalMode: courseAgentProcedure
-    // The choice is the user's for this course. The conversation being viewed, if any, is told
-    // at once; other conversations learn it with their next message.
-    .input(z.object({ conversationId: IdSchema.optional(), approvalMode: ApprovalModeSchema }))
+    // A conversation keeps its own mode. This tells it at once, so a change does not wait for the
+    // conversation's next message.
+    .input(z.object({ conversationId: IdSchema, approvalMode: ApprovalModeSchema }))
     .mutation(async ({ ctx, input }) => {
-      const conversation = input.conversationId
-        ? await selectOptionalCourseAgentConversation({
-            id: input.conversationId,
-            course_id: ctx.course.id,
-            user_id: ctx.locals.authn_user.id,
-          })
-        : null;
-      if (input.conversationId && !conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      await updateCourseAgentUserSettings({
-        user_id: ctx.locals.authn_user.id,
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
         course_id: ctx.course.id,
-        approval_mode: input.approvalMode,
+        user_id: ctx.locals.authn_user.id,
       });
-      if (conversation) {
-        await setCourseAgentApprovalMode(conversation.agent_conversation_id, input.approvalMode);
-      }
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      await setCourseAgentApprovalMode(conversation.agent_conversation_id, input.approvalMode);
     }),
 
   // The agent service generates a title from the first message and publishes it to the

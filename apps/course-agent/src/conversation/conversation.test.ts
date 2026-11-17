@@ -31,7 +31,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
       sandboxLost: false,
       reviewId: null,
       title: null,
-      approvalMode: null,
+      approvalMode: 'approval_required',
     };
 
     constructor(
@@ -509,8 +509,8 @@ it('marks reviews for automatic approval from the latest message that chose a mo
 
   const required = fixture().conversation;
   await required.onStart();
-  // A conversation that has not been given a mode reports none, and asks.
-  expect(required.state.approvalMode).toBeNull();
+  // A conversation that has not been given a mode asks.
+  expect(required.state.approvalMode).toBe('approval_required');
   const unmarked = await submitReview((await startTurn(required)).options);
   expect(unmarked.part).toMatchObject({ data: { reviewId: expect.any(String) } });
   expect(unmarked.part).not.toHaveProperty('data.autoApprove');

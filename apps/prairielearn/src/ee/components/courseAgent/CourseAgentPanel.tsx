@@ -13,8 +13,6 @@ import {
 import { Alert, Button, Offcanvas, Spinner } from 'react-bootstrap';
 import { createPortal } from 'react-dom';
 
-import type { ApprovalMode } from '@prairielearn/course-agent-types';
-
 // The package root would pull all of `@prairielearn/ui` into this eagerly loaded bundle.
 import { OverlayTrigger } from '@prairielearn/ui/overlay-trigger';
 
@@ -80,7 +78,6 @@ export function CourseAgentPanel({
   chatCsrfToken,
   initialOpen,
   showConversationStats,
-  initialApprovalMode,
 }: {
   courseId: string;
   authnUserId: string;
@@ -88,7 +85,6 @@ export function CourseAgentPanel({
   chatCsrfToken: string;
   initialOpen: boolean;
   showConversationStats: boolean;
-  initialApprovalMode: ApprovalMode;
 }) {
   const [hydrated, setHydrated] = useState(false);
   const [mobileLauncher] = useState(() =>
@@ -193,7 +189,6 @@ export function CourseAgentPanel({
             chatCsrfToken={chatCsrfToken}
             active={open}
             showConversationStats={showConversationStats}
-            initialApprovalMode={initialApprovalMode}
           />
         ) : (
           <ChatLoading />

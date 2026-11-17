@@ -7,7 +7,6 @@ import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { CourseAgentPanel } from '../components/courseAgent/CourseAgentPanel.js';
 import { courseAgentEnabled } from '../lib/course-agent/access.js';
-import { selectCourseAgentUserSettings } from '../models/course-agent-user-settings.js';
 
 /**
  * Renders the course agent panel into `res.locals.course_agent_panel` for
@@ -34,10 +33,6 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
   // Bind both CSRF tokens to the authenticated user, including while emulating another user.
   const csrfToken = (url: string) =>
     generatePrefixCsrfToken({ url, authn_user_id: authnUserId }, config.secretKey);
-  const settings = await selectCourseAgentUserSettings({
-    user_id: authnUserId,
-    course_id: courseId,
-  });
   res.locals.course_agent_panel = renderHtml(
     <Hydrate className="d-flex">
       <CourseAgentPanel
@@ -47,7 +42,6 @@ export default typedAsyncHandler<'course'>(async (req, res, next) => {
         chatCsrfToken={csrfToken(`/pl/course/${courseId}/course_agent`)}
         initialOpen={req.session.course_agent_panel_open === true}
         showConversationStats={config.devMode}
-        initialApprovalMode={settings.approval_mode}
       />
     </Hydrate>,
   );

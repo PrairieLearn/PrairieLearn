@@ -1,7 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import type { ApprovalMode } from '@prairielearn/course-agent-types';
 import { QueryClientProviderDebug } from '@prairielearn/trpc/react';
 
 import { createCourseTrpcClient } from '../../../trpc/course/client.js';
@@ -16,7 +15,6 @@ export function CourseAgentChat({
   chatCsrfToken,
   active,
   showConversationStats,
-  initialApprovalMode,
 }: {
   courseId: string;
   authnUserId: string;
@@ -24,7 +22,6 @@ export function CourseAgentChat({
   chatCsrfToken: string;
   active: boolean;
   showConversationStats: boolean;
-  initialApprovalMode: ApprovalMode;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -39,7 +36,6 @@ export function CourseAgentChat({
           chatCsrfToken={chatCsrfToken}
           active={active}
           showConversationStats={showConversationStats}
-          initialApprovalMode={initialApprovalMode}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>

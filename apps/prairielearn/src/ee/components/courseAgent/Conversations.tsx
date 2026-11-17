@@ -71,14 +71,12 @@ export function Conversations({
   chatCsrfToken,
   active,
   showConversationStats,
-  initialApprovalMode,
 }: {
   courseId: string;
   authnUserId: string;
   chatCsrfToken: string;
   active: boolean;
   showConversationStats: boolean;
-  initialApprovalMode: ApprovalMode;
 }) {
   const trpc = useTRPC();
   const conversations = useQuery(trpc.courseAgent.list.queryOptions());
@@ -101,7 +99,6 @@ export function Conversations({
           chatCsrfToken={chatCsrfToken}
           active={active}
           showConversationStats={showConversationStats}
-          initialApprovalMode={initialApprovalMode}
         />
       )}
     </>
@@ -111,7 +108,6 @@ export function Conversations({
 function ConversationPicker({
   conversations,
   showConversationStats,
-  initialApprovalMode,
   courseId,
   authnUserId,
   chatCsrfToken,
@@ -123,7 +119,6 @@ function ConversationPicker({
   chatCsrfToken: string;
   active: boolean;
   showConversationStats: boolean;
-  initialApprovalMode: ApprovalMode;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -147,16 +142,9 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
-  // The user's latest choice in this course, which PrairieLearn keeps. It is the mode of a new
-  // conversation; an existing one keeps the mode it was last given.
-  const [approvalMode, setApprovalMode] = useState(initialApprovalMode);
-  const { mutate: saveApprovalMode } = useMutation(
-    trpc.courseAgent.setApprovalMode.mutationOptions(),
-  );
-  const changeApprovalMode = (mode: ApprovalMode) => {
-    setApprovalMode(mode);
-    saveApprovalMode({ conversationId: selectedId ?? undefined, approvalMode: mode });
-  };
+  // A conversation keeps its own mode once it exists. Until then the choice waits here, and
+  // every new conversation starts by asking.
+  const [newApprovalMode, setNewApprovalMode] = useState<ApprovalMode>('approval_required');
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -223,6 +211,7 @@ function ConversationPicker({
             disabled={create.isPending}
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
+              setNewApprovalMode('approval_required');
               setDraft('');
               drafts.setAttachments([]);
               create.reset();
@@ -238,7 +227,7 @@ function ConversationPicker({
           courseId={courseId}
           conversationId={selectedId}
           showConversationStats={showConversationStats}
-          defaultApprovalMode={approvalMode}
+          initialApprovalMode={create.data?.id === selectedId ? newApprovalMode : undefined}
           chatCsrfToken={chatCsrfToken}
           initialMessage={
             create.data?.id === selectedId && create.variables
@@ -246,7 +235,6 @@ function ConversationPicker({
               : undefined
           }
           onInitialMessageSent={create.reset}
-          onApprovalModeChange={changeApprovalMode}
         />
       ) : active ? (
         <FileDropArea enabled={!create.isPending} onDrop={drafts.add}>
@@ -270,8 +258,8 @@ function ConversationPicker({
             disabled={create.isPending}
             pending={create.isPending}
             attachments={drafts.attachments}
-            approvalMode={approvalMode}
-            onApprovalModeChange={changeApprovalMode}
+            approvalMode={newApprovalMode}
+            onApprovalModeChange={setNewApprovalMode}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
@@ -309,17 +297,15 @@ function Chat({
   initialMessage,
   onInitialMessageSent,
   showConversationStats,
-  defaultApprovalMode,
-  onApprovalModeChange,
+  initialApprovalMode,
 }: {
   courseId: string;
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
   initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
-  /** The user's latest choice in this course, for a conversation that has no mode of its own. */
-  defaultApprovalMode: ApprovalMode;
-  onApprovalModeChange: (mode: ApprovalMode) => void;
+  /** The mode chosen before this conversation existed, which its first message gives it. */
+  initialApprovalMode: ApprovalMode | undefined;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -342,13 +328,16 @@ function Chat({
   const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
-  // The conversation's own mode wins over the user's default, and a choice made here shows at
-  // once instead of waiting for the agent service to report it back.
-  const [chosenApprovalMode, setChosenApprovalMode] = useState<ApprovalMode | null>(null);
-  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode ?? defaultApprovalMode;
+  // The conversation keeps its own mode. A choice made here shows at once instead of waiting for
+  // the agent service to report it back.
+  const [chosenApprovalMode, setChosenApprovalMode] = useState(initialApprovalMode);
+  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode ?? 'approval_required';
+  const { mutate: saveApprovalMode } = useMutation(
+    trpc.courseAgent.setApprovalMode.mutationOptions(),
+  );
   const changeApprovalMode = (mode: ApprovalMode) => {
     setChosenApprovalMode(mode);
-    onApprovalModeChange(mode);
+    saveApprovalMode({ conversationId, approvalMode: mode });
   };
   const [connectionFailed, setConnectionFailed] = useState(false);
   // Chat remounts per conversation, so this is the message that created it.
