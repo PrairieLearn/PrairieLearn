@@ -102,7 +102,7 @@ export function RequestChangesCard({
         <ReviewActions
           disabled={actionsDisabled}
           canApprove={canApprove}
-          files={pending?.diff.files ?? null}
+          fileCount={pending?.diff.files?.length ?? null}
           onViewChanges={() => setShowChanges(true)}
           onDecision={decide}
           onApproveAlways={approveAlways}
@@ -180,57 +180,34 @@ export function RequestChangesCard({
   );
 }
 
-const FILE_CHANGE_VERBS = { added: 'Adds', modified: 'Edits', deleted: 'Deletes' } as const;
-const FILE_CHANGE_COUNTS = { added: 'added', modified: 'edited', deleted: 'deleted' } as const;
-
 function ReviewActions({
   disabled,
   canApprove,
-  files,
+  fileCount,
   onViewChanges,
   onDecision,
   onApproveAlways,
 }: {
   disabled: boolean;
   canApprove: boolean;
-  files: ReviewDiffFile[] | null;
+  fileCount: number | null;
   onViewChanges: () => void;
   onDecision: (decision: 'approved' | 'denied') => void;
   onApproveAlways: () => void;
 }) {
-  const fileCount = files?.length ?? 0;
   return (
     <>
-      <div className="d-flex align-items-baseline gap-2">
-        <i className="bi bi-file-earmark-diff text-body-secondary" aria-hidden="true" />
-        <span className="fw-medium">
-          The course agent wants to save{' '}
-          {fileCount === 0 ? 'changes' : fileCount === 1 ? '1 file' : `${fileCount} files`}
-        </span>
-      </div>
-      <p className="small text-body-secondary text-break mt-1 mb-0">
-        {files?.length === 1 && (
-          <>
-            {FILE_CHANGE_VERBS[files[0].change]} <code>{files[0].path}</code>.{' '}
-          </>
-        )}
-        {files && files.length > 1 && (
-          <>
-            {(['added', 'modified', 'deleted'] as const)
-              .map((change) => ({
-                change,
-                count: files.filter((file) => file.change === change).length,
-              }))
-              .filter(({ count }) => count > 0)
-              .map(({ change, count }) => `${count} ${FILE_CHANGE_COUNTS[change]}`)
-              .join(', ')}
-            .{' '}
-          </>
-        )}
-        <Button variant="link" size="sm" className="p-0 align-baseline" onClick={onViewChanges}>
-          View changes
+      <div className="d-flex flex-wrap align-items-center column-gap-2 row-gap-1">
+        <div className="d-flex align-items-center gap-2">
+          <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
+          <span>Review course changes</span>
+        </div>
+        <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
+          {fileCount === null
+            ? 'View changes'
+            : `View ${fileCount === 1 ? '1 changed file' : `${fileCount} changed files`}`}
         </Button>
-      </p>
+      </div>
       <div className="d-flex flex-wrap gap-2 mt-2">
         <Button
           size="sm"
