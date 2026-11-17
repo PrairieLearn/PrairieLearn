@@ -3,12 +3,16 @@ import assert from 'assert';
 import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { getCounter, metrics } from '@prairielearn/opentelemetry';
 import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { gradeAssessmentInstance } from '../../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
+import { getInstanceQuestionUrl } from '../../lib/client/url.js';
+import { config } from '../../lib/config.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { type File } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -19,11 +23,13 @@ import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { canCollectUnsavedSubmissions } from '../../lib/unsaved-submissions.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.js';
+import { hasUnsavedSubmission } from '../../models/unsaved-submission.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -361,6 +367,34 @@ router.get(
 
     const renderState = await getAndRenderVariant(variant_id, null, res.locals);
 
+    let unsavedSubmissionConfig;
+    if (
+      renderState.variant.open &&
+      renderState.variant.broken_at === null &&
+      canCollectUnsavedSubmissions(res.locals) &&
+      (await features.enabledFromLocals('unsaved-submissions-collection', res.locals))
+    ) {
+      const hasDraft = await hasUnsavedSubmission({
+        instance_question_id: res.locals.instance_question.id,
+        user_id: res.locals.user.id,
+        variant_id: renderState.variant.id,
+      });
+      getCounter(metrics.getMeter('prairielearn'), 'unsaved_submissions.page_loads').add(1, {
+        has_draft: hasDraft,
+      });
+      const urlParts = {
+        courseInstanceId: res.locals.course_instance.id,
+        instanceQuestionId: res.locals.instance_question.id,
+      };
+      unsavedSubmissionConfig = {
+        ...urlParts,
+        csrfToken: generatePrefixCsrfToken(
+          { url: getInstanceQuestionUrl(urlParts), authn_user_id: res.locals.authn_user.id },
+          config.secretKey,
+        ),
+      };
+    }
+
     await logPageView('studentInstanceQuestion', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
       course: res.locals.course,
@@ -414,6 +448,7 @@ router.get(
         lastGrader,
         questionCopyTargets,
         enabledTools,
+        unsavedSubmissionConfig,
       }),
     );
   }),

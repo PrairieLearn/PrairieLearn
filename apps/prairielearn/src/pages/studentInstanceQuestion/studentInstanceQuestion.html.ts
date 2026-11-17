@@ -26,6 +26,7 @@ import { getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsInstanceQuestionRender } from '../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { CalculatorSettingsSchema } from '../../schemas/infoAssessment.js';
+import type { InstanceQuestionTrpcClientOptions } from '../../trpc/instanceQuestion/client.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -36,6 +37,7 @@ export function StudentInstanceQuestion({
   lastGrader,
   questionCopyTargets,
   enabledTools = [],
+  unsavedSubmissionConfig,
 }: {
   independentScrolling: boolean;
   resLocals: ResLocalsForPage<'instance-question'>;
@@ -45,6 +47,7 @@ export function StudentInstanceQuestion({
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
   enabledTools?: AssessmentTool[];
+  unsavedSubmissionConfig?: InstanceQuestionTrpcClientOptions;
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
@@ -70,6 +73,14 @@ export function StudentInstanceQuestion({
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />
       ${compiledScriptTag('question.ts')} ${calculator ? CalculatorDrawerHeadScripts() : ''}
+      ${
+        unsavedSubmissionConfig
+          ? html`
+              ${EncodedData(unsavedSubmissionConfig, 'unsaved-submission-data')}
+              ${compiledScriptTag('unsavedSubmissionsClient.ts')}
+            `
+          : ''
+      }
       ${
         resLocals.assessment.type === 'Exam'
           ? html`

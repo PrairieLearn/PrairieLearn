@@ -14,16 +14,22 @@ function skippedFieldsFromForm(form: HTMLFormElement): Set<string> {
   ]);
 }
 
-function serializeQuestionFormData(form: HTMLFormElement): string {
+function serializeQuestionFormData(
+  form: HTMLFormElement,
+  captured = getQuestionFormData(form),
+): string {
   const formData = new URLSearchParams();
-  getQuestionFormData(form).forEach((value, key) => formData.append(key, value.toString()));
+  captured.forEach((value, key) => formData.append(key, value.toString()));
   skippedFieldsFromForm(form).forEach((field) => formData.delete(field));
   formData.sort(); // Ensure consistent ordering for comparison
   return formData.toString();
 }
 
-export function isQuestionFormDirty(form: HTMLFormElement): boolean {
-  return form.dataset.originalFormData !== serializeQuestionFormData(form);
+export function isQuestionFormDirty(
+  form: HTMLFormElement,
+  captured = getQuestionFormData(form),
+): boolean {
+  return form.dataset.originalFormData !== serializeQuestionFormData(form, captured);
 }
 
 function saveQuestionFormData(form: HTMLFormElement) {

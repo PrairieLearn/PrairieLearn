@@ -1662,6 +1662,18 @@ export const TopicSchema = z.object({
 });
 export type Topic = z.infer<typeof TopicSchema>;
 
+export const UnsavedSubmissionSchema = z.object({
+  credit: z.number().nullable(),
+  id: IdSchema,
+  instance_question_id: IdSchema,
+  raw_submitted_answer: z.record(z.string(), z.any()),
+  updated_at: DateFromISOString,
+  user_id: IdSchema,
+  uuid: z.string(),
+  variant_id: IdSchema,
+});
+export type UnsavedSubmission = z.infer<typeof UnsavedSubmissionSchema>;
+
 export const UserSchema = z.object({
   email: z.string().nullable(),
   id: IdSchema,
@@ -1906,6 +1918,7 @@ export const TableNames = [
   'tags',
   'time_series',
   'topics',
+  'unsaved_submissions',
   'user_sessions',
   'user_settings',
   'users',
