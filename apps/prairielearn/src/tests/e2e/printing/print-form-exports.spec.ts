@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
+import { updatePrintFormSettings } from '../../../models/print-form.js';
 import { syncCourse } from '../../helperCourse.js';
 import { createTest, expect } from '../fixtures.js';
 
@@ -71,8 +72,8 @@ test('reports omitted questions and exports the selected Word content', async ({
     brokenOnlyQuery.append('exclude_question', number!);
   }
   const emptyPreview = await page.request.get(`${printUrl}/preview?${brokenOnlyQuery}`);
-  expect(emptyPreview.status()).toBe(422);
-  expect(await emptyPreview.text()).toContain('No questions could be rendered');
+  expect(emptyPreview.status()).toBe(200);
+  expect(await emptyPreview.text()).toContain('data-print-question-count="0"');
 
   const retainedQuestionNumber = await page
     .locator('.pagedjs_page .printing-question')
@@ -87,6 +88,15 @@ test('reports omitted questions and exports the selected Word content', async ({
   for (const warning of warnings) {
     selectedQuery.append('exclude_question', warning.question_number);
   }
+  await updatePrintFormSettings({
+    printFormId: printForm.id,
+    assessmentId: printForm.assessment_id,
+    settings: {
+      ...printForm.settings,
+      excludedQuestions: selectedQuery.getAll('exclude_question'),
+    },
+    expectedSettings: printForm.settings,
+  });
   await page.goto(`${printUrl}/preview?${selectedQuery}`);
   await waitForPrintablePage(page);
   expect(await readWarnings(page)).toEqual([]);
