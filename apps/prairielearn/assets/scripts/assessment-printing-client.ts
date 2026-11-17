@@ -562,6 +562,6 @@ window.__PL_PRINT_READY__ = paginateAssessment().catch((error: unknown) => {
   document.documentElement.dataset.printStatus = 'error';
   document.documentElement.dataset.printError = message;
   const status = document.querySelector('#assessment-print-status');
-  if (status) status.textContent = `Unable to paginate this assessment: ${message}`;
+  if (status) status.textContent = `Could not prepare the printable pages: ${message}`;
   throw error;
 });
