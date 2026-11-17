@@ -243,7 +243,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         assessment.type === 'Homework' ? `HW${assessment.number}.1` : '1',
       );
       expect(questions.flatMap((question) => question.concerns)).not.toContain(
-        'Could not inspect this question’s source. Review its preview before printing.',
+        'Could not check this question for printing issues. Review it in the preview before printing.',
       );
     },
   );
@@ -403,10 +403,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await execute(sql.set_team_work, { assessment_id: assessment.id, team_work: true });
     try {
       await expect(api.printForms.create.mutate()).rejects.toThrow(
-        'Creating print forms for group assessments is not supported yet.',
+        'Printing group assessments is not available yet.',
       );
       await expect(api.printForms.regenerate.mutate(form)).rejects.toThrow(
-        'Creating print forms for group assessments is not supported yet.',
+        'Printing group assessments is not available yet.',
       );
     } finally {
       await execute(sql.set_team_work, {
@@ -434,7 +434,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     try {
       const inspected = await api.printForms.questions.query(form);
       expect(inspected[0].concerns).toContain(
-        'Could not inspect this question’s source. Review its preview before printing.',
+        'Could not check this question for printing issues. Review it in the preview before printing.',
       );
       expect(inspected).toHaveLength(questions.length);
     } finally {

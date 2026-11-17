@@ -49,7 +49,7 @@ const rejectGroupWork = t.middleware(async ({ ctx, next }) => {
   if (ctx.assessment.team_work) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
-      message: 'Creating print forms for group assessments is not supported yet.',
+      message: 'Printing group assessments is not available yet.',
     });
   }
   return next();

@@ -42,7 +42,7 @@ A form does not save a separate copy of the question content. If you edit a ques
 
 ## Cover pages
 
-The default cover has spaces for **Name**, **Date**, **Student ID**, and **Section**, along with the assessment's instructions. You can edit or remove the latter two fields under **Cover page**:
+The default cover has spaces for **Name**, **Date**, **Student ID**, and **Section**, along with the assessment's instructions. You can edit or remove **Student ID** and **Section** under **Cover page**:
 
 - Under **Additional student information**, enter one label per line, such as “Student ID” or “Section”.
 - Select **Include grading table** to add a table for recording question scores.
