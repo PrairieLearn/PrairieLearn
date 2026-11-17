@@ -1,42 +1,17 @@
 import random
 
 import pytest
-from pytest_prairielearn_grader.fixture import FeedbackFixture, StudentFixture
-from pytest_prairielearn_grader.utils import FunctionStatusCode
+from pytest_prairielearn_grader.assertions import assert_equal
+from pytest_prairielearn_grader.fixture import StudentFixture
 
 
-@pytest.mark.output(level="friendly")
 @pytest.mark.grading_data(name="last_element", points=10)
-def test_last_element(sandbox: StudentFixture, feedback: FeedbackFixture) -> None:
-    num_tests = 10
-    num_correct = 0
-    failures = []
-
-    for _ in range(num_tests):
+def test_last_element(sandbox: StudentFixture, subtests: pytest.Subtests) -> None:
+    for _ in range(10):
         lst = random.sample(range(1000), k=random.randint(1, 20))
-        description = f"last_element({lst})"
-        response = sandbox.query_function_raw("_last_element_and_list", lst)
-        if response["status"] == FunctionStatusCode.TIMEOUT:
-            # A late reply would otherwise be read as the answer to the next input.
-            failures.append(f"{description}: timed out")
-            break
-        if response["status"] != FunctionStatusCode.SUCCESS:
-            failures.append(
-                f"{description}: raised {response['exception_name']}: "
-                f"{response['exception_message']}"
+        with subtests.test(f"last_element({lst})"):
+            value, lst_after = sandbox.query_function("_last_element_and_list", lst)
+            assert_equal(value, lst[-1])
+            assert_equal(
+                lst_after, lst, msg="Your function should not modify the input list."
             )
-            continue
-        value, lst_after = response["value"]
-        if value != lst[-1]:
-            failures.append(f"{description}: expected {lst[-1]}, got {value}")
-        elif lst_after != lst:
-            failures.append(
-                f"Your function modified the input list {lst} to {lst_after}. "
-                "It should not modify the input list."
-            )
-        else:
-            num_correct += 1
-
-    if failures:
-        feedback.add_message("\n\n".join(failures))
-    feedback.set_score_final(num_correct / num_tests)

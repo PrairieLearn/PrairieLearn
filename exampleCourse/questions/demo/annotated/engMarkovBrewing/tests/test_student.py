@@ -3,8 +3,6 @@ import pytest
 from pytest_prairielearn_grader.assertions import assert_true
 from pytest_prairielearn_grader.fixture import StudentFixture
 
-pytestmark = pytest.mark.output(level="friendly")
-
 sandbox_timeout = 15
 
 
