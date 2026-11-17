@@ -83,7 +83,7 @@ function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJson
 
 async function syncCourseFromDisk(
   course: Course,
-  chunkUpdateMode: ChunkUpdateMode,
+  chunkUpdate: ChunkUpdateMode & { commitHash: string | null },
   job: ServerJob,
   courseData?: courseDB.CourseData,
 ) {
@@ -98,7 +98,7 @@ async function syncCourseFromDisk(
       coursePath: course.path,
       courseId: course.id,
       courseData: syncResult.courseData,
-      ...chunkUpdateMode,
+      ...chunkUpdate,
     });
     logChunkChangesToJob(chunkChanges, job);
   }
@@ -262,6 +262,7 @@ export abstract class Editor {
               changedFiles: (writeResult?.pathsToAdd ?? []).map((p) =>
                 path.relative(this.course.path, p),
               ),
+              commitHash: null,
             },
             job,
           );
@@ -450,12 +451,14 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
+          const endGitHash = await getCourseCommitHash(this.course.path);
           await syncCourseFromDisk(
             this.course,
             {
               mode: 'git-diff',
               oldHash: startGitHash,
-              newHash: await getCourseCommitHash(this.course.path),
+              newHash: endGitHash,
+              commitHash: endGitHash,
             },
             job,
             courseData,

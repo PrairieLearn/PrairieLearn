@@ -344,6 +344,7 @@ describe('chunks', () => {
         mode: 'full',
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
       });
       const baselineDate = new Date('2000-01-01T00:00:00.000Z');
@@ -359,6 +360,7 @@ describe('chunks', () => {
         mode: 'changed-files',
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         changedFiles: ['serverFilesCourse/changed.py'],
       });
@@ -395,6 +397,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -420,6 +423,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [],
@@ -452,6 +456,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -478,6 +483,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [],
@@ -514,6 +520,7 @@ describe('chunks', () => {
         mode: 'full',
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
       });
       const chunksToLoad: chunksLib.Chunk[] = [
@@ -549,6 +556,7 @@ describe('chunks', () => {
         mode: 'git-diff',
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         oldHash,
         newHash,
@@ -598,6 +606,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: tempTestCourseDir.path,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -645,6 +654,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [],
@@ -724,6 +734,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [],
@@ -789,6 +800,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -830,6 +842,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [],
@@ -885,6 +898,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [
@@ -936,6 +950,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [path.relative(courseDir, clientFilePath)],
@@ -972,6 +987,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [path.relative(courseDir, infoCourseInstancePath)],
@@ -994,6 +1010,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -1036,6 +1053,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [],
@@ -1077,6 +1095,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -1090,6 +1109,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -1132,6 +1152,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -1165,6 +1186,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'full',
       });
@@ -1186,6 +1208,7 @@ describe('chunks', () => {
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
         courseId: course.id,
+        commitHash: null,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         mode: 'changed-files',
         changedFiles: [],

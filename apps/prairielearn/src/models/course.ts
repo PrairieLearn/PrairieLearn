@@ -152,6 +152,18 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
 }
 
 /**
+ * Returns whether the given commit exists in the git repository at the course path.
+ */
+export async function gitCommitExists(coursePath: string, commitHash: string): Promise<boolean> {
+  const { exitCode } = await execa('git', ['cat-file', '-e', `${commitHash}^{commit}`], {
+    cwd: coursePath,
+    env: process.env,
+    reject: false,
+  });
+  return exitCode === 0;
+}
+
+/**
  * Gets the default branch from a git repository by querying origin/HEAD.
  * Returns 'master' as fallback if the query fails.
  */

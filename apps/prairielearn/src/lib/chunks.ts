@@ -928,12 +928,14 @@ type UpdateChunksForCourseOptions = {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
+  /** The commit the chunks are built from, or null if the course isn't a git repository. */
+  commitHash: string | null;
 } & ChunkUpdateMode;
 
 export async function updateChunksForCourse(
   options: UpdateChunksForCourseOptions,
 ): Promise<ChunksDiff> {
-  const { coursePath, courseId, courseData } = options;
+  const { coursePath, courseId, courseData, commitHash } = options;
   const changedCourseChunks = await run(async () => {
     switch (options.mode) {
       case 'git-diff': {
@@ -958,7 +960,6 @@ export async function updateChunksForCourse(
     changedCourseChunks,
   });
 
-  const commitHash = options.mode === 'git-diff' ? await getCourseCommitHash(coursePath) : null;
   const generatedChunks = await createAndUploadChunks(coursePath, courseId, updatedChunks);
 
   // Uploads finish before the transaction, so it only holds row locks briefly.
@@ -1033,6 +1034,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
       coursePath: courseDir,
       courseId: String(course_id),
       courseData,
+      commitHash: await getCourseCommitHash(courseDir),
       mode: 'full',
     });
     logChunkChangesToJob(chunkChanges, job);
