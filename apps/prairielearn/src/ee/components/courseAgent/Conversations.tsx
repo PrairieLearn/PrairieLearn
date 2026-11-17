@@ -147,8 +147,8 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
-  // PrairieLearn keeps the user's choice for this course; each conversation is told when it
-  // changes and with every message.
+  // The user's latest choice in this course, which PrairieLearn keeps. It is the mode of a new
+  // conversation; an existing one keeps the mode it was last given.
   const [approvalMode, setApprovalMode] = useState(initialApprovalMode);
   const { mutate: saveApprovalMode } = useMutation(
     trpc.courseAgent.setApprovalMode.mutationOptions(),
@@ -238,7 +238,7 @@ function ConversationPicker({
           courseId={courseId}
           conversationId={selectedId}
           showConversationStats={showConversationStats}
-          approvalMode={approvalMode}
+          defaultApprovalMode={approvalMode}
           chatCsrfToken={chatCsrfToken}
           initialMessage={
             create.data?.id === selectedId && create.variables
@@ -309,7 +309,7 @@ function Chat({
   initialMessage,
   onInitialMessageSent,
   showConversationStats,
-  approvalMode,
+  defaultApprovalMode,
   onApprovalModeChange,
 }: {
   courseId: string;
@@ -317,7 +317,8 @@ function Chat({
   showConversationStats: boolean;
   chatCsrfToken: string;
   initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
-  approvalMode: ApprovalMode;
+  /** The user's latest choice in this course, for a conversation that has no mode of its own. */
+  defaultApprovalMode: ApprovalMode;
   onApprovalModeChange: (mode: ApprovalMode) => void;
   onInitialMessageSent: () => void;
 }) {
@@ -341,6 +342,14 @@ function Chat({
   const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
+  // The conversation's own mode wins over the user's default, and a choice made here shows at
+  // once instead of waiting for the agent service to report it back.
+  const [chosenApprovalMode, setChosenApprovalMode] = useState<ApprovalMode | null>(null);
+  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode ?? defaultApprovalMode;
+  const changeApprovalMode = (mode: ApprovalMode) => {
+    setChosenApprovalMode(mode);
+    onApprovalModeChange(mode);
+  };
   const [connectionFailed, setConnectionFailed] = useState(false);
   // Chat remounts per conversation, so this is the message that created it.
   const [initialText, setInitialText] = useState(initialMessage?.text);
@@ -584,7 +593,7 @@ function Chat({
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
-              onAlwaysApprove={onApprovalModeChange}
+              onAlwaysApprove={changeApprovalMode}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={(text) => void send(text, [])}
             />
@@ -600,7 +609,7 @@ function Chat({
                 reviewId={lifecycle.reviewId}
                 canResume={awaitingReviewId === lifecycle.reviewId}
                 autoApprove={false}
-                onAlwaysApprove={() => onApprovalModeChange('always_approve')}
+                onAlwaysApprove={() => changeApprovalMode('always_approve')}
               />
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
@@ -657,7 +666,7 @@ function Chat({
         attachments={drafts.attachments}
         approvalMode={approvalMode}
         stopDisabled={!connected || !canStop}
-        onApprovalModeChange={onApprovalModeChange}
+        onApprovalModeChange={changeApprovalMode}
         onAttach={drafts.add}
         onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}

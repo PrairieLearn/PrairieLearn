@@ -265,7 +265,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     sandboxLost: false,
     reviewId: null,
     title: null,
-    approvalMode: 'approval_required',
+    approvalMode: null,
   };
 
   private metering: MeteringState = {
@@ -338,7 +338,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
       title: this.record.title ?? null,
-      approvalMode: this.record.approvalMode ?? 'approval_required',
+      approvalMode: this.record.approvalMode ?? null,
     };
     // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
     const retryAt = this.metering.limitedUntil;

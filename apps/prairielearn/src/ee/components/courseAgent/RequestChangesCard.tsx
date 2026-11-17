@@ -74,6 +74,11 @@ export function RequestChangesCard({
     getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
     getAppError<CourseAgentError['Resume']>(resume.error);
   const pending = data?.status === 'pending' ? data : null;
+  // A decided review no longer returns its diff, so keep the last one for the card to show while
+  // the changes are saved.
+  const [lastFiles, setLastFiles] = useState<ReviewDiffFile[] | null>(null);
+  if (pending?.diff.files && pending.diff.files !== lastFiles) setLastFiles(pending.diff.files);
+  const files = pending?.diff.files ?? lastFiles;
   const decide = (value: 'approved' | 'denied') =>
     decision.mutate({ conversationId, reviewId, decision: value });
   const approveAlways = () =>
@@ -102,7 +107,7 @@ export function RequestChangesCard({
         <ReviewActions
           disabled={actionsDisabled}
           canApprove={canApprove}
-          files={pending?.diff.files ?? null}
+          files={files}
           onViewChanges={() => setShowChanges(true)}
           onDecision={decide}
           onApproveAlways={approveAlways}
@@ -155,7 +160,7 @@ export function RequestChangesCard({
         id={reviewId}
         show={showChanges}
         loading={review.isLoading}
-        files={pending?.diff.files ?? null}
+        files={files}
         error={pending?.diff.error ? <Alert variant="danger">{pending.diff.error}</Alert> : null}
         actionsDisabled={actionsDisabled}
         canApprove={canApprove}

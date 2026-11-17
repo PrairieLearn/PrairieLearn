@@ -36,8 +36,11 @@ export type ConversationState = ConversationLifecycle & {
   reviewId: string | null;
   /** Generated from the first message; PrairieLearn shows its own fallback until then. */
   title: string | null;
-  /** Whether reviews the agent submits from now on are approved for the instructor. */
-  approvalMode: ApprovalMode;
+  /**
+   * Whether reviews the agent submits from now on are approved for the instructor. `null` until
+   * the conversation is given a mode, which PrairieLearn shows as the user's default.
+   */
+  approvalMode: ApprovalMode | null;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
