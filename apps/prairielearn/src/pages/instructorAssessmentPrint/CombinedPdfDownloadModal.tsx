@@ -98,7 +98,9 @@ export function CombinedPdfDownloadModal({
               </p>
             )}
             <p className="small text-muted mb-0">
-              Your PDF file will begin downloading when ready, and will appear in Recent exports
+              Click below to export your printable{' '}
+              {document === 'assessment' ? 'assessment' : 'answer keys'} as a PDF file. It will
+              begin downloading once it's ready, and will appear in 'Recent exports' for 24 hours
               afterward.
             </p>
           </>
