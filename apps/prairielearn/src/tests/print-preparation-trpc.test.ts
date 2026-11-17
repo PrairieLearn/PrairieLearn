@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { PDFDocument } from 'pdf-lib';
 import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
@@ -62,26 +63,26 @@ function client(assessmentId: string) {
   });
 }
 
-function packetInput(
-  printFormId: string,
-  copies = 1,
-  document: 'assessment' | 'answer_key' | 'booklet' = 'assessment',
-) {
+function packetInput(printFormId: string, document: 'assessment' | 'answer_key' = 'assessment') {
   const data = new FormData();
   data.set(
     'metadata',
     JSON.stringify({
       forms: [{ printFormId, settings: DEFAULT_PRINT_SETTINGS }],
-      copies,
       document,
     }),
   );
   return data;
 }
 
-async function appendPrintSnapshot(data: FormData, printFormId: string, html: string) {
+async function appendPrintSnapshot(
+  data: FormData,
+  printFormId: string,
+  html: string,
+  document: 'assessment' | 'answer_key' = 'assessment',
+) {
   const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
-  search.set('document', 'assessment');
+  search.set('document', document);
   data.append('pages', new File([html], `form-${printFormId}.html`));
   data.append(
     'snapshotIds',
@@ -158,7 +159,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
       work: {
         format: 'pdf',
         document: 'assessment',
-        copies: 1,
         filename,
         snapshots: [],
         covers: [],
@@ -476,7 +476,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('validates export settings and cover PDFs before queueing', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    await expect(api.printableAssessmentExport.pdf.mutate(packetInput('1', 0))).rejects.toThrow(
+    const invalid = packetInput('1');
+    invalid.set('metadata', JSON.stringify({ forms: [], document: 'assessment' }));
+    await expect(api.printableAssessmentExport.pdf.mutate(invalid)).rejects.toThrow(
       'Invalid print export settings.',
     );
     const form = await api.printForms.create.mutate();
@@ -488,7 +490,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await expect(api.printableAssessmentExport.pdf.mutate(invalidCover)).rejects.toThrow(
       'valid PDF without password protection',
     );
-    const answerKeyCover = packetInput(form.printFormId, 1, 'answer_key');
+    const answerKeyCover = packetInput(form.printFormId, 'answer_key');
     answerKeyCover.append(
       'coverPages',
       new File(['unused'], 'cover.pdf', { type: 'application/pdf' }),
@@ -498,13 +500,64 @@ describe('print preparation', { timeout: 60_000 }, () => {
     );
   });
 
+  test('preflights every selected form and identifies a form that needs attention', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const first = await api.printForms.create.mutate();
+    const second = await api.printForms.create.mutate();
+    const cover = await PDFDocument.create();
+    cover.addPage();
+    const data = new FormData();
+    data.set('formIds', JSON.stringify([first.printFormId, second.printFormId]));
+    data.set('document', 'assessment');
+    data.append('coverPages', new File([Buffer.from(await cover.save())], 'cover.pdf'));
+    expect(await api.printableAssessmentExport.preflight.mutate(data)).toEqual({
+      coverPageCount: 1,
+      failure: null,
+    });
+    await execute(sql.set_print_form_question_broken, {
+      print_form_id: second.printFormId,
+      broken: true,
+    });
+    try {
+      expect(await api.printableAssessmentExport.preflight.mutate(data)).toEqual({
+        coverPageCount: 0,
+        failure: {
+          printFormId: second.printFormId,
+          formLabel: second.label,
+          message: expect.stringContaining(`Form ${second.label}`),
+        },
+      });
+    } finally {
+      await execute(sql.set_print_form_question_broken, {
+        print_form_id: second.printFormId,
+        broken: false,
+      });
+    }
+  });
+
   test('rejects a predictable page limit before rendering', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const form = await api.printForms.create.mutate();
-    const data = packetInput(form.printFormId, 500);
-    data.append('pages', new File(['<div class="pagedjs_page"></div>'.repeat(21)], 'large.html'));
-    data.append('snapshotIds', 'placeholder');
+    const forms = [await api.printForms.create.mutate(), await api.printForms.create.mutate()];
+    const data = new FormData();
+    data.set(
+      'metadata',
+      JSON.stringify({
+        forms: forms.map(({ printFormId }) => ({
+          printFormId,
+          settings: DEFAULT_PRINT_SETTINGS,
+        })),
+        document: 'assessment',
+      }),
+    );
+    for (let index = 0; index < forms.length; index++) {
+      data.append(
+        'pages',
+        new File(['<div class="pagedjs_page"></div>'.repeat(5_001)], 'large.html'),
+      );
+      data.append('snapshotIds', 'placeholder');
+    }
     await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
       'The export would exceed 10,000 pages.',
     );
@@ -592,7 +645,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       assessmentId: assessment.id,
       authnUserId: '1',
     }))!;
-    expect(printExport.filename).toMatch(new RegExp(`_form_${label}_assessment_1_copies\\.pdf$`));
+    expect(printExport.filename).toMatch(new RegExp(`_form_${label}_assessment\\.pdf$`));
     expect(response.headers.get('content-disposition')).toBe(
       `attachment; filename="${printExport.filename}"`,
     );
@@ -628,6 +681,52 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect((await fetch(url)).status).toBe(404);
   });
 
+  test('queues one combined PDF containing every selected answer key', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const first = await api.printForms.create.mutate();
+    const second = await api.printForms.create.mutate();
+    const data = new FormData();
+    data.set(
+      'metadata',
+      JSON.stringify({
+        forms: [first, second].map(({ printFormId }) => ({
+          printFormId,
+          settings: DEFAULT_PRINT_SETTINGS,
+        })),
+        document: 'answer_key',
+      }),
+    );
+    const html =
+      '<html data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0"></html>';
+    for (const form of [first, second]) {
+      await appendPrintSnapshot(data, form.printFormId, html, 'answer_key');
+    }
+    const render = vi
+      .spyOn(printExportRender, 'renderPrintExport')
+      .mockResolvedValueOnce(Buffer.from('%PDF-1.4 combined answer keys'));
+    try {
+      const { printExportId } = await api.printableAssessmentExport.pdf.mutate(data);
+      await completePrintExport(assessment.id, printExportId);
+      expect(render.mock.calls[0][0]).toMatchObject({
+        document: 'answer_key',
+        snapshots: [{ printDocument: 'answer_key' }, { printDocument: 'answer_key' }],
+      });
+      expect(await api.printableAssessmentExport.status.query({ printExportId })).toMatchObject({
+        label: 'PDF with 2 form answer keys',
+      });
+      expect(
+        (await selectOptionalPrintExport({
+          printExportId,
+          assessmentId: assessment.id,
+          authnUserId: '1',
+        }))!.filename,
+      ).toMatch(/_all_answer_keys\.pdf$/);
+    } finally {
+      render.mockRestore();
+    }
+  });
+
   test('rejects a PDF with question exclusions that differ from the saved form', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
@@ -638,7 +737,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
       'metadata',
       JSON.stringify({
         forms: [{ printFormId: form.printFormId, settings }],
-        copies: 1,
         document: 'assessment',
       }),
     );
@@ -688,7 +786,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
           printFormId,
           settings: DEFAULT_PRINT_SETTINGS,
         })),
-        copies: 2,
         document: 'assessment',
       }),
     );
@@ -843,8 +940,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       },
       work: {
         format: 'pdf',
-        document: 'booklet',
-        copies: 1,
+        document: 'assessment',
         filename: 'failed-export.pdf',
         snapshots: [],
         covers: [
@@ -860,7 +956,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: 'Booklet PDF for 1 student',
+      label: 'PDF with 0 forms',
       failureMessage:
         '“invalid-cover.pdf” could not be read. Upload a valid PDF without password protection.',
     });
@@ -950,7 +1046,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       sizeBytes: null,
       label: expect.any(String),
       failureMessage:
-        'The PDF could not be prepared after repeated attempts. Try fewer forms or copies, or contact support.',
+        'The PDF could not be prepared after repeated attempts. Try fewer forms or contact support.',
     });
   });
 

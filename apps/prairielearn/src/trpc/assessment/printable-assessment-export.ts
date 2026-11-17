@@ -5,7 +5,11 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
-import { MAX_PACKET_PAGES } from '../../lib/client/printing/print-packet.js';
+import {
+  MAX_PACKET_PAGES,
+  MAX_PRINT_FORMS,
+  countPrintSnapshotPages,
+} from '../../lib/client/printing/print-packet.js';
 import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import {
   MAX_PRINT_PACKET_SNAPSHOT_BYTES,
@@ -15,7 +19,6 @@ import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-sn
 import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import {
-  type PrintDocument,
   assertPrintDocumentReady,
   getPrintableFormQuestionIds,
   getPrintableQuestionListDigest,
@@ -31,6 +34,7 @@ import {
   selectOptionalPrintExport,
   selectRecentPrintExportsForAssessment,
 } from '../../models/print-export.js';
+import { selectPrintFormQuestionViability } from '../../models/print-form-question.js';
 import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
 import { requireCoursePermissionPreview, t } from './init.js';
@@ -39,10 +43,93 @@ import { requirePrintableAssessments } from './print-forms.js';
 export interface PrintableAssessmentExportError {
   list: never;
   pdf: never;
+  preflight: never;
   status: never;
 }
 
+const PreflightFormIdsSchema = z
+  .array(IdSchema)
+  .min(1)
+  .max(MAX_PRINT_FORMS)
+  .refine((ids) => new Set(ids).size === ids.length, 'Select each print form only once.');
+
+function uploadedCoverFiles(input: FormData): File[] {
+  const files = z.array(z.instanceof(File)).safeParse(input.getAll('coverPages'));
+  if (!files.success) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
+  }
+  return files.data;
+}
+
 export const printableAssessmentExportRouter = t.router({
+  preflight: t.procedure
+    .use(requireCoursePermissionPreview)
+    .use(requirePrintableAssessments)
+    .input(z.instanceof(FormData))
+    .mutation(async ({ ctx, input }) => {
+      let formIds: string[];
+      let document: 'assessment' | 'answer_key';
+      try {
+        formIds = PreflightFormIdsSchema.parse(JSON.parse(z.string().parse(input.get('formIds'))));
+        document = z.enum(['assessment', 'answer_key']).parse(input.get('document'));
+      } catch (error) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invalid print export settings.',
+          cause: error,
+        });
+      }
+      const files = uploadedCoverFiles(input);
+      if (document === 'answer_key' && files.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Answer key exports do not use uploaded cover pages.',
+        });
+      }
+      const savedForms = await selectPrintFormsForAssessment({ assessmentId: ctx.assessment.id });
+      const formsById = new Map(savedForms.map((form) => [form.id, form]));
+      const forms = formIds.map((id) => {
+        const form = formsById.get(id);
+        if (!form || form.archived_at) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'A print form is not available.' });
+        }
+        return form;
+      });
+      const questions = await selectPrintFormQuestionViability(formIds);
+      for (const form of forms) {
+        const excluded = new Set(form.settings.excludedQuestions);
+        const included = questions.filter(
+          (question) =>
+            question.print_form_id === form.id && !excluded.has(question.question_number),
+        );
+        const problem = included.find((question) => !question.supported || question.broken);
+        if (included.length === 0 || problem) {
+          return {
+            coverPageCount: 0,
+            failure: {
+              printFormId: form.id,
+              formLabel: form.label,
+              message: problem
+                ? `Question ${problem.question_number} in Form ${form.label} ${problem.broken ? 'has an error' : 'uses a question type that printing does not support'}. Review its preview before downloading.`
+                : `Form ${form.label} has no selected questions. Include at least one question before downloading.`,
+            },
+          };
+        }
+      }
+      let coverPageCount: number;
+      try {
+        coverPageCount = (await readPrintCoverPages(files)).reduce(
+          (count, cover) => count + cover.getPageCount(),
+          0,
+        );
+      } catch (error) {
+        if (error instanceof PrintPacketError) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+        }
+        throw error;
+      }
+      return { coverPageCount, failure: null };
+    }),
   pdf: t.procedure
     .use(requireCoursePermissionPreview)
     .use(requirePrintableAssessments)
@@ -67,16 +154,13 @@ export const printableAssessmentExportRouter = t.router({
       const formsById = new Map(savedForms.map((form) => [form.id, form]));
       const forms = metadata.forms.map((selected) => {
         const saved = formsById.get(selected.printFormId);
-        if (!saved) {
+        if (!saved || (metadata.forms.length > 1 && saved.archived_at)) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'A print form is not available.' });
         }
         return { ...selected, formLabel: saved.label };
       });
-      const files = z.array(z.instanceof(File)).safeParse(input.getAll('coverPages'));
-      if (!files.success) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
-      }
-      if (metadata.document === 'answer_key' && files.data.length > 0) {
+      const files = uploadedCoverFiles(input);
+      if (metadata.document === 'answer_key' && files.length > 0) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Answer key exports do not use uploaded cover pages.',
@@ -95,49 +179,24 @@ export const printableAssessmentExportRouter = t.router({
         });
       }
       try {
-        const covers =
-          metadata.document === 'answer_key' ? [] : await readPrintCoverPages(files.data);
-        // Copies cycle through the first `copies` forms; booklets also append every form's answer key.
-        const entries = forms.flatMap((form, index) => {
-          const printed = index < metadata.copies;
-          const documents: PrintDocument[] = {
-            assessment: printed ? ['assessment' as const] : [],
-            answer_key: printed ? ['answer_key' as const] : [],
-            booklet: printed
-              ? ['assessment' as const, 'answer_key' as const]
-              : ['answer_key' as const],
-          }[metadata.document];
-          return documents.map((printDocument) => ({ form, printDocument }));
-        });
-        if (pages.data.length !== entries.length) {
+        const covers = await readPrintCoverPages(files);
+        if (pages.data.length !== forms.length) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'The preview pages are incomplete. Update the preview and try again.',
           });
         }
-        if (!snapshotIds.success || snapshotIds.data.length !== entries.length) {
+        if (!snapshotIds.success || snapshotIds.data.length !== forms.length) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
         }
         const pageHtmls = await Promise.all(pages.data.map((page) => page.text()));
-        const pageCounts = pageHtmls.map((html) =>
-          Math.max(1, [...html.matchAll(/class="[^"]*\bpagedjs_page\b[^"]*"/g)].length),
-        );
-        const isAppendedAnswerKey = (index: number) =>
-          metadata.document === 'booklet' && entries[index].printDocument === 'answer_key';
-        const formPageCounts = pageCounts.filter((_, index) => !isAppendedAnswerKey(index));
+        const pageCounts = pageHtmls.map(countPrintSnapshotPages);
         const coverPageCount = covers.reduce((count, cover) => count + cover.getPageCount(), 0);
-        const estimatedPages =
-          Array.from(
-            { length: metadata.copies },
-            (_, copy) => formPageCounts[copy % formPageCounts.length] + coverPageCount,
-          ).reduce((sum, count) => sum + count, 0) +
-          pageCounts
-            .filter((_, index) => isAppendedAnswerKey(index))
-            .reduce((sum, count) => sum + count, 0);
+        const estimatedPages = (Math.max(...pageCounts) + coverPageCount) * forms.length;
         if (estimatedPages > MAX_PACKET_PAGES) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'The export would exceed 10,000 pages. Reduce the number of copies.',
+            message: 'The export would exceed 10,000 pages. Reduce the number of forms.',
           });
         }
         const formContexts = new Map<
@@ -170,7 +229,8 @@ export const printableAssessmentExportRouter = t.router({
             },
           });
         }
-        const snapshots = entries.map(({ form, printDocument }, index) => {
+        const snapshots = forms.map((form, index) => {
+          const printDocument = metadata.document;
           const { questionListDigest, assetScope } = formContexts.get(form.printFormId)!;
           const search = new URLSearchParams(printLayoutSearch(form.settings));
           search.set('document', printDocument);
@@ -202,7 +262,7 @@ export const printableAssessmentExportRouter = t.router({
         });
         // The worker checks the full signed page. Check its root here to reject exports that
         // are already known to contain omitted questions.
-        for (const [index, { form, printDocument }] of entries.entries()) {
+        for (const [index, form] of forms.entries()) {
           const root = load(`${/<html\b[^>]*>/i.exec(pageHtmls[index])?.[0] ?? '<html>'}</html>`)(
             'html',
           );
@@ -210,7 +270,7 @@ export const printableAssessmentExportRouter = t.router({
             questionCount: Number(root.attr('data-print-question-count')),
             omittedCount: Number(root.attr('data-print-omitted-question-count')),
             coverPageCount: 0,
-            document: printDocument,
+            document: metadata.document,
             formLabel: form.formLabel,
           });
         }
@@ -220,21 +280,23 @@ export const printableAssessmentExportRouter = t.router({
           ctx.course_instance,
           ctx.course,
         );
-        const documentName = {
-          assessment: 'assessment',
-          answer_key: 'answer_keys',
-          booklet: 'booklet',
-        }[metadata.document];
+        const documentName =
+          metadata.document === 'assessment'
+            ? forms.length === 1
+              ? 'assessment'
+              : 'all_forms'
+            : forms.length === 1
+              ? 'answer_key'
+              : 'all_answer_keys';
         const formName = forms.length === 1 ? `form_${forms[0].formLabel}_` : '';
-        const filename = `${prefix}${formName}${documentName}_${metadata.copies}_copies.pdf`;
+        const filename = `${prefix}${formName}${documentName}.pdf`;
         const work: PrintExportWork = {
           format: 'pdf',
           document: metadata.document,
-          copies: metadata.copies,
           filename,
           snapshots,
           covers: await Promise.all(
-            files.data.map(async (file) => ({
+            files.map(async (file) => ({
               name: file.name,
               base64: Buffer.from(await file.arrayBuffer()).toString('base64'),
             })),

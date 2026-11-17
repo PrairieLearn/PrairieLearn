@@ -319,7 +319,7 @@ router.get(
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
+      "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-ancestors 'self';",
     );
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.send(snapshotHtml);

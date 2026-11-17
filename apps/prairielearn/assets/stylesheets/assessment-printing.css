@@ -1,6 +1,10 @@
 @page {
   margin: 0.55in;
 
+  @bottom-left {
+    vertical-align: middle;
+  }
+
   @bottom-right {
     vertical-align: middle;
   }
@@ -25,9 +29,13 @@
 
 body {
   color: #111;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Zalando Sans', Arial, Helvetica, sans-serif;
   font-size: 10.5pt;
   line-height: 1.35;
+}
+
+:where(h1, h2, h3, h4, h5, h6, .assessment-cover-course, .printing-answer-key-label) {
+  font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
 }
 
 .assessment-print-document {
@@ -123,6 +131,7 @@ body {
 
 .assessment-cover-summary {
   border: 1pt solid #777;
+  border-radius: 0.06in;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin: 0 0 0.18in;
@@ -155,6 +164,7 @@ body {
 .assessment-cover-instructions,
 .assessment-cover-honor-code {
   border: 0.6pt solid #aaa;
+  border-radius: 0.06in;
   font-size: 9.5pt;
   line-height: 1.25;
   margin-bottom: 0.14in;
@@ -186,16 +196,6 @@ body {
   height: 0.25in;
   margin-top: 0.08in;
   position: relative;
-}
-
-.assessment-cover footer {
-  border-top: 0.5pt solid #aaa;
-  color: #555;
-  display: flex;
-  font-size: 8pt;
-  justify-content: space-between;
-  margin-top: auto;
-  padding-top: 0.06in;
 }
 
 .printing-question-page {
@@ -266,7 +266,7 @@ html[data-print-document='answer_key'] .printing-answer-key {
   align-items: center;
   background: #f5f5f5;
   border: 0.8pt solid #777;
-  border-radius: 0;
+  border-radius: 0.06in;
   box-sizing: border-box;
   break-inside: avoid;
   display: grid;

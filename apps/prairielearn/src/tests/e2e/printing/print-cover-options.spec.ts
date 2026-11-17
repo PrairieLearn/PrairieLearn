@@ -11,6 +11,36 @@ import { createPrintableForm, downloadPrintableWord, waitForPrintablePage } from
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
+test('uses the shared footer on cover and question pages', async ({ page, courseInstance }) => {
+  test.setTimeout(120_000);
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  for (const document of ['assessment', 'answer_key']) {
+    await page.goto(`${printUrl}/preview?paper_size=Letter&document=${document}`);
+    await waitForPrintablePage(page);
+    const pages = page.locator('.pagedjs_page');
+    const footerContent = await pages.evaluateAll((sheets) =>
+      sheets.map((sheet) => {
+        const left = sheet.querySelector('.pagedjs_margin-bottom-left .pagedjs_margin-content')!;
+        const right = sheet.querySelector('.pagedjs_margin-bottom-right .pagedjs_margin-content')!;
+        return {
+          left: getComputedStyle(left, '::after').content,
+          right: getComputedStyle(right, '::after').content,
+        };
+      }),
+    );
+    expect(footerContent.length).toBeGreaterThan(1);
+    for (const footer of footerContent) {
+      expect(footer.left).toContain('Test Course | Spring 2015');
+      expect(footer.right).toMatch(
+        document === 'answer_key' ? /Answer key\s*\|\s*Form A/ : /Form A/,
+      );
+    }
+    await expect(page.getByRole('article', { name: /cover page/ }).locator('footer')).toHaveCount(
+      0,
+    );
+  }
+});
+
 test('fills the cover grading table down columns using only included questions', async ({
   page,
   courseInstance,

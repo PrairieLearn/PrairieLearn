@@ -10,7 +10,7 @@ For assessments with randomization, you can prepare several versions, called _fo
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
 3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
-5. Select **Update preview** to save your changes to this form without changing its randomization. Check the **Student copy** and **Answer key** above the preview.
+5. Most settings save as you change them. Select **Save** after editing **Additional student fields**. Then select **Update preview** to see your changes without changing the form's randomization. Check the **Student copy** and **Answer key** above the preview.
 6. When you are satisfied with the preview, open **Download…** and [choose a file](#download-files). Starting the first download fixes which questions the form includes, so check the preview first.
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
@@ -32,7 +32,7 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 current forms, labeled A through Z. New forms take the first available letter. Form A and its later versions (A2, A3, and so on) cannot be archived directly; regenerate one to replace it. Assessments without randomization use a single current form.
 
-Select a form to review it and choose its questions and spacing. Apply any changes with **Update preview** before switching to another form.
+Select a form to review it and choose its questions and spacing. Changes to those settings save as you make them, so you can switch forms before updating the preview. Save any changes to **Additional student fields** before switching. Select **Update preview** before downloading a form.
 
 Starting the first PDF or Word download for a form fixes its question selection. You can still change its paper size, spacing, and cover settings. To change which questions are included, regenerate the form to create its next version. This also works for an assessment without randomization after its first download.
 
@@ -44,7 +44,7 @@ A form does not save a separate copy of question content, assessment instruction
 
 The default cover has spaces for **Name**, **Date**, **Student ID**, and **Section**, along with the assessment's instructions. You can edit or remove **Student ID** and **Section** under **Cover page**:
 
-- Under **Additional student information**, enter one label per line, such as “Student ID” or “Section”.
+- Under **Additional student fields:**, enter one label per line, such as “Student ID” or “Section”, then select **Save**.
 - Select **Include grading table** to add a table for recording question scores.
 - Select **Include academic integrity pledge** to add the assessment's honor code, or a standard pledge if the assessment does not have one.
 - Uncheck **Include default cover page** if you do not want this cover.
@@ -57,7 +57,7 @@ You can add up to 10 PDFs, with a combined limit of 100 pages and 10 MB. Uploade
 
 Upload readable PDFs without password protection. If a fillable cover is rejected or its entries do not appear, print it to a new PDF and upload that copy. If an upload is rejected, follow the message or remove the file.
 
-Uploaded covers do not appear in the preview. Download a student copy or booklet to check them before printing.
+Uploaded covers do not appear in the preview. Download a student-copy PDF to check them before printing.
 
 ## Download files
 
@@ -69,19 +69,19 @@ Select **Update preview** after making changes, then open **Download…**. The f
 | **Download Form A Word (.docx)**            | An editable student copy of Form A.                                                              |
 | **Download Form A answer key (PDF)**        | The answer key for Form A.                                                                       |
 | **Download Form A answer key Word (.docx)** | An editable answer key for Form A.                                                               |
-| **Download all current forms (PDF)**        | One student copy of each current form, including uploaded covers. Available with multiple forms. |
-| **Download booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.               |
+| **Download all forms PDF**                  | One student copy of each current form, including uploaded covers. Available with multiple forms. |
+| **Download all answer keys PDF**            | One answer key for each current form in a single PDF. Available with multiple forms.             |
+
+For either combined PDF, PrairieLearn adds blank pages when needed so every form or answer key has the same number of pages. The download dialog shows that page count before you start the download.
 
 If file preparation says the preview has expired or changed, select **Update preview** and try again.
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-Choosing a file from **Download…** starts preparing it. PDF and Word files download automatically when ready if you keep this page open. You can start another download while one is being prepared. **Recent exports** shows the progress of your ten newest files for this assessment and links to completed files. Forms are shared with course staff, but only the staff member who requested a file can download it. Use the links if you return later or an automatic download is blocked. Each file is available for 24 hours after it was requested.
+Choosing an individual file from **Download…** starts preparing it. For a combined PDF, review the page count in the dialog, then select its download button. PDF and Word files download automatically when ready if you keep this page open. You can start another download while one is being prepared. **Recent exports** shows the progress of your ten newest files for this assessment and links to completed files. Forms are shared with course staff, but only the staff member who requested a file can download it. Use the links if you return later or an automatic download is blocked. Each file is available for 24 hours after it was requested.
 
 ### Print copies for a class
 
-Select **Download booklet PDF…**, enter the **Number of students** (up to 500), and select **Download booklet PDF**. Each student gets a complete copy. With multiple forms, copies repeat in order: for example, A, B, C, A, B, C. With one form, every student gets the same version. A booklet can contain up to 10,000 pages; for larger classes, download it in batches.
-
-The booklet ends with one answer key for each form. Print it single-sided and set aside the answer keys before distributing the student copies.
+Select **Download all forms PDF**. If students are enrolled in the course instance, the dialog tells you how many copies of each form to print to cover the class. The PDF contains one copy of each current form; print the complete file that many times to make an even set of forms. Download the answer keys separately and set them aside before distributing student copies.
 
 Always check the downloaded files before printing, including the cover pages and page breaks for every form.

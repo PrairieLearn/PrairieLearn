@@ -146,10 +146,7 @@ function getPrintExportLabel(work: PrintExportWork): string {
       ? `${form} answer key Word document`
       : `${form} Word document`;
   }
-  const { document, copies, snapshots } = work;
-  if (document === 'booklet') {
-    return `Booklet PDF for ${copies} ${copies === 1 ? 'student' : 'students'}`;
-  }
+  const { document, snapshots } = work;
   const formLabels = new Set(snapshots.map((snapshot) => snapshot.formLabel));
   if (formLabels.size === 1) {
     const form = `Form ${[...formLabels][0]}`;
@@ -292,7 +289,7 @@ async function processPrintExport(printExportId: string) {
 function exhaustedFailureMessage(format: PrintExportWork['format']) {
   return format === 'docx'
     ? 'The Word document could not be prepared after repeated attempts. Try again or contact support.'
-    : 'The PDF could not be prepared after repeated attempts. Try fewer forms or copies, or contact support.';
+    : 'The PDF could not be prepared after repeated attempts. Try fewer forms or contact support.';
 }
 
 /** Republishes pending exports whose Redis job was lost, failed, or interrupted. */

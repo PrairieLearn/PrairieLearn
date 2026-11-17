@@ -6,7 +6,6 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { MAX_PRINT_COPIES } from '../../lib/client/printing/print-packet.js';
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
@@ -75,7 +74,6 @@ router.get(
               displayTimezone={course_instance.display_timezone}
               forms={forms}
               enrolledStudents={studentCount}
-              defaultCopies={Math.min(MAX_PRINT_COPIES, Math.max(1, studentCount))}
               trpcCsrfToken={trpcCsrfToken}
               docxCsrfToken={docxCsrfToken}
               search={getUrl(req).search}

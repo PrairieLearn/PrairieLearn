@@ -125,3 +125,24 @@ SET
   team_work = $team_work
 WHERE
   id = $assessment_id;
+
+-- BLOCK set_print_form_question_broken
+UPDATE variants
+SET
+  broken_at = CASE
+    WHEN $broken THEN now()
+    ELSE NULL
+  END
+WHERE
+  id = (
+    SELECT
+      variant_id
+    FROM
+      print_form_questions
+    WHERE
+      print_form_id = $print_form_id
+    ORDER BY
+      position
+    LIMIT
+      1
+  );

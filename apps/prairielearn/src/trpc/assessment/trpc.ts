@@ -46,7 +46,8 @@ const printableAssessmentPdfMiddleware = createExpressMiddleware({
 
 export const assessmentTrpcRouter: RequestHandler = (req, res, next) => {
   const middleware =
-    req.path === '/printableAssessmentExport.pdf'
+    req.path === '/printableAssessmentExport.pdf' ||
+    req.path === '/printableAssessmentExport.preflight'
       ? printableAssessmentPdfMiddleware
       : assessmentMiddleware;
   middleware(req, res, next);

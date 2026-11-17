@@ -31,6 +31,8 @@ import {
   MAX_COVER_BYTES,
   MAX_COVER_FILES,
   MAX_COVER_PAGES,
+  MAX_PACKET_PAGES,
+  countPrintSnapshotPages,
 } from '../../lib/client/printing/print-packet.js';
 import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import {
@@ -53,7 +55,7 @@ import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
 import type { PrintFormsError } from '../../trpc/assessment/print-forms.js';
 import type { PrintableAssessmentExportError } from '../../trpc/assessment/printable-assessment-export.js';
 
-import { BookletDownloadModal } from './BookletDownloadModal.js';
+import { CombinedPdfDownloadModal } from './CombinedPdfDownloadModal.js';
 import { type PreviewState, PrintPreview } from './PrintPreview.js';
 
 const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
@@ -75,7 +77,6 @@ interface PrintPreparationProps {
   requireHonorCode: boolean;
   forms: StaffPrintForm[];
   enrolledStudents: number;
-  defaultCopies: number;
   trpcCsrfToken: string;
   docxCsrfToken: string;
   search: string;
@@ -143,7 +144,6 @@ function PrintPreparation({
   requireHonorCode,
   forms: initialForms,
   enrolledStudents,
-  defaultCopies,
   docxCsrfToken,
 }: PrintPreparationProps) {
   const trpc = useTRPC();
@@ -176,8 +176,18 @@ function PrintPreparation({
     return form.label;
   }
   const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
-  const [copies, setCopies] = useState(defaultCopies);
-  const [showBookletModal, setShowBookletModal] = useState(false);
+  const [combinedDownload, setCombinedDownload] = useState<{
+    document: PrintDocument;
+    formIds: string[];
+    settingsKey: string;
+    coverPageIds: string[];
+    pageCount: number | null;
+    preparing: boolean;
+    progress: { completed: number; total: number } | null;
+    failure: { message: string; printFormId?: string; formLabel?: string } | null;
+  } | null>(null);
+  const combinedRequestRef = useRef(0);
+  const combinedReturnFocusRef = useRef<'menu' | 'recent' | { formId: string }>('menu');
   const [pendingFormAction, setPendingFormAction] = useState<{
     action: 'regenerate' | 'archive';
     id: string;
@@ -192,18 +202,15 @@ function PrintPreparation({
   const questionSelectionLocked = currentForm?.question_selection_locked_at != null;
   const [selectedQuestion, setSelectedQuestion] = useState<{ number: string } | null>(null);
   const [reviewOnly, setReviewOnly] = useState(false);
-  const [reviewWarningDismissed, setReviewWarningDismissed] = useState(false);
+  const [dismissedReviewWarning, setDismissedReviewWarning] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ url: string; state: PreviewState } | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
-  const [preparingPdf, setPreparingPdf] = useState<'packet' | 'booklet' | null>(null);
+  const [preparingPdf, setPreparingPdf] = useState(false);
   const [pdfPreparationProgress, setPdfPreparationProgress] = useState<{
     completed: number;
     total: number;
   } | null>(null);
-  const [pdfPreparationError, setPdfPreparationError] = useState<{
-    target: 'packet' | 'booklet';
-    error: Error;
-  } | null>(null);
+  const [pdfPreparationError, setPdfPreparationError] = useState<Error | null>(null);
   const snapshotsRef = useRef(new Map<string, PrintSnapshot>());
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
   const [retry, setRetry] = useState(0);
@@ -214,6 +221,7 @@ function PrintPreparation({
   const prepareButtonRef = useRef<HTMLButtonElement>(null);
   const prepareStatusRef = useRef<HTMLDivElement>(null);
   const applyPreviewButtonRef = useRef<HTMLButtonElement>(null);
+  const settingFocusRef = useRef<HTMLElement | null>(null);
   const printHeadingRef = useRef<HTMLHeadingElement>(null);
   const recentExportsRef = useRef<HTMLDetailsElement>(null);
   const nextFormFocusRef = useRef<string | null>(null);
@@ -224,8 +232,10 @@ function PrintPreparation({
     handleSubmit,
     reset,
     watch,
+    getValues,
     setValue,
-    formState: { errors, isDirty, isSubmitting },
+    trigger,
+    formState: { dirtyFields, errors, isDirty, isSubmitting },
   } = useForm<PrintSettings>({
     defaultValues: settings,
     values: settings,
@@ -240,7 +250,22 @@ function PrintPreparation({
   const printBase = formId
     ? getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: formId })
     : '';
-  const previewUrl = `${printBase}/preview?${layout}&document=${document}`;
+  const savedPreviewUrl = `${printBase}/preview?${layout}&document=${document}`;
+  const [previewUrl, setPreviewUrl] = useState(savedPreviewUrl);
+  const previewSelectionRef = useRef({ formId, document });
+  useEffect(() => {
+    // Switching forms or documents loads that selection; saving settings waits for Update preview.
+    if (
+      previewSelectionRef.current.formId === formId &&
+      previewSelectionRef.current.document === document
+    ) {
+      return;
+    }
+    previewSelectionRef.current = { formId, document };
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
+    setPreviewUrl(savedPreviewUrl);
+  }, [formId, document, savedPreviewUrl]);
+  const previewIsCurrent = previewUrl === savedPreviewUrl;
   const questions = useQuery(
     trpc.printForms.questions.queryOptions(
       validForm && formId ? { printFormId: formId } : skipToken,
@@ -293,8 +318,19 @@ function PrintPreparation({
       },
     }),
   );
+  useEffect(() => {
+    // Auto-save temporarily disables the editor; return keyboard focus once it finishes.
+    if (updateSettings.isPending || !settingFocusRef.current) return;
+    const target = settingFocusRef.current;
+    settingFocusRef.current = null;
+    window.requestAnimationFrame(() => {
+      if (target.isConnected && window.document.activeElement === window.document.body) {
+        target.focus();
+      }
+    });
+  }, [updateSettings.isPending]);
   const packet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
-  const booklet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
+  const preflight = useMutation(trpc.printableAssessmentExport.preflight.mutationOptions());
   const recentExports = useQuery(
     trpc.printableAssessmentExport.list.queryOptions(undefined, {
       refetchInterval: (query) =>
@@ -325,8 +361,7 @@ function PrintPreparation({
     archive.isPending ||
     updateSettings.isPending ||
     packet.isPending ||
-    booklet.isPending ||
-    preparingPdf !== null ||
+    preparingPdf ||
     previewPending;
   const formActionPending = regenerate.isPending || archive.isPending;
 
@@ -342,18 +377,6 @@ function PrintPreparation({
 
   function focusPrepareStatus() {
     window.requestAnimationFrame(() => prepareStatusRef.current?.focus());
-  }
-
-  function focusPrepareAction() {
-    if (snapshotStale) {
-      applyPreviewButtonRef.current?.focus();
-    } else if (prepareButtonRef.current && !prepareButtonRef.current.disabled) {
-      prepareButtonRef.current.focus();
-    } else if (prepareStatusRef.current?.textContent.trim()) {
-      prepareStatusRef.current.focus();
-    } else {
-      applyPreviewButtonRef.current?.focus();
-    }
   }
 
   function requestFormFocus(id: string, waitForSelection = false) {
@@ -386,8 +409,7 @@ function PrintPreparation({
 
   function packetMetadata(
     ids: string[],
-    copyCount: number,
-    outputDocument: PrintDocument | 'booklet',
+    outputDocument: PrintDocument,
     appliedSettings = settings,
   ) {
     return {
@@ -395,7 +417,6 @@ function PrintPreparation({
         printFormId: id,
         settings: settingsForForm(id, appliedSettings),
       })),
-      copies: copyCount,
       document: outputDocument,
     };
   }
@@ -431,27 +452,28 @@ function PrintPreparation({
     if (metadata.document !== 'answer_key') {
       for (const { file } of coverPages) input.append('coverPages', file);
     }
-    const snapshotRequests = metadata.forms.flatMap((form, index) =>
-      (metadata.document === 'booklet'
-        ? (['assessment', 'answer_key'] as const)
-        : ([metadata.document] as PrintDocument[])
-      )
-        .filter((printDocument) => printDocument !== 'assessment' || index < metadata.copies)
-        .map((printDocument) => ({ form, printDocument })),
-    );
+    const snapshotRequests = metadata.forms;
     setPdfPreparationProgress({ completed: 0, total: snapshotRequests.length });
     for (let index = 0; index < snapshotRequests.length; index += SNAPSHOT_PREPARATION_BATCH_SIZE) {
       const batch = snapshotRequests.slice(index, index + SNAPSHOT_PREPARATION_BATCH_SIZE);
       const snapshots = await Promise.all(
-        batch.map(({ form, printDocument }) =>
-          snapshotFor(form.printFormId, formLabel(form.printFormId), form.settings, printDocument),
+        batch.map((form) =>
+          snapshotFor(
+            form.printFormId,
+            formLabel(form.printFormId),
+            form.settings,
+            metadata.document,
+          ),
         ),
       );
       for (const [batchIndex, snapshot] of snapshots.entries()) {
-        const { form, printDocument } = batch[batchIndex];
+        const form = batch[batchIndex];
         input.append(
           'pages',
-          new File([snapshot.html], `form-${formLabel(form.printFormId)}-${printDocument}.html`),
+          new File(
+            [snapshot.html],
+            `form-${formLabel(form.printFormId)}-${metadata.document}.html`,
+          ),
         );
         input.append('snapshotIds', snapshot.id);
       }
@@ -463,24 +485,19 @@ function PrintPreparation({
     return input;
   }
 
-  async function preparePdfInput(
-    metadata: ReturnType<typeof packetMetadata>,
-    target: 'packet' | 'booklet',
-  ) {
+  async function preparePdfInput(metadata: ReturnType<typeof packetMetadata>) {
     setPdfPreparationError(null);
     setPdfPreparationProgress(null);
-    setPreparingPdf(target);
+    setPreparingPdf(true);
     try {
       return await packetInput(metadata);
     } catch (error) {
-      setPdfPreparationError({
-        target,
-        error:
-          error instanceof Error ? error : new Error('The printable pages could not be prepared.'),
-      });
+      setPdfPreparationError(
+        error instanceof Error ? error : new Error('The printable pages could not be prepared.'),
+      );
       throw error;
     } finally {
-      setPreparingPdf(null);
+      setPreparingPdf(false);
       setPdfPreparationProgress(null);
     }
   }
@@ -497,21 +514,164 @@ function PrintPreparation({
     setAutomaticExportIds((ids) => ids.filter((value) => value !== id));
   }, []);
 
-  async function downloadPacket(
-    ids: string[],
-    copyCount: number,
-    outputDocument: PrintDocument | 'booklet',
-  ) {
+  async function downloadPacket(ids: string[], outputDocument: PrintDocument) {
     download.reset();
     packet.reset();
     try {
       const result = await packet.mutateAsync(
-        await preparePdfInput(packetMetadata(ids, copyCount, outputDocument), 'packet'),
+        await preparePdfInput(packetMetadata(ids, outputDocument)),
       );
       receiveExport(result);
     } catch (error) {
       markStaleSnapshot(error);
       throw error;
+    }
+  }
+
+  function closeCombinedDownload(
+    returnFocus: 'menu' | 'recent' | { formId: string } = 'menu',
+    afterSuccess = false,
+  ) {
+    if (!afterSuccess && (packet.isPending || preparingPdf)) return;
+    combinedRequestRef.current += 1;
+    combinedReturnFocusRef.current = returnFocus;
+    setCombinedDownload(null);
+    preflight.reset();
+    packet.reset();
+    setPdfPreparationError(null);
+  }
+
+  async function openCombinedDownload(outputDocument: PrintDocument) {
+    const ids = [...formIds];
+    const selectedForms = ids.map((id) => ({
+      id,
+      label: formLabel(id),
+      settings: settingsForForm(id),
+    }));
+    const settingsKey = JSON.stringify(packetMetadata(ids, outputDocument));
+    const request = ++combinedRequestRef.current;
+    preflight.reset();
+    packet.reset();
+    setPdfPreparationError(null);
+    setCombinedDownload({
+      document: outputDocument,
+      formIds: ids,
+      settingsKey,
+      coverPageIds: coverPages.map(({ id }) => id),
+      pageCount: null,
+      preparing: true,
+      progress: null,
+      failure: null,
+    });
+    const input = new FormData();
+    input.set('formIds', JSON.stringify(ids));
+    input.set('document', outputDocument);
+    if (outputDocument === 'assessment') {
+      for (const { file } of coverPages) input.append('coverPages', file);
+    }
+    try {
+      const result = await preflight.mutateAsync(input);
+      if (request !== combinedRequestRef.current) return;
+      if (result.failure) {
+        setCombinedDownload(
+          (current) => current && { ...current, preparing: false, failure: result.failure },
+        );
+        return;
+      }
+      const pageCounts: number[] = [];
+      setCombinedDownload(
+        (current) => current && { ...current, progress: { completed: 0, total: ids.length } },
+      );
+      for (let index = 0; index < selectedForms.length; index += SNAPSHOT_PREPARATION_BATCH_SIZE) {
+        const batch = selectedForms.slice(index, index + SNAPSHOT_PREPARATION_BATCH_SIZE);
+        const snapshots = await Promise.allSettled(
+          batch.map((form) => snapshotFor(form.id, form.label, form.settings, outputDocument)),
+        );
+        if (request !== combinedRequestRef.current) return;
+        for (const [batchIndex, snapshot] of snapshots.entries()) {
+          if (snapshot.status === 'rejected') {
+            const form = batch[batchIndex];
+            setCombinedDownload(
+              (current) =>
+                current && {
+                  ...current,
+                  preparing: false,
+                  progress: null,
+                  failure: {
+                    printFormId: form.id,
+                    formLabel: form.label,
+                    message:
+                      snapshot.reason instanceof Error
+                        ? snapshot.reason.message
+                        : `Form ${form.label} could not be prepared.`,
+                  },
+                },
+            );
+            return;
+          }
+          pageCounts.push(countPrintSnapshotPages(snapshot.value.html));
+        }
+        setCombinedDownload(
+          (current) =>
+            current && {
+              ...current,
+              progress: { completed: index + batch.length, total: ids.length },
+            },
+        );
+      }
+      const pageCount = Math.max(...pageCounts) + result.coverPageCount;
+      setCombinedDownload(
+        (current) =>
+          current && {
+            ...current,
+            preparing: false,
+            progress: null,
+            pageCount: pageCount * ids.length <= MAX_PACKET_PAGES ? pageCount : null,
+            failure:
+              pageCount * ids.length > MAX_PACKET_PAGES
+                ? {
+                    message: `This export would exceed ${MAX_PACKET_PAGES.toLocaleString('en-US')} pages. Download fewer forms.`,
+                  }
+                : null,
+          },
+      );
+    } catch (error) {
+      if (request !== combinedRequestRef.current) return;
+      setCombinedDownload(
+        (current) =>
+          current && {
+            ...current,
+            preparing: false,
+            progress: null,
+            failure:
+              error instanceof TRPCClientError
+                ? null
+                : {
+                    message:
+                      error instanceof Error ? error.message : 'The forms could not be checked.',
+                  },
+          },
+      );
+    }
+  }
+
+  async function downloadCombined() {
+    if (!combinedDownload || combinedDownload.pageCount === null) return;
+    if (
+      JSON.stringify(formIds) !== JSON.stringify(combinedDownload.formIds) ||
+      JSON.stringify(packetMetadata(combinedDownload.formIds, combinedDownload.document)) !==
+        combinedDownload.settingsKey ||
+      JSON.stringify(coverPages.map(({ id }) => id)) !==
+        JSON.stringify(combinedDownload.coverPageIds)
+    ) {
+      await openCombinedDownload(combinedDownload.document);
+      return;
+    }
+    try {
+      await downloadPacket(combinedDownload.formIds, combinedDownload.document);
+      closeCombinedDownload('recent', true);
+    } catch {
+      // The modal shows the export error and keeps its download button available for retry.
     }
   }
 
@@ -529,6 +689,7 @@ function PrintPreparation({
       nextSettings ?? forms.data.find((form) => form.id === id)?.settings ?? defaultSettings;
     reset(next, { keepDirtyValues: false });
     setSelectedQuestion(null);
+    setDismissedReviewWarning(null);
     setPreview(null);
   }
 
@@ -617,7 +778,7 @@ function PrintPreparation({
     button.focus();
     formToFocusRef.current = null;
   }, [formId, controlsBusy, isDirty, forms.data, formFocusRequest]);
-  const preparingExport = download.isPending || packet.isPending || preparingPdf === 'packet';
+  const preparingExport = download.isPending || packet.isPending || preparingPdf;
   const onPreviewState = useCallback(
     (state: PreviewState) => {
       setPreview({ url: previewUrl, state });
@@ -633,10 +794,11 @@ function PrintPreparation({
     },
     [previewUrl],
   );
-  const currentPreview = preview?.url === previewUrl ? preview.state : null;
+  const loadedPreview = preview?.url === previewUrl ? preview.state : null;
+  const currentPreview = previewIsCurrent ? loadedPreview : null;
   const omitted = new Map(
-    currentPreview?.status === 'ready'
-      ? currentPreview.warnings.map((warning) => [warning.question_number, warning.message])
+    loadedPreview?.status === 'ready'
+      ? loadedPreview.warnings.map((warning) => [warning.question_number, warning.message])
       : [],
   );
   const includedQuestions = questions.data?.filter(
@@ -656,6 +818,16 @@ function PrintPreparation({
     includedQuestions?.filter(
       (question) => question.concerns.length || omitted.has(question.number),
     ).length ?? 0;
+  const reviewWarningKey = JSON.stringify([
+    formId,
+    includedQuestions
+      ?.filter((question) => question.concerns.length || omitted.has(question.number))
+      .map((question) => [question.number, question.concerns, omitted.get(question.number)]),
+  ]);
+  useEffect(() => {
+    // A warning that disappears should be shown again if it returns later.
+    if (reviewCount === 0) setDismissedReviewWarning(null);
+  }, [reviewCount]);
   const firstReviewQuestion =
     includedOmittedQuestions.at(0) ??
     includedQuestions?.find((question) => question.concerns.length > 0);
@@ -670,7 +842,7 @@ function PrintPreparation({
     !controlsBusy &&
     !archivedPreviewForm &&
     !noQuestionsSelected &&
-    (!formId || isDirty || previewHasError) &&
+    (!formId || isDirty || !previewIsCurrent || previewHasError) &&
     !(groupWork && !formId);
   const canAddForm =
     !controlsBusy &&
@@ -682,6 +854,7 @@ function PrintPreparation({
   const canDownload =
     validForm &&
     !isDirty &&
+    previewIsCurrent &&
     currentPreview?.status === 'ready' &&
     currentPreview.questions > 0 &&
     omitted.size === 0 &&
@@ -692,20 +865,47 @@ function PrintPreparation({
   const selectedFormName = formId ? `Form ${formLabel(formId)}` : null;
   const initialFormError = getAppError<PrintFormsError['ensureInitial']>(ensureInitial.error);
 
-  async function downloadBooklet(studentCount: number) {
-    setCopies(studentCount);
-    download.reset();
-    packet.reset();
-    booklet.reset();
+  async function saveSetting<K extends keyof PrintSettings>(field: K, value: PrintSettings[K]) {
+    if (!formId || archivedPreviewForm) return;
+    const focused = window.document.activeElement;
+    if (focused instanceof HTMLElement && focused.closest('.print-preparation-controls')) {
+      settingFocusRef.current = focused;
+    }
+    const identityDraft = getValues('identityFields');
+    const saveIdentityDraft =
+      field === 'includeCoverPage' && value === false && !!dirtyFields.identityFields;
     try {
-      receiveExport(
-        await booklet.mutateAsync(
-          await preparePdfInput(packetMetadata(formIds, studentCount, 'booklet'), 'booklet'),
-        ),
-      );
-      setShowBookletModal(false);
+      const updated = await updateSettings.mutateAsync({
+        printFormId: formId,
+        settings: {
+          ...settings,
+          [field]: value,
+          ...(saveIdentityDraft
+            ? { identityFields: PrintIdentityFieldsTextSchema.parse(identityDraft) }
+            : {}),
+        },
+        expectedSettings: settings,
+      });
+      reset(updated.settings, { keepDirtyValues: false });
+      if (
+        field !== 'identityFields' &&
+        !saveIdentityDraft &&
+        identityDraft !== updated.settings.identityFields
+      ) {
+        setValue('identityFields', identityDraft, { shouldDirty: true });
+      }
     } catch (error) {
-      markStaleSnapshot(error);
+      if (field === 'includeCoverPage') {
+        setValue('includeCoverPage', settings.includeCoverPage, { shouldDirty: false });
+        if (saveIdentityDraft) void trigger('identityFields');
+      }
+      if (error instanceof TRPCClientError && error.data?.code === 'CONFLICT') {
+        const latest = await forms.refetch();
+        const saved = latest.data?.find((form) => form.id === formId);
+        if (saved && error.message.includes(PRINT_QUESTION_SELECTION_LOCKED_MESSAGE)) {
+          reset(saved.settings, { keepDirtyValues: false });
+        }
+      }
       throw error;
     }
   }
@@ -723,13 +923,14 @@ function PrintPreparation({
     snapshotsRef.current.clear();
     if (exportNeedsNewPreview) void setExportId(null);
     packet.reset();
-    booklet.reset();
     download.reset();
     setPdfPreparationError(null);
     try {
+      let nextFormId = formId;
       if (!formId) {
         const result = await create.mutateAsync({ settings: values });
         void setSelectedForm(result.printFormId);
+        nextFormId = result.printFormId;
         values = result.settings;
       } else {
         const updated = await updateSettings.mutateAsync({
@@ -743,6 +944,10 @@ function PrintPreparation({
         }
       }
       reset(values, { keepDirtyValues: false });
+      if (nextFormId) {
+        const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: nextFormId });
+        setPreviewUrl(`${base}/preview?${printLayoutSearch(values)}&document=${document}`);
+      }
       setRetry((value) => value + 1);
     } catch (error) {
       setPreviewPending(false);
@@ -837,9 +1042,13 @@ function PrintPreparation({
         }}
       />
       <AppErrorAlert
-        error={getAppError<PrintableAssessmentExportError['pdf']>(
-          pdfPreparationError?.target === 'packet' ? pdfPreparationError.error : packet.error,
-        )}
+        error={
+          combinedDownload
+            ? null
+            : getAppError<PrintableAssessmentExportError['pdf']>(
+                pdfPreparationError ?? packet.error,
+              )
+        }
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => {
           packet.reset();
@@ -937,43 +1146,44 @@ function PrintPreparation({
         </Alert>
       )}
       {groupWork && <Alert variant="info">Printing group assessments is not available yet.</Alert>}
-      {reviewCount > 0 && !reviewWarningDismissed && (
-        <Alert
-          variant={includedOmittedCount > 0 ? 'danger' : 'warning'}
-          className="d-flex flex-wrap align-items-center justify-content-between gap-2"
-          closeLabel="Dismiss question warning"
-          dismissible
-          onClose={() => {
-            setReviewWarningDismissed(true);
-            window.requestAnimationFrame(() => printHeadingRef.current?.focus());
-          }}
-        >
-          <span>
-            {includedOmittedCount > 0
-              ? `${includedOmittedCount} ${includedOmittedCount === 1 ? 'question' : 'questions'} could not be included. ${omittedRecovery}`
-              : `${reviewCount} ${reviewCount === 1 ? 'question' : 'questions'} may need adjustments for paper.`}
-          </span>
-          <Button
-            type="button"
-            variant="link"
-            className="p-0"
-            onClick={() => {
-              const target =
-                firstReviewQuestion &&
-                window.document.getElementById(
-                  `print-preparation-question-${firstReviewQuestion.number}`,
-                );
-              target?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-              });
-              target?.focus({ preventScroll: true });
+      {reviewCount > 0 &&
+        (includedOmittedCount > 0 || dismissedReviewWarning !== reviewWarningKey) && (
+          <Alert
+            variant={includedOmittedCount > 0 ? 'danger' : 'warning'}
+            className="d-flex flex-wrap align-items-center justify-content-between gap-2"
+            closeLabel={includedOmittedCount > 0 ? undefined : 'Dismiss question warning'}
+            dismissible={includedOmittedCount === 0}
+            onClose={() => {
+              setDismissedReviewWarning(reviewWarningKey);
+              window.requestAnimationFrame(() => printHeadingRef.current?.focus());
             }}
           >
-            Review questions
-          </Button>
-        </Alert>
-      )}
+            <span>
+              {includedOmittedCount > 0
+                ? `${includedOmittedCount} ${includedOmittedCount === 1 ? 'question' : 'questions'} could not be included. ${omittedRecovery}`
+                : `${reviewCount} ${reviewCount === 1 ? 'question' : 'questions'} may need adjustments for paper.`}
+            </span>
+            <Button
+              type="button"
+              variant="link"
+              className="p-0"
+              onClick={() => {
+                const target =
+                  firstReviewQuestion &&
+                  window.document.getElementById(
+                    `print-preparation-question-${firstReviewQuestion.number}`,
+                  );
+                target?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'center',
+                });
+                target?.focus({ preventScroll: true });
+              }}
+            >
+              Review questions
+            </Button>
+          </Alert>
+        )}
       <form
         className="print-preparation-form"
         noValidate
@@ -999,8 +1209,8 @@ function PrintPreparation({
                     <h2 className="h6 mb-2">Print forms</h2>
                     <p className="small text-muted">
                       Each form keeps its chosen questions, random values, and print settings.
-                      Select a form to preview it. Booklet copies rotate through the current forms
-                      in order.
+                      Select a form to preview it. Combined PDFs include one copy of each current
+                      form in order.
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
                       {formIds.map((id) => {
@@ -1098,7 +1308,7 @@ function PrintPreparation({
                     )}
                     {isDirty && (
                       <p className="small text-muted mt-2 mb-0">
-                        Update the preview to apply your changes before switching forms.
+                        Save your changes before switching forms.
                       </p>
                     )}
                     <p className="small text-muted mt-2 mb-0">
@@ -1147,7 +1357,14 @@ function PrintPreparation({
                     <Form.Select
                       defaultValue={settings.paperSize}
                       disabled={settingsLocked}
-                      {...register('paperSize')}
+                      {...register('paperSize', {
+                        onChange: (event: ChangeEvent<HTMLSelectElement>) => {
+                          void saveSetting(
+                            'paperSize',
+                            event.target.value as PrintSettings['paperSize'],
+                          ).catch(() => {});
+                        },
+                      })}
                     >
                       <option value="Letter">US Letter · 8.5 × 11 in</option>
                       <option value="A4">A4 · 210 × 297 mm</option>
@@ -1158,7 +1375,14 @@ function PrintPreparation({
                     <Form.Select
                       defaultValue={settings.blockSize}
                       disabled={settingsLocked}
-                      {...register('blockSize')}
+                      {...register('blockSize', {
+                        onChange: (event: ChangeEvent<HTMLSelectElement>) => {
+                          void saveSetting(
+                            'blockSize',
+                            event.target.value as PrintSettings['blockSize'],
+                          ).catch(() => {});
+                        },
+                      })}
                     >
                       {Object.entries(BLOCK_SIZE_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>
@@ -1182,11 +1406,15 @@ function PrintPreparation({
                     label="Include default cover page"
                     defaultChecked={settings.includeCoverPage}
                     disabled={settingsLocked}
-                    {...register('includeCoverPage')}
+                    {...register('includeCoverPage', {
+                      onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                        void saveSetting('includeCoverPage', event.target.checked).catch(() => {});
+                      },
+                    })}
                   />
                   {includeCoverPage && (
                     <Form.Group controlId="print-identity-fields">
-                      <Form.Label>Additional student information</Form.Label>
+                      <Form.Label>Additional student fields:</Form.Label>
                       <Form.Control
                         as="textarea"
                         rows={2}
@@ -1212,6 +1440,24 @@ function PrintPreparation({
                         One label per line. Name and Date are always included. Instructions come
                         from the assessment.
                       </Form.Text>
+                      <div className="mt-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className={clsx({
+                            disabled: settingsLocked || !dirtyFields.identityFields,
+                          })}
+                          aria-disabled={settingsLocked || !dirtyFields.identityFields}
+                          onClick={() => {
+                            if (settingsLocked || !dirtyFields.identityFields) return;
+                            void handleSubmit(async (values) => {
+                              await saveSetting('identityFields', values.identityFields);
+                            })().catch(() => {});
+                          }}
+                        >
+                          Save
+                        </Button>
+                      </div>
                     </Form.Group>
                   )}
                   {includeCoverPage && (
@@ -1221,7 +1467,13 @@ function PrintPreparation({
                       label="Include grading table"
                       defaultChecked={settings.includeGradingTable}
                       disabled={settingsLocked}
-                      {...register('includeGradingTable')}
+                      {...register('includeGradingTable', {
+                        onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                          void saveSetting('includeGradingTable', event.target.checked).catch(
+                            () => {},
+                          );
+                        },
+                      })}
                     />
                   )}
                   {includeCoverPage && (
@@ -1232,7 +1484,13 @@ function PrintPreparation({
                         aria-describedby="print-honor-code-help"
                         defaultChecked={settings.includeHonorCode}
                         disabled={settingsLocked}
-                        {...register('includeHonorCode')}
+                        {...register('includeHonorCode', {
+                          onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                            void saveSetting('includeHonorCode', event.target.checked).catch(
+                              () => {},
+                            );
+                          },
+                        })}
                       />
                       <Form.Text id="print-honor-code-help">
                         Uses the assessment’s honor code, or the standard pledge if none is
@@ -1312,7 +1570,7 @@ function PrintPreparation({
                       </ol>
                       <p className="small text-muted mb-0">
                         Uploaded PDFs stay on this page until you reload it. Check a downloaded
-                        student-copy PDF or booklet to see how the pages appear.
+                        student-copy PDF to see how the pages appear.
                       </p>
                     </>
                   )}
@@ -1412,15 +1670,13 @@ function PrintPreparation({
                             checked={!excluded}
                             disabled={settingsLocked || questionSelectionLocked}
                             onChange={(event) => {
-                              setValue(
-                                'excludedQuestions',
-                                event.target.checked
-                                  ? excludedQuestions.filter((number) => number !== question.number)
-                                  : [...excludedQuestions, question.number].sort((a, b) =>
-                                      a.localeCompare(b, undefined, { numeric: true }),
-                                    ),
-                                { shouldDirty: true },
-                              );
+                              const next = event.target.checked
+                                ? excludedQuestions.filter((number) => number !== question.number)
+                                : [...excludedQuestions, question.number].sort((a, b) =>
+                                    a.localeCompare(b, undefined, { numeric: true }),
+                                  );
+                              setValue('excludedQuestions', next, { shouldDirty: true });
+                              void saveSetting('excludedQuestions', next).catch(() => {});
                               if (selectedQuestion?.number === question.number) {
                                 setSelectedQuestion(null);
                               }
@@ -1477,15 +1733,13 @@ function PrintPreparation({
                               value={questionSizes[question.number] ?? ''}
                               onChange={(event) => {
                                 // Homework labels contain dots, which register() treats as nested paths.
-                                setValue(
-                                  'questionSizes',
-                                  {
-                                    ...questionSizes,
-                                    [question.number]: event.target
-                                      .value as PrintSettings['questionSizes'][string],
-                                  },
-                                  { shouldDirty: true },
-                                );
+                                const next = {
+                                  ...questionSizes,
+                                  [question.number]: event.target
+                                    .value as PrintSettings['questionSizes'][string],
+                                };
+                                setValue('questionSizes', next, { shouldDirty: true });
+                                void saveSetting('questionSizes', next).catch(() => {});
                               }}
                             >
                               <option value="">Automatic</option>
@@ -1635,15 +1889,15 @@ function PrintPreparation({
                       <span className="d-flex align-items-center gap-2">
                         <Spinner size="sm" aria-hidden="true" />
                         <span>
-                          {preparingPdf === 'packet' && pdfPreparationProgress
+                          {preparingPdf && pdfPreparationProgress
                             ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
                             : 'Generating…'}
                         </span>
                       </span>
                     ) : download.isError ? (
                       <span className="text-danger">{download.error.message}</span>
-                    ) : pdfPreparationError?.target === 'packet' ? (
-                      <span className="text-danger">{pdfPreparationError.error.message}</span>
+                    ) : !combinedDownload && pdfPreparationError ? (
+                      <span className="text-danger">{pdfPreparationError.message}</span>
                     ) : packet.isError ? (
                       <span className="text-danger">{packet.error.message}</span>
                     ) : exportId && displayedExport?.status === 'succeeded' ? (
@@ -1675,7 +1929,7 @@ function PrintPreparation({
                             <Dropdown.Item
                               onClick={() => {
                                 focusPrepareStatus();
-                                void downloadPacket([formId], 1, 'assessment').catch(() => {});
+                                void downloadPacket([formId], 'assessment').catch(() => {});
                               }}
                             >
                               Download {selectedFormName} (PDF)
@@ -1690,7 +1944,7 @@ function PrintPreparation({
                             <Dropdown.Item
                               onClick={() => {
                                 focusPrepareStatus();
-                                void downloadPacket([formId], 1, 'answer_key').catch(() => {});
+                                void downloadPacket([formId], 'answer_key').catch(() => {});
                               }}
                             >
                               Download {selectedFormName} answer key (PDF)
@@ -1704,37 +1958,28 @@ function PrintPreparation({
                             </Dropdown.Item>
                           </>
                         )}
-                        <Dropdown.Divider />
                         {formIds.length > 1 && (
-                          <Dropdown.Item
-                            onClick={() => {
-                              focusPrepareStatus();
-                              void downloadPacket(formIds, formIds.length, 'assessment').catch(
-                                () => {},
-                              );
-                            }}
-                          >
-                            Download all current forms (PDF)
-                          </Dropdown.Item>
+                          <>
+                            <Dropdown.Divider />
+                            <Dropdown.Item onClick={() => void openCombinedDownload('assessment')}>
+                              Download all forms PDF
+                            </Dropdown.Item>
+                            <Dropdown.Item onClick={() => void openCombinedDownload('answer_key')}>
+                              Download all answer keys PDF
+                            </Dropdown.Item>
+                          </>
                         )}
-                        <Dropdown.Item
-                          onClick={() => {
-                            booklet.reset();
-                            setPdfPreparationError(null);
-                            setShowBookletModal(true);
-                          }}
-                        >
-                          Download booklet PDF…
-                        </Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown>
                   </div>
                 </div>
               </Card.Header>
-              {isDirty && (
+              {(isDirty || !previewIsCurrent) && (
                 <div className="px-3 py-2 bg-warning-subtle small" role="status">
-                  The preview shows your last applied settings. Select Update preview to see your
-                  changes or download files.
+                  The preview shows your last applied settings.{' '}
+                  {isDirty
+                    ? 'Save your changes, then update the preview to see them or download files.'
+                    : 'Select Update preview to see your saved changes or download files.'}
                 </div>
               )}
               {validForm ? (
@@ -1742,7 +1987,11 @@ function PrintPreparation({
                   key={`${previewUrl}:${retry}`}
                   url={previewUrl}
                   document={document}
-                  paperWidth={settings.paperSize === 'Letter' ? 816 : 794}
+                  paperWidth={
+                    new URLSearchParams(previewUrl.split('?')[1]).get('paper_size') === 'Letter'
+                      ? 816
+                      : 794
+                  }
                   selectedQuestion={selectedQuestion}
                   onStateChange={onPreviewState}
                   onSnapshotReady={onSnapshotReady}
@@ -1775,23 +2024,29 @@ function PrintPreparation({
           </div>
         </fieldset>
       </form>
-      <BookletDownloadModal
-        show={showBookletModal}
-        students={copies}
+      <CombinedPdfDownloadModal
+        show={combinedDownload !== null}
+        document={combinedDownload?.document ?? 'assessment'}
+        formCount={combinedDownload?.formIds.length ?? 0}
         enrolledStudents={enrolledStudents}
-        formLabels={formIds.map(formLabel)}
-        pending={booklet.isPending || preparingPdf === 'booklet'}
-        progress={preparingPdf === 'booklet' ? pdfPreparationProgress : null}
-        error={
-          pdfPreparationError?.target === 'booklet' ? pdfPreparationError.error : booklet.error
-        }
-        onHide={() => {
-          setShowBookletModal(false);
-          booklet.reset();
-          setPdfPreparationError(null);
+        pageCount={combinedDownload?.pageCount ?? null}
+        preparing={combinedDownload?.preparing ?? false}
+        downloading={packet.isPending || preparingPdf}
+        progress={combinedDownload?.progress ?? null}
+        failure={combinedDownload?.failure ?? null}
+        error={preflight.error ?? pdfPreparationError ?? packet.error}
+        onHide={() => closeCombinedDownload()}
+        onExited={() => {
+          const target = combinedReturnFocusRef.current;
+          if (target === 'recent') focusAfterDismiss();
+          else if (target === 'menu') prepareButtonRef.current?.focus();
+          else requestFormFocus(target.formId, true);
         }}
-        onExited={focusPrepareAction}
-        onDownload={(students) => void downloadBooklet(students).catch(() => {})}
+        onReviewForm={(id) => {
+          closeCombinedDownload({ formId: id });
+          switchForm(id);
+        }}
+        onDownload={() => void downloadCombined()}
       />
       <Modal
         show={pendingFormAction !== null}

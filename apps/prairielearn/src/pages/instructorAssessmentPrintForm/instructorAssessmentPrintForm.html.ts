@@ -17,7 +17,18 @@ import {
   getPrintCoverFields,
   getPrintFooterLabel,
 } from '../../lib/printing/print-cover.js';
+import { PRINT_FONT_STYLESHEET_URL } from '../../lib/printing/print-fonts.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+
+function cssContent(value: string) {
+  // HTML entities are not decoded in a style tag, so escape CSS and HTML delimiters here.
+  return unsafeHtml(
+    JSON.stringify(value.replaceAll(/\s+/g, ' '))
+      .replaceAll('<', '\\3c ')
+      .replaceAll('>', '\\3e ')
+      .replaceAll('&', '\\26 '),
+  );
+}
 
 export function InstructorAssessmentPrintForm({
   resLocals,
@@ -58,6 +69,12 @@ export function InstructorAssessmentPrintForm({
     document,
     formLabel,
   });
+  const footerCourseAndInstance = [
+    resLocals.course.title ?? resLocals.course.short_name,
+    resLocals.course_instance.long_name ?? resLocals.course_instance.short_name,
+  ]
+    .filter(Boolean)
+    .join('  |  ');
   const { width: paperWidth, height: paperHeight } = PAPER_DIMENSIONS[paperSize];
 
   return html`<!doctype html>
@@ -80,6 +97,10 @@ export function InstructorAssessmentPrintForm({
             ? `${resLocals.assessment_label} answer key`
             : `${resLocals.assessment_label} printable assessment`,
         })}
+        <meta name="referrer" content="no-referrer" />
+        <style data-pagedjs-ignore>
+          @import url('${unsafeHtml(PRINT_FONT_STYLESHEET_URL)}');
+        </style>
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
           window.PagedConfig = { auto: false };
@@ -119,10 +140,17 @@ export function InstructorAssessmentPrintForm({
         ${unsafeHtml(extraHeadersHtml)} ${compiledStylesheetTag('assessment-printing.css')}
         <style>
           @page {
+            @bottom-left {
+              color: #555;
+              content: ${cssContent(footerCourseAndInstance)};
+              font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+              font-size: 8pt;
+            }
+
             @bottom-right {
               color: #555;
               content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
-              font-family: system-ui, sans-serif;
+              font-family: 'Plus Jakarta Sans', Arial, sans-serif;
               font-size: 8pt;
             }
           }
@@ -255,16 +283,6 @@ export function InstructorAssessmentPrintForm({
                           `
                         : ''
                     }
-
-                    <footer>
-                      ${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}
-                      <span
-                        >${getPrintFooterLabel({
-                          document: 'assessment',
-                          formLabel,
-                        })}</span
-                      >
-                    </footer>
                   </article>
                 `
               : ''

@@ -48,7 +48,7 @@ The caller owns the paginated HTML page. It must set `document.documentElement.d
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
-`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy printed pages, sharing fonts and images across repeated copies. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
+`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy each selected form once and add blank pages after shorter forms so every form has the same number of pages. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
 
 ### Word output
 
@@ -56,7 +56,7 @@ Word documents keep text, lists, tables, answer spaces, links, and equations edi
 
 Word can rearrange pages after edits, so its page count may differ from the PDF. Paper size and margins match the printable page. Details boxes keep their headings and content. Response guidance appears below the answer line, while labels and units stay beside it.
 
-The browser saves question text and equations before it splits them into pages, then captures figures once the page layout is complete. `createDocxDocument` turns that content into an editable Word document. The cover and footer stay editable; callers supply them through `PrintableCover` and `footerLabel`.
+The browser saves question text and equations before it splits them into pages, then captures figures once the page layout is complete. `createDocxDocument` turns that content into an editable Word document. The cover and document footer stay editable; callers supply them separately through `PrintableCover` and `footerLabel`.
 
 `cover` may also be a function. It receives the page's root `data-*` attributes, so values known only after rendering, such as the number of questions that rendered successfully, can appear on the cover.
 
@@ -82,7 +82,7 @@ The form's saved label appears on covers and footers. New forms use the first av
 
 `grading_table=true` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
 
-The print preparation page can combine multiple saved print forms and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included in student copies, including individual form downloads. Answer key downloads exclude uploaded covers. Generated page numbers remain within the original form; uploaded pages retain their own appearance.
+The print preparation page can combine all current student forms into one PDF, or all current answer keys into another. Each student form contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled and are included in individual form downloads. Answer key downloads exclude uploaded covers. Shorter forms or answer keys receive blank pages at the end so each form in a combined PDF occupies the same number of pages. Generated page numbers remain within the original form; uploaded pages retain their own appearance.
 
 PDF and Word exports are queued. Each export is a row in `print_exports`, which is the source of truth for its status, result, and attempt count; its input is stored in S3, and its ID is published to PrairieMQ for dispatch. Exports are grouped by course so courses take turns, and total throughput scales with the number of workers. The `processPrintExports` cron job republishes pending exports whose Redis job was lost or interrupted, and fails exports still pending after 24 hours. Workers run on hosts with `printExportWorkerActive` and a browser renderer (local Chromium or Cloudflare). A graceful shutdown returns its attempt; a crashed run is retried once. Downloads are available to the requesting user for 24 hours. The app doesn't delete export files: configure an S3 lifecycle rule on the `print-exports/` prefix that also expires noncurrent versions. PrairieMQ requires a non-clustered Redis without eviction through `nonVolatileRedisUrl`. The queue namespace defaults to a hash of the PostgreSQL host and database, so deployments sharing a Redis stay separate; set `printExportQueuePrefix` when hosts use different aliases for the same database.
 
