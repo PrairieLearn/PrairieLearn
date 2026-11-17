@@ -208,6 +208,7 @@ function PrintPreparation({
   const [snapshotStale, setSnapshotStale] = useState(false);
   const [exportId, setExportId] = useQueryState('export', parseAsString);
   const [automaticExportIds, setAutomaticExportIds] = useState<string[]>([]);
+  const [recentExportsOpen, setRecentExportsOpen] = useState(false);
   const prepareButtonRef = useRef<HTMLButtonElement>(null);
   const prepareStatusRef = useRef<HTMLDivElement>(null);
   const applyPreviewButtonRef = useRef<HTMLButtonElement>(null);
@@ -477,6 +478,7 @@ function PrintPreparation({
   function receiveExport(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
     void setExportId(result.printExportId);
     setAutomaticExportIds((ids) => [...ids, result.printExportId]);
+    setRecentExportsOpen(true);
     void recentExports.refetch();
   }
 
@@ -823,7 +825,11 @@ function PrintPreparation({
         <section aria-label="Recent exports" className="mb-3">
           <Card>
             <Card.Body>
-              <details ref={recentExportsRef}>
+              <details
+                ref={recentExportsRef}
+                open={recentExportsOpen}
+                onToggle={(event) => setRecentExportsOpen(event.currentTarget.open)}
+              >
                 <summary className="h6 mb-0">Recent exports ({recentExports.data.length})</summary>
                 <p className="small text-muted mt-2 mb-2">
                   Files are available for 24 hours. You can start another export while one is
@@ -1617,7 +1623,7 @@ function PrintPreparation({
                     ) : packet.isError ? (
                       <span className="text-danger">{packet.error.message}</span>
                     ) : exportId && displayedExport?.status === 'succeeded' ? (
-                      'File ready. Open Recent exports above to download it.'
+                      <span className="visually-hidden">File ready.</span>
                     ) : exportId && displayedExport?.status === 'failed' ? (
                       <span className="text-danger">
                         {displayedExport.failureMessage ?? 'The file could not be prepared.'}

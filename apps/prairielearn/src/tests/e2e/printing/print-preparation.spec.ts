@@ -122,15 +122,15 @@ test('keeps multiple export links after another file is queued and the page relo
   const copyId = await queuePdf(`Download Form ${label} (PDF)`);
   await expect(page.locator('#print-prepare-status')).toBeFocused();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  const keyId = await queuePdf(`Download Form ${label} answer key (PDF)`);
   const recentExports = page.getByRole('region', { name: 'Recent exports' });
   const copyLink = recentExports.locator(`a[href$="/exports/${copyId}"]`);
-  const keyLink = recentExports.locator(`a[href$="/exports/${keyId}"]`);
   const summary = recentExports.getByText(/^Recent exports \(/);
   await expect(summary).toBeVisible();
-  await expect(copyLink).toHaveCount(1);
-  await expect(copyLink).toBeHidden();
+  await expect(copyLink).toBeVisible({ timeout: 120_000 });
   await summary.click();
+  await expect(copyLink).toBeHidden();
+  const keyId = await queuePdf(`Download Form ${label} answer key (PDF)`);
+  const keyLink = recentExports.locator(`a[href$="/exports/${keyId}"]`);
   await expect(copyLink).toBeVisible({ timeout: 120_000 });
   await expect(keyLink).toBeVisible({ timeout: 120_000 });
 
