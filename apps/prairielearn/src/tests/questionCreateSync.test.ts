@@ -227,7 +227,7 @@ it.each(['upload', 'database'] as const)(
       (await selectCourseById(course.id)).commit_hash,
       await getCourseCommitHash(course.path),
     );
-    const activeChunks = await dumpTableWithSchema('chunks', ChunkSchema);
+    const activeChunks = await chunks.selectChunksForCourse(course.id);
     assert.lengthOf(
       activeChunks.filter((chunk) => chunk.question_id === created.id),
       1,
