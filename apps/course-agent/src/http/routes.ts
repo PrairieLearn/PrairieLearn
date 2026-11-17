@@ -12,7 +12,6 @@ import {
 
 import { uploadKey } from '../conversation/attachments.js';
 import { reportError } from '../monitoring.js';
-import { repositorySnapshotName } from '../sandbox/repository-snapshot.js';
 
 import { isAuthorized } from './auth.js';
 
@@ -86,22 +85,6 @@ app.put('/sandboxes/:id', async (c) => {
   if (!input.success) return c.text('Invalid request', 400);
   await c.env.CourseSandbox.getByName(c.req.param('id')).warmUp(input.data);
   return c.body(null, 204);
-});
-
-// Building a snapshot takes as long as a clone, so the request only starts it and PrairieLearn
-// polls for the result.
-app.post('/repository-snapshots', async (c) => {
-  const input = RepositoryBranchSchema.safeParse(await c.req.json().catch(() => null));
-  if (!input.success) return c.text('Invalid request', 400);
-  const snapshot = c.env.RepositorySnapshot.getByName(repositorySnapshotName(input.data));
-  return c.json(await snapshot.requestBuild(input.data), 202);
-});
-
-app.get('/repository-snapshots', async (c) => {
-  const input = RepositoryBranchSchema.safeParse(c.req.query());
-  if (!input.success) return c.text('Invalid request', 400);
-  const snapshot = c.env.RepositorySnapshot.getByName(repositorySnapshotName(input.data));
-  return c.json(await snapshot.status());
 });
 
 const conversations = new Hono<{ Bindings: Env }>();

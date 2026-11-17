@@ -86,27 +86,6 @@ export const CreateConversationInput = z.strictObject({
   warmSandboxId: z.uuid().optional(),
 });
 
-/**
- * The cached copy of one repository branch that new sandboxes restore instead of cloning, and
- * the build that would replace it. A failed build leaves the previous snapshot in use.
- */
-export const RepositorySnapshotStatusSchema = z.strictObject({
-  build: z.discriminatedUnion('status', [
-    z.strictObject({ status: z.literal('idle') }),
-    z.strictObject({ status: z.literal('building') }),
-    z.strictObject({ status: z.literal('failed'), error: z.string() }),
-  ]),
-  snapshot: z
-    .strictObject({
-      commit: z.string().regex(/^[0-9a-f]{40}$/),
-      bytes: z.number().int().nonnegative(),
-      builtAt: z.iso.datetime(),
-    })
-    .nullable(),
-});
-
-export type RepositorySnapshotStatus = z.infer<typeof RepositorySnapshotStatusSchema>;
-
 // Leave room for base64 encoding within the Durable Object's 2 MB storage-entry limit.
 // TODO: Store review contents in R2 and stream them to PL instead of buffering whole reviews.
 export const MAX_REVIEW_FILE_BYTES = 1024 * 1024;

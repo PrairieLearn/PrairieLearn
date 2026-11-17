@@ -1,9 +1,8 @@
-import type { DirectoryBackupRecord } from '@cloudflare/sandbox';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CourseSandbox } from './sandbox.js';
 
-const restore = vi.hoisted(() => vi.fn());
+const archives = vi.hoisted(() => ({ backup: vi.fn(), restore: vi.fn(), delete: vi.fn() }));
 
 vi.mock('cloudflare:workers', () => ({
   DurableObject: class {
@@ -16,20 +15,35 @@ vi.mock('cloudflare:workers', () => ({
 }));
 vi.mock('@cloudflare/sandbox', () => ({
   DirectoryBackup: class {
-    restore = restore;
+    backup = archives.backup;
+    restore = archives.restore;
+    delete = archives.delete;
   },
 }));
 vi.mock('../monitoring.js', () => ({ logEvent: vi.fn(), reportError: vi.fn() }));
 
-const source = { type: 'github' as const, repository: 'Org/course', branch: 'main' };
+const course = { type: 'github' as const, repository: 'Org/course', branch: 'main' };
 const clone =
   'git clone --depth 1 --single-branch --branch main -- http://repository.internal/Org/course.git /workspace/session/course';
 
+/** The bucket all sandboxes share. */
+function createBucket() {
+  const objects = new Map<string, string>();
+  return {
+    get: async (key: string) => {
+      const value = objects.get(key);
+      return value === undefined ? null : { json: async () => JSON.parse(value) };
+    },
+    put: async (key: string, value: string) => {
+      objects.set(key, value);
+    },
+  };
+}
+
 /** A sandbox whose container records the commands it is asked to run. */
-function createSandbox(snapshot: DirectoryBackupRecord | null) {
+function createSandbox(bucket: ReturnType<typeof createBucket>) {
   const commands: string[] = [];
   const stored = new Map<string, unknown>();
-  let alarm: number | null = null;
   const container = {
     running: false,
     images: {},
@@ -58,73 +72,83 @@ function createSandbox(snapshot: DirectoryBackupRecord | null) {
           put: stored.set.bind(stored),
           delete: stored.delete.bind(stored),
         },
-        setAlarm: async (time: number) => {
-          alarm = time;
-        },
-        deleteAlarm: async () => {
-          alarm = null;
-        },
+        setAlarm: async () => {},
+        deleteAlarm: async () => {},
       },
     } as unknown as DurableObjectState,
-    {
-      SANDBOX_INSTANCE_TYPE: 'standard-2',
-      RepositorySnapshot: { getByName: () => ({ current: async () => snapshot }) },
-    } as unknown as Env,
+    { SANDBOX_INSTANCE_TYPE: 'standard-2', CHECKPOINTS: bucket } as unknown as Env,
   );
-  return { sandbox, commands, container, hasAlarm: () => alarm !== null };
+  return { sandbox, commands, container };
 }
 
-it('clones when the snapshot cannot be restored', async () => {
-  const { sandbox, commands } = createSandbox({ id: 'snapshot' } as DirectoryBackupRecord);
-  restore.mockRejectedValueOnce(new Error('BACKUP_NOT_FOUND'));
-  expect(await sandbox.addCourseFiles(source)).toEqual({ source: 'clone' });
-  expect(commands).toEqual([
-    'mkdir /workspace/session/course',
-    'rm -rf /workspace/session/course',
-    clone,
-    'chown root:root /workspace/session',
-  ]);
+/** Start a conversation's sandbox and report which commands it ran to get the course files. */
+async function startConversation(bucket: ReturnType<typeof createBucket>) {
+  const { sandbox, commands } = createSandbox(bucket);
+  await sandbox.addCourseFiles(course);
+  return commands;
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.resetAllMocks();
 });
 
-describe('a sandbox warmed before its conversation exists', () => {
-  it('is adopted mid-warm-up by the conversation that claims it, loading the course once', async () => {
-    const { sandbox, commands, container, hasAlarm } = createSandbox(null);
-    let finishStarting = () => {};
-    container.setInactivityTimeout = () =>
-      new Promise<void>((resolve) => {
-        finishStarting = resolve;
-      });
-    await sandbox.warmUp(source);
-    expect(await sandbox.claim(source, 'conversation')).toBe(true);
-    // The runner connects once prepare() returns, and that connection kills the agent user's
-    // processes in a sandbox that has not finished starting.
-    const prepared = vi.fn();
-    const preparing = sandbox.prepare(source, null).then(prepared);
-    await new Promise((resolve) => setTimeout(resolve));
-    expect(prepared).not.toHaveBeenCalled();
-    finishStarting();
-    await preparing;
-    expect(prepared).toHaveBeenCalledWith(expect.objectContaining({ prewarmed: true }));
-    expect(hasAlarm()).toBe(false);
-    expect(await sandbox.addCourseFiles(source)).toEqual({ source: 'clone' });
+describe('a new conversation on a large GitHub course', () => {
+  beforeEach(() => {
+    // Only slow clones are saved. Each clock reading is a minute after the last, so every clone
+    // here counts as slow.
+    let now = 0;
+    vi.spyOn(Date, 'now').mockImplementation(() => (now += 60_000));
+  });
+
+  it('clones the first time and restores the saved copy the next time', async () => {
+    const bucket = createBucket();
+    archives.backup.mockResolvedValue({ id: 'saved copy' });
+
+    expect(await startConversation(bucket)).toContain(clone);
+
+    expect(await startConversation(bucket)).not.toContain(clone);
+    expect(archives.restore).toHaveBeenCalledWith({ id: 'saved copy' }, expect.anything());
+  });
+
+  it('still starts when the saved copy is damaged, and replaces it', async () => {
+    const bucket = createBucket();
+    archives.backup.mockResolvedValueOnce({ id: 'damaged copy' });
+    await startConversation(bucket);
+
+    archives.restore.mockRejectedValueOnce(new Error('BACKUP_INTEGRITY'));
+    archives.backup.mockResolvedValueOnce({ id: 'new copy' });
+    expect(await startConversation(bucket)).toContain(clone);
+    expect(archives.delete).toHaveBeenCalledWith({ id: 'damaged copy' });
+
+    await startConversation(bucket);
+    expect(archives.restore).toHaveBeenLastCalledWith({ id: 'new copy' }, expect.anything());
+  });
+});
+
+describe('a sandbox started while the first message is typed', () => {
+  it('is used by the conversation that sends the message, loading the course once', async () => {
+    const { sandbox, commands } = createSandbox(createBucket());
+    await sandbox.warmUp(course);
+    expect(await sandbox.claim(course, 'conversation')).toBe(true);
+    expect(await sandbox.prepare(course, null)).toMatchObject({ prewarmed: true });
+    await sandbox.addCourseFiles(course);
     expect(commands.filter((command) => command === clone)).toHaveLength(1);
   });
 
-  it('cannot be claimed for another branch or by a second conversation', async () => {
-    const { sandbox } = createSandbox(null);
-    await sandbox.warmUp(source);
-    expect(await sandbox.claim({ ...source, branch: 'other' }, 'conversation')).toBe(false);
-    expect(await sandbox.claim(source, 'conversation')).toBe(true);
-    expect(await sandbox.claim(source, 'another conversation')).toBe(false);
+  it('is not given to another branch or to a second conversation', async () => {
+    const { sandbox } = createSandbox(createBucket());
+    await sandbox.warmUp(course);
+    expect(await sandbox.claim({ ...course, branch: 'other' }, 'conversation')).toBe(false);
+    expect(await sandbox.claim(course, 'conversation')).toBe(true);
+    expect(await sandbox.claim(course, 'another conversation')).toBe(false);
   });
 
-  it('removes itself when no conversation adopts it, leaving the ID usable for a cold start', async () => {
-    const { sandbox, commands, container } = createSandbox(null);
-    await sandbox.warmUp(source);
-    await vi.waitFor(() => expect(commands).toContain('chown root:root /workspace/session'));
+  it('removes itself if the message is never sent', async () => {
+    const { sandbox, container } = createSandbox(createBucket());
+    await sandbox.warmUp(course);
     await sandbox.alarm();
     expect(container.running).toBe(false);
-    expect(await sandbox.claim(source, 'conversation')).toBe(false);
-    expect(await sandbox.prepare(source, null)).toMatchObject({ prewarmed: false });
+    expect(await sandbox.claim(course, 'conversation')).toBe(false);
   });
 });

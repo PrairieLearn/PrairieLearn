@@ -8,7 +8,6 @@ import { UploadQuota } from '../conversation/attachments.js';
 import app from './routes.js';
 
 vi.mock('agents', () => ({ getAgentByName: vi.fn() }));
-vi.mock('cloudflare:workers', () => ({ DurableObject: class {} }));
 vi.mock('../monitoring.js', () => ({ reportError: vi.fn() }));
 
 describe('private course agent service', () => {
