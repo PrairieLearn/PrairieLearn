@@ -96,7 +96,8 @@ export function CombinedPdfDownloadModal({
               </p>
             )}
             <p className="small text-muted mb-0">
-              The PDF downloads when ready and remains in Recent exports.
+              Your PDF file will begin downloading when ready and will appear in Recent exports
+              afterward.
             </p>
           </>
         )}
