@@ -159,9 +159,11 @@ test.describe('Manual grading rubric submission panel update', () => {
     });
     await expect(page.locator('body[data-e2e-no-reload="true"]')).toBeVisible();
 
+    // The submission panel should have been replaced via AJAX with updated rubric feedback.
     const feedbackItems = page.locator(
       '[data-testid="submission-with-feedback"] [data-testid^="rubric-item-container-"]',
     );
+    await expect(feedbackItems.first()).toBeVisible({ timeout: 5000 });
     await expect(feedbackItems).toHaveCount(1);
     await expect(feedbackItems.getByTestId('rubric-item-description')).toHaveText('Partial credit');
     await expect(feedbackItems.getByTestId('rubric-item-points')).toBeVisible();
