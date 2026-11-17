@@ -154,6 +154,7 @@ async function render({
       userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
+      courseInstanceId: variant.course_instance_id,
     },
   });
 

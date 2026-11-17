@@ -62,6 +62,24 @@ WHERE
 ORDER BY
   sl.name;
 
+-- BLOCK select_student_label_names_for_users
+SELECT
+  e.user_id,
+  array_agg(
+    sl.name
+    ORDER BY
+      sl.name
+  ) AS labels
+FROM
+  enrollments AS e
+  JOIN student_label_enrollments AS sle ON sle.enrollment_id = e.id
+  JOIN student_labels AS sl ON sl.id = sle.student_label_id
+WHERE
+  e.course_instance_id = $course_instance_id
+  AND e.user_id = ANY ($user_ids::bigint[])
+GROUP BY
+  e.user_id;
+
 -- BLOCK add_label_to_enrollments
 INSERT INTO
   student_label_enrollments (enrollment_id, student_label_id)
