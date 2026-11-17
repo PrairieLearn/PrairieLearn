@@ -1441,10 +1441,6 @@ function PrintPreparation({
                         Save your changes before switching forms.
                       </p>
                     )}
-                    <p className="small text-muted mt-2 mb-0">
-                      Regenerate keeps the letter and adds the next number, such as A2. It archives
-                      the original, which remains available below.
-                    </p>
                   </Card.Body>
                 </Card>
               )}
