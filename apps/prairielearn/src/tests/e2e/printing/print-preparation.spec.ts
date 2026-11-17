@@ -133,7 +133,7 @@ test('keeps unsaved print settings when another tab updates the shared form', as
   });
   await page.getByRole('button', { name: 'Update preview' }).click();
   await expect(
-    page.getByRole('alert').getByText('This form’s settings changed in another tab.'),
+    page.getByRole('alert').getByText('This form’s settings changed while you were editing.'),
   ).toBeVisible();
   await expect(page.getByLabel('Paper size')).toHaveValue('A4');
   await expect(page.getByLabel('Include grading table')).toBeChecked();
