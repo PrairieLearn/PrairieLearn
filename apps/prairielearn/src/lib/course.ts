@@ -156,6 +156,7 @@ export async function pullAndUpdateCourse({
             cancelSignal: AbortSignal.timeout(30_000),
           });
 
+          job.info('Check that branch exists in remote git repository');
           try {
             await job.exec(
               'git',
@@ -172,11 +173,15 @@ export async function pullAndUpdateCourse({
           job.info('Clean local files not in remote git repository');
           await job.exec('git', ['clean', '-fdx'], gitOptions);
 
-          job.info('Check out current branch');
-          await job.exec('git', ['checkout', branch], gitOptions);
-
-          job.info('Reset state to remote git repository');
-          await job.exec('git', ['reset', '--hard', `origin/${branch}`], gitOptions);
+          // `-B` creates or resets the local branch to match the remote. The
+          // explicit start point also prevents git from treating the branch
+          // name as a path when a file with the same name exists.
+          job.info('Check out branch and reset to remote git repository');
+          await job.exec(
+            'git',
+            ['checkout', '-B', branch, '--track', `origin/${branch}`],
+            gitOptions,
+          );
         }
 
         // After either cloning or fetching and resetting from Git, we'll load the
