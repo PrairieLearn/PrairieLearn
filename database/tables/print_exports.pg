@@ -9,7 +9,7 @@ columns
     format: text not null
     id: bigint not null default nextval('print_exports_id_seq'::regclass)
     input_key: text not null
-    label: text
+    label: text not null
     output_key: text
     size_bytes: integer
     status: text not null default 'pending'::text

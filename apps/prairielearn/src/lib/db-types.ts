@@ -1429,7 +1429,7 @@ export const PrintExportSchema = z.object({
   format: z.enum(['pdf', 'docx']),
   id: IdSchema,
   input_key: z.string(),
-  label: z.string().nullable(),
+  label: z.string(),
   output_key: z.string().nullable(),
   size_bytes: z.number().nullable(),
   status: z.enum(['pending', 'succeeded', 'failed']),
@@ -1444,6 +1444,7 @@ export const PrintFormSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
   label: z.string().regex(/^[A-Z]+([2-9]|[1-9][0-9]+)?$/),
+  question_selection_locked_at: DateFromISOString.nullable(),
   settings: PrintSettingsSchema,
   user_id: IdSchema,
 });
