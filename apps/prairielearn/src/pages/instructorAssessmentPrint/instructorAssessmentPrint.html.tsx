@@ -108,7 +108,7 @@ function AutomaticExportDownload({
   onFinished,
 }: {
   printExportId: string;
-  onFinished: (id: string) => void;
+  onFinished: (id: string, succeeded: boolean) => void;
 }) {
   const trpc = useTRPC();
   const completedRef = useRef(false);
@@ -128,9 +128,11 @@ function AutomaticExportDownload({
     if (status.data.status === 'succeeded' && status.data.downloadUrl) {
       const link = window.document.createElement('a');
       link.href = status.data.downloadUrl;
+      onFinished(printExportId, true);
       link.click();
+    } else {
+      onFinished(printExportId, false);
     }
-    onFinished(printExportId);
   }, [status.data, onFinished, printExportId]);
   return null;
 }
@@ -176,6 +178,21 @@ function PrintPreparation({
     return form.label;
   }
   const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
+  const completedCoverIdsRef = useRef(new Set<string>());
+  const exportCoverIdsRef = useRef(new Map<string, string[]>());
+  const coversAwaitingDownload = coverPages.some(({ id }) => !completedCoverIdsRef.current.has(id));
+  useEffect(() => {
+    // Uploaded PDFs live only in this tab until a student-copy PDF includes them.
+    if (!coversAwaitingDownload) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (coverPages.every(({ id }) => completedCoverIdsRef.current.has(id))) return;
+      event.preventDefault();
+      // oxlint-disable-next-line typescript/no-deprecated -- Required for older browsers.
+      event.returnValue = 'prompt';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [coverPages, coversAwaitingDownload]);
   const [combinedDownload, setCombinedDownload] = useState<{
     document: PrintDocument;
     formIds: string[];
@@ -502,7 +519,13 @@ function PrintPreparation({
     }
   }
 
-  function receiveExport(result: Awaited<ReturnType<typeof packet.mutateAsync>>) {
+  function receiveExport(
+    result: Awaited<ReturnType<typeof packet.mutateAsync>>,
+    includedCoverIds: string[] = [],
+  ) {
+    if (includedCoverIds.length > 0) {
+      exportCoverIdsRef.current.set(result.printExportId, includedCoverIds);
+    }
     void setExportId(result.printExportId);
     setAutomaticExportIds((ids) => [...ids, result.printExportId]);
     setRecentExportsOpen(true);
@@ -510,18 +533,25 @@ function PrintPreparation({
     void forms.refetch();
   }
 
-  const finishAutomaticExport = useCallback((id: string) => {
+  const finishAutomaticExport = useCallback((id: string, succeeded: boolean) => {
+    if (succeeded) {
+      for (const coverId of exportCoverIdsRef.current.get(id) ?? []) {
+        completedCoverIdsRef.current.add(coverId);
+      }
+    }
+    exportCoverIdsRef.current.delete(id);
     setAutomaticExportIds((ids) => ids.filter((value) => value !== id));
   }, []);
 
   async function downloadPacket(ids: string[], outputDocument: PrintDocument) {
     download.reset();
     packet.reset();
+    const includedCoverIds = outputDocument === 'assessment' ? coverPages.map(({ id }) => id) : [];
     try {
       const result = await packet.mutateAsync(
         await preparePdfInput(packetMetadata(ids, outputDocument)),
       );
-      receiveExport(result);
+      receiveExport(result, includedCoverIds);
     } catch (error) {
       markStaleSnapshot(error);
       throw error;
@@ -1569,8 +1599,9 @@ function PrintPreparation({
                         ))}
                       </ol>
                       <p className="small text-muted mb-0">
-                        Uploaded PDFs stay on this page until you reload it. Check a downloaded
-                        student-copy PDF to see how the pages appear.
+                        Uploaded PDFs are temporary. Closing or reloading this page before a
+                        student-copy PDF is ready will discard them. Check the downloaded file to
+                        see how the pages appear.
                       </p>
                     </>
                   )}

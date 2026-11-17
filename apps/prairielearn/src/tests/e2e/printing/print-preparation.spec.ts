@@ -670,6 +670,13 @@ test('combines current forms and answer keys with equal page counts and custom c
     buffer: Buffer.from(await cover.save()),
   });
   await expect(page.getByText('extended-instructions.pdf', { exact: true })).toBeVisible();
+  const wouldWarnOnUnload = () =>
+    page.evaluate(() => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+  expect(await wouldWarnOnUnload()).toBe(true);
   const formPageCount = pagesPerForm + 1;
   await chooseDownload(page, 'Download all forms PDF');
   const formsModal = page.getByRole('dialog', { name: 'Download all forms PDF', exact: true });
@@ -687,6 +694,14 @@ test('combines current forms and answer keys with equal page counts and custom c
   expect(packet.getPage(1).getSize()).toEqual({ width: 400, height: 600 });
   expect(packet.getPage(pagesPerForm + 2).getSize()).toEqual({ width: 400, height: 600 });
   await expect(formsModal).toBeHidden();
+  expect(await wouldWarnOnUnload()).toBe(false);
+
+  await page.getByLabel('Custom cover pages (PDF)', { exact: true }).setInputFiles({
+    name: 'new-instructions.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from(await cover.save()),
+  });
+  expect(await wouldWarnOnUnload()).toBe(true);
 
   const pagesPerAnswerKey = Math.max(...answerKeyPageCounts);
   await chooseDownload(page, 'Download all answer keys PDF');
@@ -709,6 +724,9 @@ test('combines current forms and answer keys with equal page counts and custom c
     pagesPerAnswerKey * formIds.length,
   );
   await expect(keysModal).toBeHidden();
+  expect(await wouldWarnOnUnload()).toBe(true);
+  await page.getByRole('button', { name: 'Remove cover new-instructions.pdf' }).click();
+  expect(await wouldWarnOnUnload()).toBe(false);
   await page.getByRole('button', { name: 'Student copy', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,

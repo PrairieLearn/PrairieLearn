@@ -53,7 +53,7 @@ The default cover has spaces for **Name**, **Date**, **Student ID**, and **Secti
 
 Use **Custom cover pages (PDF)** to upload your own instructions or other pages for student copies. In each student copy, they appear in the listed order after the default cover and before the questions. If you turn off the default cover, your uploaded pages come first.
 
-You can add up to 10 PDFs, with a combined limit of 100 pages and 10 MB. Uploaded covers are excluded from answer keys and Word files. If you reload the page, you will need to add the files again.
+You can add up to 10 PDFs, with a combined limit of 100 pages and 10 MB. Uploaded covers are excluded from answer keys and Word files. If you try to close or reload the page before a student-copy PDF containing them is ready, PrairieLearn asks you to confirm leaving. After a reload, you will need to add the files again.
 
 Upload readable PDFs without password protection. If a fillable cover is rejected or its entries do not appear, print it to a new PDF and upload that copy. If an upload is rejected, follow the message or remove the file.
 
