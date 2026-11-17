@@ -64,14 +64,14 @@
   position: relative;
   overflow: hidden;
   height: 70dvh;
-  background: #e7eaee;
+  background: #d1d5db;
 }
 
 .print-preparation-preview {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #e7eaee;
+  background: #d1d5db;
 }
 
 .print-preparation-preview[data-active='false'] {
@@ -94,7 +94,7 @@
 .print-preparation-overlay {
   position: absolute;
   inset: 0;
-  background: #e7eaee;
+  background: #d1d5db;
   display: flex;
   align-items: center;
   justify-content: center;

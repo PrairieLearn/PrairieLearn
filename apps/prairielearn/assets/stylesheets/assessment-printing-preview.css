@@ -47,7 +47,7 @@ html[data-print-status='error'] #assessment-print-status {
 @media screen {
   html,
   body {
-    background: #e7eaee;
+    background: #d1d5db;
     margin: 0;
   }
 
