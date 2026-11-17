@@ -148,7 +148,7 @@ function getPrintExportLabel(work: PrintExportWork): string {
   }
   const { document, copies, snapshots } = work;
   if (document === 'booklet') {
-    return `booklet PDF for ${copies} ${copies === 1 ? 'student' : 'students'}`;
+    return `Booklet PDF for ${copies} ${copies === 1 ? 'student' : 'students'}`;
   }
   const formLabels = new Set(snapshots.map((snapshot) => snapshot.formLabel));
   if (formLabels.size === 1) {
@@ -163,8 +163,8 @@ function getPrintExportLabel(work: PrintExportWork): string {
 function printableFailureMessage(error: unknown, format: PrintExportWork['format']): string | null {
   if (error instanceof HttpStatusError && error.status === 504) {
     return format === 'docx'
-      ? 'Rendering took too long. Try again.'
-      : 'Rendering took too long. Try again, or export fewer forms at once.';
+      ? 'The Word document took too long to prepare. Try again.'
+      : 'The PDF took too long to prepare. Try again.';
   }
   if (
     error instanceof PrintPacketError ||
@@ -186,7 +186,10 @@ export async function queuePrintExport({
   formSelections: { printFormId: string; excludedQuestions: string[] }[];
 }): Promise<string> {
   if (shutdownController.signal.aborted || !getQueue()) {
-    throw new HttpStatusError(503, 'Print export queuing is not available on this server.');
+    throw new HttpStatusError(
+      503,
+      'Downloads are unavailable right now. Try again later or contact support.',
+    );
   }
   const bucket = getFileStoreS3Bucket();
   const inputKey = `${KEY_PREFIX}input/${randomUUID()}.json`;
@@ -276,7 +279,7 @@ async function processPrintExport(printExportId: string) {
       status: 'failed',
       failureMessage:
         failureMessage ??
-        `The ${format === 'docx' ? 'Word document' : 'PDF'} could not be prepared because of a server error.`,
+        `The ${format === 'docx' ? 'Word document' : 'PDF'} could not be prepared. Try again or contact support if this continues.`,
     });
   } finally {
     getHistogram(meter, 'print.export.duration', {
@@ -288,8 +291,8 @@ async function processPrintExport(printExportId: string) {
 
 function exhaustedFailureMessage(format: PrintExportWork['format']) {
   return format === 'docx'
-    ? 'The Word document stopped repeatedly while rendering. Try again or contact support.'
-    : 'The export stopped repeatedly while rendering. Try fewer forms or contact support.';
+    ? 'The Word document could not be prepared after repeated attempts. Try again or contact support.'
+    : 'The PDF could not be prepared after repeated attempts. Try fewer forms or copies, or contact support.';
 }
 
 /** Republishes pending exports whose Redis job was lost, failed, or interrupted. */

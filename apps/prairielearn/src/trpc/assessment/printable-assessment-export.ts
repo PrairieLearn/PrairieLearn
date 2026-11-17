@@ -87,7 +87,10 @@ export const printableAssessmentExportRouter = t.router({
         pages.data.some((file) => file.size > MAX_PRINT_SNAPSHOT_BYTES) ||
         pages.data.reduce((size, file) => size + file.size, 0) > MAX_PRINT_PACKET_SNAPSHOT_BYTES
       ) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'The printable pages are too large.' });
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'The download contains too much content. Try fewer forms or questions.',
+        });
       }
       try {
         const covers =
@@ -107,7 +110,7 @@ export const printableAssessmentExportRouter = t.router({
         if (pages.data.length !== entries.length) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'The printable pages are incomplete.',
+            message: 'The preview pages are incomplete. Update the preview and try again.',
           });
         }
         if (!snapshotIds.success || snapshotIds.data.length !== entries.length) {
@@ -254,7 +257,7 @@ export const printableAssessmentExportRouter = t.router({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'The PDF could not be prepared because of a server error.',
+          message: 'The PDF could not be prepared. Try again or contact support if this continues.',
           cause: error,
         });
       }

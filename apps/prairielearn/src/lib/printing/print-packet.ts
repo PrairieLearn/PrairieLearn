@@ -82,7 +82,7 @@ export async function readPrintCoverPages(
     }
     if (needsAppearances) {
       throw new PrintPacketError(
-        `“${file.name}” has form fields that need a PDF viewer to draw them. Print or export it as a flattened PDF, then upload that file.`,
+        `“${file.name}” has form fields that may print blank. Print it to a new PDF, then upload that copy.`,
       );
     }
     pageCount += cover.getPageCount();

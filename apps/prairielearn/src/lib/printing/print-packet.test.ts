@@ -126,10 +126,14 @@ describe('print packets', () => {
       ).toBeInstanceOf(PDFRawStream);
     }
     form.acroForm.dict.set(PDFName.of('NeedAppearances'), PDFBool.True);
-    await expect(readPrintCoverPages([await asFile()])).rejects.toThrow('flattened PDF');
+    await expect(readPrintCoverPages([await asFile()])).rejects.toThrow(
+      'form fields that may print blank',
+    );
     form.acroForm.dict.delete(PDFName.of('NeedAppearances'));
     name.acroField.getWidgets()[0].dict.delete(PDFName.of('AP'));
-    await expect(readPrintCoverPages([await asFile()])).rejects.toThrow('flattened PDF');
+    await expect(readPrintCoverPages([await asFile()])).rejects.toThrow(
+      'form fields that may print blank',
+    );
     const encrypted = await PDFDocument.create();
     encrypted.addPage();
     encrypted.context.trailerInfo.Encrypt = encrypted.context.obj({});

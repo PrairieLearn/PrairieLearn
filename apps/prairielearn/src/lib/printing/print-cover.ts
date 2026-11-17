@@ -17,12 +17,12 @@ export const BLANK_NAME_PLACEHOLDER = '____________________________';
 
 export const DEFAULT_ASSESSMENT_INSTRUCTIONS: readonly string[] = [
   'Write your name and identifying information clearly above.',
-  'Show your work and place each final answer in the space provided.',
+  'Answer each question as directed. Show your work where requested.',
   'If you need more room, identify the question number on any additional page.',
 ];
 
 export function answerKeyDescription(formLabel: string): string {
-  return `Correct answers are shown with the questions for assessment Form ${formLabel}.`;
+  return `This key shows any answers provided by the questions in Form ${formLabel}.`;
 }
 
 export function getPrintCoverFields({

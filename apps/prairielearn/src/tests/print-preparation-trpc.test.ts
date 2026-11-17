@@ -353,7 +353,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
     await expect(
       api.printableAssessmentExport.pdf.mutate(packetInput(otherUserForm.id)),
-    ).rejects.toThrow('The printable pages are incomplete.');
+    ).rejects.toThrow('The preview pages are incomplete. Update the preview and try again.');
     const otherAssessmentApi = client(otherAssessment.id);
     const otherForm = await otherAssessmentApi.printForms.create.mutate();
     expect(otherForm.label).toBe('A');
@@ -903,7 +903,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       sizeBytes: null,
       label: expect.any(String),
       failureMessage:
-        'The export stopped repeatedly while rendering. Try fewer forms or contact support.',
+        'The PDF could not be prepared after repeated attempts. Try fewer forms or copies, or contact support.',
     });
   });
 
