@@ -138,7 +138,10 @@ export async function pullAndUpdateCourse({
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);
 
           job.info('Fetch from remote git repository');
-          await job.exec('git', ['fetch'], {
+          // `--prune` removes remote-tracking refs for branches that no longer
+          // exist on the remote. Without it, a deleted branch would leave a stale
+          // `origin/<branch>` ref behind, and we'd silently keep resetting to it.
+          await job.exec('git', ['fetch', '--prune'], {
             ...gitOptions,
             // During GitHub incidents, fetches could take a long time. We use a
             // timeout to ensure that the sync won't hang indefinitely.
@@ -152,6 +155,16 @@ export async function pullAndUpdateCourse({
             // serving 504 errors to clients from a long request.
             cancelSignal: AbortSignal.timeout(30_000),
           });
+
+          try {
+            await job.exec(
+              'git',
+              ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}`],
+              gitOptions,
+            );
+          } catch {
+            job.fail(`Branch "${branch}" does not exist in the remote git repository.`);
+          }
 
           job.info('Restore staged and unstaged changes');
           await job.exec('git', ['restore', '--staged', '--worktree', '.'], gitOptions);
