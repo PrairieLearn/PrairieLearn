@@ -38,7 +38,7 @@ Starting the first PDF or Word download for a form fixes its question selection.
 
 To replace a form with a new version, select the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. Randomized assessments get new random values. The new form keeps the old form's paper and default cover settings, while question exclusions and individual spacing reset. Review the new questions and answer key before downloading it. Previous forms keep their chosen questions and settings and remain available under **Previous forms**. Use the archive button beside a non-A form to remove it from the current set. Adding a form after archiving C creates C2.
 
-A form does not save a separate copy of the question content. If you edit a question in your course later, a new download of an earlier form can change, including its answer key. Download and keep the matching student copy and answer key for each form. After editing a question, check both again before printing or grading.
+A form does not save a separate copy of question content, assessment instructions, or the honor code. Editing any of these can change a later download of an earlier form. Download and keep the matching student copy and answer key for each form. After editing course content, check both again before printing or grading.
 
 ## Cover pages
 

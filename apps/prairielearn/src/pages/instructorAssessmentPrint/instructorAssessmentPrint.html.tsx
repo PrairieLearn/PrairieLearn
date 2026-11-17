@@ -1115,8 +1115,8 @@ function PrintPreparation({
                       <summary className="h6 mb-0">Previous forms ({archivedForms.length})</summary>
                       <p className="small text-muted mt-2 mb-2">
                         Previous forms keep their chosen questions and print settings. You cannot
-                        edit these settings. Edits to a question in your course may affect a new
-                        download of a previous form.
+                        edit these settings. Later edits to the assessment or its questions may
+                        affect a new download of a previous form.
                       </p>
                       <div className="d-flex flex-column gap-2">
                         {archivedForms.map((form) => (
@@ -1824,8 +1824,8 @@ function PrintPreparation({
           ) : (
             <p className="mb-0">
               This will remove Form {pendingFormAction?.label} from the current set. You can still
-              preview or download it under Previous forms, but later edits to its questions may
-              affect a new download.
+              preview or download it under Previous forms, but later edits to the assessment or its
+              questions may affect a new download.
             </p>
           )}
         </Modal.Body>
