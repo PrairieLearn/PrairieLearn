@@ -85,6 +85,8 @@ PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conver
 
 `offer_page` is a native dynamic tool, registered when a thread starts, with the catalog's keys as its `page` enum and the catalog's params as its `params` object. The DO resolves a target with `POST /pl/api/v1/course/:course_id/agent_navigation`, authenticated with `PL_SERVICE_TOKEN` and the conversation's ID, so PrairieLearn looks the names up as the conversation's user. A page or name PrairieLearn does not know fails the tool call with PrairieLearn's message. Otherwise the DO emits a `data-navigation` part (`NavigationPartSchema`) carrying the resolved URL, label, and subtitle, which the chat shows as a link. The page changes only when the instructor follows it.
 
+`offer_reload` is registered the same way for every thread and takes no arguments. It emits a `data-reload` part with no data, which the chat shows as a button that reloads the page the instructor is viewing when they click it. The agent uses it once approved changes are saved and synced and the instructor is already on a page that shows them.
+
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:

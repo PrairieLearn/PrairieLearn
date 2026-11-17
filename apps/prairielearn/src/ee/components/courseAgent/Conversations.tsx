@@ -49,7 +49,7 @@ import {
 import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
-import { NavigationCard, navigationOf } from './Navigation.js';
+import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -490,7 +490,7 @@ function Chat({
       if (part.type === 'text' || part.type === 'reasoning') {
         return part.text.trim().length > 0;
       }
-      return toolCallOf(part) !== null || navigationOf(part) !== null;
+      return toolCallOf(part) !== null || navigationOf(part) !== null || isReloadPart(part);
     });
   });
   // The server reports the turn's lifecycle before the SDK marks the response active.
@@ -910,6 +910,8 @@ function Message({
       rendered.push(<ReasoningBlock key={key} part={part} />);
     } else if (navigation) {
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
+    } else if (isReloadPart(part)) {
+      rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
       const { reviewId } = ReviewPartSchema.parse(part.data);
       if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId });

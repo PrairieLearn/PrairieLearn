@@ -328,6 +328,7 @@ describe('course agent turns', () => {
         { name: 'list_course_datasets' },
         { name: 'get_course_data' },
         { name: 'offer_page' },
+        { name: 'offer_reload' },
       ],
     });
     const call = (id: number, tool: string, args: unknown) =>
@@ -430,7 +431,7 @@ describe('course agent turns', () => {
       options(() => accepted.resolve(undefined)),
     );
     await accepted.promise;
-    const call = async (id: string, args: unknown) => {
+    const call = async (id: string, args: unknown, tool = 'offer_page') => {
       emit({
         id,
         method: 'item/tool/call',
@@ -439,7 +440,7 @@ describe('course agent turns', () => {
           turnId: 'turn',
           callId: id,
           namespace: null,
-          tool: 'offer_page',
+          tool,
           arguments: args,
         },
       });
@@ -475,9 +476,11 @@ describe('course agent turns', () => {
               },
             },
           },
+          { name: 'offer_reload' },
         ],
       },
     });
+    expect(await call('reload', {}, 'offer_reload')).toMatchObject({ success: true });
     emit({
       method: 'turn/completed',
       params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
@@ -495,6 +498,9 @@ describe('course agent turns', () => {
           subtitle: 'Assessment · Fa25 / hw1',
         },
       },
+    ]);
+    expect(chunks.filter((chunk) => chunk.type === 'data-reload')).toEqual([
+      { type: 'data-reload', id: 'reload:reload', data: {} },
     ]);
   });
 
