@@ -89,6 +89,14 @@ describe('chunks', () => {
       assert.isOk(chunks.questions.has('complex/question'));
     });
 
+    it('should identify question from its directory', () => {
+      const chunks = chunksLib.identifyChunksFromChangedFiles(
+        ['questions/complex/question'],
+        COURSE,
+      );
+      assert.isOk(chunks.questions.has('complex/question'));
+    });
+
     it('should identify simple assessment in simple course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         [
@@ -413,7 +421,8 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'full',
+        mode: 'changed-files',
+        changedFiles: [],
       });
 
       // Reload chunks.
@@ -470,7 +479,8 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'full',
+        mode: 'changed-files',
+        changedFiles: [],
       });
 
       // Reload chunks.
@@ -636,7 +646,8 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'full',
+        mode: 'changed-files',
+        changedFiles: [],
       });
 
       // Reload the chunks
@@ -714,7 +725,8 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'full',
+        mode: 'changed-files',
+        changedFiles: [],
       });
 
       // Reload the chunks
@@ -819,7 +831,8 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'full',
+        mode: 'changed-files',
+        changedFiles: [],
       });
 
       // Re-read chunks from DB
@@ -1024,7 +1037,8 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'full',
+        mode: 'changed-files',
+        changedFiles: [],
       });
 
       // Re-read chunks from DB
@@ -1173,7 +1187,8 @@ describe('chunks', () => {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-        mode: 'full',
+        mode: 'changed-files',
+        changedFiles: [],
       });
 
       // Fetch again and ensure counts are unchanged
