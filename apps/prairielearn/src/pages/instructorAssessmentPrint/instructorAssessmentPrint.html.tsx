@@ -150,7 +150,10 @@ function PrintPreparation({
 }: PrintPreparationProps) {
   const trpc = useTRPC();
   const forms = useQuery(
-    trpc.printForms.list.queryOptions(undefined, { initialData: initialForms }),
+    trpc.printForms.list.queryOptions(undefined, {
+      initialData: initialForms,
+      refetchOnMount: false,
+    }),
   );
   const [selectedForm, setSelectedForm] = useQueryState('form', parseAsString);
   const activeForms = forms.data
