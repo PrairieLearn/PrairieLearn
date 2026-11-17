@@ -76,7 +76,6 @@ interface PrintPreparationProps {
   forms: StaffPrintForm[];
   enrolledStudents: number;
   defaultCopies: number;
-  renderingAvailable: boolean;
   trpcCsrfToken: string;
   docxCsrfToken: string;
   search: string;
@@ -145,7 +144,6 @@ function PrintPreparation({
   forms: initialForms,
   enrolledStudents,
   defaultCopies,
-  renderingAvailable,
   docxCsrfToken,
 }: PrintPreparationProps) {
   const trpc = useTRPC();
@@ -647,6 +645,13 @@ function PrintPreparation({
   const includedOmittedQuestions =
     includedQuestions?.filter((question) => omitted.has(question.number)) ?? [];
   const includedOmittedCount = includedOmittedQuestions.length;
+  const affectedQuestions =
+    includedOmittedCount === 1 ? 'the affected question' : 'the affected questions';
+  const omittedRecovery = archivedPreviewForm
+    ? `Fix ${affectedQuestions} in your course, then reload this page. Previous forms cannot be edited.`
+    : questionSelectionLocked
+      ? `Fix ${affectedQuestions} in your course and update the preview, or regenerate this form to leave ${includedOmittedCount === 1 ? 'it' : 'them'} out.`
+      : `Fix or deselect ${includedOmittedCount === 1 ? 'it' : 'them'}, then update the preview.`;
   const reviewCount =
     includedQuestions?.filter(
       (question) => question.concerns.length || omitted.has(question.number),
@@ -775,13 +780,13 @@ function PrintPreparation({
       </nav>
       {ensureInitial.isPending && (
         <Alert variant="info" role="status">
-          Creating the A form…
+          Creating Form A…
         </Alert>
       )}
       {initialFormError && (
         <Alert variant="danger" className="d-flex align-items-center justify-content-between gap-2">
           <span>
-            Could not create the A form.{' '}
+            Could not create Form A.{' '}
             {renderAppError(initialFormError, { UNKNOWN: ({ message }) => message })}
           </span>
           <Button
@@ -857,7 +862,7 @@ function PrintPreparation({
               >
                 <summary className="h6 mb-0">Recent exports ({recentExports.data.length})</summary>
                 <p className="small text-muted mt-2 mb-2">
-                  Files are available for 24 hours. You can start another export while one is
+                  Files are available for 24 hours. You can start another download while one is
                   preparing.
                 </p>
                 <ol className="mb-0 ps-3">
@@ -908,13 +913,13 @@ function PrintPreparation({
             </a>
           ) : exportStatus.data?.status === 'failed' ? (
             (exportStatus.data.failureMessage ??
-            'The file could not be prepared because of a server error.')
+            'The file could not be prepared. Try again or contact support if it keeps failing.')
           ) : exportStatus.isError ? (
-            'Could not check the file preparation status. Refresh the page to try again.'
+            'Could not check whether the file is ready. Refresh the page to try again.'
           ) : exportStatus.data?.status === 'expired' ? (
             'This file is no longer available. Start a new download.'
           ) : (
-            'Preparing your file in the background. You can return to this page to download it within 24 hours.'
+            'Preparing your file. You can return to this page to download it within 24 hours.'
           )}
           {exportStatus.data?.status !== 'pending' && !exportStatus.isPending && (
             <Button
@@ -931,17 +936,7 @@ function PrintPreparation({
           )}
         </Alert>
       )}
-      {groupWork && (
-        <Alert variant="info">
-          Creating printable forms for group assessments is not supported yet.
-        </Alert>
-      )}
-      {!renderingAvailable && (
-        <Alert variant="warning">
-          PDF downloads are not configured on this server. Word downloads may require them for some
-          figures.
-        </Alert>
-      )}
+      {groupWork && <Alert variant="info">Printing group assessments is not available yet.</Alert>}
       {reviewCount > 0 && !reviewWarningDismissed && (
         <Alert
           variant={includedOmittedCount > 0 ? 'danger' : 'warning'}
@@ -955,7 +950,7 @@ function PrintPreparation({
         >
           <span>
             {includedOmittedCount > 0
-              ? `${includedOmittedCount} ${includedOmittedCount === 1 ? 'question' : 'questions'} could not be included. Fix or deselect ${includedOmittedCount === 1 ? 'it' : 'them'} before downloading.`
+              ? `${includedOmittedCount} ${includedOmittedCount === 1 ? 'question' : 'questions'} could not be included. ${omittedRecovery}`
               : `${reviewCount} ${reviewCount === 1 ? 'question' : 'questions'} may need adjustments for paper.`}
           </span>
           <Button
@@ -1003,8 +998,9 @@ function PrintPreparation({
                   <Card.Body>
                     <h2 className="h6 mb-2">Print forms</h2>
                     <p className="small text-muted">
-                      Each form saves its own questions, randomization, and print settings. Select a
-                      form to preview it. Copies cycle through these forms in order.
+                      Each form keeps its chosen questions, random values, and print settings.
+                      Select a form to preview it. Booklet copies rotate through the current forms
+                      in order.
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
                       {formIds.map((id) => {
@@ -1118,8 +1114,9 @@ function PrintPreparation({
                     <details>
                       <summary className="h6 mb-0">Previous forms ({archivedForms.length})</summary>
                       <p className="small text-muted mt-2 mb-2">
-                        Saved questions, variants, and print settings remain available. Previous
-                        forms’ saved settings cannot be edited.
+                        Previous forms keep their chosen questions and print settings. You cannot
+                        edit these settings. Edits to a question in your course may affect a new
+                        download of a previous form.
                       </p>
                       <div className="d-flex flex-column gap-2">
                         {archivedForms.map((form) => (
@@ -1286,8 +1283,8 @@ function PrintPreparation({
                     <Form.Text id="print-cover-pages-help">
                       Every student copy includes all uploaded pages, in this order, before the
                       questions{includeCoverPage ? ' and after the default cover' : ''}. Answer keys
-                      exclude uploaded pages. Up to {MAX_COVER_FILES} PDFs, {COVER_SIZE_LIMIT}{' '}
-                      total, and {MAX_COVER_PAGES} pages.
+                      and Word files exclude uploaded pages. Up to {MAX_COVER_FILES} PDFs,{' '}
+                      {COVER_SIZE_LIMIT} total, and {MAX_COVER_PAGES} pages.
                     </Form.Text>
                   </Form.Group>
                   {coverPages.length > 0 && (
@@ -1314,9 +1311,8 @@ function PrintPreparation({
                         ))}
                       </ol>
                       <p className="small text-muted mb-0">
-                        Files are kept in this tab until export. Re-add them if you reload the page.
-                        Download the booklet PDF to inspect all student copies with their uploaded
-                        pages.
+                        Uploaded PDFs stay on this page until you reload it. Check a downloaded
+                        student-copy PDF or booklet to see how the pages appear.
                       </p>
                     </>
                   )}
@@ -1378,8 +1374,7 @@ function PrintPreparation({
                     <Alert variant="danger" className="m-3">
                       {includedOmittedCount}{' '}
                       {includedOmittedCount === 1 ? 'question cannot' : 'questions cannot'} be
-                      printed. Fix or deselect {includedOmittedCount === 1 ? 'it' : 'them'} before
-                      printing the assessment.
+                      printed. {omittedRecovery}
                     </Alert>
                   )}
                   {questions.data
@@ -1678,7 +1673,6 @@ function PrintPreparation({
                         {formId && selectedFormName && (
                           <>
                             <Dropdown.Item
-                              disabled={!renderingAvailable}
                               onClick={() => {
                                 focusPrepareStatus();
                                 void downloadPacket([formId], 1, 'assessment').catch(() => {});
@@ -1694,7 +1688,6 @@ function PrintPreparation({
                               Download {selectedFormName} Word (.docx)
                             </Dropdown.Item>
                             <Dropdown.Item
-                              disabled={!renderingAvailable}
                               onClick={() => {
                                 focusPrepareStatus();
                                 void downloadPacket([formId], 1, 'answer_key').catch(() => {});
@@ -1714,7 +1707,6 @@ function PrintPreparation({
                         <Dropdown.Divider />
                         {formIds.length > 1 && (
                           <Dropdown.Item
-                            disabled={!renderingAvailable}
                             onClick={() => {
                               focusPrepareStatus();
                               void downloadPacket(formIds, formIds.length, 'assessment').catch(
@@ -1722,11 +1714,10 @@ function PrintPreparation({
                               );
                             }}
                           >
-                            Download all forms (PDF)
+                            Download all current forms (PDF)
                           </Dropdown.Item>
                         )}
                         <Dropdown.Item
-                          disabled={!renderingAvailable}
                           onClick={() => {
                             booklet.reset();
                             setPdfPreparationError(null);
@@ -1765,9 +1756,9 @@ function PrintPreparation({
                   <h3 className="h5">Your printable assessment starts here</h3>
                   <p className="text-muted mb-0">
                     {ensureInitial.isPending
-                      ? 'Creating the A form and its preview.'
+                      ? 'Creating Form A and its preview.'
                       : ensureInitial.isError
-                        ? 'Use Try again above to create the A form.'
+                        ? 'Use Try again above to create Form A.'
                         : 'Choose your layout, then create a preview.'}
                     <br />
                     Review the questions before downloading.
@@ -1828,12 +1819,13 @@ function PrintPreparation({
               This will archive Form {pendingFormAction.label} and create a new form
               {hasRandomization ? ' with fresh randomization' : ''}. The new form keeps the letter
               and gets the next number. Form {pendingFormAction.label} will remain in Previous forms
-              with its original questions and settings.
+              with its chosen questions and settings.
             </p>
           ) : (
             <p className="mb-0">
-              This will remove Form {pendingFormAction?.label} from the current set. Its questions,
-              settings, and answer key will remain available in Previous forms.
+              This will remove Form {pendingFormAction?.label} from the current set. You can still
+              preview or download it under Previous forms, but later edits to its questions may
+              affect a new download.
             </p>
           )}
         </Modal.Body>

@@ -189,7 +189,7 @@ test('keeps multiple export links after another file is queued and the page relo
   await expect(
     stalePage
       .getByRole('alert')
-      .getByText('This form’s question selection is locked after a download.'),
+      .getByText('This form’s question selection is fixed after you start a download.'),
   ).toBeVisible();
   await expect(staleQuestion).toBeChecked();
   await expect(staleQuestion).toBeDisabled();
@@ -238,7 +238,7 @@ test('creates Form A on first visit and recovers if automatic creation fails', a
   });
   await openPrintPreparation(page, courseInstance.id, 'exam18-lockpoints');
 
-  const creationAlert = page.getByRole('alert').filter({ hasText: 'Could not create the A form.' });
+  const creationAlert = page.getByRole('alert').filter({ hasText: 'Could not create Form A.' });
   await expect(creationAlert).toBeVisible();
   await creationAlert.getByRole('button', { name: 'Try again' }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
@@ -632,7 +632,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   }
 
   const allFormsDownload = await downloadPreparedFile(page, async () => {
-    await chooseDownload(page, 'Download all forms (PDF)');
+    await chooseDownload(page, 'Download all current forms (PDF)');
   });
   expect(allFormsDownload.suggestedFilename()).toMatch(/assessment_2_copies\.pdf$/);
   expect(
@@ -708,7 +708,9 @@ test('combines assessment copies with custom covers and appends every form’s a
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   await page.getByRole('button', { name: `Archive Form ${newLabel}` }).click();
   const archiveDialog = page.getByRole('dialog', { name: `Archive Form ${newLabel}` });
-  await expect(archiveDialog.getByText(/remain available in Previous forms/)).toBeVisible();
+  await expect(
+    archiveDialog.getByText(/preview or download it under Previous forms/),
+  ).toBeVisible();
   await archiveDialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeVisible();
   await page.getByRole('button', { name: `Archive Form ${newLabel}` }).click();
@@ -881,7 +883,7 @@ test('keeps existing forms available when randomization is disabled', async ({
       }),
     ).toBeVisible();
     await expect(
-      page.getByRole('button', { name: 'Download all forms (PDF)', exact: true }),
+      page.getByRole('button', { name: 'Download all current forms (PDF)', exact: true }),
     ).toBeVisible();
   } finally {
     await fs.writeFile(assessmentFile, originalAssessment);

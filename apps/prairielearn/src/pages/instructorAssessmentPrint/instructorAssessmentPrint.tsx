@@ -10,7 +10,6 @@ import { MAX_PRINT_COPIES } from '../../lib/client/printing/print-packet.js';
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { isBrowserRenderingAvailable } from '../../lib/printing/index.js';
 import { assessmentHasPrintRandomization } from '../../lib/printing/print-preparation.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
@@ -77,7 +76,6 @@ router.get(
               forms={forms}
               enrolledStudents={studentCount}
               defaultCopies={Math.min(MAX_PRINT_COPIES, Math.max(1, studentCount))}
-              renderingAvailable={isBrowserRenderingAvailable()}
               trpcCsrfToken={trpcCsrfToken}
               docxCsrfToken={docxCsrfToken}
               search={getUrl(req).search}

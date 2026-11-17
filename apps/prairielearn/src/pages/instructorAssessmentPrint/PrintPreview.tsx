@@ -98,7 +98,8 @@ export function PrintPreview({
     if (!root.dataset.printStatus) {
       update({
         status: 'error',
-        message: 'The preview could not be loaded. Try again or open it in a new tab.',
+        message:
+          'The preview could not be loaded. Try again or contact support if it keeps failing.',
       });
       return;
     }

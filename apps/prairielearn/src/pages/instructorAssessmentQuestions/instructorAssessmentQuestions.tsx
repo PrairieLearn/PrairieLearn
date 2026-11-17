@@ -23,7 +23,6 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { isBrowserRenderingAvailable } from '../../lib/printing/index.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { selectAssessmentToolDefaults, selectZoneToolOverrides } from '../../models/assessment.js';
@@ -127,11 +126,12 @@ router.get(
       assessmentToolDefaults[row.tool] = row.enabled;
     }
 
-    const questionSharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
-    const consumePublicQuestionsEnabled = await features.enabledFromLocals(
-      'consume-public-questions',
-      res.locals,
-    );
+    const [questionSharingEnabled, consumePublicQuestionsEnabled, printableAssessmentsAvailable] =
+      await Promise.all([
+        features.enabledFromLocals('question-sharing', res.locals),
+        features.enabledFromLocals('consume-public-questions', res.locals),
+        features.enabledFromLocals('printable-assessments', res.locals),
+      ]);
 
     const canEdit =
       pageContext.authz_data.has_course_permission_edit && !res.locals.course.example_course;
@@ -196,10 +196,7 @@ router.get(
                 pageContext.authz_data.has_course_instance_permission_edit
               }
               canEdit={canEdit}
-              printableAssessmentsAvailable={
-                isBrowserRenderingAvailable() &&
-                (await features.enabledFromLocals('printable-assessments', res.locals))
-              }
+              printableAssessmentsAvailable={printableAssessmentsAvailable}
               courseHasQuestions={courseHasQuestions}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}

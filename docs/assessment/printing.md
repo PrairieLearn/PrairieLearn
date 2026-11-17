@@ -1,17 +1,17 @@
 # Printing assessments
 
-With course preview permission, you can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview the student copies before downloading a PDF or an editable Word file. You can also preview and download answer keys.
+Course staff with permission to preview assessments can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
 
-For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its applied paper size, spacing, question selection, default cover settings, randomized values, and matching answer key. Forms are shared with course staff who have preview permission. Creating or regenerating a print form does not start or change a student attempt. Printable forms are not currently supported for group assessments.
+For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its chosen questions, their order and random values, and its paper, spacing, and cover settings. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
 
 ## Prepare an assessment
 
-1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view. Its questions and randomized values are fixed then.
+1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view. Its questions and random values are chosen then; you can still leave questions out until you start a download.
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
 3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
 5. Select **Update preview** to save your changes to this form without changing its randomization. Check the **Student copy** and **Answer key** above the preview.
-6. When you are satisfied with the assessment, open **Download…** and [choose a file](#download-files). Use this download for final copies so the form’s question selection is fixed before distribution.
+6. When you are satisfied with the preview, open **Download…** and [choose a file](#download-files). Starting the first download fixes which questions the form includes, so check the preview first.
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
 
@@ -24,19 +24,21 @@ If your course uses custom elements in questions, check those questions in both 
 The question list highlights two kinds of items to check:
 
 - **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the assessment.
-- **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of this form. Then select **Update preview**. Downloads are unavailable while included questions have these errors. If this form has already been downloaded, regenerate it before changing its question selection.
+- **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of a current form, then select **Update preview**. Downloads are unavailable while included questions have these errors. Once a download has started, you cannot change that form's question selection; fix the question or regenerate the form to leave it out. Previous forms cannot be edited, so reload the page after fixing one of their questions.
 
 Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 active forms, labeled A through Z. New forms take the first available letter. The A slot, including A2 and later versions, cannot be archived directly; regenerate it to replace it. Assessments without randomization use a single active form.
+If your assessment uses randomization, select **Add form** to create another form. You can have up to 26 current forms, labeled A through Z. New forms take the first available letter. Form A and its later versions (A2, A3, and so on) cannot be archived directly; regenerate one to replace it. Assessments without randomization use a single current form.
 
 Select a form to review it and choose its questions and spacing. Apply any changes with **Update preview** before switching to another form.
 
 Starting the first PDF or Word download for a form fixes its question selection. You can still change its paper size, spacing, and cover settings. To change which questions are included, regenerate the form to create its next version. This also works for an assessment without randomization after its first download.
 
-To replace a form with a new version, use the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. Randomized assessments get fresh randomized values. The new form inherits the old form's paper and default cover settings, while question exclusions and individual spacing reset. Review the new questions and answer key before downloading it. Previous forms keep their original settings and remain available for student copies and answer keys. Use the archive button beside a non-A form to remove it from the current set while keeping it under **Previous forms**. Adding a form after archiving C creates C2.
+To replace a form with a new version, select the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. Randomized assessments get new random values. The new form keeps the old form's paper and default cover settings, while question exclusions and individual spacing reset. Review the new questions and answer key before downloading it. Previous forms keep their chosen questions and settings and remain available under **Previous forms**. Use the archive button beside a non-A form to remove it from the current set. Adding a form after archiving C creates C2.
+
+A form does not save a separate copy of the question content. If you edit a question in your course later, a new download of an earlier form can change, including its answer key. Download and keep the matching student copy and answer key for each form. After editing a question, check both again before printing or grading.
 
 ## Cover pages
 
@@ -53,7 +55,7 @@ Use **Custom cover pages (PDF)** to upload your own instructions or other pages 
 
 You can add up to 10 PDFs, with a combined limit of 100 pages and 10 MB. Uploaded covers are excluded from answer keys and Word files. If you reload the page, you will need to add the files again.
 
-Upload readable PDFs without password protection. Fillable covers must have saved field appearances; if prompted, print or export the cover as a flattened PDF before uploading it. If a cover is rejected, follow the download message or remove the upload.
+Upload readable PDFs without password protection. If a fillable cover is rejected or its entries do not appear, print it to a new PDF and upload that copy. If an upload is rejected, follow the message or remove the file.
 
 Uploaded covers do not appear in the preview. Download a student copy or booklet to check them before printing.
 
@@ -61,20 +63,20 @@ Uploaded covers do not appear in the preview. Download a student copy or booklet
 
 Select **Update preview** after making changes, then open **Download…**. The first four options apply to the form you are previewing:
 
-| Option                                      | What you get                                                                             |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **Download Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                              |
-| **Download Form A Word (.docx)**            | An editable student copy of Form A.                                                      |
-| **Download Form A answer key (PDF)**        | The answer key for Form A.                                                               |
-| **Download Form A answer key Word (.docx)** | An editable answer key for Form A.                                                       |
-| **Download all forms (PDF)**                | One student copy of each form, including uploaded covers. Available with multiple forms. |
-| **Download booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.       |
+| Option                                      | What you get                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Download Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                                      |
+| **Download Form A Word (.docx)**            | An editable student copy of Form A.                                                              |
+| **Download Form A answer key (PDF)**        | The answer key for Form A.                                                                       |
+| **Download Form A answer key Word (.docx)** | An editable answer key for Form A.                                                               |
+| **Download all current forms (PDF)**        | One student copy of each current form, including uploaded covers. Available with multiple forms. |
+| **Download booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.               |
 
 If file preparation says the preview has expired or changed, select **Update preview** and try again.
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-Choosing a file from **Download…** starts a new export. PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. **Recent exports** opens when you start a new export and shows your ten newest exports for this assessment, including their progress and links to finished files. It starts collapsed when you load the page. Forms are shared with course staff, but prepared files are available only to the staff member who requested them. Use those links if you return later or an automatic download is blocked. Each file is available for 24 hours after it was requested.
+Choosing a file from **Download…** starts preparing it. PDF and Word files download automatically when ready if you keep this page open. You can start another download while one is being prepared. **Recent exports** shows the progress of your ten newest files for this assessment and links to completed files. Forms are shared with course staff, but only the staff member who requested a file can download it. Use the links if you return later or an automatic download is blocked. Each file is available for 24 hours after it was requested.
 
 ### Print copies for a class
 

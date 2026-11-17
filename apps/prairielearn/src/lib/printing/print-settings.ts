@@ -27,7 +27,7 @@ export type PrintSettings = z.infer<typeof PrintSettingsSchema>;
 export const PRINT_SETTINGS_CHANGED_MESSAGE =
   'This form’s settings changed while you were editing. Your edits are still here; review them and select Update preview again.';
 export const PRINT_QUESTION_SELECTION_LOCKED_MESSAGE =
-  'This form’s question selection is locked after a download. Regenerate the form to change its questions.';
+  'This form’s question selection is fixed after you start a download. Regenerate the form to change which questions are included.';
 
 export function sameExcludedQuestions(left: readonly string[], right: readonly string[]): boolean {
   const selected = new Set(right);

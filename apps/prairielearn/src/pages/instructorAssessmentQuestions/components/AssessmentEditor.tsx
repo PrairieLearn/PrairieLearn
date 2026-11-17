@@ -1136,14 +1136,17 @@ function AssessmentEditorInner({
                           setEditMode(false);
                         }}
                       />
-                      {!editMode && printableAssessmentsAvailable && !groupsConfigured && (
-                        <a
-                          className="btn btn-outline-secondary btn-sm"
-                          href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print`}
-                        >
-                          <i className="bi bi-printer me-1" aria-hidden="true" /> Print
-                        </a>
-                      )}
+                      {!editMode &&
+                        hasCoursePermissionPreview &&
+                        printableAssessmentsAvailable &&
+                        !groupsConfigured && (
+                          <a
+                            className="btn btn-outline-secondary btn-sm"
+                            href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print`}
+                          >
+                            <i className="bi bi-printer me-1" aria-hidden="true" /> Print
+                          </a>
+                        )}
                     </div>
                   }
                   canEdit={canEdit}
