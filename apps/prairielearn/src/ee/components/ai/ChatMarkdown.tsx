@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type JSX, createElement, useEffect, useRef } from 'react';
+import { createElement, useEffect, useRef } from 'react';
 import type { UrlTransform } from 'react-markdown';
 import remarkMath from 'remark-math';
 import {
@@ -10,31 +10,6 @@ import {
 } from 'streamdown';
 
 import { loadMathjax, mathjaxTypeset } from '../../../lib/client/mathjax.js';
-
-// Streamdown has no unstyled mode. Unless a tag is overridden in `components`,
-// Streamdown renders it with its own component, which adds Tailwind utility
-// classes (a heading is `<h1 class="mt-6 mb-2 font-semibold text-3xl">`). We
-// don't ship Tailwind, so that goes wrong in two ways:
-//
-// - Most of those classes don't exist here, so the styling they stand for is
-//   silently missing. Bold text is a `<span class="font-semibold">`, not a
-//   `<strong>`, so it isn't bold at all.
-// - Some of them (`mb-2`, `px-4`, `py-2`) do exist in Bootstrap with different
-//   values, so headings, lists, and table cells get spacing nobody chose.
-//
-// `plain(tag)` is the override for a tag that needs nothing special: it drops
-// Streamdown's classes and renders the bare element, leaving it to the same
-// Bootstrap and `.markdown-body` styles as the rest of PrairieLearn.
-function plain(tag: keyof JSX.IntrinsicElements) {
-  return ({
-    node: _node,
-    className: _className,
-    ...props
-  }: {
-    node?: unknown;
-    className?: string;
-  }) => createElement(tag, props);
-}
 
 function MathExpression({ tex, display }: { tex: string; display: boolean }) {
   const ref = useRef<HTMLElement>(null);
@@ -60,8 +35,21 @@ function MathExpression({ tex, display }: { tex: string; display: boolean }) {
   );
 }
 
-// The tags Streamdown restyles that only need to be rendered bare; see
-// `plain()`. Tags that need more than that (`table`, `img`, `a`, and code)
+// Streamdown has no unstyled mode. Unless a tag is overridden in `components`,
+// Streamdown renders it with its own component, which adds Tailwind utility
+// classes (a heading is `<h1 class="mt-6 mb-2 font-semibold text-3xl">`). We
+// don't ship Tailwind, so that goes wrong in two ways:
+//
+// - Most of those classes don't exist here, so the styling they stand for is
+//   silently missing. Bold text is a `<span class="font-semibold">`, not a
+//   `<strong>`, so it isn't bold at all.
+// - Some of them (`mb-2`, `px-4`, `py-2`) do exist in Bootstrap with different
+//   values, so headings, lists, and table cells get spacing nobody chose.
+//
+// These are the tags Streamdown restyles that need nothing special. Each is
+// overridden with its own tag name, which renders the bare element and leaves
+// it to the same Bootstrap and `.markdown-body` styles as the rest of
+// PrairieLearn. Tags that need more than that (`table`, `img`, `a`, and code)
 // have their own entries in `components`.
 const PLAIN_TAGS = [
   'h1',
@@ -80,11 +68,11 @@ const PLAIN_TAGS = [
   'tr',
   'th',
   'td',
+  'strong',
 ] as const;
 
 const components: Components = {
-  ...Object.fromEntries(PLAIN_TAGS.map((tag) => [tag, plain(tag)])),
-  strong: plain('strong'),
+  ...Object.fromEntries(PLAIN_TAGS.map((tag) => [tag, tag])),
   inlineCode: ({ node: _node, className, children, ...props }) => {
     if (className?.includes('language-math') && typeof children === 'string') {
       return <MathExpression tex={children} display={false} />;
@@ -103,6 +91,8 @@ const components: Components = {
       </pre>
     );
   },
+  // Streamdown marks every link to open in a new tab. Course file links should
+  // open in the same tab.
   a: ({ node: _node, className: _className, target: _target, rel: _rel, ...props }) =>
     createElement('a', props),
   img: ({ node: _node, className: _className, alt, ...props }) => (
@@ -114,23 +104,6 @@ const components: Components = {
     </div>
   ),
 };
-
-interface HastNode {
-  type: string;
-  children?: HastNode[];
-}
-
-// Streamdown parses HTML in a message and then sanitizes it, which silently
-// drops any tag it doesn't know. Replies routinely mention elements like
-// `<pl-number-input>` outside of code spans, so HTML is shown as written
-// instead.
-function rehypeHtmlAsText() {
-  const visit = (node: HastNode) => {
-    if (node.type === 'raw') node.type = 'text';
-    node.children?.forEach(visit);
-  };
-  return visit;
-}
 
 // Models usually delimit math with `\(...\)` and `\[...\]`, which markdown
 // reads as escaped brackets. Code is matched first so that it is left alone.
@@ -145,30 +118,25 @@ function normalizeMathDelimiters(markdown: string) {
 
 const remarkPlugins = [...Object.values(defaultRemarkPlugins), remarkMath];
 
-const rehypePlugins = [
-  rehypeHtmlAsText,
-  defaultRehypePlugins.sanitize,
-  defaultRehypePlugins.harden,
-];
+// Streamdown's default `raw` plugin is left out on purpose. It parses HTML in
+// a message into elements, and sanitizing then silently drops any tag it
+// doesn't know. Replies routinely mention elements like `<pl-number-input>`
+// outside of code spans; without `raw`, HTML is shown as written instead.
+const rehypePlugins = [defaultRehypePlugins.sanitize, defaultRehypePlugins.harden];
 
 export function ChatMarkdown({
   content,
   className,
   urlTransform,
-  isStreaming = false,
 }: {
   content: string;
   className?: string;
   urlTransform?: UrlTransform;
-  isStreaming?: boolean;
 }) {
   return (
     <Streamdown
       className={className}
       components={components}
-      controls={false}
-      isAnimating={isStreaming}
-      linkSafety={{ enabled: false }}
       rehypePlugins={rehypePlugins}
       remarkPlugins={remarkPlugins}
       // A link that is still streaming has no destination yet, so it is shown

@@ -19,7 +19,7 @@ describe('ChatMarkdown', () => {
 
   it('renders a table that is cut off mid-stream', () => {
     const html = renderToStaticMarkup(
-      <ChatMarkdown content={`${TABLE}\n| \`pl-integer-input\` | **Whole`} isStreaming />,
+      <ChatMarkdown content={`${TABLE}\n| \`pl-integer-input\` | **Whole`} />,
     );
 
     expect(html).toContain('<td><code>pl-integer-input</code></td>');

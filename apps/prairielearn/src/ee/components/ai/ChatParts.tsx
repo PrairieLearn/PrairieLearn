@@ -65,11 +65,7 @@ export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
         setUserExpanded(!isExpanded);
       }}
     >
-      <ChatMarkdown
-        className="markdown-body reasoning-body p-1 pt-0"
-        content={part.text}
-        isStreaming={isStreaming}
-      />
+      <ChatMarkdown className="markdown-body reasoning-body p-1 pt-0" content={part.text} />
     </Disclosure>
   );
 }
@@ -81,12 +77,5 @@ export function TextPart({
   part: TextUIPart;
   urlTransform?: UrlTransform;
 }) {
-  return (
-    <ChatMarkdown
-      className="markdown-body"
-      content={part.text}
-      urlTransform={urlTransform}
-      isStreaming={part.state === 'streaming'}
-    />
-  );
+  return <ChatMarkdown className="markdown-body" content={part.text} urlTransform={urlTransform} />;
 }
