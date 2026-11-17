@@ -20,6 +20,20 @@ describe('createReviewDiffFile', () => {
     expect(deleted.patch).toContain('--- c.txt\n+++ /dev/null');
   });
 
+  it('counts added and removed lines without counting the file headers', () => {
+    expect(createReviewDiffFile('a.txt', null, base64('++ one\n-- two\n'))).toMatchObject({
+      additions: 2,
+      deletions: 0,
+    });
+    expect(
+      createReviewDiffFile('b.txt', Buffer.from('keep\nold\ngone\n'), base64('keep\nnew\n')),
+    ).toMatchObject({ additions: 1, deletions: 2 });
+    expect(createReviewDiffFile('c.txt', Buffer.from('gone!\n'), undefined)).toMatchObject({
+      additions: 0,
+      deletions: 1,
+    });
+  });
+
   it('omits the patch when either side is binary', () => {
     const image = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]);
     expect(createReviewDiffFile('a.png', null, image.toString('base64'))).toEqual({
@@ -27,6 +41,8 @@ describe('createReviewDiffFile', () => {
       change: 'added',
       bytes: 6,
       patch: null,
+      additions: 0,
+      deletions: 0,
     });
     expect(createReviewDiffFile('b.txt', image, base64('text\n'))).toMatchObject({
       change: 'modified',

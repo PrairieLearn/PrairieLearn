@@ -123,6 +123,22 @@ export interface ReviewDiffFile {
   bytes: number;
   /** A unified diff, or `null` for binary files. */
   patch: string | null;
+  /** Lines the patch adds and removes; both are 0 for binary files. */
+  additions: number;
+  deletions: number;
+}
+
+/** Count the lines a unified diff adds and removes. Its file headers end at the first hunk. */
+function countChangedLines(patch: string) {
+  let additions = 0;
+  let deletions = 0;
+  let inHunks = false;
+  for (const line of patch.split('\n')) {
+    if (line.startsWith('@@')) inHunks = true;
+    else if (inHunks && line.startsWith('+')) additions += 1;
+    else if (inHunks && line.startsWith('-')) deletions += 1;
+  }
+  return { additions, deletions };
 }
 
 /**
@@ -138,18 +154,20 @@ export function createReviewDiffFile(
   const next = contents === undefined ? Buffer.alloc(0) : Buffer.from(contents, 'base64');
   const change = contents === undefined ? 'deleted' : base === null ? 'added' : 'modified';
   const binary = old.includes(0) || next.includes(0) || !isUtf8(old) || !isUtf8(next);
+  const patch = binary
+    ? null
+    : createTwoFilesPatch(
+        change === 'added' ? '/dev/null' : filePath,
+        change === 'deleted' ? '/dev/null' : filePath,
+        old.toString('utf8'),
+        next.toString('utf8'),
+      );
   return {
     path: filePath,
     change,
     bytes: change === 'deleted' ? old.length : next.length,
-    patch: binary
-      ? null
-      : createTwoFilesPatch(
-          change === 'added' ? '/dev/null' : filePath,
-          change === 'deleted' ? '/dev/null' : filePath,
-          old.toString('utf8'),
-          next.toString('utf8'),
-        ),
+    patch,
+    ...(patch === null ? { additions: 0, deletions: 0 } : countChangedLines(patch)),
   };
 }
 

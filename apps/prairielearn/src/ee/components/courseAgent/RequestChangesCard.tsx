@@ -102,7 +102,7 @@ export function RequestChangesCard({
         <ReviewActions
           disabled={actionsDisabled}
           canApprove={canApprove}
-          fileCount={pending?.diff.files?.length ?? null}
+          files={pending?.diff.files ?? null}
           onViewChanges={() => setShowChanges(true)}
           onDecision={decide}
           onApproveAlways={approveAlways}
@@ -183,31 +183,51 @@ export function RequestChangesCard({
 function ReviewActions({
   disabled,
   canApprove,
-  fileCount,
+  files,
   onViewChanges,
   onDecision,
   onApproveAlways,
 }: {
   disabled: boolean;
   canApprove: boolean;
-  fileCount: number | null;
+  files: ReviewDiffFile[] | null;
   onViewChanges: () => void;
   onDecision: (decision: 'approved' | 'denied') => void;
   onApproveAlways: () => void;
 }) {
+  const additions = files?.reduce((sum, file) => sum + file.additions, 0) ?? 0;
+  const deletions = files?.reduce((sum, file) => sum + file.deletions, 0) ?? 0;
   return (
     <>
-      <div className="d-flex flex-wrap align-items-center column-gap-2 row-gap-1">
-        <div className="d-flex align-items-center gap-2">
-          <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
-          <span>Review course changes</span>
-        </div>
-        <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
-          {fileCount === null
-            ? 'View changes'
-            : `View ${fileCount === 1 ? '1 changed file' : `${fileCount} changed files`}`}
-        </Button>
+      <div className="d-flex align-items-center gap-2">
+        <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
+        <span>Review course changes</span>
       </div>
+      <Button
+        variant="link"
+        className="course-agent-review-files mt-2"
+        title="View changes"
+        onClick={onViewChanges}
+      >
+        <i className="bi bi-file-earmark-diff text-body-secondary" aria-hidden="true" />
+        {files && (
+          <span className="text-truncate">
+            {files.length === 1 ? '1 changed file' : `${files.length} changed files`}
+          </span>
+        )}
+        {files?.some((file) => file.patch !== null) && (
+          <span className="flex-shrink-0">
+            <span className="text-success">+{additions}</span>{' '}
+            <span className="text-danger">−{deletions}</span>
+          </span>
+        )}
+        <span className="course-agent-review-view d-flex align-items-center gap-1 ms-auto flex-shrink-0">
+          <span>
+            View<span className="course-agent-review-view-wide"> changes</span>
+          </span>
+          <i className="bi bi-chevron-right" aria-hidden="true" />
+        </span>
+      </Button>
       <div className="d-flex flex-wrap gap-2 mt-2">
         <Button
           size="sm"
@@ -296,15 +316,8 @@ function ReviewChangesModal({
         {error}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="outline-secondary" onClick={onHide}>
-          Close
-        </Button>
-        <Button
-          variant="outline-secondary"
-          disabled={actionsDisabled}
-          onClick={() => onDecision('denied')}
-        >
-          Deny
+        <Button disabled={actionsDisabled || !canApprove} onClick={() => onDecision('approved')}>
+          Approve once
         </Button>
         <Button
           variant="outline-primary"
@@ -313,8 +326,12 @@ function ReviewChangesModal({
         >
           Always approve
         </Button>
-        <Button disabled={actionsDisabled || !canApprove} onClick={() => onDecision('approved')}>
-          Approve once
+        <Button
+          variant="outline-secondary"
+          disabled={actionsDisabled}
+          onClick={() => onDecision('denied')}
+        >
+          Deny
         </Button>
       </Modal.Footer>
     </Modal>

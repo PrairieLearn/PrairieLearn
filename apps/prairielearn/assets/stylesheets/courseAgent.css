@@ -105,7 +105,44 @@
 
 /* The review card borrows the message box's padding and buttons so the two read as one set. */
 .course-agent-review {
+  container-type: inline-size;
   padding: 0.75rem;
+}
+
+/* The changed files open the diff; a grey row keeps them apart from the three choices. */
+.btn.course-agent-review-files {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-bg: var(--bs-tertiary-bg);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-active-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-secondary-bg);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 0.625rem;
+  font-size: 0.875rem;
+  text-align: left;
+  text-decoration: none;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+}
+
+.course-agent-review-view {
+  color: var(--bs-link-color);
+}
+
+.course-agent-review-view .bi {
+  font-size: 0.75rem;
+}
+
+/* "View" alone still marks the row as a link when there is no room for "View changes". */
+@container (max-width: 19rem) {
+  .course-agent-review-view-wide {
+    display: none;
+  }
 }
 
 .btn.course-agent-review-always {
