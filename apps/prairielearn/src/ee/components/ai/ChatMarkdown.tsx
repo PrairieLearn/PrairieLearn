@@ -11,11 +11,20 @@ import {
 
 import { loadMathjax, mathjaxTypeset } from '../../../lib/client/mathjax.js';
 
-// Streamdown's default renderers are styled with Tailwind, which we don't
-// use. Some of its utility class names (`px-4`, `py-2`, `mb-2`) also exist in
-// Bootstrap with different values, and it renders bold text as a styled
-// `<span>`, so every element is rendered as its plain tag instead and picks
-// up our existing Bootstrap and `.markdown-body` styles.
+// Streamdown has no unstyled mode. Unless a tag is overridden in `components`,
+// Streamdown renders it with its own component, which adds Tailwind utility
+// classes (a heading is `<h1 class="mt-6 mb-2 font-semibold text-3xl">`). We
+// don't ship Tailwind, so that goes wrong in two ways:
+//
+// - Most of those classes don't exist here, so the styling they stand for is
+//   silently missing. Bold text is a `<span class="font-semibold">`, not a
+//   `<strong>`, so it isn't bold at all.
+// - Some of them (`mb-2`, `px-4`, `py-2`) do exist in Bootstrap with different
+//   values, so headings, lists, and table cells get spacing nobody chose.
+//
+// `plain(tag)` is the override for a tag that needs nothing special: it drops
+// Streamdown's classes and renders the bare element, leaving it to the same
+// Bootstrap and `.markdown-body` styles as the rest of PrairieLearn.
 function plain(tag: keyof JSX.IntrinsicElements) {
   return ({
     node: _node,
@@ -51,6 +60,9 @@ function MathExpression({ tex, display }: { tex: string; display: boolean }) {
   );
 }
 
+// The tags Streamdown restyles that only need to be rendered bare; see
+// `plain()`. Tags that need more than that (`table`, `img`, `a`, and code)
+// have their own entries in `components`.
 const PLAIN_TAGS = [
   'h1',
   'h2',
