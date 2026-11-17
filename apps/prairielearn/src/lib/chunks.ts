@@ -491,6 +491,7 @@ interface DiffChunksOptions {
   courseId: string;
   courseData: CourseData;
   changedFiles: string[];
+  regenerateAll?: boolean;
 }
 
 interface ChunksDiff {
@@ -509,6 +510,7 @@ async function diffChunks({
   courseId,
   courseData,
   changedFiles,
+  regenerateAll = false,
 }: DiffChunksOptions): Promise<ChunksDiff> {
   const rawCourseChunks = await getAllChunksForCourse(courseId);
 
@@ -586,7 +588,6 @@ async function diffChunks({
   });
 
   const changedCourseChunks = identifyChunksFromChangedFiles(changedFiles, courseData);
-
   // Now, let's compute the set of chunks that we need to update or delete.
   const updatedChunks: ChunkMetadata[] = [];
   const deletedChunks: ChunkMetadata[] = [];
@@ -599,7 +600,10 @@ async function diffChunks({
     'serverFilesCourse',
   ] as const) {
     const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
-    if (hasChunkDirectory && (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])) {
+    if (
+      hasChunkDirectory &&
+      (regenerateAll || !existingCourseChunks[chunkType] || changedCourseChunks[chunkType])
+    ) {
       updatedChunks.push({ type: chunkType });
     } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
       deletedChunks.push({ type: chunkType });
@@ -608,7 +612,11 @@ async function diffChunks({
 
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
-    if (!existingCourseChunks.questions.has(qid) || changedCourseChunks.questions.has(qid)) {
+    if (
+      regenerateAll ||
+      !existingCourseChunks.questions.has(qid) ||
+      changedCourseChunks.questions.has(qid)
+    ) {
       updatedChunks.push({
         type: 'question',
         questionName: qid,
@@ -631,11 +639,13 @@ async function diffChunks({
   const activeCourseInstances = await sqldb.queryRows(
     sql.select_active_course_instance_ids,
     { course_id: courseId },
-    z.object({ course_instance_name: z.string(), course_instance_id: z.string() }),
+    z.object({
+      course_instance_name: z.string(),
+      course_instance_id: z.string(),
+      uuid: z.string().nullable(),
+    }),
   );
-  const activeCiIdByName = new Map(
-    activeCourseInstances.map((r) => [r.course_instance_name, r.course_instance_id]),
-  );
+  const activeCiByName = new Map(activeCourseInstances.map((r) => [r.course_instance_name, r]));
 
   const activeAssessments = await sqldb.queryRows(
     sql.select_active_assessment_ids_by_tid,
@@ -644,16 +654,20 @@ async function diffChunks({
       course_instance_name: z.string(),
       assessment_name: z.string(),
       assessment_id: z.string(),
+      uuid: z.string().nullable(),
     }),
   );
-  const activeAssessmentIdByCourseInstance = new Map<string, Map<string, string>>();
+  const activeAssessmentByCourseInstance = new Map<
+    string,
+    Map<string, (typeof activeAssessments)[number]>
+  >();
   activeAssessments.forEach((r) => {
-    let assessMap = activeAssessmentIdByCourseInstance.get(r.course_instance_name);
+    let assessMap = activeAssessmentByCourseInstance.get(r.course_instance_name);
     if (!assessMap) {
       assessMap = new Map();
-      activeAssessmentIdByCourseInstance.set(r.course_instance_name, assessMap);
+      activeAssessmentByCourseInstance.set(r.course_instance_name, assessMap);
     }
-    assessMap.set(r.assessment_name, r.assessment_id);
+    assessMap.set(r.assessment_name, r);
   });
 
   // Next: course instances and their assessments.
@@ -665,7 +679,13 @@ async function diffChunks({
       );
 
       const existingCourseInstanceId = existingCourseInstanceIdByName.get(ciid) ?? null;
-      const activeCourseInstanceId = activeCiIdByName.get(ciid) ?? null;
+      const activeCourseInstance = activeCiByName.get(ciid);
+      const activeCourseInstanceId = activeCourseInstance?.course_instance_id ?? null;
+      // Preparation precedes metadata writes, so UUID changes must also be
+      // detected before the database assigns the replacement entity IDs.
+      const instanceUuid = courseInstanceInfo.courseInstance.uuid;
+      const instanceIdentityChanged =
+        !!instanceUuid && !!activeCourseInstance && instanceUuid !== activeCourseInstance.uuid;
       const courseInstanceIdMismatch =
         !!activeCourseInstanceId && activeCourseInstanceId !== existingCourseInstanceId;
       const existingCourseInstanceChunk =
@@ -675,7 +695,11 @@ async function diffChunks({
         changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCourseInstanceChunk || changedCourseInstanceChunk || courseInstanceIdMismatch)
+        (regenerateAll ||
+          !existingCourseInstanceChunk ||
+          changedCourseInstanceChunk ||
+          courseInstanceIdMismatch ||
+          instanceIdentityChanged)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -696,7 +720,12 @@ async function diffChunks({
         );
         const existingAssessmentId =
           existingAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
-        const activeAssessmentId = activeAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
+        const activeAssessment = activeAssessmentByCourseInstance.get(ciid)?.get(tid);
+        const activeAssessmentId = activeAssessment?.assessment_id ?? null;
+        const assessmentUuid = courseInstanceInfo.assessments[tid].uuid;
+        const assessmentIdentityChanged =
+          instanceIdentityChanged ||
+          (!!assessmentUuid && !!activeAssessment && assessmentUuid !== activeAssessment.uuid);
         const assessmentIdMismatch =
           !!activeAssessmentId && activeAssessmentId !== existingAssessmentId;
         const hasExistingAssessment =
@@ -705,7 +734,11 @@ async function diffChunks({
           changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          (!hasExistingAssessment || hasChangedAssessment || assessmentIdMismatch)
+          (regenerateAll ||
+            !hasExistingAssessment ||
+            hasChangedAssessment ||
+            assessmentIdMismatch ||
+            assessmentIdentityChanged)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -831,6 +864,29 @@ async function createAndUploadChunks(
   return generatedChunks;
 }
 
+export interface PreparedChunks {
+  changes: ChunksDiff;
+  generatedChunks: Awaited<ReturnType<typeof createAndUploadChunks>>;
+  commitHash: string | null;
+}
+
+/** Uploads are complete; the caller applies metadata and this plan in one transaction. */
+export async function applyPreparedChunks(courseId: string, prepared: PreparedChunks) {
+  await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
+  // Preserve database precision so old and new revisions meet at the same instant.
+  const publishedAt = await sqldb.queryScalar(
+    sql.supersede_chunks,
+    { course_id: courseId, chunk_ids: prepared.changes.replacedChunkIds },
+    z.string(),
+  );
+  await sqldb.execute(sql.insert_chunks, {
+    course_id: courseId,
+    chunks: JSON.stringify(prepared.generatedChunks),
+    created_at: publishedAt,
+    commit_hash: prepared.commitHash,
+  });
+}
+
 /**
  * Returns the paths to the chunks directories for the given course
  * ID. The "downloads" directory will hold in-progress chunk
@@ -895,58 +951,87 @@ interface UpdateChunksForCourseOptions {
   oldHash?: string | null;
   newHash?: string | null;
   changedFiles?: string[];
+  regenerateAll?: boolean;
 }
 
-export async function updateChunksForCourse({
+/** Upload archives for known questions without loading course metadata. */
+export async function prepareQuestionContentChunks({
+  coursePath,
+  courseId,
+  qids,
+}: {
+  coursePath: string;
+  courseId: string;
+  qids: string[];
+}): Promise<PreparedChunks> {
+  const updatedChunks: ChunkMetadata[] = qids.map((qid) => ({
+    type: 'question',
+    questionName: qid,
+  }));
+  const replacedChunkIds = await sqldb.queryScalars(
+    sql.select_current_question_chunk_ids,
+    { course_id: courseId, qids },
+    IdSchema,
+  );
+  return {
+    changes: { updatedChunks, deletedChunks: [], replacedChunkIds },
+    generatedChunks: await createAndUploadChunks(coursePath, courseId, updatedChunks),
+    commitHash: await getCourseCommitHash(coursePath),
+  };
+}
+
+/** Publishes the chunk for a known question without reconciling the entire course. */
+export async function updateQuestionContentChunk({
+  coursePath,
+  courseId,
+  qid,
+}: {
+  coursePath: string;
+  courseId: string;
+  qid: string;
+}): Promise<ChunksDiff> {
+  const prepared = await prepareQuestionContentChunks({ coursePath, courseId, qids: [qid] });
+  await sqldb.runInTransactionAsync(() => applyPreparedChunks(courseId, prepared));
+  return prepared.changes;
+}
+
+export async function prepareChunksForCourse({
   coursePath,
   courseId,
   courseData,
   oldHash,
   newHash,
   changedFiles,
-}: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
+  regenerateAll = false,
+}: UpdateChunksForCourseOptions): Promise<PreparedChunks> {
   const resolvedChangedFiles = await run(async () => {
     if (changedFiles && (oldHash || newHash)) {
       throw new Error('cannot specify changedFiles with oldHash or newHash');
     }
-
     if (changedFiles) return changedFiles;
-
     if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
-
     return [];
   });
-
-  const { updatedChunks, deletedChunks, replacedChunkIds } = await diffChunks({
+  const changes = await diffChunks({
     coursePath,
     courseId,
     courseData,
     changedFiles: resolvedChangedFiles,
+    regenerateAll,
   });
+  return {
+    changes,
+    generatedChunks: await createAndUploadChunks(coursePath, courseId, changes.updatedChunks),
+    commitHash: newHash ? await getCourseCommitHash(coursePath) : null,
+  };
+}
 
-  const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
-  const generatedChunks = await createAndUploadChunks(coursePath, courseId, updatedChunks);
-
-  // Uploads finish before the transaction, so it only holds row locks briefly.
-  await sqldb.runInTransactionAsync(async () => {
-    await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
-    // Preserve database precision so old and new revisions meet at the same instant.
-    const publishedAt = await sqldb.queryScalar(
-      sql.supersede_chunks,
-      { course_id: courseId, chunk_ids: replacedChunkIds },
-      z.string(),
-    );
-    await sqldb.execute(sql.insert_chunks, {
-      course_id: courseId,
-      // Force this to a string; otherwise, our code in `sql-db.js` will try to
-      // convert it into a Postgres `ARRAY[...]` type, which we don't want.
-      chunks: JSON.stringify(generatedChunks),
-      created_at: publishedAt,
-      commit_hash: commitHash,
-    });
-  });
-
-  return { updatedChunks, deletedChunks, replacedChunkIds };
+export async function updateChunksForCourse(
+  options: UpdateChunksForCourseOptions,
+): Promise<ChunksDiff> {
+  const prepared = await prepareChunksForCourse(options);
+  await sqldb.runInTransactionAsync(() => applyPreparedChunks(options.courseId, prepared));
+  return prepared.changes;
 }
 
 /**
@@ -999,6 +1084,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
       coursePath: courseDir,
       courseId: String(course_id),
       courseData,
+      regenerateAll: true,
     };
     const chunkChanges = await updateChunksForCourse(chunkOptions);
     logChunkChangesToJob(chunkChanges, job);

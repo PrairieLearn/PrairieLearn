@@ -19,6 +19,20 @@ WHERE
   chunks.course_id = $course_id
   AND chunks.superseded_at IS NULL;
 
+-- BLOCK select_current_question_chunk_ids
+SELECT
+  chunks.id
+FROM
+  chunks
+  JOIN questions AS q ON (q.id = chunks.question_id)
+WHERE
+  chunks.course_id = $course_id
+  AND chunks.type = 'question'
+  AND chunks.superseded_at IS NULL
+  AND q.course_id = $course_id
+  AND q.qid = ANY ($qids::text[])
+  AND q.deleted_at IS NULL;
+
 -- BLOCK select_course_chunks_at_date
 SELECT
   chunks.*
@@ -190,7 +204,8 @@ FROM
 SELECT
   ci.short_name AS course_instance_name,
   a.tid AS assessment_name,
-  a.id AS assessment_id
+  a.id AS assessment_id,
+  a.uuid
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -202,7 +217,8 @@ WHERE
 -- BLOCK select_active_course_instance_ids
 SELECT
   ci.short_name AS course_instance_name,
-  ci.id AS course_instance_id
+  ci.id AS course_instance_id,
+  ci.uuid
 FROM
   course_instances AS ci
 WHERE

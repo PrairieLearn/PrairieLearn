@@ -15,6 +15,7 @@ import {
   getGitRemoteUrl,
   getLockNameForCoursePath,
   selectOrInsertCourseByPath,
+  updateCourseSyncConfiguration,
 } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -141,6 +142,7 @@ export async function syncDiskToSqlWithLock(
     };
   }
 
+  await updateCourseSyncConfiguration(course.id, null);
   logger.info('Syncing info to database');
 
   await timed('Synced all course data', async () => {
