@@ -22,6 +22,11 @@ import * as questions from './fromDisk/questions.js';
 import { syncQuestionTags } from './fromDisk/tags.js';
 import { syncTopics } from './fromDisk/topics.js';
 import { type InfoFile } from './infofile.js';
+import {
+  type QuestionRenameScope,
+  getQuestionRenameScope,
+  verifyQuestionRename,
+} from './questionRenameSync.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -32,6 +37,7 @@ interface QuestionCatalogSync {
 }
 
 export type QuestionSyncChange =
+  | (QuestionRenameScope & { oldQid: string; title: string })
   | { kind: 'content'; qid: string }
   | { kind: 'title'; qid: string; title: string }
   | {
@@ -55,11 +61,13 @@ export async function getQuestionSyncPlan({
   oldHash,
   newHash,
   editedPaths = [],
+  renameScope,
 }: {
   course: Course;
   oldHash: string | null;
   newHash: string;
   editedPaths?: string[];
+  renameScope?: QuestionRenameScope | null;
 }): Promise<QuestionSyncChange[] | null> {
   if (!oldHash) return null;
   const diff = await execa(
@@ -81,20 +89,57 @@ export async function getQuestionSyncPlan({
     files.add(path.relative(course.path, file));
   }
   if (files.size === 0) return [];
-  if ([...files].some((file) => !file.startsWith('questions/'))) return null;
 
   // Git mode 120000 identifies symlinks, which can redirect content edits into metadata.
   const { stdout: trackedFiles } = await execa('git', ['ls-files', '--stage', '-z', '--', '.'], {
     cwd: course.path,
   });
   if (trackedFiles.split('\0').some((entry) => entry.startsWith('120000 '))) return null;
+  const plan = new Map<string, QuestionSyncChange>();
+  const deletedInfoFiles: string[] = [];
+  const addedInfoFiles: string[] = [];
+  for (let index = 0; index < changes.length; index += 2) {
+    const file = changes[index + 1];
+    if (!file.startsWith('questions/') || !file.endsWith('/info.json')) continue;
+    if (changes[index] === 'D') deletedInfoFiles.push(file);
+    if (changes[index] === 'A') addedInfoFiles.push(file);
+  }
+  if (deletedInfoFiles.length === 1 && addedInfoFiles.length === 1) {
+    const oldQid = deletedInfoFiles[0].slice('questions/'.length, -'/info.json'.length);
+    const newQid = addedInfoFiles[0].slice('questions/'.length, -'/info.json'.length);
+    // Recover a pushed rename from the accumulated diff, even without its original UI request.
+    const scope =
+      renameScope?.qid === oldQid && renameScope.newQid === newQid
+        ? renameScope
+        : await getQuestionRenameScope(course, oldQid, newQid);
+    if (!scope) return null;
+    const renamed = await verifyQuestionRename({
+      coursePath: course.path,
+      oldHash,
+      newHash,
+      scope,
+    });
+    if (!renamed) return null;
+    plan.set(renamed.qid, renamed);
+    for (const file of files) {
+      if (
+        file === `questions/${oldQid}` ||
+        file.startsWith(`questions/${oldQid}/`) ||
+        file === `questions/${newQid}` ||
+        file.startsWith(`questions/${newQid}/`) ||
+        scope.assessmentPaths.includes(file)
+      ) {
+        files.delete(file);
+      }
+    }
+  }
+  if ([...files].some((file) => !file.startsWith('questions/'))) return null;
 
   const rows = await queryRows(
     sql.select_questions_for_files,
     { course_id: course.id, file_paths: [...files] },
     z.object({ file_path: z.string(), question: QuestionSchema.nullable() }),
   );
-  const plan = new Map<string, QuestionSyncChange>();
   const realCoursePath = await fs.realpath(course.path);
   for (const { file_path: file, question } of rows) {
     if (!question?.qid) return null;
