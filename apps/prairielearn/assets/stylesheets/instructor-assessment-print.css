@@ -60,11 +60,27 @@
   overflow-wrap: anywhere;
 }
 
-.print-preparation-preview {
+.print-preparation-preview-stack {
   position: relative;
   overflow: hidden;
   height: 70dvh;
   background: #e7eaee;
+}
+
+.print-preparation-preview {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #e7eaee;
+}
+
+.print-preparation-preview[data-active='false'] {
+  z-index: 0;
+  pointer-events: none;
+}
+
+.print-preparation-preview[data-active='true'] {
+  z-index: 1;
 }
 
 .print-preparation-frame {
@@ -193,18 +209,19 @@
   }
 
   .print-preparation-actions,
-  .print-preparation-preview-card > :not(.print-preparation-preview, .print-preparation-empty) {
+  .print-preparation-preview-card
+    > :not(.print-preparation-preview-stack, .print-preparation-empty) {
     flex-shrink: 0;
   }
 
   .print-preparation-preview-card,
-  .print-preparation-preview,
+  .print-preparation-preview-stack,
   .print-preparation-empty {
     flex: 1;
     min-height: 0;
   }
 
-  .print-preparation-preview {
+  .print-preparation-preview-stack {
     height: auto;
   }
 }

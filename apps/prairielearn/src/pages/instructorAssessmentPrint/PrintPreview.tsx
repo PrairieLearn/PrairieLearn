@@ -164,7 +164,8 @@ export function PrintPreview({
       ref={containerRef}
       className="print-preparation-preview"
       aria-busy={state.status === 'loading'}
-      hidden={!active}
+      aria-hidden={!active}
+      data-active={active}
       inert={!active}
     >
       {state.status === 'loading' && (

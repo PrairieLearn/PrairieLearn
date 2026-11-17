@@ -22,6 +22,8 @@ import { createTest, expect } from '../fixtures.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const test = createTest({ features: { 'printable-assessments': true } });
+const ACTIVE_PREVIEW_FRAME_SELECTOR =
+  '.print-preparation-preview[data-active="true"] iframe[title="Printable document preview"]';
 
 test.describe.configure({ timeout: 180_000 });
 
@@ -154,7 +156,7 @@ test('saves form edits without requiring a preview refresh before form actions',
   const assessment = await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
   const formAId = new URL(page.url()).searchParams.get('form')!;
-  const preview = page.locator('iframe[title="Printable document preview"]:visible');
+  const preview = page.locator(ACTIVE_PREVIEW_FRAME_SELECTOR);
   const previousPreviewUrl = await preview.getAttribute('src');
 
   await page.getByLabel('Paper size').focus();
@@ -177,6 +179,9 @@ test('saves form edits without requiring a preview refresh before form actions',
 
   await page.getByRole('button', { name: 'Add form', exact: true }).click();
   await expect(page.getByRole('button', { name: /^Form B/ })).toBeVisible();
+  const formBId = (await page
+    .getByRole('button', { name: 'Form B', exact: true })
+    .getAttribute('id'))!.replace('print-form-', '');
   await expect(page.getByLabel('Paper size')).toHaveValue('A4');
   await expect(page.getByLabel('Spacing for question 1', { exact: true })).toHaveValue('full');
   await expect(page.getByRole('checkbox', { name: 'Include question 2' })).not.toBeChecked();
@@ -187,12 +192,25 @@ test('saves form edits without requiring a preview refresh before form actions',
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   await preview.evaluate((frame) => {
-    frame.dataset.cacheMarker = 'form-a';
+    (frame as HTMLIFrameElement).contentDocument!.documentElement.dataset.cacheMarker = 'form-a';
   });
   await page.getByRole('button', { name: 'Form B', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await expect(preview).toHaveAttribute('src', new RegExp(`/print_form/${formBId}/preview`));
+  await expect(page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR).locator(':root')).toHaveAttribute(
+    'data-print-status',
+    'ready',
+    { timeout: 120_000 },
+  );
   await page.getByRole('button', { name: 'Form A', exact: true }).click();
-  await expect(preview).toHaveAttribute('data-cache-marker', 'form-a');
+  await expect(preview).toHaveAttribute('src', new RegExp(`/print_form/${formAId}/preview`));
+  await expect
+    .poll(() =>
+      preview.evaluate(
+        (frame) =>
+          (frame as HTMLIFrameElement).contentDocument?.documentElement.dataset.cacheMarker,
+      ),
+    )
+    .toBe('form-a');
   await expect(downloadMenu(page)).toBeEnabled();
 });
 
@@ -383,9 +401,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
-  const previewUrl = await page
-    .locator('iframe[title="Printable document preview"]:visible')
-    .getAttribute('src');
+  const previewUrl = await page.locator(ACTIVE_PREVIEW_FRAME_SELECTOR).getAttribute('src');
   const form = previewUrl!.match(/\/print_form\/(\d+)\//)![1];
   const label = await printFormLabel(page, form);
   const url = new URL(page.url());
@@ -399,7 +415,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
     'aria-pressed',
     'true',
   );
-  const frame = page.frameLocator('iframe[title="Printable document preview"]:visible');
+  const frame = page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR);
   await expect(frame.locator(':root')).toHaveAttribute('data-print-status', 'ready');
   await expect(page.getByRole('heading', { name: /Questions in this form/ })).toBeVisible();
   await expect(page.getByText('No paper-specific concerns detected')).toHaveCount(0);
@@ -504,7 +520,7 @@ test('prepares homework with matching student copies, answer keys, and Word expo
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   const downloadButton = downloadMenu(page);
   await expect(downloadButton).toBeEnabled({ timeout: 120_000 });
-  const frame = page.frameLocator('iframe[title="Printable document preview"]:visible');
+  const frame = page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR);
   await expect(frame.locator(':root')).toHaveAttribute('data-print-question-count', '2');
   await page.getByLabel('Spacing for question HW15.1', { exact: true }).selectOption('full');
   await page.getByRole('checkbox', { name: 'Include question HW15.2', exact: true }).uncheck();
@@ -636,7 +652,7 @@ test('combines current forms and answer keys with equal page counts and custom c
   expect(new Set(formIds).size).toBe(2);
   const pageCounts: number[] = [];
   const answerKeyPageCounts: number[] = [];
-  const frame = page.frameLocator('iframe[title="Printable document preview"]:visible');
+  const frame = page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR);
   for (const [index, label] of labels.entries()) {
     await page
       .getByRole('combobox', { name: 'Preview form', exact: true })
@@ -981,7 +997,7 @@ test('lets instructors choose grading and pledge content on the cover', async ({
   await grading.check();
   await pledge.uncheck();
   await preparePreview(page);
-  const frame = page.frameLocator('iframe[title="Printable document preview"]:visible');
+  const frame = page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR);
   await expect(frame.getByRole('region', { name: 'Grading table' })).toBeVisible();
   await expect(frame.getByRole('heading', { name: 'Academic integrity pledge' })).toHaveCount(0);
   await pledge.check();

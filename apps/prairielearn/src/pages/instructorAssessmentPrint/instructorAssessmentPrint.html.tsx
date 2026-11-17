@@ -74,6 +74,7 @@ interface CachedPreview {
   url: string;
   document: PrintDocument;
   state: Extract<PreviewState, { status: 'ready' }>;
+  lastUsed: number;
 }
 
 interface PrintPreparationProps {
@@ -269,6 +270,7 @@ function PrintPreparation({
   const [dismissedReviewWarning, setDismissedReviewWarning] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ key: string; state: PreviewState } | null>(null);
   const [cachedPreviews, setCachedPreviews] = useState<CachedPreview[]>([]);
+  const previewUseCountRef = useRef(0);
   const [previewVersions, setPreviewVersions] = useState<Record<string, number>>({});
   const [previewPending, setPreviewPending] = useState(false);
   const [preparingPdf, setPreparingPdf] = useState(false);
@@ -759,16 +761,19 @@ function PrintPreparation({
 
   function reuseCachedPreview(url: string) {
     const key = `${url}:${previewVersions[url] ?? 0}`;
+    const lastUsed = ++previewUseCountRef.current;
     setCachedPreviews((entries) => {
-      const index = entries.findIndex((entry) => entry.key === key);
-      if (index < 0 || index === entries.length - 1) return entries;
-      return [...entries.slice(0, index), ...entries.slice(index + 1), entries[index]];
+      if (!entries.some((entry) => entry.key === key)) return entries;
+      return entries.map((entry) => (entry.key === key ? { ...entry, lastUsed } : entry));
     });
   }
 
   function switchDocument(next: PrintDocument) {
     if (next === document) return;
-    reuseCachedPreview(`${printBase}/preview?${layout}&document=${next}`);
+    const nextUrl = `${printBase}/preview?${layout}&document=${next}`;
+    reuseCachedPreview(nextUrl);
+    previewSelectionRef.current = { formId, document: next };
+    setPreviewUrl(nextUrl);
     setDocument(next);
     setPreview(null);
   }
@@ -780,7 +785,10 @@ function PrintPreparation({
     const next =
       nextSettings ?? forms.data.find((form) => form.id === id)?.settings ?? defaultSettings;
     const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
-    reuseCachedPreview(`${base}/preview?${printLayoutSearch(next)}&document=${document}`);
+    const nextUrl = `${base}/preview?${printLayoutSearch(next)}&document=${document}`;
+    reuseCachedPreview(nextUrl);
+    previewSelectionRef.current = { formId: id, document };
+    setPreviewUrl(nextUrl);
     reset(next, { keepDirtyValues: false });
     setSelectedQuestion(null);
     setDismissedReviewWarning(null);
@@ -878,12 +886,19 @@ function PrintPreparation({
       if (key !== activePreviewKey) return;
       setPreview({ key, state });
       if (state.status === 'ready') {
-        setCachedPreviews((entries) =>
-          [
-            ...entries.filter((entry) => entry.key !== key),
-            { key, url, document: previewDocument, state },
-          ].slice(-MAX_CACHED_PREVIEWS),
-        );
+        const lastUsed = ++previewUseCountRef.current;
+        setCachedPreviews((entries) => {
+          const next = { key, url, document: previewDocument, state, lastUsed };
+          if (entries.some((entry) => entry.key === key)) {
+            return entries.map((entry) => (entry.key === key ? next : entry));
+          }
+          if (entries.length < MAX_CACHED_PREVIEWS) return [...entries, next];
+          const oldest = entries.reduce(
+            (index, entry, current) => (entry.lastUsed < entries[index].lastUsed ? current : index),
+            0,
+          );
+          return [...entries.slice(0, oldest), ...entries.slice(oldest + 1), next];
+        });
       }
       if (state.status === 'ready') setSnapshotStale(false);
       if (state.status !== 'loading') setPreviewPending(false);
@@ -2089,18 +2104,20 @@ function PrintPreparation({
                 </div>
               )}
               {validForm ? (
-                previewsToRender.map((entry) => (
-                  <PreviewFrame
-                    key={entry.key}
-                    cacheKey={entry.key}
-                    url={entry.url}
-                    document={entry.document}
-                    active={entry.key === activePreviewKey}
-                    selectedQuestion={entry.key === activePreviewKey ? selectedQuestion : null}
-                    onStateChange={onPreviewState}
-                    onSnapshotReady={onSnapshotReady}
-                  />
-                ))
+                <div className="print-preparation-preview-stack">
+                  {previewsToRender.map((entry) => (
+                    <PreviewFrame
+                      key={entry.key}
+                      cacheKey={entry.key}
+                      url={entry.url}
+                      document={entry.document}
+                      active={entry.key === activePreviewKey}
+                      selectedQuestion={entry.key === activePreviewKey ? selectedQuestion : null}
+                      onStateChange={onPreviewState}
+                      onSnapshotReady={onSnapshotReady}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="print-preparation-empty">
                   <i
