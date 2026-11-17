@@ -1882,26 +1882,16 @@ function PrintPreparation({
                     </Button>
                   </ButtonGroup>
                 </div>
-                <div className="small text-muted d-flex align-items-center gap-3">
-                  {currentPreview?.status === 'ready' && (
+                {currentPreview?.status === 'ready' && (
+                  <div className="small text-muted">
                     <span role="status">
                       {currentPreview.pages} {currentPreview.pages === 1 ? 'page' : 'pages'} ·{' '}
                       {currentPreview.questions}{' '}
                       {currentPreview.questions === 1 ? 'question' : 'questions'} ·{' '}
                       {currentPreview.points} {currentPreview.points === 1 ? 'point' : 'points'}
                     </span>
-                  )}
-                  {validForm && (
-                    <a
-                      href={previewUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="Open preview in a new tab"
-                    >
-                      <i className="bi bi-box-arrow-up-right" aria-hidden="true" />
-                    </a>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="d-flex flex-wrap align-items-center justify-content-end gap-2 ms-auto">
                   <div
                     ref={prepareStatusRef}
