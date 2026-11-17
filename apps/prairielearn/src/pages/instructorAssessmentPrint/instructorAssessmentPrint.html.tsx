@@ -2195,8 +2195,8 @@ function PrintPreparation({
               This will replace 'Form {pendingFormAction.label}' with 'Form{' '}
               {nextPrintFormLabel(forms.data, pendingFormAction.label)}'
               {hasRandomization ? ' applying fresh randomization' : ''}. 'Form{' '}
-              {pendingFormAction.label}' will remain available in <strong>Previous forms</strong>{' '}
-              with its chosen questions and settings for reference.
+              {pendingFormAction.label}' will remain available for reference in{' '}
+              <strong>Previous forms</strong> with its chosen questions and settings.
             </p>
           ) : (
             <p className="mb-0">
