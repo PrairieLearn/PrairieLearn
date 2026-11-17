@@ -69,7 +69,7 @@ To upgrade Codex, update the release version and the asset's SHA-256 digest (sho
 
 ## Repository cache
 
-Cloning a large course repository takes most of a new conversation's startup. When a clone takes longer than 10 seconds, the sandbox archives the clone's `.git` directory to the checkpoint bucket before the agent runs, along with a small record of that archive named for the repository and branch (`repository-snapshots/<owner>/<repository>@<branch>.json`). This adds a few seconds to that one startup.
+Cloning a large course repository takes most of a new conversation's startup. After cloning, a sandbox archives the clone's `.git` directory to the checkpoint bucket before the agent runs, along with a small record of that archive named for the repository and branch (`repository-snapshots/<owner>/<repository>@<branch>.json`). For a large course this adds a few seconds to that one startup.
 
 A later GitHub-backed conversation on the same repository and branch finds the record, restores the archive, fetches the branch tip, and checks it out, so it downloads from GitHub only what changed since the archive was saved. The archive therefore never needs refreshing to stay correct. If the record is missing, or the archive cannot be restored or fetched, the sandbox clones as it would without one, and that clone replaces the archive.
 

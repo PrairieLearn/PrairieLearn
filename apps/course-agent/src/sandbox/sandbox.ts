@@ -92,13 +92,9 @@ export type CourseSource =
 /** How a new sandbox got its course files, and how long each step took. */
 type CourseFilesSource =
   | { source: 'local' }
-  // `snapshotMs` is null when no snapshot was saved from this clone.
+  // `snapshotMs` is null when saving the snapshot failed.
   | { source: 'clone'; cloneMs: number; snapshotMs: number | null }
   | { source: 'snapshot'; restoreMs: number; fetchMs: number; checkoutMs: number };
-
-// A repository that clones faster than this gains little from a snapshot, and each snapshot is
-// stored until its branch is cloned again. The value is a guess to revisit with production timings.
-const SNAPSHOT_MIN_CLONE_MS = 10_000;
 
 /**
  * Where the record of a branch's snapshot is stored. The archive library names each archive
@@ -437,7 +433,6 @@ export class CourseSandbox extends DurableObject<Env> {
       AGENT_USER,
     );
     const cloneMs = Date.now() - started;
-    if (cloneMs < SNAPSHOT_MIN_CLONE_MS) return { source: 'clone', cloneMs, snapshotMs: null };
     return { source: 'clone', cloneMs, snapshotMs: await this.saveRepositorySnapshot(source) };
   }
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CourseSandbox } from './sandbox.js';
 
@@ -61,16 +61,8 @@ async function startConversation(bucket: ReturnType<typeof createBucket>) {
   return commands;
 }
 
-describe('a new conversation on a large GitHub course', () => {
-  beforeEach(() => {
-    // Only slow clones are saved. Each clock reading is a minute after the last, so every clone
-    // here counts as slow.
-    let now = 0;
-    vi.spyOn(Date, 'now').mockImplementation(() => (now += 60_000));
-  });
-
+describe('a new conversation on a GitHub course', () => {
   afterEach(() => {
-    vi.restoreAllMocks();
     vi.resetAllMocks();
   });
 
