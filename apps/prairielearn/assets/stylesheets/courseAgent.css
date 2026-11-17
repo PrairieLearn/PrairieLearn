@@ -105,7 +105,6 @@
 
 /* The review card borrows the message box's padding and buttons so the two read as one set. */
 .course-agent-review {
-  container-type: inline-size;
   padding: 0.75rem;
 }
 
@@ -117,22 +116,6 @@
   --bs-btn-active-bg: var(--bs-primary-bg-subtle);
   --bs-btn-disabled-color: var(--bs-primary);
   border-color: var(--bs-primary);
-}
-
-.btn.course-agent-review-deny {
-  margin-left: auto;
-  border-color: transparent;
-}
-
-/* Too narrow for one row: each choice takes a full-width row of its own. */
-@container (max-width: 20rem) {
-  .course-agent-review-actions {
-    flex-direction: column;
-  }
-
-  .btn.course-agent-review-deny {
-    margin-left: 0;
-  }
 }
 
 .course-agent-composer-input {
