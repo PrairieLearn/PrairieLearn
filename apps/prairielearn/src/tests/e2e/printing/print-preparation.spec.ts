@@ -494,7 +494,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   expect(await selectPrintFormQuestions(originalFormId)).toEqual(originalQuestions);
   await page.getByText(/^Previous forms \(/).click();
   await expect(
-    page.getByRole('button', { name: `View Form ${originalLabel} answer key` }),
+    page.getByRole('button', { name: `Form ${originalLabel}`, exact: true }),
   ).toBeVisible();
 
   const formIds = [replacementId];
@@ -622,11 +622,14 @@ test('combines assessment copies with custom covers and appends every form’s a
     page.getByRole('button', { name: new RegExp(`^Form ${originalLabel}(?: Previewing)?$`) }),
   ).toHaveCount(0);
   await page.getByText(/^Previous forms \(/).click();
-  await page.getByRole('button', { name: `View Form ${originalLabel} answer key` }).click();
-  await expect(page.getByRole('button', { name: 'Answer key', exact: true })).toHaveAttribute(
+  await page.getByRole('button', { name: `Form ${originalLabel}`, exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Student copy', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
+  await expect(
+    page.getByRole('button', { name: `Form ${originalLabel} Previewing` }),
+  ).toHaveAttribute('aria-pressed', 'true');
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   await page.getByRole('button', { name: `Archive Form ${newLabel}` }).click();
   const archiveDialog = page.getByRole('dialog', { name: `Archive Form ${newLabel}` });
@@ -635,9 +638,7 @@ test('combines assessment copies with custom covers and appends every form’s a
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeVisible();
   await page.getByRole('button', { name: `Archive Form ${newLabel}` }).click();
   await archiveDialog.getByRole('button', { name: 'Archive form' }).click();
-  await expect(
-    page.getByRole('button', { name: `View Form ${newLabel} answer key` }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: `Form ${newLabel}`, exact: true })).toBeVisible();
   await expect(
     page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
   ).toBeFocused();

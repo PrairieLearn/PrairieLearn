@@ -1075,13 +1075,12 @@ function PrintPreparation({
                             size="sm"
                             variant={form.id === formId ? 'secondary' : 'outline-secondary'}
                             className="text-start"
+                            aria-pressed={form.id === formId}
                             disabled={busy || isDirty || isSubmitting || download.isPending}
-                            onClick={() => {
-                              switchForm(form.id);
-                              switchDocument('answer_key');
-                            }}
+                            onClick={() => switchForm(form.id)}
                           >
-                            View Form {form.label} answer key
+                            Form {form.label}
+                            {form.id === formId && <span className="float-end">Previewing</span>}
                           </Button>
                         ))}
                       </div>
