@@ -33,6 +33,8 @@ async function renderInFrame<T>(
 ): Promise<T> {
   const frame = document.createElement('iframe');
   frame.title = 'Preparing printable document';
+  frame.inert = true;
+  frame.setAttribute('aria-hidden', 'true');
   frame.style.cssText =
     'position:fixed;left:-200vw;top:0;width:1200px;height:800px;border:0;pointer-events:none';
   let timeout: number | undefined;

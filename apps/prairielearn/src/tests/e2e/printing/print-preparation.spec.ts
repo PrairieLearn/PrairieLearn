@@ -598,14 +598,13 @@ test('combines current forms and answer keys with equal page counts and custom c
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
   const originalLabel = await printFormLabel(page, originalFormId);
   expect(originalLabel).toMatch(/^A(?:[2-9]|[1-9]\d+)?$/);
+  const nextLabel = `A${Number(originalLabel.slice(1) || 1) + 1}`;
   const originalQuestions = await selectPrintFormQuestions(originalFormId);
   await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
   const regenerateDialog = page.getByRole('dialog', {
     name: `Regenerate Form ${originalLabel}`,
   });
-  await expect(
-    regenerateDialog.getByText(/keeps the letter and gets the next number/),
-  ).toBeVisible();
+  await expect(regenerateDialog.getByText(`Form ${nextLabel}`, { exact: true })).toBeVisible();
   await regenerateDialog.getByRole('button', { name: 'Cancel' }).click();
   expect(new URL(page.url()).searchParams.get('form')).toBe(originalFormId);
   await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
@@ -613,8 +612,7 @@ test('combines current forms and answer keys with equal page counts and custom c
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(originalFormId);
   const replacementId = new URL(page.url()).searchParams.get('form')!;
   const replacementLabel = await printFormLabel(page, replacementId);
-  expect(replacementLabel).toMatch(/^A(?:[2-9]|[1-9]\d+)?$/);
-  expect(replacementLabel).not.toBe(originalLabel);
+  expect(replacementLabel).toBe(nextLabel);
   await expect(
     page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
   ).toBeFocused();
