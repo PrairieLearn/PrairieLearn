@@ -22,6 +22,7 @@ export type PreviewState =
 export function PrintPreview({
   url,
   document,
+  active,
   paperWidth,
   selectedQuestion,
   onStateChange,
@@ -29,6 +30,7 @@ export function PrintPreview({
 }: {
   url: string;
   document: PrintDocument;
+  active: boolean;
   paperWidth: number;
   selectedQuestion: { number: string } | null;
   onStateChange: (state: PreviewState) => void;
@@ -46,6 +48,7 @@ export function PrintPreview({
     const element = containerRef.current;
     if (!element) return;
     const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width === 0) return;
       setScale(Math.min(1, entry.contentRect.width / (paperWidth + 64)));
     });
     observer.observe(element);
@@ -71,11 +74,11 @@ export function PrintPreview({
 
   // Selecting a question in the review list moves to its printed location.
   useEffect(() => {
-    if (!selectedQuestion || state.status !== 'ready') return;
+    if (!active || !selectedQuestion || state.status !== 'ready') return;
     frameRef.current?.contentDocument
       ?.querySelector(`[data-question-number="${CSS.escape(selectedQuestion.number)}"]`)
       ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  }, [selectedQuestion, state.status]);
+  }, [active, selectedQuestion, state.status]);
 
   const watchPreview = useCallback(() => {
     const doc = frameRef.current?.contentDocument;
@@ -161,6 +164,8 @@ export function PrintPreview({
       ref={containerRef}
       className="print-preparation-preview"
       aria-busy={state.status === 'loading'}
+      hidden={!active}
+      inert={!active}
     >
       {state.status === 'loading' && (
         <div className="print-preparation-overlay" role="status">

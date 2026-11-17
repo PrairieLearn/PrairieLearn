@@ -66,7 +66,15 @@ const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
 };
 
 const SNAPSHOT_PREPARATION_BATCH_SIZE = 3;
+const MAX_CACHED_PREVIEWS = 3;
 const COVER_SIZE_LIMIT = filesize(MAX_COVER_BYTES, { base: 10 });
+
+interface CachedPreview {
+  key: string;
+  url: string;
+  document: PrintDocument;
+  state: Extract<PreviewState, { status: 'ready' }>;
+}
 
 interface PrintPreparationProps {
   assessmentId: string;
@@ -135,6 +143,45 @@ function AutomaticExportDownload({
     }
   }, [status.data, onFinished, printExportId]);
   return null;
+}
+
+function PreviewFrame({
+  cacheKey,
+  url,
+  document,
+  active,
+  selectedQuestion,
+  onStateChange,
+  onSnapshotReady,
+}: {
+  cacheKey: string;
+  url: string;
+  document: PrintDocument;
+  active: boolean;
+  selectedQuestion: { number: string } | null;
+  onStateChange: (key: string, url: string, document: PrintDocument, state: PreviewState) => void;
+  onSnapshotReady: (key: string, url: string, snapshot: PrintSnapshot, doc: Document) => void;
+}) {
+  const handleStateChange = useCallback(
+    (state: PreviewState) => onStateChange(cacheKey, url, document, state),
+    [cacheKey, url, document, onStateChange],
+  );
+  const handleSnapshotReady = useCallback(
+    (snapshot: PrintSnapshot, doc: Document) => onSnapshotReady(cacheKey, url, snapshot, doc),
+    [cacheKey, url, onSnapshotReady],
+  );
+
+  return (
+    <PrintPreview
+      url={url}
+      document={document}
+      paperWidth={new URLSearchParams(url.split('?')[1]).get('paper_size') === 'Letter' ? 816 : 794}
+      active={active}
+      selectedQuestion={selectedQuestion}
+      onStateChange={handleStateChange}
+      onSnapshotReady={handleSnapshotReady}
+    />
+  );
 }
 
 function PrintPreparation({
@@ -220,7 +267,9 @@ function PrintPreparation({
   const [selectedQuestion, setSelectedQuestion] = useState<{ number: string } | null>(null);
   const [reviewOnly, setReviewOnly] = useState(false);
   const [dismissedReviewWarning, setDismissedReviewWarning] = useState<string | null>(null);
-  const [preview, setPreview] = useState<{ url: string; state: PreviewState } | null>(null);
+  const [preview, setPreview] = useState<{ key: string; state: PreviewState } | null>(null);
+  const [cachedPreviews, setCachedPreviews] = useState<CachedPreview[]>([]);
+  const [previewVersions, setPreviewVersions] = useState<Record<string, number>>({});
   const [previewPending, setPreviewPending] = useState(false);
   const [preparingPdf, setPreparingPdf] = useState(false);
   const [pdfPreparationProgress, setPdfPreparationProgress] = useState<{
@@ -230,7 +279,6 @@ function PrintPreparation({
   const [pdfPreparationError, setPdfPreparationError] = useState<Error | null>(null);
   const snapshotsRef = useRef(new Map<string, PrintSnapshot>());
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
-  const [retry, setRetry] = useState(0);
   const [snapshotStale, setSnapshotStale] = useState(false);
   const [exportId, setExportId] = useQueryState('export', parseAsString);
   const [automaticExportIds, setAutomaticExportIds] = useState<string[]>([]);
@@ -283,6 +331,10 @@ function PrintPreparation({
     setPreviewUrl(savedPreviewUrl);
   }, [formId, document, savedPreviewUrl]);
   const previewIsCurrent = previewUrl === savedPreviewUrl;
+  const activePreviewKey = `${previewUrl}:${previewVersions[previewUrl] ?? 0}`;
+  const previewsToRender = cachedPreviews.some((entry) => entry.key === activePreviewKey)
+    ? cachedPreviews
+    : [...cachedPreviews, { key: activePreviewKey, url: previewUrl, document }];
   const questions = useQuery(
     trpc.printForms.questions.queryOptions(
       validForm && formId ? { printFormId: formId } : skipToken,
@@ -705,8 +757,18 @@ function PrintPreparation({
     }
   }
 
+  function reuseCachedPreview(url: string) {
+    const key = `${url}:${previewVersions[url] ?? 0}`;
+    setCachedPreviews((entries) => {
+      const index = entries.findIndex((entry) => entry.key === key);
+      if (index < 0 || index === entries.length - 1) return entries;
+      return [...entries.slice(0, index), ...entries.slice(index + 1), entries[index]];
+    });
+  }
+
   function switchDocument(next: PrintDocument) {
     if (next === document) return;
+    reuseCachedPreview(`${printBase}/preview?${layout}&document=${next}`);
     setDocument(next);
     setPreview(null);
   }
@@ -717,6 +779,8 @@ function PrintPreparation({
     void setSelectedForm(id);
     const next =
       nextSettings ?? forms.data.find((form) => form.id === id)?.settings ?? defaultSettings;
+    const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
+    reuseCachedPreview(`${base}/preview?${printLayoutSearch(next)}&document=${document}`);
     reset(next, { keepDirtyValues: false });
     setSelectedQuestion(null);
     setDismissedReviewWarning(null);
@@ -758,9 +822,10 @@ function PrintPreparation({
       const url = `${base}/preview?${search}&document=${printDocument}`;
       const livePreview = previewDocumentRef.current;
       const snapshot =
-        livePreview?.url === url && livePreview.doc.documentElement.dataset.printStatus === 'ready'
-          ? (snapshotsRef.current.get(url) ?? capturePrintSnapshot(livePreview.doc))
-          : await renderPrintSnapshot(url);
+        snapshotsRef.current.get(url) ??
+        (livePreview?.url === url && livePreview.doc.documentElement.dataset.printStatus === 'ready'
+          ? capturePrintSnapshot(livePreview.doc)
+          : await renderPrintSnapshot(url));
       snapshotsRef.current.set(url, snapshot);
       const headers = new Headers({
         Accept: 'application/json',
@@ -809,21 +874,33 @@ function PrintPreparation({
   }, [formId, controlsBusy, isDirty, forms.data, formFocusRequest]);
   const preparingExport = download.isPending || packet.isPending || preparingPdf;
   const onPreviewState = useCallback(
-    (state: PreviewState) => {
-      setPreview({ url: previewUrl, state });
+    (key: string, url: string, previewDocument: PrintDocument, state: PreviewState) => {
+      if (key !== activePreviewKey) return;
+      setPreview({ key, state });
+      if (state.status === 'ready') {
+        setCachedPreviews((entries) =>
+          [
+            ...entries.filter((entry) => entry.key !== key),
+            { key, url, document: previewDocument, state },
+          ].slice(-MAX_CACHED_PREVIEWS),
+        );
+      }
       if (state.status === 'ready') setSnapshotStale(false);
       if (state.status !== 'loading') setPreviewPending(false);
     },
-    [previewUrl],
+    [activePreviewKey],
   );
   const onSnapshotReady = useCallback(
-    (snapshot: PrintSnapshot, doc: Document) => {
-      snapshotsRef.current.set(previewUrl, snapshot);
-      previewDocumentRef.current = { url: previewUrl, doc };
+    (key: string, url: string, snapshot: PrintSnapshot, doc: Document) => {
+      if (key !== activePreviewKey) return;
+      snapshotsRef.current.set(url, snapshot);
+      previewDocumentRef.current = { url, doc };
     },
-    [previewUrl],
+    [activePreviewKey],
   );
-  const loadedPreview = preview?.url === previewUrl ? preview.state : null;
+  const loadedPreview =
+    cachedPreviews.find((entry) => entry.key === activePreviewKey)?.state ??
+    (preview?.key === activePreviewKey ? preview.state : null);
   const currentPreview = previewIsCurrent ? loadedPreview : null;
   const omitted = new Map(
     loadedPreview?.status === 'ready'
@@ -949,7 +1026,6 @@ function PrintPreparation({
     };
     setPreviewPending(true);
     setPreview(null);
-    snapshotsRef.current.clear();
     if (exportNeedsNewPreview) void setExportId(null);
     packet.reset();
     download.reset();
@@ -975,9 +1051,19 @@ function PrintPreparation({
       reset(values, { keepDirtyValues: false });
       if (nextFormId) {
         const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: nextFormId });
-        setPreviewUrl(`${base}/preview?${printLayoutSearch(values)}&document=${document}`);
+        const nextUrl = `${base}/preview?${printLayoutSearch(values)}&document=${document}`;
+        for (const url of snapshotsRef.current.keys()) {
+          if (url.startsWith(`${base}/preview?`)) snapshotsRef.current.delete(url);
+        }
+        setCachedPreviews((entries) =>
+          entries.filter((entry) => !entry.url.startsWith(`${base}/preview?`)),
+        );
+        setPreviewVersions((versions) => ({
+          ...versions,
+          [nextUrl]: (versions[nextUrl] ?? 0) + 1,
+        }));
+        setPreviewUrl(nextUrl);
       }
-      setRetry((value) => value + 1);
     } catch (error) {
       setPreviewPending(false);
       if (error instanceof TRPCClientError && error.data?.code === 'CONFLICT') {
@@ -2003,19 +2089,18 @@ function PrintPreparation({
                 </div>
               )}
               {validForm ? (
-                <PrintPreview
-                  key={`${previewUrl}:${retry}`}
-                  url={previewUrl}
-                  document={document}
-                  paperWidth={
-                    new URLSearchParams(previewUrl.split('?')[1]).get('paper_size') === 'Letter'
-                      ? 816
-                      : 794
-                  }
-                  selectedQuestion={selectedQuestion}
-                  onStateChange={onPreviewState}
-                  onSnapshotReady={onSnapshotReady}
-                />
+                previewsToRender.map((entry) => (
+                  <PreviewFrame
+                    key={entry.key}
+                    cacheKey={entry.key}
+                    url={entry.url}
+                    document={entry.document}
+                    active={entry.key === activePreviewKey}
+                    selectedQuestion={entry.key === activePreviewKey ? selectedQuestion : null}
+                    onStateChange={onPreviewState}
+                    onSnapshotReady={onSnapshotReady}
+                  />
+                ))
               ) : (
                 <div className="print-preparation-empty">
                   <i
