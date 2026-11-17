@@ -1,3 +1,6 @@
+/* For math in replies, which `ChatMarkdown` typesets with KaTeX. */
+@import url('katex/dist/katex.min.css');
+
 .course-agent-launcher {
   --bs-btn-color: var(--bs-navbar-color);
   --bs-btn-border-color: var(--bs-navbar-color);
@@ -86,6 +89,13 @@
 
 .course-agent-panel .markdown-body p:last-child {
   margin-bottom: 0;
+}
+
+/* Wide display math scrolls instead of widening the panel. */
+.course-agent-panel .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
 }
 
 body:has(.course-agent-panel) .app-main {

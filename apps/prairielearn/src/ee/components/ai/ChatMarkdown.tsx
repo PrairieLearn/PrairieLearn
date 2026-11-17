@@ -1,39 +1,21 @@
 import clsx from 'clsx';
-import { createElement, useEffect, useRef } from 'react';
+import { createElement } from 'react';
 import type { UrlTransform } from 'react-markdown';
-import remarkMath from 'remark-math';
 import {
   type Components,
+  type MathPlugin,
   Streamdown,
   defaultRehypePlugins,
   defaultRemarkPlugins,
 } from 'streamdown';
 
-import { loadMathjax, mathjaxTypeset } from '../../../lib/client/mathjax.js';
-
-function MathExpression({ tex, display }: { tex: string; display: boolean }) {
-  const ref = useRef<HTMLElement>(null);
-  const source = display ? `$$${tex}$$` : `$${tex}$`;
-
-  // MathJax replaces the source text with the typeset math. An expression
-  // that is still streaming changes several times a second, so this waits
-  // until it has settled instead of typesetting each partial expression.
-  useEffect(() => {
-    const timeout = setTimeout(async () => {
-      await loadMathjax();
-      if (ref.current) await mathjaxTypeset([ref.current]);
-    }, 200);
-    return () => clearTimeout(timeout);
-  }, [source]);
-
-  // The key gives a changed expression a fresh element, since MathJax has
-  // replaced the contents of the old one.
-  return createElement(
-    display ? 'div' : 'span',
-    { key: source, ref, className: clsx('mathjax_process', display && 'mb-3 overflow-auto') },
-    source,
-  );
-}
+import {
+  escapeTableMathPipes,
+  parseMarkdownIntoChatBlocks,
+  rehypeChatKatex,
+  remarkChatMath,
+  remendHandlers,
+} from './chatMath.js';
 
 // Streamdown styles these tags with Tailwind utility classes, which are
 // missing or mean something else in our Bootstrap app, so each is replaced
@@ -60,24 +42,14 @@ const PLAIN_TAGS = [
 
 const components: Components = {
   ...Object.fromEntries(PLAIN_TAGS.map((tag) => [tag, tag])),
-  inlineCode: ({ node: _node, className, children, ...props }) => {
-    if (className?.includes('language-math') && typeof children === 'string') {
-      return <MathExpression tex={children} display={false} />;
-    }
-    return <code {...props}>{children}</code>;
-  },
+  inlineCode: ({ node: _node, className: _className, ...props }) => <code {...props} />,
   // `pre` is left to Streamdown: it only marks its child as a block, and
   // `code` then renders the whole code block.
-  code: ({ className, children }) => {
-    if (className?.includes('language-math') && typeof children === 'string') {
-      return <MathExpression tex={children.trim()} display />;
-    }
-    return (
-      <pre>
-        <code className={className}>{children}</code>
-      </pre>
-    );
-  },
+  code: ({ className, children }) => (
+    <pre>
+      <code className={className}>{children}</code>
+    </pre>
+  ),
   // Streamdown marks every link to open in a new tab. Course file links should
   // open in the same tab.
   a: ({ node: _node, className: _className, target: _target, rel: _rel, ...props }) =>
@@ -92,46 +64,64 @@ const components: Components = {
   ),
 };
 
-// Models usually delimit math with `\(...\)` and `\[...\]`, which markdown
-// reads as escaped brackets. Code is matched first so that it is left alone.
-const MATH_DELIMITERS = /(```[\s\S]*?(?:```|$)|`[^`\n]*`)|\\\[([\s\S]*?)\\\]|\\\((.*?)\\\)/g;
-
-function normalizeMathDelimiters(markdown: string) {
-  return markdown.replaceAll(MATH_DELIMITERS, (match, code, display, inline) => {
-    if (code !== undefined) return match;
-    return display !== undefined ? `$$${display}$$` : `$${inline}$`;
-  });
-}
-
-const remarkPlugins = [...Object.values(defaultRemarkPlugins), remarkMath];
-
 // Streamdown's default `raw` plugin is left out on purpose. It parses HTML in
 // a message into elements, and sanitizing then silently drops any tag it
 // doesn't know. Replies routinely mention elements like `<pl-number-input>`
 // outside of code spans; without `raw`, HTML is shown as written instead.
 const rehypePlugins = [defaultRehypePlugins.sanitize, defaultRehypePlugins.harden];
 
+// Streamdown runs the math plugin's rehype step after the sanitizer, which
+// would otherwise strip KaTeX's markup.
+function mathPlugins(streaming: boolean) {
+  return {
+    math: {
+      name: 'katex',
+      type: 'math',
+      remarkPlugin: remarkChatMath,
+      rehypePlugin: [rehypeChatKatex, { streaming }],
+    } satisfies MathPlugin,
+  };
+}
+
+const MATH_PLUGINS = mathPlugins(false);
+const STREAMING_MATH_PLUGINS = mathPlugins(true);
+
+/**
+ * Renders a chat reply's markdown. With `math`, TeX is typeset with KaTeX; the
+ * page must then include KaTeX's stylesheet (see `courseAgent.css`).
+ */
 export function ChatMarkdown({
   content,
+  streaming,
+  math = false,
   className,
   urlTransform,
 }: {
   content: string;
+  streaming: boolean;
+  math?: boolean;
   className?: string;
   urlTransform?: UrlTransform;
 }) {
   return (
     <Streamdown
-      className={className}
+      // Question pages typeset the whole page with MathJax, which would read
+      // prices like `$5 and $10` in a message as math.
+      className={clsx(math && 'mathjax_ignore', className)}
       components={components}
+      // Closing unfinished syntax would also rewrite finished messages, e.g.
+      // dropping the `[` from a half-open interval like `[0, 1)`.
+      parseIncompleteMarkdown={streaming}
+      parseMarkdownIntoBlocksFn={math ? parseMarkdownIntoChatBlocks : undefined}
+      plugins={math ? (streaming ? STREAMING_MATH_PLUGINS : MATH_PLUGINS) : undefined}
       rehypePlugins={rehypePlugins}
-      remarkPlugins={remarkPlugins}
+      remarkPlugins={Object.values(defaultRemarkPlugins)}
       // A link that is still streaming has no destination yet, so it is shown
       // as text until it is complete.
-      remend={{ linkMode: 'text-only' }}
+      remend={{ linkMode: 'text-only', handlers: math ? remendHandlers : undefined }}
       urlTransform={urlTransform}
     >
-      {normalizeMathDelimiters(content)}
+      {math ? escapeTableMathPipes(content) : content}
     </Streamdown>
   );
 }

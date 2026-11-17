@@ -1,0 +1,8 @@
+{
+  "name": "rehype-raw",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Empty stand-in for rehype-raw; see the override in pnpm-workspace.yaml.",
+  "type": "module",
+  "exports": "./index.js"
+}

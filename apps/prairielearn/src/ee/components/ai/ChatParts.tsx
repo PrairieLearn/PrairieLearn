@@ -43,7 +43,7 @@ export function Disclosure({
   );
 }
 
-export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
+export function ReasoningBlock({ part, math = false }: { part: ReasoningUIPart; math?: boolean }) {
   // Track whether the user has explicitly interacted with the expand/collapse
   const [userControlled, setUserControlled] = useState(false);
   const [userExpanded, setUserExpanded] = useState(false);
@@ -65,17 +65,32 @@ export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
         setUserExpanded(!isExpanded);
       }}
     >
-      <ChatMarkdown className="markdown-body reasoning-body p-1 pt-0" content={part.text} />
+      <ChatMarkdown
+        className="markdown-body reasoning-body p-1 pt-0"
+        content={part.text}
+        math={math}
+        streaming={isStreaming}
+      />
     </Disclosure>
   );
 }
 
 export function TextPart({
   part,
+  math = false,
   urlTransform,
 }: {
   part: TextUIPart;
+  math?: boolean;
   urlTransform?: UrlTransform;
 }) {
-  return <ChatMarkdown className="markdown-body" content={part.text} urlTransform={urlTransform} />;
+  return (
+    <ChatMarkdown
+      className="markdown-body"
+      content={part.text}
+      math={math}
+      streaming={part.state === 'streaming'}
+      urlTransform={urlTransform}
+    />
+  );
 }

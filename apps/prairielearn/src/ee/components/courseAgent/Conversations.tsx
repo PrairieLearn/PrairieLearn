@@ -859,9 +859,9 @@ function Message({
       const { key, part } = segment;
       if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) return null;
       if (part.type === 'text') {
-        return <TextPart key={key} part={part} urlTransform={linkTransform} />;
+        return <TextPart key={key} part={part} urlTransform={linkTransform} math />;
       }
-      if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
+      if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} math />;
       if (part.type === 'data-input-request') {
         const request = InputRequestPartSchema.safeParse(part.data).data;
         if (!request) return null;

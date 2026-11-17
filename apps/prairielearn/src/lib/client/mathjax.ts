@@ -114,27 +114,6 @@ const {
   });
 })();
 
-/**
- * Loads MathJax on a page that did not include it, so that a component which
- * only occasionally shows math doesn't make every page download MathJax.
- * Resolves once MathJax is ready.
- */
-export async function loadMathjax() {
-  if (typeof window === 'undefined') return;
-
-  const src = document.querySelector('meta[name="mathjax-script-path"]')?.getAttribute('content');
-  if (src && !document.querySelector('script[src$="/tex-svg.js"]')) {
-    // The page wasn't written with MathJax in mind, so only typeset what we're asked to.
-    window.MathJax.startup.typeset = false;
-    const script = document.createElement('script');
-    script.src = src;
-    script.addEventListener('error', () => mathjaxReject(new Error('Failed to load MathJax')));
-    document.head.append(script);
-  }
-
-  await mathjaxPromise;
-}
-
 export async function mathjaxTypeset(elements?: Element[]) {
   // No-op on the server.
   if (typeof window === 'undefined') return;
