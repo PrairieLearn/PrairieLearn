@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+
 import { HttpStatusError } from '@prairielearn/error';
 import {
   execute,
@@ -11,7 +13,12 @@ import {
 import { IdSchema } from '@prairielearn/zod';
 
 import { PrintFormSchema } from '../lib/db-types.js';
-import { type PrintSettings, sameExcludedQuestions } from '../lib/printing/print-settings.js';
+import {
+  PRINT_QUESTION_SELECTION_LOCKED_MESSAGE,
+  PRINT_SETTINGS_CHANGED_MESSAGE,
+  type PrintSettings,
+  sameExcludedQuestions,
+} from '../lib/printing/print-settings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -45,10 +52,12 @@ export async function updatePrintFormSettings({
   printFormId,
   assessmentId,
   settings,
+  expectedSettings,
 }: {
   printFormId: string;
   assessmentId: string;
   settings: PrintSettings;
+  expectedSettings: PrintSettings;
 }) {
   return await runInTransactionAsync(async () => {
     await lockAssessmentForPrintForms(assessmentId);
@@ -58,10 +67,10 @@ export async function updatePrintFormSettings({
       current.question_selection_locked_at !== null &&
       !sameExcludedQuestions(current.settings.excludedQuestions, settings.excludedQuestions)
     ) {
-      throw new HttpStatusError(
-        409,
-        'This form’s question selection is locked after a download. Regenerate the form to change its questions.',
-      );
+      throw new HttpStatusError(409, PRINT_QUESTION_SELECTION_LOCKED_MESSAGE);
+    }
+    if (current?.archived_at === null && !isDeepStrictEqual(current.settings, expectedSettings)) {
+      throw new HttpStatusError(409, PRINT_SETTINGS_CHANGED_MESSAGE);
     }
     return await queryOptionalRow(
       sql.update_print_form_settings,

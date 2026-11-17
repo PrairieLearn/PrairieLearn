@@ -11,7 +11,7 @@ import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
 import { selectPrintFormQuestions } from '../../../models/print-form-question.js';
-import { selectOptionalPrintForm } from '../../../models/print-form.js';
+import { selectOptionalPrintForm, updatePrintFormSettings } from '../../../models/print-form.js';
 import { syncCourse } from '../../helperCourse.js';
 import { getOrCreateUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
@@ -92,6 +92,58 @@ async function printFormLabel(page: Page, printFormId?: string) {
   const form = await selectOptionalPrintForm({ printFormId: formId, assessmentId });
   return form!.label;
 }
+
+test('keeps unsaved print settings when another tab updates the shared form', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
+  const otherTab = await page.context().newPage();
+  await otherTab.goto(page.url());
+  await expect(otherTab.getByLabel('Space per question')).toBeEnabled();
+
+  await page.bringToFront();
+  await page.getByLabel('Paper size').selectOption('A4');
+  await otherTab.bringToFront();
+  await otherTab.getByLabel('Space per question').selectOption('half');
+  await otherTab.getByRole('button', { name: 'Update preview' }).click();
+  await expect(otherTab.getByRole('button', { name: 'Download…' })).toBeEnabled({
+    timeout: 120_000,
+  });
+
+  const formsRefreshed = page.waitForResponse(
+    (response) => new URL(response.url()).pathname.endsWith('/printForms.list'),
+    { timeout: 15_000 },
+  );
+  await page.bringToFront();
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
+  await formsRefreshed;
+  await expect(page.getByLabel('Paper size')).toHaveValue('A4');
+  await expect(page.getByLabel('Space per question')).toHaveValue('half');
+  await expect(page.getByRole('button', { name: 'Update preview' })).toBeEnabled();
+
+  const printFormId = new URL(page.url()).searchParams.get('form')!;
+  const form = (await selectOptionalPrintForm({ printFormId, assessmentId: assessment.id }))!;
+  await updatePrintFormSettings({
+    printFormId,
+    assessmentId: assessment.id,
+    expectedSettings: form.settings,
+    settings: { ...form.settings, includeGradingTable: true },
+  });
+  await page.getByRole('button', { name: 'Update preview' }).click();
+  await expect(
+    page.getByRole('alert').getByText('This form’s settings changed in another tab.'),
+  ).toBeVisible();
+  await expect(page.getByLabel('Paper size')).toHaveValue('A4');
+  await expect(page.getByLabel('Include grading table')).toBeChecked();
+  await page.getByRole('button', { name: 'Update preview' }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  expect(
+    (await selectOptionalPrintForm({ printFormId, assessmentId: assessment.id }))!.settings,
+  ).toMatchObject({ paperSize: 'A4', blockSize: 'half', includeGradingTable: true });
+  await otherTab.close();
+});
 
 test('keeps multiple export links after another file is queued and the page reloads', async ({
   page,
@@ -817,7 +869,7 @@ test('keeps existing forms available when randomization is disabled', async ({
     await page.reload();
     await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
     await expect(page.getByRole('heading', { name: 'Print forms', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add form', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Add form', exact: true })).toHaveCount(0);
     await expect(
       page.getByRole('combobox', { name: 'Preview form', exact: true }).getByRole('option'),
     ).toHaveCount(2);

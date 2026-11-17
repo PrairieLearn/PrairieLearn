@@ -148,13 +148,14 @@ export const printFormsRouter = t.router({
     }
   }),
   updateSettings: assessmentFormProcedure
-    .input(z.object({ settings: PrintSettingsSchema }))
+    .input(z.object({ settings: PrintSettingsSchema, expectedSettings: PrintSettingsSchema }))
     .mutation(async ({ ctx, input }) => {
       try {
         const form = await updatePrintFormSettings({
           printFormId: input.printFormId,
           assessmentId: ctx.assessment.id,
           settings: input.settings,
+          expectedSettings: input.expectedSettings,
         });
         if (!form) {
           throw new TRPCError({

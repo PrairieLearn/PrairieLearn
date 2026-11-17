@@ -42,7 +42,11 @@ import {
 import type { StaffPrintForm } from '../../lib/client/safe-db-types.js';
 import { getPrintFormUrl, getQuestionUrl } from '../../lib/client/url.js';
 import type { PrintDocument } from '../../lib/printing/index.js';
-import { DEFAULT_PRINT_SETTINGS, type PrintSettings } from '../../lib/printing/print-settings.js';
+import {
+  DEFAULT_PRINT_SETTINGS,
+  PRINT_QUESTION_SELECTION_LOCKED_MESSAGE,
+  type PrintSettings,
+} from '../../lib/printing/print-settings.js';
 import type { QuestionBlockSize } from '../../lib/printing/question-block-size.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
@@ -221,7 +225,12 @@ function PrintPreparation({
     watch,
     setValue,
     formState: { errors, isDirty, isSubmitting },
-  } = useForm<PrintSettings>({ defaultValues: settings, values: settings });
+  } = useForm<PrintSettings>({
+    defaultValues: settings,
+    values: settings,
+    // A shared form can refresh while this instructor is editing it.
+    resetOptions: { keepDirtyValues: true },
+  });
   const includeCoverPage = watch('includeCoverPage');
   const questionSizes = watch('questionSizes');
   const excludedQuestions = watch('excludedQuestions');
@@ -517,7 +526,7 @@ function PrintPreparation({
     void setSelectedForm(id);
     const next =
       nextSettings ?? forms.data.find((form) => form.id === id)?.settings ?? defaultSettings;
-    reset(next);
+    reset(next, { keepDirtyValues: false });
     setSelectedQuestion(null);
     setPreview(null);
   }
@@ -715,20 +724,26 @@ function PrintPreparation({
         void setSelectedForm(result.printFormId);
         values = result.settings;
       } else {
-        const updated = await updateSettings.mutateAsync({ printFormId: formId, settings: values });
+        const updated = await updateSettings.mutateAsync({
+          printFormId: formId,
+          settings: values,
+          expectedSettings: settings,
+        });
         values = updated.settings;
         if (printLayoutSearch(values) === printLayoutSearch(settings)) {
           await questions.refetch();
         }
       }
-      reset(values);
+      reset(values, { keepDirtyValues: false });
       setRetry((value) => value + 1);
     } catch (error) {
       setPreviewPending(false);
       if (error instanceof TRPCClientError && error.data?.code === 'CONFLICT') {
         const latest = await forms.refetch();
         const saved = latest.data?.find((form) => form.id === formId);
-        if (saved) reset(saved.settings);
+        if (saved && error.message.includes(PRINT_QUESTION_SELECTION_LOCKED_MESSAGE)) {
+          reset(saved.settings, { keepDirtyValues: false });
+        }
       }
       throw error;
     }
@@ -1068,18 +1083,20 @@ function PrintPreparation({
                         );
                       })}
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline-primary"
-                      size="sm"
-                      className={clsx('mt-3', { disabled: !canAddForm })}
-                      aria-disabled={!canAddForm}
-                      onClick={() => {
-                        if (canAddForm) void addForm().catch(() => {});
-                      }}
-                    >
-                      <i className="bi bi-plus-lg me-2" aria-hidden="true" /> Add form
-                    </Button>
+                    {hasRandomization && !groupWork && (
+                      <Button
+                        type="button"
+                        variant="outline-primary"
+                        size="sm"
+                        className={clsx('mt-3', { disabled: !canAddForm })}
+                        aria-disabled={!canAddForm}
+                        onClick={() => {
+                          if (canAddForm) void addForm().catch(() => {});
+                        }}
+                      >
+                        <i className="bi bi-plus-lg me-2" aria-hidden="true" /> Add form
+                      </Button>
+                    )}
                     {isDirty && (
                       <p className="small text-muted mt-2 mb-0">
                         Update the preview to apply your changes before switching forms.

@@ -270,6 +270,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await api.printForms.updateSettings.mutate({
       printFormId: first.printFormId,
       settings: updatedSettings,
+      expectedSettings: originalSettings,
     });
     expect(
       (await api.printForms.list.query()).find((form) => form.id === first.printFormId),
@@ -301,6 +302,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       api.printForms.updateSettings.mutate({
         printFormId: first.printFormId,
         settings: originalSettings,
+        expectedSettings: updatedSettings,
       }),
     ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
   });
@@ -368,6 +370,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       api.printForms.updateSettings.mutate({
         printFormId: otherForm.printFormId,
         settings: DEFAULT_PRINT_SETTINGS,
+        expectedSettings: DEFAULT_PRINT_SETTINGS,
       }),
     ).rejects.toThrow('This print form is not available.');
     await expect(
@@ -545,11 +548,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
         api.printForms.updateSettings.mutate({
           printFormId: form.printFormId,
           settings: { ...DEFAULT_PRINT_SETTINGS, excludedQuestions: ['1'] },
+          expectedSettings: form.settings,
         }),
       ).rejects.toMatchObject({ data: { code: 'CONFLICT' } });
       await api.printForms.updateSettings.mutate({
         printFormId: form.printFormId,
         settings: { ...DEFAULT_PRINT_SETTINGS, paperSize: 'A4' },
+        expectedSettings: form.settings,
       });
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledOnce();
