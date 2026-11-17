@@ -319,20 +319,29 @@ function PendingStatus({ label }: { label: string }) {
  * from the sandbox starting to the turn ending, so the time covers both.
  */
 function ActivityStatus({
+  conversationId,
   startingSandbox,
   message,
 }: {
+  conversationId: string;
   startingSandbox: boolean;
   message: UIMessage | undefined;
 }) {
   const call = latestCall(message);
-  const [startedAt] = useState(() => Date.now());
-  const [now, setNow] = useState(startedAt);
+  const storageKey = `course-agent-working-since:${conversationId}`;
+  const [startedAt] = useState(() => Number(sessionStorage.getItem(storageKey)) || Date.now());
+  const [now, setNow] = useState(() => Date.now());
   // Advances the elapsed time once a second.
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
+  // Remembers when the agent started, so reloading the page mid-turn does not restart the time.
+  // Leaving the page skips the cleanup; the turn ending runs it.
+  useEffect(() => {
+    sessionStorage.setItem(storageKey, String(startedAt));
+    return () => sessionStorage.removeItem(storageKey);
+  }, [storageKey, startedAt]);
   return (
     <div className="small text-body-secondary" role="status">
       {/* The label changes with every step and the time every second, too often to announce. */}
@@ -657,7 +666,11 @@ function Chat({
               />
             )}
           {(startingSandbox || working) && (
-            <ActivityStatus startingSandbox={startingSandbox} message={messages.at(-1)} />
+            <ActivityStatus
+              conversationId={conversationId}
+              startingSandbox={startingSandbox}
+              message={messages.at(-1)}
+            />
           )}
           {lifecycle?.status === 'blocked' && (
             <BlockedNotice
