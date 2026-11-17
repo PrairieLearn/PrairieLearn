@@ -673,6 +673,14 @@ test('distinguishes paper review flags from broken questions omitted from the do
   await expect(page.getByText('Omitted', { exact: true }).first()).toBeVisible({
     timeout: 120_000,
   });
+  const firstOmittedQuestion = page
+    .getByRole('group', { name: /^Question / })
+    .filter({ has: page.getByText('Omitted', { exact: true }) })
+    .first();
+  await expect(firstOmittedQuestion).not.toBeInViewport();
+  await page.getByRole('button', { name: 'Review questions' }).click();
+  await expect(firstOmittedQuestion).toBeInViewport();
+  await expect(firstOmittedQuestion).toBeFocused();
   await expect(downloadMenu(page)).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeEnabled();
   await page.getByLabel(/Show only items to review/).check();
@@ -700,16 +708,14 @@ test('distinguishes paper review flags from broken questions omitted from the do
   }
   await expect(page.getByText('Omitted', { exact: true })).toHaveCount(0);
 
+  const firstFormId = new URL(page.url()).searchParams.get('form');
+  const firstLabel = await printFormLabel(page);
   await page.getByRole('button', { name: 'Add form', exact: true }).click();
   await expect
-    .poll(() => new URL(page.url()).searchParams.get('forms')?.split(',').length, {
+    .poll(() => new URL(page.url()).searchParams.get('form'), {
       timeout: 120_000,
     })
-    .toBe(2);
-  const firstLabel = await printFormLabel(
-    page,
-    new URL(page.url()).searchParams.get('forms')!.split(',')[0],
-  );
+    .not.toBe(firstFormId);
   await expect(page.getByText('Omitted', { exact: true }).first()).toBeVisible({
     timeout: 120_000,
   });
