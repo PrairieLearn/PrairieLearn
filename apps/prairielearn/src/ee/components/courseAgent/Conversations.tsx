@@ -237,9 +237,7 @@ function ConversationPicker({
                 <PendingStatus label="Getting ready…" />
               </div>
             ) : (
-              <p className="text-muted text-center my-4">
-                Ask the course agent about your course or about PrairieLearn.
-              </p>
+              <EmptyConversation onStart={setDraft} />
             )}
             {create.isError && (
               <AppErrorAlert error={createError} render={{ UNKNOWN: ({ message }) => message }} />
@@ -257,6 +255,42 @@ function ConversationPicker({
           />
         </FileDropArea>
       ) : null}
+    </div>
+  );
+}
+
+/** Openings for staff who are not sure what to ask. Each leaves the rest for them to fill in. */
+const STARTERS = [
+  { label: 'Review a question', text: 'Review this question and suggest improvements: ' },
+  { label: 'Write a new question', text: 'Write a new question about ' },
+  { label: 'See how students are doing', text: 'Which questions are students finding hardest in ' },
+  { label: 'Ask how PrairieLearn works', text: 'How do I ' },
+];
+
+function EmptyConversation({ onStart }: { onStart: (text: string) => void }) {
+  return (
+    <div className="text-center my-4">
+      <p className="text-muted">Ask the course agent about your course or about PrairieLearn.</p>
+      <div className="d-flex flex-wrap justify-content-center gap-2">
+        {STARTERS.map(({ label, text }) => (
+          <Button
+            key={label}
+            variant="outline-secondary"
+            size="sm"
+            className="rounded-pill"
+            onClick={(event) => {
+              onStart(text);
+              // The opening is unfinished, so typing carries on from it in the message box.
+              event.currentTarget
+                .closest('.course-agent-panel')
+                ?.querySelector<HTMLTextAreaElement>('.course-agent-composer textarea')
+                ?.focus();
+            }}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -591,9 +625,7 @@ function Chat({
             <Loading />
           )}
           {historyReady && !showInitialText && messages.length === 0 && (
-            <p className="text-muted text-center my-4">
-              Ask the course agent about your course or about PrairieLearn.
-            </p>
+            <EmptyConversation onStart={setDraft} />
           )}
           {messages.map((message, index) => (
             <Message

@@ -18,6 +18,16 @@ const isCall = (item: WorkItem): item is ToolCall => 'kind' in item;
 /** Where the sandbox keeps the agent's skills, which staff cannot see. */
 const SKILLS_DIR = '/etc/codex/skills/';
 
+/** The agent's own tools for students' results. */
+const isCourseData = (call: ToolCall) =>
+  call.kind === 'tool' &&
+  call.server === null &&
+  ['list_course_datasets', 'get_course_data'].includes(call.tool);
+
+const readsOnlySkills = (call: ToolCall) =>
+  call.kind === 'command' &&
+  call.actions.every((action) => action.type === 'read' && action.path.startsWith(SKILLS_DIR));
+
 type Verb =
   | 'read'
   | 'list'
@@ -28,6 +38,8 @@ type Verb =
   | 'create'
   | 'delete'
   | 'call'
+  | 'check'
+  | 'look up'
   | 'summarize';
 
 const VERBS: Record<Verb, [running: string, done: string]> = {
@@ -40,6 +52,8 @@ const VERBS: Record<Verb, [running: string, done: string]> = {
   create: ['Creating', 'Created'],
   delete: ['Deleting', 'Deleted'],
   call: ['Calling', 'Called'],
+  check: ['Checking', 'Checked'],
+  'look up': ['Looking up', 'Looked up'],
   summarize: ['Summarizing', 'Summarized'],
 };
 
@@ -116,6 +130,13 @@ function category(call: ToolCall): {
           group: (n) => `Browsed the web ${count(n, 'time')}`,
         };
       }
+      if (isCourseData(call)) {
+        return {
+          key: 'data',
+          icon: 'bi-table',
+          group: (n) => `Looked up course data ${count(n, 'time')}`,
+        };
+      }
       return {
         key: `call:${toolName(call)}`,
         icon: 'bi-plug',
@@ -137,6 +158,7 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
       const { actions } = call;
       const [action] = actions;
       if (category(call).key === 'read') {
+        if (readsOnlySkills(call)) return { verb: 'check', subject: 'guidance' };
         return {
           verb: 'read',
           subject: actions.map((read, i) => (
@@ -182,6 +204,7 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
     }
     case 'tool':
       if (call.server === 'web') return describeWeb(call.tool, call.arguments.text);
+      if (isCourseData(call)) return { verb: 'look up', subject: 'course data' };
       return { verb: 'call', subject: <Code>{toolName(call)}</Code> };
     case 'compaction':
       return { verb: 'summarize', subject: 'earlier conversation' };
@@ -321,7 +344,7 @@ export function runningLabel(call: ToolCall): string {
         const paths = call.actions.flatMap((action) =>
           action.type === 'read' ? [action.path] : [],
         );
-        if (paths.every((path) => path.startsWith(SKILLS_DIR))) return 'Checking guidance';
+        if (readsOnlySkills(call)) return 'Checking guidance';
         return paths.length === 1 ? `Reading ${name(paths[0])}` : `Reading ${paths.length} files`;
       }
       if (key === 'list') return 'Looking through the course files';
@@ -336,6 +359,7 @@ export function runningLabel(call: ToolCall): string {
       return `${verb} ${name(path)}`;
     }
     case 'tool':
+      if (isCourseData(call)) return 'Looking up course data';
       if (call.server !== 'web') return 'Getting information';
       return call.tool === 'search' ? 'Searching the web' : 'Reading a web page';
     case 'compaction':
