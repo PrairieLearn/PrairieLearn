@@ -176,7 +176,10 @@ export async function queuePrintExport({
   work: PrintExportWork;
 }): Promise<string> {
   if (shutdownController.signal.aborted || !getQueue()) {
-    throw new HttpStatusError(503, 'Downloads are unavailable right now. Try again later.');
+    throw new HttpStatusError(
+      503,
+      'Downloads are unavailable right now. Try again later or contact support.',
+    );
   }
   const bucket = getFileStoreS3Bucket();
   const inputKey = `${KEY_PREFIX}input/${randomUUID()}.json`;
