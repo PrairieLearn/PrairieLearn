@@ -60,7 +60,7 @@ export function BookletDownloadModal({
       >
         <Modal.Header closeButton={!pending}>
           <Modal.Title as="h2" id="print-booklet-title" className="h5">
-            Prepare booklet PDF
+            Download booklet PDF
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -95,7 +95,7 @@ export function BookletDownloadModal({
           {enrolledStudents > MAX_PRINT_COPIES && (
             <Alert variant="warning" className="mt-3 mb-0">
               This course has {enrolledStudents} enrolled students. A booklet can include up to{' '}
-              {MAX_PRINT_COPIES} copies. Prepare additional booklets to cover the class.
+              {MAX_PRINT_COPIES} copies. Download additional booklets to cover the class.
             </Alert>
           )}
           <p id="print-booklet-students-help" className="small text-muted mt-3 mb-0">
@@ -127,7 +127,7 @@ export function BookletDownloadModal({
             ) : (
               <>
                 <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
-                Prepare booklet PDF
+                Download booklet PDF
               </>
             )}
           </Button>

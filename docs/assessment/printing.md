@@ -11,7 +11,7 @@ For assessments with randomization, you can prepare several versions, called _fo
 3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
 5. Select **Update preview** to save your changes to this form without changing its randomization. Check the **Student copy** and **Answer key** above the preview.
-6. When you are satisfied with the assessment, open **Prepare…** and [choose a file](#prepare-and-download-files).
+6. When you are satisfied with the assessment, open **Download…** and [choose a file](#download-files).
 
 The spacing you choose is a minimum. Longer questions can take more space and move to the next page when needed. Check that students have enough room to write their answers.
 
@@ -55,28 +55,28 @@ Upload readable PDFs without password protection. Fillable covers must have save
 
 Uploaded covers do not appear in the preview. Download a student copy or booklet to check them before printing.
 
-## Prepare and download files
+## Download files
 
-Select **Update preview** after making changes, then open **Prepare…**. The first four options apply to the form you are previewing:
+Select **Update preview** after making changes, then open **Download…**. The first four options apply to the form you are previewing:
 
-| Option                                     | What you get                                                                             |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| **Prepare Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                              |
-| **Prepare Form A Word (.docx)**            | An editable student copy of Form A.                                                      |
-| **Prepare Form A answer key (PDF)**        | The answer key for Form A.                                                               |
-| **Prepare Form A answer key Word (.docx)** | An editable answer key for Form A.                                                       |
-| **Prepare all forms (PDF)**                | One student copy of each form, including uploaded covers. Available with multiple forms. |
-| **Prepare booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.       |
+| Option                                      | What you get                                                                             |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Download Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                              |
+| **Download Form A Word (.docx)**            | An editable student copy of Form A.                                                      |
+| **Download Form A answer key (PDF)**        | The answer key for Form A.                                                               |
+| **Download Form A answer key Word (.docx)** | An editable answer key for Form A.                                                       |
+| **Download all forms (PDF)**                | One student copy of each form, including uploaded covers. Available with multiple forms. |
+| **Download booklet PDF…**                   | A student copy with uploaded covers for each student, followed by the answer keys.       |
 
 If file preparation says the preview has expired or changed, select **Update preview** and try again.
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-**Prepare…** starts a new file; **Download** links retrieve files that have already finished. PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. Expand **Recent exports** to see your ten newest exports for this assessment, including their progress and download links. This section is collapsed by default. Forms are shared with course staff, but prepared files are available only to the staff member who requested them. Use those links if you return later or an automatic download is blocked. Each file is available for 24 hours after it was requested.
+Choosing a file from **Download…** starts a new export. PDF and Word files are prepared in the background and download automatically when ready if you keep this page open. You can start another export while one is being prepared. Expand **Recent exports** to see your ten newest exports for this assessment, including their progress and links to finished files. This section is collapsed by default. Forms are shared with course staff, but prepared files are available only to the staff member who requested them. Use those links if you return later or an automatic download is blocked. Each file is available for 24 hours after it was requested.
 
 ### Print copies for a class
 
-Select **Prepare booklet PDF…**, enter the **Number of students** (up to 500), and select **Prepare booklet PDF**. Each student gets a complete copy. With multiple forms, copies repeat in order: for example, A, B, C, A, B, C. With one form, every student gets the same version. A booklet can contain up to 10,000 pages; for larger classes, prepare it in batches.
+Select **Download booklet PDF…**, enter the **Number of students** (up to 500), and select **Download booklet PDF**. Each student gets a complete copy. With multiple forms, copies repeat in order: for example, A, B, C, A, B, C. With one form, every student gets the same version. A booklet can contain up to 10,000 pages; for larger classes, download it in batches.
 
 The booklet ends with one answer key for each form. Print it single-sided and set aside the answer keys before distributing the student copies.
 

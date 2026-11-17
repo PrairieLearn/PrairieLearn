@@ -877,7 +877,7 @@ function PrintPreparation({
           ) : exportStatus.isError ? (
             'Could not check the file preparation status. Refresh the page to try again.'
           ) : exportStatus.data?.status === 'expired' ? (
-            'This file is no longer available. Prepare it again.'
+            'This file is no longer available. Start a new download.'
           ) : (
             'Preparing your file in the background. You can return to this page to download it within 24 hours.'
           )}
@@ -1486,7 +1486,7 @@ function PrintPreparation({
             <div className="print-preparation-actions">
               {noQuestionsSelected && (
                 <p className="small text-danger mb-2" role="alert">
-                  Select at least one question to prepare an assessment.
+                  Select at least one question to download an assessment.
                 </p>
               )}
               <Button
@@ -1630,7 +1630,7 @@ function PrintPreparation({
                         disabled={!canDownload}
                       >
                         <i className="bi bi-file-earmark-arrow-down me-2" aria-hidden="true" />
-                        Prepare…
+                        Download…
                       </Dropdown.Toggle>
                       <Dropdown.Menu>
                         {formId && selectedFormName && (
@@ -1642,14 +1642,14 @@ function PrintPreparation({
                                 void downloadPacket([formId], 1, 'assessment').catch(() => {});
                               }}
                             >
-                              Prepare {selectedFormName} (PDF)
+                              Download {selectedFormName} (PDF)
                             </Dropdown.Item>
                             <Dropdown.Item
                               onClick={() => {
                                 startWordExport(formId, 'assessment');
                               }}
                             >
-                              Prepare {selectedFormName} Word (.docx)
+                              Download {selectedFormName} Word (.docx)
                             </Dropdown.Item>
                             <Dropdown.Item
                               disabled={!renderingAvailable}
@@ -1658,14 +1658,14 @@ function PrintPreparation({
                                 void downloadPacket([formId], 1, 'answer_key').catch(() => {});
                               }}
                             >
-                              Prepare {selectedFormName} answer key (PDF)
+                              Download {selectedFormName} answer key (PDF)
                             </Dropdown.Item>
                             <Dropdown.Item
                               onClick={() => {
                                 startWordExport(formId, 'answer_key');
                               }}
                             >
-                              Prepare {selectedFormName} answer key Word (.docx)
+                              Download {selectedFormName} answer key Word (.docx)
                             </Dropdown.Item>
                           </>
                         )}
@@ -1680,7 +1680,7 @@ function PrintPreparation({
                               );
                             }}
                           >
-                            Prepare all forms (PDF)
+                            Download all forms (PDF)
                           </Dropdown.Item>
                         )}
                         <Dropdown.Item
@@ -1691,7 +1691,7 @@ function PrintPreparation({
                             setShowBookletModal(true);
                           }}
                         >
-                          Prepare booklet PDF…
+                          Download booklet PDF…
                         </Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown>
