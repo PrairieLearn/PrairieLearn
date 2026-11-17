@@ -1353,9 +1353,9 @@ function PrintPreparation({
                     <details>
                       <summary className="h6 mb-0">Previous forms ({archivedForms.length})</summary>
                       <p className="small text-muted mt-2 mb-2">
-                        Previous forms keep their chosen questions and print settings. You cannot
-                        edit these settings. Later edits to the assessment or its questions may
-                        affect a new download of a previous form.
+                        Previous forms keep question selection and print settings. You cannot edit
+                        these settings. Later edits to the assessment or its questions may affect a
+                        new download of a previous form.
                       </p>
                       <div className="d-flex flex-column gap-2">
                         {archivedForms.map((form) => (
