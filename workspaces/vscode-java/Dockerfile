@@ -23,3 +23,6 @@ RUN curl -fsSL https://open-vsx.org/api/redhat/java/1.54.0/file/redhat.java-1.54
   # Java projects view
   --install-extension vscjava.vscode-java-dependency \
   && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/redhat.java-1.54.0.vsix
+
+# Workaround to cover CVE-2026-114938
+ENV JDK_JAVA_OPTIONS="-XX:-UseBASE64Intrinsics"
