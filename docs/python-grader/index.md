@@ -6,7 +6,7 @@ This page covers how to set up a question. The [quick start guide](https://githu
 
 !!! tip "Converting existing questions"
 
-    Questions that use the older `prairielearn/grader-python` image, with `tests/test.py` and `PLTestCase`, can be converted by following the [conversion guide](https://github.com/PrairieLearn/grader-python-v2/blob/main/converting.md). The guide is written so that you can also give it to an AI coding agent to do the conversion.
+    Questions that use the older `prairielearn/grader-python` image, with `tests/test.py` and `PLTestCase`, can be converted by following the [conversion guide](https://github.com/PrairieLearn/grader-python-v2/blob/main/converting.md). The guide is written so that you can also give it to an AI coding agent to do the conversion. The older image is documented in the [legacy Python autograder](../python-grader-legacy/index.md) pages.
 
 ## Setting up
 
@@ -91,7 +91,7 @@ To share Python modules between questions, put them in the course's [`serverFile
 }
 ```
 
-As in the legacy grader, `/grade/serverFilesCourse` is on the import path, so the tests, setup code and student code can all `import course_lib`. If you set `import_whitelist`, list the module in it so that setup code and student code can import it. Student code can import these modules too, so they mustn't contain answers.
+As in the legacy grader, `/grade/serverFilesCourse` is on the import path, so the tests, setup code and student code can all `import course_lib`. If you set `import_whitelist`, list the module in it so that setup code and student code can import it. Student code can import these modules too, so they mustn't contain answers. Tests can also read data files from there, such as `/grade/serverFilesCourse/compounds/chem.json`.
 
 ## Writing tests
 
@@ -178,7 +178,7 @@ def test_last_element(sandbox: StudentFixture, subtests: pytest.Subtests) -> Non
             )
 ```
 
-Students see how many checks passed, such as `7/10 checks passed.`, and the messages of the first few that failed, each after the label passed to `subtests.test()`. If a call times out, the remaining checks fail without running. To give each input its own name and points instead, use `@pytest.mark.parametrize`.
+Students see how many checks passed, such as `7/10 checks passed.`, and the messages of the first few that failed, each after the label passed to `subtests.test()`. If a call times out, the remaining checks fail without running. To make some checks count for more, pass a weight, such as `subtests.test(weight=2)`: the test then gets the weight of the passed checks divided by the total weight. To give each input its own name and points instead, use `@pytest.mark.parametrize`.
 
 ### Plots
 
@@ -232,7 +232,7 @@ def test_x_sq(sandbox: StudentFixture) -> None:
 ```
 
 - **Fresh values.** The setup code runs again for each test, so read random values with `sandbox.query_setup` in the test that uses them.
-- **Parameters.** Setup code can read `data["params"]` as `__data_params`. Values that `server.py` stored with `pl.to_json` are still encoded: decode them with `__from_server_json(__data_params["A"])`.
+- **Parameters.** Setup code can import `data["params"]` with `from pytest_prairielearn_grader.server_data import from_server_json, params`. Values that `server.py` stored with `pl.to_json` are still encoded: decode them with `from_server_json(params["A"])`. Student code can't import this module.
 - **Restrictions.** Setup code has the same builtins and import restrictions as student code. For example, it can't call `open`.
 
 ## Configuration
@@ -310,7 +310,7 @@ tests/
     └── data.json                 (if the tests need params)
 ```
 
-Then run `pytest tests/test_student.py`. The grader grades each `student_code*.py` file on its own and prints a table of each test's points and message, so you can try a correct solution, the unchanged starter code and wrong answers in one run. Put in `data.json` whatever `params` the question's `server.py` and elements would set, such as `names_for_user`.
+Then run `pytest tests/test_student.py`. To run the tests of several questions at once, run pytest on a folder that holds their copies. The grader grades each `student_code*.py` file on its own and prints a table of each test's points and message, so you can try a correct solution, the unchanged starter code and wrong answers in one run. Put in `data.json` whatever `params` the question's `server.py` and elements would set, such as `names_for_user`.
 
 Before syncing, you can also check the finished question in the grader image, which has the same libraries, file layout and sandbox user as in PrairieLearn. Build the `/grade` layout and run the image:
 
@@ -329,7 +329,7 @@ The image moves files around, so start each run from a fresh copy. You can also 
 
 - **Sandbox.** Student code runs in a separate process as an unprivileged user, with a limited set of builtins and import restrictions. Dangerous builtins such as `open`, `eval` and `exec` aren't available. With `workspace_mode`, the student's own modules keep Python's normal builtins, but they still run as the unprivileged user.
 - **Grading data.** `data.json`, which can contain `correct_answers`, is readable only by the grader, not by student code.
-- **What students can read.** `__data_params`, any `helper_modules` and `data_files`, and modules from `serverFilesCourse` are available to student code, so they mustn't contain answers.
+- **What students can read.** `data["params"]`, any `helper_modules` and `data_files`, and modules from `serverFilesCourse` are available to student code, so they mustn't contain answers.
 - **Import restrictions.** These only check `import` statements, so they aren't a security boundary on their own. For example, a module that student code is allowed to import can expose `os` as an attribute.
 
 ## Example questions

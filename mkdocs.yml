@@ -88,6 +88,7 @@ plugins:
       handlers:
         python:
           paths:
+            - graders/python/python_autograder
             - apps/prairielearn/python
           options:
             show_root_heading: false
@@ -335,6 +336,9 @@ nav:
       - 'Old v1/v2 question format': 'oldQuestion.md'
       - 'Old PrairieDraw graphics': 'PrairieDraw.md'
       - 'Legacy assessment access control': 'assessment/accessControlLegacy.md'
+      - 'Legacy Python autograder':
+          - 'python-grader-legacy/index.md'
+          - 'API reference': python-grader-legacy/reference-docs.md
 
 not_in_nav: |
   schemas/questionOptionsCalculation.md
