@@ -28,6 +28,8 @@ export function QuestionDialogData({
       submissions: resLocals.submissions.map((submission: SubmissionForRender) =>
         getSubmissionInfo({
           submission,
+          question: resLocals.question,
+          assessment_question: resLocals.assessment_question,
           courseId: resLocals.question.course_id,
           courseInstanceId: resLocals.course_instance?.id,
           timezone:

@@ -2,18 +2,21 @@ import { differenceInMilliseconds } from 'date-fns';
 
 import { formatDate } from '@prairielearn/formatter';
 
-import type { GradingJob, Submission } from './db-types.js';
+import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+
+import type { AssessmentQuestion, Question } from './db-types.js';
 
 export function getSubmissionInfo({
   submission,
+  question,
+  assessment_question,
   courseId,
   courseInstanceId,
   timezone,
 }: {
-  submission: Pick<Submission, 'id' | 'date'> & {
-    user_uid: string | null;
-    grading_job: GradingJob | null;
-  };
+  submission: Pick<SubmissionForRender, 'id' | 'date' | 'user_uid' | 'grading_job'>;
+  question: Question;
+  assessment_question?: AssessmentQuestion | null;
   courseId: string;
   courseInstanceId?: string | null;
   timezone: string;
@@ -21,6 +24,7 @@ export function getSubmissionInfo({
   const gradingJobId = submission.grading_job?.id ?? null;
   return {
     id: submission.id,
+    isAutograded: isAutograded({ question, assessment_question }),
     formattedDate: formatDate(submission.date!, timezone),
     userUid: submission.user_uid,
     gradingJobId,
@@ -36,7 +40,7 @@ export function getSubmissionInfo({
 
 export type SubmissionInfo = ReturnType<typeof getSubmissionInfo>;
 
-function buildGradingJobStats(job: GradingJob | null) {
+function buildGradingJobStats(job: SubmissionForRender['grading_job']) {
   if (!job) return null;
 
   const durations: (number | null)[] = [];
@@ -64,4 +68,16 @@ function buildGradingJobStats(job: GradingJob | null) {
       (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
     ),
   };
+}
+
+export function isAutograded({
+  question,
+  assessment_question,
+}: {
+  question: Question;
+  assessment_question?: AssessmentQuestion | null;
+}) {
+  return assessment_question
+    ? !!assessment_question.max_auto_points || !assessment_question.max_manual_points
+    : question.grading_method !== 'Manual';
 }

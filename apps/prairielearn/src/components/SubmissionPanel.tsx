@@ -20,7 +20,7 @@ import type {
   RubricData,
   RubricGradingData,
 } from '../lib/manualGrading.types.js';
-import { getSubmissionInfo } from '../lib/submission-info.js';
+import { getSubmissionInfo, isAutograded } from '../lib/submission-info.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -37,8 +37,20 @@ const detailedSubmissionColumns = {
   true_answer: true,
 } as const;
 
+const SubmissionGradingJobSchema = GradingJobSchema.pick({
+  id: true,
+  grading_method: true,
+  grading_requested_at: true,
+  grading_submitted_at: true,
+  grading_received_at: true,
+  grading_started_at: true,
+  grading_finished_at: true,
+  graded_at: true,
+  grading_request_canceled_at: true,
+});
+
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
-  grading_job: GradingJobSchema.nullable(),
+  grading_job: SubmissionGradingJobSchema.nullable(),
   user_uid: z.string().nullable(),
 });
 
@@ -335,6 +347,8 @@ export function SubmissionPanel({
             : SubmissionInfoModal(
                 getSubmissionInfo({
                   submission,
+                  question,
+                  assessment_question,
                   courseId: question.course_id,
                   courseInstanceId: course_instance?.id,
                   timezone: course_instance?.display_timezone || course.display_timezone,
@@ -406,11 +420,7 @@ function SubmissionStatusBadge({
 
   const autoStatusPrefix = manualGradingBadge ? 'auto-grading: ' : '';
 
-  if (
-    assessment_question
-      ? assessment_question.max_auto_points || !assessment_question.max_manual_points
-      : question.grading_method !== 'Manual'
-  ) {
+  if (isAutograded({ question, assessment_question })) {
     if (submission.graded_at == null) {
       if (submission.grading_requested_at == null) {
         if (submission.gradable) {

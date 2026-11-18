@@ -1,22 +1,26 @@
-import base64
+import prairielearn as pl
+
+LEADING_CODE = """def f(x):
+    return x**2
+
+
+def df(x):
+    return 2 * x
+
+
+def gradient_descent(x, alpha):
+    grad_f = df(x)
+"""
+TRAILING_CODE = "    return x_new\n"
 
 
 def generate(data):
+    data["params"]["leading_code"] = LEADING_CODE
+    data["params"]["trailing_code"] = TRAILING_CODE
     data["params"]["names_from_user"] = [{"name": "gradient_descent"}]
 
 
-def base64_encode_string(s):
-    # do some wonky encode/decode because base64 expects a bytes object
-    return base64.b64encode(s.encode("utf-8")).decode("utf-8")
-
-
 def parse(data):
-    answer = data["submitted_answers"]["answer"]
-    answer = (
-        (" " * 4) + answer.strip() + "\n"
-    )  # add 4 spaces in front and a newline at the end
-
-    # ship the answer off to the autograder
-    data["submitted_answers"]["_files"] = [
-        {"name": "user_code.py", "contents": base64_encode_string(answer)}
-    ]
+    answer = data["submitted_answers"]["answer"].strip()
+    code = LEADING_CODE + "    " + answer + "\n" + TRAILING_CODE
+    pl.add_submitted_file(data, "student_code.py", raw_contents=code)
