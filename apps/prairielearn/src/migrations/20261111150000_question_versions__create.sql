@@ -1,7 +1,30 @@
--- Each snapshot belongs to one question chunk revision; chunks owns its identity and lifetime.
--- Writers must supply normalized settings explicitly, rather than applying new defaults to history.
+-- Versions exist independently of archives: local development reads files from disk.
 CREATE TABLE question_versions (
-  chunk_id bigint PRIMARY KEY REFERENCES chunks (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  id bigserial PRIMARY KEY,
+  question_id bigint NOT NULL REFERENCES questions (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  commit_hash text,
+  created_at timestamptz NOT NULL,
+  superseded_at timestamptz,
+  source_hash text NOT NULL,
+  dependency_hash text NOT NULL,
+  uses_chunks boolean NOT NULL,
+  UNIQUE (question_id, id),
+  CHECK (
+    superseded_at IS NULL
+    OR superseded_at > created_at
+  )
+);
+
+CREATE INDEX question_versions_question_id_created_at_idx ON question_versions (question_id, created_at DESC, id DESC);
+
+CREATE UNIQUE INDEX question_versions_current_question_id_key ON question_versions (question_id)
+WHERE
+  superseded_at IS NULL;
+
+-- Every published version owns a fresh settings row, even when the values are unchanged.
+-- Writers supply normalized settings explicitly, without applying new defaults to history.
+CREATE TABLE question_version_settings (
+  question_version_id bigint PRIMARY KEY REFERENCES question_versions (id) ON UPDATE CASCADE ON DELETE CASCADE,
   client_files text[],
   dependencies jsonb NOT NULL,
   directory text NOT NULL,
@@ -18,6 +41,7 @@ CREATE TABLE question_versions (
   show_correct_answer boolean,
   single_variant boolean,
   template_directory text,
+  title text NOT NULL,
   type enum_question_type NOT NULL,
   workspace_args text,
   workspace_enable_networking boolean,

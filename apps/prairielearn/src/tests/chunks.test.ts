@@ -11,7 +11,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { type Course, CourseSchema, QuestionVersionSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema, QuestionVersionSettingSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -381,7 +381,7 @@ describe('chunks', () => {
       const initialVersions = await sqldb.queryRows(
         sql.select_question_versions,
         { question_id: questionId },
-        QuestionVersionSchema,
+        QuestionVersionSettingSchema,
       );
       expect(initialVersions).toHaveLength(1);
       expect(initialVersions[0].partial_credit).toBe(true);
@@ -406,29 +406,40 @@ describe('chunks', () => {
       const metadataVersions = await sqldb.queryRows(
         sql.select_question_versions,
         { question_id: questionId },
-        QuestionVersionSchema,
+        QuestionVersionSettingSchema,
       );
       expect(metadataVersions).toHaveLength(2);
       expect(metadataVersions[0]).toEqual(initialVersions[0]);
       expect(metadataVersions[1].partial_credit).toBe(false);
       const liveQuestion = await selectQuestionById(questionId);
       expect(metadataVersions[1]).toEqual({
-        ...QuestionVersionSchema.omit({ chunk_id: true }).parse(liveQuestion),
-        chunk_id: metadataVersions[1].chunk_id,
+        ...QuestionVersionSettingSchema.omit({ question_version_id: true }).parse(liveQuestion),
+        question_version_id: metadataVersions[1].question_version_id,
       });
 
-      for (const version of metadataVersions) {
-        const at_date = await sqldb.queryScalar(
-          sql.select_chunk_creation_date,
-          { chunk_id: version.chunk_id },
-          z.string(),
-        );
+      const publications = await sqldb.queryRows(
+        sql.select_question_publications,
+        { question_id: questionId },
+        z.object({
+          version_date: z.string(),
+          chunk_date: z.string(),
+          version_id: IdSchema,
+          chunk_id: IdSchema,
+        }),
+      );
+      for (const publication of publications) {
         const historical = await selectOptionalQuestionVersionAtDate({
           question_id: questionId,
-          at_date,
+          at_date: publication.version_date,
         });
-        expect(historical?.chunk.id).toBe(version.chunk_id);
-        expect(historical?.question_version).toEqual(version);
+        expect(historical?.chunk?.id).toBe(publication.chunk_id);
+        expect(historical?.question_version.id).toBe(publication.version_id);
+        expect(historical?.settings).toEqual(
+          metadataVersions.find(
+            (settings) => settings.question_version_id === publication.version_id,
+          ),
+        );
+        expect(historical?.version_date).toBe(publication.version_date);
       }
 
       await fs.appendFile(
@@ -444,13 +455,71 @@ describe('chunks', () => {
       const codeVersions = await sqldb.queryRows(
         sql.select_question_versions,
         { question_id: questionId },
-        QuestionVersionSchema,
+        QuestionVersionSettingSchema,
       );
       expect(codeVersions).toHaveLength(3);
       expect(codeVersions[2]).toEqual({
         ...metadataVersions[1],
-        chunk_id: codeVersions[2].chunk_id,
+        question_version_id: codeVersions[2].question_version_id,
       });
+    });
+
+    it('resolves archives at the version date and reports missing archives', async () => {
+      const courseDir = tempTestCourseDir.path;
+      const courseData = await courseDB.loadFullCourse(course.id, courseDir);
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData,
+      });
+      const originalChunk = (await chunksLib.selectChunksForCourse(course.id)).find(
+        (chunk) => chunk.question_id === questionId,
+      )!;
+      const originalDate = await sqldb.queryScalar(
+        sql.select_chunk_creation_date,
+        { chunk_id: originalChunk.id },
+        z.string(),
+      );
+      const original = await selectOptionalQuestionVersionAtDate({
+        question_id: questionId,
+        at_date: originalDate,
+      });
+      assert(original !== null);
+
+      // A forced archive refresh can preserve the same question content identity.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId: course.id,
+        courseData,
+        changedFiles: ['questions/addNumbers/server.py'],
+      });
+      const currentChunk = (await chunksLib.selectChunksForCourse(course.id)).find(
+        (chunk) => chunk.question_id === questionId,
+      )!;
+      expect(currentChunk.id).not.toBe(originalChunk.id);
+      const laterDate = await sqldb.queryScalar(
+        sql.select_chunk_creation_date,
+        { chunk_id: currentChunk.id },
+        z.string(),
+      );
+      const later = await selectOptionalQuestionVersionAtDate({
+        question_id: questionId,
+        at_date: laterDate,
+      });
+      expect(later?.question_version.id).toBe(original.question_version.id);
+      expect(later?.version_date).toBe(originalDate);
+      expect(later?.chunk?.id).toBe(originalChunk.id);
+
+      await sqldb.execute(sql.delete_chunk, { chunk_id: originalChunk.id });
+      await expect(
+        selectOptionalQuestionVersionAtDate({ question_id: questionId, at_date: laterDate }),
+      ).rejects.toMatchObject({ name: 'QuestionHistoryUnavailableError' });
+      const settings = await sqldb.queryRows(
+        sql.select_question_versions,
+        { question_id: questionId },
+        QuestionVersionSettingSchema,
+      );
+      expect(settings).toEqual([original.settings]);
     });
 
     it('does not snapshot parsed question settings with validation errors', async () => {
@@ -463,7 +532,7 @@ describe('chunks', () => {
       const initialVersions = await sqldb.queryRows(
         sql.select_question_versions,
         { question_id: questionId },
-        QuestionVersionSchema,
+        QuestionVersionSettingSchema,
       );
       const infoPath = path.join(courseDir, 'questions/addNumbers/info.json');
       const originalInfo = QuestionJsonSchema.parse(await fs.readJson(infoPath));
@@ -484,13 +553,9 @@ describe('chunks', () => {
       const invalidVersions = await sqldb.queryRows(
         sql.select_question_versions,
         { question_id: questionId },
-        QuestionVersionSchema,
+        QuestionVersionSettingSchema,
       );
       expect(invalidVersions).toEqual(initialVersions);
-      const current = (await chunksLib.selectChunksForCourse(course.id)).find(
-        (chunk) => chunk.question_id === questionId,
-      )!;
-      expect(current.id).not.toBe(initialVersions[0].chunk_id);
 
       await fs.writeJson(infoPath, originalInfo);
       const repairedSync = await syncDiskToSql(course, logger);
@@ -504,10 +569,92 @@ describe('chunks', () => {
       const repairedVersions = await sqldb.queryRows(
         sql.select_question_versions,
         { question_id: questionId },
-        QuestionVersionSchema,
+        QuestionVersionSettingSchema,
       );
       expect(repairedVersions).toHaveLength(2);
       expect(repairedVersions[0]).toEqual(initialVersions[0]);
+    });
+
+    it('publishes versions during chunk-enabled sync and rolls back incomplete publications', async () => {
+      const { logger } = makeMockLogger();
+      config.chunksGenerator = true;
+      try {
+        await syncDiskToSql(course, logger);
+        const initialChunks = await chunksLib.selectChunksForCourse(course.id);
+        const initialSettings = await sqldb.queryRows(
+          sql.select_question_versions,
+          { question_id: questionId },
+          QuestionVersionSettingSchema,
+        );
+        expect(initialSettings).toHaveLength(1);
+
+        await fs.appendFile(
+          path.join(tempTestCourseDir.path, 'questions/addNumbers/server.py'),
+          '\n# New revision\n',
+        );
+        await sqldb.execute(sql.reject_settings);
+        try {
+          await expect(syncDiskToSql(course, logger)).rejects.toThrow('reject_settings');
+        } finally {
+          await sqldb.execute(sql.allow_settings);
+        }
+        expect(await chunksLib.selectChunksForCourse(course.id)).toEqual(initialChunks);
+        expect(
+          await sqldb.queryRows(
+            sql.select_question_versions,
+            { question_id: questionId },
+            QuestionVersionSettingSchema,
+          ),
+        ).toEqual(initialSettings);
+
+        await syncDiskToSql(course, logger);
+        const publications = await sqldb.queryRows(
+          sql.select_question_publications,
+          { question_id: questionId },
+          z.object({
+            version_date: z.string(),
+            chunk_date: z.string(),
+            version_id: IdSchema,
+            chunk_id: IdSchema,
+          }),
+        );
+        expect(publications).toHaveLength(2);
+        for (const publication of publications) {
+          expect(publication.version_date).toBe(publication.chunk_date);
+        }
+
+        const initialDependency = initialChunks.find(
+          (chunk) => chunk.type === 'serverFilesCourse',
+        )!;
+        expect(
+          (await chunksLib.selectChunksForCourse(course.id)).find(
+            (chunk) => chunk.type === 'serverFilesCourse',
+          )?.uuid,
+        ).toBe(initialDependency.uuid);
+        await fs.writeFile(
+          path.join(tempTestCourseDir.path, 'serverFilesCourse/helper.py'),
+          '# Dependency edit\n',
+        );
+        await syncDiskToSql(course, logger);
+        const dependency = (await chunksLib.selectChunksForCourse(course.id)).find(
+          (chunk) => chunk.type === 'serverFilesCourse',
+        )!;
+        expect(dependency.uuid).not.toBe(initialDependency.uuid);
+        const withDependency = await sqldb.queryRows(
+          sql.select_question_publications,
+          { question_id: questionId },
+          z.object({
+            version_date: z.string(),
+            chunk_date: z.string(),
+            version_id: IdSchema,
+            chunk_id: IdSchema,
+          }),
+        );
+        expect(withDependency).toHaveLength(3);
+        expect(new Date(withDependency[2].version_date)).toEqual(dependency.created_at);
+      } finally {
+        config.chunksGenerator = false;
+      }
     });
 
     it('handles question nesting after a rename', async () => {

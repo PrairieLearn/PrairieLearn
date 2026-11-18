@@ -18,11 +18,14 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { getCourseCommitHash, getLockNameForCoursePath } from '../models/course.js';
+import { getLockNameForCoursePath, getOptionalCourseCommitHash } from '../models/course.js';
+import {
+  beginQuestionVersionPublication,
+  prepareQuestionVersions,
+  writeQuestionVersions,
+} from '../models/question-version.js';
 import * as courseDB from '../sync/course-db.js';
 import { type CourseData } from '../sync/course-db.js';
-import { getQuestionVersionSettings } from '../sync/fromDisk/questions.js';
-import * as infofile from '../sync/infofile.js';
 
 import { downloadFromS3, makeS3ClientConfig } from './aws.js';
 import { chalk } from './chalk.js';
@@ -33,8 +36,6 @@ import {
   CourseInstanceSchema,
   CourseSchema,
   QuestionSchema,
-  type QuestionVersion,
-  QuestionVersionSchema,
 } from './db-types.js';
 import { DefaultMap } from './default-map.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
@@ -495,7 +496,8 @@ interface DiffChunksOptions {
   courseId: string;
   courseData: CourseData;
   changedFiles: string[];
-  questionSettings: Map<string, Omit<QuestionVersion, 'chunk_id'>>;
+  versionedQuestions: Set<string>;
+  dependenciesChanged: boolean;
 }
 
 interface ChunksDiff {
@@ -514,23 +516,10 @@ async function diffChunks({
   courseId,
   courseData,
   changedFiles,
-  questionSettings,
+  versionedQuestions,
+  dependenciesChanged,
 }: DiffChunksOptions): Promise<ChunksDiff> {
   const rawCourseChunks = await getAllChunksForCourse(courseId);
-  const currentQuestionVersions = await sqldb.queryRows(
-    sql.select_current_question_versions,
-    { course_id: courseId },
-    QuestionVersionSchema,
-  );
-  const questionVersionsByChunkId = new Map(
-    currentQuestionVersions.map(({ chunk_id, ...settings }) => [chunk_id, settings]),
-  );
-  const currentQuestionChunksByName = new Map(
-    rawCourseChunks
-      .filter((chunk) => chunk.type === 'question')
-      .map((chunk) => [chunk.question_name, chunk]),
-  );
-
   // Build a data structure from the result of getAllChunksForCourse so that
   // we can efficiently query to see if a given chunk exists
   const existingCourseChunks: CourseChunks = {
@@ -618,7 +607,10 @@ async function diffChunks({
     'serverFilesCourse',
   ] as const) {
     const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
-    if (hasChunkDirectory && (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])) {
+    if (
+      hasChunkDirectory &&
+      (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType] || dependenciesChanged)
+    ) {
       updatedChunks.push({ type: chunkType });
     } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
       deletedChunks.push({ type: chunkType });
@@ -627,15 +619,10 @@ async function diffChunks({
 
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
-    const currentChunk = currentQuestionChunksByName.get(qid);
-    const settings = questionSettings.get(qid);
-    const currentSettings = currentChunk && questionVersionsByChunkId.get(currentChunk.id);
-    // A fresh publication establishes a baseline; never attach today's settings to an old archive.
-    const settingsChanged = settings && !util.isDeepStrictEqual(settings, currentSettings);
     if (
       !existingCourseChunks.questions.has(qid) ||
       changedCourseChunks.questions.has(qid) ||
-      settingsChanged
+      versionedQuestions.has(qid)
     ) {
       updatedChunks.push({
         type: 'question',
@@ -945,47 +932,39 @@ export async function updateChunksForCourse({
     return [];
   });
 
-  const questionSettings = new Map(
-    Object.entries(courseData.questions).flatMap(([qid, question]) => {
-      // An invalid source can retain old live settings. They do not describe its new archive.
-      if (!question.data || infofile.hasErrors(question)) return [];
-      return [[qid, getQuestionVersionSettings(qid, question.data)] as const];
-    }),
-  );
+  const publication = await prepareQuestionVersions({
+    courseId,
+    coursePath,
+    courseData,
+    usesChunks: true,
+  });
   const { updatedChunks, deletedChunks, replacedChunkIds } = await diffChunks({
     coursePath,
     courseId,
     courseData,
     changedFiles: resolvedChangedFiles,
-    questionSettings,
+    versionedQuestions: new Set(publication.versions.map((version) => version.qid)),
+    dependenciesChanged: publication.dependenciesChanged,
   });
 
-  const commitHash = newHash ? await getCourseCommitHash(coursePath) : null;
+  const commitHash = await getOptionalCourseCommitHash(coursePath);
   const generatedChunks = await createAndUploadChunks(coursePath, courseId, updatedChunks);
 
   // Uploads finish before the transaction, so it only holds row locks briefly.
   await sqldb.runInTransactionAsync(async () => {
-    await sqldb.execute(sql.lock_course_for_chunk_publication, { course_id: courseId });
-    // Preserve database precision so old and new revisions meet at the same instant.
-    const publishedAt = await sqldb.queryScalar(
-      sql.supersede_chunks,
-      { course_id: courseId, chunk_ids: replacedChunkIds },
-      z.string(),
-    );
+    const publishedAt = await beginQuestionVersionPublication(courseId);
+    await sqldb.execute(sql.supersede_chunks, {
+      course_id: courseId,
+      chunk_ids: replacedChunkIds,
+      created_at: publishedAt,
+    });
     await sqldb.execute(sql.insert_chunks, {
       course_id: courseId,
-      // Force this to a string; otherwise, our code in `sql-db.js` will try to
-      // convert it into a Postgres `ARRAY[...]` type, which we don't want.
-      chunks: JSON.stringify(
-        generatedChunks.map((chunk) =>
-          chunk.type === 'question'
-            ? { ...chunk, questionSettings: questionSettings.get(chunk.questionName) }
-            : chunk,
-        ),
-      ),
+      chunks: JSON.stringify(generatedChunks),
       created_at: publishedAt,
       commit_hash: commitHash,
     });
+    await writeQuestionVersions({ publication, publishedAt, commitHash });
   });
 
   return { updatedChunks, deletedChunks, replacedChunkIds };

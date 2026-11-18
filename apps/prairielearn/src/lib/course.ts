@@ -15,7 +15,6 @@ import {
 } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
-import * as chunks from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User, UserSchema } from './db-types.js';
 import { REPOSITORY_ROOT_PATH } from './paths.js';
@@ -174,24 +173,16 @@ export async function pullAndUpdateCourse({
         const endGitHash = await getCourseCommitHash(path);
 
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(course, job);
+        const syncResult = await syncDiskToSqlWithLock(course, job, undefined, {
+          oldHash: startGitHash,
+          newHash: endGitHash,
+        });
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
           }
           job.fail('Sync completely failed due to invalid question sharing edit.');
           return;
-        }
-
-        if (config.chunksGenerator) {
-          const chunkChanges = await chunks.updateChunksForCourse({
-            coursePath: path,
-            courseId: course.id,
-            courseData: syncResult.courseData,
-            oldHash: startGitHash,
-            newHash: endGitHash,
-          });
-          chunks.logChunkChangesToJob(chunkChanges, job);
         }
 
         await updateCourseCommitHash({ id: course.id, path });
