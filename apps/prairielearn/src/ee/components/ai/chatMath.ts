@@ -467,8 +467,13 @@ let hiddenMath: string[] = [];
 function inCode(text: string, index: number) {
   const before = text.slice(0, index);
   const fences = before.match(/^ {0,3}(?:```|~~~)/gm)?.length ?? 0;
-  const ticks = before.slice(before.lastIndexOf('\n') + 1).match(/`/g)?.length ?? 0;
-  return fences % 2 === 1 || ticks % 2 === 1;
+  // A code span closes at the next run of the same number of backticks.
+  let span: number | undefined;
+  for (const [run] of before.slice(before.lastIndexOf('\n') + 1).matchAll(/`+/g)) {
+    if (span === undefined) span = run.length;
+    else if (run.length === span) span = undefined;
+  }
+  return fences % 2 === 1 || span !== undefined;
 }
 
 /** Where math that is still streaming starts at the end of `text`, if any. */

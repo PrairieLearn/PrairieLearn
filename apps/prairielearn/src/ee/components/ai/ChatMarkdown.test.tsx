@@ -131,6 +131,8 @@ describe('ChatMarkdown', () => {
       expect(html).not.toContain('frac');
     }
 
+    expect(render('Use ``a \\(x`` then continue', { streaming: true })).toContain('then continue');
+
     // The start of the next heading isn't shown as an empty heading.
     expect(render('Done.\n\n#', { streaming: true })).not.toContain('<h1');
   });
