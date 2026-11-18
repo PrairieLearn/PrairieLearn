@@ -1538,6 +1538,7 @@ export type QuestionVersionSetting = z.infer<typeof QuestionVersionSettingSchema
 export const QuestionVersionSchema = z.object({
   commit_hash: z.string().nullable(),
   created_at: DateFromISOString,
+  dependency_hash: z.string(),
   id: IdSchema,
   question_id: IdSchema,
   source_hash: z.string(),
