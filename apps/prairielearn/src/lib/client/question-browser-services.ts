@@ -217,7 +217,10 @@ export function createQuestionServicesHost({
       // before sending this request, and port messages are ordered, so later
       // reports reflect only those edits.
       answersDirty = false;
-      form.submit();
+      // An answer named `submit` would shadow `form.submit`, so calling it would
+      // throw instead of posting. The question form avoided this by submitting
+      // through its buttons.
+      HTMLFormElement.prototype.submit.call(form);
     },
 
     async navigate({ target }) {
