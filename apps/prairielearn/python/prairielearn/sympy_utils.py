@@ -32,6 +32,7 @@ from typing import (
 )
 
 import sympy
+from sympy.assumptions.assume import AppliedPredicate
 from sympy.printing.str import StrPrinter
 
 from prairielearn.internal import (
@@ -44,6 +45,7 @@ from prairielearn.internal import (
     sympy_source,
 )
 from prairielearn.misc_utils import full_unidecode
+from prairielearn.set_builder import SetBuilderSet, set_builder_from_standard
 
 __all__ = [
     "SET_NOTATION_OPERATORS",
@@ -132,6 +134,8 @@ class SympyJson(TypedDict):
     _variables: list[str]
     _assumptions: NotRequired[AssumptionsDictT]
     _custom_functions: NotRequired[list[str]]
+    _custom_predicates: NotRequired[list[str]]
+    _bound_variables: NotRequired[list[str]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +168,8 @@ def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
         and isinstance(json.get("_variables"), list)
         and isinstance(json.get("_assumptions", {}), dict)
         and isinstance(json.get("_custom_functions", []), list)
+        and isinstance(json.get("_custom_predicates", []), list)
+        and isinstance(json.get("_bound_variables", []), list)
     )
 
 
@@ -210,6 +216,75 @@ class _SympyJsonStrPrinter(StrPrinter):
     def _print_Tuple(self, expr: sympy.Tuple) -> str:  # ruff:ignore[invalid-function-name]
         args = ", ".join(self._print(arg) for arg in expr.args)
         return f"_pl_Tuple({args})"
+
+    def _print_SetBuilderSet(self, expr: SetBuilderSet) -> str:  # ruff:ignore[invalid-function-name]
+        return (
+            f"_pl_SetBuilder({self._print(expr.body)}, "
+            f"{self._print(sympy.Tuple(*expr.bound_variables))}, "
+            f"{self._print(expr.condition)}, "
+            f"{self._print(sympy.Tuple(*expr.domains))})"
+        )
+
+    def _print_ConditionSet(self, s: sympy.ConditionSet) -> str:  # ruff:ignore[invalid-function-name]
+        builder = set_builder_from_standard(s)
+        if builder is None:
+            return str(s)
+        return self._print_SetBuilderSet(builder)
+
+    def _print_ImageSet(self, expr: sympy.ImageSet) -> str:  # ruff:ignore[invalid-function-name]
+        builder = set_builder_from_standard(expr)
+        if builder is None:
+            return str(expr)
+        return self._print_SetBuilderSet(builder)
+
+    def _print_AppliedPredicate(self, expr: AppliedPredicate) -> str:  # ruff:ignore[invalid-function-name]
+        arguments = ", ".join(self._print(argument) for argument in expr.arguments)
+        suffix = f", {arguments}" if arguments else ""
+        predicate_name = str(expr.function).removeprefix("Q.")
+        return f"_pl_Predicate({predicate_name}{suffix})"
+
+    def _print_boolean_call(self, name: str, expr: sympy.Basic) -> str:
+        arguments = ", ".join(self._print(argument) for argument in expr.args)
+        return f"{name}({arguments})"
+
+    def _print_And(self, expr: sympy.And) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_And", expr)
+
+    def _print_Or(self, expr: sympy.Or) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Or", expr)
+
+    def _print_Not(self, expr: sympy.Not) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Not", expr)
+
+    def _print_Xor(self, expr: sympy.Xor) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Xor", expr)
+
+    def _print_Implies(self, expr: sympy.Implies) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Implies", expr)
+
+    def _print_Equivalent(self, expr: sympy.Equivalent) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Equivalent", expr)
+
+    def _print_Contains(self, expr: sympy.Contains) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Contains", expr)
+
+    def _print_Equality(self, expr: sympy.Equality) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Eq", expr)
+
+    def _print_Unequality(self, expr: sympy.Unequality) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Ne", expr)
+
+    def _print_StrictLessThan(self, expr: sympy.StrictLessThan) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Lt", expr)
+
+    def _print_LessThan(self, expr: sympy.LessThan) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Le", expr)
+
+    def _print_StrictGreaterThan(self, expr: sympy.StrictGreaterThan) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Gt", expr)
+
+    def _print_GreaterThan(self, expr: sympy.GreaterThan) -> str:  # ruff:ignore[invalid-function-name]
+        return self._print_boolean_call("_pl_Ge", expr)
 
 
 # Safe evaluation of user input to convert from string to sympy expression.
@@ -756,6 +831,11 @@ def sympy_check(
     """Check the SymPy expression for complex numbers, invalid symbols, and floats."""
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
+    )
+    valid_symbols.update(
+        variable.name
+        for builder in expr.atoms(SetBuilderSet)
+        for variable in builder.bound_variables
     )
 
     def check_nodes(
@@ -1585,14 +1665,28 @@ def sympy_to_json(
     custom_functions = list(
         (functions_set - reserved) | legacy_custom_function_overrides
     )
+    custom_predicates = sorted({
+        str(predicate.function).removeprefix("Q.")
+        for predicate in a.atoms(AppliedPredicate)
+    })
+    bound_variables = sorted({
+        variable.name
+        for builder in a.atoms(SetBuilderSet)
+        for variable in builder.bound_variables
+    })
 
-    return {
+    result: SympyJson = {
         "_type": "sympy",
         "_value": _SympyJsonStrPrinter(allow_complex=allow_complex).doprint(a),
         "_variables": variables,
         "_assumptions": assumptions_dict,
         "_custom_functions": custom_functions,
     }
+    if custom_predicates:
+        result["_custom_predicates"] = custom_predicates
+    if bound_variables:
+        result["_bound_variables"] = bound_variables
+    return result
 
 
 def json_to_sympy(
@@ -1621,12 +1715,21 @@ def json_to_sympy(
         sympy_expr_dict["_variables"] = None
 
     variables = sympy_expr_dict["_variables"]
+    parsing_variables = (
+        [
+            *variables,
+            *sympy_expr_dict.get("_bound_variables", ()),
+            *sympy_expr_dict.get("_custom_predicates", ()),
+        ]
+        if variables is not None
+        else None
+    )
     # Older set-enabled submissions could contain scalar `x | y` or `x & y`.
     # Keep their variables untyped during validation so stored answers remain
     # renderable and gradable, while new text submissions use strict scalar types.
     result, _ = _convert_string_to_sympy_with_source(
         sympy_expr_dict["_value"],
-        variables,
+        parsing_variables,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
@@ -1635,7 +1738,9 @@ def json_to_sympy(
         custom_functions=sympy_expr_dict.get("_custom_functions"),
         assumptions=sympy_expr_dict.get("_assumptions"),
         resolved_name_overrides=(
-            dict.fromkeys(variables) if allow_sets and variables is not None else None
+            dict.fromkeys(parsing_variables)
+            if allow_sets and parsing_variables is not None
+            else None
         ),
         additional_variables=(
             sympy_constants.serialized_named_sets if allow_sets else None
@@ -2297,6 +2402,7 @@ def _try_parse_mathjson_as_sympy(
     simplify_expression: bool = True,
     assumptions: AssumptionsDictT | None = None,
     additional_variables: Mapping[str, sympy.Basic | complex] | None = None,
+    additional_functions: Mapping[str, Callable[..., Any]] | None = None,
     parser_start: sympy_expression.ParserStart = "symbolic_start",
     simplify_set_operations: bool | None = None,
     allow_set_functions: bool = True,
@@ -2324,6 +2430,7 @@ def _try_parse_mathjson_as_sympy(
             simplify_expression=simplify_expression,
             assumptions=assumptions,
             additional_variables=additional_variables,
+            additional_functions=additional_functions,
             parser_start=parser_start,
             simplify_set_operations=simplify_set_operations,
             allow_set_functions=allow_set_functions,

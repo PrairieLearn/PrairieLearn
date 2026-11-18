@@ -5,15 +5,17 @@ from __future__ import annotations
 from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Never, cast
+from itertools import pairwise
+from typing import TYPE_CHECKING, Any, Never, cast
 
 import sympy
 
 import prairielearn.sympy_utils as psu
 from prairielearn.internal import mathjson as internal_mathjson
+from prairielearn.set_builder import SetBuilderSet, set_builder_from_standard
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
 
 NAMED_SETS = {
@@ -25,6 +27,42 @@ NAMED_SETS = {
 }
 NAMED_SET_NAMES = frozenset(NAMED_SETS)
 _SET_OPERATOR_NAMES = frozenset({"U", "cup", "cap"})
+
+
+def _pairwise_relation(
+    relation: object, *values: sympy.Basic
+) -> sympy.logic.boolalg.Boolean:
+    if len(values) < 2:
+        raise TypeError("A comparison requires at least two values.")
+    callable_relation = cast(
+        "Callable[[sympy.Basic, sympy.Basic], sympy.logic.boolalg.Boolean | bool]",
+        relation,
+    )
+    return sympy.And(
+        *(callable_relation(left, right) for left, right in pairwise(values))
+    )
+
+
+_SET_BUILDER_FUNCTIONS: dict[str, Callable[..., Any]] = {
+    "And": sympy.And,
+    "Element": sympy.Contains,
+    "Equal": lambda *values: _pairwise_relation(sympy.Eq, *values),
+    "Equivalent": sympy.Equivalent,
+    "Greater": lambda *values: _pairwise_relation(sympy.Gt, *values),
+    "GreaterEqual": lambda *values: _pairwise_relation(sympy.Ge, *values),
+    "Implies": sympy.Implies,
+    "Less": lambda *values: _pairwise_relation(sympy.Lt, *values),
+    "LessEqual": lambda *values: _pairwise_relation(sympy.Le, *values),
+    "Not": sympy.Not,
+    "NotElement": lambda value, domain: sympy.Not(sympy.Contains(value, domain)),
+    "NotEqual": lambda *values: sympy.Not(_pairwise_relation(sympy.Eq, *values)),
+    "Or": sympy.Or,
+    "Xor": sympy.Xor,
+}
+
+
+def _predicate_function(name: str) -> Callable[..., Any]:
+    return cast("Callable[..., Any]", sympy.Predicate(name))
 
 
 class SetSyntax(Enum):
@@ -47,12 +85,18 @@ class SetParseFailure:
 type SetParseResult = SetParseSuccess | SetParseFailure
 
 
-def validate_names(variables: Iterable[str], custom_functions: Iterable[str]) -> None:
+def validate_names(
+    variables: Iterable[str],
+    custom_functions: Iterable[str],
+    custom_predicates: Iterable[str] = (),
+) -> None:
     """Reject instructor names that shadow the unqualified named-set syntax."""
     variable_names = set(variables)
     function_names = set(custom_functions)
+    predicate_names = set(custom_predicates)
     conflicting_named_variables = sorted(NAMED_SET_NAMES.intersection(variable_names))
     conflicting_named_functions = sorted(NAMED_SET_NAMES.intersection(function_names))
+    conflicting_named_predicates = sorted(NAMED_SET_NAMES.intersection(predicate_names))
     if conflicting_named_variables:
         raise ValueError(
             "Named sets cannot be used as variable names: "
@@ -63,8 +107,23 @@ def validate_names(variables: Iterable[str], custom_functions: Iterable[str]) ->
             "Named sets cannot be used as custom function names: "
             + ", ".join(conflicting_named_functions)
         )
+    if conflicting_named_predicates:
+        raise ValueError(
+            "Named sets cannot be used as custom predicate names: "
+            + ", ".join(conflicting_named_predicates)
+        )
+    conflicting_configured_names = sorted(
+        (variable_names & predicate_names) | (function_names & predicate_names)
+    )
+    if conflicting_configured_names:
+        raise ValueError(
+            "Custom predicate names cannot also be variables or custom functions: "
+            + ", ".join(conflicting_configured_names)
+        )
     conflicting_operators = sorted(
-        _SET_OPERATOR_NAMES.intersection(variable_names | function_names)
+        _SET_OPERATOR_NAMES.intersection(
+            variable_names | function_names | predicate_names
+        )
     )
     if conflicting_operators:
         raise ValueError(
@@ -79,6 +138,15 @@ def is_representable_set(
     """Return whether the set can round-trip through the set-only grammar."""
     if value in NAMED_SETS.values() or value is sympy.S.EmptySet:
         return True
+    if isinstance(value, SetBuilderSet):
+        if isinstance(value.body, sympy.Tuple) and syntax is not SetSyntax.TUPLE:
+            return False
+        return all(
+            is_representable_set(domain, syntax=syntax) for domain in value.domains
+        )
+    if isinstance(value, (sympy.ConditionSet, sympy.ImageSet)):
+        builder = set_builder_from_standard(value)
+        return builder is not None and is_representable_set(builder, syntax=syntax)
     if isinstance(value, sympy.Interval):
         return syntax is SetSyntax.INTERVAL
     if isinstance(value, sympy.FiniteSet):
@@ -133,6 +201,7 @@ def try_parse_set_submission(
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
     custom_functions: Sequence[str] = (),
+    custom_predicates: Sequence[str] = (),
     simplify_expression: bool = True,
     assumptions: psu.AssumptionsDictT | None = None,
     syntax: SetSyntax = SetSyntax.TUPLE,
@@ -143,8 +212,9 @@ def try_parse_set_submission(
 
     variable_list = list(variables or ())
     custom_function_list = list(custom_functions)
+    custom_predicate_list = list(custom_predicates)
     try:
-        validate_names(variable_list, custom_function_list)
+        validate_names(variable_list, custom_function_list, custom_predicate_list)
     except ValueError as exc:
         return SetParseFailure(str(exc))
 
@@ -167,6 +237,8 @@ def try_parse_set_submission(
                 simplify_expression=simplify_expression,
                 assumptions=assumptions,
                 additional_variables=NAMED_SETS,
+                additional_functions=_SET_BUILDER_FUNCTIONS
+                | {name: _predicate_function(name) for name in custom_predicate_list},
                 parser_start="set_start",
                 simplify_set_operations=False,
                 allow_set_functions=False,

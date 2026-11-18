@@ -37,6 +37,10 @@ Tuple and interval syntax are mutually exclusive. Tuple mode rejects interval no
 
 Scalar members, tuple coordinates, and interval endpoints use the usual `pl-symbolic-input` expression syntax. Function-style constructors such as `Tuple(1, 2)` and `Interval(0, 1)`, qualified names, and long named-set forms such as `Reals` are not accepted student syntax.
 
+When `formula-editor="true"`, students may also enter set-builder notation. The formula editor supports condition sets such as $\{x \mid x > 0\}$, explicit domains such as $\{x \in \mathbb{Z} \mid x < 5\}$, image sets such as $\{x^2 \mid x \in \mathbb{R}\}$, and tuple or multivariable builders. A variable without an explicit membership domain is assumed to range over the real numbers. Builder conditions may contain membership, comparisons, `and`, `or`, `not`, exclusive-or, implication, equivalence, and predicates listed in `custom-predicates`. Quantified conditions using $\forall$ or $\exists$ are not supported.
+
+Set-builder notation is not added to the plain-text parser. Bound variables are local to the builder and should not be listed in `variables`; names in `variables` remain free parameters.
+
 The names `RR`, `QQ`, `ZZ`, `NN`, and `CC` are reserved and cannot appear in `variables` or `custom-functions`.
 
 ## Customizations
@@ -51,10 +55,11 @@ The names `RR`, `QQ`, `ZZ`, `NN`, and `CC` are reserved and cannot appear in `va
 | `blank-value`                   | string                    | `{}`       | Set used when the input is blank and `allow-blank` is true. May also be the empty string.                                |
 | `correct-answer`                | string                    | —          | Correct answer in the supported set syntax. Defaults to `data["correct_answers"][answers-name]`.                         |
 | `custom-functions`              | string                    | —          | Comma-delimited custom functions allowed in scalar expressions.                                                          |
+| `custom-predicates`             | string                    | —          | Comma-delimited Boolean predicates allowed in formula-editor set-builder conditions.                                     |
 | `display`                       | `"block"` or `"inline"`   | `"inline"` | Display mode.                                                                                                            |
 | `display-log-as-ln`             | boolean                   | false      | Display `ln` instead of `log`.                                                                                           |
 | `display-simplified-expression` | boolean                   | true       | Whether scalar expressions and stored sets are displayed in simplified form. Set operations are retained during parsing. |
-| `formula-editor`                | boolean                   | false      | Use the visual formula editor, including keys for the selected set syntax and the five named sets.                       |
+| `formula-editor`                | boolean                   | false      | Use the visual formula editor, including set-builder, relation, logic, selected set-syntax, and named-set keys.          |
 | `imaginary-unit-for-display`    | `"i"` or `"j"`            | `"i"`      | Imaginary unit used for display.                                                                                         |
 | `initial-value`                 | string                    | —          | Initial value shown the first time the input renders.                                                                    |
 | `label`                         | string                    | —          | Prefix displayed before the input.                                                                                       |
@@ -67,7 +72,16 @@ The names `RR`, `QQ`, `ZZ`, `NN`, and `CC` are reserved and cannot appear in `va
 | `variables`                     | string                    | —          | Comma-delimited scalar variable names.                                                                                   |
 | `weight`                        | integer                   | 1          | Weight used when computing the question score.                                                                           |
 
-Correct answers supplied through `server.py` must use only the set classes representable in the selected syntax. In tuple mode, use `sympy.FiniteSet` containing `sympy.Tuple` values; in interval mode, use `sympy.Interval`. `Range`, `ConditionSet`, `ImageSet`, `ProductSet`, `UniversalSet`, and other SymPy set classes are rejected during element preparation.
+Correct answers supplied through `server.py` must use only set classes representable in the selected syntax. In tuple mode, use `sympy.FiniteSet` containing `sympy.Tuple` values; in interval mode, use `sympy.Interval`. `ConditionSet` and `ImageSet` are accepted when they can be represented as builders. Use `pl.set_builder(body, bound_variables, condition, domains)` for multivariable image sets or other builders that these standard SymPy classes cannot represent. Omitted domains default to the real numbers. For a configured predicate such as `custom-predicates="P"`, construct its condition with `sympy.Predicate("P")(x)`.
+
+```python title="server.py"
+def generate(data):
+    x = sympy.Symbol("x")
+    answer = pl.set_builder(x**2, x, x > 0)
+    data["correct_answers"]["result"] = pl.to_json(answer)
+```
+
+`Range`, top-level `ProductSet`, `UniversalSet`, and other unsupported SymPy set classes are rejected during element preparation.
 
 ## Example implementations
 
