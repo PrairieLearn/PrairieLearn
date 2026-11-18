@@ -111,17 +111,25 @@ describe('Question version sync without chunks', () => {
     const { courseDir, syncResults } = await util.writeAndSyncCourseData(courseData);
     assert(syncResults.status === 'complete');
     const question = await selectQuestion();
+    await fs.ensureDir(path.join(courseDir, 'sharedDependency'));
+    await fs.symlink('sharedDependency', path.join(courseDir, 'serverFilesCourse'), 'dir');
     await fs.outputFile(path.join(courseDir, 'serverFilesCourse', 'helper.py'), '# Dependency\n');
     await util.syncCourseData(courseDir);
     const dependencyVersions = await selectVersions(syncResults.courseId, question.id);
     expect(dependencyVersions).toHaveLength(2);
+    await fs.appendFile(
+      path.join(courseDir, 'sharedDependency', 'helper.py'),
+      '# Changed target\n',
+    );
+    await util.syncCourseData(courseDir);
+    expect(await selectVersions(syncResults.courseId, question.id)).toHaveLength(3);
 
     await fs.writeFile(
       path.join(courseDir, 'questions', util.ALTERNATIVE_QUESTION_ID, 'server.py'),
       '# Template edit\n',
     );
     await util.syncCourseData(courseDir);
-    expect(await selectVersions(syncResults.courseId, question.id)).toHaveLength(3);
+    expect(await selectVersions(syncResults.courseId, question.id)).toHaveLength(4);
     expect(await util.dumpTableWithSchema('chunks', ChunkSchema)).toEqual([]);
   });
 
