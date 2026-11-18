@@ -229,11 +229,6 @@ describe('question QID sync with real Git and a course subdirectory', () => {
       await execa('git', ['pull'], { cwd: fixture.courseLiveDir });
       await syncCourseData(fixture.courseLiveDir);
       await sync();
-      await chunks.updateQuestionContentChunk({
-        coursePath: fixture.courseLiveDir,
-        courseId: '1',
-        qid: otherQid,
-      });
       const before = await captureDatabaseSnapshot();
       const beforeChunks = await dumpTableWithSchema('chunks', ChunkSchema);
       const operation = await prepareRename('title');
