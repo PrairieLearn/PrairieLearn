@@ -4,7 +4,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { QuestionVersionSchema } from '../../lib/db-types.js';
+import { QuestionVersionSettingSchema } from '../../lib/db-types.js';
 import { isDraftQid } from '../../lib/draft-question.js';
 import { type QuestionJson, defaultWorkspaceOptions } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
@@ -73,7 +73,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson) {
 /** Uses the same defaults and command normalization as live question sync. */
 export function getQuestionVersionSettings(qid: string, question: QuestionJson) {
   const params = getParamsForQuestion(qid, question);
-  return QuestionVersionSchema.omit({ chunk_id: true }).parse({
+  return QuestionVersionSettingSchema.omit({ question_version_id: true }).parse({
     // SQL sync stores absent settings as NULL. Preserve that distinction in snapshots.
     ...Object.fromEntries(Object.entries(params).map(([key, value]) => [key, value ?? null])),
     directory: qid,

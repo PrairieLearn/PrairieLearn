@@ -112,150 +112,57 @@ FROM
 LIMIT
   100;
 
--- BLOCK lock_course_for_chunk_publication
-SELECT
-  id
-FROM
-  courses
-WHERE
-  id = $course_id
-FOR NO KEY UPDATE;
-
 -- BLOCK supersede_chunks
-WITH
-  chunk_publication AS (
-    SELECT
-      clock_timestamp() AS created_at
-  ),
-  superseded AS (
-    UPDATE chunks
-    SET
-      superseded_at = chunk_publication.created_at
-    FROM
-      chunk_publication
-    WHERE
-      course_id = $course_id
-      AND id = ANY ($chunk_ids::bigint[])
-      AND superseded_at IS NULL
-  )
-SELECT
-  created_at::text
-FROM
-  chunk_publication;
+UPDATE chunks
+SET
+  superseded_at = $created_at::timestamptz
+WHERE
+  course_id = $course_id
+  AND id = ANY ($chunk_ids::bigint[])
+  AND superseded_at IS NULL;
 
 -- BLOCK insert_chunks
-WITH
-  inserted_chunks AS (
-    INSERT INTO
-      chunks (
-        type,
-        course_id,
-        question_id,
-        course_instance_id,
-        assessment_id,
-        uuid,
-        created_at,
-        commit_hash,
-        size_compressed,
-        size_uncompressed
-      )
-    SELECT
-      (chunk ->> 'type')::enum_chunk_type,
-      $course_id,
-      q.id AS question_id,
-      ci.id AS course_instance_id,
-      a.id AS assessment_id,
-      (chunk ->> 'uuid')::uuid,
-      $created_at::timestamptz,
-      $commit_hash,
-      (chunk ->> 'sizeCompressed')::bigint,
-      (chunk ->> 'sizeUncompressed')::bigint
-    FROM
-      JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
-      LEFT JOIN questions AS q ON (
-        q.qid = (chunk ->> 'questionName')
-        AND q.deleted_at IS NULL
-        AND q.course_id = $course_id
-      )
-      LEFT JOIN course_instances AS ci ON (
-        ci.short_name = (chunk ->> 'courseInstanceName')
-        AND ci.deleted_at IS NULL
-        AND ci.course_id = $course_id
-      )
-      LEFT JOIN assessments AS a ON (
-        a.tid = (chunk ->> 'assessmentName')
-        AND a.deleted_at IS NULL
-        AND a.course_instance_id = ci.id
-      )
-    RETURNING
-      id,
-      uuid
-  )
 INSERT INTO
-  question_versions (
-    chunk_id,
-    client_files,
-    dependencies,
-    directory,
-    external_grading_enable_networking,
-    external_grading_entrypoint,
-    external_grading_environment,
-    external_grading_files,
-    external_grading_image,
-    external_grading_timeout,
-    grading_method,
-    options,
-    partial_credit,
-    preferences_schema,
-    show_correct_answer,
-    single_variant,
-    template_directory,
+  chunks (
     type,
-    workspace_args,
-    workspace_enable_networking,
-    workspace_environment,
-    workspace_graded_files,
-    workspace_home,
-    workspace_image,
-    workspace_port,
-    workspace_url_rewrite
+    course_id,
+    question_id,
+    course_instance_id,
+    assessment_id,
+    uuid,
+    created_at,
+    commit_hash,
+    size_compressed,
+    size_uncompressed
   )
 SELECT
-  inserted_chunks.id,
-  settings.client_files,
-  settings.dependencies,
-  settings.directory,
-  settings.external_grading_enable_networking,
-  settings.external_grading_entrypoint,
-  settings.external_grading_environment,
-  settings.external_grading_files,
-  settings.external_grading_image,
-  settings.external_grading_timeout,
-  settings.grading_method,
-  settings.options,
-  settings.partial_credit,
-  settings.preferences_schema,
-  settings.show_correct_answer,
-  settings.single_variant,
-  settings.template_directory,
-  settings.type,
-  settings.workspace_args,
-  settings.workspace_enable_networking,
-  settings.workspace_environment,
-  settings.workspace_graded_files,
-  settings.workspace_home,
-  settings.workspace_image,
-  settings.workspace_port,
-  settings.workspace_url_rewrite
+  (chunk ->> 'type')::enum_chunk_type,
+  $course_id,
+  q.id AS question_id,
+  ci.id AS course_instance_id,
+  a.id AS assessment_id,
+  (chunk ->> 'uuid')::uuid,
+  $created_at::timestamptz,
+  $commit_hash,
+  (chunk ->> 'sizeCompressed')::bigint,
+  (chunk ->> 'sizeUncompressed')::bigint
 FROM
   JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
-  JOIN inserted_chunks ON inserted_chunks.uuid = (chunk ->> 'uuid')::uuid
-  CROSS JOIN LATERAL JSONB_POPULATE_RECORD(
-    NULL::question_versions,
-    chunk -> 'questionSettings'
-  ) AS settings
-WHERE
-  chunk -> 'questionSettings' IS NOT NULL;
+  LEFT JOIN questions AS q ON (
+    q.qid = (chunk ->> 'questionName')
+    AND q.deleted_at IS NULL
+    AND q.course_id = $course_id
+  )
+  LEFT JOIN course_instances AS ci ON (
+    ci.short_name = (chunk ->> 'courseInstanceName')
+    AND ci.deleted_at IS NULL
+    AND ci.course_id = $course_id
+  )
+  LEFT JOIN assessments AS a ON (
+    a.tid = (chunk ->> 'assessmentName')
+    AND a.deleted_at IS NULL
+    AND a.course_instance_id = ci.id
+  );
 
 -- BLOCK select_active_assessment_ids_by_tid
 SELECT
@@ -279,14 +186,3 @@ FROM
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
-
--- BLOCK select_current_question_versions
-SELECT
-  qv.*
-FROM
-  question_versions AS qv
-  JOIN chunks AS c ON c.id = qv.chunk_id
-WHERE
-  c.course_id = $course_id
-  AND c.type = 'question'
-  AND c.superseded_at IS NULL;

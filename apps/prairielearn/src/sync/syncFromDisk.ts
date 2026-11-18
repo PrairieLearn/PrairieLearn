@@ -5,6 +5,7 @@ import async from 'async';
 import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk } from '../lib/chalk.js';
+import { logChunkChangesToJob, updateChunksForCourse } from '../lib/chunks.js';
 import { config } from '../lib/config.js';
 import type { Course } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
@@ -14,8 +15,10 @@ import {
   getGitDefaultBranch,
   getGitRemoteUrl,
   getLockNameForCoursePath,
+  getOptionalCourseCommitHash,
   selectOrInsertCourseByPath,
 } from '../models/course.js';
+import { publishQuestionVersionsFromDisk } from '../models/question-version.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
@@ -111,6 +114,7 @@ export async function syncDiskToSqlWithLock(
   course: Course,
   logger: ServerJobLogger,
   courseData?: courseDB.CourseData,
+  chunkOptions?: { oldHash?: string | null; newHash?: string | null },
 ): Promise<SyncResults> {
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
@@ -248,6 +252,26 @@ export async function syncDiskToSqlWithLock(
         },
       );
     });
+  });
+
+  const commitHash = await getOptionalCourseCommitHash(course.path);
+  await timed('Published question versions', async () => {
+    if (config.chunksGenerator) {
+      const chunkChanges = await updateChunksForCourse({
+        coursePath: course.path,
+        courseId: course.id,
+        courseData,
+        ...(chunkOptions ?? { oldHash: course.commit_hash, newHash: commitHash }),
+      });
+      logChunkChangesToJob(chunkChanges, logger);
+    } else {
+      await publishQuestionVersionsFromDisk({
+        coursePath: course.path,
+        courseId: course.id,
+        courseData,
+        commitHash,
+      });
+    }
   });
 
   if (config.devMode) {

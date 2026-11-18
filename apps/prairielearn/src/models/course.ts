@@ -150,6 +150,16 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
   }
 }
 
+/** Local courses can be outside Git or have no commits yet. */
+export async function getOptionalCourseCommitHash(coursePath: string): Promise<string | null> {
+  const result = await execa('git', ['rev-parse', '--verify', 'HEAD'], {
+    cwd: coursePath,
+    env: process.env,
+    reject: false,
+  });
+  return result.exitCode === 0 ? result.stdout.trim() : null;
+}
+
 /**
  * Gets the default branch from a git repository by querying origin/HEAD.
  * Returns 'master' as fallback if the query fails.
