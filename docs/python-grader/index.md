@@ -329,7 +329,7 @@ The image moves files around, so start each run from a fresh copy. You can also 
 
 - **Sandbox.** Student code runs in a separate process as an unprivileged user, with a limited set of builtins and import restrictions. Dangerous builtins such as `open`, `eval` and `exec` aren't available. With `workspace_mode`, the student's own modules keep Python's normal builtins, but they still run as the unprivileged user.
 - **Grading data.** `data.json`, which can contain `correct_answers`, is readable only by the grader, not by student code.
-- **What students can read.** `data["params"]`, any `helper_modules` and `data_files`, and modules from `serverFilesCourse` are available to student code, so they mustn't contain answers.
+- **What students can read.** `data["params"]`, any `helper_modules` and `data_files`, and modules from `serverFilesCourse` are available to student code, so they mustn't contain answers. Other files in `tests/`, including `test_student.py`, `leading_code.py` and `setup_code.py`, aren't readable by student code.
 - **Import restrictions.** These only check `import` statements, so they aren't a security boundary on their own. For example, a module that student code is allowed to import can expose `os` as an attribute.
 
 ## Example questions

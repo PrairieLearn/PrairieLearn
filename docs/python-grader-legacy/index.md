@@ -170,7 +170,7 @@ class Test(PLTestCase):
     @name("name of the test case")
     def test_0(self):
         if Feedback.check_scalar(
-            "name of the variable", self.ref.variable_name, self.st.variable_names
+            "name of the variable", self.ref.variable_name, self.st.variable_name
         ):
             Feedback.set_score(1)
         else:
