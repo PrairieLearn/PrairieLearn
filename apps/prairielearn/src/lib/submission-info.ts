@@ -2,9 +2,19 @@ import { differenceInMilliseconds } from 'date-fns';
 
 import { formatDate } from '@prairielearn/formatter';
 
-import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+import type { AssessmentQuestion, GradingJob, Question, Submission } from './db-types.js';
 
-import type { AssessmentQuestion, Question } from './db-types.js';
+type SubmissionGradingJob = Pick<
+  GradingJob,
+  | 'id'
+  | 'grading_method'
+  | 'grading_requested_at'
+  | 'grading_submitted_at'
+  | 'grading_received_at'
+  | 'grading_started_at'
+  | 'grading_finished_at'
+  | 'graded_at'
+>;
 
 export function getSubmissionInfo({
   submission,
@@ -14,7 +24,10 @@ export function getSubmissionInfo({
   courseInstanceId,
   timezone,
 }: {
-  submission: Pick<SubmissionForRender, 'id' | 'date' | 'user_uid' | 'grading_job'>;
+  submission: Pick<Submission, 'id' | 'date'> & {
+    user_uid: string | null;
+    grading_job: SubmissionGradingJob | null;
+  };
   question: Question;
   assessment_question?: AssessmentQuestion | null;
   courseId: string;
@@ -40,7 +53,7 @@ export function getSubmissionInfo({
 
 export type SubmissionInfo = ReturnType<typeof getSubmissionInfo>;
 
-function buildGradingJobStats(job: SubmissionForRender['grading_job']) {
+function buildGradingJobStats(job: SubmissionGradingJob | null) {
   if (!job) return null;
 
   const durations: (number | null)[] = [];
