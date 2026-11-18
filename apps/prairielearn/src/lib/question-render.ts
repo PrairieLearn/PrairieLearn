@@ -918,6 +918,9 @@ export async function renderPanelsForSubmission({
       // As usual, only render if this variant is part of an assessment
       if (assessment == null || assessment_set == null || assessment_instance == null) return;
 
+      // Only homework question pages show the assessment score.
+      if (assessment.type !== 'Homework') return;
+
       panels.assessmentScorePanel = AssessmentScorePanel({
         urlPrefix,
         assessment,

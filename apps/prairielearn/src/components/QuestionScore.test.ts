@@ -37,4 +37,20 @@ describe('InstanceQuestionPoints', () => {
     }).toString();
     assert.notInclude(rendered, 'pending');
   });
+
+  it('shows points staff awarded on an unanswered question that is tagged for manual grading', () => {
+    const rendered = InstanceQuestionPoints({
+      ...savedManualOnlyQuestion,
+      instance_question: {
+        ...savedManualOnlyQuestion.instance_question,
+        status: 'unanswered',
+        requires_manual_grading: true,
+        last_grader: '1',
+        manual_points: 3,
+        points: 3,
+      },
+    }).toString();
+    assert.notInclude(rendered, 'pending');
+    assert.include(rendered, '>3<');
+  });
 });

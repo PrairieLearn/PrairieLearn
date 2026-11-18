@@ -303,7 +303,11 @@ export function InstanceQuestionPoints({
     (!!assessment_question.max_auto_points || !assessment_question.max_manual_points);
   const pointsPending =
     (autoPointsPending && component !== 'manual') ||
-    (instance_question.requires_manual_grading && component !== 'auto');
+    // Staff can tag unanswered questions for manual grading, but there is
+    // nothing to grade, and the manual grading queue excludes them too.
+    (instance_question.requires_manual_grading &&
+      instance_question.status !== 'unanswered' &&
+      component !== 'auto');
 
   return html`
     <span class="text-nowrap ${instance_question.used_for_grade === false ? 'text-muted' : ''}">
