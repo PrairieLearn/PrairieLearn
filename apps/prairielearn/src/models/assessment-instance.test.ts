@@ -66,7 +66,19 @@ describe('selectAssessmentInstanceGradingPending', () => {
     await setQuestionState(AUTO_QID, { status: 'saved', requires_manual_grading: false });
     assert.deepEqual(await selectAssessmentInstanceGradingPending(assessment_instance_id), {
       manual: false,
-      auto: true,
+      saved: true,
+      grading: false,
+      assessment_type: 'Homework',
+      open: true,
+    });
+  });
+
+  it('reports an answer that is being graded separately from saved answers', async () => {
+    await setQuestionState(AUTO_QID, { status: 'grading', requires_manual_grading: false });
+    assert.deepEqual(await selectAssessmentInstanceGradingPending(assessment_instance_id), {
+      manual: false,
+      saved: false,
+      grading: true,
       assessment_type: 'Homework',
       open: true,
     });
@@ -76,7 +88,8 @@ describe('selectAssessmentInstanceGradingPending', () => {
     await setQuestionState(MANUAL_QID, { status: 'saved', requires_manual_grading: true });
     assert.deepEqual(await selectAssessmentInstanceGradingPending(assessment_instance_id), {
       manual: true,
-      auto: false,
+      saved: false,
+      grading: false,
       assessment_type: 'Homework',
       open: true,
     });

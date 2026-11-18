@@ -43,7 +43,8 @@ export function AssessmentScore({ score, gradingPending, className }: Assessment
         data-bs-title="Grading pending"
         data-bs-content={[
           gradingPending.manual ? 'Some answers are waiting for manual grading.' : null,
-          gradingPending.auto ? savedAnswersMessage(gradingPending) : null,
+          gradingPending.grading ? 'Some answers are being graded.' : null,
+          gradingPending.saved ? savedAnswersMessage(gradingPending) : null,
           'Your score may not reflect all submitted work.',
         ]
           .filter((sentence) => sentence != null)

@@ -93,13 +93,21 @@ SELECT
     iq.requires_manual_grading
     AND iq.status != 'unanswered'
   ) AS manual,
+  -- A saved answer to a manual-only question has no auto points to wait for.
   bool_or(
-    iq.status IN ('saved', 'grading')
+    iq.status = 'saved'
     AND (
       coalesce(aq.max_auto_points, 0) > 0
       OR coalesce(aq.max_manual_points, 0) = 0
     )
-  ) AS auto,
+  ) AS saved,
+  bool_or(
+    iq.status = 'grading'
+    AND (
+      coalesce(aq.max_auto_points, 0) > 0
+      OR coalesce(aq.max_manual_points, 0) = 0
+    )
+  ) AS grading,
   a.type AS assessment_type,
   ai.open
 FROM

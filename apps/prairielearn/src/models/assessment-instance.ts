@@ -88,8 +88,10 @@ export async function insertGroupAssessmentInstance({
 export interface GradingPending {
   /** At least one question is waiting for manual grading. */
   manual: boolean;
-  /** At least one saved answer has not been graded. */
-  auto: boolean;
+  /** At least one saved answer has not been submitted for grading. */
+  saved: boolean;
+  /** At least one answer has a grading job that is queued or running. */
+  grading: boolean;
   /** What happens to saved answers depends on the assessment type and whether it is still open. */
   assessment_type: Assessment['type'];
   open: boolean;
@@ -109,14 +111,15 @@ export async function selectGradingPending(
     z.object({
       assessment_instance_id: IdSchema,
       manual: z.boolean(),
-      auto: z.boolean(),
+      saved: z.boolean(),
+      grading: z.boolean(),
       assessment_type: AssessmentSchema.shape.type,
       open: AssessmentInstanceSchema.shape.open,
     }),
   );
   return new Map(
     rows
-      .filter((row) => row.manual || row.auto)
+      .filter((row) => row.manual || row.saved || row.grading)
       .map(({ assessment_instance_id, ...gradingPending }) => [
         assessment_instance_id,
         gradingPending,
