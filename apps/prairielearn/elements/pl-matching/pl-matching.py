@@ -448,6 +448,7 @@ def prepare_radio_matrix(element: lxml.html, data: pl.QuestionData) -> None:
 
     builtin_grading = pl.get_boolean_attrib(element, "builtin-grading", BUILTIN_GRADING_DEFAULT)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    
 
     if not builtin_grading:
         if pl.has_attrib(element, "weight"):
@@ -464,6 +465,7 @@ def prepare_radio_matrix(element: lxml.html, data: pl.QuestionData) -> None:
 
     options, statements = categorize_matches(element)
 
+
     # Choose and randomize the options and statements. Each can be in a fixed order.
     fixed_statements_order = pl.get_boolean_attrib(
         element, "fixed-order", FIXED_STATEMENTS_ORDER_DEFAULT
@@ -472,11 +474,86 @@ def prepare_radio_matrix(element: lxml.html, data: pl.QuestionData) -> None:
         element, "fixed-options-order", FIXED_OPTIONS_ORDER_DEFAULT
     )
 
-    if not fixed_statements_order:
+    number_statements = pl.get_integer_attrib(
+        element, "number-statements", len(statements)
+    )
+    number_options = pl.get_integer_attrib(element, "number-options", len(options))
+    nota = pl.get_boolean_attrib(element, "none-of-the-above", NOTA_DEFAULT)
+
+    if fixed_statements_order:
+        if number_statements < len(statements):
+            # Take a random sampling, but maintain the original order of the statements.
+            indices = random.sample(range(len(statements)), number_statements)
+            statements = [statements[i] for i in sorted(indices)]
+        # Otherwise, just use all the statements as-is.
+    # Shuffle or sample the statements.
+    elif number_statements < len(statements):
+        statements = random.sample(statements, number_statements)
+    else:
         random.shuffle(statements)
 
-    if not fixed_options_order:
-        random.shuffle(options)
+    # Organize the list of options to use.
+    # First, select all the options associated with the chosen statements.
+    needed_options = []
+    distractors = []
+    if builtin_grading:
+        needed_options_keys = {s["match"] for s in statements}
+        needed_options, distractors = pl.partition(
+            options, lambda opt: opt["name"] in needed_options_keys
+        )
+    else:
+        needed_options = options
+
+
+    if len(needed_options) < number_options:
+        # The limit is set above the # of options needed to match the chosen statements.
+        # Add distractor options; and None of the Above if needed.
+        more_needed = number_options - len(needed_options)
+        if more_needed >= len(distractors):
+            # Use all options, both correct and distractors.
+            needed_options = options
+            # Add NOTA if that's still not enough.
+            if more_needed > len(distractors):
+                nota = True
+        else:
+            # Add a sample of the distractors.
+            distractor_sample = random.sample(distractors, more_needed)
+            needed_options_keys = needed_options_keys.union({
+                o["name"] for o in distractor_sample
+            })
+            needed_options = [o for o in options if o["name"] in needed_options_keys]
+        options = needed_options
+        if not fixed_options_order:
+            random.shuffle(options)
+        
+
+    elif len(needed_options) > number_options:
+        # The limit is set below the # of options needed.
+        # Add None of the Above to compensate.
+
+        if fixed_options_order:
+            # Take a random sampling, but maintain the original order of the options.
+            indices = random.sample(range(len(needed_options)), number_options)
+            options = [needed_options[i] for i in sorted(indices)]
+        else:
+            options = random.sample(needed_options, number_options)
+        nota = True
+        
+    else:
+        # The number of needed options matches the total options.
+        options = needed_options
+        if not fixed_options_order:
+            random.shuffle(options)
+        
+
+    if nota:
+        options.append({
+            "index": len(options),
+            "name": "__nota__",
+            "html": "Not Applicable",
+        })
+
+    
 
     # Build the options to display to the student.
     chosen_option_names = []
@@ -491,13 +568,16 @@ def prepare_radio_matrix(element: lxml.html, data: pl.QuestionData) -> None:
         display_statements = []
         correct_matches = []
         for i, statement in enumerate(statements):
-
+            if nota and statement["match"] not in chosen_option_names:
+                match_index = len(options) - 1
+            else:
+                match_index = chosen_option_names.index(statement["match"])
             keyed_statement = {
                 "key": str(i),
                 "html": statement["html"],
                 "match": statement["match"],
             }
-            match_index = chosen_option_names.index(statement["match"])
+            
 
             display_statements.append(keyed_statement)
             correct_matches.append(match_index)
