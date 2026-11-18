@@ -980,21 +980,6 @@ export async function prepareQuestionContentChunks({
   };
 }
 
-/** Publishes the chunk for a known question without reconciling the entire course. */
-export async function updateQuestionContentChunk({
-  coursePath,
-  courseId,
-  qid,
-}: {
-  coursePath: string;
-  courseId: string;
-  qid: string;
-}): Promise<ChunksDiff> {
-  const prepared = await prepareQuestionContentChunks({ coursePath, courseId, qids: [qid] });
-  await sqldb.runInTransactionAsync(() => applyPreparedChunks(courseId, prepared));
-  return prepared.changes;
-}
-
 export async function prepareChunksForCourse({
   coursePath,
   courseId,

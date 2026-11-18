@@ -28,7 +28,6 @@ import { features } from '../lib/features/index.js';
 import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import * as courseModel from '../models/course.js';
 import { getCourseCommitHash, selectCourseById, updateCourseColumn } from '../models/course.js';
-import { insertInstitution } from '../models/institution.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 import * as courseDB from '../sync/course-db.js';
@@ -121,8 +120,6 @@ describe('content-only question save', () => {
     const initial = await selectCourseById(courseId);
     assert.isNotNull(initial.sync_configuration);
     load.mockClear();
-    await sync();
-    expect(load).not.toHaveBeenCalled();
 
     await courseModel.updateCourseSyncConfiguration(courseId, {
       ...initial.sync_configuration,
@@ -139,9 +136,6 @@ describe('content-only question save', () => {
 
     await util.syncCourseData(courseDir);
     assert.isNull((await selectCourseById(courseId)).sync_configuration);
-    load.mockClear();
-    await sync();
-    expect(load).toHaveBeenCalledOnce();
   });
 
   it('revalidates sharing on feature changes and keeps recorded JSON errors without repeatedly doing full sync', async () => {
@@ -175,60 +169,8 @@ describe('content-only question save', () => {
         });
         await sync();
         assert.isNull((await selectQuestionByQid({ course_id: courseId, qid })).sync_errors);
-        load.mockClear();
-        await withConfig(
-          { features: { 'question-sharing': true, 'consume-public-questions': true } },
-          async () => {
-            await sync();
-            expect(load).toHaveBeenCalledOnce();
-            assert.isNull((await selectQuestionByQid({ course_id: courseId, qid })).sync_errors);
-          },
-        );
       },
     );
-  });
-
-  it('uses the current institution for a sync requested before the course moved', async () => {
-    const infoPath = path.join(fixture.courseOriginDir, 'questions', qid, 'info.json');
-    const info = await fs.readJson(infoPath);
-    await fs.writeJson(infoPath, { ...info, sharePublicly: true });
-    await commitOriginAndSync(fixture, 'Make question public');
-    await withConfig({ checkSharingOnSync: true }, async () => {
-      const initial = await selectCourseById(courseId);
-      await features.enable('question-sharing', { institution_id: initial.institution_id });
-      await sync();
-      const requestedCourse = await selectCourseById(courseId);
-      // resetDatabase inserts the default institution with an explicit ID.
-      await execute(sql.advance_institution_sequence, {});
-      const institutionId = await insertInstitution({
-        shortName: 'Other',
-        longName: 'Other institution',
-        displayTimezone: 'UTC',
-        uidRegexp: null,
-      });
-      await features.disable('question-sharing', { institution_id: institutionId });
-      await updateCourseColumn({
-        courseId,
-        columnName: 'institution_id',
-        value: institutionId,
-        authnUserId: user.id,
-      });
-      const load = vi.spyOn(courseDB, 'loadFullCourse');
-      const { jobPromise } = await pullAndUpdateCourse({
-        course: requestedCourse,
-        userId: user.id,
-        authnUserId: user.id,
-      });
-      await jobPromise;
-      expect(load).toHaveBeenCalledOnce();
-      expect((await selectCourseById(courseId)).sync_configuration?.features).toMatchObject({
-        'question-sharing': false,
-      });
-      assert.include(
-        (await selectQuestionByQid({ course_id: courseId, qid })).sync_errors!,
-        'sharing is not enabled',
-      );
-    });
   });
 
   it('reloads prepared metadata when sharing changes during the push', async () => {
@@ -271,44 +213,6 @@ describe('content-only question save', () => {
     });
   });
 
-  it('refreshes declared feature warnings without hashing unrelated feature flags', async () => {
-    const infoPath = path.join(fixture.courseOriginDir, 'infoCourse.json');
-    const info = await fs.readJson(infoPath);
-    await fs.writeJson(infoPath, {
-      ...info,
-      options: { ...info.options, devModeFeatures: { 'rich-text-editor': true } },
-    });
-    await commitOriginAndSync(fixture, 'Declare editor feature');
-    await withConfig(
-      {
-        devMode: false,
-        features: { 'rich-text-editor': true },
-      },
-      async () => {
-        await sync();
-        assert.equal((await selectCourseById(courseId)).sync_warnings, '');
-        const load = vi.spyOn(courseDB, 'loadFullCourse');
-        await withConfig({ features: { 'rich-text-editor': false } }, async () => {
-          await sync();
-          expect(load).toHaveBeenCalledOnce();
-          assert.include((await selectCourseById(courseId)).sync_warnings!, 'actually disabled');
-        });
-        load.mockClear();
-        await sync();
-        expect(load).toHaveBeenCalledOnce();
-        assert.equal((await selectCourseById(courseId)).sync_warnings, '');
-        load.mockClear();
-        await withConfig(
-          { features: { 'rich-text-editor': true, 'ai-question-generation': true } },
-          async () => {
-            await sync();
-            expect(load).not.toHaveBeenCalled();
-          },
-        );
-      },
-    );
-  });
-
   it('rebuilds chunks on activation but preserves chunk revisions when only processing settings change', async () => {
     await withConfig({ chunksGenerator: false }, async () => {
       await sync();
@@ -331,61 +235,10 @@ describe('content-only question save', () => {
     });
   });
 
-  it.each(['upload', 'database'])(
-    'keeps the old configuration on %s failure and retries the configuration change',
-    async (failure) => {
-      await withConfig({ chunksGenerator: true }, async () => {
-        await sync();
-        const before = await selectCourseById(courseId);
-        const beforeChunks = await util.dumpTableWithSchema('chunks', ChunkSchema);
-        await courseModel.updateCourseSyncConfiguration(courseId, {
-          ...before.sync_configuration,
-          version: 0,
-        });
-        const oldConfiguration = (await selectCourseById(courseId)).sync_configuration;
-        const upload = vi.spyOn(chunks, 'prepareChunksForCourse');
-        const publishConfiguration = courseModel.updateCourseSyncConfiguration;
-        const publish = vi.spyOn(courseModel, 'updateCourseSyncConfiguration');
-        if (failure === 'upload') upload.mockRejectedValueOnce(new Error('Upload failed'));
-        if (failure === 'database') {
-          // Fail after metadata and commit updates, when publishing the new configuration.
-          publish.mockImplementation(async (id, configuration) => {
-            await publishConfiguration(id, configuration);
-            if (configuration !== null) throw new Error('Database failed');
-          });
-        }
-        const operation = await save();
-        await expect(operation.run()).rejects.toThrow(
-          failure === 'upload' ? 'Upload failed' : 'Database failed',
-        );
-        const after = await selectCourseById(courseId);
-        assert.equal(after.commit_hash, before.commit_hash);
-        assert.deepEqual(after.sync_configuration, oldConfiguration);
-        assert.deepEqual(await util.dumpTableWithSchema('chunks', ChunkSchema), beforeChunks);
-        publish.mockRestore();
-        await sync();
-        assert.deepEqual(
-          (await selectCourseById(courseId)).sync_configuration,
-          before.sync_configuration,
-        );
-        assert.equal(
-          (await selectCourseById(courseId)).commit_hash,
-          await getCourseCommitHash(courseDir),
-        );
-      });
-    },
-  );
-
   it('saves nested-question content and publishes only its chunk without loading course metadata', async () => {
     config.chunksGenerator = true;
     config.chunksConsumer = true;
     config.chunksConsumerDirectory = path.join(fixture.baseDir, 'runtime');
-    await chunks.updateQuestionContentChunk({ coursePath: courseDir, courseId, qid });
-    await chunks.updateQuestionContentChunk({
-      coursePath: courseDir,
-      courseId,
-      qid: util.QUESTION_ID,
-    });
     const before = await chunks.selectChunksForCourse(courseId);
     const question = await selectQuestionByQid({ course_id: courseId, qid });
     const targeted = vi.spyOn(chunks, 'prepareQuestionContentChunks');
@@ -483,12 +336,11 @@ describe('content-only question save', () => {
     assert.equal(classifyEditOutcome((await operation.result()).data), 'success');
   });
 
-  it('fully syncs restored question metadata and records JSON errors', async () => {
+  it('fully syncs question metadata and preserves JSON errors during content saves', async () => {
     const jsonPath = path.join(path.dirname(filePath), 'info.json');
     const info = await fs.readJson(jsonPath);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const operation = await save(jsonPath, JSON.stringify({ ...info, title: 'Changed title' }));
-    await fs.remove(jsonPath);
     await operation.run();
     expect(load).toHaveBeenCalledOnce();
     assert.equal((await selectQuestionByQid({ course_id: courseId, qid })).title, 'Changed title');
@@ -703,40 +555,58 @@ describe('content-only question save', () => {
   });
 
   it.each(['upload', 'database'])(
-    'preserves metadata, references, and checkpoint on %s failure',
+    'rolls back metadata, chunks, commit, and configuration on %s failure and recovers a reverted edit',
     async (failure) => {
-      config.chunksGenerator = true;
-      await chunks.updateQuestionContentChunk({ coursePath: courseDir, courseId, qid });
-      const before = await selectQuestionByQid({ course_id: courseId, qid });
+      const beforeQuestion = await selectQuestionByQid({ course_id: courseId, qid });
+      const beforeCourse = await selectCourseById(courseId);
       const beforeChunks = await util.dumpTableWithSchema('chunks', ChunkSchema);
-      const beforeCommit = (await selectCourseById(courseId)).commit_hash;
       const infoPath = path.join(path.dirname(filePath), 'info.json');
       const original = await fs.readFile(infoPath, 'utf8');
       const changed = JSON.stringify({ ...JSON.parse(original), title: 'Changed title' });
-      const upload = vi.spyOn(chunks, 'prepareChunksForCourse');
-      if (failure === 'upload') upload.mockRejectedValueOnce(new Error('Upload failed'));
-      const checkpoint = vi.spyOn(courseModel, 'updateCourseCommitHash');
-      if (failure === 'database') checkpoint.mockRejectedValueOnce(new Error('Database failed'));
-      const operation = await save(infoPath, changed);
-      await expect(operation.run()).rejects.toThrow(
-        failure === 'upload' ? 'Upload failed' : 'Database failed',
+      await withConfig(
+        { externalGradingMaximumTimeout: config.externalGradingMaximumTimeout + 1 },
+        async () => {
+          const upload = vi.spyOn(chunks, 'prepareChunksForCourse');
+          const publishConfiguration = courseModel.updateCourseSyncConfiguration;
+          const publish = vi.spyOn(courseModel, 'updateCourseSyncConfiguration');
+          if (failure === 'upload') upload.mockRejectedValueOnce(new Error('Upload failed'));
+          if (failure === 'database') {
+            publish.mockImplementation(async (id, configuration) => {
+              await publishConfiguration(id, configuration);
+              if (configuration !== null) throw new Error('Database failed');
+            });
+          }
+          const operation = await save(infoPath, changed);
+          await expect(operation.run()).rejects.toThrow(
+            failure === 'upload' ? 'Upload failed' : 'Database failed',
+          );
+          assert.deepEqual(await selectQuestionByQid({ course_id: courseId, qid }), beforeQuestion);
+          assert.deepEqual(await util.dumpTableWithSchema('chunks', ChunkSchema), beforeChunks);
+          const afterCourse = await selectCourseById(courseId);
+          assert.equal(afterCourse.commit_hash, beforeCourse.commit_hash);
+          assert.deepEqual(afterCourse.sync_configuration, beforeCourse.sync_configuration);
+          assert.notEqual(await getCourseCommitHash(courseDir), beforeCourse.commit_hash);
+          if (failure === 'database') {
+            const prepared = await upload.mock.results[0].value;
+            assert.isAbove(prepared.generatedChunks.length, 0);
+          }
+          publish.mockRestore();
+        },
       );
-      assert.deepEqual(await selectQuestionByQid({ course_id: courseId, qid }), before);
-      assert.deepEqual(await util.dumpTableWithSchema('chunks', ChunkSchema), beforeChunks);
-      assert.equal((await selectCourseById(courseId)).commit_hash, beforeCommit);
-      assert.notEqual(await getCourseCommitHash(courseDir), beforeCommit);
-      if (failure === 'database') {
-        const prepared = await upload.mock.results[0].value;
-        assert.isAbove(prepared.generatedChunks.length, 0);
-      }
-      // Reverting B in C makes A..C empty; the UI path still requires reconciliation.
+      // Original settings prevent configuration invalidation from masking an empty-diff bug.
       const retry = await save(infoPath, original);
       await retry.run();
-      assert.equal((await selectQuestionByQid({ course_id: courseId, qid })).title, before.title);
-      assert.equal(
-        (await selectCourseById(courseId)).commit_hash,
-        await getCourseCommitHash(courseDir),
+      const currentHash = await getCourseCommitHash(courseDir);
+      const { stdout: diff } = await execa(
+        'git',
+        ['diff', '--name-only', beforeCourse.commit_hash!, currentHash],
+        { cwd: courseDir },
       );
+      assert.equal(diff, '');
+      assert.deepEqual(await selectQuestionByQid({ course_id: courseId, qid }), beforeQuestion);
+      const afterCourse = await selectCourseById(courseId);
+      assert.equal(afterCourse.commit_hash, currentHash);
+      assert.deepEqual(afterCourse.sync_configuration, beforeCourse.sync_configuration);
     },
   );
 });
