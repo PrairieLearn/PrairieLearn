@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
@@ -93,6 +94,84 @@ def test_formula_editor_mathjson_bypasses_set_text_parser() -> None:
     assert data["format_errors"] == {}
     submitted = psu.json_to_sympy(data["submitted_answers"]["test"], allow_sets=True)
     assert submitted == sympy.Complement(sympy.S.Reals, sympy.FiniteSet(0))
+
+
+def test_formula_editor_set_builder_grades_against_interval() -> None:
+    element_html = build_element_html('formula-editor="true"', 'syntax="interval"')
+    submitted_answers = {
+        "test": "{x | x > 0}",
+        "test-json": json.dumps([
+            "Set",
+            "x",
+            ["Condition", ["Greater", "x", 0]],
+        ]),
+    }
+    data = make_question_data(
+        submitted_answers=submitted_answers,
+        raw_submitted_answers=submitted_answers.copy(),
+        correct_answers={
+            "test": pl.to_json(sympy.Interval.open(0, sympy.oo)),
+        },
+    )
+
+    set_symbolic_input.prepare(element_html, data)
+    set_symbolic_input.parse(element_html, data)
+    set_symbolic_input.grade(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_formula_editor_set_builder_grades_by_alpha_equivalence() -> None:
+    x, y = sympy.symbols("x y")
+    correct = pl.set_builder(
+        sympy.Tuple(x, y),
+        (x, y),
+        sympy.Eq(x + y, 1),
+    )
+    element_html = build_element_html('formula-editor="true"')
+    submitted_answers = {
+        "test": "{(u, v) | u + v = 1}",
+        "test-json": json.dumps([
+            "Set",
+            ["Tuple", "u", "v"],
+            ["Condition", ["Equal", ["Add", "u", "v"], 1]],
+        ]),
+    }
+    data = make_question_data(
+        submitted_answers=submitted_answers,
+        raw_submitted_answers=submitted_answers.copy(),
+        correct_answers={"test": pl.to_json(correct)},
+    )
+
+    set_symbolic_input.prepare(element_html, data)
+    set_symbolic_input.parse(element_html, data)
+    set_symbolic_input.grade(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert data["partial_scores"]["test"]["score"] == 1
+
+
+def test_formula_editor_set_builder_custom_predicate_requires_configuration() -> None:
+    mathjson = json.dumps(["Set", "x", ["Condition", ["P", "x"]]])
+    configured_html = build_element_html(
+        'formula-editor="true"', 'custom-predicates="P"'
+    )
+    configured_data = make_question_data(
+        submitted_answers={"test": "{x | P(x)}", "test-json": mathjson}
+    )
+
+    set_symbolic_input.prepare(configured_html, configured_data)
+    set_symbolic_input.parse(configured_html, configured_data)
+    assert configured_data["format_errors"] == {}
+
+    unconfigured_html = build_element_html('formula-editor="true"')
+    unconfigured_data = make_question_data(
+        submitted_answers={"test": "{x | P(x)}", "test-json": mathjson}
+    )
+    set_symbolic_input.parse(unconfigured_html, unconfigured_data)
+    assert unconfigured_data["submitted_answers"]["test"] is None
+    assert "test" in unconfigured_data["format_errors"]
 
 
 def test_formula_editor_malformed_mathjson_does_not_fall_back() -> None:

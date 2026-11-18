@@ -29,6 +29,9 @@
     "custom-functions": {
       "type": "string"
     },
+    "custom-predicates": {
+      "type": "string"
+    },
     "display": {
       "type": "string",
       "enum": ["block", "inline"]

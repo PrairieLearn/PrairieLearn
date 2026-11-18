@@ -447,6 +447,7 @@ interface KeyboardLayout {
   function createSyntax(mf: MathfieldElement): LatexSyntax {
     const variables = mf.dataset.variables?.split(',').filter(Boolean) ?? [];
     const customFunctions = mf.getAttribute('custom-functions')?.split(',').filter(Boolean) ?? [];
+    const customPredicates = mf.getAttribute('custom-predicates')?.split(',').filter(Boolean) ?? [];
     const allowTrig = mf.hasAttribute('allow-trig');
     const allowSets = mf.hasAttribute('allow-sets');
     const cacheKey = JSON.stringify([
@@ -454,6 +455,7 @@ interface KeyboardLayout {
       allowSets,
       [...variables].sort(),
       [...customFunctions].sort(),
+      [...customPredicates].sort(),
     ]);
     const cached = latexSyntaxCache.get(cacheKey);
     if (cached) return cached;
@@ -539,7 +541,7 @@ interface KeyboardLayout {
           latexTrigger: variable,
           parse: variable,
         })),
-        ...customFunctions.flatMap((name) =>
+        ...[...customFunctions, ...customPredicates].flatMap((name) =>
           [
             { latexTrigger: name },
             { symbolTrigger: name },
@@ -837,6 +839,43 @@ interface KeyboardLayout {
           { class: 'small hide-shift ', label: '[backspace]', shift: null, width: 1 },
           ...onlyIfSets(signKey), // sign shifted from above
         ],
+        ...(allowSets
+          ? [
+              [
+                '[separator]',
+                makeShortcutProxy(
+                  {
+                    class: 'small',
+                    latex: '\\{#0\\mid#?\\}',
+                    insert: '\\{{#@}\\mid {#?}\\}',
+                  },
+                  mf,
+                ),
+                {
+                  latex: '\\in',
+                  variants: [{ latex: '\\notin' }],
+                },
+                {
+                  latex: '=',
+                  variants: [
+                    { latex: '\\ne' },
+                    { latex: '<' },
+                    { latex: '\\le' },
+                    { latex: '>' },
+                    { latex: '\\ge' },
+                  ],
+                },
+                {
+                  latex: '\\land',
+                  variants: [{ latex: '\\lor' }, { latex: '\\neg' }],
+                },
+                '[separator]',
+                { class: 'small hide-shift', label: '[left]' },
+                { class: 'small hide-shift', label: '[right]' },
+                { class: 'small hide-shift', label: '[backspace]', shift: null },
+              ],
+            ]
+          : []),
         ...(namedSets
           ? [
               [
@@ -978,8 +1017,11 @@ interface KeyboardLayout {
    */
   function setUpSymbolicInputMacros(mf: MathfieldElement) {
     const additionalFunctions = mf.getAttribute('custom-functions')?.split(',') ?? [];
+    const additionalPredicates = mf.getAttribute('custom-predicates')?.split(',') ?? [];
 
-    const customFunctions = new Set(additionalFunctions.concat(defaultFunctions));
+    const customFunctions = new Set(
+      additionalFunctions.concat(additionalPredicates, defaultFunctions),
+    );
     const allowSets = mf.getAttribute('allow-sets');
 
     const macros: MacroDictionary = {};
