@@ -26,8 +26,8 @@ import { type QuestionRenameScope } from '../sync/questionRenameSync.js';
 import {
   getQuestionSyncPlan,
   syncNewQuestions,
+  syncQuestionInfo,
   syncQuestionMetadata,
-  syncRecoveredQuestion,
 } from '../sync/questionSync.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
 import { checkSharingConfigurationValid, syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
@@ -156,9 +156,9 @@ export async function syncCourseFromDisk({
         for (const change of questionChanges) {
           if (change.kind === 'title') {
             await syncQuestionTitle({ course_id: course.id, qid: change.qid, title: change.title });
-          } else if (change.kind === 'recover') {
+          } else if (change.kind === 'recover' || change.kind === 'settings') {
             job.info(`Reprocessing question metadata: ${change.qid}`);
-            await syncRecoveredQuestion(course, change);
+            await syncQuestionInfo(course, change);
             for (const error of change.info.errors) job.error(error);
           } else if (change.kind === 'rename') {
             await syncQuestionQid({
@@ -180,7 +180,9 @@ export async function syncCourseFromDisk({
       return {
         status: 'complete',
         hadJsonErrors: questionChanges.some(
-          (change) => change.kind === 'recover' && infofile.hasErrors(change.info),
+          (change) =>
+            (change.kind === 'recover' || change.kind === 'settings') &&
+            infofile.hasErrors(change.info),
         ),
       };
     }

@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
+import { omit, pick } from 'es-toolkit';
+import { get } from 'es-toolkit/compat';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -42,6 +44,32 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
+const questionSettingsFields = [
+  'singleVariant',
+  'showCorrectAnswer',
+  'partialCredit',
+  'authors',
+  'comment',
+  'dependencies',
+  'workspaceOptions',
+  'externalGradingOptions',
+] as const satisfies readonly (keyof QuestionJson)[];
+
+const deprecatedSettingPaths = [
+  'dependencies.coreStyles',
+  'dependencies.coreScripts',
+  'workspaceOptions.syncIgnore',
+  'externalGradingOptions.enabled',
+] as const;
+
+function fieldsOutsideQuestionSettings(data: Record<string, unknown>) {
+  return {
+    fields: omit(data, questionSettingsFields),
+    // Compare authored values so parsing defaults cannot hide deprecated-field edits.
+    deprecatedSettings: deprecatedSettingPaths.map((field) => get(data, field)),
+  };
+}
+
 interface QuestionCatalogSync {
   tagsChanged: boolean;
   topicChanged: boolean;
@@ -64,7 +92,7 @@ export type QuestionSyncChange =
   | { kind: 'content'; qid: string }
   | { kind: 'title'; qid: string; title: string }
   | {
-      kind: 'recover';
+      kind: 'recover' | 'settings';
       qid: string;
       info: InfoFile<QuestionJson>;
       catalogs: QuestionCatalogSync | null;
@@ -309,12 +337,22 @@ export async function getQuestionSyncPlan({
         topic: newTopic,
         ...newRemainingFields
       } = loaded.data;
-      if (!isDeepStrictEqual(oldRemainingFields, newRemainingFields)) return null;
+      if (
+        !isDeepStrictEqual(
+          fieldsOutsideQuestionSettings(oldRemainingFields),
+          fieldsOutsideQuestionSettings(newRemainingFields),
+        )
+      ) {
+        return null;
+      }
+      const settingsChanged = !isDeepStrictEqual(
+        pick(oldRemainingFields, questionSettingsFields),
+        pick(newRemainingFields, questionSettingsFields),
+      );
       const tagsChanged = !isDeepStrictEqual(oldTags, newTags);
       const topicChanged = oldTopic !== newTopic;
-      if (!tagsChanged && !topicChanged) {
-        plan.set(question.qid, { kind: 'title', qid: question.qid, title: validated.data.title });
-      } else {
+      let catalogs: QuestionCatalogSync | null = null;
+      if (tagsChanged || topicChanged) {
         const courseInfo = await loadInfoFile({
           coursePath: course.path,
           filePath: 'infoCourse.json',
@@ -322,6 +360,20 @@ export async function getQuestionSyncPlan({
         if (!courseInfo?.data || courseInfo.errors.length > 0) return null;
         const courseMetadata = CourseJsonSchema.safeParse(courseInfo.data);
         if (!courseMetadata.success) return null;
+        catalogs = { tagsChanged, topicChanged, courseMetadata: courseMetadata.data };
+      }
+      if (settingsChanged) {
+        const info = await loadQuestionInfo(course.id, course.path, question.qid);
+        if (
+          !info ||
+          info.errors.length > 0 ||
+          !question.uuid ||
+          info.uuid?.toLowerCase() !== question.uuid.toLowerCase()
+        ) {
+          return null;
+        }
+        plan.set(question.qid, { kind: 'settings', qid: question.qid, info, catalogs });
+      } else if (catalogs) {
         plan.set(question.qid, {
           kind: 'metadata',
           qid: question.qid,
@@ -330,10 +382,10 @@ export async function getQuestionSyncPlan({
             tags: validated.data.tags,
             topic: validated.data.topic,
           },
-          tagsChanged,
-          topicChanged,
-          courseMetadata: courseMetadata.data,
+          ...catalogs,
         });
+      } else {
+        plan.set(question.qid, { kind: 'title', qid: question.qid, title: validated.data.title });
       }
     } else if (!plan.has(question.qid)) {
       plan.set(question.qid, { kind: 'content', qid: question.qid });
@@ -406,10 +458,10 @@ async function syncQuestionCatalogs(
   }
 }
 
-/** Requires the course lock; recovery shares the chunk activation transaction. */
-export async function syncRecoveredQuestion(
+/** Requires the course lock; question metadata shares the chunk activation transaction. */
+export async function syncQuestionInfo(
   course: Course,
-  change: Extract<QuestionSyncChange, { kind: 'recover' }>,
+  change: Extract<QuestionSyncChange, { kind: 'recover' | 'settings' }>,
 ) {
   await runInTransactionAsync(async () => {
     if (change.catalogs && change.info.data) {
