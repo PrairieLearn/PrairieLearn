@@ -62,7 +62,7 @@ Omit the `cover` option to start with questions on the first page.
 
 ### PrairieLearn endpoint parameters
 
-Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. Regenerating archives a form and creates the next numbered version of its letter, such as A2; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
+Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. The first form is A1. Regenerating archives a form and creates the next numbered version of its letter, such as A2; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
 The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` exports a submitted page snapshot. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
 
@@ -70,7 +70,7 @@ The form resource is `/pl/course_instance/:course_instance_id/instructor/assessm
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
-The form's saved label appears on covers and footers. New forms use the first available letter among up to 26 active slots. Archiving a slot makes its letter available again with the next numbered version, such as C2. Query parameters cannot change labels.
+The form's saved label appears on covers and footers. New forms use the first available letter with version 1 among up to 26 active slots. Archiving a slot makes its letter available again with the next numbered version, such as C2. Query parameters cannot change labels.
 
 `include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
 
