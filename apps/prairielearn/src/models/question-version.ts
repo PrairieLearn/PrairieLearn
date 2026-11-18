@@ -41,7 +41,8 @@ async function hashDirectory(directory: string): Promise<string> {
   const hash = createHash('sha256');
   async function visit(relativePath: string) {
     const filePath = path.join(directory, relativePath);
-    const stat = await fs.lstat(filePath);
+    // tar follows its cwd, but preserves symlinks inside the archive.
+    const stat = relativePath === '' ? await fs.stat(filePath) : await fs.lstat(filePath);
     const type = stat.isDirectory() ? 'directory' : stat.isSymbolicLink() ? 'symlink' : 'file';
     hash.update(
       JSON.stringify([relativePath, type, stat.mode & 0o777, stat.isFile() ? stat.size : null]),
