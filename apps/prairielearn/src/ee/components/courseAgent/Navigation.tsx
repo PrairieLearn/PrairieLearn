@@ -29,3 +29,26 @@ export function NavigationCard({ navigation }: { navigation: NavigationPart }) {
     </a>
   );
 }
+
+export function isReloadPart(part: UIMessage['parts'][number]) {
+  return part.type === 'data-reload';
+}
+
+/** A reload the agent offered, so the page shows saved changes. Like a page, it waits for a click. */
+export function ReloadCard() {
+  return (
+    <button
+      type="button"
+      className="course-agent-page-link border rounded p-2 d-flex align-items-center gap-2 text-body text-start w-100"
+      onClick={() => window.location.reload()}
+    >
+      <span className="course-agent-page-link-icon rounded d-flex align-items-center justify-content-center flex-shrink-0">
+        <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+      </span>
+      <span className="course-agent-page-link-text d-flex flex-column flex-grow-1">
+        <span className="fw-semibold text-truncate">Reload this page</span>
+        <span className="small text-muted text-truncate">Shows the latest saved changes</span>
+      </span>
+    </button>
+  );
+}
