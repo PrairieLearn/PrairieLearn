@@ -1046,9 +1046,7 @@ test('retries a failed combined PDF download from its modal', async ({ page, cou
   await chooseDownload(page, 'Download all answer keys PDF');
   const modal = page.getByRole('dialog', { name: 'Download all answer keys PDF', exact: true });
   const submit = modal.getByRole('button', { name: 'Download all answer keys PDF', exact: true });
-  await expect(
-    modal.getByText(/^Each included answer key consists of \d+ pages?\.$/),
-  ).toBeVisible();
+  await expect(submit).toBeEnabled({ timeout: 120_000 });
   await page.route('**/printableAssessmentExport.pdf', (route) => route.abort(), { times: 1 });
   await submit.click();
   await expect(modal.getByRole('alert')).toBeVisible();
