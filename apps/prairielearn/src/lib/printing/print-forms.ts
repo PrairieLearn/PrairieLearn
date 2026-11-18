@@ -63,7 +63,7 @@ export function nextPrintFormLabel(
       latestVersion = Math.max(latestVersion, Number(form.label.slice(base.length)) || 1);
     }
   }
-  return latestVersion === 0 ? base : `${base}${latestVersion + 1}`;
+  return `${base}${latestVersion + 1}`;
 }
 
 function assertCanCreatePrintForm(activeForms: PrintForm[], replacesPrintFormId?: string) {

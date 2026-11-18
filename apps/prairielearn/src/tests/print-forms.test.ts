@@ -37,10 +37,11 @@ describe('print forms', { timeout: 60_000 }, () => {
       label,
       archived_at: archived ? new Date() : null,
     });
-    expect(nextPrintFormLabel([])).toBe('A');
+    expect(nextPrintFormLabel([])).toBe('A1');
+    expect(nextPrintFormLabel([form('A1')], 'A1')).toBe('A2');
+    expect(nextPrintFormLabel([form('A1', true), form('A2')], 'A2')).toBe('A3');
+    expect(nextPrintFormLabel([form('A1'), form('B1'), form('C1', true)])).toBe('C2');
     expect(nextPrintFormLabel([form('A')], 'A')).toBe('A2');
-    expect(nextPrintFormLabel([form('A', true), form('A2')], 'A2')).toBe('A3');
-    expect(nextPrintFormLabel([form('A'), form('B'), form('C', true)])).toBe('C2');
   });
 
   it('saves assessment-shared form versions without creating student records', () =>
@@ -77,7 +78,7 @@ describe('print forms', { timeout: 60_000 }, () => {
       };
 
       const form = await ensureInitialPrintForm(options);
-      expect(form.label).toBe('A');
+      expect(form.label).toBe('A1');
       expect((await ensureInitialPrintForm(options)).id).toBe(form.id);
       expect(form.archived_at).toBeNull();
       const rows = await selectPrintFormQuestions(form.id);
@@ -139,7 +140,7 @@ describe('print forms', { timeout: 60_000 }, () => {
       ).rejects.toMatchObject({ status: 404 });
       const formB = await createPrintForm(options);
       const formC = await createPrintForm(options);
-      expect([formB.label, formC.label]).toEqual(['B', 'C']);
+      expect([formB.label, formC.label]).toEqual(['B1', 'C1']);
       await archivePrintForm({ printFormId: formC.id, assessmentId: assessment.id });
       const replacementC = await createPrintForm(options);
       expect(replacementC.label).toBe('C2');
@@ -147,7 +148,7 @@ describe('print forms', { timeout: 60_000 }, () => {
         (await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })).map(
           (activeForm) => activeForm.label,
         ),
-      ).toEqual(['C2', 'B', 'A2']);
+      ).toEqual(['C2', 'B1', 'A2']);
       expect(
         await queryRow(
           sql.count_student_records,
