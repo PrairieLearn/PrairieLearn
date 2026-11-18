@@ -6,6 +6,7 @@ CREATE TABLE question_versions (
   created_at timestamptz NOT NULL,
   superseded_at timestamptz,
   source_hash text NOT NULL,
+  dependency_hash text NOT NULL,
   uses_chunks boolean NOT NULL,
   UNIQUE (question_id, id),
   CHECK (

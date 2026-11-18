@@ -1,6 +1,7 @@
 columns
     commit_hash: text
     created_at: timestamp with time zone not null
+    dependency_hash: text not null
     id: bigint not null default nextval('question_versions_id_seq'::regclass)
     question_id: bigint not null
     source_hash: text not null
