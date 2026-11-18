@@ -509,13 +509,13 @@ export function resolveAccessControl(
   // path outside a reservation. Carry the after-complete policy forward so a
   // completed instance can be authorized separately, but do not treat an
   // unstarted assessment as complete merely because no reservation is active.
+  // Gate on the score rather than the questions so that a score-only release
+  // still lets students find their completed instance.
   if (!hasRelease) {
     if (rule.prairieTestExams.length > 0) {
       return {
         ...UNAUTHORIZED_RESULT,
-        authorization: afterCompleteVisibility.showQuestions
-          ? 'requires-completed-instance'
-          : 'denied',
+        authorization: afterCompleteVisibility.showScore ? 'requires-completed-instance' : 'denied',
         afterCompleteVisibility,
         visibility: HIDDEN,
         accessTimeline,
