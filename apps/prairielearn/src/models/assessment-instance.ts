@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
+import {
+  type Assessment,
+  type AssessmentInstance,
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+} from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -85,6 +90,9 @@ export interface GradingPending {
   manual: boolean;
   /** At least one saved answer has not been graded. */
   auto: boolean;
+  /** What happens to saved answers depends on the assessment type and whether it is still open. */
+  assessment_type: Assessment['type'];
+  open: boolean;
 }
 
 /**
@@ -98,14 +106,20 @@ export async function selectGradingPending(
   const rows = await queryRows(
     sql.select_grading_pending,
     { assessment_instance_ids },
-    z.object({ assessment_instance_id: IdSchema, manual: z.boolean(), auto: z.boolean() }),
+    z.object({
+      assessment_instance_id: IdSchema,
+      manual: z.boolean(),
+      auto: z.boolean(),
+      assessment_type: AssessmentSchema.shape.type,
+      open: AssessmentInstanceSchema.shape.open,
+    }),
   );
   return new Map(
     rows
       .filter((row) => row.manual || row.auto)
-      .map(({ assessment_instance_id, manual, auto }) => [
+      .map(({ assessment_instance_id, ...gradingPending }) => [
         assessment_instance_id,
-        { manual, auto },
+        gradingPending,
       ]),
   );
 }

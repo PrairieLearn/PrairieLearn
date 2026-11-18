@@ -133,6 +133,11 @@ test('saved work with real-time grading disabled shows pending without exposing 
   await page.goto(overviewUrl);
   await expect(page.getByText('Grading pending', { exact: true })).toBeVisible();
   await expect(page.getByTestId('scorebar')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Grading pending', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Grading pending' })).toContainText(
+    'Your saved answers will be graded when you finish the assessment.',
+  );
+  await page.keyboard.press('Escape');
 
   await updateInstanceQuestions({
     assessment_question: await selectAssessmentQuestionById(question.assessment_question_id),

@@ -67,6 +67,8 @@ describe('selectAssessmentInstanceGradingPending', () => {
     assert.deepEqual(await selectAssessmentInstanceGradingPending(assessment_instance_id), {
       manual: false,
       auto: true,
+      assessment_type: 'Homework',
+      open: true,
     });
   });
 
@@ -75,6 +77,8 @@ describe('selectAssessmentInstanceGradingPending', () => {
     assert.deepEqual(await selectAssessmentInstanceGradingPending(assessment_instance_id), {
       manual: true,
       auto: false,
+      assessment_type: 'Homework',
+      open: true,
     });
   });
 

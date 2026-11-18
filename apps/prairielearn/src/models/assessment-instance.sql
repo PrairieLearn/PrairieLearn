@@ -99,9 +99,12 @@ SELECT
       coalesce(aq.max_auto_points, 0) > 0
       OR coalesce(aq.max_manual_points, 0) = 0
     )
-  ) AS auto
+  ) AS auto,
+  a.type AS assessment_type,
+  ai.open
 FROM
   instance_questions AS iq
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   JOIN assessments AS a ON (a.id = aq.assessment_id)
   JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
@@ -118,4 +121,6 @@ WHERE
     OR a.type = 'Exam'
   )
 GROUP BY
-  iq.assessment_instance_id;
+  iq.assessment_instance_id,
+  a.type,
+  ai.open;

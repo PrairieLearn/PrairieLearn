@@ -13,6 +13,15 @@ interface AssessmentScoreProps {
   className?: string;
 }
 
+function savedAnswersMessage({ assessment_type, open }: GradingPending) {
+  if (!open) return 'Some saved answers were not graded.';
+  // Homework answers are only graded when the student asks; exams grade
+  // whatever is saved when the student finishes.
+  return assessment_type === 'Homework'
+    ? 'You have saved answers that you have not submitted for grading.'
+    : 'Your saved answers will be graded when you finish the assessment.';
+}
+
 export function AssessmentScore({ score, gradingPending, className }: AssessmentScoreProps) {
   if (!gradingPending) return <Scorebar score={score} className={className} />;
   return (
@@ -34,9 +43,7 @@ export function AssessmentScore({ score, gradingPending, className }: Assessment
         data-bs-title="Grading pending"
         data-bs-content={[
           gradingPending.manual ? 'Some answers are waiting for manual grading.' : null,
-          gradingPending.auto
-            ? 'You have saved answers that you have not submitted for grading.'
-            : null,
+          gradingPending.auto ? savedAnswersMessage(gradingPending) : null,
           'Your score may not reflect all submitted work.',
         ]
           .filter((sentence) => sentence != null)
