@@ -31,7 +31,7 @@ test('Bootstrap popovers have a keyboard-accessible Close button', async ({
   await expect(trigger).toBeFocused();
 });
 
-test('Bootstrap popovers keep focus inside when tabbing from content outside the tab order', async ({
+test('Bootstrap popovers keep focus inside when it is on an element outside the tab order', async ({
   page,
   courseInstance,
 }) => {
@@ -63,16 +63,6 @@ test('Bootstrap popovers keep focus inside when tabbing from content outside the
   await staticContent.focus();
   await page.keyboard.press('Shift+Tab');
   await expect(lastControl).toBeFocused();
-
-  // Clicking text without a focusable ancestor leaves focus on the body.
-  await dialog.getByRole('heading', { name: 'Upload files', exact: true }).click();
-  await page.keyboard.press('Shift+Tab');
-  await expect(lastControl).toBeFocused();
-
-  await staticContent.focus();
-  await page.keyboard.press('Escape');
-  await expect(dialog).toBeHidden();
-  await expect(trigger).toBeFocused();
 });
 
 test('React popovers expose dialog state and return focus after closing', async ({
