@@ -3,23 +3,29 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { insertPrintFormQuestions } from '../../models/print-form-question.js';
+import {
+  insertPrintFormQuestions,
+  selectPrintFormQuestions,
+} from '../../models/print-form-question.js';
 import {
   archivePrintForm,
   insertPrintForm,
   lockAssessmentForPrintForms,
   selectActivePrintFormsForAssessment,
+  selectOptionalPrintForm,
   selectPrintFormsForAssessment,
 } from '../../models/print-form.js';
 import { nextPrintFormLabel, printFormLabelBase } from '../client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../client/printing/print-form-limits.js';
 import {
   type Assessment,
+  type AssessmentQuestion,
   AssessmentQuestionSchema,
   type Course,
   type CourseInstance,
   type PrintForm,
   type PrintFormQuestion,
+  type Question,
   QuestionSchema,
 } from '../db-types.js';
 import { ensureVariant, getQuestionCourse } from '../question-variant.js';
@@ -49,6 +55,35 @@ interface CreatePrintFormOptions {
   authnUserId: string;
   replacesPrintFormId?: string;
   settings?: PrintSettings;
+}
+
+async function createPrintVariant({
+  assessmentQuestion,
+  question,
+  course,
+  courseInstance,
+  userId,
+  authnUserId,
+}: {
+  assessmentQuestion: AssessmentQuestion;
+  question: Question;
+  course: Course;
+  courseInstance: CourseInstance;
+  userId: string;
+  authnUserId: string;
+}) {
+  return await ensureVariant({
+    question_id: question.id,
+    instance_question_id: null,
+    user_id: userId,
+    authn_user_id: authnUserId,
+    course_instance: courseInstance,
+    variant_course: course,
+    question_course: await getQuestionCourse(question, course),
+    options: { preferences: assessmentQuestion.preferences ?? {} },
+    require_open: false,
+    client_fingerprint_id: null,
+  });
 }
 
 /** Creates an independent form with saved question selection, ordering, and variants. */
@@ -99,17 +134,13 @@ async function createPrintFormInternal({
   // the form state once the lock is held.
   const questions: Omit<PrintFormQuestion, 'id' | 'print_form_id'>[] = [];
   for (const selected of selectedQuestions) {
-    const variant = await ensureVariant({
-      question_id: selected.question.id,
-      instance_question_id: null,
-      user_id: userId,
-      authn_user_id: authnUserId,
-      course_instance: courseInstance,
-      variant_course: course,
-      question_course: await getQuestionCourse(selected.question, course),
-      options: { preferences: selected.assessment_question.preferences ?? {} },
-      require_open: false,
-      client_fingerprint_id: null,
+    const variant = await createPrintVariant({
+      assessmentQuestion: selected.assessment_question,
+      question: selected.question,
+      course,
+      courseInstance,
+      userId,
+      authnUserId,
     });
     questions.push({
       assessment_question_id: selected.assessment_question.id,
@@ -154,6 +185,95 @@ async function createPrintFormInternal({
         assessmentId: assessment.id,
       });
       if (!archived) throw new HttpStatusError(409, 'The form to regenerate is no longer active.');
+    }
+    return form;
+  });
+}
+
+/** Creates a new version with one changed selection while keeping the saved form intact. */
+export async function revisePrintFormSelection({
+  assessment,
+  course,
+  courseInstance,
+  userId,
+  authnUserId,
+  printFormId,
+  questionNumber,
+  included,
+}: Omit<CreatePrintFormOptions, 'replacesPrintFormId' | 'settings'> & {
+  printFormId: string;
+  questionNumber: string;
+  included: boolean;
+}) {
+  const original = await selectOptionalPrintForm({ printFormId, assessmentId: assessment.id });
+  if (original?.archived_at !== null) {
+    throw new HttpStatusError(404, 'This print form is no longer active.');
+  }
+  if (original.question_selection_locked_at === null) {
+    throw new HttpStatusError(409, 'This form’s question selection is still editable.');
+  }
+
+  const savedQuestions = await selectPrintFormQuestions(printFormId);
+  if (
+    !savedQuestions.some(
+      ({ print_form_question }) => print_form_question.question_number === questionNumber,
+    )
+  ) {
+    throw new HttpStatusError(400, 'This question is not part of the print form.');
+  }
+
+  // Question generation can be slow, so the assessment lock is only held while saving the
+  // replacement. The saved question set cannot change after the form has been exported.
+  const questions: Omit<PrintFormQuestion, 'id' | 'print_form_id'>[] = [];
+  for (const { assessment_question, print_form_question, question } of savedQuestions) {
+    const variant = await createPrintVariant({
+      assessmentQuestion: assessment_question,
+      question,
+      course,
+      courseInstance,
+      userId,
+      authnUserId,
+    });
+    questions.push({
+      assessment_question_id: print_form_question.assessment_question_id,
+      variant_id: variant.id,
+      position: print_form_question.position,
+      question_number: print_form_question.question_number,
+      max_points: print_form_question.max_points,
+    });
+  }
+
+  return await runInTransactionAsync(async () => {
+    await lockAssessmentForPrintForms(assessment.id);
+    const forms = await selectPrintFormsForAssessment({ assessmentId: assessment.id });
+    const current = forms.find((form) => form.id === printFormId && form.archived_at === null);
+    if (!current) {
+      throw new HttpStatusError(404, 'This print form is no longer active.');
+    }
+    if (current.question_selection_locked_at === null) {
+      throw new HttpStatusError(409, 'This form’s question selection is still editable.');
+    }
+    const currentlyExcluded = current.settings.excludedQuestions.includes(questionNumber);
+    if (currentlyExcluded === !included) {
+      throw new HttpStatusError(409, 'This question selection has already changed.');
+    }
+
+    const excludedQuestions = included
+      ? current.settings.excludedQuestions.filter((number) => number !== questionNumber)
+      : [...current.settings.excludedQuestions, questionNumber].sort((a, b) =>
+          a.localeCompare(b, undefined, { numeric: true }),
+        );
+    const form = await insertPrintForm({
+      assessmentId: assessment.id,
+      userId,
+      authnUserId,
+      label: nextPrintFormLabel(forms, current.label),
+      settings: { ...current.settings, excludedQuestions },
+    });
+    await insertPrintFormQuestions({ printFormId: form.id, questions });
+    const archived = await archivePrintForm({ printFormId, assessmentId: assessment.id });
+    if (!archived) {
+      throw new HttpStatusError(409, 'This print form is no longer active.');
     }
     return form;
   });

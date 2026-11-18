@@ -7,7 +7,11 @@ import { IdSchema } from '@prairielearn/zod';
 import { printFormLabelBase } from '../../lib/client/printing/print-form-label.js';
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
-import { createPrintForm, ensureInitialPrintForm } from '../../lib/printing/print-forms.js';
+import {
+  createPrintForm,
+  ensureInitialPrintForm,
+  revisePrintFormSelection,
+} from '../../lib/printing/print-forms.js';
 import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
 import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-settings.js';
 import {
@@ -26,6 +30,7 @@ export interface PrintFormsError {
   create: never;
   ensureInitial: never;
   regenerate: never;
+  reviseSelection: never;
   updateSettings: never;
 }
 
@@ -68,6 +73,21 @@ const assessmentFormProcedure = printFormProcedure
     return next({ ctx: { printForm: form } });
   });
 
+function rethrowPrintFormError(error: unknown): never {
+  if (error instanceof HttpStatusError) {
+    if (error.status === 400) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+    }
+    if (error.status === 404) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: error.message, cause: error });
+    }
+    if (error.status === 409) {
+      throw new TRPCError({ code: 'CONFLICT', message: error.message, cause: error });
+    }
+  }
+  throw error;
+}
+
 async function createForm({
   ctx,
   replacesPrintFormId,
@@ -96,18 +116,7 @@ async function createForm({
       settings: PrintSettingsSchema.parse(form.settings),
     };
   } catch (error) {
-    if (error instanceof HttpStatusError) {
-      if (error.status === 400) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
-      }
-      if (error.status === 404) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: error.message, cause: error });
-      }
-      if (error.status === 409) {
-        throw new TRPCError({ code: 'CONFLICT', message: error.message, cause: error });
-      }
-    }
-    throw error;
+    rethrowPrintFormError(error);
   }
 }
 
@@ -132,6 +141,30 @@ export const printFormsRouter = t.router({
     .mutation(
       async ({ ctx, input }) => await createForm({ ctx, replacesPrintFormId: input.printFormId }),
     ),
+  reviseSelection: assessmentFormProcedure
+    .use(rejectGroupWork)
+    .input(z.object({ questionNumber: z.string().min(1), included: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const form = await revisePrintFormSelection({
+          assessment: ctx.assessment,
+          course: ctx.course,
+          courseInstance: ctx.course_instance,
+          userId: ctx.locals.user.id,
+          authnUserId: ctx.authn_user.id,
+          printFormId: input.printFormId,
+          questionNumber: input.questionNumber,
+          included: input.included,
+        });
+        return {
+          printFormId: form.id,
+          label: form.label,
+          settings: PrintSettingsSchema.parse(form.settings),
+        };
+      } catch (error) {
+        rethrowPrintFormError(error);
+      }
+    }),
   archive: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
     if (ctx.printForm.archived_at === null && printFormLabelBase(ctx.printForm.label) === 'A') {
       throw new TRPCError({

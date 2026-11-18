@@ -6,7 +6,7 @@ For assessments with randomization, you can prepare several versions, called _fo
 
 ## Prepare an assessment
 
-1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view. Its questions and random values are chosen then; you can still leave questions out until you start a download.
+1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view. Its questions and random values are chosen then; you can leave questions out before downloading.
 2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
 3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
@@ -24,7 +24,7 @@ If your course uses custom elements in questions, check those questions in both 
 The question list highlights two kinds of items to check:
 
 - **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the assessment.
-- **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of a current form, then select **Update preview**. Downloads are unavailable while included questions have these errors. Once a download has started, you cannot change that form's question selection; fix the question or regenerate the form to leave it out. Previous forms cannot be edited, so reload the page after fixing one of their questions.
+- **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of a current form, then select **Update preview**. Downloads are unavailable while included questions have these errors. If the form has already been downloaded, changing a checkbox asks you to create a new numbered version. Previous forms cannot be edited, so reload the page after fixing one of their questions.
 
 Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
 
@@ -34,7 +34,7 @@ If your assessment uses randomization, select **Add form** to create another for
 
 Select a form to review it and choose its questions and spacing. Changes to those settings save as you make them, so you can switch forms before updating the preview. Save any changes to **Additional student fields** before switching. Select **Update preview** before downloading a form.
 
-Starting the first PDF or Word download for a form fixes its question selection. You can still change its paper size, spacing, and cover settings. To change which questions are included, regenerate the form to create its next version. This also works for an assessment without randomization after its first download.
+Starting the first PDF or Word download for a form fixes its question selection so later student copies and answer keys can match. To include or exclude a question afterward, select its checkbox and confirm the new numbered version. For example, changing Form B2 creates Form B3 and moves B2 to **Previous forms**. The new version keeps the question order, all other selections, and print settings. Random values may change. You can still change paper size, spacing, and cover settings on the current form. This also works for an assessment without randomization.
 
 To replace a form with a new version, select the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. Randomized assessments get new random values. The new form keeps the old form's paper and default cover settings, while question exclusions and individual spacing reset. Review the new questions and answer key before downloading it. Previous forms keep their chosen questions and settings and remain available under **Previous forms**. Use the archive button beside a non-A form to remove it from the current set. Adding a form after archiving C creates C2.
 

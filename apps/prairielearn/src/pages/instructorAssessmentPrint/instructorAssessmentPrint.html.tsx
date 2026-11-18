@@ -257,11 +257,17 @@ function PrintPreparation({
   const combinedRequestRef = useRef(0);
   const [combinedSubmitting, setCombinedSubmitting] = useState(false);
   const combinedReturnFocusRef = useRef<'menu' | 'recent' | { formId: string }>('menu');
-  const [pendingFormAction, setPendingFormAction] = useState<{
-    action: 'regenerate' | 'archive';
-    id: string;
-    label: string;
-  } | null>(null);
+  const [pendingFormAction, setPendingFormAction] = useState<
+    | { action: 'regenerate' | 'archive'; id: string; label: string }
+    | {
+        action: 'reviseSelection';
+        id: string;
+        label: string;
+        questionNumber: string;
+        included: boolean;
+      }
+    | null
+  >(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const validForm = forms.data.some((form) => form.id === formId);
   const [document, setDocument] = useState<PrintDocument>('assessment');
@@ -379,6 +385,13 @@ function PrintPreparation({
       },
     }),
   );
+  const reviseSelection = useMutation(
+    trpc.printForms.reviseSelection.mutationOptions({
+      onSuccess: async () => {
+        await forms.refetch();
+      },
+    }),
+  );
   const archive = useMutation(
     trpc.printForms.archive.mutationOptions({
       onSuccess: async () => {
@@ -433,12 +446,13 @@ function PrintPreparation({
     ensureInitial.isPending ||
     create.isPending ||
     regenerate.isPending ||
+    reviseSelection.isPending ||
     archive.isPending ||
     updateSettings.isPending ||
     packet.isPending ||
     preparingPdf ||
     previewPending;
-  const formActionPending = regenerate.isPending || archive.isPending;
+  const formActionPending = regenerate.isPending || reviseSelection.isPending || archive.isPending;
 
   function focusAfterDismiss(target: 'link' | 'summary' = 'link') {
     window.requestAnimationFrame(() => {
@@ -815,6 +829,12 @@ function PrintPreparation({
     return result.printFormId;
   }
 
+  async function reviseFormSelection(id: string, questionNumber: string, included: boolean) {
+    const result = await reviseSelection.mutateAsync({ printFormId: id, questionNumber, included });
+    switchForm(result.printFormId, result.settings);
+    return result.printFormId;
+  }
+
   async function archiveForm(id: string) {
     await archive.mutateAsync({ printFormId: id });
     const archivedIndex = formIds.indexOf(id);
@@ -941,7 +961,7 @@ function PrintPreparation({
   const omittedRecovery = archivedPreviewForm
     ? `Fix ${affectedQuestions} in your course, then reload this page. Previous forms cannot be edited.`
     : questionSelectionLocked
-      ? `Fix ${affectedQuestions} in your course and update the preview, or regenerate this form to leave ${includedOmittedCount === 1 ? 'it' : 'them'} out.`
+      ? `Fix ${affectedQuestions} in your course and update the preview, or deselect ${includedOmittedCount === 1 ? 'it' : 'them'} to create a new form version.`
       : `Fix or deselect ${includedOmittedCount === 1 ? 'it' : 'them'}, then update the preview.`;
   const reviewCount =
     includedQuestions?.filter(
@@ -1028,11 +1048,15 @@ function PrintPreparation({
         setValue('includeCoverPage', settings.includeCoverPage, { shouldDirty: false });
         if (saveIdentityDraft) void trigger('identityFields');
       }
-      if (error instanceof TRPCClientError && error.data?.code === 'CONFLICT') {
+      if (
+        error instanceof TRPCClientError &&
+        error.data?.code === 'CONFLICT' &&
+        error.message.includes(PRINT_QUESTION_SELECTION_LOCKED_MESSAGE)
+      ) {
         const latest = await forms.refetch();
         const saved = latest.data?.find((form) => form.id === formId);
-        if (saved && error.message.includes(PRINT_QUESTION_SELECTION_LOCKED_MESSAGE)) {
-          reset(saved.settings, { keepDirtyValues: false });
+        if (saved) {
+          setValue('excludedQuestions', saved.settings.excludedQuestions, { shouldDirty: true });
         }
       }
       throw error;
@@ -1171,6 +1195,14 @@ function PrintPreparation({
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => {
           regenerate.reset();
+          focusAfterDismiss();
+        }}
+      />
+      <AppErrorAlert
+        error={getAppError<PrintFormsError['reviseSelection']>(reviseSelection.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+        onDismiss={() => {
+          reviseSelection.reset();
           focusAfterDismiss();
         }}
       />
@@ -1746,8 +1778,8 @@ function PrintPreparation({
                       </p>
                       {questionSelectionLocked && !archivedPreviewForm && (
                         <p className="small text-muted mb-0 mt-1">
-                          This form’s question selection is fixed now that a download has started.
-                          Regenerate it to change which questions are included.
+                          A download has started for this form. Changing its question selection
+                          creates a new numbered version; the original stays in Previous forms.
                         </p>
                       )}
                     </div>
@@ -1812,8 +1844,18 @@ function PrintPreparation({
                             className="print-preparation-question-include"
                             aria-label={`Include question ${question.number}`}
                             checked={!excluded}
-                            disabled={settingsLocked || questionSelectionLocked}
+                            disabled={settingsLocked || (questionSelectionLocked && isDirty)}
                             onChange={(event) => {
+                              if (questionSelectionLocked && formId) {
+                                setPendingFormAction({
+                                  action: 'reviseSelection',
+                                  id: formId,
+                                  label: formLabel(formId),
+                                  questionNumber: question.number,
+                                  included: event.target.checked,
+                                });
+                                return;
+                              }
                               const next = event.target.checked
                                 ? excludedQuestions.filter((number) => number !== question.number)
                                 : [...excludedQuestions, question.number].sort((a, b) =>
@@ -2199,8 +2241,9 @@ function PrintPreparation({
       >
         <Modal.Header closeButton={!formActionPending}>
           <Modal.Title as="h2" className="h5" id="print-form-action-title">
-            {pendingFormAction?.action === 'regenerate' ? 'Regenerate' : 'Archive'} Form{' '}
-            {pendingFormAction?.label}
+            {pendingFormAction?.action === 'reviseSelection'
+              ? `Change Form ${pendingFormAction.label} questions`
+              : `${pendingFormAction?.action === 'regenerate' ? 'Regenerate' : 'Archive'} Form ${pendingFormAction?.label}`}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -2211,6 +2254,17 @@ function PrintPreparation({
               {hasRandomization ? ' applying fresh randomization' : ''}.{' '}
               <strong>Form {pendingFormAction.label}</strong> will remain available for reference in
               the 'Previous forms' section with its chosen questions and settings.
+            </p>
+          ) : pendingFormAction?.action === 'reviseSelection' ? (
+            <p className="mb-0">
+              A download has started for this form.{' '}
+              {pendingFormAction.included ? 'Including' : 'Deselecting'} question{' '}
+              {pendingFormAction.questionNumber} will replace{' '}
+              <strong>Form {pendingFormAction.label}</strong> with{' '}
+              <strong>Form {nextPrintFormLabel(forms.data, pendingFormAction.label)}</strong>. The
+              new version keeps the question order, other selections, and print settings
+              {hasRandomization ? '. Random values may change' : ''}. The original remains in
+              Previous forms.
             </p>
           ) : (
             <p className="mb-0">
@@ -2236,13 +2290,21 @@ function PrintPreparation({
             aria-disabled={formActionPending}
             onClick={() => {
               if (!pendingFormAction || formActionPending) return;
-              const { action, id } = pendingFormAction;
+              const action = pendingFormAction;
               void (async () => {
                 try {
                   nextFormFocusRef.current =
-                    action === 'regenerate' ? await regenerateForm(id) : await archiveForm(id);
+                    action.action === 'regenerate'
+                      ? await regenerateForm(action.id)
+                      : action.action === 'reviseSelection'
+                        ? await reviseFormSelection(
+                            action.id,
+                            action.questionNumber,
+                            action.included,
+                          )
+                        : await archiveForm(action.id);
                 } catch {
-                  nextFormFocusRef.current = id;
+                  nextFormFocusRef.current = action.id;
                 } finally {
                   setPendingFormAction(null);
                 }
@@ -2252,10 +2314,16 @@ function PrintPreparation({
             {formActionPending ? (
               <>
                 <Spinner size="sm" className="me-2" aria-hidden="true" />
-                {pendingFormAction?.action === 'regenerate' ? 'Regenerating…' : 'Archiving…'}
+                {pendingFormAction?.action === 'regenerate'
+                  ? 'Regenerating…'
+                  : pendingFormAction?.action === 'reviseSelection'
+                    ? 'Creating version…'
+                    : 'Archiving…'}
               </>
             ) : pendingFormAction?.action === 'regenerate' ? (
               'Regenerate form'
+            ) : pendingFormAction?.action === 'reviseSelection' ? (
+              'Create new form version'
             ) : (
               'Archive form'
             )}

@@ -281,16 +281,16 @@ test('keeps multiple export links after another file is queued and the page relo
   await expect(page.locator('#print-prepare-status')).toBeFocused();
   await expect(
     page.getByRole('checkbox', { name: 'Include question 1', exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await expect(page.getByLabel('Spacing for question 1', { exact: true })).toBeEnabled();
   await staleQuestion.click();
   await expect(
     stalePage
       .getByRole('alert')
-      .getByText('This form’s question selection is fixed after you start a download.'),
+      .getByText('Reload the page, then select a question to create a new numbered version.'),
   ).toBeVisible();
   await expect(staleQuestion).toBeChecked();
-  await expect(staleQuestion).toBeDisabled();
+  await expect(staleQuestion).toBeEnabled();
   await expect(stalePage.getByRole('button', { name: `Form ${label} Previewing` })).toBeEnabled();
   await stalePage.close();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
@@ -313,6 +313,40 @@ test('keeps multiple export links after another file is queued and the page relo
   await summary.click();
   await expect(copyLink).toBeVisible({ timeout: 120_000 });
   await expect(keyLink).toBeVisible({ timeout: 120_000 });
+});
+
+test('creates a new form version when including a question after a download', async ({
+  page,
+  courseInstance,
+}) => {
+  await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
+  const originalFormId = new URL(page.url()).searchParams.get('form')!;
+  const question = page.getByRole('checkbox', { name: 'Include question 2', exact: true });
+  await question.uncheck();
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+
+  const file = await downloadPreparedFile(page, async () => {
+    await chooseDownload(page, 'Download Form A (PDF)');
+  });
+  expect(await file.failure()).toBeNull();
+  await expect(question).toBeEnabled();
+  await question.click();
+  const dialog = page.getByRole('dialog', { name: 'Change Form A questions' });
+  await expect(dialog.getByText('Form A2', { exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(question).not.toBeChecked();
+  await question.click();
+  await dialog.getByRole('button', { name: 'Create new form version' }).click();
+
+  await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(originalFormId);
+  await expect(page.getByRole('button', { name: 'Form A2 Previewing' })).toBeVisible();
+  await expect(question).toBeChecked();
+  await page.getByText(/^Previous forms \(/).click();
+  await page.getByRole('button', { name: 'Form A', exact: true }).click();
+  await expect(question).not.toBeChecked();
+  await expect(question).toBeDisabled();
 });
 
 test('creates Form A on first visit and recovers if automatic creation fails', async ({

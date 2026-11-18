@@ -40,7 +40,7 @@ import { insertCoursePermissionsByUserUid } from '../models/course-permissions.j
 import { selectCourseById } from '../models/course.js';
 import { selectOptionalPrintExport } from '../models/print-export.js';
 import { selectPrintFormQuestions } from '../models/print-form-question.js';
-import { selectOptionalPrintForm } from '../models/print-form.js';
+import { lockPrintFormQuestionSelections, selectOptionalPrintForm } from '../models/print-form.js';
 import { selectQuestionById } from '../models/question.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
@@ -323,6 +323,73 @@ describe('print preparation', { timeout: 60_000 }, () => {
         printFormId: first.printFormId,
         settings: originalSettings,
         expectedSettings: updatedSettings,
+      }),
+    ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+  });
+
+  test('revises a locked question selection without changing the saved form', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const settings = {
+      ...DEFAULT_PRINT_SETTINGS,
+      paperSize: 'A4' as const,
+      questionSizes: { '2': 'half' as const },
+      excludedQuestions: ['1'],
+    };
+    const original = await api.printForms.create.mutate({ settings });
+    const originalQuestions = await selectPrintFormQuestions(original.printFormId);
+    await lockPrintFormQuestionSelections({
+      assessmentId: assessment.id,
+      printFormIds: [original.printFormId],
+    });
+
+    await expect(
+      api.printForms.reviseSelection.mutate({
+        printFormId: original.printFormId,
+        questionNumber: 'not-on-form',
+        included: true,
+      }),
+    ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
+
+    const revised = await api.printForms.reviseSelection.mutate({
+      printFormId: original.printFormId,
+      questionNumber: '1',
+      included: true,
+    });
+    expect(revised.printFormId).not.toBe(original.printFormId);
+    expect(printFormLabelBase(revised.label)).toBe(printFormLabelBase(original.label));
+    expect(revised.label).not.toBe(original.label);
+    expect(revised.settings).toEqual({ ...settings, excludedQuestions: [] });
+
+    const revisedQuestions = await selectPrintFormQuestions(revised.printFormId);
+    const savedQuestionData = (rows: Awaited<ReturnType<typeof selectPrintFormQuestions>>) =>
+      rows.map(({ print_form_question: question }) => ({
+        assessment_question_id: question.assessment_question_id,
+        position: question.position,
+        question_number: question.question_number,
+        max_points: question.max_points,
+      }));
+    expect(savedQuestionData(revisedQuestions)).toEqual(savedQuestionData(originalQuestions));
+    const originalVariantIds = new Set(
+      originalQuestions.map(({ print_form_question }) => print_form_question.variant_id),
+    );
+    expect(
+      revisedQuestions.every(
+        ({ print_form_question }) => !originalVariantIds.has(print_form_question.variant_id),
+      ),
+    ).toBe(true);
+    expect(await selectPrintFormQuestions(original.printFormId)).toEqual(originalQuestions);
+    expect(
+      (await selectOptionalPrintForm({
+        printFormId: original.printFormId,
+        assessmentId: assessment.id,
+      }))!.archived_at,
+    ).not.toBeNull();
+    await expect(
+      api.printForms.reviseSelection.mutate({
+        printFormId: original.printFormId,
+        questionNumber: '1',
+        included: true,
       }),
     ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
   });
