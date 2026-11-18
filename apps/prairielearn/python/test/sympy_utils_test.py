@@ -231,6 +231,8 @@ class TestSympy:
         ("{1} ∪ {2}", sympy.FiniteSet(1, 2)),  # ruff:ignore[ambiguous-unicode-character-string]
         ("{1, 2} ∩ {2, 3}", sympy.FiniteSet(2)),
         ("{1, 2} - {2, 3}", sympy.FiniteSet(1)),
+        ("{1, 2} \\ {2, 3}", sympy.FiniteSet(1)),
+        ("{1, 2} \u2216 {2, 3}", sympy.FiniteSet(1)),
         ("{1, 2} + {2, 3}", sympy.FiniteSet(1, 2, 3)),
         ("{m} - {n}", sympy.Complement(sympy.FiniteSet(M), sympy.FiniteSet(N))),
         (
@@ -348,8 +350,14 @@ class TestSympy:
             ("{1, 2} & {2}", sympy.FiniteSet(2)),
             ("{1} + {2}", sympy.FiniteSet(1, 2)),
             ("{1, 2} - {2}", sympy.FiniteSet(1)),
+            ("{1, 2} \\ {2}", sympy.FiniteSet(1)),
+            ("{1, 2} \u2216 {2}", sympy.FiniteSet(1)),
             (
                 "({1} U {2}) - ({2} & {2, 3})",
+                sympy.FiniteSet(1),
+            ),
+            (
+                "({1} U {2}) \\ ({2} & {2, 3})",
                 sympy.FiniteSet(1),
             ),
         ],
@@ -1095,6 +1103,14 @@ class TestExceptions:
     def test_escape_error(self, a_sub: str) -> None:
         with pytest.raises(psu.HasEscapeError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
+
+    def test_unicode_set_difference_rejected_when_sets_disabled(self) -> None:
+        with pytest.raises(psu.HasInvalidSymbolError):
+            psu.convert_string_to_sympy("{1} \u2216 {2}", allow_sets=False)
+
+    def test_fullwidth_backslash_rejected_when_sets_enabled(self) -> None:
+        with pytest.raises(psu.HasEscapeError):
+            psu.convert_string_to_sympy("{1} \uff3c {2}", allow_sets=True)
 
     @pytest.mark.parametrize("a_sub", INVALID_COMMENT_CASES)
     def test_comment_error(self, a_sub: str) -> None:
