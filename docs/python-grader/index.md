@@ -77,6 +77,22 @@ The grader looks for a file matching `student_code*.py` by default. To grade a f
 
 Make sure that starter code can be run as is. A submission with a syntax error is marked as ungradable: the student doesn't lose an attempt, but doesn't get any test results either.
 
+### Course libraries
+
+To share Python modules between questions, put them in the course's [`serverFilesCourse`](../clientServerFiles.md) directory and list them in the question's `externalGradingOptions`:
+
+```json title="info.json"
+{
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python-pytest:latest",
+    "serverFilesCourse": ["course_lib.py"]
+  }
+}
+```
+
+As in the legacy grader, `/grade/serverFilesCourse` is on the import path, so the tests, setup code and student code can all `import course_lib`. If you set `import_whitelist`, list the module in it so that setup code and student code can import it. Student code can import these modules too, so they mustn't contain answers.
+
 ## Writing tests
 
 Each test case is a function in `tests/test_student.py` whose name starts with `test_`. Tests run in the order they appear in the file. Here's part of the test file for the [`demo/autograder/codeEditor`][demo/autograder/codeeditor] example question:
@@ -306,7 +322,7 @@ The image moves files around, so start each run from a fresh copy. You can also 
 
 - **Sandbox.** Student code runs in a separate process as an unprivileged user, with a limited set of builtins and import restrictions. Dangerous builtins such as `open`, `eval` and `exec` aren't available.
 - **Grading data.** `data.json`, which can contain `correct_answers`, is readable only by the grader, not by student code.
-- **What students can read.** `__data_params` and any `helper_modules` and `data_files` are available to student code, so they mustn't contain answers.
+- **What students can read.** `__data_params`, any `helper_modules` and `data_files`, and modules from `serverFilesCourse` are available to student code, so they mustn't contain answers.
 - **Import restrictions.** These only check `import` statements, so they aren't a security boundary on their own. For example, a module that student code is allowed to import can expose `os` as an attribute.
 
 ## Example questions
