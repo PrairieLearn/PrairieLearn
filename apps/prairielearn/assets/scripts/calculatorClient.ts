@@ -735,10 +735,14 @@ export function initCalculator(
     ) {
       return false;
     }
-    // Make multiplication explicit, and insert the pair ourselves: MathLive's
-    // repeating-decimal heuristic disables smart fences even after the new dot.
-    calculatorInputElement.insert('\\cdot\\left(\\right?', { selectionMode: 'after' });
-    calculatorInputElement.executeCommand('moveToPreviousChar');
+    // MathLive's repeating-decimal heuristic skips automatic pairing here.
+    // Like a typed opening fence, wrap the rest of this group, not just an empty slot.
+    const position = calculatorInputElement.position;
+    calculatorInputElement.executeCommand('extendToGroupEnd');
+    const contents = calculatorInputElement.position === position ? '' : '#0';
+    calculatorInputElement.insert(`\\cdot\\left(${contents}\\right?`, { selectionMode: 'after' });
+    // Skip the multiplication dot and the opening fence; leave the caret before the contents.
+    calculatorInputElement.position = position + 2;
     return true;
   }
 
@@ -868,7 +872,16 @@ export function initCalculator(
                 calculatorInputElement.insert('\\operatorname{ans}');
                 calculatorInputElement.insert(action);
               }
-            } else if (action !== '(' || !insertParenthesesAfterNumber()) {
+            } else if (action === '(' || action === ')') {
+              if (action !== '(' || !insertParenthesesAfterNumber()) {
+                // A keystroke completes a pending fence; insert(')') adds a literal one.
+                calculatorInputElement.executeCommand([
+                  'typedText',
+                  action,
+                  { simulateKeystroke: true },
+                ]);
+              }
+            } else {
               calculatorInputElement.insert(action);
             }
             shouldAutoInsertAns = false;
