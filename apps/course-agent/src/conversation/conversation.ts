@@ -42,7 +42,7 @@ import {
   attachmentsOf,
   attachmentsToWrite,
   formatRequest,
-  isImage,
+  imageType,
   keepUploadReferences,
   uploadKey,
   uploadPrefix,
@@ -290,7 +290,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Shared by every shutdown caller; delivery waits for it to finish. */
   private sandboxShutdown: Promise<void> | null = null;
   private readonly uploadQuota = new UploadQuota(async () => {
-    const { objects } = await this.env.CHECKPOINTS.list({ prefix: uploadPrefix(this.name) });
+    // The delimiter leaves out thumbnails, which are one level down and don't count.
+    const { objects } = await this.env.CHECKPOINTS.list({
+      prefix: uploadPrefix(this.name),
+      delimiter: '/',
+    });
     return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
   });
 
@@ -1128,7 +1132,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const images = new Set<string>();
     for (const [index, upload] of uploads.entries()) {
       if (!upload) return null;
-      if (isImage(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
+      if (imageType(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
     }
     return images;
   }
@@ -1351,7 +1355,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.native?.emit({ type: 'data-review', id, data: { reviewId: id } });
     return {
       success: true,
-      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. If you have not yet described the changes for staff, do so briefly now. Then end your turn without making further edits.',
+      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.',
     };
   }
 

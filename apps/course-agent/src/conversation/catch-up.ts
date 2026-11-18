@@ -200,6 +200,8 @@ function describePart(part: UIMessage['parts'][number]) {
       const navigation = NavigationPartSchema.safeParse(part.data).data;
       return navigation ? `[Offered to open ${navigation.label} (${navigation.subtitle}).]` : '';
     }
+    case 'data-reload':
+      return '[Offered to reload the page.]';
     case 'file': {
       const attachment = attachmentOf(part);
       return attachment ? `[Attached ${attachmentPath(attachment)}]` : '';
