@@ -106,7 +106,7 @@ describe('ChatMarkdown', () => {
     ]);
   });
 
-  it('typesets math that is still streaming', () => {
+  it('holds back math until it has finished streaming', () => {
     const html = render(
       [
         '1. By linearity, \\(\\mathbb{E}[X]=np\\):',
@@ -121,28 +121,15 @@ describe('ChatMarkdown', () => {
       { streaming: true },
     );
 
-    expect(html).not.toContain('katex-error');
-    expect(typesetMath(html).map(({ display }) => display)).toEqual([false, true, true]);
+    expect(typesetMath(html).map(({ display }) => display)).toEqual([false, true]);
+    expect(html).toContain('Thus,');
+    expect(html).not.toContain('A^{-1}');
 
-    // Completing an expression keeps all of it, rather than backing up to the
-    // last point where it parsed.
-    for (const [content, kept] of [
-      [
-        '\\left( \\sqrt{a + b + c + d + e + f + g + h + i + j_',
-        'a + b + c + d + e + f + g + h + i + j',
-      ],
-      [
-        '\\begin{matrix} a_1 & b_1 & c_1 & d_1 \\\\ e_1 & f_1 & g_1 & h_',
-        'e_1 &amp; f_1 &amp; g_1',
-      ],
-    ]) {
-      const html = render(`So \\(${content}`, { streaming: true });
-      expect(html).not.toContain('katex-error');
-      expect(typesetMath(html)[0].tex).toContain(kept);
+    for (const content of ['So \\(x = \\frac{1', 'So\n\n$$\nx = \\frac{1']) {
+      const html = render(content, { streaming: true });
+      expect(html).toContain('So');
+      expect(html).not.toContain('frac');
     }
-
-    // An expression that so far is only a command has nothing to typeset yet.
-    expect(render('So \\(\\mathbb', { streaming: true })).not.toContain('katex-error');
 
     // The start of the next heading isn't shown as an empty heading.
     expect(render('Done.\n\n#', { streaming: true })).not.toContain('<h1');

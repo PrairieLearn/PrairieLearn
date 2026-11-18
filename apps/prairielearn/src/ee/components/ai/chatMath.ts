@@ -1,4 +1,3 @@
-import katex from 'katex';
 import type {
   CompileContext,
   Extension as FromMarkdownExtension,
@@ -11,7 +10,6 @@ import type {
   Extension as MicromarkExtension,
   State,
 } from 'micromark-util-types';
-import rehypeKatex from 'rehype-katex';
 import remarkMath from 'remark-math';
 // For the unified data that remark-parse reads extensions from.
 import type {} from 'remark-parse';
@@ -288,8 +286,8 @@ const displayClosingFence: Construct = {
  *
  * Like Claude, `\[...\]` in the middle of a line stays text, and so does a
  * line that starts with `\[` but has no `\]`, such as `\[0, 1) is half-open`.
- * While a message streams, an unclosed block is closed by
- * `closeTrailingDisplayMath`.
+ * While a message streams, an unclosed block is held back by
+ * `holdUnfinishedMath`.
  */
 const latexDisplayMath: Construct = {
   name: 'chatLatexDisplayMath',
@@ -457,9 +455,9 @@ export function escapeTableMathPipes(markdown: string) {
 
 type RemendHandler = NonNullable<NonNullable<StreamdownProps['remend']>['handlers']>[number];
 
-// `\(...\)` or `\[...\]` within one paragraph, or an unclosed one at the end.
+// `\(...\)` or `\[...\]` within one paragraph.
 const BODY = String.raw`(?:(?!\n[ \t]*\n)[\s\S])*?`;
-const LATEX_MATH = new RegExp(String.raw`\\\[${BODY}(?:\\\]|$)|\\\(${BODY}(?:\\\)|$)`, 'g');
+const LATEX_MATH = new RegExp(String.raw`\\\[${BODY}\\\]|\\\(${BODY}\\\)`, 'g');
 const PLACEHOLDER = /\uE000(\d+)\uE001/g;
 
 // The math hidden by `hideLatexMath`. remend runs its handlers synchronously
@@ -473,11 +471,54 @@ function inCode(text: string, index: number) {
   return fences % 2 === 1 || ticks % 2 === 1;
 }
 
+/** Where math that is still streaming starts at the end of `text`, if any. */
+function unfinishedMathStart(text: string) {
+  const starts: number[] = [];
+
+  const display = [...text.matchAll(/^[ \t>]*\\\[[ \t]*$/gm)].at(-1);
+  if (display && !/\\\][ \t]*$/m.test(text.slice(display.index))) starts.push(display.index);
+
+  // A line that starts with `$$` and has an odd number of them opens or
+  // closes a `$$` block. Elsewhere `$$` can appear in prose, so an unpaired
+  // one only counts on the line still being written.
+  let offset = 0;
+  let open: number | undefined;
+  const lines = text.split('\n');
+  for (const [index, line] of lines.entries()) {
+    const count = line.match(/\$\$/g)?.length ?? 0;
+    const fence = /^[ \t>]*\$\$/.test(line);
+    if (count % 2 === 1 && (fence || index === lines.length - 1) && !inCode(text, offset)) {
+      open = open === undefined ? offset + line.lastIndexOf('$$') : undefined;
+    }
+    offset += line.length + 1;
+  }
+  if (open !== undefined) starts.push(open);
+
+  const inline = text.lastIndexOf('\\(');
+  if (
+    inline !== -1 &&
+    text[inline - 1] !== '\\' &&
+    !text.includes('\\)', inline) &&
+    !/\n[ \t]*\n/.test(text.slice(inline))
+  ) {
+    starts.push(inline);
+  }
+
+  return starts.filter((start) => !inCode(text, start)).sort((a, b) => a - b)[0];
+}
+
 /**
  * Handlers for remend, which Streamdown uses to repair a message's unfinished
  * markdown while it streams.
  */
 export const remendHandlers: RemendHandler[] = [
+  {
+    // Like ChatGPT, math that is still streaming is held back until it is
+    // complete, rather than shown as TeX that keeps changing.
+    name: 'holdUnfinishedMath',
+    priority: -2,
+    handle: (text) => text.slice(0, unfinishedMathStart(text)),
+  },
   {
     // remend only knows to skip math inside `$$`. In `\(...\)` and `\[...\]`
     // it would read `[` as an unfinished link and remove it, and close the `_`
@@ -495,33 +536,6 @@ export const remendHandlers: RemendHandler[] = [
     priority: 1000,
     handle: (text) =>
       text.replaceAll(PLACEHOLDER, (match, index: string) => hiddenMath[Number(index)] ?? match),
-  },
-  {
-    // Closes math at the end of the message, so that math that is still
-    // streaming is typeset as it arrives instead of shown as TeX.
-    name: 'closeTrailingMath',
-    priority: 1001,
-    handle: (text) => {
-      const display = [...text.matchAll(/^([ \t>]*)\\\[[ \t]*$/gm)].at(-1);
-      if (
-        display &&
-        !/\\\][ \t]*$/m.test(text.slice(display.index)) &&
-        !inCode(text, display.index)
-      ) {
-        return `${text}${text.endsWith('\n') ? '' : '\n'}${display[1]}\\]`;
-      }
-      const inline = text.lastIndexOf('\\(');
-      if (
-        inline === -1 ||
-        text[inline - 1] === '\\' ||
-        text.includes('\\)', inline) ||
-        /\n[ \t]*\n/.test(text.slice(inline)) ||
-        inCode(text, inline)
-      ) {
-        return text;
-      }
-      return text.endsWith('\\') && !text.endsWith('\\\\') ? `${text})` : `${text}\\)`;
-    },
   },
   {
     // A heading marker that is still streaming, such as the `#` of `## Next`,
@@ -554,97 +568,4 @@ export function parseMarkdownIntoChatBlocks(markdown: string) {
     }
   }
   return blocks;
-}
-
-function parsesAsTex(tex: string) {
-  try {
-    katex.renderToString(tex, { strict: 'ignore', throwOnError: true });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Turns TeX that is still streaming into TeX that KaTeX can typeset, e.g.
- * `\frac{1}{` into `\frac{1}{}`. It drops a trailing half-written command or
- * operator, then closes open braces, `\left`s, and environments.
- */
-function completePartialTex(tex: string) {
-  let completed = tex
-    .trimEnd()
-    .replace(/\\(?:begin|end)\{[^}]*$|\\[a-zA-Z]*$|[\\^_&]$/, '')
-    .trimEnd();
-
-  let depth = 0;
-  for (let i = 0; i < completed.length; i++) {
-    if (completed[i] === '\\') i++;
-    else if (completed[i] === '{') depth++;
-    else if (completed[i] === '}') depth = Math.max(0, depth - 1);
-  }
-  completed += '}'.repeat(depth);
-
-  const lefts = completed.match(/\\left(?![a-zA-Z])/g)?.length ?? 0;
-  const rights = completed.match(/\\right(?![a-zA-Z])/g)?.length ?? 0;
-  completed += '\\right.'.repeat(Math.max(0, lefts - rights));
-
-  const environments: string[] = [];
-  for (const [, kind, name] of completed.matchAll(/\\(begin|end)\{([^}]*)\}/g)) {
-    if (kind === 'begin') environments.push(name);
-    else environments.pop();
-  }
-  return (
-    completed +
-    environments
-      .reverse()
-      .map((name) => `\\end{${name}}`)
-      .join('')
-  );
-}
-
-type HastNode = Parameters<ReturnType<typeof rehypeKatex>>[0]['children'][number];
-
-function completeStreamingMath(node: HastNode) {
-  if (node.type !== 'element') return;
-  const className = node.properties.className;
-  const text = node.children.at(0);
-  if (
-    Array.isArray(className) &&
-    className.includes('language-math') &&
-    text?.type === 'text' &&
-    !parsesAsTex(text.value)
-  ) {
-    // Completing the TeX as it is usually works. When it doesn't, such as for
-    // `\frac{1` (`\frac` needs two arguments), back up a few characters.
-    for (let end = text.value.length; end > text.value.length - 24 && end > 0; end--) {
-      const completed = completePartialTex(text.value.slice(0, end));
-      if (parsesAsTex(completed)) {
-        text.value = completed;
-        break;
-      }
-    }
-    return;
-  }
-  node.children.forEach(completeStreamingMath);
-}
-
-/**
- * Typesets math with KaTeX. KaTeX's defaults reject commands like `\href` and
- * `\htmlClass`, which would otherwise put links or classes from a reply into
- * the page, and `maxSize` keeps `\rule` and the like from covering it.
- *
- * While a message streams, its last expression is usually half-written. That
- * is completed before typesetting, and anything KaTeX still can't parse is
- * shown in the text color rather than as a red error.
- */
-export function rehypeChatKatex({ streaming = false }: { streaming?: boolean } = {}) {
-  const typeset = rehypeKatex({
-    strict: 'ignore',
-    maxSize: 10,
-    ...(streaming && { errorColor: 'inherit' }),
-  });
-  return (tree: Parameters<typeof typeset>[0], file: Parameters<typeof typeset>[1]) => {
-    if (streaming) tree.children.forEach(completeStreamingMath);
-    typeset(tree, file);
-  };
 }

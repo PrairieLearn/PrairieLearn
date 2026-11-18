@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { createElement } from 'react';
 import type { UrlTransform } from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
 import {
   type Components,
   type MathPlugin,
@@ -12,7 +13,6 @@ import {
 import {
   escapeTableMathPipes,
   parseMarkdownIntoChatBlocks,
-  rehypeChatKatex,
   remarkChatMath,
   remendHandlers,
 } from './chatMath.js';
@@ -71,20 +71,17 @@ const components: Components = {
 const rehypePlugins = [defaultRehypePlugins.sanitize, defaultRehypePlugins.harden];
 
 // Streamdown runs the math plugin's rehype step after the sanitizer, which
-// would otherwise strip KaTeX's markup.
-function mathPlugins(streaming: boolean) {
-  return {
-    math: {
-      name: 'katex',
-      type: 'math',
-      remarkPlugin: remarkChatMath,
-      rehypePlugin: [rehypeChatKatex, { streaming }],
-    } satisfies MathPlugin,
-  };
-}
-
-const MATH_PLUGINS = mathPlugins(false);
-const STREAMING_MATH_PLUGINS = mathPlugins(true);
+// would otherwise strip KaTeX's markup. KaTeX's defaults reject commands like
+// `\href` and `\htmlClass` that would put links or classes from a reply into
+// the page, and `maxSize` keeps `\rule` and the like from covering it.
+const mathPlugins = {
+  math: {
+    name: 'katex',
+    type: 'math',
+    remarkPlugin: remarkChatMath,
+    rehypePlugin: [rehypeKatex, { strict: 'ignore', maxSize: 10 }],
+  } satisfies MathPlugin,
+};
 
 /**
  * Renders a chat reply's markdown. With `math`, TeX is typeset with KaTeX; the
@@ -113,12 +110,16 @@ export function ChatMarkdown({
       // dropping the `[` from a half-open interval like `[0, 1)`.
       parseIncompleteMarkdown={streaming}
       parseMarkdownIntoBlocksFn={math ? parseMarkdownIntoChatBlocks : undefined}
-      plugins={math ? (streaming ? STREAMING_MATH_PLUGINS : MATH_PLUGINS) : undefined}
+      plugins={math ? mathPlugins : undefined}
       rehypePlugins={rehypePlugins}
       remarkPlugins={Object.values(defaultRemarkPlugins)}
       // A link that is still streaming has no destination yet, so it is shown
       // as text until it is complete.
-      remend={{ linkMode: 'text-only', handlers: math ? remendHandlers : undefined }}
+      remend={{
+        linkMode: 'text-only',
+        // `holdUnfinishedMath` holds back unfinished `$$` math instead.
+        ...(math && { handlers: remendHandlers, katex: false }),
+      }}
       urlTransform={urlTransform}
     >
       {math ? escapeTableMathPipes(content) : content}
