@@ -8,6 +8,8 @@ import { contains } from '@prairielearn/path-utils';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { type Course, QuestionSchema } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -24,6 +26,15 @@ export async function getQuestionContentPlan({
   editedPaths?: string[];
 }): Promise<string[] | null> {
   if (!oldHash) return null;
+  const institution = await selectInstitutionForCourse({ course_id: course.id });
+  if (
+    !(await features.enabled('partial-course-sync', {
+      course_id: course.id,
+      institution_id: institution.id,
+    }))
+  ) {
+    return null;
+  }
   const diff = await execa(
     'git',
     ['diff', '--relative', '--no-renames', '--name-status', '-z', oldHash, newHash, '--', '.'],

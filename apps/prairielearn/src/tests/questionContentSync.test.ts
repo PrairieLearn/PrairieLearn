@@ -62,6 +62,7 @@ describe('content-only question save', () => {
   });
   beforeEach(async () => {
     await helperDb.resetDatabase();
+    await features.enable('partial-course-sync');
     config.fileEditorUseGit = true;
     config.chunksGenerator = true;
     config.chunksConsumer = false;
@@ -111,6 +112,37 @@ describe('content-only question save', () => {
     });
     return await jobPromise;
   }
+
+  it('uses full sync by default for saves and pulls and allows partial sync only while enabled', async () => {
+    await features.delete('partial-course-sync');
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    const partial = vi.spyOn(chunks, 'prepareQuestionContentChunks');
+    await (await save()).run();
+    expect(load).toHaveBeenCalledOnce();
+    expect(partial).not.toHaveBeenCalled();
+    load.mockClear();
+    await sync();
+    expect(load).toHaveBeenCalledOnce();
+
+    const course = await selectCourseById(courseId);
+    const context = { course_id: courseId, institution_id: course.institution_id };
+    await features.enable('partial-course-sync', context);
+    load.mockClear();
+    await (await save(filePath, '<p>Enabled</p>')).run();
+    expect(load).not.toHaveBeenCalled();
+    expect(partial).toHaveBeenCalledOnce();
+
+    await features.disable('partial-course-sync', context);
+    partial.mockClear();
+    await (await save(filePath, '<p>Disabled again</p>')).run();
+    expect(load).toHaveBeenCalledOnce();
+    expect(partial).not.toHaveBeenCalled();
+    assert.equal(await fs.readFile(filePath, 'utf8'), '<p>Disabled again</p>');
+    assert.equal(
+      (await selectCourseById(courseId)).commit_hash,
+      await getCourseCommitHash(courseDir),
+    );
+  });
 
   it('establishes the sync configuration, reprocesses version changes without Git changes, and returns to partial sync', async () => {
     await courseModel.updateCourseSyncConfiguration(courseId, null);

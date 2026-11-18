@@ -7,6 +7,7 @@ const featureNames = [
   // Should only be applied to courses/institutions.
   'question-sharing', // This also controls course instance sharing.
   'consume-public-questions',
+  'partial-course-sync',
   'ai-grading',
   'ai-submission-grouping',
   'disable-public-workspaces',
