@@ -3,7 +3,7 @@ import random
 from contextlib import suppress
 from enum import Enum
 from sys import get_int_max_str_digits
-from typing import Any, assert_never
+from typing import Any, assert_never, cast
 
 import chevron
 import lxml.html
@@ -11,6 +11,12 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
 from prairielearn import set_expression
+from prairielearn.set_builder import (
+    SetBuilderSet,
+    alpha_equivalent,
+    normalize_set_builder,
+    set_builder_from_standard,
+)
 from sympy.printing.str import StrPrinter
 
 
@@ -22,6 +28,7 @@ class DisplayType(Enum):
 WEIGHT_DEFAULT = 1
 VARIABLES_DEFAULT = None
 CUSTOM_FUNCTIONS_DEFAULT = None
+CUSTOM_PREDICATES_DEFAULT = None
 LABEL_DEFAULT = None
 ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
@@ -83,6 +90,12 @@ def _get_parser_options(
         element, "syntax", set_expression.SetSyntax, SYNTAX_DEFAULT
     )
     return custom_functions, allow_complex, allow_trig, simplify_expression, syntax
+
+
+def _get_custom_predicates(element: lxml.html.HtmlElement) -> list[str]:
+    return psu.get_items_list(
+        pl.get_string_attrib(element, "custom-predicates", CUSTOM_PREDICATES_DEFAULT)
+    )
 
 
 def _parse_set(
@@ -173,16 +186,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     custom_functions, allow_complex, allow_trig, simplify_expression, syntax = (
         _get_parser_options(element)
     )
+    custom_predicates = _get_custom_predicates(element)
 
     psu.validate_names_for_conflicts(
         name,
         variables,
-        custom_functions,
+        [*custom_functions, *custom_predicates],
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
         allow_sets=False,
     )
-    set_expression.validate_names(variables, custom_functions)
+    set_expression.validate_names(variables, custom_functions, custom_predicates)
     pl.check_answers_names(data, name)
 
     if pl.has_attrib(element, "correct-answer"):
@@ -216,9 +230,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     variables = _get_variables_with_fallback(element, data, name)
     correct_answer = data["correct_answers"].get(name)
     if correct_answer is not None and correct_answer != "":
+        if isinstance(correct_answer, dict):
+            unconfigured_predicates = sorted(
+                set(correct_answer.get("_custom_predicates", ()))
+                - set(custom_predicates)
+            )
+            if unconfigured_predicates:
+                raise ValueError(
+                    "Correct-answer predicates must be listed in custom-predicates: "
+                    + ", ".join(unconfigured_predicates)
+                )
         try:
             _deserialize_correct_answer(
-                correct_answer,
+                cast(str | psu.SympyJson, correct_answer),
                 variables,
                 custom_functions,
                 allow_complex=allow_complex,
@@ -295,6 +319,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     custom_functions, allow_complex, allow_trig, simplify_expression, syntax = (
         _get_parser_options(element)
     )
+    custom_predicates = _get_custom_predicates(element)
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
@@ -323,6 +348,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "&",
         "-",
         *custom_functions,
+        *custom_predicates,
         *sorted(
             psu.get_builtin_callable_functions(
                 allow_trig_functions=allow_trig,
@@ -427,6 +453,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
         "formula_editor": formula_editor,
         "custom_functions": ",".join(custom_functions),
+        "custom_predicates": ",".join(custom_predicates),
         "variables": ",".join(variables),
         "allow_trig": allow_trig,
         "allow_sets": True,
@@ -513,6 +540,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     custom_functions, allow_complex, allow_trig, simplify_expression, syntax = (
         _get_parser_options(element)
     )
+    custom_predicates = _get_custom_predicates(element)
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
@@ -560,6 +588,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
         custom_functions=custom_functions,
+        custom_predicates=custom_predicates,
         simplify_expression=simplify_expression,
         assumptions=assumptions,
         syntax=syntax,
@@ -589,6 +618,36 @@ def _sympy_values_equal(a: sympy.Basic, b: sympy.Basic) -> bool:
         reverse_pair = (right, left)
         if reverse_pair in comparison_cache:
             return comparison_cache[reverse_pair]
+
+        if isinstance(left, sympy.Set) and isinstance(right, sympy.Set):
+            left_builder = (
+                left
+                if isinstance(left, SetBuilderSet)
+                else set_builder_from_standard(left)
+            )
+            right_builder = (
+                right
+                if isinstance(right, SetBuilderSet)
+                else set_builder_from_standard(right)
+            )
+            if left_builder is not None or right_builder is not None:
+                normalized_left = (
+                    normalize_set_builder(left) if left_builder is not None else left
+                )
+                normalized_right = (
+                    normalize_set_builder(right) if right_builder is not None else right
+                )
+                if normalized_left != left or normalized_right != right:
+                    result = compare(normalized_left, normalized_right)
+                    if result:
+                        comparison_cache[pair] = True
+                        comparison_cache[reverse_pair] = True
+                        return True
+                if left_builder is not None and right_builder is not None:
+                    result = alpha_equivalent(left_builder, right_builder)
+                    comparison_cache[pair] = result
+                    comparison_cache[reverse_pair] = result
+                    return result
 
         if left is right or left == right:
             result = True

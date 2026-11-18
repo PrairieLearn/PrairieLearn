@@ -6,6 +6,7 @@ import pytest
 import sympy
 from prairielearn import set_expression
 from prairielearn.internal import mathjson as internal_mathjson
+from prairielearn.set_builder import SetBuilderSet
 
 
 def _caret_template(template: str) -> tuple[str, str]:
@@ -130,6 +131,121 @@ def test_mathjson_bypasses_text_parser(
 
     assert isinstance(result, set_expression.SetParseSuccess)
     assert result.expr.doit(deep=True) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "body", "variables", "condition", "domains"),
+    [
+        (
+            ["Set", "x", ["Condition", ["Greater", "x", 0]]],
+            sympy.Symbol("x"),
+            (sympy.Symbol("x"),),
+            sympy.Symbol("x") > 0,
+            (sympy.S.Reals,),
+        ),
+        (
+            [
+                "Set",
+                ["Power", "x", 2],
+                ["Condition", ["Element", "x", "Integers"]],
+            ],
+            sympy.Symbol("x") ** 2,
+            (sympy.Symbol("x"),),
+            sympy.true,
+            (sympy.S.Integers,),
+        ),
+        (
+            [
+                "Set",
+                ["Tuple", "x", "y"],
+                [
+                    "Condition",
+                    [
+                        "And",
+                        ["Element", "x", "RealNumbers"],
+                        ["Element", "y", "RealNumbers"],
+                        ["Equal", ["Add", "x", "y"], 1],
+                    ],
+                ],
+            ],
+            sympy.Tuple(sympy.Symbol("x"), sympy.Symbol("y")),
+            (sympy.Symbol("x"), sympy.Symbol("y")),
+            sympy.Eq(sympy.Symbol("x") + sympy.Symbol("y"), 1),
+            (sympy.S.Reals, sympy.S.Reals),
+        ),
+    ],
+)
+def test_mathjson_set_builders(
+    value: internal_mathjson.MathJsonExpression,
+    body: sympy.Basic,
+    variables: tuple[sympy.Symbol, ...],
+    condition: sympy.logic.boolalg.Boolean,
+    domains: tuple[sympy.Set, ...],
+) -> None:
+    result = set_expression.try_parse_set_submission(
+        "builder",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps(value),
+    )
+
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert isinstance(result.expr, SetBuilderSet)
+    assert result.expr.body == body
+    assert result.expr.bound_variables == variables
+    assert result.expr.condition == condition
+    assert result.expr.domains == domains
+    assert psu.json_to_sympy(result.json, allow_sets=True) == result.expr
+
+
+def test_mathjson_set_builder_custom_predicate() -> None:
+    value: internal_mathjson.MathJsonExpression = [
+        "Set",
+        "x",
+        ["Condition", ["P", "x"]],
+    ]
+    result = set_expression.try_parse_set_submission(
+        "builder",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps(value),
+        custom_predicates=("P",),
+    )
+
+    assert isinstance(result, set_expression.SetParseSuccess)
+    assert result.json.get("_custom_predicates") == ["P"]
+
+    unconfigured = set_expression.try_parse_set_submission(
+        "builder",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps(value),
+    )
+    assert isinstance(unconfigured, set_expression.SetParseFailure)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ["Add", "x", 1],
+        ["ForAll", "y", ["Greater", "y", "x"]],
+        ["Exists", "y", ["Equal", "y", "x"]],
+    ],
+)
+def test_mathjson_set_builder_rejects_unsupported_conditions(
+    condition: internal_mathjson.MathJsonExpression,
+) -> None:
+    result = set_expression.try_parse_set_submission(
+        "builder",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps([
+            "Set",
+            "x",
+            ["Condition", condition],
+        ]),
+    )
+    assert isinstance(result, set_expression.SetParseFailure)
 
 
 def test_mathjson_tuple_uses_configured_set_syntax() -> None:
@@ -361,10 +477,6 @@ def test_formula_editor_normalization_preserves_scalar_spans() -> None:
     "value",
     [
         sympy.Range(5),
-        sympy.ConditionSet(sympy.Symbol("x"), sympy.Symbol("x") > 0),
-        sympy.ImageSet(
-            sympy.Lambda(sympy.Symbol("x"), sympy.Symbol("x") + 1), sympy.S.Integers
-        ),
         sympy.ProductSet(sympy.S.Integers, sympy.S.Integers),
         sympy.S.UniversalSet,
     ],
@@ -383,6 +495,15 @@ def test_accepts_representable_correct_answer_classes() -> None:
     )
     assert set_expression.is_representable_set(
         value, syntax=set_expression.SetSyntax.INTERVAL
+    )
+    x = sympy.Symbol("x")
+    assert set_expression.is_representable_set(
+        sympy.ConditionSet(x, x > 0, sympy.S.Reals),
+        syntax=set_expression.SetSyntax.INTERVAL,
+    )
+    assert set_expression.is_representable_set(
+        sympy.ImageSet(sympy.Lambda(x, x + 1), sympy.S.Integers),
+        syntax=set_expression.SetSyntax.INTERVAL,
     )
 
 

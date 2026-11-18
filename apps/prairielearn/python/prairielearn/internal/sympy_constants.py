@@ -8,6 +8,11 @@ from typing import TYPE_CHECKING, Any, Final
 
 import sympy
 
+from prairielearn.set_builder import (
+    _deserialize_predicate,
+    _deserialize_set_builder,
+)
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -72,7 +77,22 @@ set_domain_names: Final = frozenset({
 })
 
 serialized_functions: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({
+    "_pl_And": sympy.And,
+    "_pl_Contains": sympy.Contains,
+    "_pl_Eq": sympy.Eq,
+    "_pl_Equivalent": sympy.Equivalent,
+    "_pl_Ge": sympy.Ge,
+    "_pl_Gt": sympy.Gt,
+    "_pl_Implies": sympy.Implies,
+    "_pl_Le": sympy.Le,
+    "_pl_Lt": sympy.Lt,
+    "_pl_Ne": sympy.Ne,
+    "_pl_Not": sympy.Not,
+    "_pl_Or": sympy.Or,
+    "_pl_Predicate": _deserialize_predicate,
+    "_pl_SetBuilder": _deserialize_set_builder,
     "_pl_Tuple": sympy.Tuple,
+    "_pl_Xor": sympy.Xor,
 })
 
 functions: Final[FrozenDict[str, Callable[..., Any]]] = FrozenDict({

@@ -22,6 +22,7 @@ from prairielearn.internal import (
     sympy_evaluation,
     sympy_source,
 )
+from prairielearn.set_builder import SetBuilderSet
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -118,6 +119,16 @@ class _FiniteSet:
 
 
 @dataclass(frozen=True, slots=True)
+class _SetBuilder:
+    body: _Expression
+    condition: _Expression
+    span: sympy_source.SourceSpan
+
+    def to_structure(self) -> str:
+        return f"SetBuilder({self.body.to_structure()},{self.condition.to_structure()})"
+
+
+@dataclass(frozen=True, slots=True)
 class _Interval:
     left: _Expression
     right: _Expression
@@ -163,6 +174,7 @@ type _Expression = (
     | _Binary
     | _Factorial
     | _FiniteSet
+    | _SetBuilder
     | _Interval
     | _Delimited
     | _Group
@@ -879,6 +891,22 @@ class _MathJsonDecoder:
                 self.decode(arguments[0]), self._operator("!", span), span
             )
         if head == "Set":
+            if (
+                len(arguments) == 2
+                and isinstance(arguments[1], list)
+                and len(arguments[1]) == 2
+                and arguments[1][0] == "Condition"
+            ):
+                return _SetBuilder(
+                    self.decode(arguments[0]),
+                    self.decode(arguments[1][1]),
+                    span,
+                )
+            if any(
+                isinstance(argument, list) and argument and argument[0] == "Condition"
+                for argument in arguments
+            ):
+                self._raise(value)
             return _FiniteSet(tuple(map(self.decode, arguments)), span)
         if head == "Union":
             return self._chain("cup", arguments, span)
@@ -1150,7 +1178,191 @@ class Evaluator:
                 span,
                 exc,
             ) from None
+        if isinstance(value, (bool, Boolean)):
+            result_type = sympy_evaluation.SympyType.BOOL
+        elif isinstance(value, sympy.Set):
+            result_type = sympy_evaluation.SympyType.SET
+        elif isinstance(value, sympy.Tuple):
+            result_type = sympy_evaluation.SympyType.TUPLE
         return _Evaluated(cast(sympy_evaluation.SympyValue, value), result_type)
+
+    def _unconfigured_names(self, expression: _Expression) -> list[_Name]:
+        names: list[_Name] = []
+
+        def visit(value: _Expression) -> None:
+            if isinstance(value, _Name):
+                if (
+                    value.text not in {"True", "False"}
+                    and value.text not in self.variables
+                    and value.text not in self.functions
+                ):
+                    names.append(value)
+                return
+            if isinstance(value, (_Number, _SetBuilder)):
+                return
+            if isinstance(value, _Call):
+                for argument in value.arguments:
+                    visit(argument)
+                return
+            if isinstance(value, _Unary):
+                visit(value.operand)
+                return
+            if isinstance(value, _Binary):
+                visit(value.left)
+                visit(value.right)
+                return
+            if isinstance(value, _Factorial):
+                visit(value.operand)
+                return
+            if isinstance(value, _FiniteSet):
+                for item in value.items:
+                    visit(item)
+                return
+            if isinstance(value, _Interval):
+                visit(value.left)
+                visit(value.right)
+                return
+            if isinstance(value, _Delimited):
+                for item in value.items:
+                    visit(item)
+                return
+            if isinstance(value, _Group):
+                visit(value.value)
+                return
+            raise AssertionError(value)
+
+        visit(expression)
+        return names
+
+    @staticmethod
+    def _flatten_and(expression: _Expression) -> list[_Expression]:
+        if isinstance(expression, _Group):
+            return Evaluator._flatten_and(expression.value)
+        if isinstance(expression, _Call) and expression.function.text == "And":
+            return [
+                clause
+                for argument in expression.arguments
+                for clause in Evaluator._flatten_and(argument)
+            ]
+        return [expression]
+
+    def _evaluate_set_builder(self, expression: _SetBuilder) -> _Evaluated:
+        if not self.allow_sets:
+            self._raise(sympy_evaluation.SetNotationDiagnostic(), expression.span)
+
+        candidate_names = [
+            *self._unconfigured_names(expression.body),
+            *self._unconfigured_names(expression.condition),
+        ]
+        bound_names = tuple(dict.fromkeys(name.text for name in candidate_names))
+        if not bound_names:
+            self._raise(
+                sympy_evaluation.SetExpressionDiagnostic(
+                    "Set-builder notation must bind at least one variable."
+                ),
+                expression.span,
+            )
+
+        bound_symbols = {name: sympy.Symbol(name) for name in bound_names}
+        previous_variables = self.variables
+        merged_variables = self.variables.copy()
+        merged_variables.update(bound_symbols)
+        self.variables = merged_variables
+        try:
+            domain_expressions: dict[str, list[_Expression]] = {
+                name: [] for name in bound_names
+            }
+            remaining_conditions: list[_Expression] = []
+            for clause in self._flatten_and(expression.condition):
+                if (
+                    isinstance(clause, _Call)
+                    and clause.function.text == "Element"
+                    and len(clause.arguments) == 2
+                    and isinstance(clause.arguments[0], _Name)
+                    and clause.arguments[0].text in domain_expressions
+                ):
+                    domain_expressions[clause.arguments[0].text].append(
+                        clause.arguments[1]
+                    )
+                else:
+                    remaining_conditions.append(clause)
+
+            domains: list[sympy.Set] = []
+            for name in bound_names:
+                evaluated_domains = [
+                    self.evaluate(domain_expression)
+                    for domain_expression in domain_expressions[name]
+                ]
+                if any(
+                    domain.type != sympy_evaluation.SympyType.SET
+                    for domain in evaluated_domains
+                ):
+                    self._raise(
+                        sympy_evaluation.SetExpressionDiagnostic(
+                            "Set-builder domains must be sets."
+                        ),
+                        expression.span,
+                    )
+                if not evaluated_domains:
+                    domains.append(sympy.S.Reals)
+                elif len(evaluated_domains) == 1:
+                    domains.append(cast(sympy.Set, evaluated_domains[0].value))
+                else:
+                    domains.append(
+                        sympy.Intersection(
+                            *(
+                                cast(sympy.Set, domain.value)
+                                for domain in evaluated_domains
+                            ),
+                            evaluate=self.simplify_set_operations,
+                        )
+                    )
+
+            body = self.evaluate(expression.body)
+            if body.type not in {
+                sympy_evaluation.SympyType.SCALAR,
+                sympy_evaluation.SympyType.TUPLE,
+            }:
+                self._raise(
+                    sympy_evaluation.SetExpressionDiagnostic(
+                        "Set-builder values must be scalar or tuple expressions."
+                    ),
+                    expression.body.span,
+                )
+
+            if not remaining_conditions:
+                condition_value: Boolean | bool = True
+            else:
+                remaining = remaining_conditions[0]
+                if len(remaining_conditions) > 1:
+                    remaining = _Call(
+                        _Name(
+                            "And",
+                            expression.condition.span,
+                            (expression.condition.span,),
+                        ),
+                        tuple(remaining_conditions),
+                        expression.condition.span,
+                    )
+                condition = self.evaluate(remaining)
+                if condition.type != sympy_evaluation.SympyType.BOOL:
+                    self._raise(
+                        sympy_evaluation.SetExpressionDiagnostic(
+                            "Set-builder conditions must be true/false expressions."
+                        ),
+                        expression.condition.span,
+                    )
+                condition_value = cast(Boolean | bool, condition.value)
+
+            value = SetBuilderSet(
+                cast(sympy.Basic, body.value),
+                tuple(bound_symbols[name] for name in bound_names),
+                sympy.sympify(condition_value),
+                domains,
+            )
+            return _Evaluated(value, sympy_evaluation.SympyType.SET)
+        finally:
+            self.variables = previous_variables
 
     def _binary(self, expression: _Binary) -> _Evaluated:
         left = self.evaluate(expression.left)
@@ -1396,6 +1608,8 @@ class Evaluator:
                 arguments,
                 expression.function.span,
             )
+        if isinstance(expression, _SetBuilder):
+            return self._evaluate_set_builder(expression)
         if isinstance(expression, _FiniteSet):
             if not self.allow_sets:
                 self._raise(sympy_evaluation.SetNotationDiagnostic(), expression.span)
