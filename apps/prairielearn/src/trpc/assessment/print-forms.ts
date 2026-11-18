@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
-import { printFormLabelBase } from '../../lib/client/printing/print-form-label.js';
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import {
+  archivePrintFormIfOtherActive,
   createPrintForm,
   ensureInitialPrintForm,
   revisePrintFormSelection,
@@ -15,7 +15,6 @@ import {
 import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
 import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-settings.js';
 import {
-  archivePrintForm,
   selectOptionalPrintForm,
   selectPrintFormsForAssessment,
   updatePrintFormSettings,
@@ -166,18 +165,13 @@ export const printFormsRouter = t.router({
       }
     }),
   archive: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
-    if (ctx.printForm.archived_at === null && printFormLabelBase(ctx.printForm.label) === 'A') {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Form A cannot be archived. Regenerate it to make a new version.',
+    try {
+      await archivePrintFormIfOtherActive({
+        printFormId: input.printFormId,
+        assessmentId: ctx.assessment.id,
       });
-    }
-    const archived = await archivePrintForm({
-      printFormId: input.printFormId,
-      assessmentId: ctx.assessment.id,
-    });
-    if (!archived) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is no longer active.' });
+    } catch (error) {
+      rethrowPrintFormError(error);
     }
   }),
   updateSettings: assessmentFormProcedure

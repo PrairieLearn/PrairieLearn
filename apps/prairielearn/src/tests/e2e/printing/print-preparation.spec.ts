@@ -189,6 +189,7 @@ test('saves form edits without requiring a preview refresh before form actions',
   const formAId = new URL(page.url()).searchParams.get('form')!;
   const preview = page.locator(ACTIVE_PREVIEW_FRAME_SELECTOR);
   const previousPreviewUrl = await preview.getAttribute('src');
+  await expect(page.getByRole('button', { name: 'Archive Form A' })).toBeDisabled();
 
   await page.getByLabel('Paper size').focus();
   await page.getByLabel('Paper size').selectOption('A4');
@@ -217,6 +218,7 @@ test('saves form edits without requiring a preview refresh before form actions',
   await expect(page.getByLabel('Spacing for question 1', { exact: true })).toHaveValue('full');
   await expect(page.getByRole('checkbox', { name: 'Include question 2' })).not.toBeChecked();
   await expect(page.getByRole('button', { name: 'Archive Form B' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Archive Form A' })).toBeEnabled();
 
   await page.getByRole('button', { name: 'Form A', exact: true }).click();
   await expect(page.getByLabel('Paper size')).toHaveValue('A4');
@@ -698,9 +700,9 @@ test('combines current forms and answer keys with equal page counts and custom c
   await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(replacementId);
   const newId = new URL(page.url()).searchParams.get('form')!;
   const newLabel = await printFormLabel(page, newId);
-  await expect(page.getByRole('button', { name: `Archive Form ${replacementLabel}` })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByRole('button', { name: `Archive Form ${replacementLabel}` }),
+  ).toBeEnabled();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeFocused();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toHaveAttribute(
     'aria-pressed',
@@ -852,19 +854,31 @@ test('combines current forms and answer keys with equal page counts and custom c
     page.getByRole('button', { name: `Form ${originalLabel} Previewing` }),
   ).toHaveAttribute('aria-pressed', 'true');
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await page.getByRole('button', { name: `Archive Form ${newLabel}` }).click();
-  const archiveDialog = page.getByRole('dialog', { name: `Archive Form ${newLabel}` });
+  await page.getByRole('button', { name: `Archive Form ${replacementLabel}` }).click();
+  const archiveDialog = page.getByRole('dialog', {
+    name: `Archive Form ${replacementLabel}`,
+  });
   await expect(
     archiveDialog.getByText(/preview or download it under Previous forms/),
   ).toBeVisible();
   await archiveDialog.getByRole('button', { name: 'Cancel' }).click();
-  await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeVisible();
-  await page.getByRole('button', { name: `Archive Form ${newLabel}` }).click();
-  await archiveDialog.getByRole('button', { name: 'Archive form' }).click();
-  await expect(page.getByRole('button', { name: `Form ${newLabel}`, exact: true })).toBeVisible();
   await expect(
     page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
-  ).toBeFocused();
+  ).toBeVisible();
+  await page.getByRole('button', { name: `Archive Form ${replacementLabel}` }).click();
+  await archiveDialog.getByRole('button', { name: 'Archive form' }).click();
+  await expect(
+    page.getByRole('button', { name: `Form ${replacementLabel}`, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeFocused();
+  await expect(page.getByRole('button', { name: `Archive Form ${newLabel}` })).toBeDisabled();
+  await page.reload();
+  await expect(page.getByRole('button', { name: `Archive Form ${newLabel}` })).toBeDisabled();
+  expect(
+    (await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })).map(
+      (form) => form.label,
+    ),
+  ).toEqual([newLabel]);
 });
 
 test('distinguishes paper review flags from broken questions omitted from the document', async ({

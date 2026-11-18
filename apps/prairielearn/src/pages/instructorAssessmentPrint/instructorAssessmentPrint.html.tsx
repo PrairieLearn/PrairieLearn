@@ -214,7 +214,6 @@ function PrintPreparation({
       const rightBase = printFormLabelBase(right.label);
       return leftBase.length - rightBase.length || leftBase.localeCompare(rightBase);
     });
-  const hasActiveA = activeForms.some((form) => printFormLabelBase(form.label) === 'A');
   const archivedForms = forms.data.filter((form) => form.archived_at !== null);
   const formIds = activeForms.map((form) => form.id);
   const selectedArchivedForm = archivedForms.find((form) => form.id === selectedForm);
@@ -368,12 +367,12 @@ function PrintPreparation({
   const ensureInitialMutate = ensureInitial.mutate;
   useEffect(() => {
     // The first staff visit creates the A slot; the server handles concurrent visits.
-    if (groupWork || hasActiveA || forms.isError || initialFormRequestedRef.current) {
+    if (groupWork || activeForms.length > 0 || forms.isError || initialFormRequestedRef.current) {
       return;
     }
     initialFormRequestedRef.current = true;
     ensureInitialMutate();
-  }, [hasActiveA, forms.isError, groupWork, ensureInitialMutate]);
+  }, [activeForms.length, forms.isError, groupWork, ensureInitialMutate]);
   useEffect(() => {
     // Keep the URL on the form actually shown, while preserving valid form deep links.
     if (formId && formId !== selectedForm) void setSelectedForm(formId);
@@ -1439,34 +1438,32 @@ function PrintPreparation({
                                 </Button>
                               </OverlayTrigger>
                             )}
-                            {printFormLabelBase(label) !== 'A' && (
-                              <OverlayTrigger
-                                placement="top"
-                                tooltip={{
-                                  props: { id: `print-archive-${id}` },
-                                  body: `Archive Form ${label}`,
-                                }}
+                            <OverlayTrigger
+                              placement="top"
+                              tooltip={{
+                                props: { id: `print-archive-${id}` },
+                                body: `Archive Form ${label}`,
+                              }}
+                            >
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline-secondary"
+                                aria-label={`Archive Form ${label}`}
+                                disabled={
+                                  activeForms.length === 1 ||
+                                  busy ||
+                                  isDirty ||
+                                  isSubmitting ||
+                                  download.isPending
+                                }
+                                onClick={() =>
+                                  setPendingFormAction({ action: 'archive', id, label })
+                                }
                               >
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline-secondary"
-                                  aria-label={`Archive Form ${label}`}
-                                  disabled={
-                                    activeForms.length === 1 ||
-                                    busy ||
-                                    isDirty ||
-                                    isSubmitting ||
-                                    download.isPending
-                                  }
-                                  onClick={() =>
-                                    setPendingFormAction({ action: 'archive', id, label })
-                                  }
-                                >
-                                  <i className="bi bi-archive" aria-hidden="true" />
-                                </Button>
-                              </OverlayTrigger>
-                            )}
+                                <i className="bi bi-archive" aria-hidden="true" />
+                              </Button>
+                            </OverlayTrigger>
                           </div>
                         );
                       })}

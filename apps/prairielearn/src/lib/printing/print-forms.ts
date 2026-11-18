@@ -91,7 +91,7 @@ export async function createPrintForm(options: CreatePrintFormOptions) {
   return await createPrintFormInternal({ ...options, ensureInitial: false });
 }
 
-/** Returns the active A form, creating its first version when needed. */
+/** Returns an active form, creating one when no current forms exist. */
 export async function ensureInitialPrintForm(
   options: Omit<CreatePrintFormOptions, 'replacesPrintFormId'>,
 ) {
@@ -111,9 +111,11 @@ async function createPrintFormInternal({
   const initialActiveForms = await selectActivePrintFormsForAssessment({
     assessmentId: assessment.id,
   });
-  if (ensureInitial) {
-    const existing = initialActiveForms.find((form) => printFormLabelBase(form.label) === 'A');
-    if (existing) return existing;
+  if (ensureInitial && initialActiveForms.length > 0) {
+    return (
+      initialActiveForms.find((form) => printFormLabelBase(form.label) === 'A') ??
+      initialActiveForms[0]
+    );
   }
   assertCanCreatePrintForm(initialActiveForms, replacesPrintFormId);
   const selectedQuestions = await queryRows(
@@ -155,9 +157,8 @@ async function createPrintFormInternal({
     await lockAssessmentForPrintForms(assessment.id);
     const forms = await selectPrintFormsForAssessment({ assessmentId: assessment.id });
     const activeForms = forms.filter((form) => form.archived_at === null);
-    if (ensureInitial) {
-      const existing = activeForms.find((form) => printFormLabelBase(form.label) === 'A');
-      if (existing) return existing;
+    if (ensureInitial && activeForms.length > 0) {
+      return activeForms.find((form) => printFormLabelBase(form.label) === 'A') ?? activeForms[0];
     }
     assertCanCreatePrintForm(activeForms, replacesPrintFormId);
     const replacedForm = replacesPrintFormId
@@ -187,6 +188,31 @@ async function createPrintFormInternal({
       if (!archived) throw new HttpStatusError(409, 'The form to regenerate is no longer active.');
     }
     return form;
+  });
+}
+
+/** Archives a form while preserving at least one current form for the assessment. */
+export async function archivePrintFormIfOtherActive({
+  assessmentId,
+  printFormId,
+}: {
+  assessmentId: string;
+  printFormId: string;
+}) {
+  return await runInTransactionAsync(async () => {
+    await lockAssessmentForPrintForms(assessmentId);
+    const activeForms = await selectActivePrintFormsForAssessment({ assessmentId });
+    if (!activeForms.some((form) => form.id === printFormId)) {
+      throw new HttpStatusError(404, 'This print form is no longer active.');
+    }
+    if (activeForms.length === 1) {
+      throw new HttpStatusError(400, 'The only current print form cannot be archived.');
+    }
+    const archived = await archivePrintForm({ printFormId, assessmentId });
+    if (!archived) {
+      throw new HttpStatusError(404, 'This print form is no longer active.');
+    }
+    return archived;
   });
 }
 

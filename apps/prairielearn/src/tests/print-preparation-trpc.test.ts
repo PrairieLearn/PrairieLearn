@@ -231,7 +231,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       const first = await api.printForms.ensureInitial.mutate();
       expect(await api.printForms.ensureInitial.mutate()).toEqual(first);
       await expect(api.printForms.archive.mutate(first)).rejects.toThrow(
-        'Form A cannot be archived.',
+        'The only current print form cannot be archived.',
       );
       const second = await api.printForms.create.mutate();
       expect(second.printFormId).not.toBe(first.printFormId);
@@ -265,6 +265,15 @@ describe('print preparation', { timeout: 60_000 }, () => {
       expect(questions.flatMap((question) => question.concerns)).not.toContain(
         'Could not check this question for printing issues. Review it in the preview before printing.',
       );
+      await api.printForms.archive.mutate(first);
+      expect((await api.printForms.ensureInitial.mutate()).printFormId).toBe(second.printFormId);
+      await expect(api.printForms.archive.mutate(second)).rejects.toThrow(
+        'The only current print form cannot be archived.',
+      );
+      expect(
+        (await api.printForms.list.query()).find((form) => form.id === first.printFormId)
+          ?.archived_at,
+      ).not.toBeNull();
     },
   );
 
@@ -445,7 +454,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const otherForm = await otherAssessmentApi.printForms.create.mutate();
     expect(otherForm.label).toBe('A');
     await expect(otherAssessmentApi.printForms.archive.mutate(otherForm)).rejects.toThrow(
-      'Form A cannot be archived.',
+      'The only current print form cannot be archived.',
     );
     await expect(api.printForms.questions.query(otherForm)).rejects.toThrow(
       'This print form is not available.',
