@@ -13,6 +13,13 @@ export function skipNextFormConfirmation(): void {
   skipNextConfirmation = true;
 }
 
+/** Call from a `beforeunload` handler that would otherwise ask for confirmation. */
+export function consumeSkippedFormConfirmation(): boolean {
+  const skipped = skipNextConfirmation;
+  skipNextConfirmation = false; // Reset in case navigation doesn't happen
+  return skipped;
+}
+
 function skippedFieldsFromForm(form: HTMLFormElement): Set<string> {
   return new Set([
     '__csrf_token',
@@ -68,14 +75,21 @@ function updateQuestionFormData(form: HTMLFormElement, input: HTMLInputElement) 
   form.dataset.originalFormData = updatedFormData.toString();
 }
 
-export function confirmOnUnload(form: HTMLFormElement): () => void {
+/** Maintains the saved form state that unsaved answers are compared against. */
+function watchSavedQuestionFormData(form: HTMLFormElement, onSave: () => void): () => void {
   // Set form state on load. Use timeout of zero to trigger this change in the
   // next event cycle. This ensures any initialization code done by elements is
   // executed before saving the data.
-  const initialTimeoutId = setTimeout(() => saveQuestionFormData(form), 0);
+  const initialTimeoutId = setTimeout(() => {
+    saveQuestionFormData(form);
+    onSave();
+  }, 0);
 
   // Set form state on submit, since in this case the "unsaved" data is being saved
-  const handleSubmit = () => saveQuestionFormData(form);
+  const handleSubmit = () => {
+    saveQuestionFormData(form);
+    onSave();
+  };
   form.addEventListener('submit', handleSubmit);
 
   // For elements that have a deferred initialization of their input fields
@@ -101,18 +115,26 @@ export function confirmOnUnload(form: HTMLFormElement): () => void {
     const observer = new MutationObserver(() => {
       updateQuestionFormData(form, input);
       observer.disconnect();
+      onSave();
     });
     observer.observe(input, { attributes: true, attributeFilter: ['value'] });
     observers.push(observer);
   });
 
+  return () => {
+    clearTimeout(initialTimeoutId);
+    form.removeEventListener('submit', handleSubmit);
+    observers.forEach((observer) => observer.disconnect());
+  };
+}
+
+export function confirmOnUnload(form: HTMLFormElement): () => void {
+  const stopWatching = watchSavedQuestionFormData(form, () => {});
+
   // Check form state on unload
   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
     // Skip confirmation if explicitly requested (e.g., during intentional form submission)
-    if (skipNextConfirmation) {
-      skipNextConfirmation = false; // Reset in case navigation doesn't happen
-      return;
-    }
+    if (consumeSkippedFormConfirmation()) return;
 
     const isSameForm = form.dataset.originalFormData === getQuestionFormData(form);
 
@@ -128,9 +150,60 @@ export function confirmOnUnload(form: HTMLFormElement): () => void {
   window.addEventListener('beforeunload', handleBeforeUnload);
 
   return () => {
-    clearTimeout(initialTimeoutId);
-    form.removeEventListener('submit', handleSubmit);
-    observers.forEach((observer) => observer.disconnect());
+    stopWatching();
     window.removeEventListener('beforeunload', handleBeforeUnload);
+  };
+}
+
+/**
+ * Reports whether the form has unsaved answers whenever that changes. Unlike
+ * `confirmOnUnload`, this does not wait for the page to unload: an application
+ * page cannot synchronously ask a question in another document, and Safari does
+ * not show unload prompts from cross-origin frames.
+ */
+export function trackQuestionFormChanges(
+  form: HTMLFormElement,
+  onChange: (dirty: boolean) => void,
+): () => void {
+  let dirty = false;
+  let pendingCheck: ReturnType<typeof setTimeout> | undefined;
+  const observer = new MutationObserver(() => scheduleCheck());
+
+  function check() {
+    pendingCheck = undefined;
+    if (form.dataset.originalFormData === undefined) return;
+    const changed = form.dataset.originalFormData !== getQuestionFormData(form);
+    // Building form data runs `formdata` handlers, which may set the inputs they
+    // update. Those changes must not schedule another check.
+    observer.takeRecords();
+    if (changed !== dirty) {
+      dirty = changed;
+      onChange(dirty);
+    }
+  }
+
+  // Elements may update their inputs after the event that changed the answer,
+  // so check in a later task. Repeated changes in one task share a check.
+  function scheduleCheck() {
+    pendingCheck ??= setTimeout(check, 0);
+  }
+
+  const stopWatching = watchSavedQuestionFormData(form, scheduleCheck);
+  const events = ['input', 'change', 'keyup', 'pointerup', 'drop'];
+  events.forEach((type) => form.addEventListener(type, scheduleCheck, { capture: true }));
+  // Elements often store answers in hidden inputs, whose `value` property is
+  // reflected to the attribute, and may add inputs after initialization.
+  observer.observe(form, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['value'],
+  });
+
+  return () => {
+    clearTimeout(pendingCheck);
+    stopWatching();
+    events.forEach((type) => form.removeEventListener(type, scheduleCheck, { capture: true }));
+    observer.disconnect();
   };
 }

@@ -18,6 +18,9 @@ it('checks the frame origin and source before connecting ports in a simulated ha
         .fn()
         .mockResolvedValue({ submissionPanel: 'feedback', extraHeadersHtml: null }),
       subscribeToGradingStatus: vi.fn(),
+      submitAnswer: vi.fn(),
+      navigate: vi.fn(),
+      reportAnswerState: vi.fn(),
     },
     dispose: vi.fn(),
   };

@@ -4,33 +4,57 @@ import type { StatusMessage, StatusMessageSubmission } from '../externalGradingS
 import type { QuestionDialogData } from '../question-dialogs.types.js';
 import type { SubmissionPanels } from '../question-render.types.js';
 
+import { consumeSkippedFormConfirmation } from './confirm-on-unload.js';
 import {
   createQuestionServicesClient,
   serveQuestionServices,
 } from './question-browser-services.transport.js';
-import type { QuestionBrowserServices } from './question-browser-services.types.js';
+import type {
+  QuestionBrowserServices,
+  QuestionNavigationTarget,
+} from './question-browser-services.types.js';
 import { createQuestionDialogs } from './question-dialogs.js';
 import { isStaleGradingStatus } from './question-grading-status.js';
 import { updateQuestionPagePanels } from './question-page-panels.js';
+
+// The application adds these to submitted answers; the question cannot supply them.
+const RESERVED_ANSWER_FIELDS = new Set(['__action', '__csrf_token', '__variant_id']);
 
 /** Application implementation; endpoints and credentials never cross the port. */
 export function createQuestionServicesHost({
   document,
   variantId,
   variantToken,
+  csrfToken,
   submissionRenderUrls,
+  navigationUrls,
   dialogData,
   isCurrent,
 }: {
   document: Document;
   variantId: string;
   variantToken: string;
+  csrfToken: string;
   submissionRenderUrls: ReadonlyMap<string, string>;
+  navigationUrls: Partial<Record<QuestionNavigationTarget, string>>;
   dialogData: QuestionDialogData;
   isCurrent: () => boolean;
 }): { services: QuestionBrowserServices; dispose: () => void } {
   const abortController = new AbortController();
   const dialogs = createQuestionDialogs(document, dialogData);
+  let answersDirty = false;
+  let answersSubmitted = false;
+  document.defaultView!.addEventListener(
+    'beforeunload',
+    (event) => {
+      if (!answersDirty || answersSubmitted || consumeSkippedFormConfirmation()) return;
+      // Best practice per MDN is to call preventDefault() and set returnValue for legacy support.
+      event.preventDefault();
+      // oxlint-disable-next-line typescript/no-deprecated -- https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#usage_notes
+      event.returnValue = 'prompt';
+    },
+    { signal: abortController.signal },
+  );
   let renderSequence = 0;
   let appliedPageSequence = 0;
   const submissionSequences = new Map<string, number>();
@@ -156,6 +180,52 @@ export function createQuestionServicesHost({
       return () => {
         if (subscriptions.delete(subscription) && subscriptions.size === 0) closeGradingSocket();
       };
+    },
+
+    async submitAnswer({ action, entries }) {
+      assertCurrent();
+      if (answersSubmitted) throw new Error('Answers were already submitted');
+      if (entries.some(([name]) => RESERVED_ANSWER_FIELDS.has(name))) {
+        throw new Error('Answers cannot include reserved fields');
+      }
+      // Post natively to the page URL, as the question form would, so the server's
+      // redirect, flash messages, and checks are unchanged.
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.hidden = true;
+      const fields: [string, string][] = [
+        ['__csrf_token', csrfToken],
+        ['__variant_id', variantId],
+        ['__action', action],
+        ...entries,
+      ];
+      form.append(
+        ...fields.map(([name, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          input.value = value;
+          return input;
+        }),
+      );
+      document.body.append(form);
+      answersSubmitted = true;
+      form.submit();
+    },
+
+    async navigate({ target }) {
+      assertCurrent();
+      const navigationUrl = navigationUrls[target];
+      if (!navigationUrl) throw new Error('Navigation is unavailable');
+      const url = new URL(navigationUrl, document.location.origin);
+      if (url.origin !== document.location.origin) {
+        throw new Error('Navigation URL must be same-origin');
+      }
+      document.location.assign(url);
+    },
+
+    reportAnswerState({ dirty }) {
+      answersDirty = dirty;
     },
   };
 

@@ -101,7 +101,15 @@ export function QuestionContainer({
       ${
         question.type === 'Freeform'
           ? html`
-              <form class="question-form" name="question-form" method="POST" autocomplete="off">
+              <!-- With browser services, the application submits answers with its own
+                   credentials, and dialog submission keeps native submission inert. -->
+              <form
+                class="question-form"
+                name="question-form"
+                method="${questionHostingUpdate ? 'dialog' : 'POST'}"
+                autocomplete="off"
+                ${questionHostingUpdate ? html`data-question-submission="services"` : ''}
+              >
                 ${QuestionPanel({
                   resLocals,
                   questionContext,
@@ -576,20 +584,29 @@ interface QuestionFooterResLocals {
 function QuestionFooter({
   resLocals,
   questionContext,
+  questionHostingUpdate,
 }: {
   resLocals: QuestionFooterResLocals;
   questionContext: QuestionContext;
+  questionHostingUpdate: boolean;
 }) {
   if (resLocals.question.type === 'Freeform') {
+    // With browser services, the application adds its credentials when it submits answers.
     return html`
       <div class="card-footer" id="question-panel-footer">
-        <input
-          type="hidden"
-          name="__csrf_token"
-          value="${resLocals.__csrf_token}"
-          data-skip-unload-check="true"
-        />
-        ${QuestionFooterContent({ resLocals, questionContext })}
+        ${
+          questionHostingUpdate
+            ? ''
+            : html`
+                <input
+                  type="hidden"
+                  name="__csrf_token"
+                  value="${resLocals.__csrf_token}"
+                  data-skip-unload-check="true"
+                />
+              `
+        }
+        ${QuestionFooterContent({ resLocals, questionContext, questionHostingUpdate })}
       </div>
     `;
   } else {
@@ -612,10 +629,18 @@ function QuestionFooter({
 export function QuestionFooterContent({
   resLocals,
   questionContext,
+  questionHostingUpdate = false,
 }: {
   resLocals: Omit<QuestionFooterResLocals, '__csrf_token'>;
   questionContext: QuestionContext;
+  questionHostingUpdate?: boolean;
 }) {
+  const servicesSubmission = questionHostingUpdate && resLocals.question.type === 'Freeform';
+  const submitButtonState = (disabled: boolean) => {
+    if (disabled) return 'disabled';
+    // Browser services enable these buttons once they can submit answers.
+    return servicesSubmission ? html`disabled data-question-services-pending` : '';
+  };
   const {
     showSaveButton,
     showGradeButton,
@@ -663,7 +688,7 @@ export function QuestionFooterContent({
                     <button
                       type="submit"
                       class="btn btn-info question-save disable-on-submit order-2"
-                      ${disableSaveButton ? 'disabled' : ''}
+                      ${submitButtonState(disableSaveButton)}
                       ${question.type === 'Freeform' ? html`name="__action" value="save"` : ''}
                     >
                       ${showGradeButton ? 'Save only' : 'Save'}
@@ -677,7 +702,7 @@ export function QuestionFooterContent({
                     <button
                       type="submit"
                       class="btn btn-primary question-grade disable-on-submit order-1 me-1"
-                      ${disableGradeButton ? 'disabled' : ''}
+                      ${submitButtonState(disableGradeButton)}
                       ${question.type === 'Freeform' ? html`name="__action" value="grade"` : ''}
                     >
                       Save &amp; Grade
@@ -723,19 +748,21 @@ export function QuestionFooterContent({
           </span>
           <div class="d-flex">
             ${
-              question.type === 'Freeform'
-                ? html`
-                    <input
-                      type="hidden"
-                      name="__variant_id"
-                      value="${variant.id}"
-                      data-skip-unload-check="true"
-                    />
-                  `
-                : html`
-                    <input type="hidden" name="postData" class="postData" />
-                    <input type="hidden" name="__action" class="__action" />
-                  `
+              servicesSubmission
+                ? ''
+                : question.type === 'Freeform'
+                  ? html`
+                      <input
+                        type="hidden"
+                        name="__variant_id"
+                        value="${variant.id}"
+                        data-skip-unload-check="true"
+                      />
+                    `
+                  : html`
+                      <input type="hidden" name="postData" class="postData" />
+                      <input type="hidden" name="__action" class="__action" />
+                    `
             }
             ${
               showNewVariantButton
@@ -743,13 +770,18 @@ export function QuestionFooterContent({
                     <a
                       href="${newVariantUrl}"
                       class="btn btn-primary disable-on-click ms-1 js-new-variant-button"
+                      ${questionHostingUpdate ? html`data-question-navigate="new-variant"` : ''}
                     >
                       New variant
                     </a>
                   `
                 : showTryAgainButton
                   ? html`
-                      <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
+                      <a
+                        href="${tryAgainUrl}"
+                        class="btn btn-primary disable-on-click ms-1"
+                        ${questionHostingUpdate ? html`data-question-navigate="try-again"` : ''}
+                      >
                         ${
                           instance_question_info.previous_variants?.some(
                             (variant: SimpleVariantWithScore) => variant.open,
@@ -1029,7 +1061,11 @@ function QuestionPanel({
                           manualGradingPreviewUrl
                             ? html`
                                 <li>
-                                  <a class="dropdown-item" href="${manualGradingPreviewUrl}">
+                                  <a
+                                    class="dropdown-item"
+                                    href="${manualGradingPreviewUrl}"
+                                    ${questionHostingUpdate ? html`data-question-navigate="manual-grading-preview"` : ''}
+                                  >
                                     Manual grading view
                                   </a>
                                 </li>
@@ -1040,7 +1076,11 @@ function QuestionPanel({
                           aiGradingPreviewUrl
                             ? html`
                                 <li>
-                                  <a class="dropdown-item" href="${aiGradingPreviewUrl}">
+                                  <a
+                                    class="dropdown-item"
+                                    href="${aiGradingPreviewUrl}"
+                                    ${questionHostingUpdate ? html`data-question-navigate="ai-grading-preview"` : ''}
+                                  >
                                     AI grading view
                                   </a>
                                 </li>
@@ -1068,6 +1108,7 @@ function QuestionPanel({
               // TODO: propagate more precise types upwards.
               resLocals: resLocals as any,
               questionContext,
+              questionHostingUpdate,
             })
           : ''
       }

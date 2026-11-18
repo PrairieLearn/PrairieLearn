@@ -10,15 +10,20 @@ export function QuestionBrowserServicesData({
   resLocals,
   questionContext,
   renderSubmissionSearchParams,
+  manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   renderSubmissionSearchParams?: URLSearchParams;
+  manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
 }) {
   return EncodedData<ServicesData>(
     {
       variantId: resLocals.variant.id,
       variantToken: resLocals.variantToken,
+      csrfToken: resLocals.__csrf_token,
       submissionRenderUrls:
         resLocals.question.type === 'Freeform'
           ? resLocals.submissions.map((submission: SubmissionForRender) => [
@@ -36,6 +41,12 @@ export function QuestionBrowserServicesData({
               }),
             ])
           : [],
+      navigationUrls: {
+        'new-variant': resLocals.newVariantUrl,
+        'try-again': resLocals.tryAgainUrl,
+        'manual-grading-preview': manualGradingPreviewUrl,
+        'ai-grading-preview': aiGradingPreviewUrl,
+      },
     },
     'question-browser-services-data',
   );

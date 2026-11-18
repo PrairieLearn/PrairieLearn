@@ -12,7 +12,7 @@ question UI → client adapter → MessagePort → application host → HTTP / S
 
 The application host owns endpoint selection, credentials, and score/navigation
 updates. It returns only question content through the port. The server continues
-to authorize requests. Native form submission is unchanged.
+to authorize requests.
 
 ## Operations and lifecycle
 
@@ -23,6 +23,21 @@ to authorize requests. Native form submission is unchanged.
   creates the dialog from its own data and replies when it closes, allowing the UI
   to restore focus. Copy credentials and submission metadata stay in the host.
   Disposing the connection closes its dialog and rejects pending UI promises.
+- Answer submission sends the action (`save` or `grade`) and the form's entries
+  after element submit handlers have run. The application rejects reserved field
+  names, adds its CSRF token and variant ID, and posts natively to the page URL,
+  so the server's redirect and checks are unchanged. It accepts one submission per
+  view. The question form uses `method="dialog"`, so native submission does
+  nothing, and its submit buttons stay disabled until the services can submit.
+- Navigation requests name a target, such as a new variant. The application maps
+  it to a URL from its own data; the question cannot choose a destination.
+  Modified clicks keep the link's native behavior.
+- The question reports whether its answers are unsaved whenever that changes, and
+  the application warns before the page unloads. This is a one-way notification
+  without an ID. The question cannot be asked synchronously during `beforeunload`,
+  and Safari does not show unload prompts from cross-origin frames.
+- Requests that complete without data (dialogs, submissions, and navigation)
+  resolve on a `done` response.
 - The client rejects immediately on cancellation and sends a cancel message. The
   host owns a separate abort controller. Late results are ignored. Cancellation
   cannot undo an application update that has already completed.

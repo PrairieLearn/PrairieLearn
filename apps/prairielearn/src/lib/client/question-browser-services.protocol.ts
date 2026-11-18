@@ -15,12 +15,25 @@ export const QuestionServiceRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cancel'), id }),
   z.object({ type: z.literal('subscribe'), id }),
   z.object({ type: z.literal('unsubscribe'), id }),
+  z.object({
+    type: z.literal('submit-answer'),
+    id,
+    action: z.enum(['save', 'grade']),
+    entries: z.array(z.tuple([z.string(), z.string()])),
+  }),
+  z.object({
+    type: z.literal('navigate'),
+    id,
+    target: z.enum(['new-variant', 'try-again', 'manual-grading-preview', 'ai-grading-preview']),
+  }),
+  z.object({ type: z.literal('answer-state'), dirty: z.boolean() }),
   z.object({ type: z.literal('dispose') }),
 ]);
 export type QuestionServiceRequest = z.infer<typeof QuestionServiceRequestSchema>;
 
 export const QuestionServiceResponseSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('dialog-closed'), id }),
+  // Completes requests without data: dialogs closed, answers submitted, navigation started.
+  z.object({ type: z.literal('done'), id }),
   z.object({
     type: z.literal('result'),
     id,
