@@ -66,6 +66,6 @@ sphinx-markdown-builder==0.6.0
 ...
 ```
 
-When you're satisfied with your edits, commit and push your changes, then [create the pull request in the PrairieLearn repository](https://github.com/PrairieLearn/PrairieLearn/pulls).
+When you're satisfied with your edits, commit and push your changes, then [create the pull request in the PrairieLearn repository](https://github.com/PrairieLearn/PrairieLearn/pulls). For the Python grader's dependencies, fork [`grader-python-v2`](https://github.com/PrairieLearn/grader-python-v2) instead and create the pull request there.
 
 If you've reached this point, then you're all finished! One of the PrairieLearn maintainers will look over your pull request shortly.

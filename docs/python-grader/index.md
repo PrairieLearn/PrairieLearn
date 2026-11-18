@@ -269,7 +269,14 @@ To stop students from using a library function, add it to `import_blacklist` in 
 
 ```python title="tests/test_student.py"
 autograder_config = ConfigObject(
-    import_blacklist=["os", "sys", "subprocess", "pathlib", "shutil", "numpy.linalg.inv"],
+    import_blacklist=[
+        "os",
+        "sys",
+        "subprocess",
+        "pathlib",
+        "shutil",
+        "numpy.linalg.inv",
+    ],
 )
 ```
 
@@ -320,7 +327,7 @@ The image moves files around, so start each run from a fresh copy. You can also 
 
 ## Security
 
-- **Sandbox.** Student code runs in a separate process as an unprivileged user, with a limited set of builtins and import restrictions. Dangerous builtins such as `open`, `eval` and `exec` aren't available.
+- **Sandbox.** Student code runs in a separate process as an unprivileged user, with a limited set of builtins and import restrictions. Dangerous builtins such as `open`, `eval` and `exec` aren't available. With `workspace_mode`, the student's own modules keep Python's normal builtins, but they still run as the unprivileged user.
 - **Grading data.** `data.json`, which can contain `correct_answers`, is readable only by the grader, not by student code.
 - **What students can read.** `__data_params`, any `helper_modules` and `data_files`, and modules from `serverFilesCourse` are available to student code, so they mustn't contain answers.
 - **Import restrictions.** These only check `import` statements, so they aren't a security boundary on their own. For example, a module that student code is allowed to import can expose `os` as an attribute.

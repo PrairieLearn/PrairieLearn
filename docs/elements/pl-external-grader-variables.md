@@ -2,7 +2,7 @@
 
 Displays variables that are given to the student, or expected for the student to define in questions graded by the [Python autograder](../python-grader/index.md).
 
-With `params-name="names_for_user"`, the listed variables are also the ones that the Python autograder gives to student code from the question's setup code. The autograder doesn't read `names_from_user`, which is only used to display the table.
+With `params-name="names_for_user"`, the listed variables are also the ones that the Python autograder gives to student code from the question's setup code. The autograder doesn't read `names_from_user`, which is only used to display the table. Questions that still use the legacy `prairielearn/grader-python` image need `names_from_user`, because that grader reads it to collect the student's variables.
 
 **We advise against using this element for any question not using the Python autograder**, as the way this element stores parameters is specifically for use with that autograder. If you want to display a table of variables for a question using a different autograder, consider using a standard HTML `<table>` instead.
 
