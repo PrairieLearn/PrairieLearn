@@ -2,18 +2,34 @@ import { differenceInMilliseconds } from 'date-fns';
 
 import { formatDate } from '@prairielearn/formatter';
 
-import type { GradingJob, Submission } from './db-types.js';
+import type { AssessmentQuestion, GradingJob, Question, Submission } from './db-types.js';
+
+type SubmissionGradingJob = Pick<
+  GradingJob,
+  | 'id'
+  | 'grading_method'
+  | 'grading_requested_at'
+  | 'grading_submitted_at'
+  | 'grading_received_at'
+  | 'grading_started_at'
+  | 'grading_finished_at'
+  | 'graded_at'
+>;
 
 export function getSubmissionInfo({
   submission,
+  question,
+  assessment_question,
   courseId,
   courseInstanceId,
   timezone,
 }: {
   submission: Pick<Submission, 'id' | 'date'> & {
     user_uid: string | null;
-    grading_job: GradingJob | null;
+    grading_job: SubmissionGradingJob | null;
   };
+  question: Question;
+  assessment_question?: AssessmentQuestion | null;
   courseId: string;
   courseInstanceId?: string | null;
   timezone: string;
@@ -21,6 +37,7 @@ export function getSubmissionInfo({
   const gradingJobId = submission.grading_job?.id ?? null;
   return {
     id: submission.id,
+    isAutograded: isAutograded({ question, assessment_question }),
     formattedDate: formatDate(submission.date!, timezone),
     userUid: submission.user_uid,
     gradingJobId,
@@ -36,7 +53,7 @@ export function getSubmissionInfo({
 
 export type SubmissionInfo = ReturnType<typeof getSubmissionInfo>;
 
-function buildGradingJobStats(job: GradingJob | null) {
+function buildGradingJobStats(job: SubmissionGradingJob | null) {
   if (!job) return null;
 
   const durations: (number | null)[] = [];
@@ -64,4 +81,16 @@ function buildGradingJobStats(job: GradingJob | null) {
       (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
     ),
   };
+}
+
+export function isAutograded({
+  question,
+  assessment_question,
+}: {
+  question: Question;
+  assessment_question?: AssessmentQuestion | null;
+}) {
+  return assessment_question
+    ? !!assessment_question.max_auto_points || !assessment_question.max_manual_points
+    : question.grading_method !== 'Manual';
 }

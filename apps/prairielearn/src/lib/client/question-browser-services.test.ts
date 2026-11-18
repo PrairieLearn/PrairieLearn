@@ -27,6 +27,7 @@ const panels: SubmissionPanels = {
 };
 
 const submissionInfo: SubmissionInfo = {
+  isAutograded: true,
   id: '2',
   formattedDate: 'November 3, 2026, 10:00:00 AM',
   userUid: 'student@example.com',
@@ -114,7 +115,7 @@ it('updates an open submission dialog from server data without returning that da
   });
   const closed = services.openSubmissionInfo({ submissionId: '2' });
   expect(document.querySelector('.modal-body')!.textContent).toContain(
-    'This submission has not been graded.',
+    'This submission was not automatically graded.',
   );
 
   const gradedInfo: SubmissionInfo = {

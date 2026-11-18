@@ -61,7 +61,11 @@ export function SubmissionInfoModal(info: SubmissionInfo) {
           }
         </tbody>
       </table>
-      ${gradingJobStats ? '' : html`<p class="mt-2">This submission has not been graded.</p>`}
+      ${
+        gradingJobStats || !info.isAutograded
+          ? ''
+          : html`<p class="mt-2">This submission was not automatically graded.</p>`
+      }
       ${
         gradingJobStats?.grading_method === 'External'
           ? html`
