@@ -269,7 +269,27 @@ For a workspace with several `.py` files that import each other, set `workspace_
 
 ## Testing a question locally
 
-The grader runs the files in `/grade` in the same way it does in PrairieLearn, so you can test a question with Docker before syncing it:
+While you write the tests, run them with pytest on your own computer. Install the grader in a Python environment, which also gives your editor autocomplete and type checking for the grader's API:
+
+```bash
+pip install pytest pytest-prairielearn-grader
+```
+
+Copy the question's `tests` folder somewhere outside the course, and add a folder named after the test file, next to it, holding the files the grader reads:
+
+```text
+tests/
+├── test_student.py
+└── test_student/
+    ├── student_code_correct.py   (each student_code*.py file is graded separately)
+    ├── student_code_wrong.py
+    ├── setup_code.py             (if the question has one)
+    └── data.json                 (if the tests need params)
+```
+
+Then run `pytest tests/test_student.py`. The grader grades each `student_code*.py` file on its own and prints a table of each test's points and message, so you can try a correct solution, the unchanged starter code and wrong answers in one run. Put in `data.json` whatever `params` the question's `server.py` and elements would set, such as `names_for_user`.
+
+Before syncing, you can also check the finished question in the grader image, which has the same libraries, file layout and sandbox user as in PrairieLearn. Build the `/grade` layout and run the image:
 
 ```bash
 mkdir -p grade/tests grade/student grade/data
@@ -280,7 +300,7 @@ docker run --rm -v "$PWD/grade:/grade" prairielearn/grader-python-pytest:latest
 cat grade/results/results.json
 ```
 
-Put in `params` whatever the question's `server.py` and elements would set, such as `names_for_user`. The grader moves files around, so start each run from a fresh copy. You can also [run PrairieLearn locally](../installing.md#support-for-external-graders-and-workspaces) with external grading enabled.
+The image moves files around, so start each run from a fresh copy. You can also [run PrairieLearn locally](../installing.md#support-for-external-graders-and-workspaces) with external grading enabled. See [Testing Locally](https://github.com/PrairieLearn/grader-python-v2/blob/main/quick_start.md#testing-locally) for more.
 
 ## Security
 
