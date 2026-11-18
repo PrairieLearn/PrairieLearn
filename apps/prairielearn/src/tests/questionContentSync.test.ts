@@ -292,7 +292,7 @@ describe('content-only question save', () => {
           ...info,
           sharePublicly: true,
           title: 'Changed title',
-          singleVariant: !info.singleVariant,
+          gradingMethod: 'Manual',
         }),
       );
       await expect(
@@ -566,13 +566,157 @@ describe('content-only question save', () => {
     },
   );
 
+  it('syncs current question settings and catalogs together, restores defaults, and matches full sync', async () => {
+    const infoPath = path.join(path.dirname(filePath), 'info.json');
+    const original = await fs.readJson(infoPath);
+    const changed = {
+      ...original,
+      title: 'Updated settings',
+      tags: ['new-settings-tag'],
+      topic: 'New settings topic',
+      singleVariant: true,
+      showCorrectAnswer: false,
+      partialCredit: false,
+      authors: [' editor@example.com ', 'editor@example.com'],
+      comment: 'Updated question settings',
+      dependencies: { clientFilesQuestionStyles: ['style.css'] },
+      workspaceOptions: {
+        image: 'prairielearn/workspace-vscode',
+        port: 8080,
+        home: '/home/student',
+        args: ['code', '--port', '8080'],
+        rewriteUrl: false,
+        gradedFiles: ['answer.py'],
+        enableNetworking: true,
+        environment: { COURSE_NAME: 'test' },
+      },
+      externalGradingOptions: {
+        image: 'prairielearn/grader-python',
+        entrypoint: ['python3', 'test.py'],
+        serverFilesCourse: [],
+        timeout: config.externalGradingMaximumTimeout + 1,
+        enableNetworking: true,
+        environment: { TEST_MODE: '1' },
+      },
+    };
+    await fs.outputFile(
+      path.join(fixture.courseOriginDir, 'questions', qid, 'clientFilesQuestion/style.css'),
+      'body { color: black; }',
+    );
+    await commitOriginAndSync(fixture, 'Add question stylesheet');
+    await sync();
+    const beforeQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    await (await save(infoPath, JSON.stringify(changed))).run();
+    expect(load).not.toHaveBeenCalled();
+    const question = await selectQuestionByQid({ course_id: courseId, qid });
+    assert.isTrue(question.single_variant);
+    assert.isFalse(question.show_correct_answer);
+    assert.isFalse(question.partial_credit);
+    assert.deepEqual(question.authors, ['editor@example.com']);
+    assert.equal(question.workspace_args, 'code --port 8080');
+    assert.equal(question.external_grading_entrypoint, 'python3 test.py');
+    assert.equal(question.external_grading_timeout, config.externalGradingMaximumTimeout);
+    assert.include(question.sync_warnings!, 'has been limited');
+    assert.sameDeepMembers(
+      (await util.dumpTableWithSchema('questions', QuestionSchema)).filter(
+        (q) => q.id !== question.id,
+      ),
+      beforeQuestions.filter((q) => q.id !== question.id),
+    );
+    await withConfig(
+      { chunksConsumer: true, chunksConsumerDirectory: path.join(fixture.baseDir, 'runtime') },
+      async () => {
+        await chunks.ensureChunksForCourseAsync(courseId, {
+          type: 'question',
+          questionId: question.id,
+        });
+        const runtimePath = chunks.getRuntimeDirectoryForCourse({ id: courseId, path: courseDir });
+        assert.deepEqual(
+          await fs.readJson(path.join(runtimePath, 'questions', qid, 'info.json')),
+          changed,
+        );
+      },
+    );
+    const targeted = await metadataSnapshot();
+    await util.syncCourseData(courseDir);
+    (await metadataSnapshot()).forEach((rows, index) =>
+      assert.sameDeepMembers<unknown>(rows, targeted[index]),
+    );
+    await sync();
+    load.mockClear();
+    await (await save(infoPath, JSON.stringify(original))).run();
+    expect(load).not.toHaveBeenCalled();
+    const restored = await metadataSnapshot();
+    await util.syncCourseData(courseDir);
+    (await metadataSnapshot()).forEach((rows, index) =>
+      assert.sameDeepMembers<unknown>(rows, restored[index]),
+    );
+  });
+
+  it('uses full sync for authored deprecated settings even when their effective default is unchanged', async () => {
+    const originPath = path.join(fixture.courseOriginDir, 'questions', qid, 'info.json');
+    const original = await fs.readJson(originPath);
+    const info = { ...original, externalGradingOptions: { image: 'prairielearn/grader-python' } };
+    await fs.writeJson(originPath, info);
+    await commitOriginAndSync(fixture, 'Configure external grader image');
+    await sync();
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    await (
+      await save(
+        path.join(path.dirname(filePath), 'info.json'),
+        JSON.stringify({
+          ...info,
+          singleVariant: true,
+          externalGradingOptions: { ...info.externalGradingOptions, enabled: true },
+        }),
+      )
+    ).run();
+    expect(load).toHaveBeenCalled();
+    assert.isTrue((await selectQuestionByQid({ course_id: courseId, qid })).single_variant);
+  });
+
+  it('uses full sync to record semantic errors in settings without applying invalid metadata', async () => {
+    const originPath = path.join(fixture.courseOriginDir, 'questions', qid, 'info.json');
+    const original = await fs.readJson(originPath);
+    const info = {
+      ...original,
+      gradingMethod: 'External',
+      externalGradingOptions: { image: 'prairielearn/grader-python' },
+    };
+    await fs.writeJson(originPath, info);
+    await commitOriginAndSync(fixture, 'Enable external grading');
+    await sync();
+    const before = await selectQuestionByQid({ course_id: courseId, qid });
+    const { externalGradingOptions: _options, ...withoutOptions } = info;
+    const load = vi.spyOn(courseDB, 'loadFullCourse');
+    await expect(
+      (
+        await save(
+          path.join(path.dirname(filePath), 'info.json'),
+          JSON.stringify({ ...withoutOptions, singleVariant: true }),
+        )
+      ).run(),
+    ).rejects.toThrow('One or more JSON files');
+    expect(load).toHaveBeenCalled();
+    const after = await selectQuestionByQid({ course_id: courseId, qid });
+    assert.equal(after.single_variant, before.single_variant);
+    assert.equal(after.external_grading_image, before.external_grading_image);
+    assert.include(after.sync_errors!, 'externalGradingOptions');
+  });
+
   it('fully syncs restored question metadata and records JSON errors', async () => {
     const jsonPath = path.join(path.dirname(filePath), 'info.json');
     const info = await fs.readJson(jsonPath);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
     const operation = await save(
       jsonPath,
-      JSON.stringify({ ...info, title: 'Changed title', gradingMethod: 'Manual' }),
+      JSON.stringify({
+        ...info,
+        title: 'Changed title',
+        singleVariant: true,
+        gradingMethod: 'Manual',
+      }),
     );
     await fs.remove(jsonPath);
     await operation.run();
@@ -1109,7 +1253,11 @@ describe('content-only question save', () => {
       const beforeCommit = (await selectCourseById(courseId)).commit_hash;
       const infoPath = path.join(path.dirname(filePath), 'info.json');
       const original = await fs.readFile(infoPath, 'utf8');
-      const changed = JSON.stringify({ ...JSON.parse(original), title: 'Changed title' });
+      const changed = JSON.stringify({
+        ...JSON.parse(original),
+        title: 'Changed title',
+        singleVariant: true,
+      });
       const upload = vi.spyOn(chunks, 'prepareQuestionContentChunks');
       if (failure === 'upload') upload.mockRejectedValueOnce(new Error('Upload failed'));
       const checkpoint = vi.spyOn(courseModel, 'updateCourseCommitHash');
