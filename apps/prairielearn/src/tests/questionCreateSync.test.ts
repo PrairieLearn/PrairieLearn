@@ -10,6 +10,7 @@ import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';
 import { ChunkSchema } from '../lib/db-types.js';
 import { QuestionAddEditor, QuestionCopyEditor } from '../lib/editors.js';
+import { features } from '../lib/features/index.js';
 import * as courseModel from '../models/course.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import { selectQuestionByQid, selectQuestionByUuid } from '../models/question.js';
@@ -45,6 +46,7 @@ beforeAll(async () => {
   config.fileEditorUseGit = true;
   config.chunksGenerator = true;
   await helperServer.before(fixture.courseLiveDir)();
+  await features.enable('partial-course-sync');
   await sync();
 });
 
