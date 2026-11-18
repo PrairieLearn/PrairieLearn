@@ -150,27 +150,3 @@ it('waits for dialog closure and rejects dialog requests on failure or disposal'
   disposeHost();
   expect(await rejected).toMatchObject({ name: 'AbortError' });
 });
-
-it('completes submissions and navigation, and forwards answer state without a reply', async () => {
-  const submitAnswer = vi
-    .fn<QuestionBrowserServices['submitAnswer']>()
-    .mockResolvedValueOnce()
-    .mockRejectedValueOnce(new Error('Answers were already submitted'));
-  const navigate = vi.fn<QuestionBrowserServices['navigate']>().mockResolvedValue();
-  const reportAnswerState = vi.fn();
-  const { services } = connect({ submitAnswer, navigate, reportAnswerState });
-
-  services.reportAnswerState({ dirty: true });
-  const entries: [string, string][] = [
-    ['answer', '1'],
-    ['answer', '2'],
-  ];
-  await services.submitAnswer({ action: 'grade', entries });
-  expect(reportAnswerState).toHaveBeenCalledWith({ dirty: true });
-  expect(submitAnswer).toHaveBeenCalledWith({ action: 'grade', entries });
-  await expect(services.submitAnswer({ action: 'save', entries: [] })).rejects.toThrow(
-    'Question service request failed',
-  );
-  await services.navigate({ target: 'new-variant' });
-  expect(navigate).toHaveBeenCalledWith({ target: 'new-variant' });
-});

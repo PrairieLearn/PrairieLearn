@@ -31,13 +31,17 @@ function skippedFieldsFromForm(form: HTMLFormElement): Set<string> {
   ]);
 }
 
-function getQuestionFormData(form: HTMLFormElement): string {
+function getQuestionFormParams(form: HTMLFormElement): URLSearchParams {
   // Cast FormData since TS does not support this parameter,
   // see https://github.com/microsoft/TypeScript/issues/30584
   const formData = new URLSearchParams(new FormData(form) as any);
   skippedFieldsFromForm(form).forEach((field) => formData.delete(field));
   formData.sort(); // Ensure consistent ordering for comparison
-  return formData.toString();
+  return formData;
+}
+
+function getQuestionFormData(form: HTMLFormElement): string {
+  return getQuestionFormParams(form).toString();
 }
 
 function saveQuestionFormData(form: HTMLFormElement | null) {
@@ -166,13 +170,22 @@ export function trackQuestionFormChanges(
   onChange: (dirty: boolean) => void,
 ): () => void {
   let dirty = false;
+  let savedEntries: [string, string][] | undefined;
   let pendingCheck: ReturnType<typeof setTimeout> | undefined;
   const observer = new MutationObserver(() => scheduleCheck());
 
   function check() {
     pendingCheck = undefined;
-    if (form.dataset.originalFormData === undefined) return;
-    const changed = form.dataset.originalFormData !== getQuestionFormData(form);
+    const saved = savedEntries;
+    if (!saved) return;
+    // Compare entries rather than the encoded string `confirmOnUnload` compares.
+    // That comparison runs once, on unload; this one runs after every change, and
+    // encoding large answers such as uploaded files took tens of milliseconds per
+    // keystroke. Encoding is one-to-one, so both comparisons agree.
+    const entries = Array.from(getQuestionFormParams(form));
+    const changed =
+      entries.length !== saved.length ||
+      entries.some(([name, value], i) => name !== saved[i][0] || value !== saved[i][1]);
     // Building form data runs `formdata` handlers, which may set the inputs they
     // update. Those changes must not schedule another check.
     observer.takeRecords();
@@ -188,7 +201,13 @@ export function trackQuestionFormChanges(
     pendingCheck ??= setTimeout(check, 0);
   }
 
-  const stopWatching = watchSavedQuestionFormData(form, scheduleCheck);
+  // Decode the saved state when it changes, not on every check. Reading it from
+  // the form keeps updates for deferred initial values.
+  const stopWatching = watchSavedQuestionFormData(form, () => {
+    if (form.dataset.originalFormData === undefined) return;
+    savedEntries = Array.from(new URLSearchParams(form.dataset.originalFormData));
+    scheduleCheck();
+  });
   const events = ['input', 'change', 'keyup', 'pointerup', 'drop'];
   events.forEach((type) => form.addEventListener(type, scheduleCheck, { capture: true }));
   // Elements often store answers in hidden inputs, whose `value` property is

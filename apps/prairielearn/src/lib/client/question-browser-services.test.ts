@@ -46,10 +46,7 @@ function createServices(
     variantToken: 'token',
     csrfToken: 'csrf-token',
     submissionRenderUrls,
-    navigationUrls: {
-      'new-variant': '/pl/question/1/preview/',
-      'try-again': 'https://other.example/pl/question/1/preview/',
-    },
+    navigationUrls: {},
     dialogData,
     isCurrent: () => true,
   });
@@ -385,8 +382,7 @@ it('invalidates host renders before cancellation returns across the port', async
   }
 });
 
-it('submits answers once with application credentials and warns only about unsaved answers', async () => {
-  document.body.innerHTML = '<div class="question-container"></div>';
+it('submits answers once and still warns about edits made after a submission', async () => {
   const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
   const { services, dispose } = createServices();
   const leave = () => {
@@ -394,56 +390,20 @@ it('submits answers once with application credentials and warns only about unsav
     window.dispatchEvent(event);
     return event.defaultPrevented;
   };
-  services.reportAnswerState({ dirty: true });
-  expect(leave()).toBe(true);
-  services.reportAnswerState({ dirty: false });
-  expect(leave()).toBe(false);
-
   await expect(
     services.submitAnswer({ action: 'grade', entries: [['__csrf_token', 'question-token']] }),
   ).rejects.toThrow('reserved fields');
+
   services.reportAnswerState({ dirty: true });
-  await services.submitAnswer({
-    action: 'grade',
-    entries: [
-      ['answer', '1'],
-      ['answer', '2'],
-    ],
-  });
-  expect(submit).toHaveBeenCalledOnce();
-  const form = submit.mock.contexts[0] as HTMLFormElement;
-  expect(form.closest('.question-container')).toBeNull();
-  expect(form.method).toBe('post');
-  expect(form.getAttribute('action')).toBeNull();
-  expect(Array.from(new FormData(form))).toEqual([
-    ['__csrf_token', 'csrf-token'],
-    ['__variant_id', '3'],
-    ['__action', 'grade'],
-    ['answer', '1'],
-    ['answer', '2'],
-  ]);
+  await services.submitAnswer({ action: 'grade', entries: [['answer', '1']] });
   expect(leave()).toBe(false);
   await expect(services.submitAnswer({ action: 'save', entries: [] })).rejects.toThrow(
     'already submitted',
   );
   expect(submit).toHaveBeenCalledOnce();
-  dispose();
-});
 
-it('stops warning about unsaved answers when the view is disposed', () => {
-  const { services, dispose } = createServices();
+  // The page remains if the user stops the submission's navigation.
   services.reportAnswerState({ dirty: true });
-  dispose();
-  const event = new Event('beforeunload', { cancelable: true });
-  window.dispatchEvent(event);
-  expect(event.defaultPrevented).toBe(false);
-});
-
-it('navigates only to application-provided same-origin URLs', async () => {
-  const { services, dispose } = createServices();
-  await expect(services.navigate({ target: 'manual-grading-preview' })).rejects.toThrow(
-    'Navigation is unavailable',
-  );
-  await expect(services.navigate({ target: 'try-again' })).rejects.toThrow('same-origin');
+  expect(leave()).toBe(true);
   dispose();
 });

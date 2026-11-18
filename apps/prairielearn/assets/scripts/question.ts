@@ -628,6 +628,7 @@ function updateDynamicPanels({
     // Using a specific ID ensures we can find things easily via grep.
     const targetElement = container.querySelector(`#${parsedHTML.id}`);
     targetElement?.replaceWith(parsedHTML);
+    // The replacement footer's submit buttons are rendered disabled again.
     if (browserServices.has(container)) enableSubmitButtons(parsedHTML);
   }
 }

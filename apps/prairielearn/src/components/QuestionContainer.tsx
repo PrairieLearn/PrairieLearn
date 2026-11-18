@@ -99,10 +99,11 @@ export function QuestionContainer({
         IssuePanel({ issue, course, course_instance, authz_data, is_administrator }),
       )}
       ${
+        // With browser services, the form has no credentials: the application submits
+        // answers with its own. Dialog submission keeps a native submission, such as a
+        // click before question.ts initializes, from posting without a CSRF token.
         question.type === 'Freeform'
           ? html`
-              <!-- With browser services, the application submits answers with its own
-                   credentials, and dialog submission keeps native submission inert. -->
               <form
                 class="question-form"
                 name="question-form"
@@ -638,7 +639,8 @@ export function QuestionFooterContent({
   const servicesSubmission = questionHostingUpdate && resLocals.question.type === 'Freeform';
   const submitButtonState = (disabled: boolean) => {
     if (disabled) return 'disabled';
-    // Browser services enable these buttons once they can submit answers.
+    // Until browser services can submit answers, a click would do nothing. The
+    // buttons start disabled and question.ts enables them.
     return servicesSubmission ? html`disabled data-question-services-pending` : '';
   };
   const {

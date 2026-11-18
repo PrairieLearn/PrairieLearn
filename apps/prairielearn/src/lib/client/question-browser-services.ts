@@ -47,7 +47,8 @@ export function createQuestionServicesHost({
   document.defaultView!.addEventListener(
     'beforeunload',
     (event) => {
-      if (!answersDirty || answersSubmitted || consumeSkippedFormConfirmation()) return;
+      // The exam time limit skips this warning when it submits the assessment.
+      if (!answersDirty || consumeSkippedFormConfirmation()) return;
       // Best practice per MDN is to call preventDefault() and set returnValue for legacy support.
       event.preventDefault();
       // oxlint-disable-next-line typescript/no-deprecated -- https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#usage_notes
@@ -210,6 +211,12 @@ export function createQuestionServicesHost({
       );
       document.body.append(form);
       answersSubmitted = true;
+      // Clear the unsaved state rather than skipping the warning after a submission:
+      // if the page stays, for example because the user stopped the navigation,
+      // edits made afterwards must warn again. The question saves its form state
+      // before sending this request, and port messages are ordered, so later
+      // reports reflect only those edits.
+      answersDirty = false;
       form.submit();
     },
 
