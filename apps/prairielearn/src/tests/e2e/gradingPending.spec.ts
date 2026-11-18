@@ -106,7 +106,7 @@ test('students see overall pending status for saved answers and manual grading',
   await expect(page.getByTestId('scorebar')).toBeVisible();
 });
 
-test('saved work with real-time grading disabled shows pending without exposing a current score', async ({
+test('saved work with real-time grading disabled shows pending only where a score is shown', async ({
   page,
   baseURL,
   courseInstance,
@@ -131,13 +131,17 @@ test('saved work with real-time grading disabled shows pending without exposing 
   await page.getByRole('textbox').fill('42');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.goto(overviewUrl);
-  await expect(page.getByText('Grading pending', { exact: true })).toBeVisible();
   await expect(page.getByTestId('scorebar')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Grading pending', exact: true }).click();
+  await expect(page.getByText('Grading pending', { exact: true })).toHaveCount(0);
+
+  await page.getByRole('link', { name: 'Assessments', exact: true }).click();
+  const assessmentRow = page.getByRole('row').filter({ hasText: assessment.title! });
+  await assessmentRow.getByRole('button', { name: 'Grading pending', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Grading pending' })).toContainText(
     'Your saved answers will be graded when you finish the assessment.',
   );
   await page.keyboard.press('Escape');
+  await page.goto(overviewUrl);
 
   await updateInstanceQuestions({
     assessment_question: await selectAssessmentQuestionById(question.assessment_question_id),

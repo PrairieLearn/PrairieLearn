@@ -276,6 +276,9 @@ export function StudentAssessmentInstance({
                 const allQuestionsDisabled = instance_question_rows.every(
                   (row) => !row.assessment_question.allow_real_time_grading,
                 );
+                // No score is shown in this case, so there is nothing for the
+                // grading pending indicator to qualify. The page already says
+                // that grading happens once the assessment is finished.
                 return allQuestionsDisabled && resLocals.assessment_instance.open;
               })
                 ? html`
@@ -292,10 +295,7 @@ export function StudentAssessmentInstance({
                           : ''
                       }
                     </div>
-                    <div class="col-md-3 col-sm-12">
-                      ${AssessmentScoreHtml({ score: null, gradingPending })}
-                    </div>
-                    <div class="col-md-6 col-sm-12">
+                    <div class="col-md-9 col-sm-12">
                       ${AssessmentStatus({
                         assessment: resLocals.assessment,
                         assessment_instance: resLocals.assessment_instance,
