@@ -255,6 +255,7 @@ function PrintPreparation({
     failure: { message: string; printFormId?: string; formLabel?: string } | null;
   } | null>(null);
   const combinedRequestRef = useRef(0);
+  const [combinedSubmitting, setCombinedSubmitting] = useState(false);
   const combinedReturnFocusRef = useRef<'menu' | 'recent' | { formId: string }>('menu');
   const [pendingFormAction, setPendingFormAction] = useState<{
     action: 'regenerate' | 'archive';
@@ -312,7 +313,7 @@ function PrintPreparation({
     // A shared form can refresh while this instructor is editing it.
     resetOptions: { keepDirtyValues: true },
   });
-  const includeCoverPage = watch('includeCoverPage');
+  const includeCoverPage = settings.includeCoverPage;
   const questionSizes = watch('questionSizes');
   const excludedQuestions = watch('excludedQuestions');
   const excludedQuestionNumbers = new Set(excludedQuestions);
@@ -439,12 +440,13 @@ function PrintPreparation({
     previewPending;
   const formActionPending = regenerate.isPending || archive.isPending;
 
-  function focusAfterDismiss() {
+  function focusAfterDismiss(target: 'link' | 'summary' = 'link') {
     window.requestAnimationFrame(() => {
       const details = recentExportsRef.current;
-      const link = details?.open
-        ? details.querySelector<HTMLAnchorElement>('a[href*="/exports/"]')
-        : null;
+      const link =
+        target === 'link' && details?.open
+          ? details.querySelector<HTMLAnchorElement>('a[href*="/exports/"]')
+          : null;
       (link ?? details?.querySelector('summary') ?? printHeadingRef.current)?.focus();
     });
   }
@@ -586,8 +588,8 @@ function PrintPreparation({
     void setExportId(result.printExportId);
     setAutomaticExportIds((ids) => [...ids, result.printExportId]);
     setRecentExportsOpen(true);
-    void recentExports.refetch();
     void forms.refetch();
+    return recentExports.refetch();
   }
 
   const finishAutomaticExport = useCallback((id: string, succeeded: boolean) => {
@@ -608,7 +610,7 @@ function PrintPreparation({
       const result = await packet.mutateAsync(
         await preparePdfInput(packetMetadata(ids, outputDocument)),
       );
-      receiveExport(result, includedCoverIds);
+      await receiveExport(result, includedCoverIds);
     } catch (error) {
       markStaleSnapshot(error);
       throw error;
@@ -619,7 +621,7 @@ function PrintPreparation({
     returnFocus: 'menu' | 'recent' | { formId: string } = 'menu',
     afterSuccess = false,
   ) {
-    if (!afterSuccess && (packet.isPending || preparingPdf)) return;
+    if (!afterSuccess && (packet.isPending || preparingPdf || combinedSubmitting)) return;
     combinedRequestRef.current += 1;
     combinedReturnFocusRef.current = returnFocus;
     setCombinedDownload(null);
@@ -743,7 +745,7 @@ function PrintPreparation({
   }
 
   async function downloadCombined() {
-    if (!combinedDownload || combinedDownload.pageCount === null) return;
+    if (!combinedDownload || combinedSubmitting || combinedDownload.pageCount === null) return;
     if (
       JSON.stringify(formIds) !== JSON.stringify(combinedDownload.formIds) ||
       JSON.stringify(packetMetadata(combinedDownload.formIds, combinedDownload.document)) !==
@@ -754,11 +756,14 @@ function PrintPreparation({
       await openCombinedDownload(combinedDownload.document);
       return;
     }
+    setCombinedSubmitting(true);
     try {
       await downloadPacket(combinedDownload.formIds, combinedDownload.document);
       closeCombinedDownload('recent', true);
     } catch {
       // The modal shows the export error and keeps its download button available for retry.
+    } finally {
+      setCombinedSubmitting(false);
     }
   }
 
@@ -855,7 +860,7 @@ function PrintPreparation({
         }
         throw new Error('The download could not be generated. Review the preview and try again.');
       }
-      receiveExport(z.object({ printExportId: IdSchema }).parse(await response.json()));
+      void receiveExport(z.object({ printExportId: IdSchema }).parse(await response.json()));
     },
     onError: (error: Error) => markStaleSnapshot(error),
   });
@@ -1036,6 +1041,17 @@ function PrintPreparation({
 
   async function applySettings(values: PrintSettings) {
     if (archivedPreviewForm) return;
+    if (formId) {
+      // Auto-saved fields use saved settings unless an unsuccessful edit is still dirty.
+      const changedFields = (Object.keys(dirtyFields) as (keyof PrintSettings)[]).filter(
+        (field) => dirtyFields[field],
+      );
+      values = {
+        ...settings,
+        ...Object.fromEntries(changedFields.map((field) => [field, values[field]])),
+        identityFields: values.identityFields,
+      };
+    }
     values = {
       ...values,
       identityFields: values.includeCoverPage
@@ -2150,14 +2166,14 @@ function PrintPreparation({
         enrolledStudents={enrolledStudents}
         pageCount={combinedDownload?.pageCount ?? null}
         preparing={combinedDownload?.preparing ?? false}
-        downloading={packet.isPending || preparingPdf}
+        downloading={packet.isPending || preparingPdf || combinedSubmitting}
         progress={combinedDownload?.progress ?? null}
         failure={combinedDownload?.failure ?? null}
         error={preflight.error ?? pdfPreparationError ?? packet.error}
         onHide={() => closeCombinedDownload()}
         onExited={() => {
           const target = combinedReturnFocusRef.current;
-          if (target === 'recent') focusAfterDismiss();
+          if (target === 'recent') focusAfterDismiss('summary');
           else if (target === 'menu') prepareButtonRef.current?.focus();
           else requestFormFocus(target.formId, true);
         }}

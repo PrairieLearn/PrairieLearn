@@ -48,6 +48,7 @@ export function CombinedPdfDownloadModal({
       backdrop={downloading ? 'static' : true}
       keyboard={!downloading}
       aria-labelledby="print-combined-download-title"
+      restoreFocus={false}
       onHide={onHide}
       onExited={onExited}
     >

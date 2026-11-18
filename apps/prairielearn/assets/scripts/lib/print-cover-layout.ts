@@ -10,19 +10,13 @@ export function layoutPrintGradingTable(source: HTMLElement, pageHeight: number)
   grid.setAttribute('role', 'table');
   grid.setAttribute('aria-label', 'Question scores');
   const cover = table.closest<HTMLElement>('.assessment-cover')!;
-  const footer = cover.querySelector('footer')!;
   const questionNumbers = [...source.querySelectorAll<HTMLElement>('.printing-question')].map(
     (question) => question.dataset.questionNumber!,
   );
   table.hidden = false;
-  const footerBounds = footer.getBoundingClientRect();
+  // Paged.js places the shared footer outside the printable content height.
   const availableHeight = Math.floor(
-    Math.min(
-      footerBounds.top,
-      cover.getBoundingClientRect().top + pageHeight - footerBounds.height,
-    ) -
-      grid.getBoundingClientRect().top -
-      12,
+    pageHeight - (grid.getBoundingClientRect().top - cover.getBoundingClientRect().top) - 12,
   );
   const labels = [...questionNumbers, 'Total'];
   const rowsPerColumn = Math.min(labels.length, Math.floor(availableHeight / 28));

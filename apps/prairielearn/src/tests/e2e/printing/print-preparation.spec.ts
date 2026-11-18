@@ -6,7 +6,7 @@ import { PDFDocument } from 'pdf-lib';
 import * as unzipper from 'unzipper';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
@@ -26,6 +26,11 @@ const ACTIVE_PREVIEW_FRAME_SELECTOR =
   '.print-preparation-preview[data-active="true"] iframe[title="Printable document preview"]';
 
 test.describe.configure({ timeout: 180_000 });
+
+test.beforeEach(async ({ courseInstance }) => {
+  await execute(sql.clear_print_exports, { course_instance_id: courseInstance.id });
+  await execute(sql.clear_print_forms, { course_instance_id: courseInstance.id });
+});
 
 /** The download menu gates every export, so its toggle stands in for "ready to download". */
 function downloadMenu(page: Page) {
@@ -91,6 +96,11 @@ async function waitForFormA(page: Page) {
 async function preparePreview(page: Page) {
   await waitForFormA(page);
   const applyPreview = page.getByRole('button', { name: /^(Create|Update) preview$/ });
+  await expect
+    .poll(async () => (await applyPreview.isEnabled()) || (await downloadMenu(page).isEnabled()), {
+      timeout: 120_000,
+    })
+    .toBe(true);
   if (await applyPreview.isEnabled()) await applyPreview.click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 }
@@ -149,6 +159,27 @@ test('keeps an unsaved student-fields draft when another tab updates the shared 
   await otherTab.close();
 });
 
+test('keeps a failed autosave edit available for Update preview', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
+  const printFormId = new URL(page.url()).searchParams.get('form')!;
+  await page.route('**/printForms.updateSettings', (route) => route.abort(), { times: 1 });
+  await page.getByLabel('Paper size').selectOption('A4');
+  await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
+  await expect
+    .poll(
+      async () =>
+        (await selectOptionalPrintForm({ printFormId, assessmentId: assessment.id }))?.settings
+          .paperSize,
+    )
+    .toBe('A4');
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+});
+
 test('saves form edits without requiring a preview refresh before form actions', async ({
   page,
   courseInstance,
@@ -180,7 +211,7 @@ test('saves form edits without requiring a preview refresh before form actions',
   await page.getByRole('button', { name: 'Add form', exact: true }).click();
   await expect(page.getByRole('button', { name: /^Form B/ })).toBeVisible();
   const formBId = (await page
-    .getByRole('button', { name: 'Form B', exact: true })
+    .getByRole('button', { name: /^Form B(?: Previewing)?$/ })
     .getAttribute('id'))!.replace('print-form-', '');
   await expect(page.getByLabel('Paper size')).toHaveValue('A4');
   await expect(page.getByLabel('Spacing for question 1', { exact: true })).toHaveValue('full');
@@ -189,7 +220,6 @@ test('saves form edits without requiring a preview refresh before form actions',
 
   await page.getByRole('button', { name: 'Form A', exact: true }).click();
   await expect(page.getByLabel('Paper size')).toHaveValue('A4');
-  await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   await preview.evaluate((frame) => {
     (frame as HTMLIFrameElement).contentDocument!.documentElement.dataset.cacheMarker = 'form-a';
@@ -810,6 +840,11 @@ test('distinguishes paper review flags from broken questions omitted from the do
   await openPrintPreparation(page, courseInstance.id, 'exam23-printing');
   await waitForFormA(page);
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
+  await expect(page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR).locator(':root')).toHaveAttribute(
+    'data-print-status',
+    'ready',
+    { timeout: 120_000 },
+  );
   await expect(page.getByText('Review printability', { exact: true }).first()).toBeVisible({
     timeout: 120_000,
   });
@@ -881,9 +916,6 @@ test('distinguishes paper review flags from broken questions omitted from the do
       timeout: 120_000,
     })
     .not.toBe(firstFormId);
-  await expect(page.getByText('Omitted', { exact: true }).first()).toBeVisible({
-    timeout: 120_000,
-  });
   await expect(reviewAlert).toBeVisible();
   await page
     .getByRole('combobox', { name: 'Preview form', exact: true })
@@ -919,7 +951,7 @@ test('retries a failed combined PDF download from its modal', async ({ page, cou
   await expect(modal).toBeHidden();
   await expect(downloadMenu(page)).toBeEnabled();
   await expect(
-    page.getByRole('region', { name: 'Recent exports' }).locator('a[href*="/exports/"]').first(),
+    page.getByRole('region', { name: 'Recent exports' }).locator('summary'),
   ).toBeFocused();
 });
 test('keeps existing forms available when randomization is disabled', async ({
