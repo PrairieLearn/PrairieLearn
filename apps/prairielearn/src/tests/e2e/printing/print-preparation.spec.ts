@@ -87,14 +87,14 @@ async function openPrintPreparation(
   return assessment;
 }
 
-async function waitForFormA(page: Page) {
-  await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible({
+async function waitForFormA1(page: Page) {
+  await expect(page.getByRole('button', { name: /^Form A1(?: Previewing)?$/ })).toBeVisible({
     timeout: 120_000,
   });
 }
 
 async function preparePreview(page: Page) {
-  await waitForFormA(page);
+  await waitForFormA1(page);
   const applyPreview = page.getByRole('button', { name: /^(Create|Update) preview$/ });
   await expect
     .poll(async () => (await applyPreview.isEnabled()) || (await downloadMenu(page).isEnabled()), {
@@ -189,7 +189,7 @@ test('saves form edits without requiring a preview refresh before form actions',
   const formAId = new URL(page.url()).searchParams.get('form')!;
   const preview = page.locator(ACTIVE_PREVIEW_FRAME_SELECTOR);
   const previousPreviewUrl = await preview.getAttribute('src');
-  await expect(page.getByRole('button', { name: 'Archive Form A' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Archive Form A1' })).toBeDisabled();
 
   await page.getByLabel('Paper size').focus();
   await page.getByLabel('Paper size').selectOption('A4');
@@ -207,33 +207,33 @@ test('saves form edits without requiring a preview refresh before form actions',
   await page.getByLabel('Spacing for question 1', { exact: true }).selectOption('full');
   await page.getByRole('checkbox', { name: 'Include question 2', exact: true }).uncheck();
   await expect(page.getByRole('button', { name: 'Add form', exact: true })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Regenerate Form A' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Regenerate Form A1' })).toBeEnabled();
 
   await page.getByRole('button', { name: 'Add form', exact: true }).click();
-  await expect(page.getByRole('button', { name: /^Form B/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Form B1(?: Previewing)?$/ })).toBeVisible();
   const formBId = (await page
-    .getByRole('button', { name: /^Form B(?: Previewing)?$/ })
+    .getByRole('button', { name: /^Form B1(?: Previewing)?$/ })
     .getAttribute('id'))!.replace('print-form-', '');
   await expect(page.getByLabel('Paper size')).toHaveValue('A4');
   await expect(page.getByLabel('Spacing for question 1', { exact: true })).toHaveValue('full');
   await expect(page.getByRole('checkbox', { name: 'Include question 2' })).not.toBeChecked();
-  await expect(page.getByRole('button', { name: 'Archive Form B' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Archive Form A' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Archive Form B1' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Archive Form A1' })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'Form A', exact: true }).click();
+  await page.getByRole('button', { name: 'Form A1', exact: true }).click();
   await expect(page.getByLabel('Paper size')).toHaveValue('A4');
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   await preview.evaluate((frame) => {
     (frame as HTMLIFrameElement).contentDocument!.documentElement.dataset.cacheMarker = 'form-a';
   });
-  await page.getByRole('button', { name: 'Form B', exact: true }).click();
+  await page.getByRole('button', { name: 'Form B1', exact: true }).click();
   await expect(preview).toHaveAttribute('src', new RegExp(`/print_form/${formBId}/preview`));
   await expect(page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR).locator(':root')).toHaveAttribute(
     'data-print-status',
     'ready',
     { timeout: 120_000 },
   );
-  await page.getByRole('button', { name: 'Form A', exact: true }).click();
+  await page.getByRole('button', { name: 'Form A1', exact: true }).click();
   await expect(preview).toHaveAttribute('src', new RegExp(`/print_form/${formAId}/preview`));
   await expect
     .poll(() =>
@@ -265,16 +265,16 @@ test('uses one paper size for current forms and versions a downloaded form', asy
       ),
     )
     .toEqual(['A4', 'A4']);
-  await page.getByRole('button', { name: 'Form A', exact: true }).click();
+  await page.getByRole('button', { name: 'Form A1', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   const copy = await downloadPreparedFile(page, async () => {
-    await chooseDownload(page, 'Download Form A (PDF)');
+    await chooseDownload(page, 'Download Form A1 (PDF)');
   });
   expect(await copy.failure()).toBeNull();
 
   await page.getByLabel('Paper size', { exact: true }).selectOption('Letter');
   const dialog = page.getByRole('dialog', { name: 'Change paper size for all forms' });
-  await expect(dialog).toContainText('Form A → Form A2');
+  await expect(dialog).toContainText('Form A1 → Form A2');
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByLabel('Paper size', { exact: true })).toHaveValue('A4');
   expect(
@@ -305,7 +305,7 @@ test('uses one paper size for current forms and versions a downloaded form', asy
       .paperSize,
   ).toBe('Letter');
   await page.getByText(/^Previous forms \(/).click();
-  await page.getByRole('button', { name: 'Form A', exact: true }).click();
+  await page.getByRole('button', { name: 'Form A1', exact: true }).click();
   await expect(page.getByLabel('Paper size', { exact: true })).toHaveValue('A4');
 });
 
@@ -393,12 +393,12 @@ test('creates a new form version when including a question after a download', as
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 
   const file = await downloadPreparedFile(page, async () => {
-    await chooseDownload(page, 'Download Form A (PDF)');
+    await chooseDownload(page, 'Download Form A1 (PDF)');
   });
   expect(await file.failure()).toBeNull();
   await expect(question).toBeEnabled();
   await question.click();
-  const dialog = page.getByRole('dialog', { name: 'Change Form A questions' });
+  const dialog = page.getByRole('dialog', { name: 'Change Form A1 questions' });
   await expect(dialog.getByText('Form A2', { exact: true })).toBeVisible();
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(question).not.toBeChecked();
@@ -409,12 +409,12 @@ test('creates a new form version when including a question after a download', as
   await expect(page.getByRole('button', { name: 'Form A2 Previewing' })).toBeVisible();
   await expect(question).toBeChecked();
   await page.getByText(/^Previous forms \(/).click();
-  await page.getByRole('button', { name: 'Form A', exact: true }).click();
+  await page.getByRole('button', { name: 'Form A1', exact: true }).click();
   await expect(question).not.toBeChecked();
   await expect(question).toBeDisabled();
 });
 
-test('creates Form A on first visit and recovers if automatic creation fails', async ({
+test('creates Form A1 on first visit and recovers if automatic creation fails', async ({
   page,
   courseInstance,
 }) => {
@@ -435,11 +435,11 @@ test('creates Form A on first visit and recovers if automatic creation fails', a
   });
   await openPrintPreparation(page, courseInstance.id, 'exam18-lockpoints');
 
-  const creationAlert = page.getByRole('alert').filter({ hasText: 'Could not create Form A.' });
+  const creationAlert = page.getByRole('alert').filter({ hasText: 'Could not create Form A1.' });
   await expect(creationAlert).toBeVisible();
   await creationAlert.getByRole('button', { name: 'Try again' }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(page.getByRole('button', { name: /^Form A(?: Previewing)?$/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Form A1(?: Previewing)?$/ })).toBeVisible();
   expect(
     await queryScalar(sql.count_print_forms, { assessment_id: assessment.id }, z.number()),
   ).toBe(formsBefore + 1);
@@ -522,7 +522,7 @@ test('prepares an assessment and key with consistent variants and downloads', as
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
   await expect(breadcrumb.getByRole('heading', { name: 'Print assessment' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Form A1(?: Previewing)?$/ })).toBeVisible();
   await openPrintPreparation(page, courseInstance.id);
   await page.getByLabel('Additional student fields:').fill('Section');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -642,7 +642,7 @@ test('prepares homework with matching student copies, answer keys, and Word expo
     `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
   );
   await page.getByRole('link', { name: 'Print', exact: true }).click();
-  await expect(page.getByRole('button', { name: /^Form A(?:[2-9]|[1-9]\d+)?/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Form A1(?: Previewing)?$/ })).toBeVisible();
   await openPrintPreparation(page, courseInstance.id, 'hw15-lockpoints');
   await page.getByLabel('Additional student fields:').fill('Section');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -716,9 +716,9 @@ test('combines current forms and answer keys with equal page counts and custom c
     .addCookies([{ name: 'pl_test_user', value: 'test_instructor', url: baseURL }]);
 
   const assessment = await openPrintPreparation(page, courseInstance.id);
-  await waitForFormA(page);
+  await waitForFormA1(page);
   for (const form of await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })) {
-    if (/^A\d*$/.test(form.label)) continue;
+    if (/^A[1-9]\d*$/.test(form.label)) continue;
     await archivePrintForm({ printFormId: form.id, assessmentId: assessment.id });
   }
 
@@ -726,8 +726,8 @@ test('combines current forms and answer keys with equal page counts and custom c
   await preparePreview(page);
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
   const originalLabel = await printFormLabel(page, originalFormId);
-  expect(originalLabel).toMatch(/^A(?:[2-9]|[1-9]\d+)?$/);
-  const nextLabel = `A${Number(originalLabel.slice(1) || 1) + 1}`;
+  expect(originalLabel).toMatch(/^A[1-9]\d*$/);
+  const nextLabel = `A${Number(originalLabel.slice(1)) + 1}`;
   const originalQuestions = await selectPrintFormQuestions(originalFormId);
   await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
   const regenerateDialog = page.getByRole('dialog', {
@@ -949,7 +949,7 @@ test('distinguishes paper review flags from broken questions omitted from the do
   courseInstance,
 }) => {
   await openPrintPreparation(page, courseInstance.id, 'exam23-printing');
-  await waitForFormA(page);
+  await waitForFormA1(page);
   await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
   await expect(page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR).locator(':root')).toHaveAttribute(
     'data-print-status',

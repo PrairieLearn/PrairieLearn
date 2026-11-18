@@ -238,7 +238,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       );
       const second = await api.printForms.create.mutate();
       expect(second.printFormId).not.toBe(first.printFormId);
-      expect([first.label, second.label]).toEqual(['A', 'B']);
+      expect([first.label, second.label]).toEqual(['A1', 'B1']);
       expect(
         await selectOptionalPrintForm({
           printFormId: first.printFormId,
@@ -458,7 +458,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     expect(changed.replacements).toHaveLength(1);
     const replacement = changed.replacements[0];
     expect(replacement.oldPrintFormId).toBe(first.printFormId);
-    expect(replacement.label).toBe(`${first.label}2`);
+    expect(replacement.label).toBe(`${printFormLabelBase(first.label)}2`);
     expect(replacement.settings).toEqual({ ...originalSettings, paperSize: 'A4' });
 
     const forms = await api.printForms.list.query();
@@ -570,7 +570,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).rejects.toThrow('The preview pages are incomplete. Update the preview and try again.');
     const otherAssessmentApi = client(otherAssessment.id);
     const otherForm = await otherAssessmentApi.printForms.create.mutate();
-    expect(otherForm.label).toBe('A');
+    expect(otherForm.label).toBe('A1');
     await expect(otherAssessmentApi.printForms.archive.mutate(otherForm)).rejects.toThrow(
       'The only current print form cannot be archived.',
     );

@@ -1247,13 +1247,13 @@ function PrintPreparation({
       </nav>
       {ensureInitial.isPending && (
         <Alert variant="info" role="status">
-          Creating Form A…
+          Creating Form A1…
         </Alert>
       )}
       {initialFormError && (
         <Alert variant="danger" className="d-flex align-items-center justify-content-between gap-2">
           <span>
-            Could not create Form A.{' '}
+            Could not create Form A1.{' '}
             {renderAppError(initialFormError, { UNKNOWN: ({ message }) => message })}
           </span>
           <Button
@@ -2308,9 +2308,9 @@ function PrintPreparation({
                   <h3 className="h5">Your printable assessment starts here</h3>
                   <p className="text-muted mb-0">
                     {ensureInitial.isPending
-                      ? 'Creating Form A and its preview.'
+                      ? 'Creating Form A1 and its preview.'
                       : ensureInitial.isError
-                        ? 'Use Try again above to create Form A.'
+                        ? 'Use Try again above to create Form A1.'
                         : 'Choose your layout, then create a preview.'}
                     <br />
                     Review the questions before downloading.

@@ -6,7 +6,7 @@ For assessments with randomization, you can prepare several versions, called _fo
 
 ## Prepare an assessment
 
-1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view. Its questions and random values are chosen then; you can leave questions out before downloading.
+1. Open the assessment's **Questions** page and select **Print**. Form A1 is created automatically the first time course staff open this view. Its questions and random values are chosen then; you can leave questions out before downloading.
 2. Under **Paper and layout**, choose a **Paper size** for all current forms and **Space per question** for the selected form.
 3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
@@ -30,7 +30,7 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. The new form copies the settings of the form you are viewing, including its question exclusions and spacing, while using the current forms' paper size and generating its own questions and random values. You can have up to 26 current forms, labeled A through Z. New forms take the first available letter. You can archive a form when at least one other current form remains. Assessments without randomization use a single current form.
+If your assessment uses randomization, select **Add form** to create another form. The new form copies the settings of the form you are viewing, including its question exclusions and spacing, while using the current forms' paper size and generating its own questions and random values. You can have up to 26 current forms. Their first versions are labeled A1 through Z1, and new forms take the first available letter. You can archive a form when at least one other current form remains. Assessments without randomization use a single current form.
 
 Select a form to review it and choose its questions and spacing. Changes to those settings save as you make them, so you can switch forms before updating the preview. Save any changes to **Additional student fields** before switching. Select **Update preview** before downloading a form.
 
@@ -38,7 +38,7 @@ Starting the first PDF or Word download for a form fixes its question selection 
 
 Changing **Paper size** updates all current forms. If a download has started for any affected form, confirm the change to create its next numbered version; the earlier version remains in **Previous forms**. Question selections and other print settings stay with each form. Previous forms keep their saved paper size. If current forms already have different sizes, use the button under **Paper size** to align them before a combined download.
 
-To replace a form with a new version, select the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. Randomized assessments get new random values. The new form keeps the old form's paper and default cover settings, while question exclusions and individual spacing reset. Review the new questions and answer key before downloading it. Previous forms keep their chosen questions and settings and remain available under **Previous forms**. Use the archive button beside a form to remove it from the current set. Adding a form after archiving C creates C2.
+To replace a form with a new version, select the circular arrow button beside it, labeled **Regenerate Form A1** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A1 becomes A2, then A3. Randomized assessments get new random values. The new form keeps the old form's paper and default cover settings, while question exclusions and individual spacing reset. Review the new questions and answer key before downloading it. Previous forms keep their chosen questions and settings and remain available under **Previous forms**. Use the archive button beside a form to remove it from the current set. Adding a form after archiving C1 creates C2.
 
 A form does not save a separate copy of question content, assessment instructions, or the honor code. Editing any of these can change a later download of an earlier form. Download and keep the matching student copy and answer key for each form. After editing course content, check both again before printing or grading.
 
@@ -65,14 +65,14 @@ Uploaded covers do not appear in the preview. Download a student-copy PDF to che
 
 Select **Update preview** after making changes, then open **Download…**. The first four options apply to the form you are previewing:
 
-| Option                                      | What you get                                                                                     |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Download Form A (PDF)**                   | One student copy of Form A, including uploaded cover pages.                                      |
-| **Download Form A Word (.docx)**            | An editable student copy of Form A.                                                              |
-| **Download Form A answer key (PDF)**        | The answer key for Form A.                                                                       |
-| **Download Form A answer key Word (.docx)** | An editable answer key for Form A.                                                               |
-| **Download all forms PDF**                  | One student copy of each current form, including uploaded covers. Available with multiple forms. |
-| **Download all answer keys PDF**            | One answer key for each current form in a single PDF. Available with multiple forms.             |
+| Option                                       | What you get                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Download Form A1 (PDF)**                   | One student copy of Form A1, including uploaded cover pages.                                     |
+| **Download Form A1 Word (.docx)**            | An editable student copy of Form A1.                                                             |
+| **Download Form A1 answer key (PDF)**        | The answer key for Form A1.                                                                      |
+| **Download Form A1 answer key Word (.docx)** | An editable answer key for Form A1.                                                              |
+| **Download all forms PDF**                   | One student copy of each current form, including uploaded covers. Available with multiple forms. |
+| **Download all answer keys PDF**             | One answer key for each current form in a single PDF. Available with multiple forms.             |
 
 For either combined PDF, PrairieLearn adds blank pages when needed so every form or answer key has the same number of pages. The download dialog shows that page count before you start the download.
 

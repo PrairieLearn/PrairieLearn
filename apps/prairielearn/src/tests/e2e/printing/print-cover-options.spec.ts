@@ -39,8 +39,8 @@ test('uses the shared footer on cover and question pages', async ({ page, course
       expect(footer.center).toContain('Exam with assessment tools');
       expect(footer.right).toContain(
         document === 'answer_key'
-          ? `Answer key${separator}Form A${separator}Page `
-          : `Form A${separator}Page `,
+          ? `Answer key${separator}Form A1${separator}Page `
+          : `Form A1${separator}Page `,
       );
     }
     await expect(page.getByRole('article', { name: /cover page/ }).locator('footer')).toHaveCount(
