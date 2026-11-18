@@ -3,7 +3,7 @@ CREATE TABLE print_forms (
   assessment_id BIGINT NOT NULL REFERENCES assessments (id) ON UPDATE CASCADE ON DELETE CASCADE,
   user_id BIGINT NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
   authn_user_id BIGINT NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
-  label TEXT NOT NULL CHECK (label ~ '^[A-Z]+([2-9]|[1-9][0-9]+)?$'),
+  label TEXT NOT NULL CHECK (label ~ '^[A-Z]+([1-9][0-9]*)?$'),
   question_selection_locked_at TIMESTAMPTZ,
   settings JSONB NOT NULL,
   archived_at TIMESTAMPTZ,
