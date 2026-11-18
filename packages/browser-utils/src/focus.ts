@@ -85,11 +85,16 @@ export function trapFocus(element: Element): FocusTrap {
     // order, such as one with `tabindex="-1"` that was focused by script. The
     // browser would continue from that element's position in the document,
     // which can take focus out of the container, so we pick the target here.
+    //
+    // `tabIndex` is also negative for some elements that are in the tab order,
+    // such as a `contenteditable` element with no `tabindex` attribute, so we
+    // leave anything in `focusable` to the browser.
     const activeElement = document.activeElement;
     if (
       activeElement instanceof HTMLElement &&
       element.contains(activeElement) &&
-      activeElement.tabIndex < 0
+      activeElement.tabIndex < 0 &&
+      !focusable.includes(activeElement)
     ) {
       const position = e.shiftKey
         ? Node.DOCUMENT_POSITION_PRECEDING
@@ -100,7 +105,8 @@ export function trapFocus(element: Element): FocusTrap {
       const target = e.shiftKey
         ? (candidates[candidates.length - 1] ?? lastFocusable)
         : (candidates[0] ?? firstFocusable);
-      focusElementOrCheckedOption(target);
+      // With nothing to move to, focus stays where it is.
+      if (focusable.length > 0) focusElementOrCheckedOption(target);
       e.preventDefault();
       return;
     }
