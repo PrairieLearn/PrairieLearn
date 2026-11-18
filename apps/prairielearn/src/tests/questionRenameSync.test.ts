@@ -13,6 +13,7 @@ import { pullAndUpdateCourse } from '../lib/course.js';
 import { ChunkSchema } from '../lib/db-types.js';
 import { computeFileContentHash } from '../lib/editorUtil.js';
 import { FileModifyEditor, MultiEditor, QuestionRenameEditor } from '../lib/editors.js';
+import { features } from '../lib/features/index.js';
 import * as courseModel from '../models/course.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
@@ -60,6 +61,7 @@ describe('question QID sync with real Git and a course subdirectory', () => {
     config.fileEditorUseGit = true;
     config.chunksGenerator = true;
     await helperServer.before(fixture.courseLiveDir)();
+    await features.enable('partial-course-sync');
     await sync();
   });
   afterEach(() => vi.restoreAllMocks());
