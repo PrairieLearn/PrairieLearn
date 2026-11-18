@@ -1,4 +1,5 @@
 import importlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +60,56 @@ def test_set_union_submission_parses_when_set_notation_is_enabled() -> None:
     assert psu.json_to_sympy(
         data["submitted_answers"]["test"], allow_sets=True
     ) == sympy.FiniteSet(1, 2)
+
+
+def test_formula_editor_mathjson_bypasses_text_parser() -> None:
+    element_html = build_element_html('variables="x"', 'formula-editor="true"')
+    submitted_answers = {
+        "test": "not valid text",
+        "test-json": json.dumps(["Add", "x", 1]),
+    }
+    data = make_question_data(
+        submitted_answers=submitted_answers,
+        raw_submitted_answers={**submitted_answers, "test-latex": "x+1"},
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["format_errors"] == {}
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == sympy.Symbol("x") + 1
+
+
+def test_formula_editor_malformed_mathjson_does_not_fall_back() -> None:
+    element_html = build_element_html('variables="x"', 'formula-editor="true"')
+    submitted_answers = {"test": "x + 1", "test-json": "{"}
+    data = make_question_data(
+        submitted_answers=submitted_answers,
+        raw_submitted_answers=submitted_answers.copy(),
+    )
+
+    symbolic_input.parse(element_html, data)
+
+    assert data["submitted_answers"]["test"] is None
+    assert "test" in data["format_errors"]
+
+
+def test_generated_formula_editor_submission_includes_mathjson() -> None:
+    element_html = build_element_html(
+        'variables="x"', 'formula-editor="true"', 'correct-answer="x + 1"'
+    )
+    data = make_question_data()
+    data["test_type"] = "correct"
+
+    symbolic_input.prepare(element_html, data)
+    symbolic_input.test(element_html, data)
+
+    assert "test-json" in data["raw_submitted_answers"]
+    data["submitted_answers"] = data["raw_submitted_answers"].copy()
+    symbolic_input.parse(element_html, data)
+    assert data["format_errors"] == {}
+    assert psu.json_to_sympy(data["submitted_answers"]["test"]) == (
+        sympy.Symbol("x") + 1
+    )
 
 
 @pytest.mark.parametrize(
