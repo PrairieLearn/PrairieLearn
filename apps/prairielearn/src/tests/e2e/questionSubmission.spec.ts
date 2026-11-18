@@ -60,11 +60,15 @@ test('the application warns about unsaved answers before navigating to a new var
   await answer.click();
   await answer.fill('3');
 
-  const prompt = page.waitForEvent('dialog');
+  // Dismiss prompts as they open: the click can wait for the navigation it triggers,
+  // and that navigation waits for the prompt.
+  const dialogs: string[] = [];
+  page.on('dialog', async (dialog) => {
+    dialogs.push(dialog.type());
+    await dialog.dismiss();
+  });
   await page.getByRole('link', { name: 'New variant' }).click();
-  const dialog = await prompt;
-  expect(dialog.type()).toBe('beforeunload');
-  await dialog.dismiss();
+  await expect.poll(() => dialogs).toEqual(['beforeunload']);
   await expect(page.locator('.question-container')).toHaveAttribute('data-variant-id', variantId);
 
   // Saving does not prompt, and afterwards nothing is unsaved.
@@ -75,4 +79,5 @@ test('the application warns about unsaved answers before navigating to a new var
     'data-variant-id',
     variantId,
   );
+  expect(dialogs).toEqual(['beforeunload']);
 });

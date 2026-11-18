@@ -7,8 +7,6 @@ export type QuestionContentPanels = Pick<
   'submissionPanel' | 'extraHeadersHtml' | 'answerPanel' | 'questionPanelFooter'
 >;
 
-export type QuestionAnswerAction = 'save' | 'grade';
-
 export type QuestionNavigationTarget =
   | 'new-variant'
   | 'try-again'
@@ -42,10 +40,7 @@ export interface QuestionBrowserServices {
    * Submits the answer form's entries with the application's credentials. The
    * application navigates to the response, so this resolves once it is sent.
    */
-  submitAnswer(request: {
-    action: QuestionAnswerAction;
-    entries: [string, string][];
-  }): Promise<void>;
+  submitAnswer(request: { action: 'save' | 'grade'; entries: [string, string][] }): Promise<void>;
 
   navigate(request: { target: QuestionNavigationTarget }): Promise<void>;
 
