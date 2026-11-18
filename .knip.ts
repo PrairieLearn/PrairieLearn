@@ -248,6 +248,9 @@ const config: KnipConfig = {
       entry: ['src/benchmark.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
+    // Plain JavaScript, so knip's default patterns apply rather than the
+    // TypeScript ones above.
+    'packages/rehype-raw-stub': {},
   },
 
   // TODO: enable these features

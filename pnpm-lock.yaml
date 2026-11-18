@@ -170,7 +170,7 @@ overrides:
   pagedjs@0.4.3>@babel/runtime: '-'
   pagedjs@0.4.3>event-emitter: '-'
   bunyan>mv: '-'
-  streamdown>rehype-raw: link:./scripts/stubs/rehype-raw
+  streamdown>rehype-raw: workspace:@prairielearn/rehype-raw-stub@*
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4
@@ -2758,6 +2758,8 @@ importers:
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
+
+  packages/rehype-raw-stub: {}
 
   packages/run:
     devDependencies:
@@ -20482,7 +20484,7 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       rehype-harden: 1.1.9
-      rehype-raw: link:scripts/stubs/rehype-raw
+      rehype-raw: link:packages/rehype-raw-stub
       rehype-sanitize: 6.0.0
       remark-gfm: 4.0.1(supports-color@10.2.2)
       remark-parse: 11.0.0(supports-color@10.2.2)
