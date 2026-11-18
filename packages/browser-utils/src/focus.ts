@@ -66,6 +66,30 @@ function focusableChildren(element: Element, includeCloseButtons = false): HTMLE
   );
 }
 
+/**
+ * Returns the node inside `container` that Tab would continue from when that
+ * node is not itself in the tab order, or `null` if there is no such node.
+ */
+function focusNavigationOrigin(container: Element): Node | null {
+  const activeElement = document.activeElement;
+  if (
+    activeElement instanceof HTMLElement &&
+    activeElement !== document.body &&
+    container.contains(activeElement)
+  ) {
+    return activeElement.tabIndex < 0 ? activeElement : null;
+  }
+
+  // Clicking text that has no focusable ancestor leaves focus on the body, but
+  // the browser still continues from the click, which places the selection.
+  if (activeElement === document.body) {
+    const anchorNode = window.getSelection()?.anchorNode;
+    if (anchorNode && container.contains(anchorNode)) return anchorNode;
+  }
+
+  return null;
+}
+
 export interface FocusTrap {
   deactivate(): void;
 }
@@ -80,6 +104,28 @@ export function trapFocus(element: Element): FocusTrap {
     const focusable = focusableChildren(element, true);
     const firstFocusable = focusable[0];
     const lastFocusable = focusable[focusable.length - 1];
+
+    // The browser continues from wherever focus navigation last started, which
+    // isn't always a tabbable element: it can be an element that was focused by
+    // script (e.g. `tabindex="-1"`), or text that was clicked. Continuing from
+    // there can take focus out of the container, so we pick the target here.
+    const origin = focusNavigationOrigin(element);
+    if (origin) {
+      e.preventDefault();
+      if (focusable.length === 0) return;
+
+      const position = e.shiftKey
+        ? Node.DOCUMENT_POSITION_PRECEDING
+        : Node.DOCUMENT_POSITION_FOLLOWING;
+      const candidates = focusable.filter(
+        (child) => !child.contains(origin) && origin.compareDocumentPosition(child) & position,
+      );
+      const target = e.shiftKey
+        ? (candidates[candidates.length - 1] ?? lastFocusable)
+        : (candidates[0] ?? firstFocusable);
+      focusElementOrCheckedOption(target);
+      return;
+    }
 
     if (e.shiftKey) {
       // Tabbing backwards
