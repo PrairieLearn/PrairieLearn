@@ -37,6 +37,21 @@ WHERE
   assessment_id = $assessment_id
   AND id = ANY ($print_form_ids::bigint[]);
 
+-- BLOCK update_print_form_paper_size
+UPDATE print_forms
+SET
+  settings = jsonb_set(
+    settings,
+    '{paperSize}',
+    to_jsonb($paper_size::text)
+  )
+WHERE
+  id = $print_form_id
+  AND assessment_id = $assessment_id
+  AND archived_at IS NULL
+RETURNING
+  *;
+
 -- BLOCK lock_assessment_for_print_forms
 SELECT
   id

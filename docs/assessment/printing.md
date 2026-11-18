@@ -2,12 +2,12 @@
 
 Course staff with permission to preview assessments can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
 
-For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its chosen questions, their order and random values, and its paper, spacing, and default cover settings. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
+For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its chosen questions, their order and random values, spacing, and default cover settings. Current forms share one paper size; previous forms keep the size they used. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
 
 ## Prepare an assessment
 
 1. Open the assessment's **Questions** page and select **Print**. Form A is created automatically the first time course staff open this view. Its questions and random values are chosen then; you can leave questions out before downloading.
-2. Under **Paper and layout**, choose a **Paper size** and **Space per question**.
+2. Under **Paper and layout**, choose a **Paper size** for all current forms and **Space per question** for the selected form.
 3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
 5. Most settings save as you change them. Select **Save** after editing **Additional student fields**. Then select **Update preview** to see your changes without changing the form's randomization. Check the **Student copy** and **Answer key** above the preview.
@@ -30,11 +30,13 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. The new form copies the settings of the form you are viewing, including its question exclusions and spacing, while generating its own questions and random values. You can have up to 26 current forms, labeled A through Z. New forms take the first available letter. You can archive a form when at least one other current form remains. Assessments without randomization use a single current form.
+If your assessment uses randomization, select **Add form** to create another form. The new form copies the settings of the form you are viewing, including its question exclusions and spacing, while using the current forms' paper size and generating its own questions and random values. You can have up to 26 current forms, labeled A through Z. New forms take the first available letter. You can archive a form when at least one other current form remains. Assessments without randomization use a single current form.
 
 Select a form to review it and choose its questions and spacing. Changes to those settings save as you make them, so you can switch forms before updating the preview. Save any changes to **Additional student fields** before switching. Select **Update preview** before downloading a form.
 
-Starting the first PDF or Word download for a form fixes its question selection so later student copies and answer keys can match. To include or exclude a question afterward, select its checkbox and confirm the new numbered version. For example, changing Form B2 creates Form B3 and moves B2 to **Previous forms**. The new version keeps the question order, all other selections, and print settings. Random values may change. You can still change paper size, spacing, and cover settings on the current form. This also works for an assessment without randomization.
+Starting the first PDF or Word download for a form fixes its question selection so later student copies and answer keys can match. To include or exclude a question afterward, select its checkbox and confirm the new numbered version. For example, changing Form B2 creates Form B3 and moves B2 to **Previous forms**. The new version keeps the question order, all other selections, and print settings. Random values may change. You can still change spacing and cover settings on the current form. This also works for an assessment without randomization.
+
+Changing **Paper size** updates all current forms. If a download has started for any affected form, confirm the change to create its next numbered version; the earlier version remains in **Previous forms**. Question selections and other print settings stay with each form. Previous forms keep their saved paper size. If current forms already have different sizes, use the button under **Paper size** to align them before a combined download.
 
 To replace a form with a new version, select the circular arrow button beside it, labeled **Regenerate Form A** (or the corresponding label), and confirm the change. The replacement keeps its letter and gains the next number: A becomes A2, then A3. Randomized assessments get new random values. The new form keeps the old form's paper and default cover settings, while question exclusions and individual spacing reset. Review the new questions and answer key before downloading it. Previous forms keep their chosen questions and settings and remain available under **Previous forms**. Use the archive button beside a form to remove it from the current set. Adding a form after archiving C creates C2.
 

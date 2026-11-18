@@ -80,6 +80,13 @@ interface CachedPreview {
   lastUsed: number;
 }
 
+interface PendingPaperSizeChange {
+  paperSize: PrintSettings['paperSize'];
+  sourceFormId: string;
+  expectedForms: { id: string; paperSize: PrintSettings['paperSize']; locked: boolean }[];
+  versionedForms: { previousLabel: string; nextLabel: string }[];
+}
+
 interface PrintPreparationProps {
   assessmentId: string;
   courseInstanceId: string;
@@ -214,6 +221,7 @@ function PrintPreparation({
       const rightBase = printFormLabelBase(right.label);
       return leftBase.length - rightBase.length || leftBase.localeCompare(rightBase);
     });
+  const mixedPaperSizes = new Set(activeForms.map((form) => form.settings.paperSize)).size > 1;
   const archivedForms = forms.data.filter((form) => form.archived_at !== null);
   const formIds = activeForms.map((form) => form.id);
   const selectedArchivedForm = archivedForms.find((form) => form.id === selectedForm);
@@ -267,6 +275,10 @@ function PrintPreparation({
       }
     | null
   >(null);
+  const [pendingPaperSizeChange, setPendingPaperSizeChange] =
+    useState<PendingPaperSizeChange | null>(null);
+  const [paperSizeApplying, setPaperSizeApplying] = useState(false);
+  const [paperSizeRefreshFailed, setPaperSizeRefreshFailed] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const validForm = forms.data.some((form) => form.id === formId);
   const [document, setDocument] = useState<PrintDocument>('assessment');
@@ -405,9 +417,10 @@ function PrintPreparation({
       },
     }),
   );
+  const setPaperSize = useMutation(trpc.printForms.setPaperSize.mutationOptions());
   useEffect(() => {
     // Auto-save temporarily disables the editor; return keyboard focus once it finishes.
-    if (updateSettings.isPending || !settingFocusRef.current) return;
+    if (updateSettings.isPending || paperSizeApplying || !settingFocusRef.current) return;
     const target = settingFocusRef.current;
     settingFocusRef.current = null;
     window.requestAnimationFrame(() => {
@@ -415,7 +428,7 @@ function PrintPreparation({
         target.focus();
       }
     });
-  }, [updateSettings.isPending]);
+  }, [updateSettings.isPending, paperSizeApplying]);
   const packet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
   const preflight = useMutation(trpc.printableAssessmentExport.preflight.mutationOptions());
   const recentExports = useQuery(
@@ -448,6 +461,8 @@ function PrintPreparation({
     reviseSelection.isPending ||
     archive.isPending ||
     updateSettings.isPending ||
+    paperSizeApplying ||
+    paperSizeRefreshFailed ||
     packet.isPending ||
     preparingPdf ||
     previewPending;
@@ -1013,6 +1028,81 @@ function PrintPreparation({
   const selectedFormName = formId ? `Form ${formLabel(formId)}` : null;
   const initialFormError = getAppError<PrintFormsError['ensureInitial']>(ensureInitial.error);
 
+  async function applyPaperSizeChange({
+    paperSize,
+    sourceFormId,
+    expectedForms,
+  }: PendingPaperSizeChange) {
+    setPaperSizeApplying(true);
+    const focused = window.document.activeElement;
+    if (focused instanceof HTMLElement && focused.closest('.print-preparation-controls')) {
+      settingFocusRef.current = focused;
+    }
+    const identityDraft = getValues('identityFields');
+    const identityWasDirty = !!dirtyFields.identityFields;
+    let mutationSucceeded = false;
+    try {
+      const result = await setPaperSize.mutateAsync({
+        printFormId: sourceFormId,
+        paperSize,
+        expectedForms,
+      });
+      mutationSucceeded = true;
+      const latest = await forms.refetch({ throwOnError: true });
+      const replacement = result.replacements.find((form) => form.oldPrintFormId === sourceFormId);
+      const selectedId = replacement?.printFormId ?? sourceFormId;
+      const selected = latest.data?.find((form) => form.id === selectedId);
+      if (!selected) throw new Error('The updated print form could not be loaded.');
+      if (replacement) {
+        switchForm(selectedId, selected.settings);
+      } else {
+        reset(selected.settings, { keepDirtyValues: false });
+      }
+      if (identityWasDirty) {
+        setValue('identityFields', identityDraft, { shouldDirty: true });
+      }
+    } catch (error) {
+      if (mutationSucceeded) {
+        setPaperSizeRefreshFailed(true);
+        return;
+      }
+      setValue('paperSize', settings.paperSize, { shouldDirty: true });
+      throw error;
+    } finally {
+      setPaperSizeApplying(false);
+    }
+  }
+
+  function changePaperSize(paperSize: PrintSettings['paperSize']) {
+    if (!formId || archivedPreviewForm) return;
+    const expectedForms = activeForms.map((form) => ({
+      id: form.id,
+      paperSize: form.settings.paperSize,
+      locked: form.question_selection_locked_at !== null,
+    }));
+    const versionedForms = activeForms
+      .filter((form) => form.settings.paperSize !== paperSize && form.question_selection_locked_at)
+      .map((form) => ({
+        previousLabel: form.label,
+        nextLabel: nextPrintFormLabel(forms.data, form.label),
+      }));
+    const change = { paperSize, sourceFormId: formId, expectedForms, versionedForms };
+    if (versionedForms.length > 0) {
+      setPendingPaperSizeChange(change);
+    } else {
+      void applyPaperSizeChange(change).catch(() => {});
+    }
+  }
+
+  function cancelPaperSizeChange() {
+    if (paperSizeApplying) return;
+    const selected = forms.data.find((form) => form.id === pendingPaperSizeChange?.sourceFormId);
+    setValue('paperSize', selected?.settings.paperSize ?? settings.paperSize, {
+      shouldDirty: true,
+    });
+    setPendingPaperSizeChange(null);
+  }
+
   async function saveSetting<K extends keyof PrintSettings>(field: K, value: PrintSettings[K]) {
     if (!formId || archivedPreviewForm) return;
     const focused = window.document.activeElement;
@@ -1186,9 +1276,15 @@ function PrintPreparation({
         }}
       />
       <AppErrorAlert
-        error={getAppError<PrintFormsError['list']>(forms.error)}
+        error={paperSizeRefreshFailed ? null : getAppError<PrintFormsError['list']>(forms.error)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
+      {paperSizeRefreshFailed && (
+        <Alert variant="danger">
+          The paper size was changed, but the updated forms could not be loaded. Reload this page to
+          continue.
+        </Alert>
+      )}
       <AppErrorAlert
         error={getAppError<PrintFormsError['regenerate']>(regenerate.error)}
         render={{ UNKNOWN: ({ message }) => message }}
@@ -1218,6 +1314,14 @@ function PrintPreparation({
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => {
           updateSettings.reset();
+          focusAfterDismiss();
+        }}
+      />
+      <AppErrorAlert
+        error={getAppError<PrintFormsError['setPaperSize']>(setPaperSize.error)}
+        render={{ UNKNOWN: ({ message }) => message }}
+        onDismiss={() => {
+          setPaperSize.reset();
           focusAfterDismiss();
         }}
       />
@@ -1388,7 +1492,8 @@ function PrintPreparation({
                     <h2 className="h6 mb-2">Print forms</h2>
                     <p className="small text-muted">
                       Each form can contain distinct randomized values, selected questions, and
-                      print settings. Select a form to preview it or make changes.
+                      layout settings. Paper size is shared by all current forms. Select a form to
+                      preview it or make changes.
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
                       {formIds.map((id) => {
@@ -1531,16 +1636,34 @@ function PrintPreparation({
                       disabled={settingsLocked}
                       {...register('paperSize', {
                         onChange: (event: ChangeEvent<HTMLSelectElement>) => {
-                          void saveSetting(
-                            'paperSize',
-                            event.target.value as PrintSettings['paperSize'],
-                          ).catch(() => {});
+                          changePaperSize(event.target.value as PrintSettings['paperSize']);
                         },
                       })}
                     >
                       <option value="Letter">US Letter · 8.5 × 11 in</option>
                       <option value="A4">A4 · 210 × 297 mm</option>
                     </Form.Select>
+                    <Form.Text>
+                      This size applies to all current forms. Previous forms keep their saved size.
+                    </Form.Text>
+                    {mixedPaperSizes && (
+                      <Alert variant="warning" className="mt-2 mb-0 small">
+                        Current forms use different paper sizes.{' '}
+                        {archivedPreviewForm ? (
+                          'Select a current form to apply one size to all forms.'
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline-warning"
+                            disabled={settingsLocked}
+                            onClick={() => changePaperSize(settings.paperSize)}
+                          >
+                            Apply {settings.paperSize} to all current forms
+                          </Button>
+                        )}
+                      </Alert>
+                    )}
                   </Form.Group>
                   <Form.Group controlId="print-block-size">
                     <Form.Label>Space per question</Form.Label>
@@ -2134,10 +2257,16 @@ function PrintPreparation({
                         {formIds.length > 1 && (
                           <>
                             <Dropdown.Divider />
-                            <Dropdown.Item onClick={() => void openCombinedDownload('assessment')}>
+                            <Dropdown.Item
+                              disabled={mixedPaperSizes}
+                              onClick={() => void openCombinedDownload('assessment')}
+                            >
                               Download all forms PDF
                             </Dropdown.Item>
-                            <Dropdown.Item onClick={() => void openCombinedDownload('answer_key')}>
+                            <Dropdown.Item
+                              disabled={mixedPaperSizes}
+                              onClick={() => void openCombinedDownload('answer_key')}
+                            >
                               Download all answer keys PDF
                             </Dropdown.Item>
                           </>
@@ -2222,6 +2351,67 @@ function PrintPreparation({
         }}
         onDownload={() => void downloadCombined()}
       />
+      <Modal
+        show={pendingPaperSizeChange !== null}
+        aria-labelledby="print-paper-size-change-title"
+        backdrop="static"
+        keyboard={!paperSizeApplying}
+        restoreFocus={false}
+        onHide={cancelPaperSizeChange}
+        onExited={() => window.document.getElementById('print-paper-size')?.focus()}
+      >
+        <Modal.Header closeButton={!paperSizeApplying}>
+          <Modal.Title as="h2" className="h5" id="print-paper-size-change-title">
+            Change paper size for all forms
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            This will set all current forms to {pendingPaperSizeChange?.paperSize}. A download has
+            started for these forms, so each will get a new numbered version:
+          </p>
+          <ul>
+            {pendingPaperSizeChange?.versionedForms.map((form) => (
+              <li key={form.previousLabel}>
+                Form {form.previousLabel} → Form {form.nextLabel}
+              </li>
+            ))}
+          </ul>
+          <p className="mb-0">
+            The previous versions will remain available in Previous forms. Question selections and
+            other print settings will be kept.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={paperSizeApplying}
+            onClick={cancelPaperSizeChange}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={paperSizeApplying}
+            onClick={() => {
+              if (!pendingPaperSizeChange || paperSizeApplying) return;
+              void applyPaperSizeChange(pendingPaperSizeChange)
+                .catch(() => {})
+                .finally(() => setPendingPaperSizeChange(null));
+            }}
+          >
+            {paperSizeApplying ? (
+              <>
+                <Spinner size="sm" className="me-2" aria-hidden="true" />
+                Updating forms…
+              </>
+            ) : (
+              'Apply paper size'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
       <Modal
         show={pendingFormAction !== null}
         aria-labelledby="print-form-action-title"

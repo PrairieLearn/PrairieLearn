@@ -28,6 +28,7 @@ import type { PrintExportWork } from '../../lib/printing/print-export-render.js'
 import { queuePrintExport } from '../../lib/printing/print-exports.js';
 import { PrintPacketMetadataSchema } from '../../lib/printing/print-packet-schema.js';
 import { PrintPacketError, readPrintCoverPages } from '../../lib/printing/print-packet.js';
+import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE } from '../../lib/printing/print-settings.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import {
@@ -59,6 +60,18 @@ function uploadedCoverFiles(input: FormData): File[] {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
   }
   return files.data;
+}
+
+function assertSharedPaperSize(forms: { settings: { paperSize: string } }[]) {
+  if (
+    forms.length > 1 &&
+    forms.some((form) => form.settings.paperSize !== forms[0].settings.paperSize)
+  ) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: PRINT_PAPER_SIZES_MISMATCH_MESSAGE,
+    });
+  }
 }
 
 export const printableAssessmentExportRouter = t.router({
@@ -95,6 +108,7 @@ export const printableAssessmentExportRouter = t.router({
         }
         return form;
       });
+      assertSharedPaperSize(forms);
       const questions = await selectPrintFormQuestionViability(formIds);
       for (const form of forms) {
         const excluded = new Set(form.settings.excludedQuestions);
@@ -157,8 +171,12 @@ export const printableAssessmentExportRouter = t.router({
         if (!saved || (metadata.forms.length > 1 && saved.archived_at)) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'A print form is not available.' });
         }
+        if (selected.settings.paperSize !== saved.settings.paperSize) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
+        }
         return { ...selected, formLabel: saved.label };
       });
+      assertSharedPaperSize(forms);
       const files = uploadedCoverFiles(input);
       if (metadata.document === 'answer_key' && files.length > 0) {
         throw new TRPCError({
@@ -315,6 +333,7 @@ export const printableAssessmentExportRouter = t.router({
             formSelections: forms.map(({ printFormId, settings }) => ({
               printFormId,
               excludedQuestions: settings.excludedQuestions,
+              paperSize: settings.paperSize,
             })),
           }),
         };

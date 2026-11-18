@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRows,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   insertPrintFormQuestions,
@@ -14,6 +20,7 @@ import {
   selectActivePrintFormsForAssessment,
   selectOptionalPrintForm,
   selectPrintFormsForAssessment,
+  updatePrintFormPaperSize,
 } from '../../models/print-form.js';
 import { nextPrintFormLabel, printFormLabelBase } from '../client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../client/printing/print-form-limits.js';
@@ -30,6 +37,7 @@ import {
 } from '../db-types.js';
 import { ensureVariant, getQuestionCourse } from '../question-variant.js';
 
+import type { PaperSize } from './paper-size.js';
 import { DEFAULT_PRINT_SETTINGS, type PrintSettings } from './print-settings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -84,6 +92,60 @@ async function createPrintVariant({
     require_open: false,
     client_fingerprint_id: null,
   });
+}
+
+async function createSavedPrintFormQuestions({
+  savedQuestions,
+  course,
+  courseInstance,
+  userId,
+  authnUserId,
+}: {
+  savedQuestions: Awaited<ReturnType<typeof selectPrintFormQuestions>>;
+  course: Course;
+  courseInstance: CourseInstance;
+  userId: string;
+  authnUserId: string;
+}) {
+  const questions: Omit<PrintFormQuestion, 'id' | 'print_form_id'>[] = [];
+  for (const { assessment_question, print_form_question, question } of savedQuestions) {
+    const variant = await createPrintVariant({
+      assessmentQuestion: assessment_question,
+      question,
+      course,
+      courseInstance,
+      userId,
+      authnUserId,
+    });
+    questions.push({
+      assessment_question_id: print_form_question.assessment_question_id,
+      variant_id: variant.id,
+      position: print_form_question.position,
+      question_number: print_form_question.question_number,
+      max_points: print_form_question.max_points,
+    });
+  }
+  return questions;
+}
+
+async function copySavedPrintFormQuestions(printFormId: string) {
+  const savedQuestions = await selectPrintFormQuestions(printFormId);
+  const questions: Omit<PrintFormQuestion, 'id' | 'print_form_id'>[] = [];
+  for (const { print_form_question: question } of savedQuestions) {
+    const variantId = await queryScalar(
+      sql.copy_print_form_variant,
+      { variant_id: question.variant_id },
+      IdSchema,
+    );
+    questions.push({
+      assessment_question_id: question.assessment_question_id,
+      variant_id: variantId,
+      position: question.position,
+      question_number: question.question_number,
+      max_points: question.max_points,
+    });
+  }
+  return questions;
 }
 
 /** Creates an independent form with saved question selection, ordering, and variants. */
@@ -169,9 +231,13 @@ async function createPrintFormInternal({
       ...DEFAULT_PRINT_SETTINGS,
       includeHonorCode: !!assessment.require_honor_code,
     };
-    const formSettings = replacedForm
+    const inheritedSettings = replacedForm
       ? { ...replacedForm.settings, questionSizes: {}, excludedQuestions: [] }
       : (settings ?? defaultSettings);
+    const formSettings = {
+      ...inheritedSettings,
+      paperSize: activeForms[0]?.settings.paperSize ?? inheritedSettings.paperSize,
+    };
     const form = await insertPrintForm({
       assessmentId: assessment.id,
       userId,
@@ -216,6 +282,117 @@ export async function archivePrintFormIfOtherActive({
   });
 }
 
+interface PaperSizeFormSnapshot {
+  id: string;
+  paperSize: PaperSize;
+  locked: boolean;
+}
+
+function assertPaperSizeFormSnapshot(
+  activeForms: PrintForm[],
+  expectedForms: PaperSizeFormSnapshot[],
+) {
+  const expectedById = new Map(expectedForms.map((form) => [form.id, form]));
+  if (
+    expectedById.size !== activeForms.length ||
+    expectedForms.length !== activeForms.length ||
+    activeForms.some((form) => {
+      const expected = expectedById.get(form.id);
+      return (
+        !expected ||
+        expected.paperSize !== form.settings.paperSize ||
+        expected.locked !== (form.question_selection_locked_at !== null)
+      );
+    })
+  ) {
+    throw new HttpStatusError(409, 'The current forms changed. Reload the page and try again.');
+  }
+}
+
+/** Applies a shared paper size while retaining downloaded versions of affected forms. */
+export async function setPrintFormPaperSize({
+  assessment,
+  userId,
+  authnUserId,
+  printFormId,
+  paperSize,
+  expectedForms,
+}: Pick<CreatePrintFormOptions, 'assessment' | 'userId' | 'authnUserId'> & {
+  printFormId: string;
+  paperSize: PaperSize;
+  expectedForms: PaperSizeFormSnapshot[];
+}) {
+  const initialActiveForms = await selectActivePrintFormsForAssessment({
+    assessmentId: assessment.id,
+  });
+  if (!initialActiveForms.some((form) => form.id === printFormId)) {
+    throw new HttpStatusError(404, 'This print form is no longer active.');
+  }
+  assertPaperSizeFormSnapshot(initialActiveForms, expectedForms);
+
+  const replacementQuestions = new Map<string, Omit<PrintFormQuestion, 'id' | 'print_form_id'>[]>();
+  for (const form of initialActiveForms) {
+    if (form.settings.paperSize !== paperSize && form.question_selection_locked_at !== null) {
+      replacementQuestions.set(form.id, await copySavedPrintFormQuestions(form.id));
+    }
+  }
+
+  return await runInTransactionAsync(async () => {
+    await lockAssessmentForPrintForms(assessment.id);
+    const forms = await selectPrintFormsForAssessment({ assessmentId: assessment.id });
+    const activeForms = forms.filter((form) => form.archived_at === null);
+    if (!activeForms.some((form) => form.id === printFormId)) {
+      throw new HttpStatusError(404, 'This print form is no longer active.');
+    }
+    assertPaperSizeFormSnapshot(activeForms, expectedForms);
+
+    const replacements: {
+      oldPrintFormId: string;
+      printFormId: string;
+      label: string;
+      settings: PrintSettings;
+    }[] = [];
+    for (const form of activeForms) {
+      if (form.settings.paperSize === paperSize) continue;
+      if (form.question_selection_locked_at === null) {
+        const updated = await updatePrintFormPaperSize({
+          printFormId: form.id,
+          assessmentId: assessment.id,
+          paperSize,
+        });
+        if (!updated) throw new HttpStatusError(404, 'This print form is no longer active.');
+        continue;
+      }
+
+      const questions = replacementQuestions.get(form.id);
+      if (!questions) {
+        throw new HttpStatusError(409, 'The current forms changed. Reload the page and try again.');
+      }
+      const replacement = await insertPrintForm({
+        assessmentId: assessment.id,
+        userId,
+        authnUserId,
+        label: nextPrintFormLabel(forms, form.label),
+        settings: { ...form.settings, paperSize },
+      });
+      await insertPrintFormQuestions({ printFormId: replacement.id, questions });
+      const archived = await archivePrintForm({
+        printFormId: form.id,
+        assessmentId: assessment.id,
+      });
+      if (!archived) throw new HttpStatusError(404, 'This print form is no longer active.');
+      forms.push(replacement);
+      replacements.push({
+        oldPrintFormId: form.id,
+        printFormId: replacement.id,
+        label: replacement.label,
+        settings: replacement.settings,
+      });
+    }
+    return { replacements };
+  });
+}
+
 /** Creates a new version with one changed selection while keeping the saved form intact. */
 export async function revisePrintFormSelection({
   assessment,
@@ -250,24 +427,13 @@ export async function revisePrintFormSelection({
 
   // Question generation can be slow, so the assessment lock is only held while saving the
   // replacement. The saved question set cannot change after the form has been exported.
-  const questions: Omit<PrintFormQuestion, 'id' | 'print_form_id'>[] = [];
-  for (const { assessment_question, print_form_question, question } of savedQuestions) {
-    const variant = await createPrintVariant({
-      assessmentQuestion: assessment_question,
-      question,
-      course,
-      courseInstance,
-      userId,
-      authnUserId,
-    });
-    questions.push({
-      assessment_question_id: print_form_question.assessment_question_id,
-      variant_id: variant.id,
-      position: print_form_question.position,
-      question_number: print_form_question.question_number,
-      max_points: print_form_question.max_points,
-    });
-  }
+  const questions = await createSavedPrintFormQuestions({
+    savedQuestions,
+    course,
+    courseInstance,
+    userId,
+    authnUserId,
+  });
 
   return await runInTransactionAsync(async () => {
     await lockAssessmentForPrintForms(assessment.id);

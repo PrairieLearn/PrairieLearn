@@ -13,7 +13,9 @@ import {
 import { IdSchema } from '@prairielearn/zod';
 
 import { PrintFormSchema } from '../lib/db-types.js';
+import type { PaperSize } from '../lib/printing/paper-size.js';
 import {
+  PRINT_PAPER_SIZE_SHARED_MESSAGE,
   PRINT_QUESTION_SELECTION_LOCKED_MESSAGE,
   PRINT_SETTINGS_CHANGED_MESSAGE,
   type PrintSettings,
@@ -69,6 +71,9 @@ export async function updatePrintFormSettings({
     ) {
       throw new HttpStatusError(409, PRINT_QUESTION_SELECTION_LOCKED_MESSAGE);
     }
+    if (current?.archived_at === null && current.settings.paperSize !== settings.paperSize) {
+      throw new HttpStatusError(409, PRINT_PAPER_SIZE_SHARED_MESSAGE);
+    }
     if (current?.archived_at === null && !isDeepStrictEqual(current.settings, expectedSettings)) {
       throw new HttpStatusError(409, PRINT_SETTINGS_CHANGED_MESSAGE);
     }
@@ -82,6 +87,22 @@ export async function updatePrintFormSettings({
       PrintFormSchema,
     );
   });
+}
+
+export async function updatePrintFormPaperSize({
+  printFormId,
+  assessmentId,
+  paperSize,
+}: {
+  printFormId: string;
+  assessmentId: string;
+  paperSize: PaperSize;
+}) {
+  return await queryOptionalRow(
+    sql.update_print_form_paper_size,
+    { print_form_id: printFormId, assessment_id: assessmentId, paper_size: paperSize },
+    PrintFormSchema,
+  );
 }
 
 export async function lockPrintFormQuestionSelections({

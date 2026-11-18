@@ -7,7 +7,7 @@ import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import * as PrairieMQ from '@prairielearn/prairiemq';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
@@ -145,11 +145,14 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   }
 
-  async function queueTestPdf(filename: string) {
+  async function queueTestPdf(
+    filename: string,
+    formSelections: Parameters<typeof queuePrintExport>[0]['formSelections'] = [],
+  ) {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
     const printExportId = await queuePrintExport({
-      formSelections: [],
+      formSelections,
       owner: {
         assessmentId: assessment.id,
         authnUserId: '1',
@@ -282,7 +285,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const api = client(assessment.id);
     const originalSettings = {
       ...DEFAULT_PRINT_SETTINGS,
-      paperSize: 'A4' as const,
       excludedQuestions: ['1'],
     };
     const first = await api.printForms.create.mutate({ settings: originalSettings });
@@ -341,7 +343,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const api = client(assessment.id);
     const settings = {
       ...DEFAULT_PRINT_SETTINGS,
-      paperSize: 'A4' as const,
       questionSizes: { '2': 'half' as const },
       excludedQuestions: ['1'],
     };
@@ -401,6 +402,123 @@ describe('print preparation', { timeout: 60_000 }, () => {
         included: true,
       }),
     ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+  });
+
+  test('applies one paper size to current forms while retaining downloaded versions', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const originalSettings = {
+      ...DEFAULT_PRINT_SETTINGS,
+      blockSize: 'half' as const,
+      excludedQuestions: ['1'],
+    };
+    const first = await api.printForms.create.mutate({ settings: originalSettings });
+    const second = await api.printForms.create.mutate();
+    await lockPrintFormQuestionSelections({
+      assessmentId: assessment.id,
+      printFormIds: [first.printFormId],
+    });
+    const variantSchema = z.object({
+      assessment_question_id: IdSchema,
+      position: z.number(),
+      question_number: z.string(),
+      max_points: z.number(),
+      variant_id: IdSchema,
+      variant_seed: z.string(),
+      params: z.unknown(),
+      true_answer: z.unknown(),
+    });
+    const firstVariants = await queryRows(
+      sql.select_print_form_variant_data,
+      { print_form_id: first.printFormId },
+      variantSchema,
+    );
+    const expectedForms = (await api.printForms.list.query())
+      .filter((form) => form.archived_at === null)
+      .map((form) => ({
+        id: form.id,
+        paperSize: form.settings.paperSize,
+        locked: form.question_selection_locked_at !== null,
+      }));
+    await expect(
+      api.printForms.setPaperSize.mutate({
+        printFormId: second.printFormId,
+        paperSize: 'A4',
+        expectedForms: expectedForms.map((form) =>
+          form.id === first.printFormId ? { ...form, locked: false } : form,
+        ),
+      }),
+    ).rejects.toMatchObject({ data: { code: 'CONFLICT' } });
+
+    const changed = await api.printForms.setPaperSize.mutate({
+      printFormId: second.printFormId,
+      paperSize: 'A4',
+      expectedForms,
+    });
+    expect(changed.replacements).toHaveLength(1);
+    const replacement = changed.replacements[0];
+    expect(replacement.oldPrintFormId).toBe(first.printFormId);
+    expect(replacement.label).toBe(`${first.label}2`);
+    expect(replacement.settings).toEqual({ ...originalSettings, paperSize: 'A4' });
+
+    const forms = await api.printForms.list.query();
+    expect(forms.find((form) => form.id === first.printFormId)).toMatchObject({
+      archived_at: expect.any(Date),
+      settings: originalSettings,
+    });
+    expect(forms.find((form) => form.id === second.printFormId)).toMatchObject({
+      archived_at: null,
+      settings: { ...DEFAULT_PRINT_SETTINGS, paperSize: 'A4' },
+    });
+    expect(forms.find((form) => form.id === replacement.printFormId)).toMatchObject({
+      archived_at: null,
+      settings: replacement.settings,
+    });
+    const replacementVariants = await queryRows(
+      sql.select_print_form_variant_data,
+      { print_form_id: replacement.printFormId },
+      variantSchema,
+    );
+    expect(replacementVariants.map(({ variant_id: _id, ...variant }) => variant)).toEqual(
+      firstVariants.map(({ variant_id: _id, ...variant }) => variant),
+    );
+    expect(replacementVariants.map((variant) => variant.variant_id)).not.toEqual(
+      firstVariants.map((variant) => variant.variant_id),
+    );
+
+    await expect(
+      api.printForms.updateSettings.mutate({
+        printFormId: second.printFormId,
+        settings: DEFAULT_PRINT_SETTINGS,
+        expectedSettings: { ...DEFAULT_PRINT_SETTINGS, paperSize: 'A4' },
+      }),
+    ).rejects.toMatchObject({ data: { code: 'CONFLICT' } });
+    const added = await api.printForms.create.mutate({
+      settings: forms.find((form) => form.id === first.printFormId)!.settings,
+    });
+    expect(added.settings.paperSize).toBe('A4');
+    await expect(
+      queueTestPdf('stale-paper-size.pdf', [
+        {
+          printFormId: added.printFormId,
+          excludedQuestions: added.settings.excludedQuestions,
+          paperSize: 'Letter',
+        },
+      ]),
+    ).rejects.toThrow('This print preview has expired or changed.');
+    // Other tests use the same assessment, so restore its current forms to the default size.
+    const currentForms = (await api.printForms.list.query()).filter(
+      (form) => form.archived_at === null,
+    );
+    await api.printForms.setPaperSize.mutate({
+      printFormId: added.printFormId,
+      paperSize: 'Letter',
+      expectedForms: currentForms.map((form) => ({
+        id: form.id,
+        paperSize: form.settings.paperSize,
+        locked: form.question_selection_locked_at !== null,
+      })),
+    });
   });
 
   test('shares forms across staff while keeping assessment boundaries', async () => {
@@ -684,11 +802,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
           expectedSettings: form.settings,
         }),
       ).rejects.toMatchObject({ data: { code: 'CONFLICT' } });
-      await api.printForms.updateSettings.mutate({
-        printFormId: form.printFormId,
-        settings: { ...DEFAULT_PRINT_SETTINGS, paperSize: 'A4' },
-        expectedSettings: form.settings,
-      });
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledOnce();
       expect(render.mock.calls[0][0]).toMatchObject({

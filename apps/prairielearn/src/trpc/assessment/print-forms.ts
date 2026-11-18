@@ -4,13 +4,16 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
+import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
 import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
+import { PAPER_SIZES } from '../../lib/printing/paper-size.js';
 import {
   archivePrintFormIfOtherActive,
   createPrintForm,
   ensureInitialPrintForm,
   revisePrintFormSelection,
+  setPrintFormPaperSize,
 } from '../../lib/printing/print-forms.js';
 import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
 import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-settings.js';
@@ -30,6 +33,7 @@ export interface PrintFormsError {
   ensureInitial: never;
   regenerate: never;
   reviseSelection: never;
+  setPaperSize: never;
   updateSettings: never;
 }
 
@@ -159,6 +163,37 @@ export const printFormsRouter = t.router({
           printFormId: form.id,
           label: form.label,
           settings: PrintSettingsSchema.parse(form.settings),
+        };
+      } catch (error) {
+        rethrowPrintFormError(error);
+      }
+    }),
+  setPaperSize: assessmentFormProcedure
+    .use(rejectGroupWork)
+    .input(
+      z.object({
+        paperSize: z.enum(PAPER_SIZES),
+        expectedForms: z
+          .array(z.object({ id: IdSchema, paperSize: z.enum(PAPER_SIZES), locked: z.boolean() }))
+          .min(1)
+          .max(MAX_ACTIVE_PRINT_FORMS),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const result = await setPrintFormPaperSize({
+          assessment: ctx.assessment,
+          userId: ctx.locals.user.id,
+          authnUserId: ctx.authn_user.id,
+          printFormId: input.printFormId,
+          paperSize: input.paperSize,
+          expectedForms: input.expectedForms,
+        });
+        return {
+          replacements: result.replacements.map((form) => ({
+            ...form,
+            settings: PrintSettingsSchema.parse(form.settings),
+          })),
         };
       } catch (error) {
         rethrowPrintFormError(error);

@@ -28,13 +28,14 @@ import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../client/printing/print-snapshot.
 import { config } from '../config.js';
 import { getFileStoreS3Bucket } from '../file-store.js';
 
+import type { PaperSize } from './paper-size.js';
 import {
   type PrintExportWork,
   PrintExportWorkSchema,
   renderPrintExport,
 } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
-import { sameExcludedQuestions } from './print-settings.js';
+import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE, sameExcludedQuestions } from './print-settings.js';
 
 import { isBrowserRenderingAvailable } from './index.js';
 
@@ -180,7 +181,7 @@ export async function queuePrintExport({
 }: {
   owner: { assessmentId: string; authnUserId: string; courseId: string; userId: string };
   work: PrintExportWork;
-  formSelections: { printFormId: string; excludedQuestions: string[] }[];
+  formSelections: { printFormId: string; excludedQuestions: string[]; paperSize: PaperSize }[];
 }): Promise<string> {
   if (shutdownController.signal.aborted || !getQueue()) {
     throw new HttpStatusError(
@@ -201,11 +202,21 @@ export async function queuePrintExport({
           form,
         ]),
       );
-      for (const { printFormId, excludedQuestions } of formSelections) {
+      const paperSizes = new Set<PaperSize>();
+      for (const { printFormId, excludedQuestions, paperSize } of formSelections) {
         const saved = savedForms.get(printFormId);
-        if (!saved || !sameExcludedQuestions(saved.settings.excludedQuestions, excludedQuestions)) {
+        if (
+          !saved ||
+          (formSelections.length > 1 && saved.archived_at !== null) ||
+          saved.settings.paperSize !== paperSize ||
+          !sameExcludedQuestions(saved.settings.excludedQuestions, excludedQuestions)
+        ) {
           throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
         }
+        paperSizes.add(paperSize);
+      }
+      if (paperSizes.size > 1) {
+        throw new HttpStatusError(400, PRINT_PAPER_SIZES_MISMATCH_MESSAGE);
       }
       await lockPrintFormQuestionSelections({
         assessmentId: owner.assessmentId,

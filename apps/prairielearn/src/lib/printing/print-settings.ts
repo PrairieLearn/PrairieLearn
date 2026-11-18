@@ -26,6 +26,10 @@ export type PrintSettings = z.infer<typeof PrintSettingsSchema>;
 
 export const PRINT_SETTINGS_CHANGED_MESSAGE =
   'This form’s settings changed while you were editing. Your edits are still here; review them and select Update preview again.';
+export const PRINT_PAPER_SIZE_SHARED_MESSAGE =
+  'Paper size must be changed for all current forms together. Reload this page, then choose a paper size again.';
+export const PRINT_PAPER_SIZES_MISMATCH_MESSAGE =
+  'Current forms use different paper sizes. Choose a paper size for all forms before downloading.';
 export const PRINT_QUESTION_SELECTION_LOCKED_MESSAGE =
   'This form’s question selection is fixed after you start a download. Reload the page, then select a question to create a new numbered version.';
 

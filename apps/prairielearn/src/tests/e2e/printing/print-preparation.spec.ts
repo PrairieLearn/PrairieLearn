@@ -167,16 +167,16 @@ test('keeps a failed autosave edit available for Update preview', async ({
   await preparePreview(page);
   const printFormId = new URL(page.url()).searchParams.get('form')!;
   await page.route('**/printForms.updateSettings', (route) => route.abort(), { times: 1 });
-  await page.getByLabel('Paper size').selectOption('A4');
+  await page.getByLabel('Space per question').selectOption('half');
   await expect(page.getByRole('button', { name: 'Update preview', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect
     .poll(
       async () =>
         (await selectOptionalPrintForm({ printFormId, assessmentId: assessment.id }))?.settings
-          .paperSize,
+          .blockSize,
     )
-    .toBe('A4');
+    .toBe('half');
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 });
 
@@ -244,6 +244,69 @@ test('saves form edits without requiring a preview refresh before form actions',
     )
     .toBe('form-a');
   await expect(downloadMenu(page)).toBeEnabled();
+});
+
+test('uses one paper size for current forms and versions a downloaded form', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
+  const formAId = new URL(page.url()).searchParams.get('form')!;
+  await page.getByRole('button', { name: 'Add form', exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(formAId);
+  const formBId = new URL(page.url()).searchParams.get('form')!;
+
+  await page.getByLabel('Paper size', { exact: true }).selectOption('A4');
+  await expect
+    .poll(async () =>
+      (await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })).map(
+        (form) => form.settings.paperSize,
+      ),
+    )
+    .toEqual(['A4', 'A4']);
+  await page.getByRole('button', { name: 'Form A', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  const copy = await downloadPreparedFile(page, async () => {
+    await chooseDownload(page, 'Download Form A (PDF)');
+  });
+  expect(await copy.failure()).toBeNull();
+
+  await page.getByLabel('Paper size', { exact: true }).selectOption('Letter');
+  const dialog = page.getByRole('dialog', { name: 'Change paper size for all forms' });
+  await expect(dialog).toContainText('Form A → Form A2');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByLabel('Paper size', { exact: true })).toHaveValue('A4');
+  expect(
+    (await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })).map(
+      (form) => form.settings.paperSize,
+    ),
+  ).toEqual(['A4', 'A4']);
+
+  await page.getByLabel('Paper size', { exact: true }).selectOption('Letter');
+  await dialog.getByRole('button', { name: 'Apply paper size' }).click();
+  await expect(page.getByRole('button', { name: 'Form A2 Previewing' })).toBeVisible({
+    timeout: 120_000,
+  });
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await expect
+    .poll(async () =>
+      (await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })).map(
+        (form) => form.settings.paperSize,
+      ),
+    )
+    .toEqual(['Letter', 'Letter']);
+  expect(
+    (await selectOptionalPrintForm({ printFormId: formAId, assessmentId: assessment.id }))!.settings
+      .paperSize,
+  ).toBe('A4');
+  expect(
+    (await selectOptionalPrintForm({ printFormId: formBId, assessmentId: assessment.id }))!.settings
+      .paperSize,
+  ).toBe('Letter');
+  await page.getByText(/^Previous forms \(/).click();
+  await page.getByRole('button', { name: 'Form A', exact: true }).click();
+  await expect(page.getByLabel('Paper size', { exact: true })).toHaveValue('A4');
 });
 
 test('keeps multiple export links after another file is queued and the page reloads', async ({
