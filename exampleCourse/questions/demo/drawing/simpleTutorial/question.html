@@ -37,16 +37,16 @@
 
     <pl-drawing-initial>
       <pl-drawing-group visible="{{params.visible1}}">
-          <pl-coordinates x1="{{params.x0}}" y1="{{params.y0}}" label="O" offsetx="-10" offsety="5"> </pl-coordinates>
+          <pl-coordinates x1="{{params.x0}}" y1="{{params.y0}}" label="O" relpos-active="true"> </pl-coordinates>
       </pl-drawing-group>
 
       <pl-drawing-group visible="{{params.visible0}}">
         <pl-rod x1="{{params.xA}}" y1="{{params.y}}" x2="{{params.xD}}" y2="{{params.y}}"
                 label1="A" offsetx1="-10" offsety1="10"
                 label2="D" offsetx2="-10" offsety2="10"> </pl-rod>
-        <pl-point x1="{{params.xB}}" y1="{{params.y}}" label="B" offsetx="-10" offsety="10"></pl-point>
-        <pl-point x1="{{params.xC}}" y1="{{params.y}}" label="C" offsetx="-10" offsety="10"></pl-point>
-        <pl-coordinates x1="{{params.x0}}" y1="{{params.y0}}" label="O" offsetx="-10" offsety="5"> </pl-coordinates>
+        <pl-point x1="{{params.xB}}" y1="{{params.y}}" label="B" label-pos="below" label-sep="15"></pl-point>
+        <pl-point x1="{{params.xC}}" y1="{{params.y}}" label="C" label-pos="below" label-sep="15"></pl-point>
+        <pl-coordinates x1="{{params.x0}}" y1="{{params.y0}}" label="O" relpos-active="true"> </pl-coordinates>
       </pl-drawing-group>
     </pl-drawing-initial>
 

@@ -16,7 +16,7 @@ def generate(data):
     data["params"]["c"] = c
 
     x1 = 80
-    y1 = height_canvas - 120
+    y1 = height_canvas - 80
     x2 = x1 + a
     y2 = y1 - c
     x3 = x2 + b
