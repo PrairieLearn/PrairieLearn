@@ -21,9 +21,13 @@ test('uses the shared footer on cover and question pages', async ({ page, course
     const footerContent = await pages.evaluateAll((sheets) =>
       sheets.map((sheet) => {
         const left = sheet.querySelector('.pagedjs_margin-bottom-left .pagedjs_margin-content')!;
+        const center = sheet.querySelector(
+          '.pagedjs_margin-bottom-center .pagedjs_margin-content',
+        )!;
         const right = sheet.querySelector('.pagedjs_margin-bottom-right .pagedjs_margin-content')!;
         return {
           left: getComputedStyle(left, '::after').content,
+          center: getComputedStyle(center, '::after').content,
           right: getComputedStyle(right, '::after').content,
         };
       }),
@@ -32,6 +36,7 @@ test('uses the shared footer on cover and question pages', async ({ page, course
     const separator = '\u00a0\u00a0|\u00a0\u00a0';
     for (const footer of footerContent) {
       expect(footer.left).toContain(`Test Course${separator}Spring 2015`);
+      expect(footer.center).toContain('Exam with assessment tools');
       expect(footer.right).toContain(
         document === 'answer_key'
           ? `Answer key${separator}Form A${separator}Page `

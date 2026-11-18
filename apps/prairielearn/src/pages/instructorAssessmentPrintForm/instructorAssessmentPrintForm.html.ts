@@ -76,6 +76,7 @@ export function InstructorAssessmentPrintForm({
   ]
     .filter(Boolean)
     .join(PRINT_FOOTER_SEPARATOR);
+  const footerAssessmentName = resLocals.assessment.title || resLocals.assessment_label;
   const { width: paperWidth, height: paperHeight } = PAPER_DIMENSIONS[paperSize];
 
   return html`<!doctype html>
@@ -144,6 +145,13 @@ export function InstructorAssessmentPrintForm({
             @bottom-left {
               color: #555;
               content: ${cssContent(footerCourseAndInstance)};
+              font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+              font-size: 8pt;
+            }
+
+            @bottom-center {
+              color: #555;
+              content: ${cssContent(footerAssessmentName)};
               font-family: 'Plus Jakarta Sans', Arial, sans-serif;
               font-size: 8pt;
             }

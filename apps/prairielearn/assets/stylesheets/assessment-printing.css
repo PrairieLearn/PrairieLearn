@@ -5,6 +5,10 @@
     vertical-align: middle;
   }
 
+  @bottom-center {
+    vertical-align: middle;
+  }
+
   @bottom-right {
     vertical-align: middle;
   }
