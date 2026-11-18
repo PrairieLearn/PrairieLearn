@@ -629,7 +629,7 @@ export function AssessmentQuestionsSection({
     <>
       {conflictCount > 0 && (
         <div className="d-flex align-items-center gap-2 p-2 bg-light border rounded mb-2 small">
-          <i className="bi bi-exclamation-circle text-warning" aria-hidden="true" />
+          <i className="bi bi-exclamation-circle text-warning-emphasis" aria-hidden="true" />
           <span className="flex-grow-1">
             {conflictCount} question{conflictCount !== 1 ? 's' : ''} conflict
             {conflictCount === 1 ? 's' : ''} with existing questions

@@ -52,7 +52,10 @@ export function ExtensionTableRow({
                 className="btn btn-xs btn-ghost"
                 aria-label="Extension will be ignored"
               >
-                <i className="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
+                <i
+                  className="fas fa-exclamation-triangle text-warning-emphasis"
+                  aria-hidden="true"
+                />
               </button>
             </OverlayTrigger>
           )}

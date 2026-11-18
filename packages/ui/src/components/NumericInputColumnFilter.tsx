@@ -52,7 +52,7 @@ export function NumericInputColumnFilter<TData extends RowData, TValue>({
         variant="link"
         className={clsx(
           'text-muted p-0',
-          hasActiveFilter && (isInvalid ? 'text-warning' : 'text-primary'),
+          hasActiveFilter && (isInvalid ? 'text-warning-emphasis' : 'text-primary'),
         )}
         id={`filter-${columnId}`}
         aria-label={`Filter ${label.toLowerCase()}`}

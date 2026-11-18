@@ -475,7 +475,10 @@ function buildBeforeYouGradeItems({
 function BeforeYouGradeCard({ item }: { item: BeforeYouGradeItem }) {
   return (
     <div className="rounded-2 px-3 py-2 border border-warning bg-warning bg-opacity-10 d-flex align-items-start gap-2">
-      <i className="bi bi-exclamation-triangle-fill text-warning mt-1" aria-hidden="true" />
+      <i
+        className="bi bi-exclamation-triangle-fill text-warning-emphasis mt-1"
+        aria-hidden="true"
+      />
       <div className="flex-grow-1">
         {item.onClick ? (
           <Button

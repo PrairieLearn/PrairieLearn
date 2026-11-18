@@ -258,7 +258,7 @@ function ImageTable({
                 <td>
                   ${
                     image.imageSyncNeeded
-                      ? html`<span class="text-warning">Not found in PL registry</span>`
+                      ? html`<span class="text-warning-emphasis">Not found in PL registry</span>`
                       : image.pushed_at
                         ? formatDate(image.pushed_at, course.display_timezone)
                         : html`&mdash;`
