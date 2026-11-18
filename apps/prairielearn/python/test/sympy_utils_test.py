@@ -1633,6 +1633,7 @@ def test_symbolic_submission_backfills_mathjson() -> None:
 
     assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
     assert result.mathjson is not None
+    assert result.expr != ""
     assert json.loads(result.mathjson) == internal_mathjson.sympy_to_mathjson(
         result.expr
     )
