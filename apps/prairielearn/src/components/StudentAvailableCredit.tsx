@@ -1,64 +1,102 @@
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import type { LegacyAssessmentAccessRuleResult } from '../lib/assessment-access-control/authz-result.js';
-import type { AccessTimelineEntry } from '../lib/assessment-access-control/timeline.js';
+import type { AssessmentAuthzResult } from '../lib/assessment-access-control/authz-result.js';
 
-export function StudentAccessRulesSchedule({
-  accessRules,
-}: {
-  accessRules: LegacyAssessmentAccessRuleResult[];
-}) {
-  return CreditSchedule({
-    rows: accessRules.map((accessRule) => ({
-      credit: accessRule.credit,
-      start: accessRule.start_date,
-      end: accessRule.end_date,
-    })),
-  });
+interface Schedule {
+  columns: string[];
+  rows: { cells: string[]; current: boolean; past: boolean }[];
 }
 
-export function StudentAccessTimelineSchedule({
-  accessTimeline,
+function buildSchedule({
+  authzResult,
+  modernAccessControl,
   displayTimezone,
 }: {
-  accessTimeline: readonly AccessTimelineEntry[];
+  authzResult: AssessmentAuthzResult;
+  modernAccessControl: boolean;
   displayTimezone: string;
-}) {
+}): Schedule {
+  if (!modernAccessControl) {
+    // Legacy access rules can overlap or leave gaps, so each row needs both
+    // of its dates, and their order says nothing about which are in the past.
+    return {
+      columns: ['Credit', 'Start', 'End'],
+      rows: authzResult.access_rules.map((rule) => ({
+        cells: [rule.credit, rule.start_date, rule.end_date],
+        current: rule.active === true,
+        past: false,
+      })),
+    };
+  }
+
   // Hide segments where submissions aren't allowed. Rendering a 0%-credit
   // after-last-deadline row reads as "keep submitting for 0 credit" when
   // submissions are actually forbidden. The resolver still emits these entries
   // so other consumers (e.g. instructor views) can show the full picture.
-  const visibleEntries = accessTimeline.filter((entry) => entry.submittable);
-  return CreditSchedule({
-    rows: visibleEntries.map((entry) => ({
-      credit: `${entry.credit}%`,
-      start: entry.startDate ? formatDate(entry.startDate, displayTimezone) : '—',
-      end: entry.endDate ? formatDate(entry.endDate, displayTimezone) : '—',
+  const entries = authzResult.access_timeline.filter((entry) => entry.submittable);
+  const currentIndex = entries.findIndex((entry) => entry.current);
+  // Timeline segments are contiguous, so each one starts when the previous
+  // one ends and only the end date needs to be shown.
+  return {
+    columns: ['Credit', 'Until'],
+    rows: entries.map((entry, index) => ({
+      cells: [`${entry.credit}%`, entry.endDate ? formatDate(entry.endDate, displayTimezone) : '—'],
+      current: index === currentIndex,
+      past: index < currentIndex,
     })),
-  });
+  };
 }
 
-function CreditSchedule({ rows }: { rows: { credit: string; start: string; end: string }[] }) {
-  if (rows.length === 0) return '';
+/**
+ * Renders the credit currently available to a student. When the credit changes
+ * over time, the text opens a popover that lists the full schedule.
+ */
+export function StudentAvailableCredit({
+  authzResult,
+  modernAccessControl,
+  displayTimezone,
+}: {
+  authzResult: AssessmentAuthzResult;
+  modernAccessControl: boolean;
+  displayTimezone: string;
+}) {
+  const credit = authzResult.credit_date_string ?? 'None';
+  const schedule = buildSchedule({ authzResult, modernAccessControl, displayTimezone });
 
+  // A single-row schedule says nothing that the credit text doesn't already say.
+  if (schedule.rows.length < 2) return html`${credit}`;
+
+  // The popover moves focus to the `autofocus` element when it opens. Focusing
+  // the start of the content, rather than the close button, lets screen reader
+  // users read straight into the table.
   const content = html`
-    <div class="table-responsive">
+    <div class="table-responsive" tabindex="-1" autofocus>
       <table class="table table-sm mb-0" aria-label="Credit schedule">
         <thead>
           <tr>
-            <th scope="col">Credit</th>
-            <th scope="col">Start</th>
-            <th scope="col">End</th>
+            ${schedule.columns.map((column) => html`<th scope="col">${column}</th>`)}
           </tr>
         </thead>
         <tbody>
-          ${rows.map(
+          ${schedule.rows.map(
             (row) => html`
-              <tr>
-                <td>${row.credit}</td>
-                <td>${row.start}</td>
-                <td>${row.end}</td>
+              <tr
+                class="${row.current ? 'table-primary fw-semibold' : ''}"
+                ${row.current ? html`aria-current="true"` : ''}
+              >
+                ${row.cells.map(
+                  (cell, index) => html`
+                    <td class="${row.past ? 'text-muted' : ''}">
+                      ${cell}
+                      ${
+                        row.current && index === 0
+                          ? html`<span class="badge text-bg-primary ms-1">Now</span>`
+                          : ''
+                      }
+                    </td>
+                  `,
+                )}
               </tr>
             `,
           )}
@@ -70,7 +108,9 @@ function CreditSchedule({ rows }: { rows: { credit: string; start: string; end: 
   return html`
     <button
       type="button"
-      class="btn btn-xs btn-outline-secondary ms-1"
+      class="btn btn-link link-body-emphasis p-0 align-baseline"
+      style="text-decoration-style: dotted; text-underline-offset: 3px;"
+      aria-label="${credit}, show credit schedule"
       data-bs-toggle="popover"
       data-bs-container="body"
       data-bs-html="true"
@@ -79,7 +119,7 @@ function CreditSchedule({ rows }: { rows: { credit: string; start: string; end: 
       data-bs-custom-class="popover-wide"
       data-bs-placement="bottom"
     >
-      Credit schedule
+      ${credit}<i class="bi bi-chevron-down ms-1 small" aria-hidden="true"></i>
     </button>
   `;
 }
