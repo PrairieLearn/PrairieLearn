@@ -81,10 +81,7 @@ export function StudentAvailableCredit({
         <tbody>
           ${schedule.rows.map(
             (row) => html`
-              <tr
-                class="${row.current ? 'table-primary fw-semibold' : ''}"
-                ${row.current ? html`aria-current="true"` : ''}
-              >
+              <tr class="${row.current ? 'table-primary fw-semibold' : ''}">
                 ${row.cells.map(
                   (cell, index) => html`
                     <td class="${row.past ? 'text-muted' : ''}">
