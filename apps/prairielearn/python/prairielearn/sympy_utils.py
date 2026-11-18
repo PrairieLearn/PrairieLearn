@@ -2379,6 +2379,21 @@ def try_parse_symbolic_submission(
         )
     elif use_mathjson:
         assert formula_editor_mathjson is not None
+        if formula_editor_latex and re.search(
+            r"\\pm(?![a-zA-Z])", formula_editor_latex
+        ):
+            plus_minus_result = _try_normalize_symbolic_input(
+                submission,
+                variable_list,
+                custom_function_list,
+                formula_editor=True,
+                latex=formula_editor_latex,
+                allow_trig_functions=allow_trig_functions,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+            )
+            if isinstance(plus_minus_result, SympyParseFailure):
+                return plus_minus_result
         result = _try_parse_mathjson_as_sympy(
             formula_editor_mathjson,
             formula_editor_latex or submission,
