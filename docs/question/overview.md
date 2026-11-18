@@ -124,7 +124,7 @@ Any question that is marked with `"shareSourcePublicly": true` will be considere
 
 ### Question Authorship
 
-List the UIDs or ORCID URLs of the people who contributed to this question in `authors`:
+List the UIDs or ORCID URLs of the people who contributed to this question in `authors` (at most 100 entries):
 
 ```json
 {

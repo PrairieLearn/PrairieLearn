@@ -3,9 +3,14 @@ import { Hono } from 'hono';
 
 import {
   CreateConversationInput,
+  MAX_ATTACHMENT_BYTES,
+  MAX_THUMBNAIL_BYTES,
+  PageCatalogSchema,
   RequestChangesResultSchema,
+  UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
 
+import { imageType, thumbnailKey, uploadKey } from '../conversation/attachments.js';
 import { reportError } from '../monitoring.js';
 
 import { isAuthorized } from './auth.js';
@@ -26,6 +31,16 @@ app.use('*', async (c, next) => {
   await next();
 });
 
+/** The local route's body is the course archive, so its page catalog arrives in a header. */
+function parsePagesHeader(header: string | undefined) {
+  if (header === undefined) return { success: true as const, data: undefined };
+  try {
+    return PageCatalogSchema.safeParse(JSON.parse(decodeURIComponent(header)));
+  } catch {
+    return { success: false as const };
+  }
+}
+
 // Local PL development uploads the authorized course's current files and Git history.
 // The first message unpacks this archive; creation alone does not start a container.
 app.post('/conversations/local', async (c) => {
@@ -36,12 +51,14 @@ app.post('/conversations/local', async (c) => {
   if (directory.startsWith('/') || directory.split('/').includes('..')) {
     return c.text('Expected a relative course directory', 400);
   }
+  const pages = parsePagesHeader(c.req.header('X-PL-Pages'));
+  if (!pages.success) return c.text('Invalid page catalog', 400);
   const id = crypto.randomUUID();
   const archiveKey = `local-sources/${id}.tar.gz`;
   await c.env.CHECKPOINTS.put(archiveKey, c.req.raw.body);
   try {
     const conversation = await getAgentByName(c.env.Conversation, id);
-    await conversation.initialize({ type: 'local', archiveKey, directory });
+    await conversation.initialize({ type: 'local', archiveKey, directory }, pages.data);
   } catch (error) {
     await c.env.CHECKPOINTS.delete(archiveKey);
     throw error;
@@ -54,17 +71,26 @@ app.post('/conversations', async (c) => {
   if (!input.success) return c.text('Invalid request', 400);
   const id = crypto.randomUUID();
   const conversation = await getAgentByName(c.env.Conversation, id);
-  await conversation.initialize({ type: 'github', ...input.data });
+  const { pages, ...source } = input.data;
+  await conversation.initialize({ type: 'github', ...source }, pages);
   return c.json({ id }, 201);
 });
 
 const conversations = new Hono<{ Bindings: Env }>();
 conversations.use('/:id/*', async (c, next) => {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(c.req.param('id')!)) {
-    return c.notFound();
-  }
+  if (!UUID_PATTERN.test(c.req.param('id')!)) return c.notFound();
   await next();
 });
+conversations.use('/:id/uploads/:uploadId/*', async (c, next) => {
+  if (!UUID_PATTERN.test(c.req.param('uploadId')!)) return c.notFound();
+  await next();
+});
+
+/** A request body's declared size, if it is 1 to `max` bytes. R2 requires a known length. */
+function bodySize(request: Request, max: number) {
+  const size = Number(request.headers.get('Content-Length'));
+  return request.body && Number.isSafeInteger(size) && size >= 1 && size <= max ? size : null;
+}
 
 conversations.post('/:id/resume', async (c) => {
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
@@ -78,6 +104,63 @@ conversations.post('/:id/resume', async (c) => {
     reportError(error);
     return c.json({ error: 'Could not recover the course agent' }, 503);
   }
+});
+
+// The browser uploads each attachment before sending the message that refers to it by ID.
+conversations.post('/:id/uploads', async (c) => {
+  const size = bodySize(c.req.raw, MAX_ATTACHMENT_BYTES);
+  if (size === null) return c.text(`Expected a file of 1 to ${MAX_ATTACHMENT_BYTES} bytes`, 400);
+  // The conversation's Durable Object reserves room, so concurrent uploads can't overshoot the cap.
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  if (!(await conversation.reserveUpload(size))) {
+    return c.text('This conversation has reached its attachment limit', 413);
+  }
+  const id = crypto.randomUUID();
+  try {
+    await c.env.CHECKPOINTS.put(uploadKey(c.req.param('id'), id), c.req.raw.body);
+  } catch (error) {
+    await conversation.releaseUpload(size);
+    throw error;
+  }
+  return c.json({ id }, 201);
+});
+
+conversations.get('/:id/uploads/:uploadId', async (c) => {
+  const upload = await c.env.CHECKPOINTS.get(uploadKey(c.req.param('id'), c.req.param('uploadId')));
+  if (!upload) return c.notFound();
+  return new Response(upload.body, {
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String(upload.size),
+    },
+  });
+});
+
+// The browser makes an image's preview, since Workers can't resize images without a paid service.
+// Only an existing upload gets one, so thumbnails can't fill the bucket past the upload cap.
+conversations.post('/:id/uploads/:uploadId/thumbnail', async (c) => {
+  if (bodySize(c.req.raw, MAX_THUMBNAIL_BYTES) === null) {
+    return c.text(`Expected a thumbnail of 1 to ${MAX_THUMBNAIL_BYTES} bytes`, 400);
+  }
+  const { id, uploadId } = c.req.param();
+  if (!(await c.env.CHECKPOINTS.head(uploadKey(id, uploadId)))) return c.notFound();
+  const bytes = new Uint8Array(await c.req.arrayBuffer());
+  const contentType = imageType(bytes);
+  if (!contentType) return c.text('Expected a PNG, JPEG, GIF, or WebP thumbnail', 415);
+  await c.env.CHECKPOINTS.put(thumbnailKey(id, uploadId), bytes, { httpMetadata: { contentType } });
+  return c.body(null, 204);
+});
+
+conversations.get('/:id/uploads/:uploadId/thumbnail', async (c) => {
+  const thumbnail = await c.env.CHECKPOINTS.get(
+    thumbnailKey(c.req.param('id'), c.req.param('uploadId')),
+  );
+  if (!thumbnail) return c.notFound();
+  return new Response(thumbnail.body, {
+    headers: {
+      'Content-Type': thumbnail.httpMetadata!.contentType!,
+    },
+  });
 });
 
 conversations.get('/:id/reviews/:reviewId', async (c) => {

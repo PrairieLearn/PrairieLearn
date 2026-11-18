@@ -30,7 +30,7 @@ export class SandboxTurn {
       prepare: () => Promise<void>;
       /** Runs alongside the runner start; the thread starts only after both finish. */
       addCourseFiles?: () => Promise<void>;
-      thread: { model: string; instructions: string; threadId: string | null };
+      thread: Parameters<CodexAppServerClient['thread']>[0];
       onThread: (id: string) => void;
       onReady: () => void;
       /** Receives the native turn ID, or null when an earlier attempt already submitted it. */

@@ -949,13 +949,14 @@ describe('resolveAccessControl', () => {
         },
       },
       {
-        // PT reservations only apply in Exam mode; no DC means no at-home path.
-        name: 'Public mode with PT-gated rule and no DC: denied',
+        // PT reservations only apply in Exam mode; no DC means no at-home path,
+        // but a released score still makes a completed instance reachable.
+        name: 'Public mode with PT-gated rule, no DC, and released score: requires completed instance',
         rules: [ptDefaultRule],
         authzMode: 'Public',
         reservations: [validReservation],
         expect: {
-          authorization: 'denied',
+          authorization: 'requires-completed-instance',
           submittable: false,
           credit: 0,
           visibility: { showQuestions: false, showScore: false },
@@ -1484,7 +1485,7 @@ describe('resolveAccessControl', () => {
             makeDefaultRule({ beforeRelease: { listed: true } }, { prairieTestExams: [ptExam1] }),
           ],
           expect: {
-            authorization: 'denied',
+            authorization: 'requires-completed-instance',
             showBeforeRelease: true,
             submittable: false,
             credit: 0,
