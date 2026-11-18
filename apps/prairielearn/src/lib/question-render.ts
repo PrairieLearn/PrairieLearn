@@ -817,6 +817,8 @@ export async function renderPanelsForSubmission({
       ? {
           submissionInfo: getSubmissionInfo({
             submission: { ...submission, grading_job, user_uid },
+            question,
+            assessment_question,
             courseId: question.course_id,
             courseInstanceId: course_instance?.id,
             timezone: course_instance?.display_timezone || course.display_timezone,
