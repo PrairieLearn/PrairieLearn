@@ -128,6 +128,7 @@ it('waits for dialog closure and rejects dialog requests on failure or disposal'
   const openSubmissionInfo = vi
     .fn<QuestionBrowserServices['openSubmissionInfo']>()
     .mockRejectedValueOnce(new Error('Internal details'))
+    .mockRejectedValueOnce(new DOMException('Question view was removed', 'AbortError'))
     .mockImplementation(() => new Promise(() => {}));
   const { services, disposeHost } = connect({
     openCopyQuestion,
@@ -147,9 +148,12 @@ it('waits for dialog closure and rejects dialog requests on failure or disposal'
     'Question service request failed',
   );
   expect(openSubmissionInfo).toHaveBeenCalledWith({ submissionId: '2' });
+  await expect(services.openSubmissionInfo({ submissionId: '2' })).rejects.toMatchObject({
+    name: 'AbortError',
+  });
   const pending = services.openSubmissionInfo({ submissionId: '2' });
   const rejected = pending.catch((error: unknown) => error);
-  await vi.waitFor(() => expect(openSubmissionInfo).toHaveBeenCalledTimes(2));
+  await vi.waitFor(() => expect(openSubmissionInfo).toHaveBeenCalledTimes(3));
   disposeHost();
   expect(await rejected).toMatchObject({ name: 'AbortError' });
 });
