@@ -86,8 +86,7 @@ function getMarkedInstance(options: {
  *
  * @param original The markdown string to convert.
  * @param options Options for the conversion.
- * @param options.sanitize If true, sanitizes the HTML output to prevent XSS
- * attacks.
+ * @param options.sanitize If true, sanitizes the HTML output.
  * @param options.inline If true, parses the markdown as inline content,
  * otherwise as block content.
  * @param options.allowHtml If true, allows HTML tags in the markdown. If false,
@@ -103,7 +102,12 @@ export function markdownToHtml(
     inline = false,
     allowHtml = true,
     interpretMath = true,
-  }: { sanitize?: boolean; inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
+  }: {
+    sanitize?: boolean;
+    inline?: boolean;
+    allowHtml?: boolean;
+    interpretMath?: boolean;
+  } = {},
 ): string {
   const marked = getMarkedInstance({ sanitize, allowHtml, interpretMath });
   return (inline ? marked.parseInline : marked.parse)(original, { async: false });

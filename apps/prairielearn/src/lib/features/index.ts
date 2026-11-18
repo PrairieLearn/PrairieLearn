@@ -16,6 +16,7 @@ const featureNames = [
   'ai-question-generation-course-toggle',
 
   // Can be applied to any context.
+  'assessment-text-markdown',
   'course-agent',
   'ai-question-generation',
   'rich-text-editor',
