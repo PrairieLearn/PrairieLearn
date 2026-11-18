@@ -123,3 +123,41 @@ test('captures current Calculation answers before Save or Grade is clicked', asy
   expect(JSON.parse(request.postDataJSON().postData)).toEqual(captured);
   await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible();
 });
+
+test('allows grading when a legacy answer getter throws during initialization', async ({
+  page,
+  courseInstance,
+}) => {
+  await page.route('**/localscripts/questionCalculation.js', async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      response,
+      body: `${await response.text()}
+        var originalGetSubmittedAnswer = CalculationClient.prototype.getSubmittedAnswer;
+        CalculationClient.prototype.getSubmittedAnswer = function (container, questionData) {
+          var answer = originalGetSubmittedAnswer.call(this, container, questionData);
+          JSON.parse(answer.wx || '');
+          return answer;
+        };
+      `,
+    });
+  });
+  const question = await selectQuestionByQid({
+    course_id: courseInstance.course_id,
+    qid: 'addVectors',
+  });
+  const initialError = page.waitForEvent('pageerror');
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/question/${question.id}/preview`,
+  );
+  expect((await initialError).name).toBe('SyntaxError');
+
+  await page.locator('[data-instavalue="submittedAnswer.wx"]').fill('12');
+  await page.locator('[data-instavalue="submittedAnswer.wy"]').fill('34');
+  const submitted = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url() === page.url(),
+  );
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  expect((await submitted).postDataJSON().__action).toBe('grade');
+  await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible();
+});
