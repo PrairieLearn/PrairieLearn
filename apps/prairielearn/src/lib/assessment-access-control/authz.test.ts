@@ -7,6 +7,7 @@ import type { AccessControlResolverResult } from './resolver.js';
 const baseAssessmentResult: AssessmentAuthzResult = {
   authorized: true,
   credit: 100,
+  credit_end_date: null,
   credit_date_string: '2025-03-15T12:00:00Z',
   time_limit_min: null,
   password: null,

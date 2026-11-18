@@ -1,3 +1,5 @@
+import { getLocalDate } from '@prairielearn/utils/timezone';
+
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
 import {
@@ -350,7 +352,7 @@ export function resolveVisibility(
   return true;
 }
 
-export function formatDateShort(date: Date, timezone: string): string {
+export function formatDateShort(date: Date, timezone: string, baseDate: Date): string {
   // Replicate SQL format: 'HH24:MI, Dy, Mon FMDD'
   // Example: "14:30, Mon, Jan 5"
   const formatter = new Intl.DateTimeFormat('en-US', {
@@ -367,7 +369,14 @@ export function formatDateShort(date: Date, timezone: string): string {
   const get = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((p) => p.type === type)?.value ?? '';
 
-  return `${get('hour')}:${get('minute')}, ${get('weekday')}, ${get('month')} ${get('day')}`;
+  const time = `${get('hour')}:${get('minute')}`;
+  const localDate = getLocalDate(date, timezone);
+  const baseLocalDate = getLocalDate(baseDate, timezone);
+
+  if (localDate.equals(baseLocalDate)) return `${time}, today`;
+  if (localDate.equals(baseLocalDate.add({ days: 1 }))) return `${time}, tomorrow`;
+
+  return `${time}, ${get('weekday')}, ${get('month')} ${get('day')}`;
 }
 
 function formatCreditDateString(
@@ -375,10 +384,11 @@ function formatCreditDateString(
   submittable: boolean,
   nextDeadlineDate: Date | null,
   displayTimezone: string,
+  date: Date,
 ): string {
   if (credit <= 0 || !submittable) return 'None';
   if (nextDeadlineDate) {
-    return `${credit}% until ${formatDateShort(nextDeadlineDate, displayTimezone)}`;
+    return `${credit}% until ${formatDateShort(nextDeadlineDate, displayTimezone, date)}`;
   }
   return `${credit}%`;
 }
@@ -485,7 +495,7 @@ export function resolveAccessControl(
     return {
       authorization: 'granted',
       credit: 100,
-      creditDateString: formatCreditDateString(100, submittable, null, displayTimezone),
+      creditDateString: formatCreditDateString(100, submittable, null, displayTimezone, date),
       timeLimitMin: null,
       password: null,
       submittable,
@@ -560,6 +570,7 @@ export function resolveAccessControl(
       current.submittable,
       current.endDate,
       displayTimezone,
+      date,
     ),
     timeLimitMin: computeTimeLimitMin(
       rule.dateControl?.durationMinutes,
