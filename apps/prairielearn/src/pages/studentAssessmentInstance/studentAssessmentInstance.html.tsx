@@ -23,6 +23,7 @@ import { type Assessment, type AssessmentInstance, type GroupConfig } from '../.
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { GradingPending } from '../../models/assessment-instance.js';
 
 import { ExamFooterContent } from './components/ExamFooterContent.js';
 import { QuestionTableBody } from './components/QuestionTableBody.js';
@@ -30,6 +31,7 @@ import type { InstanceQuestionRow } from './studentAssessmentInstance.types.js';
 
 export function StudentAssessmentInstance({
   instance_question_rows,
+  gradingPending,
   showTimeLimitExpiredModal,
   groupConfig,
   groupInfo,
@@ -38,6 +40,7 @@ export function StudentAssessmentInstance({
   resLocals,
 }: {
   instance_question_rows: InstanceQuestionRow[];
+  gradingPending: GradingPending | null;
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
   resLocals: ResLocalsForPage<'assessment-instance'> & {
@@ -290,7 +293,7 @@ export function StudentAssessmentInstance({
                       }
                     </div>
                     <div class="col-md-3 col-sm-12">
-                      ${AssessmentScoreHtml({ score: null, gradingPending: resLocals.assessment_instance_grading_pending ?? null })}
+                      ${AssessmentScoreHtml({ score: null, gradingPending })}
                     </div>
                     <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({
@@ -319,7 +322,7 @@ export function StudentAssessmentInstance({
                       }
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${AssessmentScoreHtml({ score: resLocals.assessment_instance.score_perc, gradingPending: resLocals.assessment_instance_grading_pending ?? null })}
+                      ${AssessmentScoreHtml({ score: resLocals.assessment_instance.score_perc, gradingPending })}
                     </div>
                     <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({

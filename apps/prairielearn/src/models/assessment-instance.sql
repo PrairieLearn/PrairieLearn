@@ -87,7 +87,12 @@ INSERT INTO
 -- so that the overall status always agrees with the student's question table.
 SELECT
   iq.assessment_instance_id,
-  bool_or(iq.requires_manual_grading) AS manual,
+  -- Staff can tag unanswered questions for manual grading, but there is
+  -- nothing to grade, and the manual grading queue excludes them too.
+  bool_or(
+    iq.requires_manual_grading
+    AND iq.status != 'unanswered'
+  ) AS manual,
   bool_or(
     iq.status IN ('saved', 'grading')
     AND (

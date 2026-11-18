@@ -1,7 +1,5 @@
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { selectGradingPending } from '../models/assessment-instance.js';
-
 import {
   type AuthzDataForAccessControl,
   resolveModernAssessmentAccessResultsBatch,
@@ -103,15 +101,6 @@ async function getGradebookRows({
       reqDate,
       auth,
     });
-    const gradingPending = await selectGradingPending(
-      rows
-        .filter((row) => row.show_closed_assessment_score)
-        .map((row) => row.assessment_instance.id),
-    );
-    for (const row of rows) {
-      row.assessment_instance_grading_pending =
-        gradingPending.get(row.assessment_instance.id) ?? null;
-    }
     return rows;
   }
 

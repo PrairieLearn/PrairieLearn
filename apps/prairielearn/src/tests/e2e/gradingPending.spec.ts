@@ -41,7 +41,7 @@ test('students see overall pending status for saved answers and manual grading',
   page,
   baseURL,
   courseInstance,
-}, testInfo) => {
+}) => {
   test.setTimeout(60_000);
   const cookies = await signInAsStudent(page, baseURL, courseInstance);
   const assessment = await selectAssessmentByTid({
@@ -59,7 +59,7 @@ test('students see overall pending status for saved answers and manual grading',
   await expect(assessmentScore.getByText('Grading pending', { exact: true })).toBeVisible();
   await assessmentScore.getByRole('button', { name: 'Grading pending', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Grading pending' })).toContainText(
-    'Some saved answers have not been graded.',
+    'You have saved answers that you have not submitted for grading.',
   );
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Grading pending' })).toHaveCount(0);
@@ -86,28 +86,13 @@ test('students see overall pending status for saved answers and manual grading',
   await expect(page.getByRole('dialog', { name: 'Grading pending' })).toContainText(
     'Some answers are waiting for manual grading.',
   );
-  await page.screenshot({
-    path: testInfo.outputPath('pending-popover-overview.png'),
-    fullPage: true,
-  });
   await page.keyboard.press('Escape');
   await expect(pendingButton).toBeFocused();
-  await page.screenshot({
-    path: testInfo.outputPath('manual-pending-overview.png'),
-    fullPage: true,
-  });
   await page.getByRole('link', { name: 'Assessments', exact: true }).click();
   const assessmentRow = page.getByRole('row').filter({ hasText: assessment.title! });
   await expect(assessmentRow.getByText('Grading pending', { exact: true })).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath('pending-assessments.png'), fullPage: true });
   await page.getByRole('link', { name: 'Gradebook', exact: true }).click();
   await expect(assessmentRow.getByText('Grading pending', { exact: true })).toBeVisible();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({
-    path: testInfo.outputPath('pending-gradebook-mobile.png'),
-    fullPage: true,
-  });
-  await page.setViewportSize({ width: 1280, height: 720 });
 
   await page.context().clearCookies();
   await page.goto(
@@ -119,17 +104,13 @@ test('students see overall pending status for saved answers and manual grading',
   await page.goto(overviewUrl);
   await expect(page.getByText('Grading pending', { exact: true })).toHaveCount(0);
   await expect(page.getByTestId('scorebar')).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath('manual-graded-overview.png'),
-    fullPage: true,
-  });
 });
 
 test('saved work with real-time grading disabled shows pending without exposing a current score', async ({
   page,
   baseURL,
   courseInstance,
-}, testInfo) => {
+}) => {
   await signInAsStudent(page, baseURL, courseInstance);
   const assessment = await selectAssessmentByTid({
     course_instance_id: courseInstance.id,
@@ -152,10 +133,6 @@ test('saved work with real-time grading disabled shows pending without exposing 
   await page.goto(overviewUrl);
   await expect(page.getByText('Grading pending', { exact: true })).toBeVisible();
   await expect(page.getByTestId('scorebar')).toHaveCount(0);
-  await page.screenshot({
-    path: testInfo.outputPath('deferred-pending-overview.png'),
-    fullPage: true,
-  });
 
   await updateInstanceQuestions({
     assessment_question: await selectAssessmentQuestionById(question.assessment_question_id),
@@ -173,8 +150,4 @@ test('saved work with real-time grading disabled shows pending without exposing 
   await expect(page.getByTestId('assessment-closed-message')).toBeVisible();
   await expect(page.getByRole('table', { name: 'Questions', exact: true })).toHaveCount(0);
   await expect(page.getByText('Grading pending', { exact: true })).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath('closed-pending-overview.png'),
-    fullPage: true,
-  });
 });

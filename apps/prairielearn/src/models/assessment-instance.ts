@@ -83,7 +83,7 @@ export async function insertGroupAssessmentInstance({
 export interface GradingPending {
   /** At least one question is waiting for manual grading. */
   manual: boolean;
-  /** At least one saved answer has not been automatically graded. */
+  /** At least one saved answer has not been graded. */
   auto: boolean;
 }
 
@@ -108,4 +108,11 @@ export async function selectGradingPending(
         { manual, auto },
       ]),
   );
+}
+
+export async function selectAssessmentInstanceGradingPending(
+  assessment_instance_id: string,
+): Promise<GradingPending | null> {
+  const gradingPending = await selectGradingPending([assessment_instance_id]);
+  return gradingPending.get(assessment_instance_id) ?? null;
 }

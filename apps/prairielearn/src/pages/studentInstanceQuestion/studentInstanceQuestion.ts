@@ -23,6 +23,7 @@ import { getCanonicalHost } from '../../lib/url.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import { selectAssessmentInstanceGradingPending } from '../../models/assessment-instance.js';
 import { selectEnabledToolsForInstanceQuestion } from '../../models/assessment.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
@@ -414,6 +415,11 @@ router.get(
         lastGrader,
         questionCopyTargets,
         enabledTools,
+        // Only homework question pages show the assessment score.
+        gradingPending:
+          res.locals.assessment.type === 'Homework'
+            ? await selectAssessmentInstanceGradingPending(res.locals.assessment_instance.id)
+            : null,
       }),
     );
   }),
