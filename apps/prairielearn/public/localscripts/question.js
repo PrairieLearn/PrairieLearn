@@ -67,6 +67,8 @@ $(function () {
     initialize($(questionContainer), function (err) {
       if (err) return console.log(err);
       render($(questionContainer));
+      $(questionContainer).find('.question-grade').click(grade);
+      $(questionContainer).find('.question-save').click(save);
       $(questionContainer)
         .find('form.question-form')
         .each(function (i, form) {
@@ -78,8 +80,6 @@ $(function () {
             .find('input.postData')
             .attr('value', getPostData($(questionContainer)));
         });
-      $(questionContainer).find('.question-grade').click(grade);
-      $(questionContainer).find('.question-save').click(save);
     });
   });
 });
