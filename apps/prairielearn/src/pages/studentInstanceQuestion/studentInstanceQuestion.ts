@@ -331,6 +331,12 @@ router.get(
       assessment_id: res.locals.assessment.id,
     });
 
+    // Only homework question pages show the assessment score.
+    const gradingPending =
+      res.locals.assessment.type === 'Homework'
+        ? await selectAssessmentInstanceGradingPending(res.locals.assessment_instance.id)
+        : null;
+
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we
       // fetch and display the most recent non-broken variant.
@@ -349,6 +355,7 @@ router.get(
             renderState: null,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
             enabledTools,
+            gradingPending,
           }),
         );
         return;
@@ -415,11 +422,7 @@ router.get(
         lastGrader,
         questionCopyTargets,
         enabledTools,
-        // Only homework question pages show the assessment score.
-        gradingPending:
-          res.locals.assessment.type === 'Homework'
-            ? await selectAssessmentInstanceGradingPending(res.locals.assessment_instance.id)
-            : null,
+        gradingPending,
       }),
     );
   }),

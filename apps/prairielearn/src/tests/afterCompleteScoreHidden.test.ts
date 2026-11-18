@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { selectAssessmentInstanceGradingPending } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
@@ -128,7 +129,8 @@ describe(
         AssessmentInstanceSchema,
       );
       assert.equal(result.open, false);
-      await sqldb.execute(sql.mark_requires_manual_grading, { assessment_instance_id: result.id });
+      await sqldb.execute(sql.mark_grading_pending, { assessment_instance_id: result.id });
+      assert.isNotNull(await selectAssessmentInstanceGradingPending(result.id));
     });
 
     test('check that accessing a question gives the "assessment closed" message', async () => {
