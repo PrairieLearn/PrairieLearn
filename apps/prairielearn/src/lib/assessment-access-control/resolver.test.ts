@@ -12,7 +12,6 @@ import {
   type OverrideRule,
   type PrairieTestExam,
   type PrairieTestReservation,
-  formatDateShort,
   mergeRules,
   resolveAccessControl,
   resolveVisibility,
@@ -781,7 +780,7 @@ describe('resolveAccessControl', () => {
         expect: {
           authorization: 'granted',
           submittable: true,
-          creditDateString: expect.stringContaining('May 31'),
+          creditDateString: expect.stringContaining('May\u00a031'),
         },
       },
       {
@@ -802,7 +801,7 @@ describe('resolveAccessControl', () => {
         expect: {
           authorization: 'granted',
           submittable: true,
-          creditDateString: expect.stringContaining('May 31'),
+          creditDateString: expect.stringContaining('May\u00a031'),
         },
       },
       {
@@ -824,7 +823,7 @@ describe('resolveAccessControl', () => {
         expect: {
           authorization: 'granted',
           submittable: true,
-          creditDateString: expect.stringContaining('Jun 30'),
+          creditDateString: expect.stringContaining('Jun\u00a030'),
         },
       },
       {
@@ -847,7 +846,7 @@ describe('resolveAccessControl', () => {
         expect: {
           authorization: 'granted',
           submittable: true,
-          creditDateString: expect.stringContaining('Jul 31'),
+          creditDateString: expect.stringContaining('Jul\u00a031'),
         },
       },
     ])('$name', (c) => {
@@ -882,7 +881,7 @@ describe('resolveAccessControl', () => {
           submittable: true,
           password: 'override-pw',
           // Due Jun 1 UTC = May 31 CDT
-          creditDateString: expect.stringContaining('May 31'),
+          creditDateString: expect.stringContaining('May\u00a031'),
         },
       },
       {
@@ -949,13 +948,14 @@ describe('resolveAccessControl', () => {
         },
       },
       {
-        // PT reservations only apply in Exam mode; no DC means no at-home path.
-        name: 'Public mode with PT-gated rule and no DC: denied',
+        // PT reservations only apply in Exam mode; no DC means no at-home path,
+        // but a released score still makes a completed instance reachable.
+        name: 'Public mode with PT-gated rule, no DC, and released score: requires completed instance',
         rules: [ptDefaultRule],
         authzMode: 'Public',
         reservations: [validReservation],
         expect: {
-          authorization: 'denied',
+          authorization: 'requires-completed-instance',
           submittable: false,
           credit: 0,
           visibility: { showQuestions: false, showScore: false },
@@ -1484,7 +1484,7 @@ describe('resolveAccessControl', () => {
             makeDefaultRule({ beforeRelease: { listed: true } }, { prairieTestExams: [ptExam1] }),
           ],
           expect: {
-            authorization: 'denied',
+            authorization: 'requires-completed-instance',
             showBeforeRelease: true,
             submittable: false,
             credit: 0,
@@ -2845,27 +2845,5 @@ describe('resolveVisibility', () => {
     const showDate = showAgain != null ? new Date(showAgain) : showAgain;
     const hideDate = hideAgain != null ? new Date(hideAgain) : undefined;
     expect(resolveVisibility(hide, showDate, hideDate, now)).toBe(expected);
-  });
-});
-
-describe('formatDateShort', () => {
-  it.each([
-    {
-      name: 'America/Chicago timezone (12:00 UTC = 07:00 CDT)',
-      date: '2025-03-15T12:00:00Z',
-      timezone: 'America/Chicago',
-      patterns: [/07:00/, /Sat/, /Mar/, /15/],
-    },
-    {
-      name: 'UTC timezone',
-      date: '2025-03-15T14:30:00Z',
-      timezone: 'UTC',
-      patterns: [/14:30/, /Sat/, /Mar/, /15/],
-    },
-  ])('$name', ({ date, timezone, patterns }) => {
-    const result = formatDateShort(new Date(date), timezone);
-    for (const pattern of patterns) {
-      expect(result).toMatch(pattern);
-    }
   });
 });
