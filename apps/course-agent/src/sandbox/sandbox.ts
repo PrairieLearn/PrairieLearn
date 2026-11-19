@@ -70,6 +70,13 @@ class SandboxCommandError extends Error {
   }
 }
 
+/** Why the agent's user can't read a file, in words the agent can act on. */
+function fileProblem(error: SandboxFileError) {
+  if (error.code === 'ENOENT') return 'no such file';
+  if (error.code === 'EACCES') return 'permission denied';
+  return error.code;
+}
+
 /**
  * The agent may fetch the branch without merging it. Diffing against the fetched tip would
  * propose reverting the newer upstream files, so diff against what the checkout is based on.
@@ -428,17 +435,27 @@ export class CourseSandbox extends DurableObject<Env> {
           return info.type === 'file' ? { size: Number(info.size) } : { problem: 'not a file' };
         } catch (error) {
           if (!SandboxFileError.is(error)) throw error;
-          return { problem: error.code === 'ENOENT' ? 'no such file' : error.code };
+          return { problem: fileProblem(error) };
         }
       }),
     );
   }
 
-  /** Copy a file of the size `statFiles()` reported into the bucket; R2 needs the length. */
-  async storeFile(path: string, size: number, key: string) {
-    const file = await new Files(this.container).readFile(path, AGENT_FILE_OPTIONS);
+  /**
+   * Copy a file of the size `statFiles()` reported into the bucket; R2 needs the length. A file
+   * the agent can't read is returned as a problem, like one it can't measure.
+   */
+  async storeFile(path: string, size: number, key: string): Promise<{ problem: string } | null> {
+    let file;
+    try {
+      file = await new Files(this.container).readFile(path, AGENT_FILE_OPTIONS);
+    } catch (error) {
+      if (!SandboxFileError.is(error)) throw error;
+      return { problem: fileProblem(error) };
+    }
     // A file that changed size since it was measured fails here instead of being cut short.
     await this.env.CHECKPOINTS.put(key, file.body!.pipeThrough(new FixedLengthStream(size)));
+    return null;
   }
 
   /**

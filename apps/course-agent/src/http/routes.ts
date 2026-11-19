@@ -172,7 +172,6 @@ conversations.get('/:id/sent-files/:fileId', async (c) => {
     headers: {
       'Content-Type': 'application/octet-stream',
       'Content-Length': String(file.size),
-      'Cache-Control': CACHE_CONTROL,
     },
   });
 });
