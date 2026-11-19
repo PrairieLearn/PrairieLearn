@@ -1,7 +1,7 @@
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 
-import { afterAll, assert, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
 import { CourseActionCatalogSchema } from '@prairielearn/course-agent-types';
@@ -123,6 +123,10 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     delivered.length = 0;
   });
   afterAll(helperServer.after);
+
+  /** An approval's result is sent to the service after the approval request answers. */
+  const waitForDeliveries = (count: number) =>
+    vi.waitFor(() => expect(delivered).toHaveLength(count));
   afterAll(async () => {
     service.close();
     await once(service, 'close');
@@ -332,6 +336,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       expect(
         await client.courseAgent.getAction.query({ conversationId: conversation.id, actionId: id }),
       ).toMatchObject({ decision: 'approved', result });
+      await waitForDeliveries(1);
       expect(delivered).toEqual([
         {
           path: `/conversations/${conversation.agent_conversation_id}/reviews/${id}/outcome`,
@@ -364,6 +369,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       });
     });
     expect(await issuesOpen(issueIds)).toEqual([true]);
+    await waitForDeliveries(1);
     expect(delivered[0].body).toMatchObject({
       outcome: { status: 'succeeded', summary: 'Reopened 1 issue.' },
     });
@@ -403,6 +409,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       action: { name: 'issues_close', title: 'Close 1 issue' },
       outcome: { status: 'not_attempted' },
     };
+    await waitForDeliveries(2);
     expect(delivered.map(({ body }) => body)).toEqual([result, { ...result, viaMessage: true }]);
   });
 
@@ -536,6 +543,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
         });
       }
     });
+    await waitForDeliveries(2);
     expect(delivered.map(({ body }) => body)).toMatchObject([
       { outcome: { status: 'succeeded', summary: 'Closed 1 issue.' } },
       {
