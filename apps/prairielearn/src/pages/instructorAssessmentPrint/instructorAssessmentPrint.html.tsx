@@ -1382,7 +1382,7 @@ function PrintPreparation({
               >
                 <summary className="h6 mb-0">Recent exports ({recentExports.data.length})</summary>
                 <p className="small text-muted mt-2 mb-2">
-                  Files are available here for 24 hours once they have been prepared.
+                  Files are available here for up to 24 hours after you request them.
                 </p>
                 <ol className="mb-0 ps-3">
                   {recentExports.data.map((item) => (
@@ -2473,8 +2473,8 @@ function PrintPreparation({
             ) : (
               <p className="mb-0">
                 This will regenerate <strong>Form {pendingFormAction.label}</strong> while keeping
-                its label, selected questions, and print settings.
-                {hasRandomization ? ' Questions that use randomness will get new values.' : ''}
+                its label, selected questions, their order, and print settings.
+                {hasRandomization ? ' Random question values may change.' : ''}
               </p>
             )
           ) : pendingFormAction?.action === 'reviseSelection' ? (

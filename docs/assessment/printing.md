@@ -2,11 +2,11 @@
 
 Course staff with permission to preview assessments can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
 
-For assessments with randomization, you can prepare several versions, called _forms_. Each form saves its chosen questions, their order and random values, spacing, and default cover settings. Current forms share one paper size; previous forms keep the size they used. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
+For assessments with randomization, you can prepare multiple _forms_, such as A1 and B1. Each form keeps its selected questions, their order and any random values, and its print settings. Changing paper size updates all current forms; previous forms keep the size they used. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
 
 ## Prepare an assessment
 
-1. Open the assessment's **Questions** page and select **Print**. Form A1 is created automatically the first time course staff open this view. Its questions and random values are chosen then; you can leave questions out before downloading.
+1. Open the assessment's **Questions** page and select **Print**. If the assessment has questions, Form A1 is created automatically the first time course staff open this view. Its questions and any random values are chosen then; you can leave questions out before downloading.
 2. Under **Paper and layout**, choose a **Paper size** for all current forms and **Space per question** for the selected form.
 3. Choose what to include on the [cover page](#cover-pages).
 4. Under **Questions in this form**, uncheck any questions you want to leave out. Use **Spacing** to give individual questions more or less room.
@@ -24,13 +24,13 @@ If your course uses custom elements in questions, check those questions in both 
 The question list highlights two kinds of items to check:
 
 - **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the assessment.
-- **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of a current form, then select **Update preview**. Downloads are unavailable while included questions have these errors. If the form has already been downloaded, changing a checkbox asks you to create a new numbered version. Previous forms cannot be edited, so reload the page after fixing one of their questions.
+- **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of a current form, then select **Update preview**. Downloads are unavailable while included questions have these errors. If a download has started for the form, changing a checkbox asks you to create a new numbered version. Previous forms cannot be edited, so reload the page after fixing one of their questions.
 
 Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
 
 ## Prepare multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. The new form copies the settings of the form you are viewing, including its question exclusions and spacing, while using the current forms' paper size and generating its own questions and random values. You can have up to 26 current forms. Their first versions are labeled A1 through Z1, and new forms take the first available letter. You can archive a form when at least one other current form remains. Assessments without randomization use a single current form.
+If your assessment uses randomization, select **Add form** to create another form. The new form copies the settings of the form you are viewing, including which questions you left out and the space set for each question. It uses the current forms' paper size and chooses its own questions and random values. You can have up to 26 current forms. Their first versions are labeled A1 through Z1, and new forms take the first available letter. You can archive a form when at least one other current form remains. Assessments without randomization use a single current form.
 
 Select a form to review it and choose its questions and spacing. Changes to those settings save as you make them, so you can switch forms before updating the preview. Save any changes to **Additional student fields** before switching. Select **Update preview** before downloading a form.
 
@@ -38,9 +38,13 @@ Starting the first PDF or Word download for a form fixes its question selection 
 
 Changing **Paper size** updates all current forms. If a download has started for any affected form, confirm the change to create its next numbered version; the earlier version remains in **Previous forms**. Question selections and other print settings stay with each form. Previous forms keep their saved paper size. If current forms already have different sizes, use the button under **Paper size** to align them before a combined download.
 
-To regenerate a form, select the circular arrow button beside it, labeled **Regenerate Form A1** (or the corresponding label), and confirm the change. Before an export starts, regeneration keeps the form's label, selected questions, and print settings. Questions that use randomness get new values. After an export starts, regeneration creates a numbered version: A1 becomes A2, then A3. The new version may have a different question selection and order. It keeps the paper and default cover settings, while question exclusions and individual spacing reset. Review the new questions and answer key before downloading. The earlier version keeps its chosen questions and settings under **Previous forms**. Use the archive button beside a form to remove it from the current set. Adding a form after archiving C1 creates C2.
+For an assessment with randomization, select the circular arrow button beside a form, labeled **Regenerate Form A1** (or the corresponding label), to reroll any random values in its questions. Before starting a download, regeneration keeps the form's label, selected questions, their order, and print settings. To draw a new choice or order of questions, select **Add form**.
 
-A form does not save a separate copy of question content, assessment instructions, or the honor code. Editing any of these can change a later download of an earlier form. Download and keep the matching student copy and answer key for each form. After editing course content, check both again before printing or grading.
+After a download starts, regeneration creates a numbered version: A1 becomes A2, then A3. The new version may have a different set or order of questions. It keeps the paper size and default cover settings, but starts with every question in the new form included and returns individual **Spacing** choices to **Automatic**. Review the new student copy and answer key before downloading. The earlier version remains under **Previous forms** with its chosen questions and settings. For an assessment without randomization, **Regenerate** appears only after a download starts and creates a new numbered version.
+
+Use the archive button beside a form to remove it from the current set. If A1 and B1 remain after you archive C1, adding another form creates C2.
+
+Editing question content, assessment instructions, or the honor code can change a later download of an earlier form. Download and keep the matching student copy and answer key for each form. After editing course content, check both again before printing or grading.
 
 ## Cover pages
 
@@ -80,7 +84,9 @@ If file preparation says the preview has expired or changed, select **Update pre
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-Choosing an individual file from **Download…** starts preparing it. For a combined PDF, review the page count in the dialog, then select its download button. PDF and Word files download automatically when ready if you keep this page open. You can start another download while one is being prepared. **Recent exports** shows the progress of your ten newest files for this assessment and links to completed files. Forms are shared with course staff, but only the staff member who requested a file can download it. Use the links if you return later or an automatic download is blocked. Each file is available for 24 hours after it was requested.
+Choosing an individual file from **Download…** starts preparing it. For a combined PDF, review the page count in the dialog, then select its download button. PDF and Word files download automatically when ready if you keep this page open. You can start another download while one is being prepared.
+
+**Recent exports** shows the progress of your ten newest files for this assessment and links to completed files. Forms are shared with course staff, but only the staff member who requested a file can download it. Use the links if you return later or an automatic download is blocked. Each file is available for up to 24 hours after you request it.
 
 ### Print copies for a class
 
