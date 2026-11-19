@@ -741,6 +741,85 @@ it('charges the estimate when final usage never arrives', async () => {
   expect(restored.schedule).toHaveBeenCalledWith(0, 'flushUsage', undefined, { idempotent: true });
 });
 
+it('charges a reply the agent dropped what the provider reports, even after the turn ends', async () => {
+  const replies: ReadableStreamDefaultController<Uint8Array>[] = [];
+  stubFetch({
+    usage: async () => decision(),
+    model: async () =>
+      new Response(new ReadableStream<Uint8Array>({ start: (reply) => void replies.push(reply) }), {
+        headers: { 'Content-Type': 'text/event-stream' },
+      }),
+  });
+  const waited = Promise.withResolvers<undefined>();
+  vi.stubGlobal('scheduler', { wait: () => waited.promise });
+  const state = await runningConversation();
+  // Codex drops the reply it is reading to deliver a message staff sent. Two such replies are
+  // still running when the turn ends normally.
+  for (const response of [await state.startRequest(), await state.startRequest()]) {
+    // Not awaited: this settles only once the Worker's own copy of the reply is done.
+    void response.body!.cancel();
+  }
+  await state.finish();
+  expect(metering(state.saved).unreported).toEqual(emptyUsage());
+
+  const usage = {
+    input_tokens: 30_000,
+    input_tokens_details: { cached_tokens: 29_000 },
+    output_tokens: 800,
+  };
+  replies[0].enqueue(
+    new TextEncoder().encode(
+      `data: ${JSON.stringify({ type: 'response.completed', response: { usage } })}\n\n`,
+    ),
+  );
+  replies[0].close();
+  const reported = {
+    ...emptyUsage(),
+    inputTokens: 30_000,
+    cachedInputTokens: 29_000,
+    outputTokens: 800,
+  };
+  await vi.waitFor(() => expect(metering(state.saved).unreported).toEqual(reported));
+
+  // A reply that outlasts the wait is given up on and charged its estimate.
+  waited.resolve(undefined);
+  await vi.waitFor(() =>
+    expect(metering(state.saved).unreported).toEqual({
+      ...reported,
+      inputTokens: 30_001,
+      outputTokens: 16_800,
+    }),
+  );
+});
+
+it('gives up the oldest dropped reply to make room for a model request, but never a search', async () => {
+  const unanswered = Promise.withResolvers<Response>();
+  let reply = async () =>
+    new Response(new ReadableStream(), { headers: { 'Content-Type': 'text/event-stream' } });
+  const { fetch } = stubFetch({ usage: async () => decision(), model: () => reply() });
+  const providerCalls = () => fetch.mock.calls.filter(([url]) => !String(url).endsWith('/usage'));
+  const state = await runningConversation();
+  // Each message staff send makes Codex drop the reply it is reading and ask again. The fifth
+  // request would exceed the limit, so the first reply is charged its estimate instead.
+  for (let request = 0; request < 5; request++) {
+    expect((await state.startRequest()).status).toBe(200);
+  }
+  expect(metering(state.saved).unreported).toEqual({
+    ...emptyUsage(),
+    inputTokens: 1,
+    outputTokens: 16_000,
+  });
+
+  // Searches run side by side and Codex waits for each, so they are never given up.
+  const searching = await runningConversation();
+  reply = () => unanswered.promise;
+  const searches = [1, 2, 3, 4].map(() => searching.search(1));
+  await vi.waitFor(() => expect(providerCalls()).toHaveLength(9));
+  expect((await searching.startRequest()).status).toBe(429);
+  unanswered.resolve(Response.json({ output: 'Results' }));
+  await Promise.all(searches);
+});
+
 it('reports usage recorded while a flush is in flight, even once that flush limits the turn', async () => {
   freezeTime();
   const gate = Promise.withResolvers<Response>();
