@@ -334,6 +334,7 @@ export const printableAssessmentExportRouter = t.router({
               printFormId,
               excludedQuestions: settings.excludedQuestions,
               paperSize: settings.paperSize,
+              questionListDigest: formContexts.get(printFormId)!.questionListDigest,
             })),
           }),
         };

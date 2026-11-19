@@ -37,7 +37,7 @@ import {
 import { PrintPacketError } from './print-packet.js';
 import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE, sameExcludedQuestions } from './print-settings.js';
 
-import { isBrowserRenderingAvailable } from './index.js';
+import { getPrintableQuestionListDigest, isBrowserRenderingAvailable } from './index.js';
 
 const KEY_PREFIX = 'print-exports/';
 const QUEUE_NAME = 'print-exports';
@@ -181,7 +181,12 @@ export async function queuePrintExport({
 }: {
   owner: { assessmentId: string; authnUserId: string; courseId: string; userId: string };
   work: PrintExportWork;
-  formSelections: { printFormId: string; excludedQuestions: string[]; paperSize: PaperSize }[];
+  formSelections: {
+    printFormId: string;
+    excludedQuestions: string[];
+    paperSize: PaperSize;
+    questionListDigest: string;
+  }[];
 }): Promise<string> {
   if (shutdownController.signal.aborted || !getQueue()) {
     throw new HttpStatusError(
@@ -203,13 +208,24 @@ export async function queuePrintExport({
         ]),
       );
       const paperSizes = new Set<PaperSize>();
-      for (const { printFormId, excludedQuestions, paperSize } of formSelections) {
+      for (const {
+        printFormId,
+        excludedQuestions,
+        paperSize,
+        questionListDigest,
+      } of formSelections) {
         const saved = savedForms.get(printFormId);
         if (
           !saved ||
           (formSelections.length > 1 && saved.archived_at !== null) ||
           saved.settings.paperSize !== paperSize ||
           !sameExcludedQuestions(saved.settings.excludedQuestions, excludedQuestions)
+        ) {
+          throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+        }
+        if (
+          (await getPrintableQuestionListDigest(printFormId, new Set(excludedQuestions))) !==
+          questionListDigest
         ) {
           throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
         }

@@ -26,6 +26,23 @@ FROM
 RETURNING
   *;
 
+-- BLOCK update_print_form_question_variants
+UPDATE print_form_questions AS pfq
+SET
+  variant_id = updates.variant_id
+FROM
+  jsonb_to_recordset($updates::jsonb) AS updates (
+    id BIGINT,
+    previous_variant_id BIGINT,
+    variant_id BIGINT
+  )
+WHERE
+  pfq.print_form_id = $print_form_id
+  AND pfq.id = updates.id
+  AND pfq.variant_id = updates.previous_variant_id
+RETURNING
+  pfq.*;
+
 -- BLOCK select_print_form_questions
 -- A saved form retains questions removed from the current assessment.
 SELECT

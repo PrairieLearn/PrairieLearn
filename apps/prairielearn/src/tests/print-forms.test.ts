@@ -14,6 +14,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectPrintFormQuestions } from '../models/print-form-question.js';
 import {
   archivePrintForm,
+  lockPrintFormQuestionSelections,
   selectActivePrintFormsForAssessment,
   selectOptionalPrintForm,
   selectPrintFormsForAssessment,
@@ -106,6 +107,25 @@ describe('print forms', { timeout: 60_000 }, () => {
       expect(
         await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
       ).toContainEqual(form);
+      const rerandomized = await createPrintForm({
+        ...options,
+        userId: authnUser.id,
+        replacesPrintFormId: form.id,
+      });
+      expect(rerandomized).toEqual(form);
+      const rerandomizedQuestions = await selectPrintFormQuestions(form.id);
+      expect(rerandomizedQuestions[0].print_form_question).toMatchObject({
+        id: saved.id,
+        assessment_question_id: saved.assessment_question_id,
+        position: saved.position,
+        question_number: saved.question_number,
+        max_points: saved.max_points,
+      });
+      expect(rerandomizedQuestions[0].print_form_question.variant_id).not.toBe(saved.variant_id);
+      await lockPrintFormQuestionSelections({
+        assessmentId: assessment.id,
+        printFormIds: [form.id],
+      });
       const regenerated = await createPrintForm({
         ...options,
         userId: authnUser.id,
@@ -116,7 +136,9 @@ describe('print forms', { timeout: 60_000 }, () => {
       expect((await ensureInitialPrintForm(options)).id).toBe(regenerated.id);
       expect(regenerated.archived_at).toBeNull();
       const regeneratedQuestions = await selectPrintFormQuestions(regenerated.id);
-      expect(regeneratedQuestions[0].print_form_question.variant_id).not.toBe(variant.id);
+      expect(regeneratedQuestions[0].print_form_question.variant_id).not.toBe(
+        rerandomizedQuestions[0].print_form_question.variant_id,
+      );
       const archived = await selectOptionalPrintForm({
         printFormId: form.id,
         assessmentId: assessment.id,
@@ -160,7 +182,7 @@ describe('print forms', { timeout: 60_000 }, () => {
         assessment_question_id: saved.assessment_question_id,
       });
       const reread = await selectPrintFormQuestions(form.id);
-      expect(reread[0].print_form_question).toEqual(saved);
+      expect(reread[0].print_form_question).toEqual(rerandomizedQuestions[0].print_form_question);
       expect(reread[0].assessment_question.deleted_at).not.toBeNull();
     }));
 

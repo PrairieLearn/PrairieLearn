@@ -280,7 +280,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     },
   );
 
-  test('regeneration creates a replacement and preserves the saved original form', async () => {
+  test('regeneration replaces a locked form and preserves the saved original', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const originalSettings = {
@@ -307,6 +307,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
       (await api.printForms.list.query()).find((form) => form.id === first.printFormId),
     ).toMatchObject({ settings: updatedSettings });
 
+    await lockPrintFormQuestionSelections({
+      assessmentId: assessment.id,
+      printFormIds: [first.printFormId],
+    });
     const regenerated = await api.printForms.regenerate.mutate(first);
     expect(regenerated.printFormId).not.toBe(first.printFormId);
     expect(printFormLabelBase(regenerated.label)).toBe(printFormLabelBase(first.label));
@@ -503,6 +507,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
           printFormId: added.printFormId,
           excludedQuestions: added.settings.excludedQuestions,
           paperSize: 'Letter',
+          questionListDigest: await printing.getPrintableQuestionListDigest(
+            added.printFormId,
+            new Set(added.settings.excludedQuestions),
+          ),
         },
       ]),
     ).rejects.toThrow('This print preview has expired or changed.');
@@ -954,6 +962,35 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
       'This print preview has expired or changed.',
     );
+    expect(
+      (await selectOptionalPrintForm({
+        printFormId: form.printFormId,
+        assessmentId: assessment.id,
+      }))!.question_selection_locked_at,
+    ).toBeNull();
+  });
+
+  test('does not lock a regenerated form for an older snapshot', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const form = await api.printForms.create.mutate();
+    const oldDigest = await printing.getPrintableQuestionListDigest(form.printFormId, new Set());
+    const regenerated = await api.printForms.regenerate.mutate(form);
+    expect(regenerated.printFormId).toBe(form.printFormId);
+    expect(await printing.getPrintableQuestionListDigest(form.printFormId, new Set())).not.toBe(
+      oldDigest,
+    );
+
+    await expect(
+      queueTestPdf('outdated-form.pdf', [
+        {
+          printFormId: form.printFormId,
+          excludedQuestions: [],
+          paperSize: 'Letter',
+          questionListDigest: oldDigest,
+        },
+      ]),
+    ).rejects.toThrow('This print preview has expired or changed.');
     expect(
       (await selectOptionalPrintForm({
         printFormId: form.printFormId,

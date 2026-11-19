@@ -423,6 +423,7 @@ router.post(
           printFormId: res.locals.print_form.id,
           excludedQuestions: [...layout.excludedQuestionNumbers],
           paperSize: layout.paperSize,
+          questionListDigest,
         },
       ],
       owner: {

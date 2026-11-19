@@ -39,6 +39,20 @@ export async function selectPrintFormQuestions(printFormId: string) {
   );
 }
 
+export async function updatePrintFormQuestionVariants({
+  printFormId,
+  updates,
+}: {
+  printFormId: string;
+  updates: { id: string; previous_variant_id: string; variant_id: string }[];
+}) {
+  return await queryRows(
+    sql.update_print_form_question_variants,
+    { print_form_id: printFormId, updates: JSON.stringify(updates) },
+    PrintFormQuestionSchema,
+  );
+}
+
 export async function selectOptionalPrintFormQuestion({
   printFormId,
   printFormQuestionId,

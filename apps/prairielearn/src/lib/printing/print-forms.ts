@@ -12,6 +12,7 @@ import { IdSchema } from '@prairielearn/zod';
 import {
   insertPrintFormQuestions,
   selectPrintFormQuestions,
+  updatePrintFormQuestionVariants,
 } from '../../models/print-form-question.js';
 import {
   archivePrintForm,
@@ -148,9 +149,69 @@ async function copySavedPrintFormQuestions(printFormId: string) {
   return questions;
 }
 
-/** Creates an independent form with saved question selection, ordering, and variants. */
+/** Creates a form, or rerandomizes an unlocked form in place. */
 export async function createPrintForm(options: CreatePrintFormOptions) {
+  if (options.replacesPrintFormId) {
+    const form = await selectOptionalPrintForm({
+      printFormId: options.replacesPrintFormId,
+      assessmentId: options.assessment.id,
+    });
+    if (form?.archived_at !== null) {
+      throw new HttpStatusError(404, 'The form to regenerate is no longer active.');
+    }
+    if (form.question_selection_locked_at === null) {
+      return await regenerateUnlockedPrintForm({
+        ...options,
+        replacesPrintFormId: options.replacesPrintFormId,
+      });
+    }
+  }
   return await createPrintFormInternal({ ...options, ensureInitial: false });
+}
+
+async function regenerateUnlockedPrintForm({
+  assessment,
+  course,
+  courseInstance,
+  userId,
+  authnUserId,
+  replacesPrintFormId,
+}: CreatePrintFormOptions & { replacesPrintFormId: string }) {
+  const savedQuestions = await selectPrintFormQuestions(replacesPrintFormId);
+  const questions = await createSavedPrintFormQuestions({
+    savedQuestions,
+    course,
+    courseInstance,
+    userId,
+    authnUserId,
+  });
+  const updates = savedQuestions.map(({ print_form_question: saved }, index) => ({
+    id: saved.id,
+    previous_variant_id: saved.variant_id,
+    variant_id: questions[index].variant_id,
+  }));
+
+  return await runInTransactionAsync(async () => {
+    await lockAssessmentForPrintForms(assessment.id);
+    const form = await selectOptionalPrintForm({
+      printFormId: replacesPrintFormId,
+      assessmentId: assessment.id,
+    });
+    if (form?.archived_at !== null) {
+      throw new HttpStatusError(404, 'The form to regenerate is no longer active.');
+    }
+    if (form.question_selection_locked_at !== null) {
+      throw new HttpStatusError(409, 'This form was exported while regenerating. Try again.');
+    }
+    const updated = await updatePrintFormQuestionVariants({
+      printFormId: replacesPrintFormId,
+      updates,
+    });
+    if (updated.length !== updates.length) {
+      throw new HttpStatusError(409, 'This form changed while regenerating. Try again.');
+    }
+    return form;
+  });
 }
 
 /** Returns an active form, creating one when no current forms exist. */
