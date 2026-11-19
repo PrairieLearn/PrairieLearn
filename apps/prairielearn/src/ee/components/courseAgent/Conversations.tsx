@@ -25,6 +25,7 @@ import {
   ApprovalModeSchema,
   type ConversationState,
   InputRequestPartSchema,
+  MAX_STEER_CHARS,
   type ReviewPart,
   ReviewPartSchema,
   SteerPartSchema,
@@ -443,6 +444,9 @@ function Chat({
   // the chat socket, which would start a turn of its own.
   const steer = useMutation(trpc.courseAgent.steer.mutationOptions());
   const steerError = getAppError<CourseAgentError['Steer']>(steer.error);
+  // One ID per message, kept across attempts, so sending it again after a lost reply or pressing
+  // Enter twice adds it to the turn once.
+  const steerAttemptRef = useRef<{ text: string; id: string } | null>(null);
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
 
@@ -568,15 +572,25 @@ function Chat({
   // Files reach the agent when a turn starts, so a message with files waits for the next one.
   const waitingToSendFiles = canStop && !pendingReview && drafts.attachments.length > 0;
   const canSteer = connected && canStop && !pendingReview && drafts.attachments.length === 0;
+  const tooLongToSteer = canSteer && draft.trim().length > MAX_STEER_CHARS;
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
     if (!text || !connected || sending || deny.isPending || steer.isPending) return;
     if (canSteer) {
+      if (tooLongToSteer) return;
+      if (steerAttemptRef.current?.text !== text) {
+        steerAttemptRef.current = { text, id: crypto.randomUUID() };
+      }
       steer.mutate(
-        { conversationId, id: crypto.randomUUID(), text, location: currentPageLocation() },
-        { onSuccess: () => setDraft('') },
+        { conversationId, id: steerAttemptRef.current.id, text, location: currentPageLocation() },
+        {
+          onSuccess: () => {
+            steerAttemptRef.current = null;
+            setDraft('');
+          },
+        },
       );
       return;
     }
@@ -689,8 +703,14 @@ function Chat({
         }
         sendLabel={replyDenies ? 'Deny and send' : undefined}
         pending={sending || deny.isPending || steer.isPending}
-        notice={waitingToSendFiles ? 'You can send files once the agent finishes.' : undefined}
-        sendWhileRunning={canSteer}
+        notice={
+          waitingToSendFiles
+            ? 'You can send files once the agent finishes.'
+            : tooLongToSteer
+              ? 'This message is too long to send while the agent works. Shorten it, or send it once the agent finishes.'
+              : undefined
+        }
+        sendWhileRunning={canSteer && !tooLongToSteer}
         attachments={drafts.attachments}
         approvalMode={shownApprovalMode}
         stopDisabled={!connected || !canStop}
