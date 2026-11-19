@@ -44,7 +44,7 @@ import {
   attachmentsOf,
   attachmentsToWrite,
   formatRequest,
-  isImage,
+  imageType,
   keepUploadReferences,
   uploadKey,
   uploadPrefix,
@@ -61,6 +61,7 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
+import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
 import { resolveNavigation } from './navigation.js';
 import { generateTitle } from './title.js';
@@ -294,7 +295,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Shared by every shutdown caller; delivery waits for it to finish. */
   private sandboxShutdown: Promise<void> | null = null;
   private readonly uploadQuota = new UploadQuota(async () => {
-    const { objects } = await this.env.CHECKPOINTS.list({ prefix: uploadPrefix(this.name) });
+    // The delimiter leaves out thumbnails, which are one level down and don't count.
+    const { objects } = await this.env.CHECKPOINTS.list({
+      prefix: uploadPrefix(this.name),
+      delimiter: '/',
+    });
     return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
   });
 
@@ -1008,8 +1013,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       unsentMessageIds: [],
     });
     log('turn_started', { startup });
-    const native = (this.native ??= new CodexAppServerClient(this.sandbox, (target) =>
-      resolveNavigation(this.prairieLearnContext(), target),
+    const native = (this.native ??= new CodexAppServerClient(
+      this.sandbox,
+      {
+        listCourseDatasets: () => listCourseDatasets(this.prairieLearnContext()),
+        getCourseData: (request) =>
+          getCourseData({ ...this.prairieLearnContext(), sandbox: this.sandbox, request }),
+      },
+      (target) => resolveNavigation(this.prairieLearnContext(), target),
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
@@ -1136,7 +1147,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const images = new Set<string>();
     for (const [index, upload] of uploads.entries()) {
       if (!upload) return null;
-      if (isImage(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
+      if (imageType(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
     }
     return images;
   }
@@ -1368,7 +1379,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         autoApprove
           ? 'Submitted the changes; edits after this point are not part of them. The instructor chose to approve changes without reviewing them, so they are being saved now. The result arrives in a later message.'
           : 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message.'
-      } If you have not yet described the changes for staff, do so briefly now. Then end your turn without making further edits.`,
+      } End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.`,
     };
   }
 
