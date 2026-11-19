@@ -146,6 +146,8 @@ interface WorkspaceProxyOptions {
   removeResponseHeaders?: string[];
   cookieDomainRewrite?: string;
   rewriteContainerCookiesForCrossOrigin?: boolean;
+  /** Mark container responses `no-store` whenever PrairieLearn adds its own cookies to them. */
+  noStoreWithOwnCookies?: boolean;
 }
 
 export function makeWorkspaceProxyMiddleware(
@@ -274,6 +276,11 @@ function makeProxy(containerPathRegex: RegExp, options: WorkspaceProxyOptions) {
               return rewrittenCookie == null ? [] : [rewrittenCookie];
             })
           : containerCookies;
+        if (options.noStoreWithOwnCookies && existingCookies.length > 0) {
+          // A response the container marked as cacheable must not let a cache store our cookies,
+          // which include the PrairieLearn session ID.
+          proxyRes.headers['cache-control'] = 'no-store';
+        }
         if (existingCookies.length > 0 || rewrittenContainerCookies.length > 0) {
           proxyRes.headers['set-cookie'] = [...existingCookies, ...rewrittenContainerCookies];
         } else if (options.rewriteContainerCookiesForCrossOrigin && containerCookies.length > 0) {

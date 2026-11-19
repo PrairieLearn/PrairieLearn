@@ -44,6 +44,10 @@ describe('workspace proxy', () => {
           });
           res.type('css').send('body { color: red; }');
         });
+        container.get('/public.css', (_req, res) => {
+          res.set('Cache-Control', 'public, max-age=3600');
+          res.type('css').send('body { color: blue; }');
+        });
         await withServer(container, async ({ url: containerUrl }) => {
           const hostnameQuery = vi
             .spyOn(sqldb, 'queryOptionalScalar')
@@ -51,23 +55,42 @@ describe('workspace proxy', () => {
           const rewriteQuery = vi.spyOn(sqldb, 'queryScalar').mockResolvedValue(true);
           try {
             const app = express();
+            // Stands in for reauthorization renewing PrairieLearn's cookies on this response.
+            app.use((req, res, next) => {
+              if (req.path.endsWith('/public.css')) {
+                res.cookie('__Host-pl_workspace_session', 'renewed', { path: '/', secure: true });
+              }
+              next();
+            });
             app.use(makeWorkspaceSandboxMiddleware());
             await withServer(app, async ({ url }) => {
-              const response = await new Promise<http.IncomingMessage>((resolve, reject) => {
-                http
-                  .get(
-                    `${url}/pl/workspace/123/container/style.css`,
-                    {
-                      headers: {
-                        Host: 'w123.us.prairielearn-user-content.test',
-                        Origin: 'https://w123.us.prairielearn-user-content.test',
-                        Cookie: `__Host-pl_workspace_authz=${generateWorkspaceSandboxCookie({ workspaceId: '123' })}`,
+              const get = (path: string) =>
+                new Promise<http.IncomingMessage>((resolve, reject) => {
+                  http
+                    .get(
+                      `${url}/pl/workspace/123/container/${path}`,
+                      {
+                        headers: {
+                          Host: 'w123.us.prairielearn-user-content.test',
+                          Origin: 'https://w123.us.prairielearn-user-content.test',
+                          Cookie: `__Host-pl_workspace_authz=${generateWorkspaceSandboxCookie({ workspaceId: '123' })}`,
+                        },
                       },
-                    },
-                    resolve,
-                  )
-                  .on('error', reject);
-              });
+                      resolve,
+                    )
+                    .on('error', reject);
+                });
+
+              const renewed = await get('public.css');
+              renewed.resume();
+              assert.equal(renewed.statusCode, 200);
+              assert.equal(renewed.headers['cache-control'], 'no-store');
+              assert.include(
+                renewed.headers['set-cookie']?.join('\n'),
+                '__Host-pl_workspace_session',
+              );
+
+              const response = await get('style.css');
               let body = '';
               for await (const chunk of response) body += chunk;
               assert.equal(response.statusCode, 200);

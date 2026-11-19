@@ -165,6 +165,18 @@ describe('workspace sandbox middleware', () => {
         assert.include(reauthorization.body, 'prairielearn:workspace-authorization-expired');
         assert.isUndefined(reauthorization.headers.location);
 
+        const unauthenticatedPath = await request({
+          baseUrl,
+          path: `/pl/workspace/${workspaceId}/container/pl/api/v1/anything`,
+          host: hostname,
+          headers: {
+            'Sec-Fetch-Site': 'same-origin',
+            Cookie: sessionCookie.split(';')[0],
+          },
+        });
+        assert.equal(unauthenticatedPath.status, 401);
+        assert.include(unauthenticatedPath.body, 'prairielearn:workspace-authorization-expired');
+
         const expiredToken = await generateWorkspaceSandboxBootstrapToken({
           authorizationCookies: {},
           publicQuestionEndpoint: false,

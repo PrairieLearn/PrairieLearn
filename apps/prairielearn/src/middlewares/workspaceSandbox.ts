@@ -10,6 +10,7 @@ import {
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
 import * as Sentry from '@prairielearn/sentry';
 import { loadExistingSession } from '@prairielearn/session';
@@ -281,7 +282,16 @@ export function makeWorkspaceSandboxMiddleware({
     }),
   );
   const authorizationChecks = Router({ mergeParams: true });
-  authorizationChecks.use(date, authn);
+  authorizationChecks.use(date, authn, (_req, res, next) => {
+    // `authn` passes OPTIONS requests and container paths that look like `/pl/api/` or
+    // `/pl/webhooks/` through without a user. Fail closed here instead of relying on the
+    // authorization middleware crashing without one.
+    if (!res.locals.authn_user) {
+      next(new HttpStatusError(401, 'Workspace authorization expired'));
+      return;
+    }
+    next();
+  });
   authorizationChecks.use((req, res, next) => {
     const authorization = getWorkspaceSession(res).public_question_endpoint
       ? publicWorkspaceAuthorization
@@ -421,6 +431,7 @@ export function makeWorkspaceSandboxMiddleware({
     makeWorkspaceProxyMiddleware(CONTAINER_PATH_REGEX, {
       cookieDomainRewrite: '',
       rewriteContainerCookiesForCrossOrigin: true,
+      noStoreWithOwnCookies: true,
       // Keep container service workers scoped below /container/, away from /bootstrap.
       removeResponseHeaders: ['X-Frame-Options', 'Service-Worker-Allowed'],
       responseHeaders,
