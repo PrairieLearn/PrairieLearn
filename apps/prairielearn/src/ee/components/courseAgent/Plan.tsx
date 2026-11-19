@@ -36,7 +36,7 @@ export function PlanChecklist({ plan }: { plan: PlanPart }) {
           key={index}
           className={clsx(
             'd-flex gap-2',
-            step.status === 'inProgress' ? 'text-body' : 'text-body-secondary',
+            step.status === 'inProgress' ? 'text-body fw-semibold' : 'text-body-secondary',
           )}
         >
           <span
@@ -46,12 +46,13 @@ export function PlanChecklist({ plan }: { plan: PlanPart }) {
             {step.status === 'inProgress' ? (
               <Spinner
                 animation="border"
+                variant="primary"
                 style={{ width: '0.875rem', height: '0.875rem', borderWidth: '0.125em' }}
               />
             ) : step.status === 'completed' ? (
-              <i className="course-agent-plan-done bi bi-check-circle-fill" />
+              <i className="course-agent-plan-done bi bi-check-circle-fill text-success" />
             ) : (
-              <span className="course-agent-plan-pending" />
+              <i className="bi bi-circle text-body-tertiary" />
             )}
           </span>
           <span>

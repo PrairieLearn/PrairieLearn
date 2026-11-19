@@ -205,14 +205,6 @@
   }
 }
 
-/* A step the agent has not reached yet: an empty dashed circle. */
-.course-agent-plan-pending {
-  width: 0.875rem;
-  height: 0.875rem;
-  border: 1px dashed currentcolor;
-  border-radius: 50%;
-}
-
 /* One column for the plan's icons, each centred on its step's first line. */
 .course-agent-plan-icon {
   width: 1rem;
