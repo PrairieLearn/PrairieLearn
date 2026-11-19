@@ -545,7 +545,7 @@ it('holds a requested course action in the review slot and delivers its result',
     context: null,
     rows: [{ label: 'addNumbers', detail: 'The answer box rejects negative numbers.' }],
     moreRows: 1,
-    undo: 'Reopen the same issues with issues_reopen.',
+    undo: 'Reopen the same issues.',
   };
   const fetch = vi.fn(async (url: string | URL, _options?: RequestInit) => {
     if (String(url).endsWith('/usage')) return decision();

@@ -50,7 +50,7 @@ export const issueActions = {
       'Close open issues that students or PrairieLearn reported on questions. Use it once the question is fixed, or when the report needs no change.',
     effects:
       'The issues leave the open issues list and the open issue count. Students see no change.',
-    undo: 'Reopen the same issues with issues_reopen.',
+    undo: 'Reopen the same issues.',
     permission: 'course_editor',
     input: IssuesInputSchema,
     describe: ({ ctx, input }) => describeIssues(ctx, input.issue_ids, false),
@@ -74,7 +74,7 @@ export const issueActions = {
     description:
       'Reopen closed issues, such as ones closed by mistake or whose problem has come back.',
     effects: 'The issues return to the open issues list and the open issue count.',
-    undo: 'Close the same issues with issues_close.',
+    undo: 'Close the same issues.',
     permission: 'course_editor',
     input: IssuesInputSchema,
     describe: ({ ctx, input }) => describeIssues(ctx, input.issue_ids, true),
