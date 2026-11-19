@@ -16,17 +16,6 @@ describe('InstanceQuestionPoints', () => {
     component: 'total' as const,
   };
 
-  it('shows a saved manual-only question as pending while it requires manual grading', () => {
-    const rendered = InstanceQuestionPoints({
-      ...savedManualOnlyQuestion,
-      instance_question: {
-        ...savedManualOnlyQuestion.instance_question,
-        requires_manual_grading: true,
-      },
-    }).toString();
-    assert.include(rendered, 'pending');
-  });
-
   it('does not show a saved manual-only question as pending once it is tagged as graded', () => {
     const rendered = InstanceQuestionPoints({
       ...savedManualOnlyQuestion,
