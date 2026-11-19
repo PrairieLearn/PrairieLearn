@@ -7,6 +7,7 @@ import sys
 import tempfile
 import urllib.error
 import urllib.request
+from http import HTTPStatus
 from typing import Literal, cast, get_args
 
 from utils import (
@@ -107,10 +108,12 @@ def check_path_modified(path: str) -> bool:
 def docker_hub_repository_exists(image: str) -> bool:
     """Check if the given image already has a repository on Docker Hub."""
     try:
-        with urllib.request.urlopen(f"https://hub.docker.com/v2/repositories/{image}/"):
+        with urllib.request.urlopen(
+            f"https://hub.docker.com/v2/repositories/{image}/", timeout=30
+        ):
             return True
     except urllib.error.HTTPError as e:
-        if e.code == 404:
+        if e.code == HTTPStatus.NOT_FOUND:
             return False
         raise
 
@@ -322,7 +325,7 @@ def build_images(
             and not docker_hub_repository_exists(image)
         ):
             print(
-                f"Not pushing {image} because its Docker Hub repository doesn't exist yet. It will be created when this image is built on master."
+                f"Not pushing {image} because its Docker Hub repository doesn't exist yet. It will be created when this image is built from merged code."
             )
             should_push_image = False
 
