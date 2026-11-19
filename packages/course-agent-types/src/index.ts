@@ -36,8 +36,6 @@ export type ConversationState = ConversationLifecycle & {
   reviewId: string | null;
   /** Generated from the first message; PrairieLearn shows its own fallback until then. */
   title: string | null;
-  /** Whether reviews the agent submits from now on are approved for the instructor. */
-  approvalMode: ApprovalMode;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
@@ -282,6 +280,19 @@ export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
 // A sandbox copies in every earlier attachment when it starts, so a conversation's total is capped.
 export const MAX_CONVERSATION_ATTACHMENT_BYTES = 200 * 1024 * 1024;
 export const MAX_CONVERSATION_ATTACHMENTS = 100;
+// The browser makes each image's chat preview, at most this many pixels on its longer side.
+export const THUMBNAIL_PIXELS = 256;
+export const MAX_THUMBNAIL_BYTES = 512 * 1024;
+/**
+ * Image types PrairieLearn serves as themselves, so the browser can display them. Every other
+ * upload, including other images such as SVG or HEIC, is only downloaded.
+ */
+export const INLINE_IMAGE_TYPES: readonly string[] = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+];
 
 export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
 
@@ -318,21 +329,8 @@ export const PageLocationSchema = z.object({
 
 export type PageLocation = z.infer<typeof PageLocationSchema>;
 
-/**
- * Whether the instructor decides each `request_changes` review or it is approved for them. The
- * browser sets it on the conversation and repeats it in each user message's metadata; it applies
- * to reviews the agent submits from then on.
- */
-export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
-
-export type ApprovalMode = z.infer<typeof ApprovalModeSchema>;
-
 /** Metadata the browser attaches to a user message. */
-export const UserMessageMetadataSchema = z.object({
-  location: PageLocationSchema.optional(),
-  // A mode added by a newer PrairieLearn must not discard the rest of the metadata.
-  approvalMode: ApprovalModeSchema.optional().catch(undefined),
-});
+export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
 
 /** Tags a message sent while the agent was working, on its part and on Codex's copy of it. */
 export const steerTag = (steerId: string) => `steer:${steerId}`;
@@ -365,17 +363,6 @@ export const SteerPartSchema = z.object({
 export type SteerPart = z.infer<typeof SteerPartSchema>;
 
 /**
- * A `data-review` part, which shows a review in chat history by ID. `autoApprove` records that the
- * review was submitted under `always_approve`; the instructor's browser then approves it.
- */
-export const ReviewPartSchema = z.object({
-  reviewId: z.string(),
-  autoApprove: z.boolean().optional(),
-});
-
-export type ReviewPart = z.infer<typeof ReviewPartSchema>;
-
-/**
  * Input the agent requested from staff with Codex's `request_user_input_async`, in a
  * `data-input-request` part keyed by the Codex item ID. The tool returns at once; staff's next
  * message is the answer, so the part holds no answer and is never rewritten.
@@ -393,6 +380,55 @@ export const InputRequestPartSchema = z.object({
 });
 
 export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;
+
+/** Operators that compare a column with one value. */
+export const COURSE_DATA_COMPARISONS = ['eq', 'lt', 'lte', 'gt', 'gte'] as const;
+
+/** The most values an `in` filter takes; a longer list is better filtered after downloading. */
+export const COURSE_DATA_MAX_IN_VALUES = 1000;
+
+const CourseDataValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+
+/**
+ * A request for rows of one course dataset. PrairieLearn validates it with `column` limited to the
+ * dataset's columns; the course agent uses it with any column name as its tool's arguments.
+ */
+export function courseDataQuerySchema<Column extends z.ZodType<string>>(column: Column) {
+  return z.strictObject({
+    filters: z
+      .array(
+        z.discriminatedUnion('op', [
+          z.strictObject({
+            column,
+            op: z.enum(COURSE_DATA_COMPARISONS),
+            value: CourseDataValueSchema,
+          }),
+          z.strictObject({
+            column,
+            op: z.literal('in'),
+            value: z.array(CourseDataValueSchema).min(1).max(COURSE_DATA_MAX_IN_VALUES),
+          }),
+        ]),
+      )
+      .optional()
+      .describe('Conditions that every row must meet.'),
+    select: z
+      .array(column)
+      .min(1)
+      .describe(
+        'Columns to include. Large columns are slower to read, so select only those needed.',
+      ),
+    order: z
+      .array(z.strictObject({ column, direction: z.enum(['asc', 'desc']) }))
+      .optional()
+      .describe('Sort order, most significant first.'),
+    limit: z.number().int().positive().optional().describe('Maximum number of rows.'),
+  });
+}
+
+export const CourseDataQuerySchema = courseDataQuerySchema(z.string());
+
+export type CourseDataQuery = z.infer<typeof CourseDataQuerySchema>;
 
 /**
  * A page the agent opens for the instructor: a key from the conversation's page catalog and the

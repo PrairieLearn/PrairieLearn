@@ -77,6 +77,17 @@ export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
+export const EnumInstanceQuestionStatusSchema = z.enum([
+  'complete',
+  'unanswered',
+  'saved',
+  'correct',
+  'incorrect',
+  'grading',
+  'invalid',
+]);
+export type EnumInstanceQuestionStatus = z.infer<typeof EnumInstanceQuestionStatusSchema>;
+
 export const EnumJobStatusSchema = z.enum(['Running', 'Stopping', 'Stopped', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
@@ -1167,9 +1178,7 @@ export const InstanceQuestionSchema = z.object({
   some_nonzero_submission: z.boolean().nullable(),
   some_perfect_submission: z.boolean().nullable(),
   some_submission: z.boolean().nullable(),
-  status: z
-    .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
-    .nullable(),
+  status: EnumInstanceQuestionStatusSchema.nullable(),
   submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
   variants_points_list: z.array(z.number().nullable()),
@@ -1581,6 +1590,15 @@ export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
 export const ServerLoadSchema = null;
 
+export const SharedQuestionUsageSchema = z.object({
+  destination_assessment_id: IdSchema,
+  destination_course_id: IdSchema,
+  destination_course_instance_id: IdSchema,
+  destination_user_id: IdSchema,
+  shared_question_id: IdSchema,
+});
+export type SharedQuestionUsage = z.infer<typeof SharedQuestionUsageSchema>;
+
 export const SharingSetSchema = z.object({
   course_id: IdSchema,
   description: z.string().nullable(),
@@ -1914,6 +1932,7 @@ export const TableNames = [
   'rubrics',
   'saml_providers',
   'server_loads',
+  'shared_question_usages',
   'sharing_set_courses',
   'sharing_set_questions',
   'sharing_sets',

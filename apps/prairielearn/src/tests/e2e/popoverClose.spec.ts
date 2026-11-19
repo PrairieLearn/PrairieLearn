@@ -31,6 +31,40 @@ test('Bootstrap popovers have a keyboard-accessible Close button', async ({
   await expect(trigger).toBeFocused();
 });
 
+test('Bootstrap popovers keep focus inside when it is on an element outside the tab order', async ({
+  page,
+  courseInstance,
+}) => {
+  await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/file_view`);
+
+  const trigger = page.getByRole('button', { name: 'Add new files', exact: true });
+  await trigger.click();
+
+  const dialog = page.getByRole('dialog', { name: 'Upload files' });
+  const closeButton = dialog.getByRole('button', { name: 'Close' });
+  const lastControl = dialog.getByRole('button', { name: 'Upload files' });
+  await expect(dialog.getByLabel('Choose files')).toBeFocused();
+
+  // The popover is appended to the end of the body, so without the focus trap,
+  // tabbing forward from here would leave it.
+  const staticContent = dialog.getByTestId('static-content');
+  await dialog.evaluate((el) => {
+    const content = document.createElement('p');
+    content.tabIndex = -1;
+    content.dataset.testid = 'static-content';
+    content.textContent = 'Static content';
+    el.querySelector('.popover-body')!.append(content);
+  });
+
+  await staticContent.focus();
+  await page.keyboard.press('Tab');
+  await expect(closeButton).toBeFocused();
+
+  await staticContent.focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(lastControl).toBeFocused();
+});
+
 test('React popovers expose dialog state and return focus after closing', async ({
   page,
   courseInstance,

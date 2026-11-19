@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import {
   COURSE_DIR,
+  CourseDataQuerySchema,
   type InputRequestPart,
   type NavigationPart,
   type NavigationTarget,
@@ -18,6 +19,7 @@ import {
 } from '@prairielearn/course-agent-types';
 
 import type { InitializeParams } from '../../generated/types/InitializeParams.js';
+import type { JsonValue } from '../../generated/types/serde_json/JsonValue.js';
 import type { DynamicToolCallParams } from '../../generated/types/v2/DynamicToolCallParams.js';
 import type { DynamicToolCallResponse } from '../../generated/types/v2/DynamicToolCallResponse.js';
 import type { DynamicToolSpec } from '../../generated/types/v2/DynamicToolSpec.js';
@@ -58,12 +60,12 @@ const ItemEvent = z.object({
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
 /**
- * `request_changes` shows as a review card and navigation as its own part; only a failed call
- * needs a tool entry.
+ * `request_changes` shows as a review card, and an offered page or reload as its own part; only a
+ * failed call needs a tool entry.
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'offer_page']),
+  tool: z.enum(['request_changes', 'offer_page', 'offer_reload']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -76,6 +78,17 @@ const DynamicToolCall = z.object({
   arguments: z.unknown(),
 });
 const RequestChangesArguments = z.strictObject({});
+const ListCourseDatasetsArguments = z.strictObject({});
+const CourseDataArguments = CourseDataQuerySchema.extend({
+  dataset: z.string().describe('Dataset to download, from list_course_datasets.'),
+});
+export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
+
+/** Serves the course data tools; replies go to the model. */
+export interface CourseDataTools {
+  listCourseDatasets(): Promise<ToolReply>;
+  getCourseData(request: CourseDataRequest): Promise<ToolReply>;
+}
 /**
  * `request_user_input_async` completes an agent message whose text Codex never streams, so its
  * prompts are shown only through this item. Codex calls them questions.
@@ -143,6 +156,7 @@ export class CodexAppServerClient {
 
   constructor(
     private sandbox: DurableObjectStub<CourseSandbox>,
+    private courseData: CourseDataTools,
     /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
     private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
   ) {}
@@ -275,14 +289,32 @@ export class CodexAppServerClient {
       throw new Error('Invalid dynamic tool call');
     }
     switch (call.data.tool) {
+      case listCourseDatasetsTool.name: {
+        const request = ListCourseDatasetsArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseData.listCourseDatasets());
+      }
+      case courseDataTool.name: {
+        const request = CourseDataArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseData.getCourseData(request.data));
+      }
       case requestChangesTool.name: {
-        if (!this.onReview || !RequestChangesArguments.safeParse(call.data.arguments).success) {
-          throw new Error('Invalid request_changes call');
-        }
-        return await this.onReview({ ...call.data, arguments: {} });
+        // The tool is offered only when reviews are handled, so this call is a protocol error.
+        if (!this.onReview) throw new Error('Review handling is not configured');
+        const request = RequestChangesArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await this.onReview({ ...call.data, arguments: request.data });
       }
       case 'offer_page':
         return await this.offerPage(call.data.callId, call.data.arguments);
+      case offerReloadTool.name:
+        // The chat shows this part as a button that reloads the page when the instructor clicks it.
+        this.emit({ type: 'data-reload', id: `reload:${call.data.callId}`, data: {} });
+        return {
+          success: true,
+          text: 'The instructor sees a "Reload this page" button; do not describe it.',
+        };
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
@@ -367,7 +399,10 @@ export class CodexAppServerClient {
             ...settings,
             dynamicTools: [
               ...(this.onReview ? [requestChangesTool] : []),
+              listCourseDatasetsTool,
+              courseDataTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
+              offerReloadTool,
             ],
           } satisfies ThreadStartParams,
           ThreadResult,
@@ -586,11 +621,34 @@ async function replyWithError(call: () => Promise<ToolReply>): Promise<ToolReply
   }
 }
 
+/** Codex's tool input schema, generated from the Zod schema that validates the arguments. */
+function toolInputSchema(schema: z.ZodType) {
+  // Zod types its output with a non-enumerable `~standard` property that serialization drops.
+  const { $schema: _schema, ...inputSchema } = z.toJSONSchema(schema);
+  return inputSchema as JsonValue;
+}
+
+const listCourseDatasetsTool = {
+  type: 'function',
+  name: 'list_course_datasets',
+  description:
+    "List the datasets of this course's PrairieLearn data that get_course_data can download, with each column's type and meaning.",
+  inputSchema: toolInputSchema(ListCourseDatasetsArguments),
+} satisfies DynamicToolSpec;
+
+const courseDataTool = {
+  type: 'function',
+  name: 'get_course_data',
+  description:
+    "Download the selected columns of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. To narrow results to a course instance, assessment, or question, filter by course_instance_short_name, assessment_tid, or qid, the directory names in the course files; there is no need to look up IDs first. The reply gives the file's path and row count, and says if the file does not hold every matching row.",
+  inputSchema: toolInputSchema(CourseDataArguments),
+} satisfies DynamicToolSpec;
+
 const requestChangesTool = {
   type: 'function',
   name: 'request_changes',
   description:
-    'Submit the current course edits for instructor review. Call this as the last step of your turn, after summarizing the changes for staff. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
+    'Submit the current course edits for instructor review. Make this your last tool call of the turn, without describing the changes first; then summarize them for staff in your final message. If approved, PrairieLearn saves them (pushing to Git when configured) and syncs the course. The decision arrives in a later message; do not push yourself.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
 } satisfies DynamicToolSpec;
 
@@ -626,6 +684,14 @@ function navigateTool(pages: PageCatalog): DynamicToolSpec {
     },
   };
 }
+
+const offerReloadTool = {
+  type: 'function',
+  name: 'offer_reload',
+  description:
+    'Show the instructor a button that reloads the PrairieLearn page they are viewing, for example so it shows changes that were saved and synced. Nothing changes until they click it.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+} satisfies DynamicToolSpec;
 
 /** Models often send empty or null values for the params a page does not take. */
 function withoutEmptyParams(args: unknown) {

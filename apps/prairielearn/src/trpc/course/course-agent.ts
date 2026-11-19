@@ -1,11 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import {
-  ApprovalModeSchema,
-  CreateConversationInput,
-  SteerInputSchema,
-} from '@prairielearn/course-agent-types';
+import { CreateConversationInput, SteerInputSchema } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -18,7 +14,6 @@ import {
 import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
-  setCourseAgentApprovalMode,
   steerCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
 import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
@@ -171,20 +166,6 @@ export const courseAgentRouter = t.router({
       return StaffCourseAgentConversationSchema.parse(conversation);
     }),
 
-  setApprovalMode: courseAgentProcedure
-    // A conversation keeps its own mode. This tells it at once, so a change does not wait for the
-    // conversation's next message.
-    .input(z.object({ conversationId: IdSchema, approvalMode: ApprovalModeSchema }))
-    .mutation(async ({ ctx, input }) => {
-      const conversation = await selectOptionalCourseAgentConversation({
-        id: input.conversationId,
-        course_id: ctx.course.id,
-        user_id: ctx.locals.authn_user.id,
-      });
-      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      await setCourseAgentApprovalMode(conversation.agent_conversation_id, input.approvalMode);
-    }),
-
   // A message sent while the agent is working joins the turn that is running. Between turns the
   // browser sends messages over the chat socket instead.
   steer: courseAgentProcedure
@@ -231,6 +212,5 @@ export interface CourseAgentError {
   GetReview: never;
   PostReviewDecision: never;
   SetTitle: never;
-  SetApprovalMode: never;
   Steer: never;
 }
