@@ -117,7 +117,7 @@ export const sharingActions = {
       'Set the name other courses use to refer to this course when they import its shared questions, as in @name/question. A course needs one before it can share questions.',
     effects:
       "Other courses import this course's shared questions under this name. Students see nothing change.",
-    undo: 'Choose another name with this action, but only until the first question is shared. After that the name is fixed.',
+    undo: 'Choose another name, but only until the first question is shared. After that the name is fixed.',
     permission: 'course_owner',
     feature: 'question-sharing',
     input: z.strictObject({
