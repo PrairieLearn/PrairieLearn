@@ -81,6 +81,36 @@ export function trapFocus(element: Element): FocusTrap {
     const firstFocusable = focusable[0];
     const lastFocusable = focusable[focusable.length - 1];
 
+    // Focus can be on an element inside the container that isn't in the tab
+    // order, such as one with `tabindex="-1"` that was focused by script. The
+    // browser would continue from that element's position in the document,
+    // which can take focus out of the container, so we pick the target here.
+    //
+    // `tabIndex` is also negative for some elements that are in the tab order,
+    // such as a `contenteditable` element with no `tabindex` attribute, so we
+    // leave anything in `focusable` to the browser.
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLElement &&
+      element.contains(activeElement) &&
+      activeElement.tabIndex < 0 &&
+      !focusable.includes(activeElement)
+    ) {
+      const position = e.shiftKey
+        ? Node.DOCUMENT_POSITION_PRECEDING
+        : Node.DOCUMENT_POSITION_FOLLOWING;
+      const candidates = focusable.filter(
+        (child) => activeElement.compareDocumentPosition(child) & position,
+      );
+      const target = e.shiftKey
+        ? (candidates[candidates.length - 1] ?? lastFocusable)
+        : (candidates[0] ?? firstFocusable);
+      // With nothing to move to, focus stays where it is.
+      if (focusable.length > 0) focusElementOrCheckedOption(target);
+      e.preventDefault();
+      return;
+    }
+
     if (e.shiftKey) {
       // Tabbing backwards
       if (isSameFocusContext(document.activeElement, firstFocusable)) {

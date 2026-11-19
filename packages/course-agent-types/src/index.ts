@@ -280,6 +280,19 @@ export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
 // A sandbox copies in every earlier attachment when it starts, so a conversation's total is capped.
 export const MAX_CONVERSATION_ATTACHMENT_BYTES = 200 * 1024 * 1024;
 export const MAX_CONVERSATION_ATTACHMENTS = 100;
+// The browser makes each image's chat preview, at most this many pixels on its longer side.
+export const THUMBNAIL_PIXELS = 256;
+export const MAX_THUMBNAIL_BYTES = 512 * 1024;
+/**
+ * Image types PrairieLearn serves as themselves, so the browser can display them. Every other
+ * upload, including other images such as SVG or HEIC, is only downloaded.
+ */
+export const INLINE_IMAGE_TYPES: readonly string[] = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+];
 
 export const UploadedAttachmentSchema = z.strictObject({ id: z.uuid() });
 

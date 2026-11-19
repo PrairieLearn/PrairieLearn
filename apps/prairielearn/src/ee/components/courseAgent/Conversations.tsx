@@ -43,13 +43,14 @@ import {
   FileDropArea,
   SentAttachments,
   hasInvalidAttachment,
+  revokePreviews,
   uploadDraftAttachments,
   useDraftAttachments,
 } from './Attachments.js';
 import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
-import { NavigationCard, navigationOf } from './Navigation.js';
+import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
 import { PlanChecklist, planOf } from './Plan.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { LiveOutput, Work, type WorkItem, reasoningHeading, runningLabel } from './ToolCalls.js';
@@ -151,7 +152,7 @@ function ConversationPicker({
         ...(current ?? []),
       ]);
       setPickedId(conversation.id);
-      // The new conversation's chat now owns the attachments.
+      // The new conversation's chat now owns the attachments and their previews.
       drafts.setAttachments([]);
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
@@ -207,7 +208,7 @@ function ConversationPicker({
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
               setDraft('');
-              drafts.setAttachments([]);
+              drafts.clear();
               create.reset();
             }}
           >
@@ -528,6 +529,7 @@ function Chat({
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
 
+  const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
   const { setStatus, setAttachments } = drafts;
   const { reset: resetDeny, mutateAsync: denyAsync } = deny;
   const offline = lifecycle?.status === 'offline';
@@ -539,7 +541,7 @@ function Chat({
     async (text: string, attachments: DraftAttachment[], deniedReviewId?: string) => {
       setSending(true);
       const files = await uploadDraftAttachments(attachments, {
-        url: `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`,
+        url: uploadsUrl,
         csrfToken: chatCsrfToken,
         setStatus,
       });
@@ -565,13 +567,16 @@ function Chat({
       resetDeny();
       void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
       // An answer chosen on an input request leaves the composer's attachments alone.
-      if (attachments.length > 0) setAttachments([]);
+      if (attachments.length > 0) {
+        revokePreviews(attachments);
+        setAttachments([]);
+      }
       return true;
     },
     [
-      courseId,
-      conversationId,
+      uploadsUrl,
       chatCsrfToken,
+      conversationId,
       setStatus,
       setAttachments,
       resetDeny,
@@ -665,6 +670,7 @@ function Chat({
               message={message}
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
+              uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
               hiddenReviewId={hiddenReviewId}
               turnRunning={turnRunning && index === messages.length - 1}
@@ -936,6 +942,7 @@ function Message({
   message,
   live,
   conversationId,
+  uploadsUrl,
   awaitingReviewId,
   hiddenReviewId,
   turnRunning,
@@ -953,6 +960,7 @@ function Message({
   /** Whether this message is still streaming. */
   live: boolean;
   conversationId: string;
+  uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
   /** A review requested by the running turn, whose card waits for the turn to end. */
@@ -967,7 +975,7 @@ function Message({
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     return (
       <div className="d-flex flex-column align-items-end gap-2">
-        <SentAttachments message={message} />
+        <SentAttachments message={message} uploadsUrl={uploadsUrl} />
         <UserMessage text={text} />
       </div>
     );
@@ -1017,7 +1025,9 @@ function Message({
       );
     }
     if (reply) {
-      rendered.push(<TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} />);
+      rendered.push(
+        <TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} math />,
+      );
     }
     work = null;
     reply = null;
@@ -1053,6 +1063,9 @@ function Message({
     if (navigation) {
       flush(true);
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
+    } else if (isReloadPart(part)) {
+      flush(true);
+      rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
       // Cards wait for the end of the turn, so they do not split the work before the reply.
       const { reviewId } = ReviewPartSchema.parse(part.data);

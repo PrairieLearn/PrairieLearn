@@ -4,8 +4,8 @@ import { type ReactNode, useState } from 'react';
 
 import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
+import { ChatMarkdown } from '../ai/ChatMarkdown.js';
 import { Disclosure } from '../ai/ChatParts.js';
-import { MemoizedMarkdown } from '../ai/MemoizedMarkdown.js';
 
 /**
  * One thing the agent did on the way to its reply: a tool call, reasoning between calls, or an
@@ -426,9 +426,12 @@ function ReasoningRow({
       }
       onExpand={onExpand}
     >
-      <div className="markdown-body small text-body-secondary">
-        <MemoizedMarkdown content={part.text} />
-      </div>
+      <ChatMarkdown
+        className="markdown-body small text-body-secondary"
+        content={part.text}
+        streaming={part.state === 'streaming'}
+        math
+      />
     </Row>
   );
 }
@@ -517,7 +520,7 @@ export function Work({
       <ReasoningRow key={i} part={row} live={live} onExpand={onExpand} />
     ) : (
       // oxlint-disable-next-line react/no-array-index-key
-      <Update key={i} text={row.text} />
+      <Update key={i} part={row} />
     ),
   );
   const calls = items.filter(isCall);
@@ -547,7 +550,7 @@ export function Work({
         />
       }
       // While it works, the agent's latest update says where it has got to.
-      tail={!settled && showUpdate && update && <Update text={update.text} indented />}
+      tail={!settled && showUpdate && update && <Update part={update} indented />}
       onExpand={onExpand}
     >
       {rendered}
@@ -556,11 +559,14 @@ export function Work({
 }
 
 /** Something the agent wrote along the way, which is not part of its reply. */
-function Update({ text, indented = false }: { text: string; indented?: boolean }) {
+function Update({ part, indented = false }: { part: TextUIPart; indented?: boolean }) {
   return (
-    <div className={clsx('markdown-body small text-body-secondary', indented && 'ms-4 mt-1')}>
-      <MemoizedMarkdown content={text} />
-    </div>
+    <ChatMarkdown
+      className={clsx('markdown-body small text-body-secondary', indented && 'ms-4 mt-1')}
+      content={part.text}
+      streaming={part.state === 'streaming'}
+      math
+    />
   );
 }
 
