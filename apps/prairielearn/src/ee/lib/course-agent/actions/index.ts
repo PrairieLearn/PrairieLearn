@@ -6,6 +6,7 @@ import type { CourseAction } from './action.js';
 import { attemptActions } from './attempts.js';
 import { issueActions } from './issues.js';
 import { sharingActions } from './sharing.js';
+import { staffActions } from './staff.js';
 import { studentActions } from './students.js';
 
 /**
@@ -19,6 +20,7 @@ export const COURSE_AGENT_ACTIONS: Record<string, CourseAction> = {
   ...attemptActions,
   ...sharingActions,
   ...studentActions,
+  ...staffActions,
 };
 
 const COURSE_ACTIONS_VERSION = 1;

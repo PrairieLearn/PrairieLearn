@@ -6,6 +6,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import {
   EnumAssessmentTypeSchema,
+  EnumCourseRoleSchema,
   EnumEnrollmentStatusSchema,
   EnumGradingMethodSchema,
   EnumInstanceQuestionStatusSchema,
@@ -473,6 +474,19 @@ export const COURSE_DATA_DATASETS = {
       end_date: TimestampSchema.describe("When the extension's access ends."),
       enrollment_id: IdSchema,
       uid: z.string().nullable().describe('UID of the student with the extension.'),
+    }),
+  }),
+  staff: dataset({
+    description:
+      "People on the course's staff and their course roles. Change them with the staff_ actions, by uid.",
+    query: sql.select_staff_by_course_id,
+    schema: z.object({
+      user_id: IdSchema,
+      uid: z.string().describe('UID the staff member signs in with.'),
+      name: z.string().nullable().describe("The staff member's name."),
+      course_role: EnumCourseRoleSchema.describe(
+        'Previewer, Viewer, Editor, or Owner, each with the access of the one before and more. None means the person only has access to student data in some course instances.',
+      ),
     }),
   }),
 };

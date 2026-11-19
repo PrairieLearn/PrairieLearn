@@ -17,8 +17,11 @@ import {
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
+  selectCourseInstancePermissionForUser,
+  selectCoursePermissionForUser,
 } from '../models/course-permissions.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { selectOptionalUserByUid } from '../models/user.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -94,6 +97,9 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
   });
   afterAll(() => Object.assign(config, originalConfig));
 
+  /** Actions on the course itself take no course instance. */
+  const COURSE_ACTIONS = new Set(['staff_add', 'staff_set_course_role']);
+
   async function request(action: string, input: Record<string, unknown>) {
     const id = crypto.randomUUID();
     const response = await fetch(`${siteUrl}/pl/course/1/course_agent/actions/${action}`, {
@@ -103,7 +109,10 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
         'X-Course-Agent-Conversation': conversation.agent_conversation_id,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ id, input: { ...WHERE, ...input } }),
+      body: JSON.stringify({
+        id,
+        input: COURSE_ACTIONS.has(action) ? input : { ...WHERE, ...input },
+      }),
     });
     return { id, status: response.status, body: (await response.json()) as Record<string, any> };
   }
@@ -192,6 +201,63 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
     expect(await inLabel()).toEqual([...uids].sort());
     await approve('student_labels_remove_students', { label_name: 'Extra time', uids: [uids[0]] });
     expect(await inLabel()).toEqual([uids[1]]);
+  });
+
+  test('adds staff, changes their role, and grants student data access, never to oneself', async () => {
+    const roleOf = async (uid: string) => {
+      const user = await selectOptionalUserByUid(uid);
+      return user
+        ? await selectCoursePermissionForUser({ course_id: '1', user_id: user.id })
+        : null;
+    };
+    const ta = 'ta@example.com';
+    const lead = await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'lead@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    expect(await refusal('staff_add', { uids: [owner.uid], course_role: 'Viewer' })).toContain(
+      'cannot change their own access',
+    );
+    const added = await approve('staff_add', { uids: [ta, lead.uid], course_role: 'Viewer' });
+    expect(added.card).toMatchObject({
+      title: 'Give 1 person Viewer access to the course',
+      context: '1 other already Viewer or more',
+      rows: [{ label: ta, detail: 'New to the staff' }],
+    });
+    expect(await roleOf(ta)).toBe('Viewer');
+    expect(await refusal('staff_add', { uids: [ta], course_role: 'Previewer' })).toContain(
+      'already have Previewer access or more',
+    );
+
+    const raised = await approve('staff_set_course_role', { uid: ta, course_role: 'Editor' });
+    expect(raised.card.rows).toEqual([{ label: ta, detail: 'Now: Viewer' }]);
+    expect(await roleOf(ta)).toBe('Editor');
+    expect(
+      await refusal('staff_set_course_role', { uid: owner.uid, course_role: 'Viewer' }),
+    ).toContain('cannot change their own access');
+    expect(
+      await refusal('staff_set_course_role', {
+        uid: 'stranger@example.com',
+        course_role: 'Viewer',
+      }),
+    ).toContain("not on this course's staff");
+
+    const instanceRole = async () =>
+      await selectCourseInstancePermissionForUser({
+        course_instance_id: '1',
+        user_id: (await selectOptionalUserByUid(ta))!.id,
+      });
+    const granted = await approve('staff_set_student_data_access', { uid: ta, access: 'editor' });
+    expect(granted.card).toMatchObject({
+      title: `Set the student data access of ${ta} to Student Data Editor`,
+      context: 'Sp15',
+      rows: [{ label: ta, detail: 'Now: None' }],
+    });
+    expect(await instanceRole()).toBe('Student Data Editor');
+    await approve('staff_set_student_data_access', { uid: ta, access: 'none' });
+    expect(await instanceRole()).toBeNull();
   });
 
   test('creates and removes a publishing extension', async () => {

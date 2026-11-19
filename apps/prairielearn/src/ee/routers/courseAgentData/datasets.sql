@@ -334,3 +334,15 @@ FROM
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
+
+-- BLOCK select_staff_by_course_id
+SELECT
+  u.id AS user_id,
+  u.uid,
+  u.name,
+  cp.course_role
+FROM
+  course_permissions AS cp
+  JOIN users AS u ON (u.id = cp.user_id)
+WHERE
+  cp.course_id = $course_id;
