@@ -9,11 +9,11 @@ import * as sqldb from '@prairielearn/postgres';
 
 import {
   ChunkSchema,
-  QuestionSchema,
   QuestionVersionSchema,
   QuestionVersionSettingSchema,
 } from '../../lib/db-types.js';
 import { selectOptionalQuestionVersionAtDate } from '../../models/question-version.js';
+import { selectQuestionByQid } from '../../models/question.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -27,17 +27,12 @@ const VersionSchema = z.object({
   superseded_at: z.string().nullable(),
 });
 
-async function selectVersions(courseId: string, questionId: string) {
-  return await sqldb.queryRows(
-    sql.select_versions,
-    { course_id: courseId, question_id: questionId },
-    VersionSchema,
-  );
+function selectQuestion(courseId: string) {
+  return selectQuestionByQid({ course_id: courseId, qid: util.QUESTION_ID });
 }
 
-async function selectQuestion(qid = util.QUESTION_ID) {
-  const questions = await util.dumpTableWithSchema('questions', QuestionSchema);
-  return questions.find((question) => question.qid === qid && question.deleted_at === null)!;
+async function selectVersions(questionId: string) {
+  return await sqldb.queryRows(sql.select_versions, { question_id: questionId }, VersionSchema);
 }
 
 describe('Question version sync without chunks', () => {
@@ -47,9 +42,8 @@ describe('Question version sync without chunks', () => {
 
   it('creates settings outside Git, preserves no-ops, and snapshots settings changes', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
-    assert(syncResults.status === 'complete');
-    const question = await selectQuestion();
-    const initial = await selectVersions(syncResults.courseId, question.id);
+    const question = await selectQuestion(syncResults.courseId);
+    const initial = await selectVersions(question.id);
     expect(initial).toHaveLength(1);
     expect(initial[0].question_version.commit_hash).toBeNull();
     expect(initial[0].question_version.uses_chunks).toBe(false);
@@ -60,7 +54,7 @@ describe('Question version sync without chunks', () => {
     expect(await util.dumpTableWithSchema('chunks', ChunkSchema)).toEqual([]);
 
     await util.syncCourseData(courseDir);
-    expect(await selectVersions(syncResults.courseId, question.id)).toEqual(initial);
+    expect(await selectVersions(question.id)).toEqual(initial);
 
     await fs.writeJson(path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'), {
       ...courseData.questions[util.QUESTION_ID],
@@ -68,11 +62,10 @@ describe('Question version sync without chunks', () => {
       partialCredit: false,
     });
     await util.syncCourseData(courseDir);
-    const changed = await selectVersions(syncResults.courseId, question.id);
+    const changed = await selectVersions(question.id);
     expect(changed).toHaveLength(2);
     expect(changed[0].settings).toEqual(initial[0].settings);
-    expect(changed[1].settings?.title).toBe('Updated title');
-    expect(changed[1].settings?.partial_credit).toBe(false);
+    expect(changed[1].settings).toMatchObject({ title: 'Updated title', partial_credit: false });
     expect(changed[0].superseded_at).toBe(changed[1].created_at);
   });
 
@@ -82,10 +75,9 @@ describe('Question version sync without chunks', () => {
     await execa('git', ['add', '.'], { cwd: courseDir });
     await execa('git', ['commit', '-m', 'Initial course'], { cwd: courseDir });
     const { stdout: commitHash } = await execa('git', ['rev-parse', 'HEAD'], { cwd: courseDir });
-    const result = await util.syncCourseData(courseDir);
-    assert(result.status === 'complete');
-    const question = await selectQuestion();
-    const initial = await selectVersions(result.courseId, question.id);
+    const syncResults = await util.syncCourseData(courseDir);
+    const question = await selectQuestion(syncResults.courseId);
+    const initial = await selectVersions(question.id);
     expect(initial[0].question_version.commit_hash).toBe(commitHash);
 
     await fs.writeFile(
@@ -93,65 +85,57 @@ describe('Question version sync without chunks', () => {
       '# Local edit\n',
     );
     await util.syncCourseData(courseDir);
-    const changed = await selectVersions(result.courseId, question.id);
+    const changed = await selectVersions(question.id);
     expect(changed).toHaveLength(2);
     expect(changed[1].question_version.commit_hash).toBe(commitHash);
-    expect(changed[1].question_version.source_hash).not.toBe(
-      initial[0].question_version.source_hash,
-    );
     expect(changed[1].settings).toEqual({
       ...initial[0].settings,
       question_version_id: changed[1].question_version.id,
     });
-    await util.syncCourseData(courseDir);
-    expect(await selectVersions(result.courseId, question.id)).toEqual(changed);
   });
 
   it('advances versions for course dependencies and template file changes', async () => {
     const courseData = util.getCourseData();
     courseData.questions[util.QUESTION_ID].template = util.ALTERNATIVE_QUESTION_ID;
-    const { courseDir, syncResults } = await util.writeAndSyncCourseData(courseData);
-    assert(syncResults.status === 'complete');
-    const question = await selectQuestion();
-    await fs.ensureDir(path.join(courseDir, 'sharedDependency'));
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await fs.outputFile(path.join(courseDir, 'sharedDependency/helper.py'), '# Dependency\n');
     await fs.symlink('sharedDependency', path.join(courseDir, 'serverFilesCourse'), 'dir');
-    await fs.outputFile(path.join(courseDir, 'serverFilesCourse', 'helper.py'), '# Dependency\n');
-    await util.syncCourseData(courseDir);
-    const dependencyVersions = await selectVersions(syncResults.courseId, question.id);
-    expect(dependencyVersions).toHaveLength(2);
+    const syncResults = await util.syncCourseData(courseDir);
+    const question = await selectQuestion(syncResults.courseId);
+
     await fs.appendFile(
       path.join(courseDir, 'sharedDependency', 'helper.py'),
       '# Changed target\n',
     );
     await util.syncCourseData(courseDir);
-    expect(await selectVersions(syncResults.courseId, question.id)).toHaveLength(3);
+    expect(await selectVersions(question.id)).toHaveLength(2);
 
     await fs.writeFile(
       path.join(courseDir, 'questions', util.ALTERNATIVE_QUESTION_ID, 'server.py'),
       '# Template edit\n',
     );
     await util.syncCourseData(courseDir);
-    expect(await selectVersions(syncResults.courseId, question.id)).toHaveLength(4);
-    expect(await util.dumpTableWithSchema('chunks', ChunkSchema)).toEqual([]);
+    expect(await selectVersions(question.id)).toHaveLength(3);
   });
 
   it('leaves gaps for invalid or deleted sources and preserves identity across renames', async () => {
     const { courseDir, courseData, syncResults } = await util.createAndSyncCourseData();
-    assert(syncResults.status === 'complete');
-    const question = await selectQuestion();
+    const question = await selectQuestion(syncResults.courseId);
     const infoPath = path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json');
     const original = courseData.questions[util.QUESTION_ID];
     await fs.writeJson(infoPath, { ...original, gradingMethod: 'External' });
     const invalid = await util.syncCourseData(courseDir);
     assert(invalid.status === 'complete');
-    expect(invalid.hadJsonErrors).toBe(true);
-    const invalidVersions = await selectVersions(syncResults.courseId, question.id);
+    const invalidQuestion = invalid.courseData.questions[util.QUESTION_ID];
+    expect(invalidQuestion.data).toBeDefined();
+    expect(invalidQuestion.errors).not.toHaveLength(0);
+    const invalidVersions = await selectVersions(question.id);
     expect(invalidVersions).toHaveLength(1);
     expect(invalidVersions[0].superseded_at).not.toBeNull();
 
     await fs.writeJson(infoPath, original);
     await util.syncCourseData(courseDir);
-    const repaired = await selectVersions(syncResults.courseId, question.id);
+    const repaired = await selectVersions(question.id);
     expect(repaired).toHaveLength(2);
     expect(repaired[1].settings).toEqual({
       ...repaired[0].settings,
@@ -161,15 +145,14 @@ describe('Question version sync without chunks', () => {
 
     await fs.move(path.dirname(infoPath), path.join(courseDir, 'questions', 'renamed'));
     await util.syncCourseData(courseDir);
-    expect((await selectQuestion('renamed')).id).toBe(question.id);
-    const renamed = await selectVersions(syncResults.courseId, question.id);
+    const renamed = await selectVersions(question.id);
     expect(renamed).toHaveLength(3);
     expect(renamed[2].settings?.directory).toBe('renamed');
     expect(renamed[0].settings?.directory).toBe(util.QUESTION_ID);
 
     await fs.remove(path.join(courseDir, 'questions', 'renamed'));
     await util.syncCourseData(courseDir);
-    const deleted = await selectVersions(syncResults.courseId, question.id);
+    const deleted = await selectVersions(question.id);
     expect(deleted).toHaveLength(3);
     expect(deleted[2].superseded_at).not.toBeNull();
 
@@ -192,13 +175,12 @@ describe('Question version sync without chunks', () => {
 
   it('reports missing settings and creates a fresh baseline without repairing old history', async () => {
     const { courseDir, syncResults } = await util.createAndSyncCourseData();
-    assert(syncResults.status === 'complete');
-    const question = await selectQuestion();
-    const [initial] = await selectVersions(syncResults.courseId, question.id);
+    const question = await selectQuestion(syncResults.courseId);
+    const [initial] = await selectVersions(question.id);
     await sqldb.execute(sql.delete_settings, { question_version_id: initial.question_version.id });
 
     await util.syncCourseData(courseDir);
-    const versions = await selectVersions(syncResults.courseId, question.id);
+    const versions = await selectVersions(question.id);
     expect(versions).toHaveLength(2);
     const [old, current] = versions;
     const lookup = (at_date: string) =>

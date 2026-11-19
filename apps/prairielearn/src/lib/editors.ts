@@ -88,16 +88,17 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData, {
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, {
+    courseData,
     oldHash: startGitHash,
-    newHash: endGitHash,
+    commitHash: endGitHash,
   });
 
   if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
 
-  await updateCourseCommitHash(course);
+  await updateCourseCommitHash(course, endGitHash);
 
   // JSON errors mean individual entities failed to sync (e.g., a question has
   // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`

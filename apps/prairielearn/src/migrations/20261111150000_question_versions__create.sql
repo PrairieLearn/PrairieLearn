@@ -9,10 +9,7 @@ CREATE TABLE question_versions (
   dependency_hash text NOT NULL,
   uses_chunks boolean NOT NULL,
   UNIQUE (question_id, id),
-  CHECK (
-    superseded_at IS NULL
-    OR superseded_at > created_at
-  )
+  CHECK (superseded_at > created_at)
 );
 
 CREATE INDEX question_versions_question_id_created_at_idx ON question_versions (question_id, created_at DESC, id DESC);

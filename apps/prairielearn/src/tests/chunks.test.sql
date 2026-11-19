@@ -43,38 +43,24 @@ SET
 WHERE
   course_id = $course_id;
 
--- BLOCK select_question_versions
+-- BLOCK select_publication_date
 SELECT
-  s.*
-FROM
-  question_version_settings AS s
-  JOIN question_versions AS qv ON qv.id = s.question_version_id
-WHERE
-  qv.question_id = $question_id
-  AND qv.uses_chunks
-ORDER BY
-  qv.id;
-
--- BLOCK select_question_publications
-SELECT
-  qv.created_at::text AS version_date,
-  c.created_at::text AS chunk_date,
-  qv.id AS version_id,
-  c.id AS chunk_id
+  qv.created_at::text
 FROM
   question_versions AS qv
-  JOIN chunks AS c ON c.question_id = qv.question_id
-  AND c.type = 'question'
-  AND c.created_at <= qv.created_at
-  AND (
-    c.superseded_at IS NULL
-    OR c.superseded_at > qv.created_at
-  )
+  JOIN question_version_settings AS s ON s.question_version_id = qv.id
 WHERE
   qv.question_id = $question_id
   AND qv.uses_chunks
-ORDER BY
-  qv.id;
+  AND qv.superseded_at IS NULL;
+
+-- BLOCK select_chunk_creation_date
+SELECT
+  created_at::text
+FROM
+  chunks
+WHERE
+  id = $chunk_id;
 
 -- BLOCK reject_settings
 ALTER TABLE question_version_settings

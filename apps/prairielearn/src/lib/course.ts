@@ -173,9 +173,9 @@ export async function pullAndUpdateCourse({
         const endGitHash = await getCourseCommitHash(path);
 
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(course, job, undefined, {
+        const syncResult = await syncDiskToSqlWithLock(course, job, {
           oldHash: startGitHash,
-          newHash: endGitHash,
+          commitHash: endGitHash,
         });
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
@@ -185,7 +185,7 @@ export async function pullAndUpdateCourse({
           return;
         }
 
-        await updateCourseCommitHash({ id: course.id, path });
+        await updateCourseCommitHash({ id: course.id, path }, endGitHash);
 
         if (syncResult.hadJsonErrors) {
           job.fail('One or more JSON files contained errors and were unable to be synced.');
