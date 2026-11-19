@@ -20,12 +20,14 @@ import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import {
+  type ActionPart,
   ActionPartSchema,
   type ApprovalMode,
   ApprovalModeSchema,
   type ConversationState,
   type InputRequestPart,
   InputRequestPartSchema,
+  type ReviewPart,
   ReviewPartSchema,
   type ToolCall,
   ToolCallSchema,
@@ -748,7 +750,7 @@ function Composer({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
-  // the height, and a hidden panel has no height to measure.
+  // the height.
   useLayoutEffect(() => {
     if (textareaRef.current) fitToText(textareaRef.current);
   }, [draft]);
@@ -779,9 +781,7 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
-      <div
-        className={clsx('course-agent-composer border rounded-3', pending && 'bg-body-tertiary')}
-      >
+      <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
         <DraftAttachmentList
           attachments={attachments}
           sending={pending}
@@ -869,11 +869,6 @@ function Composer({
   );
 }
 
-function fitToText(textarea: HTMLTextAreaElement) {
-  textarea.style.height = 'auto';
-  if (textarea.scrollHeight) textarea.style.height = `${textarea.scrollHeight}px`;
-}
-
 const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
   approval_required: {
     label: 'Ask first',
@@ -933,6 +928,11 @@ function ApprovalModePicker({
       </Dropdown.Menu>
     </Dropdown>
   );
+}
+
+function fitToText(textarea: HTMLTextAreaElement) {
+  textarea.style.height = 'auto';
+  textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
 function reviewInHistory(messages: UIMessage[], reviewId: string) {
@@ -1012,8 +1012,8 @@ function Message({
   // before the marker of the turn that continues this message (a review result's delivery), or at
   // the end of the message.
   type Card =
-    | { kind: 'review'; reviewId: string; autoApprove: boolean }
-    | { kind: 'action'; actionId: string; autoApprove: boolean }
+    | ({ kind: 'review' } & ReviewPart)
+    | ({ kind: 'action' } & ActionPart)
     | { kind: 'input'; key: string; request: InputRequestPart };
   const renderCard = (card: Card) =>
     card.kind === 'review' ? (
@@ -1024,7 +1024,7 @@ function Message({
         reviewId={card.reviewId}
         canResume={awaitingReviewId === card.reviewId}
         // Switching back to requiring approval also applies to a review already submitted.
-        autoApprove={card.autoApprove && approvalMode === 'always_approve'}
+        autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
         onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
     ) : card.kind === 'action' ? (
@@ -1033,7 +1033,7 @@ function Message({
         conversationId={conversationId}
         actionId={card.actionId}
         canResume={awaitingReviewId === card.actionId}
-        autoApprove={card.autoApprove && approvalMode === 'always_approve'}
+        autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
         onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
     ) : (
@@ -1071,14 +1071,10 @@ function Message({
       rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
       const { reviewId, autoApprove } = ReviewPartSchema.parse(part.data);
-      if (reviewId !== hiddenReviewId) {
-        cards.push({ kind: 'review', reviewId, autoApprove: autoApprove === true });
-      }
+      if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId, autoApprove });
     } else if (part.type === 'data-action') {
       const { actionId, autoApprove } = ActionPartSchema.parse(part.data);
-      if (actionId !== hiddenReviewId) {
-        cards.push({ kind: 'action', actionId, autoApprove: autoApprove === true });
-      }
+      if (actionId !== hiddenReviewId) cards.push({ kind: 'action', actionId, autoApprove });
     } else if (part.type === 'data-input-request') {
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
