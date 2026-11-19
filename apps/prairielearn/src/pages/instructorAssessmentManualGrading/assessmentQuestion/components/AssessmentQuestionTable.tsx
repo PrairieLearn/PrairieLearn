@@ -389,6 +389,8 @@ export function AssessmentQuestionTable({
     },
   });
 
+  const { handleDismissItemStatuses } = serverJobProgress;
+
   // Show the review alert when a job completes that we haven't already
   // recorded. The seen set is genuinely history-dependent (it must outlive
   // the job leaving `jobsProgress`), so this is a legitimate accumulator
@@ -425,10 +427,10 @@ export function AssessmentQuestionTable({
         courseInstanceId: courseInstance.id,
         studentLabels,
         scrollRef,
-        onEditPointsSuccess: () => {
-          void queryClientInstance.invalidateQueries({
-            queryKey: trpc.manualGrading.instances.queryKey(),
-          });
+        onEditPointsSuccess: (instanceQuestionId) => {
+          void queryClientInstance
+            .invalidateQueries({ queryKey: trpc.manualGrading.instances.queryKey() })
+            .then(() => handleDismissItemStatuses([instanceQuestionId]));
         },
         onEditPointsConflict: (conflictDetailsUrl: string) => {
           onSetConflictModalState({ type: 'conflict', conflictDetailsUrl });
@@ -438,6 +440,7 @@ export function AssessmentQuestionTable({
       aiGradingMode,
       instanceQuestionGroups,
       serverJobProgress.displayedStatuses,
+      handleDismissItemStatuses,
       assessment,
       assessmentQuestion,
       hasCourseInstancePermissionEdit,
@@ -706,10 +709,10 @@ export function AssessmentQuestionTable({
         <Dropdown.Item
           key="tag-as-required-grading"
           onClick={() =>
-            setRequiresManualGradingMutation.mutate({
-              requires_manual_grading: true,
-              instance_question_ids: selectedIds,
-            })
+            setRequiresManualGradingMutation.mutate(
+              { requires_manual_grading: true, instance_question_ids: selectedIds },
+              { onSuccess: () => handleDismissItemStatuses(selectedIds) },
+            )
           }
         >
           <i className="fas fa-tag" /> Tag as required grading
@@ -717,10 +720,10 @@ export function AssessmentQuestionTable({
         <Dropdown.Item
           key="tag-as-graded"
           onClick={() =>
-            setRequiresManualGradingMutation.mutate({
-              requires_manual_grading: false,
-              instance_question_ids: selectedIds,
-            })
+            setRequiresManualGradingMutation.mutate(
+              { requires_manual_grading: false, instance_question_ids: selectedIds },
+              { onSuccess: () => handleDismissItemStatuses(selectedIds) },
+            )
           }
         >
           <i className="fas fa-check-square" /> Tag as graded
@@ -1040,7 +1043,6 @@ export function AssessmentQuestionTable({
           setLastSelectedCredentialId(
             selection.provider === 'openai-compatible' ? selection.credential_id : null,
           );
-          setRowSelection({});
         }}
       />
 
@@ -1062,7 +1064,12 @@ export function AssessmentQuestionTable({
             disabled={deleteAiGradingJobsMutation.isPending}
             onClick={() =>
               deleteAiGradingJobsMutation.mutate(undefined, {
-                onSuccess: () => setShowDeleteAiGradingModal(false),
+                onSuccess: () => {
+                  setShowDeleteAiGradingModal(false);
+                  handleDismissItemStatuses(
+                    instanceQuestionsInfo.map((row) => row.instance_question.id),
+                  );
+                },
               })
             }
           >

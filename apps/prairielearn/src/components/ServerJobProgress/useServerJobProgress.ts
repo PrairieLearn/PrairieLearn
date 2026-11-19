@@ -42,6 +42,14 @@ export function useServerJobProgress({
     string,
     string
   > | null>(initialOngoingJobSequenceTokens);
+  /**
+   * Per job, the items whose terminal status the user has dismissed. Kept apart
+   * from `jobsProgress` so that progress re-fetched on reconnect doesn't
+   * bring dismissed statuses back.
+   */
+  const [dismissedItemIds, setDismissedItemIds] = useState<
+    Partial<Record<string, ReadonlySet<string>>>
+  >({});
 
   const setJobsProgressAndEmit = useCallback(
     (stateUpdater: SetStateAction<Record<string, JobProgress>>) => {
@@ -84,15 +92,17 @@ export function useServerJobProgress({
         continue;
       }
       const dropQueued = job.status === 'stopping' || job.status === 'stopped';
+      const dismissed = dismissedItemIds[job.job_sequence_id];
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
         if (dropQueued && status === JobItemStatus.queued) continue;
+        if (dismissed?.has(itemId)) continue;
         if (!(itemId in merged) || status < merged[itemId]) {
           merged[itemId] = status;
         }
       }
     }
     return merged;
-  }, [jobsProgressWithStatus, enabled]);
+  }, [jobsProgressWithStatus, dismissedItemIds, enabled]);
 
   useEffect(() => {
     if (
@@ -155,6 +165,32 @@ export function useServerJobProgress({
   }
 
   /**
+   * Stops displaying the terminal (complete or failed) statuses of the given items,
+   * e.g. once the user has changed an item's grading status and the job's status
+   * for it no longer describes the item. Items still queued or in progress are
+   * unaffected.
+   */
+  const handleDismissItemStatuses = useCallback(
+    (itemIds: string[]) =>
+      setDismissedItemIds((prev) => {
+        const next = { ...prev };
+        for (const job of Object.values(jobsProgress)) {
+          const terminalItemIds = itemIds.filter((itemId) => {
+            const status = job.item_statuses?.[itemId];
+            return status === JobItemStatus.complete || status === JobItemStatus.failed;
+          });
+          if (terminalItemIds.length === 0) continue;
+          next[job.job_sequence_id] = new Set([
+            ...(prev[job.job_sequence_id] ?? []),
+            ...terminalItemIds,
+          ]);
+        }
+        return next;
+      }),
+    [jobsProgress],
+  );
+
+  /**
    * When the user dismisses a completed job progress alert, remove the job from state.
    */
   function handleDismissCompleteJobSequence(jobSequenceId: string) {
@@ -182,12 +218,18 @@ export function useServerJobProgress({
       const { [jobSequenceId]: _removed, ...newTokens } = prev;
       return newTokens;
     });
+
+    setDismissedItemIds((prev) => {
+      const { [jobSequenceId]: _removed, ...newDismissedItemIds } = prev;
+      return newDismissedItemIds;
+    });
   }
 
   return {
     jobsProgress: jobsProgressWithStatus,
     displayedStatuses,
     handleAddOngoingJobSequence,
+    handleDismissItemStatuses,
     handleDismissCompleteJobSequence,
   };
 }

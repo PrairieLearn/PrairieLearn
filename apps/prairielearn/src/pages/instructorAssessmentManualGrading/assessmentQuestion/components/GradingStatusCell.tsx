@@ -14,13 +14,7 @@ export function GradingStatusCell({
   displayedStatuses: Record<string, JobItemStatus | undefined>;
 }) {
   const aiGradingStatus = displayedStatuses[instanceQuestionId];
-  // Once AI grading completes, show the actual grading status so that later
-  // changes (e.g. tagging the submission for human review) are reflected.
-  if (
-    !aiGradingMode ||
-    aiGradingStatus === undefined ||
-    aiGradingStatus === JobItemStatus.complete
-  ) {
+  if (!aiGradingMode || aiGradingStatus === undefined) {
     return requiresGrading ? 'Requires grading' : 'Graded';
   }
   return <AiGradingStatusCell aiGradingStatus={aiGradingStatus} />;
@@ -31,11 +25,7 @@ export function GradingStatusCell({
  * when an instance question is being AI graded,
  * this cell displays its grading status.
  */
-function AiGradingStatusCell({
-  aiGradingStatus,
-}: {
-  aiGradingStatus: Exclude<JobItemStatus, JobItemStatus.complete>;
-}) {
+function AiGradingStatusCell({ aiGradingStatus }: { aiGradingStatus: JobItemStatus }) {
   switch (aiGradingStatus) {
     case JobItemStatus.queued:
       return (
@@ -58,6 +48,13 @@ function AiGradingStatusCell({
         <span className="d-flex align-items-center gap-2">
           <i className="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
           <span>AI grading failed</span>
+        </span>
+      );
+    case JobItemStatus.complete:
+      return (
+        <span className="d-flex align-items-center gap-2">
+          <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
+          <span>AI grading complete</span>
         </span>
       );
     default:
