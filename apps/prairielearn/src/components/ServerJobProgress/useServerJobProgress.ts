@@ -180,12 +180,18 @@ export function useServerJobProgress({
     (itemIds: string[]) =>
       setDismissedItemIds((prev) => {
         const next = { ...prev };
-        for (const jobSequenceId of Object.keys(jobsProgress)) {
+        // Include jobs that haven't reported progress yet, since their
+        // completion may only arrive after the dismissal.
+        const jobSequenceIds = new Set([
+          ...Object.keys(jobsProgress),
+          ...Object.keys(ongoingJobSequenceTokens ?? {}),
+        ]);
+        for (const jobSequenceId of jobSequenceIds) {
           next[jobSequenceId] = new Set([...(prev[jobSequenceId] ?? []), ...itemIds]);
         }
         return next;
       }),
-    [jobsProgress],
+    [jobsProgress, ongoingJobSequenceTokens],
   );
 
   /**
