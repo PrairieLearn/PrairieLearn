@@ -317,6 +317,8 @@ describe('Course agent access and conversation privacy', () => {
       expect(download.headers.get('Content-Type')).toBe('application/octet-stream');
       expect(download.headers.get('Content-Disposition')).toBe('attachment');
       expect(download.headers.get('Content-Security-Policy')).toContain('sandbox');
+      expect(download.headers.get('X-Content-Type-Options')).toBe('nosniff');
+      expect(download.headers.get('Cache-Control')).toBe('no-store');
 
       const fromAgent = await fetch(
         `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/sent-files/${crypto.randomUUID()}`,
@@ -329,7 +331,16 @@ describe('Course agent access and conversation privacy', () => {
       const preview = await fetch(`${uploadUrl}/thumbnail`);
       expect(preview.headers.get('Content-Type')).toBe('image/png');
       expect(preview.headers.get('Content-Disposition')).toBe('inline');
+      expect(preview.headers.get('Cache-Control')).toBe('no-store');
       expect(Buffer.from(await preview.arrayBuffer())).toEqual(PNG);
+
+      // Express decodes %2F into the param, so only the ID check keeps it from changing the path.
+      serviceRequests.length = 0;
+      const escape = await fetch(
+        `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/uploads/x%2F..%2Fresume`,
+      );
+      expect(escape.status).toBe(400);
+      expect(serviceRequests).toEqual([]);
     });
   });
 

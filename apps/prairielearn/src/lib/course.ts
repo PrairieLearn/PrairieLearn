@@ -138,7 +138,10 @@ export async function pullAndUpdateCourse({
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);
 
           job.info('Fetch from remote git repository');
-          await job.exec('git', ['fetch'], {
+          // `--prune` removes remote-tracking refs for branches that no longer
+          // exist on the remote. Without it, a deleted branch would leave a stale
+          // `origin/<branch>` ref behind, and we'd silently keep resetting to it.
+          await job.exec('git', ['fetch', '--prune'], {
             ...gitOptions,
             // During GitHub incidents, fetches could take a long time. We use a
             // timeout to ensure that the sync won't hang indefinitely.
@@ -153,17 +156,35 @@ export async function pullAndUpdateCourse({
             cancelSignal: AbortSignal.timeout(30_000),
           });
 
+          job.info('Check that branch exists in remote git repository');
+          try {
+            await job.exec(
+              'git',
+              ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}`],
+              gitOptions,
+            );
+          } catch {
+            job.fail(`Branch "${branch}" does not exist in the remote git repository.`);
+          }
+
           job.info('Restore staged and unstaged changes');
           await job.exec('git', ['restore', '--staged', '--worktree', '.'], gitOptions);
 
           job.info('Clean local files not in remote git repository');
           await job.exec('git', ['clean', '-fdx'], gitOptions);
 
-          job.info('Check out current branch');
-          await job.exec('git', ['checkout', branch], gitOptions);
-
-          job.info('Reset state to remote git repository');
-          await job.exec('git', ['reset', '--hard', `origin/${branch}`], gitOptions);
+          // `-B` creates or resets the local branch to match the remote. The
+          // explicit start point also prevents git from treating the branch
+          // name as a path when a file with the same name exists. `--force`
+          // discards local changes like `reset --hard` would; some files (e.g.
+          // ones affected by `.gitattributes` line-ending normalization) can
+          // still appear modified after `git restore`.
+          job.info('Check out branch and reset to remote git repository');
+          await job.exec(
+            'git',
+            ['checkout', '--force', '-B', branch, '--track', `origin/${branch}`],
+            gitOptions,
+          );
         }
 
         // After either cloning or fetching and resetting from Git, we'll load the

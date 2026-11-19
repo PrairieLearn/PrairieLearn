@@ -6,12 +6,10 @@ from pytest_prairielearn_grader.fixture import (
     FeedbackFixture,
     StudentFixture,
 )
-from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 autograder_config = ConfigObject(student_code_pattern="user_code.py")
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.grading_data(name="Check return value", points=1)
 def test_0(
     sandbox: StudentFixture, data_json: DataFixture, feedback: FeedbackFixture

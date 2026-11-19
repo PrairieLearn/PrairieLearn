@@ -53,7 +53,7 @@ import {
 import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
-import { NavigationCard, navigationOf } from './Navigation.js';
+import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -498,7 +498,7 @@ function Chat({
       if (part.type === 'text' || part.type === 'reasoning') {
         return part.text.trim().length > 0;
       }
-      return toolCallOf(part) !== null || navigationOf(part) !== null;
+      return toolCallOf(part) !== null || navigationOf(part) !== null || isReloadPart(part);
     });
   });
   // The server reports the turn's lifecycle before the SDK marks the response active.
@@ -689,13 +689,24 @@ function Composer({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
-  // the height, and a hidden panel has no height to measure.
+  // the height.
   useLayoutEffect(() => {
+    if (textareaRef.current) fitToText(textareaRef.current);
+  }, [draft]);
+  // The text rewraps when the box's width changes, such as when the window or panel is resized.
+  useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    textarea.style.height = 'auto';
-    if (textarea.scrollHeight) textarea.style.height = `${textarea.scrollHeight}px`;
-  }, [draft]);
+    let width = textarea.clientWidth;
+    const observer = new ResizeObserver(() => {
+      // Fitting changes the height, which this also observes.
+      if (textarea.clientWidth === width) return;
+      width = textarea.clientWidth;
+      fitToText(textarea);
+    });
+    observer.observe(textarea);
+    return () => observer.disconnect();
+  }, []);
   const invalidAttachment = hasInvalidAttachment(attachments);
   const submit = (event: SyntheticEvent) => {
     event.preventDefault();
@@ -709,9 +720,7 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
-      <div
-        className={clsx('course-agent-composer border rounded-3', pending && 'bg-body-tertiary')}
-      >
+      <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
         <DraftAttachmentList
           attachments={attachments}
           sending={pending}
@@ -793,6 +802,11 @@ function Composer({
       </div>
     </Form>
   );
+}
+
+function fitToText(textarea: HTMLTextAreaElement) {
+  textarea.style.height = 'auto';
+  textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
 function reviewInHistory(messages: UIMessage[], reviewId: string) {
@@ -930,11 +944,13 @@ function Message({
     const { key, part } = segment;
     const navigation = navigationOf(part);
     if (part.type === 'text' && part.text.trim()) {
-      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} />);
+      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} math />);
     } else if (part.type === 'reasoning' && part.text.trim()) {
-      rendered.push(<ReasoningBlock key={key} part={part} />);
+      rendered.push(<ReasoningBlock key={key} part={part} math />);
     } else if (navigation) {
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
+    } else if (isReloadPart(part)) {
+      rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
       const { reviewId } = ReviewPartSchema.parse(part.data);
       if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId });

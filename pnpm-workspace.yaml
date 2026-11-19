@@ -28,6 +28,11 @@ overrides:
   # Azure's Bunyan logger only uses stdout/stderr, not rotating log files.
   'bunyan>mv': '-'
 
+  # Streamdown always imports rehype-raw (and so parse5, ~50 kB gzipped), even
+  # though we never enable its raw HTML plugin. Remove once Streamdown ships an
+  # entry without it: https://github.com/vercel/streamdown/issues/660
+  'streamdown>rehype-raw': 'workspace:@prairielearn/rehype-raw-stub@*'
+
   '@aws-sdk/xml-builder>fast-xml-parser': ^5.7.3
   '@sa11y/common>axe-core': ^4
   '@sa11y/format>axe-core': ^4

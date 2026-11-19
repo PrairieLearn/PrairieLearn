@@ -4,6 +4,7 @@ import { type Express, type Request, type Response, Router } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { z } from 'zod';
 
+import { INLINE_IMAGE_TYPES } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { checkSignedTokenPrefix } from '@prairielearn/signed-token';
@@ -55,20 +56,20 @@ function createProxy(onResponse?: (response: IncomingMessage) => void) {
 
 const proxy = createProxy();
 
-const INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
-
 /**
  * Uploaded files are served from PrairieLearn's origin, so none may render as a page here,
- * whatever the agent service sends: an image may display, and anything else downloads.
+ * whatever the agent service sends: an image may display, and anything else downloads. They are
+ * never cached, so every read passes the conversation owner check.
  */
 const uploadProxy = createProxy((response) => {
   const type = response.headers['content-type'];
-  const image = type !== undefined && INLINE_IMAGE_TYPES.has(type);
+  const image = type !== undefined && INLINE_IMAGE_TYPES.includes(type);
   response.headers['content-type'] = image ? type : 'application/octet-stream';
   response.headers['content-disposition'] = image ? 'inline' : 'attachment';
   response.headers['content-security-policy'] =
     "default-src 'none'; frame-ancestors 'none'; sandbox";
   response.headers['x-content-type-options'] = 'nosniff';
+  response.headers['cache-control'] = 'no-store';
 });
 
 /** Send upgrades through the same session/authentication/RBAC chain as HTTP. */

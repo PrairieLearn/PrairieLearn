@@ -92,9 +92,6 @@ function bodySize(request: Request, max: number) {
   return request.body && Number.isSafeInteger(size) && size >= 1 && size <= max ? size : null;
 }
 
-// Uploads and thumbnails never change. PrairieLearn decides how they may display.
-const CACHE_CONTROL = 'private, max-age=86400';
-
 conversations.post('/:id/resume', async (c) => {
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
   try {
@@ -135,7 +132,6 @@ conversations.get('/:id/uploads/:uploadId', async (c) => {
     headers: {
       'Content-Type': 'application/octet-stream',
       'Content-Length': String(upload.size),
-      'Cache-Control': CACHE_CONTROL,
     },
   });
 });
@@ -163,7 +159,6 @@ conversations.get('/:id/uploads/:uploadId/thumbnail', async (c) => {
   return new Response(thumbnail.body, {
     headers: {
       'Content-Type': thumbnail.httpMetadata!.contentType!,
-      'Cache-Control': CACHE_CONTROL,
     },
   });
 });

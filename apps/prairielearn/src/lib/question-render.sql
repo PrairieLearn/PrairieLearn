@@ -67,8 +67,18 @@ FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
   LEFT JOIN LATERAL (
+    -- Only the columns needed to display grading job status and timing.
+    -- Columns like `feedback` can be very large for external grading jobs.
     SELECT
-      *
+      id,
+      grading_method,
+      grading_requested_at,
+      grading_submitted_at,
+      grading_received_at,
+      grading_started_at,
+      grading_finished_at,
+      graded_at,
+      grading_request_canceled_at
     FROM
       grading_jobs
     WHERE

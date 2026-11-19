@@ -54,12 +54,12 @@ const ItemEvent = z.object({
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
 /**
- * `request_changes` shows as a review card, navigation as its own part, and `send_files` as the
- * files themselves; only a failed call needs a tool entry.
+ * `request_changes` shows as a review card, an offered page or reload as its own part, and
+ * `send_files` as the files themselves; only a failed call needs a tool entry.
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'offer_page', 'send_files']),
+  tool: z.enum(['request_changes', 'offer_page', 'offer_reload', 'send_files']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -315,6 +315,13 @@ export class CodexAppServerClient {
       }
       case 'offer_page':
         return await this.offerPage(call.data.callId, call.data.arguments);
+      case offerReloadTool.name:
+        // The chat shows this part as a button that reloads the page when the instructor clicks it.
+        this.emit({ type: 'data-reload', id: `reload:${call.data.callId}`, data: {} });
+        return {
+          success: true,
+          text: 'The instructor sees a "Reload this page" button; do not describe it.',
+        };
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
@@ -402,6 +409,7 @@ export class CodexAppServerClient {
               listCourseDatasetsTool,
               courseDataTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
+              offerReloadTool,
               sendFilesTool,
             ],
           } satisfies ThreadStartParams,
@@ -660,6 +668,14 @@ function navigateTool(pages: PageCatalog): DynamicToolSpec {
     },
   };
 }
+
+const offerReloadTool = {
+  type: 'function',
+  name: 'offer_reload',
+  description:
+    'Show the instructor a button that reloads the PrairieLearn page they are viewing, for example so it shows changes that were saved and synced. Nothing changes until they click it.',
+  inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+} satisfies DynamicToolSpec;
 
 /** Models often send empty or null values for the params a page does not take. */
 function withoutEmptyParams(args: unknown) {
