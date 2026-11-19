@@ -12,7 +12,7 @@ indexes
     question_versions_pkey: PRIMARY KEY (id) USING btree (id)
     question_versions_current_question_id_key: UNIQUE USING btree (question_id) WHERE superseded_at IS NULL
     question_versions_question_id_id_key: UNIQUE (question_id, id) USING btree (question_id, id)
-    question_versions_question_id_created_at_idx: USING btree (question_id, created_at DESC, id DESC)
+    question_versions_question_id_created_at_idx: USING btree (question_id, created_at)
 
 check constraints
     question_versions_check: CHECK (superseded_at > created_at)
