@@ -172,21 +172,17 @@
   }
 }
 
-/* The line that joins a plan's steps runs from under each step's icon to the next one. */
-.course-agent-plan-step {
-  position: relative;
+/* A line that opens to show more is set smaller than the replies around it. */
+.course-agent-fold {
+  --bs-btn-font-size: 0.875rem;
 }
 
-.course-agent-plan-step:not(:last-child)::before {
-  position: absolute;
-  top: 1.5em;
-  bottom: -0.375rem;
-  left: calc(0.5rem - 0.5px);
-  width: 1px;
-  content: '';
-  background-color: var(--bs-border-color);
+/* The agent's steps sit in one bordered list, each divided from the next. */
+.course-agent-step + .course-agent-step {
+  border-top: 1px solid var(--bs-border-color);
 }
 
+/* One column for the plan's icons, each centred on its step's first line. */
 .course-agent-plan-icon {
   width: 1rem;
   height: 1.5em;

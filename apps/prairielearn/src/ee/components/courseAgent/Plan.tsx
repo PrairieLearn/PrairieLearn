@@ -21,18 +21,8 @@ export function planOf(message: UIMessage | undefined): PlanPart | null {
   return null;
 }
 
-/**
- * The agent's plan for the running turn, pinned above the message box. The step in progress
- * holds a slot where the chat shows what the agent is doing right now.
- */
-export function PlanChecklist({
-  plan,
-  activitySlot,
-}: {
-  plan: PlanPart;
-  /** Receives the element under the step in progress, or null when there is none to fill. */
-  activitySlot: (element: HTMLElement | null) => void;
-}) {
+/** The agent's plan for the running turn, pinned above the message box. */
+export function PlanChecklist({ plan }: { plan: PlanPart }) {
   const [expanded, setExpanded] = useState(true);
   const done = plan.steps.filter((step) => step.status === 'completed').length;
   const current = plan.steps.find((step) => step.status === 'inProgress');
@@ -43,9 +33,6 @@ export function PlanChecklist({
         <span className="d-flex gap-2 flex-grow-1 overflow-hidden">
           <span className="fw-semibold text-body flex-shrink-0">Plan</span>
           {!expanded && current && <span className="text-truncate">{current.text}</span>}
-          <span className="ms-auto flex-shrink-0">
-            {done} of {plan.steps.length}
-          </span>
         </span>
       }
       expanded={expanded}
@@ -71,10 +58,10 @@ export function PlanChecklist({
             // The agent identifies a plan's steps only by their order.
             // oxlint-disable-next-line react/no-array-index-key
             key={index}
-            className="course-agent-plan-step d-flex gap-2"
+            className="d-flex gap-2"
           >
             <span
-              className="course-agent-plan-icon d-flex align-items-center justify-content-center flex-shrink-0 bg-body"
+              className="course-agent-plan-icon d-flex align-items-center justify-content-center flex-shrink-0"
               aria-hidden="true"
             >
               {step.status === 'inProgress' ? (
@@ -105,7 +92,6 @@ export function PlanChecklist({
                 {step.text}
               </span>
               <span className="visually-hidden"> ({STATUS_LABEL[step.status]})</span>
-              {step.status === 'inProgress' && <span ref={activitySlot} className="d-block" />}
             </span>
           </li>
         ))}

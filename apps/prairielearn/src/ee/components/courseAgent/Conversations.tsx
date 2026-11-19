@@ -16,7 +16,6 @@ import {
   useState,
 } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
-import { createPortal } from 'react-dom';
 import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 import { z } from 'zod';
@@ -336,13 +335,10 @@ function ActivityStatus({
   conversationId,
   startingSandbox,
   message,
-  planSlot,
 }: {
   conversationId: string;
   startingSandbox: boolean;
   message: UIMessage | undefined;
-  /** The place under the plan's step in progress, when the plan is showing one. */
-  planSlot: HTMLElement | null;
 }) {
   const call = latestCall(message);
   const storageKey = `course-agent-working-since:${conversationId}`;
@@ -359,8 +355,12 @@ function ActivityStatus({
     sessionStorage.setItem(storageKey, String(startedAt));
     return () => sessionStorage.removeItem(storageKey);
   }, [storageKey, startedAt]);
-  const visible = (
-    <>
+  return (
+    <div className="small text-body-secondary" role="status">
+      {/* The label changes with every step and the time every second, too often to announce. */}
+      <span className="visually-hidden">
+        {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
+      </span>
       <span className="d-flex gap-2" aria-hidden="true">
         <span className="text-truncate course-agent-shimmer">
           {startingSandbox ? 'Getting ready' : activityLabel(message)}…
@@ -368,16 +368,6 @@ function ActivityStatus({
         <span className="flex-shrink-0">{formatInterval(now - startedAt)}</span>
       </span>
       {call?.status === 'running' && <LiveOutput call={call} lines={1} />}
-    </>
-  );
-  return (
-    <div className={clsx('small text-body-secondary', planSlot && 'visually-hidden')} role="status">
-      {/* The label changes with every step and the time every second, too often to announce. */}
-      <span className="visually-hidden">
-        {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
-      </span>
-      {/* The plan shows this under its step in progress, when it has one. */}
-      {planSlot ? createPortal(visible, planSlot) : visible}
     </div>
   );
 }
@@ -609,7 +599,6 @@ function Chat({
     !connectionFailed &&
     !connectionError;
   const plan = working ? planOf(messages.at(-1)) : null;
-  const [planSlot, setPlanSlot] = useState<HTMLElement | null>(null);
   // The server reports the turn's lifecycle before the SDK marks the response active.
   const startingSandbox =
     !connectionFailed &&
@@ -699,7 +688,6 @@ function Chat({
               conversationId={conversationId}
               startingSandbox={startingSandbox}
               message={messages.at(-1)}
-              planSlot={planSlot}
             />
           )}
           {lifecycle?.status === 'blocked' && (
@@ -740,7 +728,7 @@ function Chat({
           )}
         </div>
       </div>
-      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} activitySlot={setPlanSlot} />}
+      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
