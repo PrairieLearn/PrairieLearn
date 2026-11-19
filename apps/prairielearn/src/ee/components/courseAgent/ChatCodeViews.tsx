@@ -59,7 +59,7 @@ export function ChatDiffView({
   const highlighted = useLanguagesLoaded(
     parsed?.flatMap(({ diff: fileDiff }) => (fileDiff ? diffLanguages(fileDiff) : [])) ?? [],
   );
-  if (!parsed) return fallback;
+  if (!parsed || highlighted === null) return fallback;
   const themeType = bootstrapThemeType();
   return (
     <div className="course-agent-diff d-flex flex-column gap-2" style={viewerStyle(themeType)}>
@@ -93,6 +93,13 @@ export function ChatDiffView({
 export function ChatCodeView({ code, language }: { code: string; language?: string }) {
   const lang = languageOf(language);
   const highlighted = useLanguagesLoaded([lang]);
+  if (highlighted === null) {
+    return (
+      <pre>
+        <code>{code}</code>
+      </pre>
+    );
+  }
   const themeType = bootstrapThemeType();
   return (
     <div

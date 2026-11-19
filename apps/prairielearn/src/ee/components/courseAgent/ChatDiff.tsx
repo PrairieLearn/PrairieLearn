@@ -1,7 +1,7 @@
 import { type ReactNode, Suspense, lazy, useMemo } from 'react';
 import { useIsCodeFenceIncomplete } from 'streamdown';
 
-import { type ChatDiffFile, parseChatDiff } from './parseChatDiff.js';
+import { type ChatDiffFile, MAX_DIFF_CHARS, parseChatDiff } from './parseChatDiff.js';
 
 // The viewer and its syntax highlighter are a large download, so they are kept out of the chat's
 // own code. Loading starts as soon as the chat does, rather than at the first code block, so that a
@@ -60,8 +60,12 @@ export function ChatDiff({
     [text, path, change, streaming],
   );
   const plain = <PlainCode>{text}</PlainCode>;
-  // Nothing of a diff can be shown before its first line arrives, and an empty one stays empty.
-  if (!diff) return streaming || text.trim() === '' ? null : plain;
+  if (!diff) {
+    // Nothing of a diff can be shown before its first line arrives, and an empty one stays empty.
+    // A diff too large for the viewer is plain text from the moment it passes the limit.
+    const nothingYet = text.length <= MAX_DIFF_CHARS && (streaming || text.trim() === '');
+    return nothingYet ? null : plain;
+  }
   return (
     <Suspense>
       <LazyChatDiffView diff={diff} showFileNames={showFileNames} fallback={plain} />

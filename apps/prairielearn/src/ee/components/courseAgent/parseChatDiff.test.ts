@@ -109,6 +109,17 @@ describe('parseChatDiff', () => {
     ]);
   });
 
+  it('tells file names from the lines of a hunk', () => {
+    // A removed `-- marker` and an added `++ marker`, inside a hunk that says it has both.
+    const marker = parseChatDiff('@@ -1 +1 @@\n--- marker\n+++ marker\n');
+    expect(marker?.files).toMatchObject([{ path: '', additions: 1, deletions: 1 }]);
+    // A context line straight after the file names, with no hunk header before it.
+    const context = parseChatDiff('--- a/a.py\n+++ b/a.py\nimport math\n-x = 1\n+x = 2\n');
+    expect(context?.files[0].patch).toBe(
+      '--- a.py\n+++ a.py\n@@ -1,2 +1,2 @@\n import math\n-x = 1\n+x = 2\n',
+    );
+  });
+
   it('uses the known file for a diff that names none', () => {
     const added = parseChatDiff('@@ -0,0 +1,2 @@\n+{\n+}', {
       known: { path: 'info.json', change: 'added' },

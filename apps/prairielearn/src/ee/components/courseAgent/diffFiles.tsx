@@ -116,11 +116,23 @@ function loadLanguages(langs: Set<SupportedLanguages>) {
   return load;
 }
 
-const TEXT_ONLY = new Set<SupportedLanguages>(['text']);
+let baseHighlighter: Promise<boolean> | undefined;
 
-/** Starts loading the highlighter itself, which every language needs. */
+/** Loads the highlighter itself, which every language needs, and tells whether it loaded. */
+function loadBaseHighlighter() {
+  baseHighlighter ??= preloadHighlighter({
+    themes: [THEME.light, THEME.dark],
+    langs: ['text'],
+  }).then(
+    () => true,
+    () => false,
+  );
+  return baseHighlighter;
+}
+
+/** Starts loading the highlighter ahead of the first code that needs it. */
 export function preloadHighlighting() {
-  void loadLanguages(TEXT_ONLY);
+  void loadBaseHighlighter();
 }
 
 const loadedLanguages = new Set<SupportedLanguages>(['text']);
@@ -129,16 +141,19 @@ const loadedLanguages = new Set<SupportedLanguages>(['text']);
  * For code shown as it streams. Suspends only until the highlighter itself is ready, then returns
  * whether the languages' own highlighting is too. Until it is, render the code as `text`: it
  * appears at once and gains its colors when they load, instead of the block sitting empty.
+ *
+ * Returns `null` if the highlighter itself could not be loaded. Pierre draws nothing without it,
+ * so the caller must then show the code some other way.
  */
 export function useLanguagesLoaded(langs: SupportedLanguages[]) {
-  use(loadLanguages(TEXT_ONLY));
+  const available = use(loadBaseHighlighter());
   const [, rerender] = useReducer((count: number) => count + 1, 0);
   const missing = langs.filter((lang) => !loadedLanguages.has(lang));
   const key = missing.join(',');
   // Loads highlighting for languages not seen before, then renders again to apply it. If a
   // language fails to load, its code stays readable as plain text.
   useEffect(() => {
-    if (key === '') return;
+    if (!available || key === '') return;
     let current = true;
     const wanted = key.split(',');
     void preloadHighlighter({ themes: [THEME.light, THEME.dark], langs: wanted }).then(
@@ -151,8 +166,8 @@ export function useLanguagesLoaded(langs: SupportedLanguages[]) {
     return () => {
       current = false;
     };
-  }, [key]);
-  return missing.length === 0;
+  }, [available, key]);
+  return available ? missing.length === 0 : null;
 }
 
 const LANGUAGES = new Set<string>(

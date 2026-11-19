@@ -19,14 +19,19 @@ export interface ParsedChatDiff {
 }
 
 /** Larger diffs stay plain text, which costs nothing to render. */
-const MAX_DIFF_CHARS = 100_000;
+export const MAX_DIFF_CHARS = 100_000;
 
-const HUNK_HEADER = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
+const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 const GIT_HEADER = /^diff --git (?:a\/)?(.+?) (?:b\/)?(.+)$/;
+/** Git's lines between a file's `diff --git` line and its first hunk. */
+const GIT_METADATA =
+  /^(?:index |(?:new|deleted) file mode |(?:old|new) mode |(?:dis)?similarity index |(?:rename|copy) (?:from|to) |Binary files |GIT binary patch$)/;
 
 interface Hunk {
   /** Where the hunk starts in the old and new file, when its header says. */
   start: { old: number; new: number } | null;
+  /** How many more old and new lines the hunk's header says it has. */
+  remaining: { old: number; new: number };
   lines: string[];
 }
 
@@ -145,16 +150,19 @@ export function parseChatDiff(
   }
   const isFileHeader = (i: number) =>
     lines[i].startsWith('--- ') && lines[i + 1]?.startsWith('+++ ');
-  /** Inside a hunk, such a pair of lines could also be a removed and an added line. */
-  const namesOneFile = (i: number) => {
+  /**
+   * Inside a hunk, such a pair of lines could also be a removed and an added line. Naming the same
+   * path twice is taken as a header only once the hunk has all the lines its own header promised.
+   */
+  const namesOneFile = (i: number, hunk: Hunk) => {
     const before = lines[i].slice(4).split('\t')[0].trim();
     const after = lines[i + 1].slice(4).split('\t')[0].trim();
     return (
       lines[i + 2]?.startsWith('@@') ||
       before === '/dev/null' ||
       after === '/dev/null' ||
-      before === after ||
-      (before.startsWith('a/') && after.startsWith('b/'))
+      (before.startsWith('a/') && after.startsWith('b/')) ||
+      (before === after && hunk.remaining.old <= 0 && hunk.remaining.new <= 0)
     );
   };
   const firstHeader = lines.findIndex(
@@ -182,8 +190,15 @@ export function parseChatDiff(
     files.push(file);
     return file;
   };
-  const openHunk = (start: Hunk['start']) => {
-    const hunk: Hunk = { start, lines: [] };
+  const openHunk = (header: RegExpExecArray | null) => {
+    const hunk: Hunk = {
+      start: header ? { old: Number(header[1]), new: Number(header[3]) } : null,
+      // A header that leaves a count out means one line.
+      remaining: header
+        ? { old: Number(header[2] || 1), new: Number(header[4] || 1) }
+        : { old: 0, new: 0 },
+      lines: [],
+    };
     (files.at(-1) ?? openFile(false)).hunks.push(hunk);
     current.hunk = hunk;
     return hunk;
@@ -209,7 +224,7 @@ export function parseChatDiff(
       named.newPath = git[2];
       continue;
     }
-    if (isFileHeader(i) && (!current.hunk || namesOneFile(i))) {
+    if (isFileHeader(i) && (!current.hunk || namesOneFile(i, current.hunk))) {
       closeHunk();
       // After a `diff --git` line, which has already opened the file, these lines give its exact
       // paths. Otherwise they start a file of their own.
@@ -223,23 +238,23 @@ export function parseChatDiff(
     }
     if (line.startsWith('@@')) {
       closeHunk();
-      const header = HUNK_HEADER.exec(line);
-      openHunk(header ? { old: Number(header[1]), new: Number(header[2]) } : null);
+      openHunk(HUNK_HEADER.exec(line));
       continue;
     }
-    if (file?.named && file.hunks.length === 0) {
-      // Git's lines between `diff --git` and the first hunk.
+    if (file?.named && file.hunks.length === 0 && GIT_METADATA.test(line)) {
       if (line.startsWith('new file mode')) file.change = 'added';
       else if (line.startsWith('deleted file mode')) file.change = 'deleted';
       else if (line.startsWith('Binary files ') || line === 'GIT binary patch') file.binary = true;
-      if (!/^[-+ ]/.test(line)) continue;
+      continue;
     }
     // The encoded contents of a binary file are not lines to show.
     if (file?.binary) continue;
+    const hunk = current.hunk ?? openHunk(null);
     // Context lines often lose their leading space when an agent writes the diff by hand.
-    (current.hunk ?? openHunk(null)).lines.push(
-      line === '' || /^[-+ \\]/.test(line) ? line : ` ${line}`,
-    );
+    const bodyLine = line === '' || /^[-+ \\]/.test(line) ? line : ` ${line}`;
+    hunk.lines.push(bodyLine);
+    if (!bodyLine.startsWith('+') && !bodyLine.startsWith('\\')) hunk.remaining.old -= 1;
+    if (!bodyLine.startsWith('-') && !bodyLine.startsWith('\\')) hunk.remaining.new -= 1;
   }
   closeHunk();
 
