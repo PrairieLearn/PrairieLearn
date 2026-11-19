@@ -1,7 +1,7 @@
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 
-import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalScalar, queryScalars } from '@prairielearn/postgres';
@@ -134,6 +134,8 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
         decision: 'approved',
       });
     });
+    // The result is sent to the service after the approval request answers.
+    await vi.waitFor(() => expect(delivered.has(requested.id)).toBe(true));
     return { card: requested.body.card, result: delivered.get(requested.id)! };
   }
 
