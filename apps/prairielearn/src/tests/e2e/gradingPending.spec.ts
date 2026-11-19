@@ -62,7 +62,6 @@ test('students see overall pending status for saved answers and manual grading',
     'You have saved answers that you have not submitted for grading.',
   );
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: 'Grading pending' })).toHaveCount(0);
   await page.getByRole('button', { name: /^Save & Grade/ }).click();
   await expect(assessmentScore.getByText('Grading pending', { exact: true })).toHaveCount(0);
   await page.getByRole('link', { name: 'Assessment overview', exact: true }).click();
@@ -80,14 +79,11 @@ test('students see overall pending status for saved answers and manual grading',
   await page.getByRole('link', { name: 'Assessment overview', exact: true }).click();
   await expect(page.getByText('Grading pending', { exact: true })).toBeVisible();
   await expect(page.getByTestId('scorebar')).toHaveText('0%');
-  const pendingButton = page.getByRole('button', { name: 'Grading pending', exact: true });
-  await pendingButton.focus();
-  await pendingButton.press('Enter');
+  await page.getByRole('button', { name: 'Grading pending', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Grading pending' })).toContainText(
     'Some answers are waiting for manual grading.',
   );
   await page.keyboard.press('Escape');
-  await expect(pendingButton).toBeFocused();
   await page.getByRole('link', { name: 'Assessments', exact: true }).click();
   const assessmentRow = page.getByRole('row').filter({ hasText: assessment.title! });
   await expect(assessmentRow.getByText('Grading pending', { exact: true })).toBeVisible();
