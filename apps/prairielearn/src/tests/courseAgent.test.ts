@@ -300,6 +300,30 @@ describe('Course agent access and conversation privacy', () => {
     ]);
   });
 
+  test("tells only the caller's own conversation its approval mode", async () => {
+    const own = await createConversation(owner);
+    const other = await createConversation(otherOwner);
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      await expect(
+        client.courseAgent.setApprovalMode.mutate({
+          conversationId: other.id,
+          approvalMode: 'always_approve',
+        }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      await client.courseAgent.setApprovalMode.mutate({
+        conversationId: own.id,
+        approvalMode: 'always_approve',
+      });
+    });
+    expect(serviceRequests.map(({ path, body }) => ({ path, body }))).toEqual([
+      {
+        path: `/conversations/${own.agent_conversation_id}/approval-mode`,
+        body: { approvalMode: 'always_approve' },
+      },
+    ]);
+  });
+
   test('downloads a sent file, and displays an image preview', async () => {
     const conversation = await createConversation(owner);
     const uploadUrl = `${siteUrl}/pl/course/1/course_agent/conversations/${conversation.id}/uploads/${crypto.randomUUID()}`;

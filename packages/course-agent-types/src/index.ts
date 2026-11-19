@@ -36,6 +36,8 @@ export type ConversationState = ConversationLifecycle & {
   reviewId: string | null;
   /** Generated from the first message; PrairieLearn shows its own fallback until then. */
   title: string | null;
+  /** Whether reviews the agent submits from now on are approved for the instructor. */
+  approvalMode: ApprovalMode;
 };
 
 export type BlockedReason = Extract<ConversationState, { status: 'blocked' }>['reason'];
@@ -329,8 +331,32 @@ export const PageLocationSchema = z.object({
 
 export type PageLocation = z.infer<typeof PageLocationSchema>;
 
+/**
+ * Whether the instructor decides each `request_changes` review or it is approved for them. The
+ * browser sets it on the conversation and repeats it in each user message's metadata; it applies
+ * to reviews the agent submits from then on.
+ */
+export const ApprovalModeSchema = z.enum(['approval_required', 'always_approve']);
+
+export type ApprovalMode = z.infer<typeof ApprovalModeSchema>;
+
 /** Metadata the browser attaches to a user message. */
-export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
+export const UserMessageMetadataSchema = z.object({
+  location: PageLocationSchema.optional(),
+  // A mode added by a newer PrairieLearn must not discard the rest of the metadata.
+  approvalMode: ApprovalModeSchema.optional().catch(undefined),
+});
+
+/**
+ * A `data-review` part, which shows a review in chat history by ID. `autoApprove` records that the
+ * review was submitted under `always_approve`; the instructor's browser then approves it.
+ */
+export const ReviewPartSchema = z.object({
+  reviewId: z.string(),
+  autoApprove: z.boolean().optional(),
+});
+
+export type ReviewPart = z.infer<typeof ReviewPartSchema>;
 
 /**
  * Input the agent requested from staff with Codex's `request_user_input_async`, in a

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { type ReactNode, Suspense, lazy, useState } from 'react';
+import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
 import type { RequestChangesResult } from '@prairielearn/course-agent-types';
@@ -31,11 +31,17 @@ export function RequestChangesCard({
   conversationId,
   reviewId,
   canResume,
+  autoApprove,
+  onAlwaysApprove,
 }: {
   conversationId: string;
   reviewId: string;
   /** The agent is idle but has not received this review's result, for example after Stop. */
   canResume: boolean;
+  /** Approve the review once its changes load, without waiting for the instructor. */
+  autoApprove: boolean;
+  /** The instructor approved this review and asked not to be asked again in this course. */
+  onAlwaysApprove: () => void;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -68,22 +74,49 @@ export function RequestChangesCard({
     getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
     getAppError<CourseAgentError['Resume']>(resume.error);
   const pending = data?.status === 'pending' ? data : null;
+  // A decided review no longer returns its diff, so keep the last one for the card to show while
+  // the changes are saved.
+  const [lastFiles, setLastFiles] = useState<ReviewDiffFile[] | null>(null);
+  if (pending?.diff.files && pending.diff.files !== lastFiles) setLastFiles(pending.diff.files);
+  const files = pending?.diff.files ?? lastFiles;
   const decide = (value: 'approved' | 'denied') =>
     decision.mutate({ conversationId, reviewId, decision: value });
+  const approveAlways = () =>
+    decision.mutate(
+      { conversationId, reviewId, decision: 'approved' },
+      { onSuccess: onAlwaysApprove },
+    );
   const actionsDisabled = !pending || decision.isPending;
   const canApprove = !!pending?.diff.files;
+  // Approves a pending review on the instructor's behalf once its changes have loaded. It tries
+  // once: if the approval fails, the card's buttons are left for the instructor to decide.
+  const autoApprovedRef = useRef(false);
+  const { mutate: mutateDecision } = decision;
+  useEffect(() => {
+    if (!autoApprove || !canApprove || autoApprovedRef.current) return;
+    autoApprovedRef.current = true;
+    mutateDecision({ conversationId, reviewId, decision: 'approved' });
+  }, [autoApprove, canApprove, mutateDecision, conversationId, reviewId]);
+  const approvingAutomatically =
+    autoApprove && decision.isPending && decision.variables.decision === 'approved';
   return (
-    <div className="border rounded p-2">
+    <div className="course-agent-review border rounded-3">
       {data?.status === 'decided' && data.result ? (
         <ReviewResult result={data.result} />
       ) : (
         <ReviewActions
           disabled={actionsDisabled}
           canApprove={canApprove}
-          fileCount={pending?.diff.files?.length ?? null}
+          files={files}
           onViewChanges={() => setShowChanges(true)}
           onDecision={decide}
+          onApproveAlways={approveAlways}
         />
+      )}
+      {approvingAutomatically && (
+        <p className="small text-muted mt-2 mb-0" role="status">
+          Approving automatically…
+        </p>
       )}
       {data?.status === 'decided' && !data.result && (
         <p className="small text-muted mt-2 mb-0" role="status">
@@ -127,13 +160,17 @@ export function RequestChangesCard({
         id={reviewId}
         show={showChanges}
         loading={review.isLoading}
-        files={pending?.diff.files ?? null}
+        files={files}
         error={pending?.diff.error ? <Alert variant="danger">{pending.diff.error}</Alert> : null}
         actionsDisabled={actionsDisabled}
         canApprove={canApprove}
         onHide={() => setShowChanges(false)}
         onDecision={(value) => {
           decide(value);
+          setShowChanges(false);
+        }}
+        onApproveAlways={() => {
+          approveAlways();
           setShowChanges(false);
         }}
       />
@@ -151,41 +188,80 @@ export function RequestChangesCard({
 function ReviewActions({
   disabled,
   canApprove,
-  fileCount,
+  files,
   onViewChanges,
   onDecision,
+  onApproveAlways,
 }: {
   disabled: boolean;
   canApprove: boolean;
-  fileCount: number | null;
+  files: ReviewDiffFile[] | null;
   onViewChanges: () => void;
   onDecision: (decision: 'approved' | 'denied') => void;
+  onApproveAlways: () => void;
 }) {
+  const additions = files?.reduce((sum, file) => sum + file.additions, 0) ?? 0;
+  const deletions = files?.reduce((sum, file) => sum + file.deletions, 0) ?? 0;
   return (
-    <div className="d-flex flex-wrap align-items-center gap-2">
+    <>
       <div className="d-flex align-items-center gap-2">
         <i className="bi bi-exclamation-triangle text-warning" aria-hidden="true" />
         <span>Review course changes</span>
       </div>
-      <Button variant="link" size="sm" className="p-0 text-nowrap" onClick={onViewChanges}>
-        {fileCount === null
-          ? 'View changes'
-          : `View ${fileCount === 1 ? '1 changed file' : `${fileCount} changed files`}`}
+      <Button
+        variant="link"
+        className="course-agent-review-files"
+        title="View changes"
+        onClick={onViewChanges}
+      >
+        <i className="bi bi-file-earmark-diff text-body-secondary" aria-hidden="true" />
+        {files && (
+          <span className="text-truncate">
+            {files.length === 1 ? '1 changed file' : `${files.length} changed files`}
+          </span>
+        )}
+        {files?.some((file) => file.patch !== null) && (
+          <span className="flex-shrink-0">
+            <span className="text-success">+{additions}</span>{' '}
+            <span className="text-danger">−{deletions}</span>
+          </span>
+        )}
+        <span className="course-agent-review-view d-flex align-items-center gap-1 ms-auto flex-shrink-0">
+          <span>
+            View<span className="course-agent-review-view-wide"> changes</span>
+          </span>
+          <i className="bi bi-chevron-right" aria-hidden="true" />
+        </span>
       </Button>
-      <div className="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
-        <Button size="sm" disabled={disabled || !canApprove} onClick={() => onDecision('approved')}>
-          Approve
+      <div className="d-flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          className="course-agent-composer-button course-agent-composer-send"
+          disabled={disabled || !canApprove}
+          onClick={() => onDecision('approved')}
+        >
+          Approve once
         </Button>
         <Button
-          variant="outline-secondary"
+          variant="link"
           size="sm"
+          className="course-agent-composer-button course-agent-review-always"
+          disabled={disabled || !canApprove}
+          onClick={onApproveAlways}
+        >
+          Always approve
+        </Button>
+        <Button
+          variant="link"
+          size="sm"
+          className="course-agent-composer-button"
           disabled={disabled}
           onClick={() => onDecision('denied')}
         >
           Deny
         </Button>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -199,6 +275,7 @@ function ReviewChangesModal({
   actionsDisabled,
   canApprove,
   onDecision,
+  onApproveAlways,
 }: {
   id: string;
   show: boolean;
@@ -209,6 +286,7 @@ function ReviewChangesModal({
   actionsDisabled: boolean;
   canApprove: boolean;
   onDecision: (decision: 'approved' | 'denied') => void;
+  onApproveAlways: () => void;
 }) {
   const loadingSpinner = (
     <div className="d-flex justify-content-center p-4">
@@ -243,18 +321,22 @@ function ReviewChangesModal({
         {error}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="outline-secondary" onClick={onHide}>
-          Close
+        <Button disabled={actionsDisabled || !canApprove} onClick={() => onDecision('approved')}>
+          Approve once
         </Button>
         <Button
-          variant="outline-danger"
+          variant="outline-primary"
+          disabled={actionsDisabled || !canApprove}
+          onClick={onApproveAlways}
+        >
+          Always approve
+        </Button>
+        <Button
+          variant="outline-secondary"
           disabled={actionsDisabled}
           onClick={() => onDecision('denied')}
         >
           Deny
-        </Button>
-        <Button disabled={actionsDisabled || !canApprove} onClick={() => onDecision('approved')}>
-          Approve
         </Button>
       </Modal.Footer>
     </Modal>
