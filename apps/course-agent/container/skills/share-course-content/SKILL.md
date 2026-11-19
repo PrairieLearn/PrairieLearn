@@ -71,20 +71,41 @@ question's Settings page; editable, records `copiedFrom`, gets no later fixes).
    You can't see whether sharing is enabled or whether the course has a sharing
    name. Content that is already shared shows both are in place. Otherwise ask
    the instructor to check the course's **Sharing** page.
-3. **Review once.** Before editing, give the instructor:
-   - what will be shared and how
-   - what can't be shared
-   - what will be locked once used
-   - the exam-use flags
-   - the license
-   - the owner-only steps
+3. **Review once.** Before editing, send the instructor one short message in
+   plain words, shaped like this:
 
-   Wait for a yes if anything is irreversible or assessed; otherwise proceed.
+   ```markdown
+   **I'd share <N> questions** with <who>, <how, in a phrase>: <their titles;
+   past about ten, the first few and "and N more">.
+
+   **Left out**
+
+   - <N> on this term's exams or quizzes (<which assessments>)
+   - <N> that can't be shared: <a reason an instructor would recognize, such
+     as "an older question format">
+
+   **Before you say yes:** <what can't be undone once the other course uses
+   them, and the license, in a sentence or two>. <The owner-only step.>
+   ```
+
+   Give counts, not names, for what you leave out, and offer the list. Leave
+   out anything the instructor doesn't need in order to decide. If anything is
+   irreversible or assessed, then ask one short question, with your default
+   first, and wait for a yes; otherwise proceed. Ask only for what you need in
+   order to act. The question shows as plain text, so keep the review out of
+   it, and don't repeat the review afterwards.
 
 4. **Apply.** Edit only the sharing fields, keeping each file's formatting,
    and submit the edits for review. PrairieLearn syncs the course when they are
    approved, and sync rejects the whole course if any sharing rule is broken.
-   If the sync fails, fix every sharing error and submit again.
+   If the sync reports errors, look at which files they name:
+   - sharing errors, or errors in files you changed: fix every one and submit
+     again
+   - errors only in other files: PrairieLearn reports the sync as failed
+     whenever any file in the course has an error, but it still syncs every
+     file that has none, so your sharing changes are in effect. Say that, name
+     where the other errors are in a sentence, and stop; don't investigate or
+     fix them unless asked
 5. **Verify.** You can't open PrairieLearn pages, so give the instructor the
    pages to check once the course has synced:
    - `/pl/public/course/<course_id>/questions`

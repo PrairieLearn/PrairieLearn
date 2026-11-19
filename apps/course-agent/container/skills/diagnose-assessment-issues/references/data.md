@@ -99,6 +99,10 @@ The instructor can attach these, or answer:
 - **Course files contain identifiers too.** Access rules in
   `infoAssessment.json` can list student emails. Don't copy them into the
   report.
+- **Attempt totals or times that look wrong,** such as missing maximum points,
+  zero durations, or start dates outside the term. The rows in
+  `instance_questions` and `submissions` carry their own scores, so analyze
+  those, and say what was unusable in the report's data note.
 - **Zero-point questions** and workspace placeholders don't need analysis.
 
 ## Per-question statistics

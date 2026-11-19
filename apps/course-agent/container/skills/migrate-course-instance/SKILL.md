@@ -34,26 +34,30 @@ Keep your working files (calendar notes, the plan, the table of moves) in `~/mig
 2. **Calendars.** Get each term's official academic calendar, which you can find on the web: first and last day of instruction, holidays, breaks, finals, and the add deadline. If you can't find one, infer it from the course's history and say which dates are inferred. See [references/calendars.md](references/calendars.md).
 3. **Copy.** Copy the source course instance's folder to a new one, or use the copy the instructor already made in PrairieLearn. See [references/copying.md](references/copying.md).
 4. **Plan.** Work out a new value for every date in the copy: the same week of instruction, weekday and time in the target term, counting weeks of instruction so that breaks don't shift what follows them. Then check every date that is unusual (on a holiday, in a break, outside the source term, out of order, or in a window that shrank), and spot-check each assessment set against its pattern (for example, "homework opens Tuesday 08:00 and is due the next Tuesday 23:59").
-5. **Propose.** Build a table of where each assessment moved, with columns: assessment, ID, current release, current due date, new release, new due date, notes. Notes appear only where something needs a look, such as "Due date Tuesday instead of Monday: Mon Sep 7 is Labor Day", "Now spans spring break: open 14 days, was 7", or "Release was left over from 2024". Send one message:
-   - the calendars, with their sources
-   - each assessment set's pattern
-   - the table, or only its rows with notes when it's long
-   - the decisions, each with your default
+5. **Propose.** Build a table of where each assessment moved, with columns: assessment, was (release to due), now (release to due), note. Write dates as "Mon, Sep 7", and give a time only where it differs from the set's pattern. Notes appear only where something needs a look, such as "Due Tuesday instead of Monday: Sep 7 is Labor Day", "Now spans spring break: open 14 days, was 7", or "Release was left over from 2024". Send it as one message that takes a minute or two to read:
+   - the two terms' dates, in a line each, with their sources
+   - each assessment set's pattern, in a line each
+   - the table, or only its rows with notes when it's long, saying how many other assessments moved by the pattern with nothing to flag
+   - the decisions, as a short list, each with your default
 
-   Close with "Anything different this term?", and apply policy changes as rules ("homework due Fridays"), not row by row. Defaults are in [references/decisions.md](references/decisions.md).
+   Then ask one short question, "Anything different this term?", with your plan as the recommended answer. The question shows as plain text, so keep the proposal out of it, and don't repeat the proposal afterwards. Apply policy changes as rules ("homework due Fridays"), not row by row. Defaults are in [references/decisions.md](references/decisions.md).
 
 6. **Apply.** Apply the plan with the instructor's decisions to the copy, and remove legacy UID rules and per-student overrides. Edit only the affected text, so the diff shows just the change.
-7. **Verify.** Check the copy again against the target calendar. It should have no leftover dates, no unapproved deadlines in breaks, and no per-student rules. Diff the copy against the source: only dates, the removed rules, and the decisions should differ.
-8. **Submit for review.** A review takes at most 100 changed files, and every file in the copy counts. For a larger course instance, submit `infoCourseInstance.json` and the first assessment sets, then the rest in later reviews, and tell the instructor how many reviews to expect. PrairieLearn syncs the course on approval; if the sync fails, fix the errors and submit again.
+7. **Verify.** Check the copy against the proposal the instructor approved and the target calendar. Every date should match the proposal, with no leftover dates, no unapproved deadlines in breaks, and no per-student rules. Diff the copy against the source: only dates, the removed rules, and the decisions should differ.
+8. **Submit for review.** A review takes at most 100 changed files, and every file in the copy counts. For a larger course instance, submit `infoCourseInstance.json` and the first assessment sets, then the rest in later reviews, and tell the instructor how many reviews to expect. PrairieLearn syncs the course on approval. If the sync reports errors, look at which files they name:
+   - errors in files you changed: fix them and submit again
+   - errors only in other files: these were there before. Your changes were saved and the new course instance synced. Say so in a sentence, name where the other errors are, and stop; don't investigate or fix them unless asked
 
 ## Handoff
+
+Keep it to a short list, in plain words:
 
 - **Result:** the new course instance, its dates, and how many dates moved.
 - **Calendars:** the sources used, and what was inferred.
 - **Decisions:** each one applied.
 - **To check in PrairieLearn:** a few assessments' **Access** tabs in the new course instance.
 - **Still to do in PrairieLearn:**
-  - PrairieTest exams to create, with the UUIDs to replace
+  - PrairieTest exams to create, by assessment name; offer the list of IDs to replace
   - students to add to labels
   - staff permissions
   - the enrollment code

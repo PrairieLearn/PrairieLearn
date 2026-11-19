@@ -6,7 +6,7 @@ description: Diagnose problems in a PrairieLearn assessment from past student re
 # Diagnose assessment issues
 
 When you're done, the instructor should know **which questions to change, how,
-and why**, after about five minutes of reading. Every claim must hold up.
+and why**, after about two minutes of reading. Every claim must hold up.
 
 Statistics tell you where to look. The question source tells you why. A gap
 between two numbers isn't a finding until you can point to what in the question,
@@ -41,9 +41,11 @@ invent labels:
 
 The docs call each entry in a zone's question list a _slot_. A slot with
 alternatives gives each student one (or `numberChoose`) of them. Refer to a
-question by its QID and by the number shown on the assessment's
-**Questions** page, for example "question 6.2 (`OhareTrackComputeR`)".
-Alternatives share the first number. Name course instances as PrairieLearn shows
+question by the number shown on the assessment's **Questions** page and a few
+words on what it asks, with its QID once, for example "question 6.2, the radius
+of the track (`OhareTrackComputeR`)". After that the number is enough.
+Alternatives share the first number. Instructors see question numbers, not
+slots, so in the report write "question 4" and "its alternatives". Name course instances as PrairieLearn shows
 them.
 
 ## 1. Establish scope
@@ -191,72 +193,58 @@ instructor.
 
 ## Report
 
-Give the report as your reply; don't add it to the course unless the instructor
-asks for a file.
+Give the report as your reply, once; don't add it to the course unless the
+instructor asks for a file, and don't follow it with a summary of itself.
 
-Make the report easy to scan. Use tables for numbers, and write
-findings as ideas: what about the question causes the problem, in plain words.
-Use measures a reader understands without explanation, such as mean score, share
-with full credit, minutes, and points out of the total. Label table columns in
-words ("points gained or lost, out of 100"), not symbols or abbreviations. If you
-need anything less familiar, define it in one sentence where it first appears.
+Write for an instructor reading in a narrow chat panel. Lead with what to
+change. Say what each question asks in plain words, so the instructor doesn't
+have to open it. Use measures that need no explanation: mean score, share with
+full credit, minutes, and points out of the assessment total. Keep the whole
+reply to about 400 words plus one table.
 
-Use these sections, adapting them to the assessment:
+Use this shape, adapting it to the assessment:
 
 ```markdown
-# <Assessment>: diagnosis
+**Bottom line**
 
-<course instances analyzed>
+- <Up to three bullets, most important first: what to change and why.>
 
-## Bottom line
+| Question                  | What it asks                                | Students | Mean score |
+| ------------------------- | ------------------------------------------- | -------- | ---------- |
+| **4** (1 of 2, 17 points) |                                             | 226      | 76.9%      |
+| ↳ **4.1**                 | Pin in a slot: find the **acceleration**    | 112      | **66.9%**  |
+| ↳ 4.2                     | Four-bar linkage: find the angular velocity | 114      | 86.8%      |
 
-<Up to five bullets, most important first: what to change and why.>
+### <The idea, in a sentence: "4.1 is harder when the slot is diagonal">
 
-## Scope
+<Two or three numbers that show it, each with its number of students.>
+**Why:** <the cause in the question, in a sentence or two, linking the file>
+**Fix:** <a concrete change, or "No change needed">
+_<Confidence label, and what would settle it if not Observed.>_
 
-<A table of the offerings analyzed: course instance, dates, number of students,
-and anything that changes how to read them (structure changes, manual grading,
-retakes). Then what was included and excluded, in a few bullets.>
+**Also checked:** <one line: slots that are well matched, gaps judged to be noise>
 
-## Results at a glance
-
-<For the main offering analyzed, one table per zone, headed with the zone's
-points. Give each slot a bold row: its number, what it tests, its points, and
-its combined students, mean score, full credit and median minutes. Under it,
-one row per alternative starting with "↳": what it asks (bold the part that
-differs), its QID, and the same numbers, plus its mean minus the slot's mean.
-Bold any alternative 10 or more points from its slot.>
-
-## Findings
-
-### <The idea, in a sentence: "6.5 needs the chain rule; 6.3 and 6.4 don't">
-
-<A small table or two sentences of evidence, each number with its course
-instance and n.>
-**Why:** <cause in the source, with file path> (or "Unexplained: …")
-**Confidence:** <label>
-**Effect:** <points out of the assessment total, and for whom>
-**Edit:** <concrete change, "No edit needed", or "Already fixed">
-
-## Checked, no change needed
-
-<One line each: alternatives that are well matched, gaps judged to be noise.>
-
-## Questions for the instructor
-
-<Only decisions you can't make. Omit the section if there are none.>
-
-## Data and definitions
-
-<The data each number is based on and the filters applied (for example, staff
-attempts excluded), and a short table defining each measure used.>
+**About the data:** <two or three sentences: the course instance and number of
+students, what was left out, and anything that limits the numbers, such as
+score changes by staff or missing times.>
 ```
 
-The bottom line and summary tables should give the picture in a minute.
-Keep each finding under about 150 words, and order findings by effect on
-students: how many were affected and by how much. Most reports have three to six
-findings. Merge related minor ones, and move small issues to "Checked, no change
-needed".
+- **The table** covers the main offering: a bold row per slot that has
+  alternatives, then a row per alternative, with the part that differs in bold.
+  Bold an alternative that is 10 or more points from its slot. The panel is
+  narrow, so keep to these four columns and to question numbers in the first;
+  name QIDs in the findings instead. Leave out slots with one question unless
+  one is a finding.
+- **Findings** are ordered by effect on students: how many were affected and by
+  how many points. Give two to four, each under about 70 words. Merge related
+  minor ones, and move small issues to "Also checked".
+- **Problems with the data** go in "About the data", not the lead. Open with
+  what the results show, and mention a data problem earlier only when it
+  changes a conclusion.
+- **Questions for the instructor** go in one closing line, and only for
+  decisions you can't make.
+- Offer the detail you left out, such as every offering's numbers or how a
+  measure was computed, instead of including it.
 
 ## Before handing off
 
@@ -266,3 +254,4 @@ needed".
 - Confirm the step 3 explanations were ruled out for each finding.
 - Confirm the report contains no user IDs or per-student rows.
 - Reread the bottom line: could the instructor act on it alone?
+- Cut anything the instructor doesn't need in order to decide.
