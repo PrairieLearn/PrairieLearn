@@ -8,17 +8,15 @@ import { z } from 'zod';
 
 import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
-import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../../lib/client/printing/print-snapshot.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
-import { finishPrintExport, insertPrintExport } from '../../../models/print-export.js';
 import { selectPrintFormQuestions } from '../../../models/print-form-question.js';
 import {
   selectActivePrintFormsForAssessment,
   selectOptionalPrintForm,
 } from '../../../models/print-form.js';
 import { syncCourse } from '../../helperCourse.js';
-import { getConfiguredUser, getOrCreateUser } from '../../utils/auth.js';
+import { getOrCreateUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -381,42 +379,6 @@ test('keeps multiple export links after another file is queued and the page relo
   await expect(keyLink).toBeVisible({ timeout: 120_000 });
 });
 
-test('a stale export for one form does not block another form', async ({
-  page,
-  courseInstance,
-}) => {
-  const assessment = await openPrintPreparation(page, courseInstance.id);
-  await preparePreview(page);
-  const formAId = new URL(page.url()).searchParams.get('form')!;
-  await page.getByRole('button', { name: 'Add form', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Form B1 Previewing' })).toBeVisible();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-
-  const user = await getConfiguredUser();
-  const printExportId = await insertPrintExport({
-    assessmentId: assessment.id,
-    userId: user.id,
-    authnUserId: user.id,
-    format: 'pdf',
-    filename: 'stale-form-a.pdf',
-    label: 'Form A1 PDF',
-    inputKey: 'test-stale-form-a',
-  });
-  expect(
-    await finishPrintExport(printExportId, {
-      status: 'failed',
-      failureMessage: STALE_PRINT_SNAPSHOT_MESSAGE,
-    }),
-  ).toBe(true);
-
-  const url = new URL(page.url());
-  url.searchParams.set('form', formAId);
-  url.searchParams.set('export', printExportId);
-  await page.goto(url.href);
-  await page.getByRole('button', { name: 'Form B1', exact: true }).click();
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-});
-
 test('creates a new form version when including a question after a download', async ({
   page,
   courseInstance,
@@ -493,8 +455,12 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
   page,
   courseInstance,
 }) => {
-  await openPrintPreparation(page, courseInstance.id, 'exam13-disableHonorCode');
+  await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
+  await page.getByRole('button', { name: 'Add form', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Form B1 Previewing' })).toBeVisible();
+  await page.getByRole('button', { name: 'Form A1', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 
   await page.route(
     '**/print_form/*/docx?*',
@@ -509,10 +475,15 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
     },
     { times: 1 },
   );
-  await chooseDownload(page, `Download Form ${await printFormLabel(page)} Word (.docx)`);
+  await chooseDownload(page, 'Download Form A1 Word (.docx)');
   await expect(
     page.getByRole('alert').getByText('This print preview has expired or changed.'),
   ).toBeVisible();
+  await expect(downloadMenu(page)).toBeDisabled();
+  await page.getByRole('button', { name: 'Form B1', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+  await page.getByRole('button', { name: 'Form A1', exact: true }).click();
+  await expect(downloadMenu(page)).toBeDisabled();
   const updatePreview = page.getByRole('button', { name: 'Update preview', exact: true });
   await expect(updatePreview).toBeEnabled();
   await updatePreview.click();
