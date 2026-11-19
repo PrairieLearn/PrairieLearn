@@ -18,8 +18,18 @@ afterEach(() => {
   cleanups.splice(0).forEach((cleanup) => cleanup());
 });
 
-function connect(services: QuestionBrowserServices) {
+function connect(overrides: Partial<QuestionBrowserServices>) {
   const channel = new MessageChannel();
+  const services: QuestionBrowserServices = {
+    openCopyQuestion: vi.fn(),
+    openSubmissionInfo: vi.fn(),
+    renderSubmission: vi.fn(),
+    subscribeToGradingStatus: () => () => {},
+    submitAnswer: vi.fn(),
+    navigate: vi.fn(),
+    reportAnswerState: vi.fn(),
+    ...overrides,
+  };
   const host = { services, dispose: vi.fn() };
   const disposeHost = serveQuestionServices(channel.port1, host);
   const client = createQuestionServicesClient(channel.port2);
@@ -41,12 +51,7 @@ it('matches concurrent responses to requests across real ports and propagates fa
     .mockReturnValueOnce(second.promise)
     .mockRejectedValueOnce(new Error('Internal details'))
     .mockRejectedValueOnce(new DOMException('Question view was removed', 'AbortError'));
-  const { services } = connect({
-    openCopyQuestion: vi.fn(),
-    openSubmissionInfo: vi.fn(),
-    renderSubmission,
-    subscribeToGradingStatus: () => () => {},
-  });
+  const { services } = connect({ renderSubmission });
   const options = { signal: new AbortController().signal };
   const a = services.renderSubmission({ submissionId: '1', purpose: 'history' }, options);
   const b = services.renderSubmission({ submissionId: '2', purpose: 'grading-result' }, options);
@@ -68,12 +73,7 @@ it('rejects cancellation locally and aborts host work', async () => {
   const renderSubmission = vi
     .fn<QuestionBrowserServices['renderSubmission']>()
     .mockReturnValue(result.promise);
-  const { services } = connect({
-    openCopyQuestion: vi.fn(),
-    openSubmissionInfo: vi.fn(),
-    renderSubmission,
-    subscribeToGradingStatus: () => () => {},
-  });
+  const { services } = connect({ renderSubmission });
   const controller = new AbortController();
   const pending = services.renderSubmission(
     { submissionId: '1', purpose: 'history' },
@@ -94,8 +94,6 @@ it('delivers initial status, unsubscribes, and rejects pending work when the hos
     () => new Promise(() => {}),
   );
   const { services, disposeHost, host } = connect({
-    openCopyQuestion: vi.fn(),
-    openSubmissionInfo: vi.fn(),
     renderSubmission,
     subscribeToGradingStatus(listener) {
       publish = listener;
@@ -130,12 +128,7 @@ it('waits for dialog closure and rejects dialog requests on failure or disposal'
     .mockRejectedValueOnce(new Error('Internal details'))
     .mockRejectedValueOnce(new DOMException('Question view was removed', 'AbortError'))
     .mockImplementation(() => new Promise(() => {}));
-  const { services, disposeHost } = connect({
-    openCopyQuestion,
-    openSubmissionInfo,
-    renderSubmission: vi.fn(),
-    subscribeToGradingStatus: () => () => {},
-  });
+  const { services, disposeHost } = connect({ openCopyQuestion, openSubmissionInfo });
   const onClosed = vi.fn();
   const copy = services.openCopyQuestion().then(onClosed);
   await vi.waitFor(() => expect(openCopyQuestion).toHaveBeenCalledOnce());

@@ -9,6 +9,16 @@ import type {
   QuestionContentPanels,
 } from './question-browser-services.types.js';
 
+type WithoutId<Request> = Request extends unknown ? Omit<Request, 'id'> : never;
+
+/** Requests that complete without data. The client assigns their IDs. */
+type ActionRequest = WithoutId<
+  Extract<
+    QuestionServiceRequest,
+    { type: 'open-copy-question' | 'open-submission-info' | 'submit-answer' | 'navigate' }
+  >
+>;
+
 function abortError() {
   return new DOMException('Question service request aborted', 'AbortError');
 }
@@ -24,7 +34,8 @@ export function createQuestionServicesClient(port: MessagePort): {
     number,
     { resolve: (panels: QuestionContentPanels) => void; reject: (error: Error) => void }
   >();
-  const dialogs = new Map<number, { resolve: () => void; reject: (error: Error) => void }>();
+  // Requests that complete without data, such as dialogs and submissions.
+  const actions = new Map<number, { resolve: () => void; reject: (error: Error) => void }>();
   const listeners = new Map<
     number,
     Parameters<QuestionBrowserServices['subscribeToGradingStatus']>[0]
@@ -37,8 +48,8 @@ export function createQuestionServicesClient(port: MessagePort): {
     send({ type: 'dispose' });
     requests.forEach(({ reject }) => reject(abortError()));
     requests.clear();
-    dialogs.forEach(({ reject }) => reject(abortError()));
-    dialogs.clear();
+    actions.forEach(({ reject }) => reject(abortError()));
+    actions.clear();
     listeners.clear();
     port.onmessage = null;
     port.onmessageerror = null;
@@ -54,18 +65,18 @@ export function createQuestionServicesClient(port: MessagePort): {
     }
     const message = parsed.data;
     switch (message.type) {
-      case 'dialog-closed':
-        dialogs.get(message.id)?.resolve();
-        dialogs.delete(message.id);
+      case 'done':
+        actions.get(message.id)?.resolve();
+        actions.delete(message.id);
         break;
       case 'result':
         requests.get(message.id)?.resolve(message.panels);
         break;
       case 'error':
-        (requests.get(message.id) ?? dialogs.get(message.id))?.reject(
+        (requests.get(message.id) ?? actions.get(message.id))?.reject(
           message.code === 'aborted' ? abortError() : new Error('Question service request failed'),
         );
-        dialogs.delete(message.id);
+        actions.delete(message.id);
         break;
       case 'status':
         listeners.get(message.id)?.(message.submissions);
@@ -76,24 +87,20 @@ export function createQuestionServicesClient(port: MessagePort): {
     }
   };
 
-  function openDialog(
-    request:
-      | { type: 'open-copy-question' }
-      | { type: 'open-submission-info'; submissionId: string },
-  ): Promise<void> {
+  function perform(request: ActionRequest): Promise<void> {
     if (disposed) return Promise.reject(abortError());
     const id = nextId++;
     return new Promise((resolve, reject) => {
-      dialogs.set(id, { resolve, reject });
+      actions.set(id, { resolve, reject });
       send({ ...request, id });
     });
   }
 
   return {
     services: {
-      openCopyQuestion: () => openDialog({ type: 'open-copy-question' }),
+      openCopyQuestion: () => perform({ type: 'open-copy-question' }),
       openSubmissionInfo: ({ submissionId }) =>
-        openDialog({ type: 'open-submission-info', submissionId }),
+        perform({ type: 'open-submission-info', submissionId }),
       renderSubmission(request, { signal }) {
         if (disposed || signal.aborted) return Promise.reject(abortError());
         const id = nextId++;
@@ -134,6 +141,11 @@ export function createQuestionServicesClient(port: MessagePort): {
         return () => {
           if (listeners.delete(id)) send({ type: 'unsubscribe', id });
         };
+      },
+      submitAnswer: ({ action, entries }) => perform({ type: 'submit-answer', action, entries }),
+      navigate: ({ target }) => perform({ type: 'navigate', target }),
+      reportAnswerState({ dirty }) {
+        if (!disposed) send({ type: 'answer-state', dirty });
       },
     },
     dispose,
@@ -194,32 +206,23 @@ export function serveQuestionServices(
     }
   }
 
-  async function openDialog(
-    message: Extract<
-      QuestionServiceRequest,
-      { type: 'open-copy-question' | 'open-submission-info' }
-    >,
-  ) {
+  async function perform(id: number, action: () => Promise<void>) {
     const controller = new AbortController();
-    requests.set(message.id, controller);
+    requests.set(id, controller);
     try {
-      if (message.type === 'open-copy-question') {
-        await host.services.openCopyQuestion();
-      } else {
-        await host.services.openSubmissionInfo({ submissionId: message.submissionId });
-      }
-      if (!controller.signal.aborted) send({ type: 'dialog-closed', id: message.id });
+      await action();
+      if (!controller.signal.aborted) send({ type: 'done', id });
     } catch (error) {
       send({
         type: 'error',
-        id: message.id,
+        id,
         code:
           controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')
             ? 'aborted'
             : 'failed',
       });
     } finally {
-      requests.delete(message.id);
+      requests.delete(id);
     }
   }
 
@@ -232,10 +235,9 @@ export function serveQuestionServices(
     }
     const message = parsed.data;
     if (
-      (message.type === 'render' ||
-        message.type === 'subscribe' ||
-        message.type === 'open-copy-question' ||
-        message.type === 'open-submission-info') &&
+      message.type !== 'cancel' &&
+      message.type !== 'unsubscribe' &&
+      'id' in message &&
       (requests.has(message.id) || subscriptions.has(message.id))
     ) {
       dispose();
@@ -243,8 +245,23 @@ export function serveQuestionServices(
     }
     switch (message.type) {
       case 'open-copy-question':
+        void perform(message.id, () => host.services.openCopyQuestion());
+        break;
       case 'open-submission-info':
-        void openDialog(message);
+        void perform(message.id, () =>
+          host.services.openSubmissionInfo({ submissionId: message.submissionId }),
+        );
+        break;
+      case 'submit-answer':
+        void perform(message.id, () =>
+          host.services.submitAnswer({ action: message.action, entries: message.entries }),
+        );
+        break;
+      case 'navigate':
+        void perform(message.id, () => host.services.navigate({ target: message.target }));
+        break;
+      case 'answer-state':
+        host.services.reportAnswerState({ dirty: message.dirty });
         break;
       case 'render':
         void render(message);

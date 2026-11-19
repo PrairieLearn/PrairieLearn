@@ -37,14 +37,16 @@ const submissionInfo: SubmissionInfo = {
 };
 
 function createServices(
-  dialogData: QuestionDialogData,
+  dialogData: QuestionDialogData = { copyQuestion: null, submissions: [] },
   submissionRenderUrls = new Map([['2', '/pl/question/1/variant/3/submission/2']]),
 ) {
   return createQuestionServicesHost({
     document,
     variantId: '3',
     variantToken: 'token',
+    csrfToken: 'csrf-token',
     submissionRenderUrls,
+    navigationUrls: {},
     dialogData,
     isCurrent: () => true,
   });
@@ -196,7 +198,9 @@ it('shares one grading socket and its latest status until the last subscriber le
     dialogData: { copyQuestion: null, submissions: [] },
     variantId: '1',
     variantToken: 'token',
+    csrfToken: 'csrf-token',
     submissionRenderUrls: new Map(),
+    navigationUrls: {},
     isCurrent: () => true,
   });
   try {
@@ -321,7 +325,9 @@ it('invalidates host renders before cancellation returns across the port', async
     document,
     variantId: '3',
     variantToken: 'token',
+    csrfToken: 'csrf-token',
     submissionRenderUrls: new Map([['2', '/submission/2']]),
+    navigationUrls: {},
     dialogData: { copyQuestion: null, submissions: [] },
     isCurrent: () => true,
   });
@@ -374,4 +380,30 @@ it('invalidates host renders before cancellation returns across the port', async
     view.dispose();
     client.dispose();
   }
+});
+
+it('submits answers once and still warns about edits made after a submission', async () => {
+  const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => {});
+  const { services, dispose } = createServices();
+  const leave = () => {
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  };
+  await expect(
+    services.submitAnswer({ action: 'grade', entries: [['__csrf_token', 'question-token']] }),
+  ).rejects.toThrow('reserved fields');
+
+  services.reportAnswerState({ dirty: true });
+  await services.submitAnswer({ action: 'grade', entries: [['answer', '1']] });
+  expect(leave()).toBe(false);
+  await expect(services.submitAnswer({ action: 'save', entries: [] })).rejects.toThrow(
+    'already submitted',
+  );
+  expect(submit).toHaveBeenCalledOnce();
+
+  // The page remains if the user stops the submission's navigation.
+  services.reportAnswerState({ dirty: true });
+  expect(leave()).toBe(true);
+  dispose();
 });

@@ -966,6 +966,7 @@ export async function renderPanelsForSubmission({
           ...locals,
         },
         questionContext,
+        questionHostingUpdate,
       }).toString();
     },
     async () => {

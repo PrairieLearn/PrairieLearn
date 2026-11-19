@@ -5,6 +5,10 @@ import { io } from 'socket.io-client';
 
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
+import {
+  confirmOnUnload,
+  trackQuestionFormChanges,
+} from '../../src/lib/client/confirm-on-unload.js';
 import { copyContentModal } from '../../src/lib/client/copy-content.js';
 import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 import { createLocalQuestionBrowserServices } from '../../src/lib/client/question-browser-services.js';
@@ -12,6 +16,7 @@ import type {
   QuestionBrowserServices,
   QuestionBrowserServicesData,
   QuestionContentPanels,
+  QuestionNavigationTarget,
 } from '../../src/lib/client/question-browser-services.types.js';
 import { updateQuestionPagePanels } from '../../src/lib/client/question-page-panels.js';
 import { createQuestionSubmissions } from '../../src/lib/client/question-submissions.js';
@@ -23,7 +28,6 @@ import type { QuestionDialogData } from '../../src/lib/question-dialogs.types.js
 import type { SubmissionPanels } from '../../src/lib/question-render.types.js';
 import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
-import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { setupCountdown } from './lib/countdown.js';
 
 const browserServices = new WeakMap<HTMLElement, QuestionBrowserServices>();
@@ -78,6 +82,37 @@ onDocumentReady(() => {
         localServices && container.querySelector('.js-submission-body[data-dynamic-render-url]')
           ? initializeQuestionSubmissions(container, localServices.services, isCurrent)
           : undefined;
+      const answerForm = container.querySelector<HTMLFormElement>(
+        'form[data-question-submission="services"]',
+      );
+      const answers =
+        localServices && answerForm
+          ? initializeAnswerSubmission(container, answerForm, localServices.services)
+          : undefined;
+
+      container.addEventListener('click', (event) => {
+        const link = (event.target as Element).closest<HTMLAnchorElement>(
+          'a[data-question-navigate]',
+        );
+        const services = browserServices.get(container);
+        if (!link || !services || event.defaultPrevented) return;
+        // Modified clicks keep their native behavior, such as opening a new tab.
+        if (
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+        event.preventDefault();
+        const target = link.dataset.questionNavigate as QuestionNavigationTarget;
+        services.navigate({ target }).catch((error: unknown) => {
+          if (error instanceof Error && error.name === 'AbortError') return;
+          throw error;
+        });
+      });
 
       container.addEventListener('click', async (event) => {
         const button = (event.target as Element).closest<HTMLButtonElement>(
@@ -116,6 +151,7 @@ onDocumentReady(() => {
       return {
         remove: () => {
           submissions?.dispose();
+          answers?.dispose();
           externalGrading?.close();
           localServices?.dispose();
           browserServices.delete(container);
@@ -154,6 +190,8 @@ onDocumentReady(() => {
   observe('.question-container form.question-form', {
     constructor: HTMLFormElement,
     initialize(form) {
+      // The application warns about unsaved answers submitted through browser services.
+      if (form.dataset.questionSubmission === 'services') return;
       const cleanup = confirmOnUnload(form);
       return { remove: () => cleanup() };
     },
@@ -267,6 +305,59 @@ function initializeQuestionSubmissions(
     dispose() {
       listeners.abort();
       submissions.dispose();
+    },
+  };
+}
+
+/** Enables submit buttons that were waiting for browser services to be available. */
+function enableSubmitButtons(root: ParentNode) {
+  root
+    .querySelectorAll<HTMLButtonElement>('button[data-question-services-pending]')
+    .forEach((button) => {
+      button.disabled = false;
+      button.removeAttribute('data-question-services-pending');
+    });
+}
+
+function initializeAnswerSubmission(
+  container: HTMLElement,
+  form: HTMLFormElement,
+  services: QuestionBrowserServices,
+) {
+  const listeners = new AbortController();
+  // Listening above the form lets element submit handlers update their inputs
+  // first, as they would before native submission.
+  container.addEventListener(
+    'submit',
+    (event) => {
+      if (event.target !== form || event.defaultPrevented) return;
+      event.preventDefault();
+      const data = new FormData(form, event.submitter);
+      const action = data.get('__action');
+      if (action !== 'save' && action !== 'grade') {
+        throw new Error('Question answers require a save or grade action');
+      }
+      data.delete('__action');
+      // URL-encoded form submission sends a selected file's name, not its contents.
+      const entries = Array.from(data, ([name, value]): [string, string] => [
+        name,
+        typeof value === 'string' ? value : value.name,
+      ]);
+      services.submitAnswer({ action, entries }).catch((error: unknown) => {
+        if (error instanceof Error && error.name === 'AbortError') return;
+        throw error;
+      });
+    },
+    { signal: listeners.signal },
+  );
+  const stopTracking = trackQuestionFormChanges(form, (dirty) =>
+    services.reportAnswerState({ dirty }),
+  );
+  enableSubmitButtons(form);
+  return {
+    dispose() {
+      listeners.abort();
+      stopTracking();
     },
   };
 }
@@ -537,6 +628,8 @@ function updateDynamicPanels({
     // Using a specific ID ensures we can find things easily via grep.
     const targetElement = container.querySelector(`#${parsedHTML.id}`);
     targetElement?.replaceWith(parsedHTML);
+    // The replacement footer's submit buttons are rendered disabled again.
+    if (browserServices.has(container)) enableSubmitButtons(parsedHTML);
   }
 }
 

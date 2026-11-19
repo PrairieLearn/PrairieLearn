@@ -22,6 +22,9 @@ function setup(submissions: StatusMessageSubmission[]) {
       notify = listener;
       return unsubscribe;
     },
+    submitAnswer: vi.fn(),
+    navigate: vi.fn(),
+    reportAnswerState: vi.fn(),
   };
   const onStatus = vi.fn();
   const onRender = vi.fn();

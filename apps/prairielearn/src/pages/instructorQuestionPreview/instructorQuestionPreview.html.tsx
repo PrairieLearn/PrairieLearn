@@ -126,7 +126,19 @@ export function InstructorQuestionPreview({
       ${CalculatorDrawer({ storageKey: `calculator-preview-${resLocals.question.id}` })}
     `,
     content: html`
-      ${questionHostingUpdate ? QuestionBrowserServicesData({ resLocals, questionContext: 'instructor', renderSubmissionSearchParams }) : ''}
+      ${
+        questionHostingUpdate
+          ? QuestionBrowserServicesData({
+              resLocals,
+              questionContext: 'instructor',
+              renderSubmissionSearchParams,
+              manualGradingPreviewUrl:
+                questionRenderContext === 'manual_grading' ? undefined : manualGradingPreviewUrl,
+              aiGradingPreviewUrl:
+                questionRenderContext === 'ai_grading' ? undefined : aiGradingPreviewUrl,
+            })
+          : ''
+      }
       ${questionHostingUpdate ? '' : previewAlerts}
       <div class="row question-page-row">
         <div
