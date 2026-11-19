@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
+import { type IncomingMessage, request } from 'node:http';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
@@ -13,7 +15,10 @@ import { config } from '../lib/config.js';
 import { UnsavedSubmissionSchema, type User } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
-import { deleteUnsavedSubmissions } from '../models/unsaved-submission.js';
+import {
+  deleteUnsavedSubmissions,
+  selectUnsavedSubmissionGeneration,
+} from '../models/unsaved-submission.js';
 import { createInstanceQuestionTrpcClient } from '../trpc/instanceQuestion/client.js';
 
 import * as helperClient from './helperClient.js';
@@ -55,15 +60,69 @@ describe('Unsaved submission collection', { concurrent: false }, () => {
     );
   }
 
-  function capture(uuid: string) {
-    return createClient().unsavedSubmissions.upsert.mutate({
+  function captureInput(uuid: string, generation: number) {
+    return {
       uuid,
+      generation,
       formData: {
         __variant_id: variantId,
         c: 'unfinished',
         repeated: ['one', 'two'],
       },
+    };
+  }
+
+  function selectGeneration() {
+    return selectUnsavedSubmissionGeneration({
+      instance_question_id: instanceQuestionId,
+      user_id: user.id,
     });
+  }
+
+  async function capture(uuid: string, generation?: number) {
+    return createClient().unsavedSubmissions.upsert.mutate(
+      captureInput(uuid, generation ?? (await selectGeneration())),
+    );
+  }
+
+  async function delayCapture(uuid: string, generation: number) {
+    const body = JSON.stringify({ json: captureInput(uuid, generation) });
+    const path = `${getInstanceQuestionTrpcUrl({ courseInstanceId, instanceQuestionId })}/unsavedSubmissions.upsert`;
+    const pending = request(`${siteUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'X-TRPC': 'true',
+        'X-CSRF-Token': generatePrefixCsrfToken(
+          { url: path, authn_user_id: user.id },
+          config.secretKey,
+        ),
+        Expect: '100-continue',
+      },
+    });
+    const response = new Promise<IncomingMessage>((resolve, reject) => {
+      pending.once('response', resolve);
+      pending.once('error', reject);
+    });
+    pending.flushHeaders();
+    await once(pending, 'continue');
+    // Keep the final byte back so parsing cannot finish until the competing action completes.
+    pending.write(body.slice(0, -1));
+
+    return {
+      finish: async () => {
+        pending.end(body.slice(-1));
+        const received = await response;
+        let text = '';
+        for await (const chunk of received) text += chunk.toString();
+        return { status: received.statusCode, body: JSON.parse(text) };
+      },
+      cancel: async () => {
+        pending.destroy();
+        await response.catch(() => undefined);
+      },
+    };
   }
 
   function createDiscardCsrfToken(authnUserId = user.id) {
@@ -76,7 +135,7 @@ describe('Unsaved submission collection', { concurrent: false }, () => {
     );
   }
 
-  function discard(uuid: string, csrfToken?: string) {
+  async function discard(uuid: string, csrfToken?: string, generation?: number) {
     const path = getInstanceQuestionUnsavedSubmissionDiscardUrl({
       courseInstanceId,
       instanceQuestionId,
@@ -85,6 +144,7 @@ describe('Unsaved submission collection', { concurrent: false }, () => {
       method: 'POST',
       body: new URLSearchParams({
         uuid,
+        generation: String(generation ?? (await selectGeneration())),
         ...(csrfToken ? { __csrf_token: csrfToken } : {}),
       }),
     });
@@ -125,13 +185,17 @@ describe('Unsaved submission collection', { concurrent: false }, () => {
       const page = await helperClient.fetchCheerio(instanceQuestionUrl);
       expect(page.$('script[src*="unsavedSubmissionsClient"]')).toHaveLength(0);
       await expect(capture(uuid)).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(createClient().unsavedSubmissions.generation.query()).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
     });
     expect(await selectDraft()).toBeNull();
 
     await withConfig({ features: { 'unsaved-submissions-collection': true } }, async () => {
       const page = await helperClient.fetchCheerio(instanceQuestionUrl);
       expect(page.$('script[src*="unsavedSubmissionsClient"]')).toHaveLength(1);
-      await capture(uuid);
+      const generation = await createClient().unsavedSubmissions.generation.query();
+      expect(await capture(uuid, generation)).toEqual({ saved: true });
     });
     expect(await selectDraft()).toMatchObject({
       variant_id: variantId,
@@ -145,24 +209,35 @@ describe('Unsaved submission collection', { concurrent: false }, () => {
   test('guards discard requests and preserves drafts when collection is disabled', async () => {
     const oldUuid = randomUUID();
     const currentUuid = randomUUID();
+    const replacementUuid = randomUUID();
     const csrfToken = createDiscardCsrfToken();
     await withConfig({ features: { 'unsaved-submissions-collection': true } }, async () => {
       await capture(oldUuid);
-      await capture(currentUuid);
-      expect((await discard(currentUuid)).status).toBe(403);
-      expect((await discard(oldUuid, csrfToken)).status).toBe(204);
-      expect(await selectDraft()).toMatchObject({ uuid: currentUuid });
-      expect((await discard(currentUuid, csrfToken)).status).toBe(204);
-      expect(await selectDraft()).toBeNull();
-      await capture(currentUuid);
+      const delayed = await delayCapture(oldUuid, await selectGeneration());
+      try {
+        await capture(currentUuid);
+        expect((await discard(currentUuid)).status).toBe(403);
+        expect((await discard(oldUuid, csrfToken)).status).toBe(204);
+        expect(await selectDraft()).toMatchObject({ uuid: currentUuid });
+        expect(await delayed.finish()).toMatchObject({
+          status: 200,
+          body: { result: { data: { json: { saved: false } } } },
+        });
+        expect(await selectDraft()).toMatchObject({ uuid: currentUuid });
+        expect((await discard(currentUuid, csrfToken)).status).toBe(204);
+        expect(await selectDraft()).toBeNull();
+        expect(await capture(replacementUuid)).toEqual({ saved: true });
+      } finally {
+        await delayed.cancel();
+      }
     });
 
     await withConfig({ features: { 'unsaved-submissions-collection': false } }, async () => {
-      expect((await discard(currentUuid, csrfToken)).status).toBe(403);
-      expect(await selectDraft()).toMatchObject({ uuid: currentUuid });
+      expect((await discard(replacementUuid, csrfToken)).status).toBe(403);
+      expect(await selectDraft()).toMatchObject({ uuid: replacementUuid });
       const response = await helperClient.saveOrGrade(instanceQuestionUrl, { c: '5' }, 'save');
       expect(response.status).toBe(200);
-      expect(await selectDraft()).toMatchObject({ uuid: currentUuid });
+      expect(await selectDraft()).toMatchObject({ uuid: replacementUuid });
     });
   });
 
@@ -174,6 +249,7 @@ describe('Unsaved submission collection', { concurrent: false }, () => {
         await expect(
           createClient(otherUser.id).unsavedSubmissions.upsert.mutate({
             uuid: randomUUID(),
+            generation: await selectGeneration(),
             formData: { __variant_id: variantId, c: 'other user' },
           }),
         ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
@@ -182,6 +258,34 @@ describe('Unsaved submission collection', { concurrent: false }, () => {
     });
     expect(await selectDraft()).toMatchObject({ uuid, user_id: user.id });
   });
+
+  test.each(['save', 'discard'] as const)(
+    'rejects an in-flight capture whose body arrives after %s',
+    async (action) => {
+      await withConfig({ features: { 'unsaved-submissions-collection': true } }, async () => {
+        const uuid = randomUUID();
+        const generation = await createClient().unsavedSubmissions.generation.query();
+        const delayed = await delayCapture(uuid, generation);
+        try {
+          const invalidated =
+            action === 'save'
+              ? await helperClient.saveOrGrade(instanceQuestionUrl, { c: '5' }, 'save')
+              : await discard(uuid, createDiscardCsrfToken(), generation);
+          expect(invalidated.status).toBe(action === 'save' ? 200 : 204);
+
+          expect(await delayed.finish()).toMatchObject({
+            status: 200,
+            body: { result: { data: { json: { saved: false } } } },
+          });
+          expect(await selectDraft()).toBeNull();
+          const freshGeneration = await createClient().unsavedSubmissions.generation.query();
+          expect(await capture(randomUUID(), freshGeneration)).toEqual({ saved: true });
+        } finally {
+          await delayed.cancel();
+        }
+      });
+    },
+  );
 
   test('clears drafts on real saves and retains work after closure', async () => {
     await withConfig({ features: { 'unsaved-submissions-collection': true } }, async () => {
