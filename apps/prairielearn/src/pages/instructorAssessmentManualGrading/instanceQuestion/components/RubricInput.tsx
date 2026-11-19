@@ -1,7 +1,17 @@
 import clsx from 'clsx';
-import type { RefObject } from 'react';
+import { type ReactNode, type RefObject, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
+
+import { run } from '@prairielearn/run';
+
+import {
+  type GradingPanelRubricItem,
+  type RubricTreeNode,
+  buildRubricTree,
+  describeSelectionRule,
+  leafItems,
+} from '../utils/rubricTree.js';
 
 import type {
   GradingPanelRubricData,
@@ -87,87 +97,17 @@ export function RubricInput({
         )}
       </div>
 
-      {rubricData.items.map((item) => {
-        const id = item.id;
-        const selected = selectedRubricItemIds.has(id);
-        const inputId = `rubric-item-${context}-${id}`;
-        const aiSelected = aiSelectedRubricItemIds?.has(id);
-        const keyBinding = enableKeyboardShortcuts ? item.keyBinding : null;
-        const itemPoints = item.points;
-        const displayedPoints = usePercentage
-          ? Math.round((itemPoints * 10000) / maxRubricPoints) / 100
-          : Math.round(itemPoints * 100) / 100;
-
-        return (
-          <div key={id}>
-            <label
-              htmlFor={inputId}
-              className={clsx(
-                'js-selectable-rubric-item-label w-100 border rounded px-1',
-                selected && 'bg-light',
-              )}
-              style={{ borderColor: selected ? undefined : 'transparent' }}
-            >
-              {aiSelectedRubricItemIds && (
-                <input
-                  type="checkbox"
-                  className="mx-2"
-                  name="rubric_item_selected_ai"
-                  value={id}
-                  checked={aiSelected}
-                  title={aiSelected ? 'Selected by AI' : 'Not selected by AI'}
-                  disabled
-                  readOnly
-                />
-              )}
-              <input
-                id={inputId}
-                type="checkbox"
-                name="rubric_item_selected_manual"
-                className="js-selectable-rubric-item me-2"
-                value={id}
-                checked={selected}
-                disabled={disabled}
-                data-key-binding={keyBinding ?? undefined}
-                onChange={(event) => onRubricItemChange(id, event.target.checked)}
-              />
-              {keyBinding && (
-                <kbd aria-hidden="true" className="pl-kbd kbd-semi-transparent me-2">
-                  {keyBinding}
-                </kbd>
-              )}
-              <span className={`float-end text-${itemPoints >= 0 ? 'success' : 'danger'}`}>
-                <strong>
-                  <span data-testid="rubric-item-points">
-                    [{itemPoints >= 0 ? '+' : ''}
-                    {displayedPoints}
-                    {usePercentage ? '%' : ''}]
-                  </span>
-                </strong>
-              </span>
-              <div
-                className="d-inline-block"
-                data-testid="rubric-item-description"
-                // The rendered fields come from the server's Markdown renderer.
-                // oxlint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{ __html: item.descriptionRendered }}
-              />
-              <div
-                className="small text-muted"
-                data-testid="rubric-item-explanation"
-                // oxlint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{ __html: item.explanationRendered }}
-              />
-              <div
-                className="small text-muted"
-                data-testid="rubric-item-grader-note"
-                // oxlint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{ __html: item.graderNoteRendered }}
-              />
-            </label>
-          </div>
-        );
-      })}
+      <RubricTree
+        nodes={buildRubricTree(rubricData.items)}
+        aiSelectedRubricItemIds={aiSelectedRubricItemIds}
+        context={context}
+        disabled={disabled}
+        enableKeyboardShortcuts={enableKeyboardShortcuts}
+        maxRubricPoints={maxRubricPoints}
+        selectedRubricItemIds={selectedRubricItemIds}
+        usePercentage={usePercentage}
+        onRubricItemChange={onRubricItemChange}
+      />
 
       {(!disabled || showAdjustment) && (
         <div className="d-flex justify-content-end">
@@ -249,5 +189,253 @@ export function RubricInput({
         </div>
       )}
     </>
+  );
+}
+
+interface RubricTreeProps {
+  aiSelectedRubricItemIds: Set<string> | null;
+  context: ManualGradingContext;
+  disabled: boolean;
+  enableKeyboardShortcuts: boolean;
+  maxRubricPoints: number;
+  onRubricItemChange: (id: string, selected: boolean) => void;
+  selectedRubricItemIds: Set<string>;
+  usePercentage: boolean;
+}
+
+function formatPoints(points: number, usePercentage: boolean, maxRubricPoints: number) {
+  const displayed = usePercentage
+    ? Math.round((points * 10000) / maxRubricPoints) / 100
+    : Math.round(points * 100) / 100;
+  return `[${points >= 0 ? '+' : ''}${displayed}${usePercentage ? '%' : ''}]`;
+}
+
+function RubricTree({ nodes, ...props }: RubricTreeProps & { nodes: RubricTreeNode[] }) {
+  const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(() => new Set());
+  const toggleCollapsed = (id: string) =>
+    setCollapsedGroupIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+
+  const renderNode = (
+    node: RubricTreeNode,
+    parent: GradingPanelRubricItem | null,
+    parentChildren: string[],
+  ): ReactNode =>
+    node.item.isGroup ? (
+      <RubricGroup
+        key={node.item.id}
+        node={node}
+        collapsed={collapsedGroupIds.has(node.item.id)}
+        renderNode={renderNode}
+        onToggleCollapsed={() => toggleCollapsed(node.item.id)}
+        {...props}
+      />
+    ) : (
+      <RubricItemRow
+        key={node.item.id}
+        item={node.item}
+        selectionBlocked={run(() => {
+          if (parent?.maxSelections == null || parent.maxSelections === 1) return false;
+          if (props.selectedRubricItemIds.has(node.item.id)) return false;
+          const selectedSiblings = parentChildren.filter((id) =>
+            props.selectedRubricItemIds.has(id),
+          );
+          return selectedSiblings.length >= parent.maxSelections;
+        })}
+        {...props}
+      />
+    );
+
+  return <>{nodes.map((node) => renderNode(node, null, []))}</>;
+}
+
+function RubricGroup({
+  node,
+  collapsed,
+  onToggleCollapsed,
+  renderNode,
+  selectedRubricItemIds,
+  usePercentage,
+  maxRubricPoints,
+  context,
+}: RubricTreeProps & {
+  node: RubricTreeNode;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+  renderNode: (
+    node: RubricTreeNode,
+    parent: GradingPanelRubricItem | null,
+    parentChildren: string[],
+  ) => ReactNode;
+}) {
+  const { item } = node;
+  const rule = describeSelectionRule(item);
+  const childIds = node.children.map((child) => child.item.id);
+  const selectedChildCount = childIds.filter((id) => selectedRubricItemIds.has(id)).length;
+  const selectedLeaves = leafItems(node).filter((leaf) => selectedRubricItemIds.has(leaf.id));
+  const selectedPoints = selectedLeaves.reduce((sum, leaf) => sum + leaf.points, 0);
+  const needsSelection = item.minSelections != null && selectedChildCount < item.minSelections;
+  const childrenId = `rubric-group-${context}-${item.id}`;
+
+  return (
+    <div className="mb-1" data-testid="rubric-group">
+      <button
+        type="button"
+        className="btn btn-sm w-100 d-flex align-items-start gap-2 text-start px-1 border-0"
+        aria-expanded={!collapsed}
+        aria-controls={childrenId}
+        onClick={onToggleCollapsed}
+      >
+        <i
+          className={clsx('bi mt-1', collapsed ? 'bi-chevron-right' : 'bi-chevron-down')}
+          aria-hidden="true"
+        />
+        <span className="flex-grow-1">
+          <span
+            className="fw-semibold"
+            data-testid="rubric-group-description"
+            // oxlint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: item.descriptionRendered }}
+          />
+          {rule && (
+            <span
+              className={clsx(
+                'badge ms-2 align-text-bottom',
+                needsSelection ? 'text-bg-warning' : 'text-bg-light border',
+              )}
+              data-testid="rubric-group-rule"
+            >
+              {needsSelection && (
+                <i className="bi bi-exclamation-triangle me-1" aria-hidden="true" />
+              )}
+              {rule}
+            </span>
+          )}
+        </span>
+        {selectedLeaves.length > 0 && (
+          <span
+            className={clsx(
+              'small text-nowrap',
+              `text-${selectedPoints >= 0 ? 'success' : 'danger'}`,
+            )}
+          >
+            {collapsed && <span className="text-muted me-1">{selectedLeaves.length} selected</span>}
+            <strong>{formatPoints(selectedPoints, usePercentage, maxRubricPoints)}</strong>
+          </span>
+        )}
+      </button>
+      {(item.explanationRendered || item.graderNoteRendered) && !collapsed && (
+        <div className="small text-muted ms-4 mb-1">
+          <div
+            // oxlint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: item.explanationRendered }}
+          />
+          <div
+            // oxlint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: item.graderNoteRendered }}
+          />
+        </div>
+      )}
+      {/* Collapsed groups stay mounted so their selected checkboxes are still submitted. */}
+      <div id={childrenId} className="ms-3 ps-2 border-start" hidden={collapsed}>
+        {node.children.map((child) => renderNode(child, item, childIds))}
+      </div>
+    </div>
+  );
+}
+
+function RubricItemRow({
+  item,
+  selectionBlocked,
+  aiSelectedRubricItemIds,
+  context,
+  disabled,
+  enableKeyboardShortcuts,
+  maxRubricPoints,
+  onRubricItemChange,
+  selectedRubricItemIds,
+  usePercentage,
+}: RubricTreeProps & { item: GradingPanelRubricItem; selectionBlocked: boolean }) {
+  const id = item.id;
+  const selected = selectedRubricItemIds.has(id);
+  const inputId = `rubric-item-${context}-${id}`;
+  const aiSelected = aiSelectedRubricItemIds?.has(id);
+  const keyBinding = enableKeyboardShortcuts ? item.keyBinding : null;
+
+  return (
+    <div>
+      <label
+        htmlFor={inputId}
+        className={clsx(
+          'js-selectable-rubric-item-label w-100 border rounded px-1 d-flex align-items-start',
+          selected && 'bg-light',
+          selectionBlocked && 'opacity-50',
+        )}
+        style={{ borderColor: selected ? undefined : 'transparent' }}
+      >
+        {aiSelectedRubricItemIds && (
+          <input
+            type="checkbox"
+            className="mx-2 mt-1"
+            name="rubric_item_selected_ai"
+            value={id}
+            checked={aiSelected}
+            title={aiSelected ? 'Selected by AI' : 'Not selected by AI'}
+            disabled
+            readOnly
+          />
+        )}
+        <input
+          id={inputId}
+          type="checkbox"
+          name="rubric_item_selected_manual"
+          className="js-selectable-rubric-item me-2 mt-1"
+          value={id}
+          checked={selected}
+          disabled={disabled || selectionBlocked}
+          data-key-binding={keyBinding ?? undefined}
+          onChange={(event) => onRubricItemChange(id, event.target.checked)}
+        />
+        {keyBinding && (
+          <kbd aria-hidden="true" className="pl-kbd kbd-semi-transparent me-2 mt-1">
+            {keyBinding}
+          </kbd>
+        )}
+        <div className="flex-grow-1">
+          <div
+            data-testid="rubric-item-description"
+            // The rendered fields come from the server's Markdown renderer.
+            // oxlint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: item.descriptionRendered }}
+          />
+          <div
+            className="small text-muted"
+            data-testid="rubric-item-explanation"
+            // oxlint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: item.explanationRendered }}
+          />
+          <div
+            className="small text-muted"
+            data-testid="rubric-item-grader-note"
+            // oxlint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: item.graderNoteRendered }}
+          />
+        </div>
+        <span className={`ms-2 text-nowrap text-${item.points >= 0 ? 'success' : 'danger'}`}>
+          <strong>
+            <span data-testid="rubric-item-points">
+              {formatPoints(item.points, usePercentage, maxRubricPoints)}
+            </span>
+          </strong>
+        </span>
+      </label>
+    </div>
   );
 }

@@ -10,7 +10,11 @@ export interface GradingPanelRubricData {
     explanationRendered: string;
     graderNoteRendered: string;
     id: string;
+    isGroup: boolean;
     keyBinding: string | null;
+    maxSelections: number | null;
+    minSelections: number | null;
+    parentId: string | null;
     points: number;
   }[];
 }
