@@ -121,3 +121,23 @@ SELECT
       AND user_id = $user_id
       AND variant_id = $variant_id
   );
+
+-- BLOCK select_optional_unsaved_submission
+SELECT
+  us.*
+FROM
+  unsaved_submissions AS us
+WHERE
+  us.instance_question_id = $instance_question_id
+  AND us.user_id = $user_id
+  AND us.variant_id = $variant_id;
+
+-- BLOCK select_optional_unsaved_submission_updated_at
+SELECT
+  updated_at
+FROM
+  unsaved_submissions
+WHERE
+  instance_question_id = $instance_question_id
+  AND user_id = $user_id
+  AND variant_id = $variant_id;

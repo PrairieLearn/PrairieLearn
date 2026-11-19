@@ -7,6 +7,18 @@ WHERE
   instance_question_id = $instance_question_id
   AND user_id = $user_id;
 
+-- BLOCK select_latest_submission
+SELECT
+  *
+FROM
+  submissions
+WHERE
+  variant_id = $variant_id
+ORDER BY
+  id DESC
+LIMIT
+  1;
+
 -- BLOCK close_assessment_instance
 UPDATE assessment_instances
 SET

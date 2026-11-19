@@ -1,6 +1,9 @@
+import { createElement } from 'react';
+
 import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/react/server';
 
 import {
   RegenerateInstanceAlert,
@@ -19,6 +22,7 @@ import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.js';
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.js';
+import { UnsavedSubmissionRecovery } from '../../components/UnsavedSubmissionRecovery.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { AssessmentTool, User } from '../../lib/db-types.js';
@@ -38,6 +42,7 @@ export function StudentInstanceQuestion({
   questionCopyTargets,
   enabledTools = [],
   unsavedSubmissionConfig,
+  unsavedSubmissionRecovery,
 }: {
   independentScrolling: boolean;
   resLocals: ResLocalsForPage<'instance-question'>;
@@ -48,6 +53,7 @@ export function StudentInstanceQuestion({
   questionCopyTargets?: CopyTarget[] | null;
   enabledTools?: AssessmentTool[];
   unsavedSubmissionConfig?: InstanceQuestionTrpcClientOptions;
+  unsavedSubmissionRecovery?: Parameters<typeof UnsavedSubmissionRecovery>[0];
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
@@ -146,6 +152,11 @@ export function StudentInstanceQuestion({
           ${independentScrolling ? html`role="region" aria-label="Question" tabindex="0"` : ''}
         >
           ${independentScrolling ? regenerateAlert : ''}
+          ${
+            unsavedSubmissionRecovery
+              ? hydrateHtml(createElement(UnsavedSubmissionRecovery, unsavedSubmissionRecovery))
+              : ''
+          }
           ${
             resLocals.instance_question_info.question_access_mode === 'read_only_lockpoint'
               ? html`
