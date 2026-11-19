@@ -18,6 +18,25 @@ import type { ParsedChatDiff } from './parseChatDiff.js';
 // means the first code block of a reply rarely has to wait for either.
 preloadHighlighting();
 
+// In the conversation a file's name sits in its own bar, so it reads as a label for the changes
+// rather than as their first line. Without line numbers, the +/− markers then line up under the
+// bar's icon and the code under the file name.
+const CHAT_DIFF_CSS = `
+[data-diffs-header='default'] {
+  min-height: 2.25rem;
+  padding-inline: 12px;
+  background-color: var(--bs-tertiary-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+[data-diffs-header] ~ [data-diff] [data-code] { padding-top: 4px; }
+[data-diffs-header] ~ [data-disable-line-numbers][data-indicators='classic'] :is([data-line], [data-no-newline]) {
+  padding-inline-start: 36px;
+}
+[data-diffs-header] ~ [data-disable-line-numbers][data-indicators='classic'] :is([data-line], [data-no-newline])::before {
+  left: calc(20px - 0.5ch);
+}
+`;
+
 /** A diff shown inside the conversation: each file's changes, one after another. */
 export function ChatDiffView({
   diff,
@@ -62,6 +81,7 @@ export function ChatDiffView({
             themeType={themeType}
             showFileName={showFileNames && file.path !== ''}
             showLineNumbers={file.numbered}
+            css={CHAT_DIFF_CSS}
           />
         </section>
       ))}

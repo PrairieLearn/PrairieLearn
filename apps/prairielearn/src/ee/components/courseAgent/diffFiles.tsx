@@ -207,6 +207,7 @@ export function FileChanges({
   binaryNotice = "Binary file can't be previewed.",
   showFileName = true,
   showLineNumbers = true,
+  css = '',
 }: {
   file: DiffFile;
   /** The parsed patch, or `null` for a binary file. */
@@ -217,6 +218,8 @@ export function FileChanges({
   binaryNotice?: string;
   showFileName?: boolean;
   showLineNumbers?: boolean;
+  /** More CSS for inside the viewer, which page stylesheets can't reach. */
+  css?: string;
 }) {
   if (!diff) return <FileNotice file={file} message={binaryNotice} />;
   if (diff.hunks.length === 0) {
@@ -239,7 +242,7 @@ export function FileChanges({
         lineDiffType: 'word',
         // Mark changed lines with +/−, not just color.
         diffIndicators: 'classic',
-        unsafeCSS: DIFF_CSS,
+        unsafeCSS: DIFF_CSS + css,
         disableFileHeader: !showFileName,
         disableLineNumbers: !showLineNumbers,
       }}
