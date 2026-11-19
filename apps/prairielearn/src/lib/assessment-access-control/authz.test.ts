@@ -201,7 +201,7 @@ describe('resolverResultToAssessmentAuthzResultForInstance', () => {
     const result = resolverResultToAssessmentAuthzResultForInstance({
       result: {
         ...baseResolverResult,
-        creditDateString: '100% until 12:00, Sat, Mar 15',
+        creditDateString: '100% until Sat, Mar\u00a015, 12pm',
         timeLimitMin: 60,
         password: 'secret',
       },
@@ -253,7 +253,7 @@ describe('resolverResultToAssessmentAuthzResultForInstance', () => {
     const result = resolverResultToAssessmentAuthzResultForInstance({
       result: {
         ...baseResolverResult,
-        creditDateString: '100% until 12:00, Sat, Mar 15',
+        creditDateString: '100% until Sat, Mar\u00a015, 12pm',
         timeLimitMin: 60,
         password: 'secret',
       },

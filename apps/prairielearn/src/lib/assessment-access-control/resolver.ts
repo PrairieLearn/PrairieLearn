@@ -1,3 +1,5 @@
+import { formatDateFriendly } from '@prairielearn/formatter';
+
 import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from '../db-types.js';
 
 import {
@@ -350,24 +352,13 @@ export function resolveVisibility(
   return true;
 }
 
-export function formatDateShort(date: Date, timezone: string): string {
-  // Replicate SQL format: 'HH24:MI, Dy, Mon FMDD'
-  // Example: "14:30, Mon, Jan 5"
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-
-  const parts = formatter.formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((p) => p.type === type)?.value ?? '';
-
-  return `${get('hour')}:${get('minute')}, ${get('weekday')}, ${get('month')} ${get('day')}`;
+/**
+ * Formats a date for the student-facing credit and availability strings.
+ * `reqDate` anchors relative terms like "today" and decides whether the year
+ * is shown, so the result stays consistent with an emulated request date.
+ */
+export function formatAccessDate(date: Date, timezone: string, reqDate: Date): string {
+  return formatDateFriendly(date, timezone, { baseDate: reqDate, includeTz: false });
 }
 
 function formatCreditDateString(
@@ -375,10 +366,11 @@ function formatCreditDateString(
   submittable: boolean,
   nextDeadlineDate: Date | null,
   displayTimezone: string,
+  reqDate: Date,
 ): string {
   if (credit <= 0 || !submittable) return 'None';
   if (nextDeadlineDate) {
-    return `${credit}% until ${formatDateShort(nextDeadlineDate, displayTimezone)}`;
+    return `${credit}% until ${formatAccessDate(nextDeadlineDate, displayTimezone, reqDate)}`;
   }
   return `${credit}%`;
 }
@@ -485,7 +477,7 @@ export function resolveAccessControl(
     return {
       authorization: 'granted',
       credit: 100,
-      creditDateString: formatCreditDateString(100, submittable, null, displayTimezone),
+      creditDateString: formatCreditDateString(100, submittable, null, displayTimezone, date),
       timeLimitMin: null,
       password: null,
       submittable,
@@ -560,6 +552,7 @@ export function resolveAccessControl(
       current.submittable,
       current.endDate,
       displayTimezone,
+      date,
     ),
     timeLimitMin: computeTimeLimitMin(
       rule.dateControl?.durationMinutes,
