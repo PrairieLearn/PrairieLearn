@@ -1136,9 +1136,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * RPC: add a message to the turn that is running, so staff do not wait for it to end. Codex
-   * gives it to the model at its next request. Returns false when no turn can take it; nothing
-   * is recorded then, and the browser keeps the message for staff to send again.
+   * RPC: add a message to the turn that is running, so staff do not wait for it to end. The
+   * agent reads it right away. Returns false when no turn can take it; nothing is recorded then,
+   * and the browser keeps the message for staff to send again.
    */
   async steer(steer: SteerInput): Promise<boolean> {
     const active = this.active;

@@ -444,8 +444,9 @@ export class CodexAppServerClient {
   }
 
   /**
-   * Add a message to the running turn, which Codex gives the model at its next request and saves
-   * under the tag. Returns false if Codex refuses it, which it does once the turn has ended.
+   * Add a message to the running turn. Codex saves it under the tag at once and cuts off the model
+   * reply in progress to start a request that includes it; a running tool call is left to finish.
+   * Returns false if Codex refuses it, which it does once the turn has ended.
    */
   async steer(input: Pick<TurnInput, 'text' | 'tag' | 'page'>) {
     if (!this.turnId) throw new Error('Native turn acceptance is unknown');
