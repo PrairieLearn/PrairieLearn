@@ -380,3 +380,14 @@ body:has(.course-agent-panel-animate) .app-main {
     transition: none;
   }
 }
+
+/* A label keeps its words whole and takes at most half the row; only an unbroken string wraps. */
+.course-agent-action-row-label {
+  max-width: 50%;
+  overflow-wrap: anywhere;
+}
+
+.course-agent-action-row-detail {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
