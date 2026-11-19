@@ -13,7 +13,7 @@ import {
   selectSharingSetsForCourse,
 } from '../../../../models/sharing-set.js';
 
-import { type CourseActionContext, CourseActionError, action } from './action.js';
+import { type CourseActionContext, CourseActionError, action, count } from './action.js';
 
 const AddCourseInputSchema = z.strictObject({
   sharing_set_name: z
@@ -93,7 +93,7 @@ export const sharingActions = {
           },
           {
             label: `Sharing set "${sharingSet.name}"`,
-            detail: `${current?.question_count ?? 0} questions`,
+            detail: count(current?.question_count ?? 0, 'question'),
           },
         ],
       };
