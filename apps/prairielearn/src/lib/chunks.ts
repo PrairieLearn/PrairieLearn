@@ -520,6 +520,7 @@ async function diffChunks({
       case 'question':
         assert(courseChunk.question_name != null);
         existingCourseChunks.questions.add(courseChunk.question_name);
+        if (courseChunk.deleted) questionsToArchive.add(courseChunk.question_name);
         break;
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
