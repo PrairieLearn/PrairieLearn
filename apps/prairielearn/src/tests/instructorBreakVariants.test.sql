@@ -5,11 +5,3 @@ FROM
   instance_questions AS iq
 WHERE
   iq.assessment_question_id = $assessment_question_id;
-
--- BLOCK select_instance_question_row
-SELECT
-  iq.*
-FROM
-  instance_questions AS iq
-WHERE
-  iq.assessment_question_id = $assessment_question_id;
