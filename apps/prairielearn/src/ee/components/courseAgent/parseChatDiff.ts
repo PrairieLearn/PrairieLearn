@@ -151,9 +151,14 @@ export function parseChatDiff(
   const isFileHeader = (i: number) =>
     lines[i].startsWith('--- ') && lines[i + 1]?.startsWith('+++ ');
   /**
-   * Inside a hunk, such a pair of lines could also be a removed and an added line. Paths written
-   * the way Git writes them always name a file. Otherwise the hunk's own header decides: while it
-   * still expects a line on each side, the pair is two of its lines.
+   * Inside a hunk, such a pair of lines could also be a removed and an added line. Otherwise the
+   * hunk's own header decides: while it still expects a line on each side, the pair is two of its
+   * lines.
+   *
+   * Paths written the way Git writes them always name a file, even then. A hand-written hunk
+   * whose header promises more lines than it has, followed by the next file, is common; a file
+   * that swaps a line starting `-- a/` for one starting `++ b/` is not, and the two can't be told
+   * apart.
    */
   const namesOneFile = (i: number, hunk: Hunk) => {
     const before = lines[i].slice(4).split('\t')[0].trim();
