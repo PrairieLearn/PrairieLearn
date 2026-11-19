@@ -18,7 +18,11 @@ import {
   parseCalculatorExpression,
 } from '../../src/lib/client/calculatorRestrictions.js';
 
-import { configureCalculatorInput, guardCalculatorInput } from './lib/calculatorInput.js';
+import {
+  configureCalculatorInput,
+  guardCalculatorInput,
+  wrapInMultiplicationParentheses,
+} from './lib/calculatorInput.js';
 
 interface DrawerElements {
   drawer: HTMLElement;
@@ -736,13 +740,7 @@ export function initCalculator(
       return false;
     }
     // MathLive's repeating-decimal heuristic skips automatic pairing here.
-    // Like a typed opening fence, wrap the rest of this group, not just an empty slot.
-    const position = calculatorInputElement.position;
-    calculatorInputElement.executeCommand('extendToGroupEnd');
-    const contents = calculatorInputElement.position === position ? '' : '#0';
-    calculatorInputElement.insert(`\\cdot\\left(${contents}\\right?`, { selectionMode: 'after' });
-    // Skip the multiplication dot and the opening fence; leave the caret before the contents.
-    calculatorInputElement.position = position + 2;
+    wrapInMultiplicationParentheses(calculatorInputElement);
     return true;
   }
 

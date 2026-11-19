@@ -7,12 +7,51 @@ import {
 
 interface CalculatorMathLiveInternals {
   model: {
+    at(position: number): { body: unknown[] };
+    getSiblingsRange(position: number): [number, number];
+    extractAtoms(range: [number, number]): unknown[];
+    deferNotifications(
+      options: { content: boolean; selection: boolean; type: string },
+      edit: () => void,
+    ): void;
+    contentWillChange(options: { inputType: string; data: string }): boolean;
     getState(): unknown;
     setState(state: unknown, options: { silenceNotifications: boolean }): void;
     getValue(): string;
     contentDidChange(options: unknown): void;
   };
+  stopRecording(): void;
+  startRecording(): void;
+  snapshot(): void;
   onCompositionUpdate(value: string): void;
+}
+
+function getMathLiveInternals(input: MathfieldElement) {
+  return (input as unknown as { _mathfield: CalculatorMathLiveInternals })._mathfield;
+}
+
+export function wrapInMultiplicationParentheses(input: MathfieldElement) {
+  const field = getMathLiveInternals(input);
+  const { model } = field;
+  const position = input.position;
+  if (!model.contentWillChange({ inputType: 'insertText', data: '(' })) return;
+  // Move the existing atoms, as MathLive's smart fences do. Its #0 insertion
+  // template round-trips them through LaTeX, committing any nested pending fences.
+  model.deferNotifications({ content: true, selection: true, type: 'insertText' }, () => {
+    const [, end] = model.getSiblingsRange(position);
+    const contents = model.extractAtoms([position, end]);
+    // Only the completed edit should appear in undo history.
+    field.stopRecording();
+    try {
+      input.insert('\\cdot\\left(\\right?', { selectionMode: 'after' });
+    } finally {
+      field.startRecording();
+    }
+    model.at(input.position).body = contents;
+    // Leave the caret after the dot and opening fence, before the original contents.
+    input.position = position + 2;
+  });
+  field.snapshot();
 }
 
 /**
@@ -24,7 +63,7 @@ export function guardCalculatorInput(
   mode: RestrictedCalculatorMode,
   onReject: () => void,
 ) {
-  const internal = (input as unknown as { _mathfield: CalculatorMathLiveInternals })._mathfield;
+  const internal = getMathLiveInternals(input);
   const model = internal.model;
   const setValue = input.setValue.bind(input);
   input.setValue = (value, options) => {

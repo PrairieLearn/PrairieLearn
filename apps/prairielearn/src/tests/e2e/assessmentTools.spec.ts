@@ -108,6 +108,16 @@ async function checkParenthesisMultiplication(page: Page) {
   await expectLatex(input, String.raw`2\cdot\left(4+3\right)`);
   await expectLatex(output, '=14');
   await page.locator('[name="clear"]:visible').click();
+
+  await input.pressSequentially('2+(3+4');
+  await input.press('Home');
+  await input.press('ArrowRight');
+  await input.pressSequentially('(1');
+  for (let i = 0; i < 3; i++) await input.press('ArrowRight');
+  await input.pressSequentially(')-1');
+  await expectLatex(input, String.raw`2\cdot\left(1+\left(3\right)-1+4\right)`);
+  await expectLatex(output, '=14');
+  await page.locator('[name="clear"]:visible').click();
 }
 
 async function checkPinyinComposition(page: Page) {
