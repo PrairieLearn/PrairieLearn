@@ -35,6 +35,11 @@ export function ActionCard({
   const action = useQuery({
     ...trpc.courseAgent.getAction.queryOptions(actionInput),
     retry: false,
+    // An approved action can keep running in the background; poll until it records a result.
+    refetchInterval: (query) => {
+      const current = query.state.data;
+      return current?.decision === 'approved' && !current.result ? 2000 : false;
+    },
   });
   const decision = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
@@ -71,7 +76,9 @@ export function ActionCard({
     autoApprovedRef.current = true;
     mutateDecision({ conversationId, reviewId: actionId, decision: 'approved' });
   }, [autoApprove, pending, mutateDecision, conversationId, actionId]);
-  const approving = decision.isPending && decision.variables.decision === 'approved';
+  const approving =
+    (decision.isPending && decision.variables.decision === 'approved') ||
+    (data?.decision === 'approved' && !data.result);
   const disabled = !pending || decision.isPending;
   return (
     <div className="course-agent-review border rounded-3">
