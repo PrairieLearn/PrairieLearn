@@ -470,6 +470,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       });
     });
     expect(await sharedWith()).toEqual(['SHARE 101']);
+    await waitForDeliveries(1);
     expect(delivered[0].body).toMatchObject({
       outcome: {
         status: 'succeeded',
@@ -514,6 +515,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     const after = (await selectCourseById('1')).sharing_token;
     expect(after).not.toBe(before);
     // The new token is the instructor's to hand out, so the agent is not sent it.
+    await waitForDeliveries(2);
     expect(JSON.stringify(delivered.at(-1))).not.toContain(after);
 
     await withConfig(
