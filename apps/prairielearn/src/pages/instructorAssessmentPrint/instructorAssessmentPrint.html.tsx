@@ -50,7 +50,7 @@ import {
   capturePrintSnapshot,
   renderPrintSnapshot,
 } from '../../lib/client/printing/print-snapshot.js';
-import type { StaffPrintForm } from '../../lib/client/safe-db-types.js';
+import type { StaffPrintPreparationForm } from '../../lib/client/safe-db-types.js';
 import { getPrintFormUrl, getQuestionUrl } from '../../lib/client/url.js';
 import type { PrintDocument } from '../../lib/printing/index.js';
 import {
@@ -100,7 +100,7 @@ interface PrintPreparationProps {
   hasRandomization: boolean;
   groupWork: boolean;
   requireHonorCode: boolean;
-  forms: StaffPrintForm[];
+  forms: StaffPrintPreparationForm[];
   enrolledStudents: number;
   trpcCsrfToken: string;
   docxCsrfToken: string;
@@ -133,7 +133,7 @@ function AutomaticExportDownload({
   onFinished,
 }: {
   printExportId: string;
-  onFinished: (id: string, succeeded: boolean) => void;
+  onFinished: (id: string, succeeded: boolean, failureMessage: string | null) => void;
 }) {
   const trpc = useTRPC();
   const completedRef = useRef(false);
@@ -153,10 +153,11 @@ function AutomaticExportDownload({
     if (status.data.status === 'succeeded' && status.data.downloadUrl) {
       const link = window.document.createElement('a');
       link.href = status.data.downloadUrl;
-      onFinished(printExportId, true);
+      onFinished(printExportId, true, null);
       link.click();
     } else {
-      onFinished(printExportId, false);
+      // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent -- The parent owns the form-to-export mapping and must mark stale forms.
+      onFinished(printExportId, false, status.data.failureMessage);
     }
   }, [status.data, onFinished, printExportId]);
   return null;
@@ -245,6 +246,7 @@ function PrintPreparation({
   const [coverPages, setCoverPages] = useState<{ id: string; file: File }[]>([]);
   const completedCoverIdsRef = useRef(new Set<string>());
   const exportCoverIdsRef = useRef(new Map<string, string[]>());
+  const exportFormIdsRef = useRef(new Map<string, string[]>());
   const coversAwaitingDownload = coverPages.some(({ id }) => !completedCoverIdsRef.current.has(id));
   useEffect(() => {
     // Uploaded PDFs live only in this tab until a student-copy PDF includes them.
@@ -315,7 +317,10 @@ function PrintPreparation({
   const snapshotsRef = useRef(new Map<string, PrintSnapshot>());
   const previewGenerationRef = useRef(new Map<string, number>());
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
-  const [snapshotStale, setSnapshotStale] = useState(false);
+  const [staleFormIds, setStaleFormIds] = useState<ReadonlySet<string>>(() => new Set());
+  const staleFormIdsRef = useRef(new Set<string>());
+  const stalePreviewRefreshesRef = useRef(new Map<string, string>());
+  const snapshotStale = formId !== null && staleFormIds.has(formId);
   const [exportId, setExportId] = useQueryState('export', parseAsString);
   const [automaticExportIds, setAutomaticExportIds] = useState<string[]>([]);
   const [recentExportsOpen, setRecentExportsOpen] = useState(false);
@@ -463,10 +468,6 @@ function PrintPreparation({
     ),
   );
   const displayedExport = listedExport ?? exportStatus.data;
-  const exportNeedsNewPreview =
-    exportId !== null &&
-    (listedExport ? listedExport.failureMessage : exportStatus.data?.failureMessage) ===
-      STALE_PRINT_SNAPSHOT_MESSAGE;
   const busy =
     ensureInitial.isPending ||
     create.isPending ||
@@ -507,10 +508,14 @@ function PrintPreparation({
     setPendingFormAction(null);
   }
 
-  function markStaleSnapshot(error: unknown) {
+  function markStaleSnapshot(error: unknown, ids: string[]) {
     if (error instanceof Error && error.message.includes(STALE_PRINT_SNAPSHOT_MESSAGE)) {
-      snapshotsRef.current.clear();
-      setSnapshotStale(true);
+      for (const id of ids) {
+        discardFormCachedPreviews(id);
+        staleFormIdsRef.current.add(id);
+        stalePreviewRefreshesRef.current.delete(id);
+      }
+      setStaleFormIds(new Set(staleFormIdsRef.current));
     }
   }
 
@@ -624,8 +629,10 @@ function PrintPreparation({
 
   function receiveExport(
     result: Awaited<ReturnType<typeof packet.mutateAsync>>,
+    formIds: string[],
     includedCoverIds: string[] = [],
   ) {
+    exportFormIdsRef.current.set(result.printExportId, formIds);
     if (includedCoverIds.length > 0) {
       exportCoverIdsRef.current.set(result.printExportId, includedCoverIds);
     }
@@ -636,15 +643,18 @@ function PrintPreparation({
     return recentExports.refetch();
   }
 
-  const finishAutomaticExport = useCallback((id: string, succeeded: boolean) => {
+  function finishAutomaticExport(id: string, succeeded: boolean, failureMessage: string | null) {
     if (succeeded) {
       for (const coverId of exportCoverIdsRef.current.get(id) ?? []) {
         completedCoverIdsRef.current.add(coverId);
       }
+    } else if (failureMessage) {
+      markStaleSnapshot(new Error(failureMessage), exportFormIdsRef.current.get(id) ?? []);
     }
     exportCoverIdsRef.current.delete(id);
+    exportFormIdsRef.current.delete(id);
     setAutomaticExportIds((ids) => ids.filter((value) => value !== id));
-  }, []);
+  }
 
   async function downloadPacket(ids: string[], outputDocument: PrintDocument) {
     download.reset();
@@ -654,9 +664,9 @@ function PrintPreparation({
       const result = await packet.mutateAsync(
         await preparePdfInput(packetMetadata(ids, outputDocument)),
       );
-      await receiveExport(result, includedCoverIds);
+      await receiveExport(result, ids, includedCoverIds);
     } catch (error) {
-      markStaleSnapshot(error);
+      markStaleSnapshot(error, ids);
       throw error;
     }
   }
@@ -820,21 +830,27 @@ function PrintPreparation({
     });
   }
 
-  function invalidateFormPreview(id: string, nextSettings: PrintSettings) {
+  function discardFormCachedPreviews(id: string) {
     const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
     const prefix = `${base}/preview?`;
-    const nextUrl = `${prefix}${printLayoutSearch(nextSettings)}&document=${document}`;
     previewGenerationRef.current.set(id, (previewGenerationRef.current.get(id) ?? 0) + 1);
     for (const url of snapshotsRef.current.keys()) {
       if (url.startsWith(prefix)) snapshotsRef.current.delete(url);
     }
     if (previewDocumentRef.current?.url.startsWith(prefix)) previewDocumentRef.current = null;
     setCachedPreviews((entries) => entries.filter((entry) => !entry.url.startsWith(prefix)));
+  }
+
+  function invalidateFormPreview(id: string, nextSettings: PrintSettings) {
+    const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
+    const nextUrl = `${base}/preview?${printLayoutSearch(nextSettings)}&document=${document}`;
+    const nextVersion = (previewVersions[nextUrl] ?? 0) + 1;
+    discardFormCachedPreviews(id);
     setPreviewVersions((versions) => ({
       ...versions,
-      [nextUrl]: (versions[nextUrl] ?? 0) + 1,
+      [nextUrl]: nextVersion,
     }));
-    return nextUrl;
+    return { url: nextUrl, key: `${nextUrl}:${nextVersion}` };
   }
 
   function switchDocument(next: PrintDocument) {
@@ -865,7 +881,7 @@ function PrintPreparation({
   }
 
   async function addForm() {
-    const result = await create.mutateAsync({ settings });
+    const result = await create.mutateAsync({ settings, sourcePrintFormId: formId ?? undefined });
     switchForm(result.printFormId, result.settings);
     requestFormFocus(result.printFormId, true);
   }
@@ -933,9 +949,9 @@ function PrintPreparation({
         }
         throw new Error('The download could not be generated. Review the preview and try again.');
       }
-      void receiveExport(z.object({ printExportId: IdSchema }).parse(await response.json()));
+      void receiveExport(z.object({ printExportId: IdSchema }).parse(await response.json()), [id]);
     },
-    onError: (error: Error) => markStaleSnapshot(error),
+    onError: (error: Error, { id }) => markStaleSnapshot(error, [id]),
   });
 
   function startWordExport(id: string, printDocument: PrintDocument) {
@@ -966,7 +982,12 @@ function PrintPreparation({
     (key: string, url: string, previewDocument: PrintDocument, state: PreviewState) => {
       if (key !== activePreviewKey) return;
       setPreview({ key, state });
-      if (state.status === 'ready') {
+      const refreshingStalePreview =
+        formId !== null && stalePreviewRefreshesRef.current.get(formId) === key;
+      if (
+        state.status === 'ready' &&
+        (formId === null || !staleFormIdsRef.current.has(formId) || refreshingStalePreview)
+      ) {
         const lastUsed = ++previewUseCountRef.current;
         setCachedPreviews((entries) => {
           const next = { key, url, document: previewDocument, state, lastUsed };
@@ -981,18 +1002,31 @@ function PrintPreparation({
           return [...entries.slice(0, oldest), ...entries.slice(oldest + 1), next];
         });
       }
-      if (state.status === 'ready') setSnapshotStale(false);
+      if (refreshingStalePreview && formId && state.status !== 'loading') {
+        stalePreviewRefreshesRef.current.delete(formId);
+        if (state.status === 'ready') {
+          staleFormIdsRef.current.delete(formId);
+          setStaleFormIds(new Set(staleFormIdsRef.current));
+        }
+      }
       if (state.status !== 'loading') setPreviewPending(false);
     },
-    [activePreviewKey],
+    [activePreviewKey, formId],
   );
   const onSnapshotReady = useCallback(
     (key: string, url: string, snapshot: PrintSnapshot, doc: Document) => {
       if (key !== activePreviewKey) return;
+      if (
+        formId !== null &&
+        staleFormIdsRef.current.has(formId) &&
+        stalePreviewRefreshesRef.current.get(formId) !== key
+      ) {
+        return;
+      }
       snapshotsRef.current.set(url, snapshot);
       previewDocumentRef.current = { url, doc };
     },
-    [activePreviewKey],
+    [activePreviewKey, formId],
   );
   const loadedPreview =
     cachedPreviews.find((entry) => entry.key === activePreviewKey)?.state ??
@@ -1034,11 +1068,7 @@ function PrintPreparation({
     includedOmittedQuestions.at(0) ??
     includedQuestions?.find((question) => question.concerns.length > 0);
   const noQuestionsSelected = questions.isSuccess && includedQuestions?.length === 0;
-  const previewHasError =
-    currentPreview?.status === 'error' ||
-    omitted.size > 0 ||
-    snapshotStale ||
-    exportNeedsNewPreview;
+  const previewHasError = currentPreview?.status === 'error' || omitted.size > 0 || snapshotStale;
   const settingsLocked = controlsBusy || !!archivedPreviewForm;
   const canApplySettings =
     !controlsBusy &&
@@ -1061,7 +1091,6 @@ function PrintPreparation({
     currentPreview.questions > 0 &&
     omitted.size === 0 &&
     !snapshotStale &&
-    !exportNeedsNewPreview &&
     !download.isPending &&
     !busy;
   const selectedFormName = formId ? `Form ${formLabel(formId)}` : null;
@@ -1212,7 +1241,7 @@ function PrintPreparation({
     };
     setPreviewPending(true);
     setPreview(null);
-    if (exportNeedsNewPreview) void setExportId(null);
+    if (snapshotStale) void setExportId(null);
     packet.reset();
     download.reset();
     setPdfPreparationError(null);
@@ -1236,7 +1265,9 @@ function PrintPreparation({
       }
       reset(values, { keepDirtyValues: false });
       if (nextFormId) {
-        setPreviewUrl(invalidateFormPreview(nextFormId, values));
+        const nextPreview = invalidateFormPreview(nextFormId, values);
+        if (snapshotStale) stalePreviewRefreshesRef.current.set(nextFormId, nextPreview.key);
+        setPreviewUrl(nextPreview.url);
       }
     } catch (error) {
       setPreviewPending(false);
@@ -1523,8 +1554,8 @@ function PrintPreparation({
                       preview it or make changes.
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
-                      {formIds.map((id) => {
-                        const label = formLabel(id);
+                      {activeForms.map((form) => {
+                        const { id, label } = form;
                         return (
                           <div key={id} className="d-flex align-items-center gap-2">
                             <Button
@@ -1540,12 +1571,13 @@ function PrintPreparation({
                               Form {label}
                               {id === formId && <span className="float-end">Previewing</span>}
                             </Button>
-                            {(hasRandomization || (formId === id && questionSelectionLocked)) && (
+                            {(form.has_randomizable_questions ||
+                              form.question_selection_locked_at !== null) && (
                               <OverlayTrigger
                                 placement="top"
                                 tooltip={{
                                   props: { id: `print-regenerate-${id}` },
-                                  body: hasRandomization
+                                  body: form.has_randomizable_questions
                                     ? `Regenerate Form ${label} with new randomization`
                                     : `Create a new version of Form ${label} to change its questions`,
                                 }}
