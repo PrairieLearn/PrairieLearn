@@ -56,7 +56,7 @@ export interface CourseActionContext {
   authz_data: CourseActionAuthz;
 }
 
-interface CourseInstanceActionContext extends CourseActionContext {
+export interface CourseInstanceActionContext extends CourseActionContext {
   course_instance: CourseInstance;
   /** The instructor's permissions in the course instance, in the form model functions take. */
   authz_data: CourseInstancePageAuthzData;
@@ -184,7 +184,7 @@ export function action<Schema extends z.ZodObject>(
 }
 
 /** The inputs that say where an action happens, named as the course files and course data name them. */
-const COURSE_INSTANCE_INPUT = {
+export const COURSE_INSTANCE_INPUT = {
   course_instance_short_name: z
     .string()
     .min(1)
@@ -203,6 +203,7 @@ export const ASSESSMENT_INPUT = {
 };
 
 // The input was validated against the action's own schema, which includes these.
+const CourseInstanceInputSchema = z.object(COURSE_INSTANCE_INPUT);
 const AssessmentInputSchema = z.object(ASSESSMENT_INPUT);
 
 async function locateCourseInstance(
@@ -241,6 +242,15 @@ async function locateCourseInstance(
       makePageAuthzData({ authzData, is_administrator: ctx.is_administrator }),
     ),
   };
+}
+
+/** An action in one course instance. Its input includes `COURSE_INSTANCE_INPUT`. */
+export function courseInstanceAction<
+  Schema extends z.ZodObject<typeof COURSE_INSTANCE_INPUT & z.ZodRawShape>,
+>(definition: CourseActionDefinition<Schema, CourseInstanceActionContext>): CourseAction {
+  return build(definition, (ctx, input) =>
+    locateCourseInstance(ctx, CourseInstanceInputSchema.parse(input).course_instance_short_name),
+  );
 }
 
 /** An action on one assessment. Its input includes `ASSESSMENT_INPUT`. */
