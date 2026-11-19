@@ -55,14 +55,3 @@ WHERE
   AND g.name = $name
 ORDER BY
   u.uid;
-
--- BLOCK select_reviews
-SELECT
-  r.agent_review_id,
-  r.decision,
-  r.result,
-  r.result_delivered_at,
-  r.created_at,
-  now() AS now
-FROM
-  course_agent_reviews AS r;

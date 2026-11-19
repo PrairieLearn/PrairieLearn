@@ -107,6 +107,15 @@ beforeAll(async () => {
   jobSequenceId = serverJob.jobSequenceId;
 });
 afterAll(helperDb.after);
+// Test files in a worker share modules, so a later file would otherwise send its review results to
+// this file's mocked service client.
+afterAll(() => {
+  vi.doUnmock('../../../lib/editors.js');
+  vi.doUnmock('../../../lib/server-jobs.js');
+  vi.doUnmock('./client.js');
+  vi.doUnmock('./review-diff.js');
+  vi.resetModules();
+});
 
 beforeEach(() => {
   vi.resetAllMocks();
