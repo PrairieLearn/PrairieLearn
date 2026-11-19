@@ -4,7 +4,12 @@ import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { type Assessment, type AssessmentQuestion } from '../lib/db-types.js';
+import {
+  type Assessment,
+  type AssessmentQuestion,
+  InstanceQuestionSchema,
+} from '../lib/db-types.js';
+import { selectAssessmentInstanceGradingPending } from '../models/assessment-instance.js';
 import { selectAssessmentQuestionByQuestionId } from '../models/assessment-question.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
@@ -173,6 +178,65 @@ describe('Instructor force-breaking variants on homework', { concurrent: false }
       assert.isDefined(variantId);
       assert.notEqual(variantId.toString(), partialCredit2VariantId);
     });
+  });
+
+  test('resetting a variant discards an answer that was saved but never graded', async () => {
+    const saveAnswer = async (linkText: string, answers: Record<string, string>) => {
+      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+      const questionUrl = `${siteUrl}${assessmentResponse.$(`a:contains("${linkText}")`).attr('href')}`;
+      const questionResponse = await fetchCheerio(questionUrl);
+      const saveResponse = await fetchCheerio(questionUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'save',
+          __csrf_token: getCSRFToken(questionResponse.$),
+          __variant_id: questionResponse.$('input[name=__variant_id]').val()!.toString(),
+          ...answers,
+        }),
+      });
+      assert.equal(saveResponse.status, 200);
+    };
+    const selectStatus = async (assessment_question_id: string) =>
+      await queryScalar(
+        sql.select_instance_question_status,
+        { assessment_question_id },
+        InstanceQuestionSchema.shape.status,
+      );
+
+    const partialCredit6AssessmentQuestion = await selectAssessmentQuestionByQuestionId({
+      assessment_id: assessment.id,
+      question_id: (await selectQuestionByQid({ course_id: '1', qid: 'partialCredit6_no_partial' }))
+        .id,
+    });
+    await withUser(studentUser, async () => {
+      await saveAnswer('Partial credit 1', { s: '100' });
+      await saveAnswer('Partial credit 6', { s1: '100', s2: '100' });
+    });
+    assert.equal(await selectStatus(partialCredit1AssessmentQuestion.id), 'saved');
+    assert.equal(await selectStatus(partialCredit6AssessmentQuestion.id), 'saved');
+    assert.isNotNull(await selectAssessmentInstanceGradingPending('1'));
+
+    const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment.id}/questions`;
+    const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
+    for (const assessmentQuestion of [
+      partialCredit1AssessmentQuestion,
+      partialCredit6AssessmentQuestion,
+    ]) {
+      const response = await fetchCheerio(assessmentQuestionsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'reset_question_variants',
+          __csrf_token: getCSRFToken(assessmentQuestionsResponse.$),
+          unsafe_assessment_question_id: assessmentQuestion.id,
+        }),
+      });
+      assert.equal(response.status, 200);
+    }
+
+    // The first question was graded before the discarded answer was saved.
+    assert.equal(await selectStatus(partialCredit1AssessmentQuestion.id), 'incorrect');
+    assert.equal(await selectStatus(partialCredit6AssessmentQuestion.id), 'unanswered');
+    assert.isNull(await selectAssessmentInstanceGradingPending('1'));
   });
 });
 
