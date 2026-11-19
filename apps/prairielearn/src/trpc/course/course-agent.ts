@@ -199,7 +199,7 @@ export const courseAgentRouter = t.router({
       if (!(await steerCourseAgentConversation(conversation.agent_conversation_id, steer))) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: 'The agent finished before your message arrived. Send it again.',
+          message: 'The agent was no longer working when your message arrived. Send it again.',
         });
       }
     }),
