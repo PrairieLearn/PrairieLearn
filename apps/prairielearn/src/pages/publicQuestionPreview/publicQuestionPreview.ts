@@ -115,7 +115,7 @@ router.get(
     });
     res.send(
       PublicQuestionPreview({
-        independentScrolling: await features.enabled('question-hosting-update', {
+        questionHostingUpdate: await features.enabled('question-hosting-update', {
           institution_id: res.locals.course.institution_id,
           course_id: res.locals.course.id,
           user_id: res.locals.authn_user.id,
