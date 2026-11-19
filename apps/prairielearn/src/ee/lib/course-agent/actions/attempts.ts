@@ -49,7 +49,7 @@ type Attempt = Awaited<ReturnType<typeof selectAttempts>>[number];
 
 /** Whose attempt it is, as staff name students. */
 const owner = (attempt: Attempt) =>
-  attempt.group ? `Team ${attempt.group.name}` : (attempt.user?.uid ?? 'Unknown user');
+  attempt.group ? `Group ${attempt.group.name}` : (attempt.user?.uid ?? 'Unknown user');
 
 const where = (ctx: AssessmentActionContext) =>
   `${ctx.assessment.title ?? ctx.assessment.tid} · ${ctx.course_instance.short_name}`;
@@ -160,7 +160,7 @@ export const attemptActions = {
       "Change how long students have on attempts they have already started, such as extra time for one student during an exam. To change the time limit for everyone who has not started yet, edit the assessment's access rules in the course files instead.",
     effects:
       'Students see the new time remaining right away. An attempt whose time runs out closes and is graded.',
-    undo: 'Change the limit again with this action, or reopen a closed attempt with assessment_instances_reopen.',
+    undo: 'Change the limit again, or reopen an attempt that closed.',
     permission: 'student_data_editor',
     input: TimeLimitInputSchema,
     describe: async ({ ctx, input }) => {
@@ -204,7 +204,7 @@ export const attemptActions = {
       'Reopen attempts that have closed, with no time limit, so students can keep working. Use assessment_instances_set_time_limit with reopen_closed to reopen with a limit instead.',
     effects:
       'The students can answer questions in those attempts again. Their answers and scores so far are kept.',
-    undo: 'Close the attempts again with assessment_instances_close.',
+    undo: 'Close the attempts again.',
     permission: 'student_data_editor',
     input: AttemptIdsInputSchema,
     describe: async ({ ctx, input }) => {
@@ -242,7 +242,7 @@ export const attemptActions = {
       'Grade and close attempts that are still open, such as after an exam ends or for a student who left one open.',
     effects:
       'Saved answers are graded, and the students can no longer answer questions in those attempts.',
-    undo: 'Reopen the attempts with assessment_instances_reopen. Grading done while closing stays.',
+    undo: 'Reopen the attempts. Grading done while closing stays.',
     permission: 'student_data_editor',
     input: AttemptIdsInputSchema,
     describe: async ({ ctx, input }) => {
@@ -287,7 +287,7 @@ export const attemptActions = {
       "Override the total score of one attempt, such as to excuse a student or correct a total by hand. To change one question's score, or to fix scores for everyone after changing points, do not use this.",
     effects:
       'The student sees the new total, and the gradebook uses it. Later grading in the attempt recalculates the total and replaces the override.',
-    undo: 'Set the earlier score again with this action. The score history keeps every change.',
+    undo: 'Set the earlier score again. The score history keeps every change.',
     permission: 'student_data_editor',
     input: z.strictObject({
       ...ASSESSMENT_INPUT,

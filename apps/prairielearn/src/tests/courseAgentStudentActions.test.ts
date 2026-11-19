@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { afterAll, assert, beforeAll, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalScalar, queryScalars } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryRows, queryScalars } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
@@ -135,7 +135,15 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
       });
     });
     // The result is sent to the service after the approval request answers.
-    await vi.waitFor(() => expect(delivered.has(requested.id)).toBe(true));
+    await vi
+      .waitFor(() => expect(delivered.has(requested.id)).toBe(true), { timeout: 20_000 })
+      .catch(async (error: unknown) => {
+        const rows = await queryRows(sql.select_reviews, z.record(z.string(), z.unknown()));
+        throw new Error(
+          `Not delivered: ${JSON.stringify({ id: requested.id, delivered: [...delivered.keys()], rows })}`,
+          { cause: error },
+        );
+      });
     return { card: requested.body.card, result: delivered.get(requested.id)! };
   }
 

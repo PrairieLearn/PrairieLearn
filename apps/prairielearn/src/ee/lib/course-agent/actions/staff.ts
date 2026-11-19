@@ -98,7 +98,7 @@ export const staffActions = {
       "Add people to the course's staff with a course role, or raise the role of people already on it. It never lowers a role.",
     effects:
       'They can open the course with that role the next time they sign in. Access to student data is separate, per course instance.',
-    undo: 'Change their role with staff_set_course_role. Removing someone from the staff is done on the Staff page.',
+    undo: 'Change their role. Removing someone from the staff is done on the Staff page.',
     permission: 'course_owner',
     input: z.strictObject({
       uids: z
@@ -137,7 +137,7 @@ export const staffActions = {
     group: 'staff',
     description: "Change the course role of someone already on the course's staff, up or down.",
     effects: 'Their access to the course changes the next time they load a page.',
-    undo: 'Set their earlier role again with this action.',
+    undo: 'Set their earlier role again.',
     permission: 'course_owner',
     input: z.strictObject({
       uid: z.email().max(256).describe('UID of the staff member.'),
@@ -170,7 +170,7 @@ export const staffActions = {
       "Change a staff member's access to student data in one course instance, such as to let a TA see and grade students' work.",
     effects:
       "They see, or stop seeing, the course instance's students, their work, and scores the next time they load a page.",
-    undo: 'Set their earlier access again with this action.',
+    undo: 'Set their earlier access again.',
     permission: 'course_owner',
     input: z.strictObject({
       ...COURSE_INSTANCE_INPUT,

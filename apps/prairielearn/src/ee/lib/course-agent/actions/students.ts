@@ -385,7 +385,7 @@ export const studentActions = {
       'Invite people to the course instance by UID. Each gets an invitation they accept the next time they open PrairieLearn. People who are already enrolled, invited, or course staff are skipped.',
     effects:
       'Each invited person sees the invitation on their PrairieLearn home page and joins by accepting it.',
-    undo: 'Cancel the invitations with students_cancel_invitation, until they are accepted.',
+    undo: 'Cancel the invitations, until they are accepted.',
     permission: 'student_data_editor',
     input: StudentsInputSchema,
     describe: async ({ ctx, input }) => {
@@ -420,7 +420,7 @@ export const studentActions = {
       'Cancel invitations that have not been accepted, such as ones sent to the wrong person.',
     effects:
       'The invitation disappears from the person’s home page, and they are no longer listed.',
-    undo: 'Invite them again with students_invite.',
+    undo: 'Invite them again.',
     from: ['invited', 'rejected'],
     title: (students) => `Cancel the invitation of ${students}`,
     done: (students) => `Cancelled the invitation of ${students}.`,
@@ -436,7 +436,7 @@ export const studentActions = {
     description:
       'Block enrolled students from the course instance. Their work and scores are kept, and they cannot rejoin on their own.',
     effects: 'The students can no longer open the course instance or its assessments.',
-    undo: 'Let them back in with students_reenroll.',
+    undo: 'Let them back in by re-enrolling them.',
     from: ['joined'],
     title: (students) => `Block ${students}`,
     done: (students) => `Blocked ${students}.`,
@@ -453,7 +453,7 @@ export const studentActions = {
       'Remove enrolled students from the course instance, such as ones who dropped. Their work and scores are kept. Use students_block instead to keep someone out for cause.',
     effects:
       'The students no longer see the course instance and are left out of the gradebook and statistics.',
-    undo: 'Bring them back with students_reenroll.',
+    undo: 'Bring them back by re-enrolling them.',
     from: ['joined'],
     title: (students) => `Remove ${students}`,
     done: (students) => `Removed ${students}.`,
@@ -468,7 +468,7 @@ export const studentActions = {
   students_reenroll: statusAction({
     description: 'Bring blocked or removed students back into the course instance.',
     effects: 'The students can open the course instance again, with their earlier work and scores.',
-    undo: 'Block them with students_block or remove them with students_remove.',
+    undo: 'Block or remove them again.',
     from: ['blocked', 'removed'],
     title: (students) => `Re-enroll ${students}`,
     done: (students) => `Re-enrolled ${students}.`,
@@ -485,7 +485,7 @@ export const studentActions = {
       'Put students in a student label, which groups them for things like access rules that apply only to them. The label must already exist; define new ones in the course files.',
     effects:
       'Anything set up for that label, such as different assessment dates, now applies to these students.',
-    undo: 'Take them out again with student_labels_remove_students.',
+    undo: 'Take them out of the label again.',
     title: (label, students) => `Add the label "${label}" to ${students}`,
     done: (label, students) => `Added the label "${label}" to ${students}.`,
     apply: addLabelToEnrollments,
@@ -493,7 +493,7 @@ export const studentActions = {
   student_labels_remove_students: labelAction({
     description: 'Take students out of a student label.',
     effects: 'What was set up for that label no longer applies to these students.',
-    undo: 'Put them back with student_labels_add_students.',
+    undo: 'Put them back in the label.',
     title: (label, students) => `Remove the label "${label}" from ${students}`,
     done: (label, students) => `Removed the label "${label}" from ${students}.`,
     apply: removeLabelFromEnrollments,
@@ -504,7 +504,7 @@ export const studentActions = {
       'Give some students access to the course instance after it closes for everyone else, such as to finish work late. To change when the course instance closes for everyone, edit its publishing dates in the course files instead.',
     effects:
       'These students keep access to the course instance until the new date. Each assessment still follows its own dates.',
-    undo: 'Remove the extension with publishing_extensions_delete.',
+    undo: 'Remove the extension.',
     permission: ['course_editor', 'student_data_editor'],
     input: CreateExtensionInputSchema,
     describe: async ({ ctx, input }) => {
@@ -582,7 +582,7 @@ export const studentActions = {
     description: 'Remove an extension, so its students lose access when everyone else does.',
     effects:
       'The students in the extension lose access to the course instance at its usual closing date, or at once if that has passed.',
-    undo: 'Create the extension again with publishing_extensions_create.',
+    undo: 'Create the extension again.',
     permission: ['course_editor', 'student_data_editor'],
     input: DeleteExtensionInputSchema,
     describe: async ({ ctx, input }) => {
