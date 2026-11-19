@@ -11,19 +11,9 @@ import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const VersionSettingsSchema = QuestionVersionSettingSchema.omit({ question_version_id: true });
 
 function getParamsForQuestion(qid: string, q: QuestionJson) {
-  let partialCredit;
-  if (q.partialCredit != null) {
-    partialCredit = q.partialCredit;
-  } else {
-    if (q.type === 'v3') {
-      partialCredit = true;
-    } else {
-      partialCredit = false;
-    }
-  }
-
   const workspaceOptions = q.workspaceOptions ?? defaultWorkspaceOptions;
   let external_grading_entrypoint = q.externalGradingOptions?.entrypoint;
   if (Array.isArray(external_grading_entrypoint)) {
@@ -37,7 +27,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson) {
     type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,
     authors: q.authors,
-    partial_credit: partialCredit,
+    partial_credit: q.partialCredit ?? q.type === 'v3',
     template_directory: q.template,
     options: q.options,
     client_files: q.clientFiles,
@@ -73,7 +63,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson) {
 /** Uses the same defaults and command normalization as live question sync. */
 export function getQuestionVersionSettings(qid: string, question: QuestionJson) {
   const params = getParamsForQuestion(qid, question);
-  return QuestionVersionSettingSchema.omit({ question_version_id: true }).parse({
+  return VersionSettingsSchema.parse({
     // SQL sync stores absent settings as NULL. Preserve that distinction in snapshots.
     ...Object.fromEntries(Object.entries(params).map(([key, value]) => [key, value ?? null])),
     directory: qid,

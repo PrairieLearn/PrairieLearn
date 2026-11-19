@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import * as path from 'node:path';
 
 import async from 'async';
-import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -16,6 +15,7 @@ import {
 import { IdSchema } from '@prairielearn/zod';
 
 import { QuestionVersionSchema, type QuestionVersionSetting } from '../lib/db-types.js';
+import { computeStableHash } from '../lib/json.js';
 import type { CourseData } from '../sync/course-db.js';
 import { getQuestionVersionSettings } from '../sync/fromDisk/questions.js';
 import * as infofile from '../sync/infofile.js';
@@ -24,9 +24,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 interface PendingQuestionVersion {
   question_id: string;
-  qid: string;
   source_hash: string;
-  dependency_hash: string;
   settings: Omit<QuestionVersionSetting, 'question_version_id'>;
 }
 
@@ -78,13 +76,12 @@ export async function prepareQuestionVersions({
     { course_id: courseId },
     z.object({
       question_version: QuestionVersionSchema,
-      has_settings: z.boolean(),
-      has_chunk: z.boolean(),
+      complete: z.boolean(),
     }),
   );
-  const currentByQuestionId = new Map(
-    current.map((row) => [row.question_version.question_id, row]),
-  );
+  // Changed, invalid, and deleted questions all close their current version.
+  // Remove versions from this map as we confirm they can stay open.
+  const versionsToClose = new Map(current.map((row) => [row.question_version.question_id, row]));
 
   // A dependency-only publication must advance the pin date even if the question archive is unchanged.
   const dependencyHashes = await Promise.all(
@@ -92,13 +89,11 @@ export async function prepareQuestionVersions({
       hashDirectory(path.join(coursePath, name)),
     ),
   );
-  const dependencyHash = createHash('sha256').update(stringify(dependencyHashes)).digest('hex');
+  const dependencyHash = computeStableHash(dependencyHashes);
+  const archived = current.filter(({ question_version }) => question_version.uses_chunks);
   const dependenciesChanged =
-    !current.some(({ question_version }) => question_version.uses_chunks) ||
-    current.some(
-      ({ question_version }) =>
-        question_version.uses_chunks && question_version.dependency_hash !== dependencyHash,
-    );
+    archived.length === 0 ||
+    archived.some(({ question_version }) => question_version.dependency_hash !== dependencyHash);
   const fileHashes = new Map(
     await async.mapLimit(
       Object.keys(courseData.questions),
@@ -108,7 +103,7 @@ export async function prepareQuestionVersions({
     ),
   );
   const versions: PendingQuestionVersion[] = [];
-  const validQuestionIds = new Set<string>();
+  const questionsToArchive = new Set<string>();
   for (const [qid, question] of Object.entries(courseData.questions)) {
     const identity = questionsByQid.get(qid);
     // Chunk regeneration can load disk without syncing identities first. Do not attach a new UUID's files to an old ID.
@@ -121,52 +116,42 @@ export async function prepareQuestionVersions({
       continue;
     }
     const settings = getQuestionVersionSettings(qid, question.data);
-    const templates: string[] = [];
-    const seen = new Set([qid]);
+    const templateHashes = new Map<string, string | undefined>();
     let template = question.data.template;
-    while (template && !seen.has(template)) {
-      seen.add(template);
-      templates.push(template);
+    while (template && template !== qid && !templateHashes.has(template)) {
+      templateHashes.set(template, fileHashes.get(template));
       template = courseData.questions[template]?.data?.template;
     }
-    const sourceHash = createHash('sha256')
-      .update(
-        stringify([
-          qid,
-          settings,
-          fileHashes.get(qid),
-          dependencyHash,
-          templates.map((name) => [name, fileHashes.get(name)]),
-        ]),
-      )
-      .digest('hex');
-    validQuestionIds.add(identity.id);
-    const previous = currentByQuestionId.get(identity.id);
-    if (
+    const sourceHash = computeStableHash([qid, settings, fileHashes.get(qid), [...templateHashes]]);
+    const previous = versionsToClose.get(identity.id);
+    const sourceIsCurrent =
       previous?.question_version.source_hash === sourceHash &&
       previous.question_version.uses_chunks === usesChunks &&
-      previous.has_settings &&
-      (!usesChunks || previous.has_chunk)
-    ) {
+      previous.complete;
+    if (sourceIsCurrent && previous.question_version.dependency_hash === dependencyHash) {
+      versionsToClose.delete(identity.id);
       continue;
     }
+    // A new version can keep using its question archive when only course dependencies changed.
+    if (usesChunks && !sourceIsCurrent) questionsToArchive.add(qid);
     versions.push({
       question_id: identity.id,
-      qid,
       source_hash: sourceHash,
-      dependency_hash: dependencyHash,
       settings,
     });
   }
-  const changedQuestionIds = new Set(versions.map((version) => version.question_id));
-  const supersededIds = current
-    .filter(
-      ({ question_version }) =>
-        !validQuestionIds.has(question_version.question_id) ||
-        changedQuestionIds.has(question_version.question_id),
-    )
-    .map(({ question_version }) => question_version.id);
-  return { versions, supersededIds, usesChunks, dependenciesChanged };
+  const supersededIds = Array.from(
+    versionsToClose.values(),
+    ({ question_version }) => question_version.id,
+  );
+  return {
+    versions,
+    supersededIds,
+    usesChunks,
+    dependencyHash,
+    dependenciesChanged,
+    questionsToArchive,
+  };
 }
 
 /** Called inside the publication transaction, with the same timestamp as the chunks (when present). */
@@ -187,6 +172,7 @@ export async function writeQuestionVersions({
     versions: JSON.stringify(publication.versions),
     published_at: publishedAt,
     commit_hash: commitHash,
+    dependency_hash: publication.dependencyHash,
     uses_chunks: publication.usesChunks,
   });
 }
@@ -204,6 +190,7 @@ export async function publishQuestionVersionsFromDisk(options: {
   commitHash: string | null;
 }) {
   const publication = await prepareQuestionVersions({ ...options, usesChunks: false });
+  if (!publication.versions.length && !publication.supersededIds.length) return;
   await runInTransactionAsync(async () => {
     const publishedAt = await beginQuestionVersionPublication(options.courseId);
     await writeQuestionVersions({ publication, publishedAt, commitHash: options.commitHash });

@@ -113,8 +113,11 @@ export async function checkSharingConfigurationValid(
 export async function syncDiskToSqlWithLock(
   course: Course,
   logger: ServerJobLogger,
-  courseData?: courseDB.CourseData,
-  chunkOptions?: { oldHash?: string | null; newHash?: string | null },
+  {
+    courseData,
+    oldHash = course.commit_hash,
+    commitHash,
+  }: { courseData?: courseDB.CourseData; oldHash?: string | null; commitHash?: string } = {},
 ): Promise<SyncResults> {
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
@@ -254,22 +257,15 @@ export async function syncDiskToSqlWithLock(
     });
   });
 
-  const commitHash = await getOptionalCourseCommitHash(course.path);
   await timed('Published question versions', async () => {
+    const source = { courseId: course.id, coursePath: course.path, courseData };
     if (config.chunksGenerator) {
-      const chunkChanges = await updateChunksForCourse({
-        coursePath: course.path,
-        courseId: course.id,
-        courseData,
-        ...(chunkOptions ?? { oldHash: course.commit_hash, newHash: commitHash }),
-      });
+      const chunkChanges = await updateChunksForCourse({ ...source, oldHash, commitHash });
       logChunkChangesToJob(chunkChanges, logger);
     } else {
       await publishQuestionVersionsFromDisk({
-        coursePath: course.path,
-        courseId: course.id,
-        courseData,
-        commitHash,
+        ...source,
+        commitHash: commitHash ?? (await getOptionalCourseCommitHash(course.path)),
       });
     }
   });

@@ -13,31 +13,30 @@ WHERE
 -- BLOCK select_current_versions
 SELECT
   to_jsonb(qv.*) AS question_version,
-  EXISTS (
-    SELECT
-      1
-    FROM
-      question_version_settings AS s
-    WHERE
-      s.question_version_id = qv.id
-  ) AS has_settings,
-  EXISTS (
-    SELECT
-      1
-    FROM
-      chunks AS c
-    WHERE
-      c.question_id = qv.question_id
-      AND c.type = 'question'
-      AND c.created_at <= qv.created_at
-      AND (
-        c.superseded_at IS NULL
-        OR c.superseded_at > qv.created_at
-      )
-  ) AS has_chunk
+  s.question_version_id IS NOT NULL
+  AND (
+    NOT qv.uses_chunks
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        chunks AS c
+      WHERE
+        c.course_id = q.course_id
+        AND c.question_id = qv.question_id
+        AND c.type = 'question'
+        AND NOT c.deleted
+        AND c.created_at <= qv.created_at
+        AND (
+          c.superseded_at IS NULL
+          OR c.superseded_at > qv.created_at
+        )
+    )
+  ) AS complete
 FROM
   question_versions AS qv
   JOIN questions AS q ON q.id = qv.question_id
+  LEFT JOIN question_version_settings AS s ON s.question_version_id = qv.id
 WHERE
   q.course_id = $course_id
   AND qv.superseded_at IS NULL;
@@ -88,6 +87,16 @@ WHERE
 
 -- BLOCK insert_versions
 WITH
+  versions AS (
+    SELECT
+      *
+    FROM
+      JSONB_TO_RECORDSET($versions::jsonb) AS v (
+        question_id bigint,
+        source_hash text,
+        settings jsonb
+      )
+  ),
   inserted_versions AS (
     INSERT INTO
       question_versions (
@@ -99,80 +108,26 @@ WITH
         uses_chunks
       )
     SELECT
-      (version ->> 'question_id')::bigint,
-      version ->> 'source_hash',
-      version ->> 'dependency_hash',
+      question_id,
+      source_hash,
+      $dependency_hash,
       $commit_hash,
       $published_at::timestamptz,
       $uses_chunks
     FROM
-      JSONB_ARRAY_ELEMENTS($versions::jsonb) AS version
+      versions
     RETURNING
       id,
       question_id
   )
 INSERT INTO
-  question_version_settings (
-    question_version_id,
-    client_files,
-    dependencies,
-    directory,
-    external_grading_enable_networking,
-    external_grading_entrypoint,
-    external_grading_environment,
-    external_grading_files,
-    external_grading_image,
-    external_grading_timeout,
-    grading_method,
-    options,
-    partial_credit,
-    preferences_schema,
-    show_correct_answer,
-    single_variant,
-    template_directory,
-    title,
-    type,
-    workspace_args,
-    workspace_enable_networking,
-    workspace_environment,
-    workspace_graded_files,
-    workspace_home,
-    workspace_image,
-    workspace_port,
-    workspace_url_rewrite
-  )
+  question_version_settings
 SELECT
-  inserted_versions.id,
-  settings.client_files,
-  settings.dependencies,
-  settings.directory,
-  settings.external_grading_enable_networking,
-  settings.external_grading_entrypoint,
-  settings.external_grading_environment,
-  settings.external_grading_files,
-  settings.external_grading_image,
-  settings.external_grading_timeout,
-  settings.grading_method,
-  settings.options,
-  settings.partial_credit,
-  settings.preferences_schema,
-  settings.show_correct_answer,
-  settings.single_variant,
-  settings.template_directory,
-  settings.title,
-  settings.type,
-  settings.workspace_args,
-  settings.workspace_enable_networking,
-  settings.workspace_environment,
-  settings.workspace_graded_files,
-  settings.workspace_home,
-  settings.workspace_image,
-  settings.workspace_port,
-  settings.workspace_url_rewrite
+  settings.*
 FROM
-  JSONB_ARRAY_ELEMENTS($versions::jsonb) AS version
-  JOIN inserted_versions ON inserted_versions.question_id = (version ->> 'question_id')::bigint
+  versions
+  JOIN inserted_versions USING (question_id)
   CROSS JOIN LATERAL JSONB_POPULATE_RECORD(
     NULL::question_version_settings,
-    version -> 'settings'
+    versions.settings || JSONB_BUILD_OBJECT('question_version_id', inserted_versions.id)
   ) AS settings;
