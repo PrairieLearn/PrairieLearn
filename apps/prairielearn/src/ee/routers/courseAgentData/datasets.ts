@@ -403,6 +403,30 @@ export const COURSE_DATA_DATASETS = {
         .describe("Detail for staff, such as the error the question's code raised."),
     }),
   }),
+  sharing_sets: dataset({
+    description:
+      "The course's sharing sets, which group questions to share with other courses. They are defined in infoCourse.json, and a question joins one in its info.json.",
+    query: sql.select_sharing_sets_by_course_id,
+    schema: z.object({
+      id: IdSchema,
+      name: z.string().describe('Name of the sharing set, as in infoCourse.json.'),
+      description: z.string().nullable().describe('What the sharing set is for.'),
+    }),
+  }),
+  sharing_set_courses: dataset({
+    description:
+      "Other courses that can use the questions in one of this course's sharing sets. Add one with the sharing_add_course_to_set action.",
+    query: sql.select_sharing_set_courses_by_course_id,
+    schema: z.object({
+      sharing_set_id: IdSchema,
+      sharing_set_name: z.string().describe('Name of the sharing set.'),
+      course_short_name: z
+        .string()
+        .nullable()
+        .describe('Short name of the course that has access, such as CS 101.'),
+      course_title: z.string().nullable().describe('Title of the course that has access.'),
+    }),
+  }),
 };
 
 type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;

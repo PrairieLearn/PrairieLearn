@@ -255,3 +255,27 @@ WHERE
   i.course_id = $course_id
   -- Issues caused by PrairieLearn itself are not the course's to resolve.
   AND i.course_caused;
+
+-- BLOCK select_sharing_sets_by_course_id
+SELECT
+  ss.id,
+  ss.name,
+  ss.description
+FROM
+  sharing_sets AS ss
+WHERE
+  ss.course_id = $course_id;
+
+-- BLOCK select_sharing_set_courses_by_course_id
+SELECT
+  ss.id AS sharing_set_id,
+  ss.name AS sharing_set_name,
+  c.short_name AS course_short_name,
+  c.title AS course_title
+FROM
+  sharing_sets AS ss
+  JOIN sharing_set_courses AS ssc ON (ssc.sharing_set_id = ss.id)
+  JOIN courses AS c ON (c.id = ssc.course_id)
+WHERE
+  ss.course_id = $course_id
+  AND c.deleted_at IS NULL;

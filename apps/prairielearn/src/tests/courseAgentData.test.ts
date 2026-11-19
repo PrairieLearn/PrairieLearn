@@ -1,13 +1,16 @@
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { COURSE_DATA_DATASETS } from '../ee/routers/courseAgentData/datasets.js';
 import { config } from '../lib/config.js';
 import { insertIssue } from '../lib/issues.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import { insertCourse } from '../models/course.js';
+import { insertSharingSetCourse } from '../models/sharing-set.js';
 
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
@@ -144,6 +147,25 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
       systemData: {},
       userId: z.string().parse(variant.user_id),
       authnUserId: z.string().parse(variant.user_id),
+    });
+    const consumer = await insertCourse({
+      institution_id: '1',
+      short_name: 'SHARE 101',
+      title: 'A course that uses shared questions',
+      display_timezone: 'America/Chicago',
+      path: `/course-${crypto.randomUUID()}`,
+      repository: null,
+      branch: 'master',
+      authn_user_id: '1',
+    });
+    await insertSharingSetCourse({
+      sharing_course_id: '1',
+      sharing_set_id: await queryScalar(
+        sql.insert_sharing_set,
+        { course_id: '1', name: 'test-set' },
+        IdSchema,
+      ),
+      course_sharing_token: consumer.sharing_token,
     });
     for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${dataUrl}/${name}`, owner, {

@@ -9,6 +9,7 @@ import {
 } from '../../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../../lib/authz-data.js';
 import type { Assessment, Course, CourseInstance, User } from '../../../../lib/db-types.js';
+import { type FeatureName, features } from '../../../../lib/features/index.js';
 import { selectOptionalAssessmentByTid } from '../../../../models/assessment.js';
 import { selectOptionalCourseInstanceByShortName } from '../../../../models/course-instances.js';
 
@@ -88,6 +89,8 @@ interface CourseActionDefinition<Schema extends z.ZodObject, Context extends Cou
   undo: string | null;
   /** Every permission listed is required. */
   permission: CourseActionPermission | CourseActionPermission[];
+  /** A feature the course must have turned on. */
+  feature?: FeatureName;
   input: Schema;
   /**
    * Checks the request against the database and says what approving it will do. The instructor
@@ -128,6 +131,17 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
     const parsed = definition.input.safeParse(raw);
     // Zod's message says what is allowed, so the course agent can correct its request.
     if (!parsed.success) throw new CourseActionError(z.prettifyError(parsed.error));
+    if (
+      definition.feature &&
+      !(await features.enabled(definition.feature, {
+        institution_id: ctx.course.institution_id,
+        course_id: ctx.course.id,
+      }))
+    ) {
+      throw new CourseActionError(
+        'This is not available in this course. Tell the instructor, and do not retry.',
+      );
+    }
     const located = await locate(ctx, parsed.data);
     for (const key of [definition.permission].flat()) {
       if (!PERMISSIONS[key].allows(located.authz_data)) {
