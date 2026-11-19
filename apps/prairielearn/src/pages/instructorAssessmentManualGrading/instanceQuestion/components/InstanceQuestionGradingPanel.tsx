@@ -13,6 +13,7 @@ import {
   roundPoints,
   syncRubricScore,
 } from '../utils/gradingPanelState.js';
+import { toggleRubricItem } from '../utils/rubricTree.js';
 
 import { GradingPoints, TotalPoints } from './GradingPoints.js';
 import { InstanceQuestionGradingActions } from './InstanceQuestionGradingActions.js';
@@ -173,20 +174,18 @@ function InstanceQuestionGradingPanelInner({
         return;
       }
 
-      const rubricItem = data.rubricData?.items.find(
-        (item) => item.keyBinding?.toLowerCase() === key,
-      );
+      const rubricItems = data.rubricData?.items ?? [];
+      const rubricItem = rubricItems.find((item) => item.keyBinding?.toLowerCase() === key);
       if (rubricItem) {
-        updateFormState((current) => {
-          const selectedRubricItemIds = new Set(current.selectedRubricItemIds);
-          const id = rubricItem.id;
-          if (selectedRubricItemIds.has(id)) {
-            selectedRubricItemIds.delete(id);
-          } else {
-            selectedRubricItemIds.add(id);
-          }
-          return { ...current, selectedRubricItemIds };
-        });
+        updateFormState((current) => ({
+          ...current,
+          selectedRubricItemIds: toggleRubricItem(
+            rubricItems,
+            current.selectedRubricItemIds,
+            rubricItem.id,
+            !current.selectedRubricItemIds.has(rubricItem.id),
+          ),
+        }));
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -210,15 +209,15 @@ function InstanceQuestionGradingPanelInner({
       showEditRubricButton={data.context === 'main'}
       usePercentage={usePercentage}
       onRubricItemChange={(id, selected) =>
-        updateFormState((current) => {
-          const selectedRubricItemIds = new Set(current.selectedRubricItemIds);
-          if (selected) {
-            selectedRubricItemIds.add(id);
-          } else {
-            selectedRubricItemIds.delete(id);
-          }
-          return { ...current, selectedRubricItemIds };
-        })
+        updateFormState((current) => ({
+          ...current,
+          selectedRubricItemIds: toggleRubricItem(
+            data.rubricData?.items ?? [],
+            current.selectedRubricItemIds,
+            id,
+            selected,
+          ),
+        }))
       }
       onShowAdjustment={() => {
         setFormState((current) => ({ ...current, showAdjustment: true }));
