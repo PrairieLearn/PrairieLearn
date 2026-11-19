@@ -46,7 +46,8 @@ Staff can send a message while the agent is working, and the agent takes it into
 - Until Codex accepts the turn's input there is no native turn to add to. A message sent then is captured with the turn like its prompt: its part is written at once, and it is submitted, in order, when Codex accepts the turn. If the turn stops or fails first, it is never submitted later. It stays in chat history, where catch-up finds it for a restored thread.
 - Codex saves the message under the tag `steer:<id>`, which catch-up uses like a prompt's tag. A repeated request with the same ID during the turn is acknowledged without submitting it again.
 - Stop, the turn deadline, and the usage limit are unchanged: a message does not extend the deadline, and Stop interrupts the turn as usual. A message Codex acknowledged stays on the thread after Stop, so the next turn's agent has it.
-- The model request that Codex cuts off reports no final usage, so it is charged its estimate like any other dropped stream.
+- The Worker keeps reading the model reply that Codex cuts off, so the provider finishes and bills it, and it is charged the usage the provider reports. That holds after the turn ends too: a turn that ends normally leaves such replies up to two minutes to finish before they are aborted and charged their estimate. Stop still aborts every running request at once.
+- A dropped reply still counts toward the four provider requests that may run at once. Codex reads one model reply at a time, so a new model request marks the earlier ones as dropped. When a new model request would exceed the limit, the oldest dropped reply is aborted and charged its estimate, so several messages in a row do not fail the turn. A running search is never given up.
 - A message during a turn carries no attachments, because a turn copies its files into the sandbox before it starts. The browser offers files only between turns.
 
 ## Backup and recovery
