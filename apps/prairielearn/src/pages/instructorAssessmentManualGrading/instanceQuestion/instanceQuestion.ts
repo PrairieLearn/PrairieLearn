@@ -472,6 +472,10 @@ const PostBodySchema = z.union([
           explanation: z.string().nullable().optional(),
           grader_note: z.string().nullable().optional(),
           always_show_to_students: z.boolean(),
+          depth: z.coerce.number().int().nonnegative().optional(),
+          is_group: z.boolean().optional(),
+          min_selections: z.coerce.number().int().nullable().optional(),
+          max_selections: z.coerce.number().int().nullable().optional(),
         }),
       )
       .default([]),

@@ -83,4 +83,12 @@ export const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   is_ai_graded: z.boolean(),
 });
 
-export type RubricItemInput = Partial<Omit<RubricItem, 'show_to_students'>> & { order: number };
+export type RubricItemInput = Partial<Omit<RubricItem, 'show_to_students' | 'parent_id'>> & {
+  order: number;
+  /**
+   * Nesting depth (0 for top-level rows). Items are sent in depth-first order,
+   * and the parent of each row is derived from the depths, so clients never
+   * send `parent_id` directly.
+   */
+  depth?: number;
+};
