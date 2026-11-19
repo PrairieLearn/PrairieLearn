@@ -12,7 +12,7 @@ CREATE TABLE question_versions (
   CHECK (superseded_at > created_at)
 );
 
-CREATE INDEX question_versions_question_id_created_at_idx ON question_versions (question_id, created_at DESC, id DESC);
+CREATE INDEX question_versions_question_id_created_at_idx ON question_versions (question_id, created_at);
 
 CREATE UNIQUE INDEX question_versions_current_question_id_key ON question_versions (question_id)
 WHERE
