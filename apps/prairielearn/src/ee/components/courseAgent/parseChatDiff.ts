@@ -105,30 +105,65 @@ function finishFile(
   };
 }
 
+/** Lines that can't be read until the line after them arrives: file and hunk headers. */
+const UNFINISHED_LINE = /^(?:-{1,3}|\+{1,3})$|^(?:--- |\+\+\+ |diff |@@)/;
+
+/** How `git show` and `git format-patch` output begins, ahead of the first file. */
+const COMMIT_LINE = /^(?:commit|From) [0-9a-f]{7,40}\b/;
+
 /**
  * Reads a diff the agent wrote or ran, for the diff viewer. Agents write diffs loosely: hunk
  * headers with the wrong line counts, no hunk header, context lines without their leading space,
  * or no file names at all. Line counts are recomputed and missing headers filled in, so the viewer
  * always gets a well-formed patch for each file.
  *
- * Returns `null` for text with no added or removed lines, which should stay a plain code block.
+ * Returns `null` when there is nothing to show, or for a very large diff.
  *
  * @param text The diff.
- * @param known The file the diff is for, used when the diff itself names no file.
+ * @param options
+ * @param options.known The file the diff is for, used when the diff itself names no file.
+ * @param options.streaming Whether more of the diff is still to come. A header at the end of the
+ * text is then left out until the lines after it show what it is.
  */
 export function parseChatDiff(
   text: string,
-  known?: { path: string; change: ChatDiffFile['change'] },
+  {
+    known,
+    streaming = false,
+  }: {
+    known?: { path: string; change: ChatDiffFile['change'] };
+    streaming?: boolean;
+  } = {},
 ): ParsedChatDiff | null {
   if (text.length > MAX_DIFF_CHARS) return null;
   const lines = text.replaceAll('\r\n', '\n').split('\n');
+  if (streaming) {
+    if (lines.at(-1) === '') lines.pop();
+    while (lines.length > 0 && UNFINISHED_LINE.test(lines.at(-1)!)) lines.pop();
+  }
   const isFileHeader = (i: number) =>
     lines[i].startsWith('--- ') && lines[i + 1]?.startsWith('+++ ');
-  // Anything before the first header is a preamble, unless the whole text is a bare hunk body.
+  /** Inside a hunk, such a pair of lines could also be a removed and an added line. */
+  const namesOneFile = (i: number) => {
+    const before = lines[i].slice(4).split('\t')[0].trim();
+    const after = lines[i + 1].slice(4).split('\t')[0].trim();
+    return (
+      lines[i + 2]?.startsWith('@@') ||
+      before === '/dev/null' ||
+      after === '/dev/null' ||
+      before === after ||
+      (before.startsWith('a/') && after.startsWith('b/'))
+    );
+  };
   const firstHeader = lines.findIndex(
     (line, i) => line.startsWith('diff --git ') || line.startsWith('@@') || isFileHeader(i),
   );
-  const preamble = lines.slice(0, Math.max(firstHeader, 0));
+  // Anything before the first header is a preamble. With no header at all, the text is a bare
+  // hunk body, unless it starts like a commit whose files have not streamed in yet.
+  const preamble = lines.slice(
+    0,
+    firstHeader === -1 && COMMIT_LINE.test(lines[0]) ? lines.length : Math.max(firstHeader, 0),
+  );
 
   const files: OpenFile[] = [];
   const current: { hunk: Hunk | null } = { hunk: null };
@@ -171,8 +206,7 @@ export function parseChatDiff(
       named.newPath = git[2];
       continue;
     }
-    // Inside a hunk, a `---` line is a removed line unless a new hunk follows the pair.
-    if (isFileHeader(i) && (!current.hunk || lines[i + 2]?.startsWith('@@'))) {
+    if (isFileHeader(i) && (!current.hunk || namesOneFile(i))) {
       closeHunk();
       // A `diff --git` line has already opened this file; these lines give its exact paths.
       const named = file?.named && file.hunks.length === 0 ? file : openFile(true);
@@ -201,7 +235,14 @@ export function parseChatDiff(
   }
   closeHunk();
 
-  const parsed = files.map((file) => finishFile(file, files.length === 1 ? known : undefined));
-  if (!parsed.some((file) => file.additions + file.deletions > 0)) return null;
-  return { preamble: preamble.join('\n').trim(), files: parsed };
+  const shown = files.filter((file) => file.binary || file.hunks.some((h) => h.lines.length > 0));
+  const preambleText = preamble.join('\n').trim();
+  // A file with only its name so far is left out until its first line arrives.
+  if (shown.length === 0 && (preambleText === '' || !streaming)) return null;
+  return {
+    preamble: preambleText,
+    files: (streaming ? shown : files).map((file) =>
+      finishFile(file, files.length === 1 ? known : undefined),
+    ),
+  };
 }

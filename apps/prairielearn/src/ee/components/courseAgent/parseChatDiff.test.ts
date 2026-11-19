@@ -110,7 +110,9 @@ describe('parseChatDiff', () => {
   });
 
   it('uses the known file for a diff that names none', () => {
-    const added = parseChatDiff('@@ -0,0 +1,2 @@\n+{\n+}', { path: 'info.json', change: 'added' });
+    const added = parseChatDiff('@@ -0,0 +1,2 @@\n+{\n+}', {
+      known: { path: 'info.json', change: 'added' },
+    });
     expect(added?.files).toMatchObject([{ path: 'info.json', change: 'added', numbered: true }]);
     expect(added?.files[0].patch).toBe('--- /dev/null\n+++ info.json\n@@ -0,0 +1,2 @@\n+{\n+}\n');
   });
@@ -130,9 +132,50 @@ describe('parseChatDiff', () => {
     }
   });
 
-  it('leaves text without changed lines, and very large diffs, as plain text', () => {
-    expect(parseChatDiff(' questions/add/server.py | 2 +-\n 1 file changed\n')).toBeNull();
+  it('shows a streaming diff as far as it has come', () => {
+    const text = [
+      '--- a/info.json',
+      '+++ b/info.json',
+      '@@ -2,2 +2,2 @@',
+      '-  "title": "Old",',
+      '+  "title": "New",',
+      '--- a/b.txt',
+      '+++ b/b.txt',
+      '-old',
+    ].join('\n');
+    const shown = (end: string) => {
+      const diff = parseChatDiff(text.slice(0, text.indexOf(end) + end.length), {
+        streaming: true,
+      });
+      return diff?.files.map((file) => `${file.path}: +${file.additions} -${file.deletions}`);
+    };
+    // A header is not read as a removed line while the lines after it are still to come.
+    expect(shown('--- a/info')).toBeUndefined();
+    expect(shown('+++ b/info.json')).toBeUndefined();
+    expect(shown('@@ -2,2 +2,2 @@')).toBeUndefined();
+    expect(shown('-  "tit')).toEqual(['info.json: +0 -1']);
+    expect(shown('"New",\n-')).toEqual(['info.json: +1 -1']);
+    expect(shown('--- a/b.txt')).toEqual(['info.json: +1 -1']);
+    expect(shown('+++ b/b.txt')).toEqual(['info.json: +1 -1']);
+    expect(shown('-old')).toEqual(['info.json: +1 -1', 'b.txt: +0 -1']);
+  });
+
+  it("keeps a commit's details out of the diff while its files stream in", () => {
+    const streaming = parseChatDiff('commit fea005d\nAuthor: Staff\n\n    Fix the answer\n', {
+      streaming: true,
+    });
+    expect(streaming).toEqual({
+      preamble: 'commit fea005d\nAuthor: Staff\n\n    Fix the answer',
+      files: [],
+    });
+  });
+
+  it('shows lines with no changes, and leaves empty and very large text as plain text', () => {
+    const summary = parseChatDiff(' questions/add/server.py | 2 +-\n 1 file changed\n');
+    expect(summary?.files).toMatchObject([{ path: '', additions: 0, deletions: 0 }]);
     expect(parseChatDiff('')).toBeNull();
+    expect(parseChatDiff('', { streaming: true })).toBeNull();
+    expect(parseChatDiff('commit fea005d\nAuthor: Staff\n')).toBeNull();
     expect(parseChatDiff(`+${'x'.repeat(100_000)}`)).toBeNull();
   });
 });

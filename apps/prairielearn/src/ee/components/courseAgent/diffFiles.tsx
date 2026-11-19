@@ -1,13 +1,14 @@
 import {
+  EXTENSION_TO_FILE_FORMAT,
   type FileDiffMetadata,
   type SupportedLanguages,
   getFiletypeFromFileName,
   getSingularPatch,
   preloadHighlighter,
 } from '@pierre/diffs';
-import { FileDiff } from '@pierre/diffs/react';
+import { File, FileDiff } from '@pierre/diffs/react';
 import clsx from 'clsx';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, use, useEffect, useReducer } from 'react';
 
 // Pierre's blue/orange palette, which stays distinguishable with red-green color blindness.
 const THEME = {
@@ -87,9 +88,17 @@ export function loadHighlighter(parsed: ParsedFile[]) {
   const langs = new Set<SupportedLanguages>();
   for (const { diff } of parsed) {
     if (!diff || diff.hunks.length === 0) continue;
-    langs.add(getFiletypeFromFileName(diff.prevName ?? diff.name));
-    langs.add(getFiletypeFromFileName(diff.name));
+    for (const lang of diffLanguages(diff)) langs.add(lang);
   }
+  return loadLanguages(langs);
+}
+
+/** The languages a diff's old and new file names call for. */
+export function diffLanguages(diff: FileDiffMetadata) {
+  return [getFiletypeFromFileName(diff.prevName ?? diff.name), getFiletypeFromFileName(diff.name)];
+}
+
+function loadLanguages(langs: Set<SupportedLanguages>) {
   // Binary and empty files only show a notice.
   if (langs.size === 0) return NOTHING_TO_HIGHLIGHT;
   const key = [...langs].sort().join(',');
@@ -102,6 +111,54 @@ export function loadHighlighter(parsed: ParsedFile[]) {
     highlighterLoads.set(key, load);
   }
   return load;
+}
+
+const TEXT_ONLY = new Set<SupportedLanguages>(['text']);
+
+/** Starts loading the highlighter itself, which every language needs. */
+export function preloadHighlighting() {
+  void loadLanguages(TEXT_ONLY);
+}
+
+const loadedLanguages = new Set<SupportedLanguages>(['text']);
+
+/**
+ * For code shown as it streams. Suspends only until the highlighter itself is ready, then returns
+ * whether the languages' own highlighting is too. Until it is, render the code as `text`: it
+ * appears at once and gains its colors when they load, instead of the block sitting empty.
+ */
+export function useLanguagesLoaded(langs: SupportedLanguages[]) {
+  use(loadLanguages(TEXT_ONLY));
+  const [, rerender] = useReducer((count: number) => count + 1, 0);
+  const missing = langs.filter((lang) => !loadedLanguages.has(lang));
+  const key = missing.join(',');
+  // Loads highlighting for languages not seen before, then renders again to apply it.
+  useEffect(() => {
+    if (key === '') return;
+    let current = true;
+    const wanted = key.split(',') as SupportedLanguages[];
+    void loadLanguages(new Set(wanted)).then(() => {
+      for (const lang of wanted) loadedLanguages.add(lang);
+      if (current) rerender();
+    });
+    return () => {
+      current = false;
+    };
+  }, [key]);
+  return missing.length === 0;
+}
+
+const LANGUAGES = new Set<string>(
+  Object.values(EXTENSION_TO_FILE_FORMAT).filter((language) => language !== undefined),
+);
+
+/** The highlighter's language for a name as written after a code fence, such as `ts` or `python`. */
+export function languageOf(name: string | undefined): SupportedLanguages {
+  if (!name) return 'text';
+  const lower = name.toLowerCase();
+  // The cast only narrows the type: `LANGUAGES` holds exactly the names the highlighter knows.
+  if (LANGUAGES.has(lower)) return lower;
+  return getFiletypeFromFileName(`file.${lower}`);
 }
 
 export function LineCounts({ additions, deletions }: { additions: number; deletions: number }) {
@@ -182,6 +239,30 @@ export function FileChanges({
         unsafeCSS: INDICATOR_CSS,
         disableFileHeader: !showFileName,
         disableLineNumbers: !showLineNumbers,
+      }}
+    />
+  );
+}
+
+/** Code on its own, highlighted like the files in a diff. */
+export function CodeFile({
+  contents,
+  lang,
+  themeType,
+}: {
+  contents: string;
+  lang: SupportedLanguages;
+  themeType: 'light' | 'dark';
+}) {
+  return (
+    <File
+      file={{ name: 'code', contents, lang }}
+      options={{
+        theme: THEME,
+        themeType,
+        overflow: 'scroll',
+        disableFileHeader: true,
+        disableLineNumbers: true,
       }}
     />
   );

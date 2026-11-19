@@ -1,17 +1,25 @@
-import { type ReactNode, use, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import {
   CHANGES,
+  CodeFile,
   FileChanges,
   bootstrapThemeType,
+  diffLanguages,
   diffStyle,
-  loadHighlighter,
+  languageOf,
   parseFile,
+  preloadHighlighting,
+  useLanguagesLoaded,
 } from './diffFiles.js';
 import type { ParsedChatDiff } from './parseChatDiff.js';
 
+// This module loads in the background when the chat opens. Starting the highlighter then too
+// means the first code block of a reply rarely has to wait for either.
+preloadHighlighting();
+
 /** A diff shown inside the conversation: each file's changes, one after another. */
-export default function ChatDiffView({
+export function ChatDiffView({
   diff,
   showFileNames,
   fallback,
@@ -29,9 +37,10 @@ export default function ChatDiffView({
       return null;
     }
   }, [diff]);
+  const highlighted = useLanguagesLoaded(
+    parsed?.flatMap(({ diff: fileDiff }) => (fileDiff ? diffLanguages(fileDiff) : [])) ?? [],
+  );
   if (!parsed) return fallback;
-  // Suspends until the highlighter is ready, so the plain text stays up until the diff can render.
-  use(loadHighlighter(parsed));
   const themeType = bootstrapThemeType();
   return (
     <div className="course-agent-diff d-flex flex-column gap-2" style={diffStyle(themeType)}>
@@ -49,13 +58,25 @@ export default function ChatDiffView({
         >
           <FileChanges
             file={file}
-            diff={fileDiff}
+            diff={fileDiff && !highlighted ? { ...fileDiff, lang: 'text' } : fileDiff}
             themeType={themeType}
             showFileName={showFileNames && file.path !== ''}
             showLineNumbers={file.numbered}
           />
         </section>
       ))}
+    </div>
+  );
+}
+
+/** A code block shown inside the conversation, with syntax highlighting. */
+export function ChatCodeView({ code, language }: { code: string; language?: string }) {
+  const lang = languageOf(language);
+  const highlighted = useLanguagesLoaded([lang]);
+  const themeType = bootstrapThemeType();
+  return (
+    <div className="course-agent-code border rounded overflow-hidden" style={diffStyle(themeType)}>
+      <CodeFile contents={code} lang={highlighted ? lang : 'text'} themeType={themeType} />
     </div>
   );
 }

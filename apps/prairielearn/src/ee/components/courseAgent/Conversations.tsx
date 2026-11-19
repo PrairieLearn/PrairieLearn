@@ -48,7 +48,7 @@ import {
   useDraftAttachments,
 } from './Attachments.js';
 import { BlockedNotice } from './BlockedNotice.js';
-import { DiffCodeBlock } from './ChatDiff.js';
+import { ChatCodeBlock } from './ChatDiff.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
@@ -919,7 +919,7 @@ function Message({
           key={key}
           part={part}
           urlTransform={linkTransform}
-          codeBlock={DiffCodeBlock}
+          codeBlock={ChatCodeBlock}
           math
         />,
       );
