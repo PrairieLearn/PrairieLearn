@@ -3,13 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import {
   type ConversationState,
+  type CourseActionResult,
   type RequestChangesResult,
   type UsageDecision,
   type UsageReport,
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
-import { CodexAppServerClient } from '../sandbox/codex.js';
+import { CodexAppServerClient, type CourseActionTools } from '../sandbox/codex.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import { Conversation, type MeteringState } from './conversation.js';
@@ -536,6 +537,85 @@ it('marks reviews for automatic approval from the latest message that chose a mo
   switched.setApprovalMode('always_approve');
   expect(switched.state.approvalMode).toBe('always_approve');
   expect((await submitReview(turn.options)).part).toHaveProperty('data.autoApprove', true);
+});
+
+it('holds a requested course action in the review slot and delivers its result', async () => {
+  const card = {
+    title: 'Close 2 issues',
+    context: null,
+    rows: [{ label: 'addNumbers', detail: 'The answer box rejects negative numbers.' }],
+    moreRows: 1,
+    undo: 'Reopen the same issues with issues_reopen.',
+  };
+  const fetch = vi.fn(async (url: string | URL, _options?: RequestInit) => {
+    if (String(url).endsWith('/usage')) return decision();
+    if (String(url).includes('/course_agent/actions/')) return Response.json({ card });
+    return modelResponse();
+  });
+  vi.stubGlobal('fetch', fetch);
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const { saved } = fixture();
+  saved.set('conversation', {
+    ...(saved.get('conversation') as object),
+    courseContext: { courseId: '7', courseTitle: 'Test course', courseShortName: 'TEST 101' },
+  });
+  const { conversation } = fixture(saved);
+  await conversation.onStart();
+  await conversation.persistMessages([
+    { id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: 'Close them' }] },
+  ]);
+  const requestId = crypto.randomUUID();
+  await conversation.onChatMessage(undefined, { requestId });
+  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+  await options.prepare();
+  options.onReady();
+
+  // The Codex client is given the handlers when the turn starts.
+  const { courseActions } = (
+    conversation as unknown as { native: { courseActions: CourseActionTools } }
+  ).native;
+  const request = { action: 'issues_close', input: { issue_ids: ['3', '4'] } };
+  const reply = await courseActions.requestCourseAction(request);
+  expect(reply).toMatchObject({ success: true });
+  expect(reply.text).toContain('Requested: Close 2 issues.');
+  expect(reply.text).toContain('- and 1 more');
+  const [url, init] = fetch.mock.calls.find(([called]) => String(called).includes('/actions/'))!;
+  expect(String(url)).toBe('https://pl.test/pl/course/7/course_agent/actions/issues_close');
+  const body = JSON.parse(init!.body as string) as { id: string; input: unknown };
+  expect(body).toEqual({ id: expect.any(String), input: request.input });
+  const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-action');
+  expect(part).toMatchObject({ data: { actionId: body.id } });
+  expect(part).not.toHaveProperty('data.autoApprove');
+  // The request waits where a file review would, so a second one is refused, and PrairieLearn,
+  // which holds the request itself, is given no snapshot.
+  expect(conversation.state.reviewId).toBe(body.id);
+  expect(await courseActions.requestCourseAction(request)).toMatchObject({ success: false });
+  expect(conversation.getReview(body.id)).toBeNull();
+
+  sdk.finishTurn();
+  await sdk.completeResponse(requestId);
+  await vi.waitFor(() => expect(conversation.state.status).toBe('waiting_for_user'));
+  const result = {
+    decision: 'approved',
+    action: { name: 'issues_close', title: 'Close 2 issues' },
+    outcome: { status: 'succeeded', summary: 'Closed 2 issues.' },
+  } satisfies CourseActionResult;
+  expect(conversation.recordReviewResult(body.id, result)).toBe(true);
+  // A repeat is acknowledged; a different result for the same request is refused.
+  expect(conversation.recordReviewResult(body.id, result)).toBe(true);
+  expect(
+    conversation.recordReviewResult(body.id, {
+      ...result,
+      outcome: { status: 'failed', error: 'x' },
+    }),
+  ).toBe(false);
+  await conversation.deliverWaitingResult();
+  await vi.waitFor(() => expect(SandboxTurn).toHaveBeenCalledTimes(2));
+  const delivery = vi.mocked(SandboxTurn).mock.calls[1][2].input;
+  expect(delivery.tag).toBe(`review:${body.id}`);
+  expect(delivery.text).toContain('approved the requested action "Close 2 issues"');
+  expect(delivery.text).toContain('Closed 2 issues.');
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {

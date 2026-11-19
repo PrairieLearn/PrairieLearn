@@ -87,6 +87,16 @@ PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conver
 
 `offer_reload` is registered the same way for every thread and takes no arguments. It emits a `data-reload` part with no data, which the chat shows as a button that reloads the page the instructor is viewing when they click it. The agent uses it once approved changes are saved and synced and the instructor is already on a page that shows them.
 
+## Course actions
+
+A course action changes something in PrairieLearn that course files do not hold, such as closing issues. PrairieLearn's registry (`ee/lib/course-agent/actions/`) is the single source of truth: `list_course_actions` reads the catalog from `GET /pl/course/:course_id/course_agent/actions`, so a new action needs no Worker change. Both tools are native dynamic tools, registered when a thread starts.
+
+`request_course_action({ action, input })` assigns the request an ID and posts it to `POST /pl/course/:course_id/course_agent/actions/:action`, authenticated like course data requests. PrairieLearn validates the input, checks the instructor's permission, builds the card the instructor will see from the rows the request names, and records all of it in `course_agent_actions`. That request changes nothing in the course. A request PrairieLearn refuses fails the tool call with a message the model can act on.
+
+A recorded request takes the conversation's review slot, with an empty snapshot and `action` set: new messages wait for it, only one review or request can wait at a time, and its result is recorded and delivered by the same code, tagged `review:<id>`. Chat history shows it as a `data-action` part (`ActionPartSchema`) holding its ID and, under `always_approve`, `autoApprove`; the card loads the rest from PrairieLearn. `getReview` returns null for a request, since PrairieLearn holds it.
+
+The instructor decides through the same endpoint as a file review. PrairieLearn claims the decision in `course_agent_reviews` under the request's ID, so the first decision wins, then runs the action in that browser request with the instructor's permissions, and records and delivers a `CourseActionResultSchema` result. The service token never changes course state. An approval PrairieLearn lost before recording a result is delivered as `unknown`, and the agent is told to check before requesting again. A denial by message is delivered with the message's turn, as for a review.
+
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:

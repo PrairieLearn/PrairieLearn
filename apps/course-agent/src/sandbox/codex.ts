@@ -53,12 +53,12 @@ const ItemEvent = z.object({
   item: z.looseObject({ id: z.string(), type: z.string() }),
 });
 /**
- * `request_changes` shows as a review card, and an offered page or reload as its own part; only a
- * failed call needs a tool entry.
+ * `request_changes` and `request_course_action` show as cards, and an offered page or reload as
+ * its own part; only a failed call needs a tool entry.
  */
 const CardToolItem = z.object({
   type: z.literal('dynamicToolCall'),
-  tool: z.enum(['request_changes', 'offer_page', 'offer_reload']),
+  tool: z.enum(['request_changes', 'request_course_action', 'offer_page', 'offer_reload']),
   success: z.boolean().nullable(),
 });
 /** A dynamic tool call from Codex; each tool validates its own arguments. */
@@ -76,6 +76,21 @@ const CourseDataArguments = CourseDataQuerySchema.extend({
   dataset: z.string().describe('Dataset to download, from list_course_datasets.'),
 });
 export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
+
+const ListCourseActionsArguments = z.strictObject({});
+const CourseActionArguments = z.strictObject({
+  action: z.string().describe('Action to request, from list_course_actions.'),
+  input: z
+    .record(z.string(), z.unknown())
+    .describe("The action's input, as list_course_actions describes it."),
+});
+export type CourseActionRequest = z.infer<typeof CourseActionArguments>;
+
+/** Serves the course action tools; replies go to the model. */
+export interface CourseActionTools {
+  listCourseActions(): Promise<ToolReply>;
+  requestCourseAction(request: CourseActionRequest): Promise<ToolReply>;
+}
 
 /** Serves the course data tools; replies go to the model. */
 export interface CourseDataTools {
@@ -152,6 +167,7 @@ export class CodexAppServerClient {
     private courseData: CourseDataTools,
     /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
     private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
+    private courseActions: CourseActionTools,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -292,6 +308,16 @@ export class CodexAppServerClient {
         if (!request.success) return invalidArguments(request.error);
         return await replyWithError(() => this.courseData.getCourseData(request.data));
       }
+      case listCourseActionsTool.name: {
+        const request = ListCourseActionsArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseActions.listCourseActions());
+      }
+      case courseActionTool.name: {
+        const request = CourseActionArguments.safeParse(call.data.arguments);
+        if (!request.success) return invalidArguments(request.error);
+        return await replyWithError(() => this.courseActions.requestCourseAction(request.data));
+      }
       case requestChangesTool.name: {
         // The tool is offered only when reviews are handled, so this call is a protocol error.
         if (!this.onReview) throw new Error('Review handling is not configured');
@@ -394,6 +420,8 @@ export class CodexAppServerClient {
               ...(this.onReview ? [requestChangesTool] : []),
               listCourseDatasetsTool,
               courseDataTool,
+              listCourseActionsTool,
+              courseActionTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
               offerReloadTool,
             ],
@@ -603,6 +631,22 @@ const courseDataTool = {
   description:
     "Download the selected columns of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. To narrow results to a course instance, assessment, or question, filter by course_instance_short_name, assessment_tid, or qid, the directory names in the course files; there is no need to look up IDs first. The reply gives the file's path and row count, and says if the file does not hold every matching row.",
   inputSchema: toolInputSchema(CourseDataArguments),
+} satisfies DynamicToolSpec;
+
+const listCourseActionsTool = {
+  type: 'function',
+  name: 'list_course_actions',
+  description:
+    'List the actions request_course_action can request, which change things in PrairieLearn that course files do not hold, such as closing issues. Each entry says what the action does, what staff and students notice, how to undo it, and what input it takes.',
+  inputSchema: toolInputSchema(ListCourseActionsArguments),
+} satisfies DynamicToolSpec;
+
+const courseActionTool = {
+  type: 'function',
+  name: 'request_course_action',
+  description:
+    'Ask PrairieLearn to carry out one action from list_course_actions for the instructor. PrairieLearn checks the request and shows the instructor exactly what it will change; nothing changes until they approve. Make this your last tool call of the turn. The decision and result arrive in a later message, and only one request can wait at a time.',
+  inputSchema: toolInputSchema(CourseActionArguments),
 } satisfies DynamicToolSpec;
 
 const requestChangesTool = {

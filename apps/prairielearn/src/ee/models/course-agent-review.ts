@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { RequestChangesResult } from '@prairielearn/course-agent-types';
+import type { ReviewResult } from '@prairielearn/course-agent-types';
 import {
   execute,
   loadSqlEquiv,
@@ -30,7 +30,7 @@ export async function insertCourseAgentReview({
   agent_review_id: string;
   decision: EnumCourseAgentReviewDecision;
   job_sequence_id: string | null;
-  result: RequestChangesResult | null;
+  result: ReviewResult | null;
 }) {
   return await queryOptionalRow(
     sql.insert_course_agent_review,
@@ -59,7 +59,7 @@ export async function updateCourseAgentReviewResult({
   result,
 }: {
   id: string;
-  result: RequestChangesResult;
+  result: ReviewResult;
 }) {
   return await queryOptionalRow(
     sql.update_course_agent_review_result,

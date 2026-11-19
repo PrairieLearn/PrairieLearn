@@ -1,10 +1,12 @@
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
+import { z } from 'zod';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { COURSE_DATA_DATASETS } from '../ee/routers/courseAgentData/datasets.js';
 import { config } from '../lib/config.js';
+import { insertIssue } from '../lib/issues.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import * as helperExam from './helperExam.js';
@@ -131,6 +133,18 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
   test('every dataset returns rows that match its schema exactly', async function () {
     dataUrl = `${locals.baseUrl}/course/1/course_agent/data`;
     owner = await staffHeaders('owner@example.com', 'Owner');
+    const [variant] = await getRows(`${dataUrl}/variants`, owner, { select: ['id', 'user_id'] });
+    await insertIssue({
+      variantId: z.string().parse(variant.id),
+      studentMessage: 'The answer box does not accept negative numbers.',
+      instructorMessage: 'student-reported issue',
+      manuallyReported: true,
+      courseCaused: true,
+      courseData: {},
+      systemData: {},
+      userId: z.string().parse(variant.user_id),
+      authnUserId: z.string().parse(variant.user_id),
+    });
     for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${dataUrl}/${name}`, owner, {
         select: Object.keys(dataset.schema.shape),

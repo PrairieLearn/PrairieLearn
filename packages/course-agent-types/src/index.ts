@@ -450,3 +450,98 @@ export const NavigationPartSchema = z.object({
 });
 
 export type NavigationPart = z.infer<typeof NavigationPartSchema>;
+
+/**
+ * What the chat shows for a course action the agent requested. PrairieLearn builds it from the
+ * validated request and the rows it names, so the instructor decides on what PrairieLearn will
+ * do rather than on the agent's description of it.
+ */
+export const CourseActionCardSchema = z.strictObject({
+  /** What will happen, such as `Close 3 issues`. */
+  title: z.string().min(1).max(200),
+  /** Where it happens, such as `Exam 1 · Fa26`, when the title does not say. */
+  context: z.string().max(300).nullable(),
+  /** What is affected, one line each. */
+  rows: z
+    .array(z.strictObject({ label: z.string().max(300), detail: z.string().max(300).nullable() }))
+    .max(20),
+  /** Affected things beyond `rows`. */
+  moreRows: z.number().int().nonnegative(),
+  /** How to reverse the action, or null when it cannot be reversed. */
+  undo: z.string().max(500).nullable(),
+});
+
+export type CourseActionCard = z.infer<typeof CourseActionCardSchema>;
+
+/** The actions the agent can request, as PrairieLearn's catalog endpoint lists them. */
+export const CourseActionCatalogSchema = z.object({
+  version: z.number(),
+  actions: z.record(
+    z.string(),
+    z.object({
+      group: z.string(),
+      description: z.string(),
+      effects: z.string(),
+      undo: z.string().nullable(),
+      /** JSON Schema of the action's input. */
+      input: z.looseObject({}),
+    }),
+  ),
+});
+
+export type CourseActionCatalog = z.infer<typeof CourseActionCatalogSchema>;
+
+/** A course action request. The agent service assigns `id`, which also keys its result. */
+export const CourseActionRequestSchema = z.strictObject({
+  id: z.uuid(),
+  input: z.unknown(),
+});
+
+/** PrairieLearn's reply to a course action request it recorded. */
+export const CourseActionRequestReplySchema = z.object({ card: CourseActionCardSchema });
+
+/**
+ * The outcome of a course action request. An action occupies the conversation's review slot, so
+ * its result is recorded and delivered like a review's.
+ */
+export const CourseActionResultSchema = z
+  .strictObject({
+    decision: z.enum(['approved', 'denied']),
+    action: z.strictObject({ name: z.string().max(100), title: z.string().max(200) }),
+    outcome: z.discriminatedUnion('status', [
+      z.strictObject({ status: z.literal('not_attempted') }),
+      z.strictObject({ status: z.literal('succeeded'), summary: z.string() }),
+      z.strictObject({ status: z.literal('failed'), error: z.string() }),
+      // PrairieLearn lost track of the action before recording how it ended.
+      z.strictObject({ status: z.literal('unknown') }),
+    ]),
+    /** As for a review: the instructor denied by sending a chat message. */
+    viaMessage: z.literal(true).optional(),
+  })
+  .refine((result) =>
+    result.decision === 'denied'
+      ? result.outcome.status === 'not_attempted'
+      : !result.viaMessage && result.outcome.status !== 'not_attempted',
+  );
+
+export type CourseActionResult = z.infer<typeof CourseActionResultSchema>;
+
+/** What the review slot delivers to the agent: the result of a file review or of an action. */
+export const ReviewResultSchema = z.union([RequestChangesResultSchema, CourseActionResultSchema]);
+
+export type ReviewResult = z.infer<typeof ReviewResultSchema>;
+
+export function isCourseActionResult(result: ReviewResult): result is CourseActionResult {
+  return 'action' in result;
+}
+
+/**
+ * A `data-action` part, which shows a requested course action in chat history by ID. The card
+ * loads everything else from PrairieLearn. `autoApprove` is as for a `data-review` part.
+ */
+export const ActionPartSchema = z.object({
+  actionId: z.string(),
+  autoApprove: z.boolean().optional(),
+});
+
+export type ActionPart = z.infer<typeof ActionPartSchema>;

@@ -20,6 +20,7 @@ import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import {
+  ActionPartSchema,
   type ApprovalMode,
   ApprovalModeSchema,
   type ConversationState,
@@ -39,6 +40,7 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import { ActionCard } from './ActionCard.js';
 import {
   type DraftAttachment,
   DraftAttachmentList,
@@ -421,7 +423,9 @@ function Chat({
     pendingReview &&
     agentIdle &&
     (review.data?.status === 'pending' ||
-      (review.data?.status === 'decided' && review.data.result?.viaMessage === true));
+      (review.data?.status === 'decided' && review.data.result?.viaMessage === true) ||
+      (review.data?.status === 'action' &&
+        (review.data.decision === null || review.data.result?.viaMessage === true)));
   const deny = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
@@ -557,8 +561,10 @@ function Chat({
   // waits for the turn to end rather than moving down as that text arrives. A review being
   // delivered is already decided and stays shown.
   const turnRunning = canStop;
-  const hiddenReviewId =
-    turnRunning && review.data?.status !== 'decided' ? (lifecycle.reviewId ?? null) : null;
+  const reviewDecided =
+    review.data?.status === 'decided' ||
+    (review.data?.status === 'action' && review.data.decision !== null);
+  const hiddenReviewId = turnRunning && !reviewDecided ? (lifecycle.reviewId ?? null) : null;
   const inputRequestOpen =
     !turnRunning &&
     latest?.role === 'assistant' &&
@@ -618,7 +624,16 @@ function Chat({
           {historyReady &&
             lifecycle?.reviewId &&
             lifecycle.reviewId !== hiddenReviewId &&
-            !reviewInHistory(messages, lifecycle.reviewId) && (
+            !reviewInHistory(messages, lifecycle.reviewId) &&
+            (review.data?.status === 'action' ? (
+              <ActionCard
+                conversationId={conversationId}
+                actionId={lifecycle.reviewId}
+                canResume={awaitingReviewId === lifecycle.reviewId}
+                autoApprove={false}
+                onAlwaysApprove={() => changeApprovalMode('always_approve')}
+              />
+            ) : (
               <RequestChangesCard
                 conversationId={conversationId}
                 reviewId={lifecycle.reviewId}
@@ -626,7 +641,7 @@ function Chat({
                 autoApprove={false}
                 onAlwaysApprove={() => changeApprovalMode('always_approve')}
               />
-            )}
+            ))}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
           {lifecycle?.status === 'blocked' && (
             <BlockedNotice
@@ -924,8 +939,10 @@ function reviewInHistory(messages: UIMessage[], reviewId: string) {
   return messages.some((message) =>
     message.parts.some(
       (part) =>
-        part.type === 'data-review' &&
-        ReviewPartSchema.safeParse(part.data).data?.reviewId === reviewId,
+        (part.type === 'data-review' &&
+          ReviewPartSchema.safeParse(part.data).data?.reviewId === reviewId) ||
+        (part.type === 'data-action' &&
+          ActionPartSchema.safeParse(part.data).data?.actionId === reviewId),
     ),
   );
 }
@@ -996,6 +1013,7 @@ function Message({
   // the end of the message.
   type Card =
     | { kind: 'review'; reviewId: string; autoApprove: boolean }
+    | { kind: 'action'; actionId: string; autoApprove: boolean }
     | { kind: 'input'; key: string; request: InputRequestPart };
   const renderCard = (card: Card) =>
     card.kind === 'review' ? (
@@ -1006,6 +1024,15 @@ function Message({
         reviewId={card.reviewId}
         canResume={awaitingReviewId === card.reviewId}
         // Switching back to requiring approval also applies to a review already submitted.
+        autoApprove={card.autoApprove && approvalMode === 'always_approve'}
+        onAlwaysApprove={() => onAlwaysApprove('always_approve')}
+      />
+    ) : card.kind === 'action' ? (
+      <ActionCard
+        key={`action-${card.actionId}`}
+        conversationId={conversationId}
+        actionId={card.actionId}
+        canResume={awaitingReviewId === card.actionId}
         autoApprove={card.autoApprove && approvalMode === 'always_approve'}
         onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
@@ -1047,6 +1074,11 @@ function Message({
       if (reviewId !== hiddenReviewId) {
         cards.push({ kind: 'review', reviewId, autoApprove: autoApprove === true });
       }
+    } else if (part.type === 'data-action') {
+      const { actionId, autoApprove } = ActionPartSchema.parse(part.data);
+      if (actionId !== hiddenReviewId) {
+        cards.push({ kind: 'action', actionId, autoApprove: autoApprove === true });
+      }
     } else if (part.type === 'data-input-request') {
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
@@ -1055,7 +1087,7 @@ function Message({
       cards = [];
     }
   }
-  rendered.push(...cards.filter((card) => card.kind === 'review' || !turnRunning).map(renderCard));
+  rendered.push(...cards.filter((card) => card.kind !== 'input' || !turnRunning).map(renderCard));
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;
   return <div className="d-flex flex-column gap-2">{rendered}</div>;

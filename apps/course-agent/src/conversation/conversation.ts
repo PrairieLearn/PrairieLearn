@@ -10,15 +10,16 @@ import { type UIMessage, createUIMessageStreamResponse, parseJsonEventStream } f
 import { z } from 'zod';
 
 import {
+  type ActionPart,
   type ApprovalMode,
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
   type PageCatalog,
-  type RequestChangesResult,
-  RequestChangesResultSchema,
   type Review,
   type ReviewPart,
+  type ReviewResult,
+  ReviewResultSchema,
   type ReviewSnapshot,
   type Usage,
   UsageDecisionSchema,
@@ -27,12 +28,18 @@ import {
   UserMessageMetadataSchema,
   addUsage,
   emptyUsage,
+  isCourseActionResult,
   isEmptyUsage,
   reviewTag,
 } from '@prairielearn/course-agent-types';
 
 import { logEvent, reportError } from '../monitoring.js';
-import { CodexAppServerClient, type TurnInput } from '../sandbox/codex.js';
+import {
+  CodexAppServerClient,
+  type CourseActionRequest,
+  type ToolReply,
+  type TurnInput,
+} from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
@@ -61,6 +68,11 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
+import {
+  describeRequestedAction,
+  listCourseActions,
+  requestCourseAction,
+} from './course-actions.js';
 import { getCourseData, listCourseDatasets } from './course-data.js';
 import { buildInstructions, describePageLocation } from './instructions.js';
 import { resolveNavigation } from './navigation.js';
@@ -185,7 +197,9 @@ interface ReviewRecord {
   id: string;
   /** Contents are placeholders; per-file KV entries keep durable values small. */
   snapshot: ReviewSnapshot;
-  result: RequestChangesResult | null;
+  result: ReviewResult | null;
+  /** A requested course action, which has no files; `snapshot` is then empty. */
+  action?: true;
   /**
    * Set when a delivery turn ends without the agent receiving the result (stopped or failed),
    * so only Resume retries it, even across wakes, rather than repeating a failing delivery.
@@ -212,6 +226,8 @@ interface RecordData {
    * the denial with that message, which the browser sends once PrairieLearn records the denial.
    */
   deniedByMessage?: string | null;
+  /** The title of the course action that `deniedByMessage` denied, if it was one. */
+  deniedAction?: string | null;
   /** Set by the browser, directly or with a user message; absent means `approval_required`. */
   approvalMode?: ApprovalMode;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
@@ -980,7 +996,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         : {
             tag: messageTag(message!.id),
             text: formatRequest(
-              deniedReviewId ? describeDenialMessage(messageText) : messageText,
+              deniedReviewId
+                ? describeDenialMessage(messageText, this.record.deniedAction ?? null)
+                : messageText,
               attachments,
               images,
             ),
@@ -1021,6 +1039,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           getCourseData({ ...this.prairieLearnContext(), sandbox: this.sandbox, request }),
       },
       (target) => resolveNavigation(this.prairieLearnContext(), target),
+      {
+        listCourseActions: () => listCourseActions(this.prairieLearnContext()),
+        requestCourseAction: (request) => this.requestCourseAction(request),
+      },
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
@@ -1074,6 +1096,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           nativeThreadId,
           threadMayBeBehind: false,
           deniedByMessage: deniedReviewId ? null : this.record.deniedByMessage,
+          deniedAction: deniedReviewId ? null : this.record.deniedAction,
         });
         if (nativeTurnId) this.stash({ nativeTurnId });
         if (delivered?.result) {
@@ -1383,6 +1406,50 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     };
   }
 
+  /**
+   * Record a course action the agent requested. PrairieLearn checks and holds the request; here it
+   * takes the review slot, so new messages wait for its result as they do for a file review.
+   */
+  private async requestCourseAction(request: CourseActionRequest): Promise<ToolReply> {
+    if (this.record.review) {
+      return {
+        success: false,
+        text: 'An earlier request is still waiting for the instructor. Their decision arrives in a later message; request this after that.',
+      };
+    }
+    const turn = this.active;
+    const id = crypto.randomUUID();
+    const reply = await requestCourseAction(this.prairieLearnContext(), { id, ...request });
+    if ('error' in reply) return { success: false, text: reply.error };
+    // Parallel calls can each pass the first check while PrairieLearn answers.
+    if (this.record.review) {
+      return { success: false, text: 'Another request is already waiting for the instructor.' };
+    }
+    // A turn that stopped or failed meanwhile can no longer show the request, so it must not
+    // record one. Recording and showing it below happen without an intervening await.
+    if (!turn || this.active !== turn || turn.stop || !this.native?.streaming) {
+      return { success: false, text: 'The turn ended before the action was requested.' };
+    }
+    this.setRecord({
+      ...this.record,
+      review: {
+        id,
+        action: true,
+        snapshot: { type: 'local', additions: [], deletions: [] },
+        result: null,
+        waitsForResume: false,
+      },
+    });
+    // Chat history shows the request by ID; PrairieLearn holds what it asks and its outcome.
+    const autoApprove = this.record.approvalMode === 'always_approve';
+    this.native?.emit({
+      type: 'data-action',
+      id,
+      data: { actionId: id, ...(autoApprove ? { autoApprove } : {}) } satisfies ActionPart,
+    });
+    return { success: true, text: describeRequestedAction(reply.card, autoApprove) };
+  }
+
   private reviewFiles(review: ReviewRecord) {
     return review.snapshot.additions.map((file, index) => ({
       path: file.path,
@@ -1402,7 +1469,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
 
   /** Before the agent continues, make saved local files the next review's baseline. */
   private async advanceLocalBaseline(review: ReviewRecord) {
-    if (review.result?.publication.status !== 'saved_locally') return;
+    if (!review.result || isCourseActionResult(review.result)) return;
+    if (review.result.publication.status !== 'saved_locally') return;
     await this.sandbox.advanceLocalBaseline([
       ...this.reviewFiles(review),
       ...review.snapshot.deletions.map((file) => ({ path: file.path, contents: null })),
@@ -1412,7 +1480,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** The review remains available without restoring or waking a sandbox. */
   getReview(reviewId: string): Review | null {
     const review = this.record.review;
-    if (review?.id !== reviewId) return null;
+    // PrairieLearn holds a requested action itself, so there is no snapshot to hand it.
+    if (review?.id !== reviewId || review.action) return null;
     return { id: review.id, snapshot: { ...review.snapshot, additions: this.reviewFiles(review) } };
   }
 
@@ -1420,20 +1489,24 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * Save PrairieLearn's result and deliver it when the sandbox is free. A result for a review the
    * agent already received is acknowledged again; a different result for this review is refused.
    */
-  recordReviewResult(reviewId: string, result: RequestChangesResult): boolean {
+  recordReviewResult(reviewId: string, result: ReviewResult): boolean {
     const review = this.record.review;
     if (review?.id !== reviewId) return true;
     if (review.result) {
       // Parsing orders keys by schema, so equal results serialize equally.
       return (
-        JSON.stringify(RequestChangesResultSchema.parse(review.result)) ===
-        JSON.stringify(RequestChangesResultSchema.parse(result))
+        JSON.stringify(ReviewResultSchema.parse(review.result)) ===
+        JSON.stringify(ReviewResultSchema.parse(result))
       );
     }
     if (result.viaMessage) {
       // The browser sends the message next; its turn delivers the denial instead of a turn here.
       this.settleReview(reviewId);
-      this.setRecord({ ...this.record, deniedByMessage: reviewId });
+      this.setRecord({
+        ...this.record,
+        deniedByMessage: reviewId,
+        deniedAction: isCourseActionResult(result) ? result.action.title : null,
+      });
       return true;
     }
     this.setRecord({ ...this.record, review: { ...review, result } });

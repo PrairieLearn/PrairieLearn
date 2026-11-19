@@ -87,6 +87,8 @@ The Worker serves both tools from PrairieLearn's internal course data route (`/p
 
 The Worker calls PrairieLearn's API at the origin in `PL_SERVICE_URL` to resolve the pages the agent offers to open (`/pl/api/v1/course/:course_id/agent_navigation`). It authenticates with `PL_SERVICE_TOKEN` and names the conversation, and PrairieLearn applies that conversation's user's permissions, only for the conversation's course. The container itself never calls PrairieLearn.
 
+It also requests course actions for the agent (`/pl/course/:course_id/course_agent/actions`), authenticated the same way. A request only records what the agent asked; PrairieLearn carries an action out when the instructor approves it in their own browser. See [Course actions](CONTRACT.md#course-actions).
+
 ## Usage limits
 
 The Worker meters the agent's model requests and web searches and reports them to PrairieLearn at `POST /pl/api/course-agent/conversations/{id}/usage`, which answers whether the agent may continue. PrairieLearn prices token usage with `costPerMillionTokens` and each web search command at `courseAgentWebSearchCallCostDollars`, records each report once in `course_agent_usage_reports`, and limits each user to `courseAgentRateLimitDollars` ($50 by default) per UTC hour across courses and conversations.
