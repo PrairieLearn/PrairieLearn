@@ -64,8 +64,11 @@ export function StudentAvailableCredit({
   const credit = authzResult.credit_date_string ?? 'None';
   const schedule = buildSchedule({ authzResult, modernAccessControl, displayTimezone });
 
-  // A single-row schedule says nothing that the credit text doesn't already say.
-  if (schedule.rows.length < 2) return html`${credit}`;
+  // A single-row schedule usually says nothing that the credit text doesn't
+  // already say. The exception is when there is no credit, since the text then
+  // omits the date that the row would show.
+  const hasSchedule = schedule.rows.length > 1 || (schedule.rows.length === 1 && credit === 'None');
+  if (!hasSchedule) return html`${credit}`;
 
   // The popover moves focus to the `autofocus` element when it opens. Focusing
   // the start of the content, rather than the close button, lets screen reader
