@@ -41,8 +41,8 @@
   },
   "scripts/examTimeLimitCountdown.ts": {
     "raw": 6682,
-    "gzip": 3023,
-    "brotli": 2636
+    "gzip": 3022,
+    "brotli": 2640
   },
   "scripts/externalImageCaptureClient.ts": {
     "raw": 45461,
@@ -125,9 +125,9 @@
     "brotli": 757
   },
   "scripts/question.ts": {
-    "raw": 74783,
-    "gzip": 23590,
-    "brotli": 21138
+    "raw": 74904,
+    "gzip": 23615,
+    "brotli": 21125
   },
   "scripts/studentAssessmentClient.ts": {
     "raw": 564,
