@@ -658,6 +658,77 @@ export function AssessmentQuestionTable({
     allAiAgreementItems,
   });
 
+  const tagForGradingDropdown = (
+    <Dropdown>
+      <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
+        <i className="fas fa-tags" aria-hidden="true" />{' '}
+        <span className="d-none d-sm-inline">Tag for grading</span>
+      </Dropdown.Toggle>
+      <Dropdown.Menu align="end">
+        <Dropdown.Header className="d-flex align-items-center gap-1">
+          Assign for grading
+          <OverlayTrigger
+            tooltip={{
+              body: <>Only staff with student data editor permissions can be assigned as graders</>,
+              props: { id: 'assign-for-grading-tooltip' },
+            }}
+          >
+            <span>
+              <i className="fas fa-question-circle text-secondary" />
+            </span>
+          </OverlayTrigger>
+        </Dropdown.Header>
+        {courseStaff.map((grader) => (
+          <Dropdown.Item
+            key={grader.id}
+            onClick={() =>
+              setAssignedGraderMutation.mutate({
+                assigned_grader: grader.id,
+                instance_question_ids: selectedIds,
+              })
+            }
+          >
+            <i className="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+          </Dropdown.Item>
+        ))}
+        <Dropdown.Item
+          key="remove-grader-assignment"
+          onClick={() =>
+            setAssignedGraderMutation.mutate({
+              assigned_grader: null,
+              instance_question_ids: selectedIds,
+            })
+          }
+        >
+          <i className="fas fa-user-slash" /> Remove grader assignment
+        </Dropdown.Item>
+        <Dropdown.Divider />
+        <Dropdown.Item
+          key="tag-as-required-grading"
+          onClick={() =>
+            setRequiresManualGradingMutation.mutate({
+              requires_manual_grading: true,
+              instance_question_ids: selectedIds,
+            })
+          }
+        >
+          <i className="fas fa-tag" /> Tag as required grading
+        </Dropdown.Item>
+        <Dropdown.Item
+          key="tag-as-graded"
+          onClick={() =>
+            setRequiresManualGradingMutation.mutate({
+              requires_manual_grading: false,
+              instance_question_ids: selectedIds,
+            })
+          }
+        >
+          <i className="fas fa-check-square" /> Tag as graded
+        </Dropdown.Item>
+      </Dropdown.Menu>
+    </Dropdown>
+  );
+
   return (
     <>
       <div className="mb-3">
@@ -772,6 +843,7 @@ export function AssessmentQuestionTable({
           hasCourseInstancePermissionEdit ? (
             aiGradingMode ? (
               <>
+                {tagForGradingDropdown}
                 <Dropdown>
                   <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
                     <i className="bi bi-stars" aria-hidden="true" />
@@ -890,80 +962,7 @@ export function AssessmentQuestionTable({
                   ))}
               </>
             ) : (
-              <Dropdown>
-                <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
-                  <i className="fas fa-tags" aria-hidden="true" />{' '}
-                  <span className="d-none d-sm-inline">Tag for grading</span>
-                </Dropdown.Toggle>
-                <Dropdown.Menu align="end">
-                  <Dropdown.Header className="d-flex align-items-center gap-1">
-                    Assign for grading
-                    <OverlayTrigger
-                      tooltip={{
-                        body: (
-                          <>
-                            Only staff with student data editor permissions can be assigned as
-                            graders
-                          </>
-                        ),
-                        props: { id: 'assign-for-grading-tooltip' },
-                      }}
-                    >
-                      <span>
-                        <i className="fas fa-question-circle text-secondary" />
-                      </span>
-                    </OverlayTrigger>
-                  </Dropdown.Header>
-                  {courseStaff.map((grader) => (
-                    <Dropdown.Item
-                      key={grader.id}
-                      onClick={() =>
-                        setAssignedGraderMutation.mutate({
-                          assigned_grader: grader.id,
-                          instance_question_ids: selectedIds,
-                        })
-                      }
-                    >
-                      <i className="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid}
-                      )
-                    </Dropdown.Item>
-                  ))}
-                  <Dropdown.Item
-                    key="remove-grader-assignment"
-                    onClick={() =>
-                      setAssignedGraderMutation.mutate({
-                        assigned_grader: null,
-                        instance_question_ids: selectedIds,
-                      })
-                    }
-                  >
-                    <i className="fas fa-user-slash" /> Remove grader assignment
-                  </Dropdown.Item>
-                  <Dropdown.Divider />
-                  <Dropdown.Item
-                    key="tag-as-required-grading"
-                    onClick={() =>
-                      setRequiresManualGradingMutation.mutate({
-                        requires_manual_grading: true,
-                        instance_question_ids: selectedIds,
-                      })
-                    }
-                  >
-                    <i className="fas fa-tag" /> Tag as required grading
-                  </Dropdown.Item>
-                  <Dropdown.Item
-                    key="tag-as-graded"
-                    onClick={() =>
-                      setRequiresManualGradingMutation.mutate({
-                        requires_manual_grading: false,
-                        instance_question_ids: selectedIds,
-                      })
-                    }
-                  >
-                    <i className="fas fa-check-square" /> Tag as graded
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
+              tagForGradingDropdown
             )
           ) : (
             <></>
