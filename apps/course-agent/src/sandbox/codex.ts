@@ -77,6 +77,51 @@ const CourseDataArguments = CourseDataQuerySchema.extend({
 });
 export type CourseDataRequest = z.infer<typeof CourseDataArguments>;
 
+/** Filler that agents send instead of a real report, compared by letters and digits alone. */
+const PLACEHOLDERS = new Set([
+  '',
+  'na',
+  'none',
+  'noop',
+  'null',
+  'placeholder',
+  'tbd',
+  'test',
+  'todo',
+  'undefined',
+]);
+const ReportFeedbackArguments = z.strictObject({
+  task: z.string().trim().min(1).describe('A short phrase naming what staff asked you to do.'),
+  kind: z
+    .enum(['missing', 'broken', 'confusing', 'idea'])
+    .describe(
+      'missing: nothing available to you could do it; broken: a tool or PrairieLearn feature failed or behaved wrongly; confusing: a tool, a feature, or its documentation was unclear or misleading; idea: a suggestion.',
+    ),
+  impact: z
+    .enum(['blocked', 'worked_around', 'friction'])
+    .describe(
+      'blocked: you could not finish; worked_around: you finished another way; friction: you finished, but it was harder than it should be.',
+    ),
+  description: z
+    .string()
+    .trim()
+    .refine(
+      (text) => !PLACEHOLDERS.has(text.toLowerCase().replaceAll(/[^\p{L}\p{N}]/gu, '')),
+      'Describe what you tried and what went wrong, or skip this tool if there is nothing to report.',
+    )
+    .describe(
+      'What you tried, including commands or tool calls and any error, and what went wrong.',
+    ),
+  subject: z
+    .string()
+    .trim()
+    .optional()
+    .describe(
+      'The tool, PrairieLearn feature, element, or documentation page the feedback is about, if any.',
+    ),
+});
+export type AgentFeedback = z.infer<typeof ReportFeedbackArguments>;
+
 /** Serves the course data tools; replies go to the model. */
 export interface CourseDataTools {
   listCourseDatasets(): Promise<ToolReply>;
@@ -152,6 +197,8 @@ export class CodexAppServerClient {
     private courseData: CourseDataTools,
     /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
     private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
+    /** Passes the agent's feedback on to the PrairieLearn developers. */
+    private sendFeedback: (feedback: AgentFeedback) => void,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -308,6 +355,15 @@ export class CodexAppServerClient {
           success: true,
           text: 'The instructor sees a "Reload this page" button; do not describe it.',
         };
+      case reportFeedbackTool.name: {
+        const feedback = ReportFeedbackArguments.safeParse(call.data.arguments);
+        if (!feedback.success) return invalidArguments(feedback.error);
+        this.sendFeedback(feedback.data);
+        return {
+          success: true,
+          text: 'Feedback sent to the PrairieLearn developers, who do not reply to it.',
+        };
+      }
       default:
         throw new Error(`Unknown tool: ${call.data.tool}`);
     }
@@ -396,6 +452,7 @@ export class CodexAppServerClient {
               courseDataTool,
               ...(config.pages.length > 0 ? [navigateTool(config.pages)] : []),
               offerReloadTool,
+              reportFeedbackTool,
             ],
           } satisfies ThreadStartParams,
           ThreadResult,
@@ -652,6 +709,18 @@ const offerReloadTool = {
   description:
     'Show the instructor a button that reloads the PrairieLearn page they are viewing, for example so it shows changes that were saved and synced. Nothing changes until they click it.',
   inputSchema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+} satisfies DynamicToolSpec;
+
+/**
+ * When to give feedback is part of the tool rather than the instructions, which also reach
+ * threads started before this tool existed.
+ */
+const reportFeedbackTool = {
+  type: 'function',
+  name: 'report_feedback',
+  description:
+    'Tell the PrairieLearn developers, not course staff, about a problem with PrairieLearn or with your own tools: something you needed and could not do, a tool or PrairieLearn feature that failed or behaved wrongly, documentation that was missing or misleading, or an idea for an improvement. Also use it when staff ask you to pass their feedback on. Call it at most once per task, and only when something got in the way. Skip it when the work went fine, and never use it to log progress or to try it out. The developers do not reply and staff do not see it as a message, so still tell staff what you could not do. Describe the problem in general terms: never include student information, names of people, assessment answers, or secrets.',
+  inputSchema: toolInputSchema(ReportFeedbackArguments),
 } satisfies DynamicToolSpec;
 
 /** Models often send empty or null values for the params a page does not take. */

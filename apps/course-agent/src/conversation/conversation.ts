@@ -29,7 +29,7 @@ import {
   reviewTag,
 } from '@prairielearn/course-agent-types';
 
-import { logEvent, reportError } from '../monitoring.js';
+import { logEvent, reportError, reportFeedback } from '../monitoring.js';
 import { CodexAppServerClient, type TurnInput } from '../sandbox/codex.js';
 import type { CourseSource } from '../sandbox/sandbox.js';
 import { SandboxTurn } from '../sandbox/turn.js';
@@ -1006,6 +1006,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           getCourseData({ ...this.prairieLearnContext(), sandbox: this.sandbox, request }),
       },
       (target) => resolveNavigation(this.prairieLearnContext(), target),
+      (feedback) => reportFeedback(feedback, this.name),
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();

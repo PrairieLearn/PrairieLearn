@@ -77,3 +77,34 @@ export function reportError(error: unknown, tags?: Record<string, string>) {
   // including errors captured by background work after a handler has returned.
   Sentry.captureException(error, { tags });
 }
+
+/** Sentry rejects feedback longer than this. */
+const FEEDBACK_CHARS = 4096;
+
+/**
+ * What the agent reports with `report_feedback` goes to Sentry's User Feedback, next to the
+ * failures it often explains. Unlike error reports, this is text the agent wrote, and
+ * `beforeSend` does not run for feedback, so credentials are redacted here.
+ */
+export function reportFeedback(
+  feedback: { task: string; kind: string; impact: string; description: string; subject?: string },
+  conversationId: string,
+) {
+  logEvent('agent_feedback', { conversationId, kind: feedback.kind, impact: feedback.impact });
+  const message = [
+    `Task: ${feedback.task}`,
+    ...(feedback.subject ? [`About: ${feedback.subject}`] : []),
+    '',
+    feedback.description,
+  ].join('\n');
+  Sentry.captureFeedback({
+    source: 'course_agent',
+    name: 'Course agent',
+    message: redactSecrets(message).slice(0, FEEDBACK_CHARS),
+    tags: {
+      'feedback.kind': feedback.kind,
+      'feedback.impact': feedback.impact,
+      'course_agent.conversation': conversationId,
+    },
+  });
+}
