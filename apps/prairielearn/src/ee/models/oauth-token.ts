@@ -12,9 +12,9 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 
 const OauthTokenWithGrantSchema = z.object({
-  token: OauthTokenSchema,
-  grant: OauthGrantSchema,
-  client: OauthClientSchema,
+  oauth_token: OauthTokenSchema,
+  oauth_grant: OauthGrantSchema,
+  oauth_client: OauthClientSchema,
 });
 export type OauthTokenWithGrant = z.infer<typeof OauthTokenWithGrantSchema>;
 

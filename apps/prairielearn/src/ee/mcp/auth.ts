@@ -24,19 +24,19 @@ export async function verifyAccessToken(token: string): Promise<AuthInfo> {
   if (!row) throw new OAuthError(OAuthErrorCode.InvalidToken, 'The access token is not valid.');
 
   // Note that the grant was used, but don't make the request wait for it.
-  updateOauthGrantLastUsed(row.grant).catch((err) => {
+  updateOauthGrantLastUsed(row.oauth_grant).catch((err) => {
     Sentry.captureException(err);
     logger.error('Error updating OAuth grant last_used_at', err);
   });
 
   return {
     token,
-    clientId: row.client.client_id,
-    scopes: row.grant.scopes,
-    expiresAt: Math.floor(row.token.expires_at.getTime() / 1000),
+    clientId: row.oauth_client.client_id,
+    scopes: row.oauth_grant.scopes,
+    expiresAt: Math.floor(row.oauth_token.expires_at.getTime() / 1000),
     // The middleware refuses a token whose resource is not this server.
-    resource: new URL(row.grant.resource),
-    extra: { user_id: row.grant.user_id, oauth_grant_id: row.grant.id },
+    resource: new URL(row.oauth_grant.resource),
+    extra: { user_id: row.oauth_grant.user_id, oauth_grant_id: row.oauth_grant.id },
   };
 }
 

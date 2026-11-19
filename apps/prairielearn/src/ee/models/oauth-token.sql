@@ -20,10 +20,9 @@ VALUES
 
 -- BLOCK select_oauth_token_with_grant
 SELECT
-  to_jsonb(t.*) AS token,
-  to_jsonb(g.*) AS
-grant,
-to_jsonb(c.*) AS client
+  to_jsonb(t.*) AS oauth_token,
+  to_jsonb(g.*) AS oauth_grant,
+  to_jsonb(c.*) AS oauth_client
 FROM
   oauth_tokens AS t
   JOIN oauth_grants AS g ON (g.id = t.oauth_grant_id)

@@ -117,14 +117,14 @@ async function redeemSingleUseToken({
   client_id: string;
 }): Promise<OauthTokenWithGrant> {
   const row = await selectOptionalOauthTokenWithGrant(hashOauthToken(token));
-  if (!row || row.token.type !== type || row.client.client_id !== client_id) {
+  if (!row || row.oauth_token.type !== type || row.oauth_client.client_id !== client_id) {
     throw new OauthFlowError('invalid_grant', 'The code or refresh token is not valid.');
   }
-  if (!(await markOauthTokenUsed(row.token))) {
-    await revokeOauthGrant(row.grant);
+  if (!(await markOauthTokenUsed(row.oauth_token))) {
+    await revokeOauthGrant(row.oauth_grant);
     throw new OauthFlowError('invalid_grant', 'The code or refresh token was already used.');
   }
-  if (row.token.expires_at <= new Date() || !isActive(row.grant)) {
+  if (row.oauth_token.expires_at <= new Date() || !isActive(row.oauth_grant)) {
     throw new OauthFlowError('invalid_grant', 'The code or refresh token has expired.');
   }
   return row;
@@ -143,7 +143,11 @@ export async function exchangeAuthorizationCode({
   code_verifier: string;
   resource?: string;
 }) {
-  const { token, grant } = await redeemSingleUseToken({ token: code, type: 'code', client_id });
+  const { oauth_token: token, oauth_grant: grant } = await redeemSingleUseToken({
+    token: code,
+    type: 'code',
+    client_id,
+  });
   if (token.redirect_uri !== redirect_uri) {
     throw new OauthFlowError('invalid_grant', 'redirect_uri does not match the request.');
   }
@@ -163,7 +167,7 @@ export async function exchangeRefreshToken({
   refresh_token: string;
   client_id: string;
 }) {
-  const { grant } = await redeemSingleUseToken({
+  const { oauth_grant: grant } = await redeemSingleUseToken({
     token: refresh_token,
     type: 'refresh',
     client_id,
@@ -174,13 +178,13 @@ export async function exchangeRefreshToken({
 /** The access token's grant and client, or null if the token cannot be used. */
 export async function selectActiveAccessToken(token: string): Promise<OauthTokenWithGrant | null> {
   const row = await selectOptionalOauthTokenWithGrant(hashOauthToken(token));
-  if (row?.token.type !== 'access') return null;
-  if (row.token.expires_at <= new Date() || !isActive(row.grant)) return null;
+  if (row?.oauth_token.type !== 'access') return null;
+  if (row.oauth_token.expires_at <= new Date() || !isActive(row.oauth_grant)) return null;
   return row;
 }
 
 /** RFC 7009: revoking any of a grant's tokens ends the whole connection. */
 export async function revokeToken(token: string) {
   const row = await selectOptionalOauthTokenWithGrant(hashOauthToken(token));
-  if (row) await revokeOauthGrant(row.grant);
+  if (row) await revokeOauthGrant(row.oauth_grant);
 }
