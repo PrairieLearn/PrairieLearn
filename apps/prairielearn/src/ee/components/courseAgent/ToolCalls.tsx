@@ -40,19 +40,23 @@ type Verb =
   | 'look up'
   | 'summarize';
 
+/**
+ * Finished steps are worded as instructions, as the agent words the ones it labels itself, so a
+ * list of steps reads the same way throughout.
+ */
 const VERBS: Record<Verb, [running: string, done: string]> = {
   read: ['Reading', 'Read'],
-  list: ['Listing', 'Listed'],
-  search: ['Searching for', 'Searched for'],
-  browse: ['Browsing', 'Browsed'],
-  run: ['Running', 'Ran'],
-  edit: ['Editing', 'Edited'],
-  create: ['Creating', 'Created'],
-  delete: ['Deleting', 'Deleted'],
-  call: ['Calling', 'Called'],
-  check: ['Checking', 'Checked'],
-  'look up': ['Looking up', 'Looked up'],
-  summarize: ['Summarizing', 'Summarized'],
+  list: ['Looking through', 'Look through'],
+  search: ['Searching', 'Search'],
+  browse: ['Browsing', 'Browse'],
+  run: ['Running', 'Run'],
+  edit: ['Editing', 'Edit'],
+  create: ['Creating', 'Create'],
+  delete: ['Deleting', 'Delete'],
+  call: ['Calling', 'Call'],
+  check: ['Checking', 'Check'],
+  'look up': ['Looking up', 'Look up'],
+  summarize: ['Summarizing', 'Summarize'],
 };
 
 /** Codex runs commands through a login shell; the inner script is what the agent wrote. */
@@ -125,26 +129,14 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
           )),
         };
       }
+      // Staff read what a step was for; its command, query, or path is in the step's details.
       if (actions.length === 1 && action.type === 'listFiles') {
-        return { verb: 'list', subject: <Code>{action.path ?? 'files'}</Code> };
+        return { verb: 'list', subject: 'the course files' };
       }
       if (actions.length === 1 && action.type === 'search') {
-        return {
-          verb: 'search',
-          subject: (
-            <>
-              <Code>{action.query ?? 'files'}</Code>
-              {action.path && (
-                <>
-                  {' in '}
-                  <Code>{action.path}</Code>
-                </>
-              )}
-            </>
-          ),
-        };
+        return { verb: 'search', subject: 'the course files' };
       }
-      return { verb: 'run', subject: <Code>{unwrapShell(call.command).split('\n')[0]}</Code> };
+      return { verb: 'run', subject: 'a command' };
     }
     case 'fileChange': {
       const meta = changeMeta([call]);
@@ -169,13 +161,10 @@ function describe(call: ToolCall): { verb: Verb; subject: ReactNode; meta?: stri
  * page, or pattern. Opening a search result by reference, and a call still starting, have neither.
  */
 function describeWeb(action: string, text: string): { verb: Verb; subject: ReactNode } {
-  const lines = text.split('\n').filter(Boolean);
-  if (action === 'openPage' && lines.length > 0) {
-    return { verb: 'read', subject: <Code>{lines[0]}</Code> };
-  }
-  if ((action === 'search' || action === 'findInPage') && lines.length > 0) {
-    return { verb: 'search', subject: <Code>{lines.at(-1)}</Code> };
-  }
+  const known = text.split('\n').some(Boolean);
+  if (action === 'openPage' && known) return { verb: 'read', subject: 'a web page' };
+  if (action === 'findInPage' && known) return { verb: 'search', subject: 'a web page' };
+  if (action === 'search' && known) return { verb: 'search', subject: 'the web' };
   return { verb: 'browse', subject: 'the web' };
 }
 
