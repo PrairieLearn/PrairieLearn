@@ -21,6 +21,9 @@ def combine_images_from_metadata_dir(
             print(f"Loaded {file} with metadata: {metadata}")
 
             metadata_json = json.loads(metadata)
+            if not metadata_json["image.pushed"]:
+                continue
+
             digest = metadata_json["containerimage.digest"]
             image_name = metadata_json["image.name"]
 

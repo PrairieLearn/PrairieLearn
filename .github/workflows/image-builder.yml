@@ -56,6 +56,9 @@ jobs:
           IMAGES: ${{ inputs.images }}
           CACHE_ONLY: ${{ inputs.cache_images }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          # Only builds of merged code (master and code freeze branches) may
+          # create new Docker Hub repositories.
+          ALLOW_NEW_REPOSITORIES: ${{ github.event_name == 'push' }}
           CACHE_STRATEGY: ${{ github.ref == 'refs/heads/master' && 'update' || 'pull' }}
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           ONLY_CHANGED: true
