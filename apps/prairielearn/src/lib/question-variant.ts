@@ -219,7 +219,8 @@ async function selectQuestion(
   }
 }
 
-async function lockAssessmentInstanceForInstanceQuestion(
+/** Locks the enclosing assessment instance. The caller must be in a transaction. */
+export async function lockAssessmentInstanceForInstanceQuestion(
   instance_question_id: string,
 ): Promise<void> {
   const assessment_instance_id = await sqldb.queryOptionalScalar(

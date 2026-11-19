@@ -9,17 +9,20 @@ import {
   instrumentedWithMetrics,
   metrics,
 } from '@prairielearn/opentelemetry';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema, JsonFromStringSchema, parseRequestBody } from '@prairielearn/zod';
 
 import { features } from '../../lib/features/index.js';
 import { saveSubmission } from '../../lib/grading.js';
 import { parseSubmissionBody } from '../../lib/question-submission.js';
+import { lockAssessmentInstanceForInstanceQuestion } from '../../lib/question-variant.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { canCollectUnsavedSubmissions } from '../../lib/unsaved-submissions.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import {
   deleteUnsavedSubmission,
   deleteUnsavedSubmissions,
+  lockUnsavedSubmissionState,
   selectOptionalUnsavedSubmission,
   selectUnsavedSubmissionGeneration,
   upsertUnsavedSubmission,
@@ -128,45 +131,53 @@ const recoveryProcedure = t.procedure
 const restore = recoveryProcedure
   .input(z.object({ variant_id: IdSchema }))
   .mutation(async ({ input, ctx }) => {
-    const draft = await selectOptionalUnsavedSubmission({
-      instance_question_id: ctx.instance_question.id,
-      user_id: ctx.user.id,
-      variant_id: input.variant_id,
-    });
-    if (!draft) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Unsaved submission is no longer available',
-      });
-    }
-    const variant = await selectAndAuthzVariant({
-      unsafe_variant_id: draft.variant_id,
-      variant_course: ctx.course,
-      question_id: ctx.question.id,
-      course_instance_id: ctx.course_instance.id,
-      instance_question_id: ctx.instance_question.id,
-      authz_data: ctx.locals.authz_data,
-      authn_user: ctx.authn_user,
-      user: ctx.user,
-      is_administrator: ctx.locals.is_administrator,
-    });
-    if (!variant.open || variant.broken_at !== null) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Variant is not open' });
-    }
-    await saveSubmission(
-      {
-        variant_id: variant.id,
+    await runInTransactionAsync(async () => {
+      // Keep captures, saves, and discards from changing the draft during restoration.
+      await lockAssessmentInstanceForInstanceQuestion(ctx.instance_question.id);
+      await lockUnsavedSubmissionState({
+        instance_question_id: ctx.instance_question.id,
         user_id: ctx.user.id,
-        auth_user_id: ctx.authn_user.id,
-        submitted_answer: draft.raw_submitted_answer,
-        credit: ctx.authz_result.credit,
-        mode: ctx.locals.authz_data.mode,
-        client_fingerprint_id: await getClientFingerprintId(ctx.req, ctx.res),
-      },
-      variant,
-      ctx.question,
-      ctx.course,
-    );
+      });
+      const draft = await selectOptionalUnsavedSubmission({
+        instance_question_id: ctx.instance_question.id,
+        user_id: ctx.user.id,
+        variant_id: input.variant_id,
+      });
+      if (!draft) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Unsaved submission is no longer available',
+        });
+      }
+      const variant = await selectAndAuthzVariant({
+        unsafe_variant_id: draft.variant_id,
+        variant_course: ctx.course,
+        question_id: ctx.question.id,
+        course_instance_id: ctx.course_instance.id,
+        instance_question_id: ctx.instance_question.id,
+        authz_data: ctx.locals.authz_data,
+        authn_user: ctx.authn_user,
+        user: ctx.user,
+        is_administrator: ctx.locals.is_administrator,
+      });
+      if (!variant.open || variant.broken_at !== null) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Variant is not open' });
+      }
+      await saveSubmission(
+        {
+          variant_id: variant.id,
+          user_id: ctx.user.id,
+          auth_user_id: ctx.authn_user.id,
+          submitted_answer: draft.raw_submitted_answer,
+          credit: ctx.authz_result.credit,
+          mode: ctx.locals.authz_data.mode,
+          client_fingerprint_id: await getClientFingerprintId(ctx.req, ctx.res),
+        },
+        variant,
+        ctx.question,
+        ctx.course,
+      );
+    });
   });
 
 // oxlint-disable-next-line @prairielearn/require-trpc-permission-middleware

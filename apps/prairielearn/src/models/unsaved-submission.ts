@@ -20,6 +20,17 @@ import { lockVariant } from './variant.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/** Locks draft state until the caller's transaction finishes. */
+export async function lockUnsavedSubmissionState({
+  instance_question_id,
+  user_id,
+}: {
+  instance_question_id: string;
+  user_id: string;
+}): Promise<void> {
+  await execute(sql.lock_unsaved_submission_state, { instance_question_id, user_id });
+}
+
 export async function upsertUnsavedSubmission({
   variant_id,
   instance_question_id,
@@ -39,7 +50,7 @@ export async function upsertUnsavedSubmission({
 }): Promise<boolean> {
   return await runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
-    await execute(sql.lock_unsaved_submission_state, { instance_question_id, user_id });
+    await lockUnsavedSubmissionState({ instance_question_id, user_id });
     const id = await queryOptionalScalar(
       sql.upsert_unsaved_submission,
       {
@@ -69,7 +80,7 @@ export async function deleteUnsavedSubmission({
   generation: number;
 }) {
   await runInTransactionAsync(async () => {
-    await execute(sql.lock_unsaved_submission_state, { instance_question_id, user_id });
+    await lockUnsavedSubmissionState({ instance_question_id, user_id });
     await execute(sql.delete_unsaved_submission, {
       instance_question_id,
       user_id,

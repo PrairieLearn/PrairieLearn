@@ -32,3 +32,13 @@ WHERE
     WHERE
       id = $instance_question_id
   );
+
+-- BLOCK count_waiting_assessment_locks
+SELECT
+  count(*)::integer
+FROM
+  pg_stat_activity
+WHERE
+  datname = current_database()
+  AND wait_event_type = 'Lock'
+  AND query LIKE $query_pattern;

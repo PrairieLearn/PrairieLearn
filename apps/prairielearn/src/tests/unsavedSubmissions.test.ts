@@ -3,9 +3,18 @@ import { once } from 'node:events';
 import { type IncomingMessage, request } from 'node:http';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { withResolvers } from '@prairielearn/utils';
 
 import {
   getInstanceQuestionTrpcUrl,
@@ -20,6 +29,7 @@ import {
   selectUnsavedSubmissionGeneration,
   upsertUnsavedSubmission,
 } from '../models/unsaved-submission.js';
+import { lockVariant } from '../models/variant.js';
 import { createInstanceQuestionTrpcClient } from '../trpc/instanceQuestion/client.js';
 
 import * as helperClient from './helperClient.js';
@@ -367,6 +377,81 @@ describe('Unsaved submission collection', { concurrent: false }, () => {
         await seedRecoverableDraft();
         const response = await helperClient.saveOrGrade(instanceQuestionUrl, { c: '18' }, 'save');
         expect(response.status).toBe(200);
+        expect(await selectDraft()).toBeNull();
+      },
+    );
+  });
+
+  test('does not restore a draft cleared by an earlier queued save', async () => {
+    await withConfig(
+      { features: { 'unsaved-submissions-collection': true, 'unsaved-submissions-ui': true } },
+      async () => {
+        await seedRecoverableDraft();
+        const page = await helperClient.fetchCheerio(instanceQuestionUrl);
+        const csrfToken = page.$('form.question-form input[name="__csrf_token"]').attr('value')!;
+        // Keep the session so fingerprint changes do not introduce an earlier assessment lock.
+        const cookie = page.headers
+          .getSetCookie()
+          .map((value) => value.split(';')[0])
+          .join('; ');
+        const locked = withResolvers<undefined>();
+        const release = withResolvers<undefined>();
+        const holder = runInTransactionAsync(async () => {
+          await lockVariant({ variant_id: variantId });
+          locked.resolve(undefined);
+          await release.promise;
+        });
+        const pending: Promise<unknown>[] = [holder];
+        let saved!: Promise<unknown>;
+        let restored!: Promise<unknown>;
+        const waiting = (queryPattern: string) =>
+          queryScalar(
+            sql.count_waiting_assessment_locks,
+            { query_pattern: queryPattern },
+            z.number(),
+          );
+
+        try {
+          await Promise.race([locked.promise, holder]);
+          saved = fetch(instanceQuestionUrl, {
+            method: 'POST',
+            headers: { cookie },
+            body: new URLSearchParams({
+              __variant_id: variantId,
+              __action: 'save',
+              __csrf_token: csrfToken,
+              c: '23',
+            }),
+          }).then(
+            (response) => ({ response }),
+            (error: unknown) => ({ error }),
+          );
+          pending.push(saved);
+          await expect
+            .poll(() => waiting('%lock_assessment_instance AS%'), { timeout: 10_000 })
+            .toBe(1);
+
+          restored = createClient()
+            .unsavedSubmissions.restore.mutate({ variant_id: variantId })
+            .then(
+              () => ({ restored: true }),
+              (error: unknown) => ({ error }),
+            );
+          pending.push(restored);
+          await expect.poll(() => waiting('%assessment_instances%'), { timeout: 10_000 }).toBe(2);
+        } finally {
+          release.resolve(undefined);
+          await Promise.allSettled(pending);
+        }
+
+        expect(await saved).toMatchObject({ response: { status: 200 } });
+        const submission = await queryRow(
+          sql.select_latest_submission,
+          { variant_id: variantId },
+          SubmissionSchema,
+        );
+        expect(submission.raw_submitted_answer).toEqual({ c: '23' });
+        expect(await restored).toMatchObject({ error: { data: { code: 'NOT_FOUND' } } });
         expect(await selectDraft()).toBeNull();
       },
     );
