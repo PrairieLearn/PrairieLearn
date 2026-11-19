@@ -52,13 +52,28 @@ question's Settings page; editable, records `copiedFrom`, gets no later fixes).
   quizzes and finals, especially ones that are open or haven't run yet. Source
   sharing also exposes answers, `server.py`, tests, `clientFilesQuestion`, and
   any secrets in those files, such as API keys; flag secrets so they can be
-  removed and rotated. Make the safe choice your default (leave out the exam
-  questions, or wait until after the term). A general "go ahead" doesn't
-  confirm publishing assessed content: ask about it by name until the
-  instructor answers.
-- **Check before unsharing.** If another course uses a question, unsharing it is
-  blocked. Turning off source sharing is allowed. Say what is and isn't
-  possible instead of editing until sync fails.
+  removed and rotated. Make the safe choice your default: leave out questions
+  on this term's exams and quizzes that are open or haven't run yet, or wait
+  until after the term. Questions used only on past terms' assessments can be
+  shared; say which ones, since the course may reuse them, and let the
+  instructor decide. A general "go ahead" doesn't confirm publishing assessed
+  content: ask about it by name until the instructor answers.
+- **Ask before unsharing.** If another course uses a question shared by
+  reference or in a set, PrairieLearn won't let you unshare it or remove it
+  from the set, and the whole course fails to sync until the change is undone.
+  You can't see other courses, so you can't tell whether one uses it. Before
+  editing, say that, and give the options:
+  - keep sharing it
+  - ask the courses using it to copy it ("Make a copy" on its Settings page)
+    or stop using it, then unshare
+  - share a new copy from now on and keep the old one shared
+  - try the change; if the sync reports the question is in use, undo it in a
+    new review right away. The course keeps the approved change until that
+    review is approved, even if your checkout or `git diff` already shows the
+    old value, so always submit it
+
+  Edit only after the instructor chooses. Turning off source sharing alone is
+  always allowed.
 
 ## Do it
 
@@ -80,7 +95,8 @@ question's Settings page; editable, records `copiedFrom`, gets no later fixes).
 
    **Left out**
 
-   - <N> on this term's exams or quizzes (<which assessments>)
+   - <N> on this term's exams or quizzes (<which assessments, and whether
+     each has run yet>)
    - <N> that can't be shared: <a reason an instructor would recognize, such
      as "an older question format">
 
@@ -88,8 +104,12 @@ question's Settings page; editable, records `copiedFrom`, gets no later fixes).
    them, and the license, in a sentence or two>. <The owner-only step.>
    ```
 
-   Give counts, not names, for what you leave out, and offer the list. Leave
-   out anything the instructor doesn't need in order to decide. If anything is
+   For what you leave out, give counts and offer the list. When the request
+   itself is to publish an exam or quiz, or most of what it asks for is
+   assessed, name the questions that are on other assessments, and offer the
+   safer ways to share: after the term ends, or with named instructors through
+   a sharing set. Leave out anything the instructor doesn't need in order to
+   decide. If anything is
    irreversible or assessed, then ask one short question, with your default
    first, and wait for a yes; otherwise proceed. Ask only for what you need in
    order to act. The question shows as plain text, so keep the review out of
@@ -117,11 +137,19 @@ question's Settings page; editable, records `copiedFrom`, gets no later fixes).
 
 ## Use another course's question
 
-Add it to the assessment as `@<sharing-name>/<qid>`, which the other course's
-instructor provides. Its files aren't in this checkout, so you can't read or
-edit it. If the course needs to change it, the instructor copies it with
-**Make a copy** on the question's Settings page, and the copy gets no later
-fixes.
+Add it to the assessment as `@<sharing-name>/<qid>`. Its files aren't in this
+checkout, so you can't read it, edit it, or check that its QID exists or is
+shared with this course. Use the exact reference the instructor gives, from the
+other course or its public questions page; if they give only a title, ask for
+it rather than guessing a QID, even one that matches a pattern in the course.
+A wrong reference fails the sync.
+
+Before adding it, say in a sentence or two how it will be used:
+
+- **By reference** (the default): the other course keeps maintaining it, this
+  course gets its fixes, and nobody here can edit it.
+- **By copy**: the instructor uses **Make a copy** on the question's Settings
+  page to get an editable version that gets no later fixes.
 
 ## Hand off
 

@@ -34,7 +34,9 @@ those from the assessment's `infoAssessment.json`, and match questions by QID:
 
 - Number each entry in a zone's `questions` list from 1, continuing across
   zones. An entry with `alternatives` is a slot whose alternatives are numbered
-  in order, such as `6.1` and `6.2`.
+  in order, such as `6.1` and `6.2`. These are the numbers on the assessment's
+  **Questions** page. The `number` column in course data counts every
+  alternative separately, so don't use it for the numbers you report.
 - `numberChoose`, `bestQuestions`, and `maxPoints` on a zone or slot change how
   many questions each student gets and which ones count.
 - A points list, such as `"points": [10, 7, 5]`, is a retry schedule.
