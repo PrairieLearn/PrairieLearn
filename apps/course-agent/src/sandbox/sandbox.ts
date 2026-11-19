@@ -608,6 +608,8 @@ export class CourseSandbox extends DurableObject<Env> {
       byte.toString(16).padStart(2, '0'),
     ).join('');
     const started = Date.now();
+    // Codex tells the model the date from its own clock, and commands the agent runs inherit it.
+    const timezone = request.headers.get('X-Course-Timezone');
     this.process = await this.container.exec(
       [
         'codex-app-server',
@@ -623,7 +625,11 @@ export class CourseSandbox extends DurableObject<Env> {
         // Threads set their own cwd to the course. Home exists before course files are added, so
         // the runner can start while the repository is still being cloned.
         cwd: `${SESSION}/home`,
-        env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
+        env: {
+          HOME: `${SESSION}/home`,
+          CODEX_HOME: `${SESSION}/home/.codex`,
+          ...(timezone && { TZ: timezone }),
+        },
         stdout: 'ignore',
         stderr: 'ignore',
       },

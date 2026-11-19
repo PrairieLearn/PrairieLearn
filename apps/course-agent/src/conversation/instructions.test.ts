@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
-import { describePageLocation } from './instructions.js';
+import { buildInstructions, describePageLocation } from './instructions.js';
+
+describe('buildInstructions', () => {
+  const course = { courseTitle: 'Calculus', courseShortName: 'MATH 101' };
+
+  it('asks for times in the course timezone', () => {
+    expect(buildInstructions({ ...course, timezone: 'America/Denver' }, 'github')).toContain(
+      "The course's timezone is America/Denver.",
+    );
+  });
+
+  it('names no timezone for a conversation whose context has none', () => {
+    expect(buildInstructions(course, 'github')).not.toContain("course's timezone");
+    expect(buildInstructions(undefined, 'local')).not.toContain("course's timezone");
+  });
+});
 
 describe('describePageLocation', () => {
   it('names the page and the course items it belongs to', () => {
