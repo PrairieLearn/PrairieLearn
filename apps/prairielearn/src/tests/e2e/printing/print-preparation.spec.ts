@@ -8,16 +8,17 @@ import { z } from 'zod';
 
 import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../../lib/client/printing/print-snapshot.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
+import { finishPrintExport, insertPrintExport } from '../../../models/print-export.js';
 import { selectPrintFormQuestions } from '../../../models/print-form-question.js';
 import {
-  archivePrintForm,
   selectActivePrintFormsForAssessment,
   selectOptionalPrintForm,
 } from '../../../models/print-form.js';
 import { syncCourse } from '../../helperCourse.js';
-import { getOrCreateUser } from '../../utils/auth.js';
+import { getConfiguredUser, getOrCreateUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -380,6 +381,42 @@ test('keeps multiple export links after another file is queued and the page relo
   await expect(keyLink).toBeVisible({ timeout: 120_000 });
 });
 
+test('a stale export for one form does not block another form', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await openPrintPreparation(page, courseInstance.id);
+  await preparePreview(page);
+  const formAId = new URL(page.url()).searchParams.get('form')!;
+  await page.getByRole('button', { name: 'Add form', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Form B1 Previewing' })).toBeVisible();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+
+  const user = await getConfiguredUser();
+  const printExportId = await insertPrintExport({
+    assessmentId: assessment.id,
+    userId: user.id,
+    authnUserId: user.id,
+    format: 'pdf',
+    filename: 'stale-form-a.pdf',
+    label: 'Form A1 PDF',
+    inputKey: 'test-stale-form-a',
+  });
+  expect(
+    await finishPrintExport(printExportId, {
+      status: 'failed',
+      failureMessage: STALE_PRINT_SNAPSHOT_MESSAGE,
+    }),
+  ).toBe(true);
+
+  const url = new URL(page.url());
+  url.searchParams.set('form', formAId);
+  url.searchParams.set('export', printExportId);
+  await page.goto(url.href);
+  await page.getByRole('button', { name: 'Form B1', exact: true }).click();
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
+});
+
 test('creates a new form version when including a question after a download', async ({
   page,
   courseInstance,
@@ -716,13 +753,6 @@ test('combines current forms and answer keys with equal page counts and custom c
     .addCookies([{ name: 'pl_test_user', value: 'test_instructor', url: baseURL }]);
 
   const assessment = await openPrintPreparation(page, courseInstance.id);
-  await waitForFormA1(page);
-  for (const form of await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })) {
-    if (/^A[1-9]\d*$/.test(form.label)) continue;
-    await archivePrintForm({ printFormId: form.id, assessmentId: assessment.id });
-  }
-
-  await openPrintPreparation(page, courseInstance.id);
   await preparePreview(page);
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
   const originalLabel = await printFormLabel(page, originalFormId);
