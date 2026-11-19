@@ -21,7 +21,7 @@ import {
   type Attachment,
   UPLOADS_DIR,
   attachmentPath,
-  streamImageType,
+  imageType,
   uploadKey,
 } from '../conversation/attachments.js';
 import { logEvent } from '../monitoring.js';
@@ -459,8 +459,13 @@ export class CourseSandbox extends DurableObject<Env> {
       if (!SandboxFileError.is(error)) throw error;
       return { problem: fileProblem(error) };
     }
+    // The first chunk holds the image signature in practice; an image whose first chunk is shorter
+    // is shown as an ordinary file.
     const [head, body] = file.body!.tee();
-    const mediaType = await streamImageType(head);
+    const reader = head.getReader();
+    const { value } = await reader.read();
+    await reader.cancel();
+    const mediaType = value ? imageType(value) : null;
     // A file that changed size since it was measured fails here instead of being cut short.
     await this.env.CHECKPOINTS.put(key, body.pipeThrough(new FixedLengthStream(size)), {
       httpMetadata: mediaType ? { contentType: mediaType } : undefined,

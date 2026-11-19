@@ -187,19 +187,3 @@ export function imageType(bytes: Uint8Array) {
   if (startsWith(ascii('RIFF')) && startsWith(ascii('WEBP'), 8)) return 'image/webp';
   return null;
 }
-
-/** `imageType()` of a stream's first bytes. Reading stops there, and the stream is cancelled. */
-export async function streamImageType(stream: ReadableStream<Uint8Array>) {
-  const reader = stream.getReader();
-  const signature = new Uint8Array(IMAGE_SIGNATURE_BYTES);
-  let length = 0;
-  while (length < IMAGE_SIGNATURE_BYTES) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const piece = value.subarray(0, IMAGE_SIGNATURE_BYTES - length);
-    signature.set(piece, length);
-    length += piece.length;
-  }
-  await reader.cancel();
-  return imageType(signature.subarray(0, length));
-}
