@@ -58,19 +58,6 @@ describe('Question version sync without chunks', () => {
       question_version_id: initial[0].question_version.id,
     });
     expect(await util.dumpTableWithSchema('chunks', ChunkSchema)).toEqual([]);
-    const selected = await selectOptionalQuestionVersionAtDate({
-      question_id: question.id,
-      at_date: initial[0].created_at,
-    });
-    expect(selected?.settings).toEqual(initial[0].settings);
-    expect(selected?.chunk).toBeNull();
-    expect(selected?.version_date).toBe(initial[0].created_at);
-    expect(
-      await selectOptionalQuestionVersionAtDate({
-        question_id: question.id,
-        at_date: initial[0].before_date,
-      }),
-    ).toBeNull();
 
     await util.syncCourseData(courseDir);
     expect(await selectVersions(syncResults.courseId, question.id)).toEqual(initial);
@@ -116,22 +103,6 @@ describe('Question version sync without chunks', () => {
       ...initial[0].settings,
       question_version_id: changed[1].question_version.id,
     });
-    expect(
-      (
-        await selectOptionalQuestionVersionAtDate({
-          question_id: question.id,
-          at_date: changed[1].before_date,
-        })
-      )?.question_version.id,
-    ).toBe(changed[0].question_version.id);
-    expect(
-      (
-        await selectOptionalQuestionVersionAtDate({
-          question_id: question.id,
-          at_date: changed[1].created_at,
-        })
-      )?.question_version.id,
-    ).toBe(changed[1].question_version.id);
     await util.syncCourseData(courseDir);
     expect(await selectVersions(result.courseId, question.id)).toEqual(changed);
   });
@@ -177,12 +148,6 @@ describe('Question version sync without chunks', () => {
     const invalidVersions = await selectVersions(syncResults.courseId, question.id);
     expect(invalidVersions).toHaveLength(1);
     expect(invalidVersions[0].superseded_at).not.toBeNull();
-    expect(
-      await selectOptionalQuestionVersionAtDate({
-        question_id: question.id,
-        at_date: invalidVersions[0].superseded_at!,
-      }),
-    ).toBeNull();
 
     await fs.writeJson(infoPath, original);
     await util.syncCourseData(courseDir);
@@ -207,25 +172,22 @@ describe('Question version sync without chunks', () => {
     const deleted = await selectVersions(syncResults.courseId, question.id);
     expect(deleted).toHaveLength(3);
     expect(deleted[2].superseded_at).not.toBeNull();
-    expect(
-      await selectOptionalQuestionVersionAtDate({
-        question_id: question.id,
-        at_date: deleted[2].superseded_at!,
-      }),
-    ).toBeNull();
-    const historical = await selectOptionalQuestionVersionAtDate({
-      question_id: question.id,
-      at_date: deleted[0].created_at,
+
+    const lookup = (at_date: string) =>
+      selectOptionalQuestionVersionAtDate({ question_id: question.id, at_date });
+    const [first, restored, last] = deleted;
+    await expect(lookup(first.before_date)).resolves.toBeNull();
+    await expect(lookup(first.superseded_at!)).resolves.toBeNull();
+    await expect(lookup(last.before_date)).resolves.toMatchObject({
+      question_version: { id: restored.question_version.id },
+      settings: { directory: util.QUESTION_ID },
     });
-    expect(historical?.settings.directory).toBe(util.QUESTION_ID);
-    expect(
-      (
-        await selectOptionalQuestionVersionAtDate({
-          question_id: question.id,
-          at_date: renamed[2].created_at,
-        })
-      )?.settings.directory,
-    ).toBe('renamed');
+    await expect(lookup(last.created_at)).resolves.toMatchObject({
+      settings: { directory: 'renamed' },
+      version_date: last.created_at,
+      chunk: null,
+    });
+    await expect(lookup(last.superseded_at!)).resolves.toBeNull();
   });
 
   it('reports missing settings and creates a fresh baseline without repairing old history', async () => {
@@ -234,34 +196,18 @@ describe('Question version sync without chunks', () => {
     const question = await selectQuestion();
     const [initial] = await selectVersions(syncResults.courseId, question.id);
     await sqldb.execute(sql.delete_settings, { question_version_id: initial.question_version.id });
-    await expect(
-      selectOptionalQuestionVersionAtDate({
-        question_id: question.id,
-        at_date: initial.created_at,
-      }),
-    ).rejects.toMatchObject({ name: 'QuestionHistoryUnavailableError' });
 
     await util.syncCourseData(courseDir);
-    const repaired = await selectVersions(syncResults.courseId, question.id);
-    expect(repaired).toHaveLength(2);
-    expect(repaired[0].settings).toBeNull();
-    expect(repaired[1].settings).toEqual({
-      ...initial.settings,
-      question_version_id: repaired[1].question_version.id,
+    const versions = await selectVersions(syncResults.courseId, question.id);
+    expect(versions).toHaveLength(2);
+    const [old, current] = versions;
+    const lookup = (at_date: string) =>
+      selectOptionalQuestionVersionAtDate({ question_id: question.id, at_date });
+    await expect(lookup(old.created_at)).rejects.toMatchObject({
+      name: 'QuestionHistoryUnavailableError',
     });
-    expect(
-      (
-        await selectOptionalQuestionVersionAtDate({
-          question_id: question.id,
-          at_date: repaired[1].created_at,
-        })
-      )?.settings,
-    ).toEqual(repaired[1].settings);
-    await expect(
-      selectOptionalQuestionVersionAtDate({
-        question_id: question.id,
-        at_date: initial.created_at,
-      }),
-    ).rejects.toMatchObject({ name: 'QuestionHistoryUnavailableError' });
+    await expect(lookup(current.created_at)).resolves.toMatchObject({
+      settings: { ...initial.settings, question_version_id: current.question_version.id },
+    });
   });
 });

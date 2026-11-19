@@ -231,12 +231,9 @@ class QuestionHistoryUnavailableError extends Error {
 }
 
 /**
- * Selects a version and its own settings, including renamed or soft-deleted questions.
- * Pass database timestamps as strings to preserve microsecond precision. `version_date`
- * preserves that precision for resolving other course dependencies at the same publication.
- * Returns null outside recorded validity intervals; throws for incomplete history.
- * Local versions have no chunk: their files are read from the course directory.
- * This lookup does not authorize access or load historical runtime files.
+ * Returns null outside recorded validity intervals and throws for incomplete history.
+ * Pass the database timestamp string for `at_date` to retain microseconds. The returned
+ * `version_date` is also a database timestamp string for use in dependency lookups.
  */
 export async function selectOptionalQuestionVersionAtDate({
   question_id,
@@ -251,13 +248,9 @@ export async function selectOptionalQuestionVersionAtDate({
     QuestionVersionAtDateSchema,
   );
   if (!result) return null;
-  if (result.settings === null || (result.question_version.uses_chunks && result.chunk === null)) {
+  const { question_version, settings, chunk, version_date } = result;
+  if (settings === null || (question_version.uses_chunks && chunk === null)) {
     throw new QuestionHistoryUnavailableError(question_id, at_date);
   }
-  return {
-    question_version: result.question_version,
-    settings: result.settings,
-    chunk: result.chunk,
-    version_date: result.version_date,
-  };
+  return { question_version, settings, chunk, version_date };
 }

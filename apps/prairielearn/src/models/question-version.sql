@@ -185,9 +185,11 @@ SELECT
   qv.created_at::text AS version_date
 FROM
   question_versions AS qv
-  -- Keep incomplete versions visible rather than substituting older or live settings.
+  JOIN questions AS q ON q.id = qv.question_id
   LEFT JOIN question_version_settings AS s ON s.question_version_id = qv.id
+  -- An archive refresh can replace a chunk without publishing a new question version.
   LEFT JOIN chunks AS c ON qv.uses_chunks
+  AND c.course_id = q.course_id
   AND c.question_id = qv.question_id
   AND c.type = 'question'
   AND NOT c.deleted
@@ -198,8 +200,8 @@ FROM
   )
 WHERE
   qv.question_id = $question_id
-  AND qv.created_at <= $at_date::timestamptz
+  AND qv.created_at <= $at_date
   AND (
     qv.superseded_at IS NULL
-    OR qv.superseded_at > $at_date::timestamptz
+    OR qv.superseded_at > $at_date
   );

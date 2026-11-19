@@ -84,14 +84,6 @@ ADD CONSTRAINT reject_settings CHECK (FALSE) NOT VALID;
 ALTER TABLE question_version_settings
 DROP CONSTRAINT reject_settings;
 
--- BLOCK select_chunk_creation_date
-SELECT
-  created_at::text
-FROM
-  chunks
-WHERE
-  id = $chunk_id;
-
 -- BLOCK delete_chunk
 DELETE FROM chunks
 WHERE

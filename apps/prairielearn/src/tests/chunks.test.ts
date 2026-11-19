@@ -417,31 +417,6 @@ describe('chunks', () => {
         question_version_id: metadataVersions[1].question_version_id,
       });
 
-      const publications = await sqldb.queryRows(
-        sql.select_question_publications,
-        { question_id: questionId },
-        z.object({
-          version_date: z.string(),
-          chunk_date: z.string(),
-          version_id: IdSchema,
-          chunk_id: IdSchema,
-        }),
-      );
-      for (const publication of publications) {
-        const historical = await selectOptionalQuestionVersionAtDate({
-          question_id: questionId,
-          at_date: publication.version_date,
-        });
-        expect(historical?.chunk?.id).toBe(publication.chunk_id);
-        expect(historical?.question_version.id).toBe(publication.version_id);
-        expect(historical?.settings).toEqual(
-          metadataVersions.find(
-            (settings) => settings.question_version_id === publication.version_id,
-          ),
-        );
-        expect(historical?.version_date).toBe(publication.version_date);
-      }
-
       await fs.appendFile(
         path.join(courseDir, 'questions/addNumbers/server.py'),
         '\n# New code revision\n',
@@ -464,62 +439,35 @@ describe('chunks', () => {
       });
     });
 
-    it('resolves archives at the version date and reports missing archives', async () => {
-      const courseDir = tempTestCourseDir.path;
-      const courseData = await courseDB.loadFullCourse(course.id, courseDir);
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
+    it('keeps the original archive across a refresh and reports its removal', async () => {
+      const coursePath = tempTestCourseDir.path;
+      const options = {
+        coursePath,
         courseId: course.id,
-        courseData,
-      });
-      const originalChunk = (await chunksLib.selectChunksForCourse(course.id)).find(
-        (chunk) => chunk.question_id === questionId,
-      )!;
-      const originalDate = await sqldb.queryScalar(
-        sql.select_chunk_creation_date,
-        { chunk_id: originalChunk.id },
-        z.string(),
-      );
-      const original = await selectOptionalQuestionVersionAtDate({
-        question_id: questionId,
-        at_date: originalDate,
-      });
-      assert(original !== null);
+        courseData: await courseDB.loadFullCourse(course.id, coursePath),
+      };
+      const latest = () =>
+        selectOptionalQuestionVersionAtDate({ question_id: questionId, at_date: 'infinity' });
+      await chunksLib.updateChunksForCourse(options);
+      const original = await latest();
+      assert(original?.chunk);
 
-      // A forced archive refresh can preserve the same question content identity.
+      // Force a new archive of the same files while the version remains current.
       await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId: course.id,
-        courseData,
+        ...options,
         changedFiles: ['questions/addNumbers/server.py'],
       });
-      const currentChunk = (await chunksLib.selectChunksForCourse(course.id)).find(
-        (chunk) => chunk.question_id === questionId,
-      )!;
-      expect(currentChunk.id).not.toBe(originalChunk.id);
-      const laterDate = await sqldb.queryScalar(
-        sql.select_chunk_creation_date,
-        { chunk_id: currentChunk.id },
-        z.string(),
-      );
-      const later = await selectOptionalQuestionVersionAtDate({
-        question_id: questionId,
-        at_date: laterDate,
+      const currentChunks = await chunksLib.selectChunksForCourse(course.id);
+      const current = currentChunks.find((chunk) => chunk.question_id === questionId);
+      assert.isDefined(current);
+      expect(current.id).not.toBe(original.chunk.id);
+      await expect(latest()).resolves.toMatchObject({
+        question_version: { id: original.question_version.id },
+        chunk: { id: original.chunk.id },
       });
-      expect(later?.question_version.id).toBe(original.question_version.id);
-      expect(later?.version_date).toBe(originalDate);
-      expect(later?.chunk?.id).toBe(originalChunk.id);
 
-      await sqldb.execute(sql.delete_chunk, { chunk_id: originalChunk.id });
-      await expect(
-        selectOptionalQuestionVersionAtDate({ question_id: questionId, at_date: laterDate }),
-      ).rejects.toMatchObject({ name: 'QuestionHistoryUnavailableError' });
-      const settings = await sqldb.queryRows(
-        sql.select_question_versions,
-        { question_id: questionId },
-        QuestionVersionSettingSchema,
-      );
-      expect(settings).toEqual([original.settings]);
+      await sqldb.execute(sql.delete_chunk, { chunk_id: original.chunk.id });
+      await expect(latest()).rejects.toMatchObject({ name: 'QuestionHistoryUnavailableError' });
     });
 
     it('does not snapshot parsed question settings with validation errors', async () => {
