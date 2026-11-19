@@ -927,6 +927,7 @@ export async function renderPanelsForSubmission({
         assessment_set,
         assessment_instance,
         gradingPending: await selectAssessmentInstanceGradingPending(assessment_instance.id),
+        active: authz_result?.active ?? null,
       }).toString();
     },
     async () => {

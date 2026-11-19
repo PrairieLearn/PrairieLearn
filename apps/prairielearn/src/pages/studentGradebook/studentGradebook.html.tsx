@@ -99,6 +99,8 @@ export function StudentGradebook({
                           <AssessmentScore
                             score={row.assessment_instance_score_perc}
                             gradingPending={row.grading_pending}
+                            // The gradebook does not know whether each assessment is still active.
+                            active={null}
                             className="mx-auto"
                           />
                         ) : (

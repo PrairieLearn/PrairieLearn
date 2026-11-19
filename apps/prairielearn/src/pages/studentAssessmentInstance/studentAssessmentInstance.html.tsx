@@ -319,7 +319,7 @@ export function StudentAssessmentInstance({
                       }
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${AssessmentScoreHtml({ score: resLocals.assessment_instance.score_perc, gradingPending })}
+                      ${AssessmentScoreHtml({ score: resLocals.assessment_instance.score_perc, gradingPending, active: resLocals.authz_result.active })}
                     </div>
                     <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({

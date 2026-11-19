@@ -92,7 +92,13 @@ RETURNING
 UPDATE instance_questions AS iq
 SET
   status = CASE
-    WHEN iq.highest_submission_score IS NULL THEN 'unanswered'
+  -- Staff can award points without recording a submission score. That
+  -- grading had marked the question complete, and marking it unanswered
+  -- would hide it from manual grading.
+    WHEN iq.highest_submission_score IS NULL
+    AND iq.last_grader IS NULL
+    AND coalesce(iq.points, 0) = 0 THEN 'unanswered'
+    WHEN iq.highest_submission_score IS NULL THEN 'complete'
     WHEN coalesce(iq.auto_points, 0) >= coalesce(aq.max_auto_points, 0)
     AND coalesce(aq.max_manual_points, 0) = 0 THEN 'complete'
     WHEN iq.highest_submission_score >= 1 THEN 'correct'
@@ -105,8 +111,8 @@ WHERE
   iq.id = ANY ($instance_question_ids::bigint[])
   AND aq.id = iq.assessment_question_id
   AND iq.status = 'saved'
-  -- An ungraded question that is waiting for manual grading must stay answered
-  -- so that it remains in the manual grading queue.
+  -- A question that is waiting for manual grading must stay answered so that
+  -- it remains in the manual grading queue.
   AND (
     iq.highest_submission_score IS NOT NULL
     OR NOT iq.requires_manual_grading

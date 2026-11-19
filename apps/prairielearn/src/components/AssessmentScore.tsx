@@ -10,11 +10,19 @@ import { Scorebar } from './Scorebar.js';
 interface AssessmentScoreProps {
   score: number | null;
   gradingPending: GradingPending | null;
+  /**
+   * Whether the student can currently work on the assessment, or `null` if
+   * that is not known where the score is shown.
+   */
+  active: boolean | null;
   className?: string;
 }
 
-function savedAnswersMessage({ assessment_type, open }: GradingPending) {
+function savedAnswersMessage({ assessment_type, open }: GradingPending, active: boolean | null) {
   if (!open) return 'Some saved answers were not graded.';
+  // Homework instances stay open after the homework can no longer be worked
+  // on, so only tell the student what to do when they can still do it.
+  if (!active) return 'Some saved answers have not been graded.';
   // Homework answers are only graded when the student asks; exams grade
   // whatever is saved when the student finishes.
   return assessment_type === 'Homework'
@@ -22,7 +30,12 @@ function savedAnswersMessage({ assessment_type, open }: GradingPending) {
     : 'Your saved answers will be graded when you finish the assessment.';
 }
 
-export function AssessmentScore({ score, gradingPending, className }: AssessmentScoreProps) {
+export function AssessmentScore({
+  score,
+  gradingPending,
+  active,
+  className,
+}: AssessmentScoreProps) {
   if (!gradingPending) return <Scorebar score={score} className={className} />;
   return (
     <div className={clsx('text-center', className)} style={{ minWidth: '5em', maxWidth: '20em' }}>
@@ -44,7 +57,7 @@ export function AssessmentScore({ score, gradingPending, className }: Assessment
         data-bs-content={[
           gradingPending.manual ? 'Some answers are waiting for manual grading.' : null,
           gradingPending.grading ? 'Some answers are being graded.' : null,
-          gradingPending.saved ? savedAnswersMessage(gradingPending) : null,
+          gradingPending.saved ? savedAnswersMessage(gradingPending, active) : null,
           'Your score may not reflect all submitted work.',
         ]
           .filter((sentence) => sentence != null)

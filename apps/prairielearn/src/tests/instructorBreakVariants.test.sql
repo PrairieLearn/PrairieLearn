@@ -6,9 +6,9 @@ FROM
 WHERE
   iq.assessment_question_id = $assessment_question_id;
 
--- BLOCK select_instance_question_status
+-- BLOCK select_instance_question_row
 SELECT
-  iq.status
+  iq.*
 FROM
   instance_questions AS iq
 WHERE

@@ -232,6 +232,7 @@ export function StudentInstanceQuestion({
                   assessment_set: resLocals.assessment_set,
                   assessment_instance: resLocals.assessment_instance,
                   gradingPending,
+                  active: resLocals.authz_result.active,
                 })
           }
           ${QuestionScorePanel({

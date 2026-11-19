@@ -169,6 +169,7 @@ function AssessmentScore(row: StudentAssessmentsRow, gradingPending: Map<string,
   return AssessmentScoreHtml({
     score: row.assessment_instance_score_perc,
     gradingPending: gradingPending.get(row.assessment_instance_id) ?? null,
+    active: row.authz_result.active,
     className: 'mx-auto',
   });
 }

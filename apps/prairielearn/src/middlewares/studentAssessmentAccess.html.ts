@@ -62,7 +62,7 @@ export function StudentAssessmentAccess({
                       )}
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${AssessmentScoreHtml({ score: assessment_instance.score_perc, gradingPending })}
+                      ${AssessmentScoreHtml({ score: assessment_instance.score_perc, gradingPending, active: authz_result.active })}
                     </div>
 
                     ${AssessmentStatusDescription({
