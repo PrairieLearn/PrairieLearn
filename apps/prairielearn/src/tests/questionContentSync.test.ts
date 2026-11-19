@@ -495,7 +495,8 @@ describe('content-only question save', () => {
     await sync();
     const beforeQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
-    await (await save(infoPath, JSON.stringify(changed))).run();
+    const operation = await save(infoPath, JSON.stringify(changed));
+    await operation.run();
     expect(load).not.toHaveBeenCalled();
     const question = await selectQuestionByQid({ course_id: courseId, qid });
     assert.isTrue(question.single_variant);
@@ -506,6 +507,7 @@ describe('content-only question save', () => {
     assert.equal(question.external_grading_entrypoint, 'python3 test.py');
     assert.equal(question.external_grading_timeout, config.externalGradingMaximumTimeout);
     assert.include(question.sync_warnings!, 'has been limited');
+    assert.include((await operation.result()).output, 'has been limited');
     assert.sameDeepMembers(
       (await util.dumpTableWithSchema('questions', QuestionSchema)).filter(
         (q) => q.id !== question.id,

@@ -160,6 +160,7 @@ export async function syncCourseFromDisk({
             job.info(`Reprocessing question metadata: ${change.qid}`);
             await syncQuestionInfo(course, change);
             for (const error of change.info.errors) job.error(error);
+            for (const warning of change.info.warnings) job.warn(warning);
           } else if (change.kind === 'rename') {
             await syncQuestionQid({
               course_id: course.id,
