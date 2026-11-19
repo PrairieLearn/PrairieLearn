@@ -48,6 +48,7 @@ import {
   useDraftAttachments,
 } from './Attachments.js';
 import { BlockedNotice } from './BlockedNotice.js';
+import { DiffCodeBlock } from './ChatDiff.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
@@ -913,7 +914,15 @@ function Message({
     const { key, part } = segment;
     const navigation = navigationOf(part);
     if (part.type === 'text' && part.text.trim()) {
-      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} math />);
+      rendered.push(
+        <TextPart
+          key={key}
+          part={part}
+          urlTransform={linkTransform}
+          codeBlock={DiffCodeBlock}
+          math
+        />,
+      );
     } else if (part.type === 'reasoning' && part.text.trim()) {
       rendered.push(<ReasoningBlock key={key} part={part} math />);
     } else if (navigation) {

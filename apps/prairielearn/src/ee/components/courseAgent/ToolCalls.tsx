@@ -6,6 +6,8 @@ import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
 import { Disclosure } from '../ai/ChatParts.js';
 
+import { ChatDiff } from './ChatDiff.js';
+
 type Verb =
   | 'read'
   | 'list'
@@ -385,9 +387,19 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
                   +{change.added} −{change.removed}
                 </span>
               </div>
-              <Output label={`Changes to ${change.path}`} clip={change.diff}>
-                <DiffLines diff={change.diff.text} />
-              </Output>
+              <ChatDiff
+                text={change.diff.text}
+                path={change.path}
+                change={FILE_CHANGES[change.change]}
+                // The row above already names the file.
+                showFileNames={false}
+                fallback={
+                  <OutputText label={`Changes to ${change.path}`}>
+                    <DiffLines diff={change.diff.text} />
+                  </OutputText>
+                }
+              />
+              <ClipNote clip={change.diff} />
             </div>
           ))}
           {call.omittedChanges > 0 && (
@@ -421,6 +433,9 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
   }
 }
 
+const FILE_CHANGES = { add: 'added', delete: 'deleted', update: 'modified' } as const;
+
+/** The diff as colored lines of text, for when the diff viewer can't show it. */
 function DiffLines({ diff }: { diff: string }) {
   return diff
     .replace(/\n$/, '')
@@ -453,24 +468,35 @@ function Output({
 }) {
   return (
     <div>
-      <pre
-        className="bg-body-tertiary border rounded p-2 mb-0 small overflow-auto"
-        style={{ maxHeight: '20rem', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
-        // Scrollable regions must be reachable by keyboard.
-        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-        tabIndex={0}
-        role="region"
-        aria-label={label}
-      >
-        {children}
-      </pre>
-      {clip && clip.omitted > 0 && (
-        <div className="small text-body-secondary">
-          {clip.text
-            ? `${clip.omitted.toLocaleString()} characters not shown`
-            : `Not kept in this conversation (${clip.omitted.toLocaleString()} characters)`}
-        </div>
-      )}
+      <OutputText label={label}>{children}</OutputText>
+      <ClipNote clip={clip} />
+    </div>
+  );
+}
+
+function OutputText({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <pre
+      className="bg-body-tertiary border rounded p-2 mb-0 small overflow-auto"
+      style={{ maxHeight: '20rem', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+      // Scrollable regions must be reachable by keyboard.
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
+      role="region"
+      aria-label={label}
+    >
+      {children}
+    </pre>
+  );
+}
+
+function ClipNote({ clip }: { clip: Clip | null }) {
+  if (!clip || clip.omitted === 0) return null;
+  return (
+    <div className="small text-body-secondary">
+      {clip.text
+        ? `${clip.omitted.toLocaleString()} characters not shown`
+        : `Not kept in this conversation (${clip.omitted.toLocaleString()} characters)`}
     </div>
   );
 }
