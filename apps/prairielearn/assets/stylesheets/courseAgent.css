@@ -338,9 +338,19 @@
 }
 
 .course-agent-plan {
-  /* The same inset as the message box under it, on every side. */
-  padding: 0.75rem;
   animation: course-agent-rise 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* The plan's one line, inset like the conversation over it and the message box under it. */
+.course-agent-plan-toggle {
+  --bs-btn-padding-x: 1rem;
+  --bs-btn-padding-y: 0.5rem;
+  --bs-btn-font-size: 0.875rem;
+}
+
+.course-agent-plan-steps {
+  max-height: 11rem;
+  padding: 0 1rem 0.75rem;
 }
 
 .course-agent-plan-done {

@@ -775,9 +775,9 @@ function Chat({
           )}
         </div>
       </div>
+      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
       <Composer
         draft={draft}
-        above={plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
         placeholder={
           replyDenies
@@ -820,7 +820,6 @@ function Composer({
   onAttach,
   onRemoveAttachment,
   stopDisabled = false,
-  above,
   children,
   onStop,
 }: {
@@ -838,8 +837,6 @@ function Composer({
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
-  /** Shown over the message box, inside the same margins. */
-  above?: ReactNode;
   children?: ReactNode;
   onStop?: () => void;
 }) {
@@ -877,7 +874,6 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
-      {above}
       <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
         <DraftAttachmentList
           attachments={attachments}

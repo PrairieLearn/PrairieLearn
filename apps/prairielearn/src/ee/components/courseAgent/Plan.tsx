@@ -1,8 +1,11 @@
 import type { UIMessage } from 'ai';
 import clsx from 'clsx';
+import { useId, useState } from 'react';
 import { Spinner } from 'react-bootstrap';
 
 import { type PlanPart, PlanPartSchema } from '@prairielearn/course-agent-types';
+
+type PlanStep = PlanPart['steps'][number];
 
 const STATUS_LABEL = { completed: 'done', inProgress: 'in progress', pending: 'not started' };
 
@@ -18,49 +21,95 @@ export function planOf(message: UIMessage | undefined): PlanPart | null {
   return null;
 }
 
+function StepIcon({ status }: { status: PlanStep['status'] }) {
+  return (
+    <span
+      className="course-agent-plan-icon d-flex align-items-center justify-content-center flex-shrink-0"
+      aria-hidden="true"
+    >
+      {status === 'inProgress' ? (
+        <Spinner
+          animation="border"
+          variant="primary"
+          style={{ width: '0.875rem', height: '0.875rem', borderWidth: '0.125em' }}
+        />
+      ) : status === 'completed' ? (
+        <i className="course-agent-plan-done bi bi-check-circle-fill text-success" />
+      ) : (
+        <i className="bi bi-circle text-body-tertiary" />
+      )}
+    </span>
+  );
+}
+
 /**
- * The agent's plan for the running turn, shown with the message box: a plain list in which only
- * the step in progress stands out.
+ * The agent's plan for the running turn, in a strip between the conversation and the message box.
+ * It takes one line, naming the step in progress, and opens to the whole list.
  */
 export function PlanChecklist({ plan }: { plan: PlanPart }) {
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
+  const done = plan.steps.filter((step) => step.status === 'completed').length;
+  const progress = `${done} of ${plan.steps.length}`;
+  const current =
+    plan.steps.find((step) => step.status === 'inProgress') ??
+    plan.steps.find((step) => step.status === 'pending') ??
+    plan.steps.at(-1);
+
   return (
-    <ol
-      className="course-agent-plan list-unstyled small border rounded-3 mb-3 d-flex flex-column gap-1 overflow-y-auto"
-      style={{ maxHeight: '11rem' }}
-      aria-label="Plan"
-    >
-      {plan.steps.map((step, index) => (
-        <li
-          // The agent identifies a plan's steps only by their order.
-          // oxlint-disable-next-line react/no-array-index-key
-          key={index}
+    <div className="course-agent-plan small border-top">
+      <button
+        type="button"
+        className="course-agent-plan-toggle btn border-0 rounded-0 w-100 d-flex align-items-center gap-2 text-start"
+        aria-expanded={expanded}
+        aria-controls={listId}
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded || !current ? (
+          <span className="flex-grow-1 text-body-secondary">{progress} done</span>
+        ) : (
+          <>
+            <StepIcon status={current.status} />
+            <span className="flex-grow-1 text-truncate fw-semibold">{current.text}</span>
+            <span className="flex-shrink-0 text-body-secondary">
+              {progress}
+              <span className="visually-hidden"> steps done</span>
+            </span>
+          </>
+        )}
+        <i
           className={clsx(
-            'd-flex gap-2',
-            step.status === 'inProgress' ? 'text-body fw-semibold' : 'text-body-secondary',
+            'bi small flex-shrink-0 text-body-secondary',
+            expanded ? 'bi-chevron-down' : 'bi-chevron-right',
           )}
+          aria-hidden="true"
+        />
+      </button>
+      {expanded && (
+        <ol
+          id={listId}
+          className="course-agent-plan-steps list-unstyled mb-0 d-flex flex-column gap-1 overflow-y-auto"
+          aria-label="Plan"
         >
-          <span
-            className="course-agent-plan-icon d-flex align-items-center justify-content-center flex-shrink-0"
-            aria-hidden="true"
-          >
-            {step.status === 'inProgress' ? (
-              <Spinner
-                animation="border"
-                variant="primary"
-                style={{ width: '0.875rem', height: '0.875rem', borderWidth: '0.125em' }}
-              />
-            ) : step.status === 'completed' ? (
-              <i className="course-agent-plan-done bi bi-check-circle-fill text-success" />
-            ) : (
-              <i className="bi bi-circle text-body-tertiary" />
-            )}
-          </span>
-          <span>
-            {step.text}
-            <span className="visually-hidden"> ({STATUS_LABEL[step.status]})</span>
-          </span>
-        </li>
-      ))}
-    </ol>
+          {plan.steps.map((step, index) => (
+            <li
+              // The agent identifies a plan's steps only by their order.
+              // oxlint-disable-next-line react/no-array-index-key
+              key={index}
+              className={clsx(
+                'd-flex gap-2',
+                step.status === 'inProgress' ? 'text-body fw-semibold' : 'text-body-secondary',
+              )}
+            >
+              <StepIcon status={step.status} />
+              <span>
+                {step.text}
+                <span className="visually-hidden"> ({STATUS_LABEL[step.status]})</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
   );
 }
