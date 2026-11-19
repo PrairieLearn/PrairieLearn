@@ -54,7 +54,7 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 ```json title="info.json"
 {
   "externalGradingOptions": {
-    "image": "prairielearn/grader-python",
+    "image": "prairielearn/grader-python-pytest:latest",
     "serverFilesCourse": ["my_libraries/"],
     "timeout": 5
   }
@@ -64,7 +64,7 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 This config file specifies the following things:
 
 - External grading is enabled.
-- The `prairielearn/grader-python` image will be used.
+- The `prairielearn/grader-python-pytest:latest` image will be used.
 - The files/directories under `serverFilesCourse/my_libraries` will be copied into your image while grading.
 - The default entrypoint script set by the image will be executed when your container starts up.
 - If grading takes longer than 5 seconds, the container will be killed.
