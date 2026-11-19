@@ -173,6 +173,13 @@ describe('parseChatDiff', () => {
   it('shows lines with no changes, and leaves empty and very large text as plain text', () => {
     const summary = parseChatDiff(' questions/add/server.py | 2 +-\n 1 file changed\n');
     expect(summary?.files).toMatchObject([{ path: '', additions: 0, deletions: 0 }]);
+    // A finished diff that only names its files still shows them.
+    const named = '--- a/one.txt\n+++ b/one.txt\n--- /dev/null\n+++ b/two.txt\n';
+    expect(parseChatDiff(named)?.files).toMatchObject([
+      { path: 'one.txt', change: 'modified', additions: 0 },
+      { path: 'two.txt', change: 'added', additions: 0 },
+    ]);
+    expect(parseChatDiff(named, { streaming: true })).toBeNull();
     expect(parseChatDiff('')).toBeNull();
     expect(parseChatDiff('', { streaming: true })).toBeNull();
     expect(parseChatDiff('commit fea005d\nAuthor: Staff\n')).toBeNull();

@@ -5,22 +5,23 @@ import { type ChatDiffFile, parseChatDiff } from './parseChatDiff.js';
 
 // The viewer and its syntax highlighter are a large download, so they are kept out of the chat's
 // own code. Loading starts as soon as the chat does, rather than at the first code block, so that a
-// reply's code rarely has to wait for them.
-const views = import('./ChatCodeViews.js');
+// reply's code rarely has to wait for them. If loading fails, blocks are shown as plain text.
+const views = import('./ChatCodeViews.js').catch(() => null);
 
-const LazyChatDiffView = lazy(() =>
-  views.then(
-    (module) => ({ default: module.ChatDiffView }),
-    () => ({ default: ({ fallback }: { fallback: ReactNode }) => fallback }),
-  ),
-);
+const LazyChatDiffView = lazy(async () => {
+  const module = await views;
+  return {
+    default: module?.ChatDiffView ?? (({ fallback }: { fallback: ReactNode }) => fallback),
+  };
+});
 
-const LazyChatCodeView = lazy(() =>
-  views.then(
-    (module) => ({ default: module.ChatCodeView }),
-    () => ({ default: ({ code }: { code: string }) => <PlainCode>{code}</PlainCode> }),
-  ),
-);
+const LazyChatCodeView = lazy(async () => {
+  const module = await views;
+  return {
+    default:
+      module?.ChatCodeView ?? (({ code }: { code: string }) => <PlainCode>{code}</PlainCode>),
+  };
+});
 
 function PlainCode({ className, children }: { className?: string; children?: ReactNode }) {
   return (
@@ -65,8 +66,8 @@ export function ChatDiff({
       }),
     [text, path, change, streaming],
   );
-  // Nothing of a streaming diff can be shown before its first line arrives.
-  if (!diff) return streaming ? null : fallback;
+  // Nothing of a diff can be shown before its first line arrives, and an empty one stays empty.
+  if (!diff) return streaming || text.trim() === '' ? null : fallback;
   return (
     <Suspense fallback={<Loading />}>
       <LazyChatDiffView diff={diff} showFileNames={showFileNames} fallback={fallback} />
@@ -86,20 +87,22 @@ export function ChatCodeBlock({
   children?: ReactNode;
 }) {
   const streaming = useIsCodeFenceIncomplete();
-  if (typeof children !== 'string') return <PlainCode className={className}>{children}</PlainCode>;
+  // An empty block has no children at all.
+  const code = children ?? '';
+  if (typeof code !== 'string') return <PlainCode className={className}>{children}</PlainCode>;
   const language = /(?:^|\s)language-(\S+)/.exec(className ?? '')?.[1];
   if (language === 'diff' || language === 'patch') {
     return (
       <ChatDiff
-        text={children}
+        text={code}
         streaming={streaming}
-        fallback={<PlainCode className={className}>{children}</PlainCode>}
+        fallback={<PlainCode className={className}>{code}</PlainCode>}
       />
     );
   }
   return (
     <Suspense fallback={<Loading />}>
-      <LazyChatCodeView code={children.replace(/\n$/, '')} language={language} />
+      <LazyChatCodeView code={code.replace(/\n$/, '')} language={language} />
     </Suspense>
   );
 }

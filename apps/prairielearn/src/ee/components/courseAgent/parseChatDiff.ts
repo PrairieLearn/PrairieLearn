@@ -33,6 +33,8 @@ interface Hunk {
 interface OpenFile {
   /** Whether the diff names this file; a `null` path then means `/dev/null`. */
   named: boolean;
+  /** Whether the file's `---` and `+++` lines have been read. */
+  hasPathLines: boolean;
   oldPath: string | null;
   newPath: string | null;
   change: ChatDiffFile['change'] | null;
@@ -117,7 +119,7 @@ const COMMIT_LINE = /^(?:commit|From) [0-9a-f]{7,40}\b/;
  * or no file names at all. Line counts are recomputed and missing headers filled in, so the viewer
  * always gets a well-formed patch for each file.
  *
- * Returns `null` when there is nothing to show, or for a very large diff.
+ * Returns `null` for empty text and for a very large diff.
  *
  * @param text The diff.
  * @param options
@@ -170,6 +172,7 @@ export function parseChatDiff(
   const openFile = (named: boolean) => {
     const file: OpenFile = {
       named,
+      hasPathLines: false,
       oldPath: null,
       newPath: null,
       change: null,
@@ -208,8 +211,11 @@ export function parseChatDiff(
     }
     if (isFileHeader(i) && (!current.hunk || namesOneFile(i))) {
       closeHunk();
-      // A `diff --git` line has already opened this file; these lines give its exact paths.
-      const named = file?.named && file.hunks.length === 0 ? file : openFile(true);
+      // After a `diff --git` line, which has already opened the file, these lines give its exact
+      // paths. Otherwise they start a file of their own.
+      const named =
+        file?.named && !file.hasPathLines && file.hunks.length === 0 ? file : openFile(true);
+      named.hasPathLines = true;
       named.oldPath = headerPath(line);
       named.newPath = headerPath(lines[i + 1]);
       i += 1;
@@ -228,6 +234,8 @@ export function parseChatDiff(
       else if (line.startsWith('Binary files ') || line === 'GIT binary patch') file.binary = true;
       if (!/^[-+ ]/.test(line)) continue;
     }
+    // The encoded contents of a binary file are not lines to show.
+    if (file?.binary) continue;
     // Context lines often lose their leading space when an agent writes the diff by hand.
     (current.hunk ?? openHunk(null)).lines.push(
       line === '' || /^[-+ \\]/.test(line) ? line : ` ${line}`,
@@ -235,14 +243,15 @@ export function parseChatDiff(
   }
   closeHunk();
 
-  const shown = files.filter((file) => file.binary || file.hunks.some((h) => h.lines.length > 0));
+  // While streaming, a file with only its name so far is left out until its first line arrives.
+  const shown = files.filter(
+    (file) =>
+      file.binary || file.hunks.some((hunk) => hunk.lines.length > 0) || (file.named && !streaming),
+  );
   const preambleText = preamble.join('\n').trim();
-  // A file with only its name so far is left out until its first line arrives.
   if (shown.length === 0 && (preambleText === '' || !streaming)) return null;
   return {
     preamble: preambleText,
-    files: (streaming ? shown : files).map((file) =>
-      finishFile(file, files.length === 1 ? known : undefined),
-    ),
+    files: shown.map((file) => finishFile(file, files.length === 1 ? known : undefined)),
   };
 }

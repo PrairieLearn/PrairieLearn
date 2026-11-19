@@ -135,15 +135,19 @@ export function useLanguagesLoaded(langs: SupportedLanguages[]) {
   const [, rerender] = useReducer((count: number) => count + 1, 0);
   const missing = langs.filter((lang) => !loadedLanguages.has(lang));
   const key = missing.join(',');
-  // Loads highlighting for languages not seen before, then renders again to apply it.
+  // Loads highlighting for languages not seen before, then renders again to apply it. If a
+  // language fails to load, its code stays readable as plain text.
   useEffect(() => {
     if (key === '') return;
     let current = true;
-    const wanted = key.split(',') as SupportedLanguages[];
-    void loadLanguages(new Set(wanted)).then(() => {
-      for (const lang of wanted) loadedLanguages.add(lang);
-      if (current) rerender();
-    });
+    const wanted = key.split(',');
+    void preloadHighlighter({ themes: [THEME.light, THEME.dark], langs: wanted }).then(
+      () => {
+        for (const lang of wanted) loadedLanguages.add(lang);
+        if (current) rerender();
+      },
+      () => undefined,
+    );
     return () => {
       current = false;
     };
@@ -155,13 +159,17 @@ const LANGUAGES = new Set<string>(
   Object.values(EXTENSION_TO_FILE_FORMAT).filter((language) => language !== undefined),
 );
 
+/** Names agents put after a code fence that are neither a language's name nor a file extension. */
+const LANGUAGE_ALIASES: Record<string, string> = { shell: 'bash', 'c++': 'cpp', latex: 'tex' };
+
 /** The highlighter's language for a name as written after a code fence, such as `ts` or `python`. */
 export function languageOf(name: string | undefined): SupportedLanguages {
   if (!name) return 'text';
   const lower = name.toLowerCase();
-  // The cast only narrows the type: `LANGUAGES` holds exactly the names the highlighter knows.
-  if (LANGUAGES.has(lower)) return lower;
-  return getFiletypeFromFileName(`file.${lower}`);
+  const language = LANGUAGE_ALIASES[lower] ?? lower;
+  if (LANGUAGES.has(language)) return language;
+  // Anything else is tried as a file extension, which gives `text` when it isn't one.
+  return getFiletypeFromFileName(`file.${language}`);
 }
 
 export function LineCounts({ additions, deletions }: { additions: number; deletions: number }) {
@@ -189,7 +197,7 @@ export function bootstrapThemeType() {
 }
 
 /** Sets the colors and fonts the diff and its line counts use. Put it on an element around them. */
-export function diffStyle(themeType: 'light' | 'dark') {
+export function viewerStyle(themeType: 'light' | 'dark') {
   return {
     '--review-diff-added': LINE_COLORS[themeType].added,
     '--review-diff-deleted': LINE_COLORS[themeType].deleted,

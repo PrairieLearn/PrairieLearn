@@ -11,9 +11,9 @@ import {
   FileChanges,
   LineCounts,
   bootstrapThemeType,
-  diffStyle,
   loadHighlighter,
   parseFile,
+  viewerStyle,
 } from './diffFiles.js';
 
 const WIDE_QUERY = '(min-width: 992px)';
@@ -61,7 +61,7 @@ export default function ReviewDiff({ files }: { files: ReviewDiffFile[] }) {
   return (
     <div
       className="d-flex flex-column flex-grow-1"
-      style={{ minHeight: 0, ...diffStyle(themeType) }}
+      style={{ minHeight: 0, ...viewerStyle(themeType) }}
     >
       <div className="d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom">
         <span>{files.length === 1 ? '1 file changed' : `${files.length} files changed`}</span>

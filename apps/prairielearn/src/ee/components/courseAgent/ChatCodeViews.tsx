@@ -6,11 +6,11 @@ import {
   FileChanges,
   bootstrapThemeType,
   diffLanguages,
-  diffStyle,
   languageOf,
   parseFile,
   preloadHighlighting,
   useLanguagesLoaded,
+  viewerStyle,
 } from './diffFiles.js';
 import type { ParsedChatDiff } from './parseChatDiff.js';
 
@@ -62,7 +62,7 @@ export function ChatDiffView({
   if (!parsed) return fallback;
   const themeType = bootstrapThemeType();
   return (
-    <div className="course-agent-diff d-flex flex-column gap-2" style={diffStyle(themeType)}>
+    <div className="course-agent-diff d-flex flex-column gap-2" style={viewerStyle(themeType)}>
       {diff.preamble && <pre className="small mb-0">{diff.preamble}</pre>}
       {parsed.map(({ file, diff: fileDiff }, i) => (
         <section
@@ -95,7 +95,10 @@ export function ChatCodeView({ code, language }: { code: string; language?: stri
   const highlighted = useLanguagesLoaded([lang]);
   const themeType = bootstrapThemeType();
   return (
-    <div className="course-agent-code border rounded overflow-hidden" style={diffStyle(themeType)}>
+    <div
+      className="course-agent-code border rounded overflow-hidden"
+      style={viewerStyle(themeType)}
+    >
       <CodeFile contents={code} lang={highlighted ? lang : 'text'} themeType={themeType} />
     </div>
   );
