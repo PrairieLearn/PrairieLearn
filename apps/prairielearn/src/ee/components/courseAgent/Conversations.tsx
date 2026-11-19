@@ -450,14 +450,14 @@ function Chat({
 
   const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: FOLLOW_ANIMATION });
-  const { scrollRef, scrollToBottom, state: stickState } = stickToBottom;
+  const { scrollRef, contentRef, scrollToBottom, state: stickState } = stickToBottom;
   // Keeps a conversation that is at the bottom there in two cases the library gets wrong:
   // - Its viewport changes height, as when the message box grows or the window is resized. The
   //   library only follows its content growing, so a shorter viewport would cover the newest
   //   messages.
-  // - Its scroll position is moved up by the browser, not by staff: a taller viewport or streaming
-  //   text that reflows a line shorter leaves less to scroll. The library can take that for
-  //   scrolling away and stop following the reply.
+  // - Its scroll position is moved up by the browser, not by staff: a taller viewport or a shorter
+  //   conversation leaves less to scroll. The library can take that for scrolling away and stop
+  //   following.
   useEffect(() => {
     const scroller = scrollRef.current;
     if (!scroller) return;
@@ -570,6 +570,27 @@ function Chat({
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
+  // Stops the conversation from getting shorter while a reply streams. Markdown that is still
+  // arriving can reflow a line shorter for a moment. At the bottom the browser then moves the scroll
+  // position up, and the library takes that for staff scrolling away and stops following the reply.
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content || !responseActive) return;
+    const observer = new ResizeObserver(() => {
+      content.style.minHeight = `${content.offsetHeight}px`;
+    });
+    observer.observe(content);
+    // Collapsing a tool call is meant to make the conversation shorter.
+    const release = () => {
+      content.style.minHeight = '';
+    };
+    content.addEventListener('click', release);
+    return () => {
+      observer.disconnect();
+      content.removeEventListener('click', release);
+      release();
+    };
+  }, [contentRef, responseActive]);
   const showThinking = run(() => {
     if (
       !(responseActive || lifecycle?.status === 'waiting_for_agent') ||
@@ -637,13 +658,16 @@ function Chat({
       <div
         ref={scrollRef}
         className="flex-grow-1 overflow-y-auto"
+        // While following a reply, text above the newest line reflowing shorter would otherwise make
+        // the browser move the scroll position up to keep that line where it was.
+        style={{ overflowAnchor: responseActive && stickToBottom.isAtBottom ? 'none' : undefined }}
         // Scrollable regions must be reachable by keyboard, and Safari only scrolls a focused one.
         // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
         role="region"
         aria-label="Conversation"
       >
-        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
+        <div ref={contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
           )}
