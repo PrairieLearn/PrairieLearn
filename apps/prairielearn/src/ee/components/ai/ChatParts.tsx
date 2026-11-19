@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { type ReactNode, useId, useState } from 'react';
 import type { UrlTransform } from 'react-markdown';
 
-import { MemoizedMarkdown } from './MemoizedMarkdown.js';
+import { type MarkdownOptions, MemoizedMarkdown } from './MemoizedMarkdown.js';
 
 /** A chevron and summary that show or hide the details beneath them. */
 export function Disclosure({
@@ -75,13 +75,15 @@ export function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
 export function TextPart({
   part,
   urlTransform,
+  markdownOptions,
 }: {
   part: TextUIPart;
   urlTransform?: UrlTransform;
+  markdownOptions?: MarkdownOptions;
 }) {
   return (
     <div className="markdown-body">
-      <MemoizedMarkdown content={part.text} urlTransform={urlTransform} />
+      <MemoizedMarkdown content={part.text} urlTransform={urlTransform} options={markdownOptions} />
     </div>
   );
 }

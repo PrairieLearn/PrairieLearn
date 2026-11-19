@@ -51,6 +51,7 @@ import {
   useDraftAttachments,
 } from './Attachments.js';
 import { BlockedNotice } from './BlockedNotice.js';
+import { DIFF_MARKDOWN_OPTIONS } from './ChatDiff.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, navigationOf } from './Navigation.js';
@@ -992,7 +993,14 @@ function Message({
       const { key, part } = segment;
       if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) return null;
       if (part.type === 'text') {
-        return <TextPart key={key} part={part} urlTransform={linkTransform} />;
+        return (
+          <TextPart
+            key={key}
+            part={part}
+            urlTransform={linkTransform}
+            markdownOptions={DIFF_MARKDOWN_OPTIONS}
+          />
+        );
       }
       if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
       const navigation = navigationOf(part);
