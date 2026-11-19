@@ -15,7 +15,7 @@ indexes
     question_versions_question_id_created_at_idx: USING btree (question_id, created_at DESC, id DESC)
 
 check constraints
-    question_versions_check: CHECK (superseded_at IS NULL OR superseded_at > created_at)
+    question_versions_check: CHECK (superseded_at > created_at)
 
 foreign-key constraints
     question_versions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
