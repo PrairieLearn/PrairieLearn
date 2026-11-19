@@ -320,9 +320,8 @@ function Loading() {
 
 function PendingStatus({ label }: { label: string }) {
   return (
-    <div className="text-muted small" role="status">
-      <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
-      {label}
+    <div className="small text-body-secondary" role="status">
+      <span className="course-agent-shimmer">{label}</span>
     </div>
   );
 }
@@ -704,7 +703,7 @@ function Chat({
             </Alert>
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
-            <p className="text-muted" role="status">
+            <p className="small text-body-secondary mb-0" role="status">
               {lifecycle.status === 'stopping'
                 ? 'Stopping the course agent…'
                 : 'Pausing the course agent…'}

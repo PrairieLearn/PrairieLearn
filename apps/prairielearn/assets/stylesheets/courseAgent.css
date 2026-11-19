@@ -182,6 +182,37 @@
   border-top: 1px solid var(--bs-border-color);
 }
 
+/* The plan eases in when the agent first shares it, and each tick pops as its step finishes. */
+.course-agent-plan {
+  animation: course-agent-plan-in 250ms ease-out;
+}
+
+@keyframes course-agent-plan-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+.course-agent-plan-done {
+  animation: course-agent-plan-done 250ms ease-out;
+}
+
+@keyframes course-agent-plan-done {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+/* A step the agent has not reached yet: an empty dashed circle. */
+.course-agent-plan-pending {
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 1px dashed currentcolor;
+  border-radius: 50%;
+}
+
 /* One column for the plan's icons, each centred on its step's first line. */
 .course-agent-plan-icon {
   width: 1rem;
@@ -344,7 +375,9 @@ body:has(.course-agent-panel-animate) .app-main {
     animation-duration: 3s;
   }
 
-  .course-agent-composer-pulse {
+  .course-agent-composer-pulse,
+  .course-agent-plan,
+  .course-agent-plan-done {
     animation: none;
   }
 
