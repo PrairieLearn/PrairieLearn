@@ -18,6 +18,7 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  type SteerInput,
   type Usage,
   UsageDecisionSchema,
   type UsageReport,
@@ -27,6 +28,7 @@ import {
   emptyUsage,
   isEmptyUsage,
   reviewTag,
+  steerTag,
 } from '@prairielearn/course-agent-types';
 
 import { logEvent, reportError } from '../monitoring.js';
@@ -56,6 +58,7 @@ import {
   messageTag,
   missedTurns,
   nextUserMessage,
+  steerMarker,
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
@@ -231,6 +234,21 @@ type ConversationRecord = RecordData &
       }
   );
 
+/** Messages staff send while a turn runs, which Codex adds to that turn. */
+interface TurnSteers {
+  /**
+   * Codex's ID for the turn once it accepts the turn's input, or null if an earlier attempt
+   * already delivered that input and no native turn runs.
+   */
+  nativeTurnId?: string | null;
+  /** Messages sent before Codex accepted the turn, submitted in order once it does. */
+  waiting: Parameters<CodexAppServerClient['steer']>[0][];
+  /** A repeated request for a message this turn already has adds nothing. */
+  ids: Set<string>;
+  /** Submissions reach Codex one at a time, in the order staff sent them. */
+  order: Promise<unknown>;
+}
+
 interface ActiveTurn {
   /** Authorizes this turn's model requests; requests made outside a turn are refused. */
   executionId: string;
@@ -246,6 +264,7 @@ interface ActiveTurn {
   deliveringReviewId: string | null;
   /** Set once the turn's provider requests are aborted, so no new one starts. */
   finishing: boolean;
+  steers: TurnSteers;
 }
 
 const reviewFileKey = (reviewId: string, index: number) => `review-file:${reviewId}:${index}`;
@@ -1009,6 +1028,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
+    const steers: TurnSteers = { waiting: [], ids: new Set(), order: Promise.resolve() };
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
       messageId: crypto.randomUUID(),
@@ -1067,6 +1087,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           native.emit(turnMarker(input.tag, summarizeReview(delivered.result)));
           this.settleReview(delivered.id);
         }
+        steers.nativeTurnId = nativeTurnId;
+        for (const waiting of steers.waiting.splice(0)) {
+          void this.keepAliveWhile(async () => {
+            if (!(await this.submitSteer(steers, native, waiting))) {
+              log('steer_refused', { tag: waiting.tag });
+            }
+          }).catch((error: unknown) => this.reportError(error));
+        }
       },
       log,
     });
@@ -1081,6 +1109,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       shutdown: false,
       deliveringReviewId: delivered?.id ?? null,
       finishing: false,
+      steers,
     };
     this.active = active;
     const abort = () => {
@@ -1104,6 +1133,61 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       })
       .finally(() => options.abortSignal?.removeEventListener('abort', abort));
     return createUIMessageStreamResponse({ stream: execution.stream });
+  }
+
+  /**
+   * RPC: add a message to the turn that is running, so staff do not wait for it to end. Codex
+   * gives it to the model at its next request. Returns false when no turn can take it; nothing
+   * is recorded then, and the browser keeps the message for staff to send again.
+   */
+  async steer(steer: SteerInput): Promise<boolean> {
+    const active = this.active;
+    const native = this.native;
+    const status = this.record.lifecycle.status;
+    // A review awaiting its result and the usage limit refuse input here as they do between
+    // turns. A turn that is stopping or whose response has closed can no longer show the message.
+    if (
+      !active ||
+      !native?.streaming ||
+      active.finishing ||
+      (status !== 'starting' && status !== 'waiting_for_agent') ||
+      this.record.review ||
+      this.metering.limitedUntil ||
+      active.steers.nativeTurnId === null
+    ) {
+      return false;
+    }
+    const { steers } = active;
+    if (steers.ids.has(steer.id)) return true;
+    steers.ids.add(steer.id);
+    const input = {
+      tag: steerTag(steer.id),
+      text: steer.text,
+      ...(steer.location ? { page: describePageLocation(steer.location) } : {}),
+    };
+    if (steers.nativeTurnId === undefined) {
+      // Captured with the turn's input, like its prompt: submitted once Codex accepts the turn,
+      // and never submitted later if the turn ends first.
+      native.emit(steerMarker(steer));
+      steers.waiting.push(input);
+      return true;
+    }
+    if (!(await this.submitSteer(steers, native, input))) {
+      steers.ids.delete(steer.id);
+      return false;
+    }
+    native.emit(steerMarker(steer));
+    return true;
+  }
+
+  private submitSteer(
+    steers: TurnSteers,
+    native: CodexAppServerClient,
+    input: TurnSteers['waiting'][number],
+  ) {
+    const submitted = steers.order.then(() => native.steer(input));
+    steers.order = submitted.catch(() => {});
+    return submitted;
   }
 
   /** Runs alongside sandbox startup, so the title adds no latency to the first turn. */

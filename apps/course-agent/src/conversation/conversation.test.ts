@@ -468,6 +468,91 @@ it('refuses messages while limited, and Resume after the reset sends them', asyn
   );
 });
 
+it('adds a message to the running turn, and nothing once the turn cannot take it', async () => {
+  stubFetch({ usage: async () => decision() });
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const steer = vi.spyOn(CodexAppServerClient.prototype, 'steer').mockResolvedValue(true);
+  const state = await runningConversation();
+  const { conversation } = state;
+  const steerParts = () =>
+    emit.mock.calls.map(([chunk]) => chunk).filter((chunk) => chunk.type === 'data-steer');
+  const message = {
+    id: crypto.randomUUID(),
+    text: 'Use SI units',
+    location: { path: '/pl/course/1/question/2/preview', page: 'question.preview' },
+  };
+  expect(await conversation.steer(message)).toBe(true);
+  expect(steer).toHaveBeenCalledWith({
+    tag: `steer:${message.id}`,
+    text: 'Use SI units',
+    page: expect.stringContaining('"question.preview"'),
+  });
+  expect(steerParts()).toEqual([{ type: 'data-steer', id: `steer:${message.id}`, data: message }]);
+  // A repeated request, such as a retry after a lost reply, adds nothing.
+  expect(await conversation.steer(message)).toBe(true);
+  expect(steer).toHaveBeenCalledOnce();
+
+  // Codex refuses a message that arrives as the turn ends, and chat history shows none.
+  steer.mockResolvedValueOnce(false);
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'Too late' })).toBe(false);
+  expect(steerParts()).toHaveLength(1);
+
+  // A review awaiting its result holds new input here as it does between turns.
+  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+  await options.onReview!({
+    threadId: 'native-thread',
+    turnId: 'native-turn',
+    callId: 'call',
+    namespace: null,
+    tool: 'request_changes',
+    arguments: {},
+  });
+  expect(conversation.state.reviewId).not.toBeNull();
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'One more' })).toBe(false);
+
+  await state.finish();
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'After' })).toBe(false);
+  expect(steer).toHaveBeenCalledTimes(2);
+});
+
+it('holds a message sent before Codex accepts the turn, and refuses one after Stop', async () => {
+  stubFetch({ usage: async () => decision() });
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const steer = vi.spyOn(CodexAppServerClient.prototype, 'steer').mockResolvedValue(true);
+  const { conversation } = fixture();
+  await conversation.onStart();
+  await conversation.persistMessages([
+    { id: 'user', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
+  ]);
+  const stop = new AbortController();
+  await conversation.onChatMessage(undefined, { requestId: 'initial', abortSignal: stop.signal });
+  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+  expect(conversation.state.status).toBe('starting');
+  const first = { id: crypto.randomUUID(), text: 'Use SI units' };
+  const second = { id: crypto.randomUUID(), text: 'And add a figure' };
+  expect(await conversation.steer(first)).toBe(true);
+  expect(await conversation.steer(second)).toBe(true);
+  // Chat shows them at once, but Codex has no turn to add them to yet.
+  expect(emit.mock.calls.map(([chunk]) => chunk)).toMatchObject([
+    { type: 'data-steer', data: first },
+    { type: 'data-steer', data: second },
+  ]);
+  expect(steer).not.toHaveBeenCalled();
+  await options.prepare();
+  options.onThread('native-thread');
+  options.onReady();
+  options.onAccepted('native-turn');
+  await vi.waitFor(() => expect(steer).toHaveBeenCalledTimes(2));
+  expect(steer.mock.calls.map(([input]) => input.text)).toEqual([first.text, second.text]);
+
+  stop.abort();
+  expect(conversation.state.status).toBe('stopping');
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'Never mind' })).toBe(false);
+  expect(steer).toHaveBeenCalledTimes(2);
+});
+
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {
   freezeTime();
   stubFetch({ usage: async () => decision() });

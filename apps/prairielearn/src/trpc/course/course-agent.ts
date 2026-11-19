@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { CreateConversationInput } from '@prairielearn/course-agent-types';
+import { CreateConversationInput, SteerInputSchema } from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -14,6 +14,7 @@ import {
 import {
   createCourseAgentConversation,
   createLocalCourseAgentConversation,
+  steerCourseAgentConversation,
 } from '../../ee/lib/course-agent/client.js';
 import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
 import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
@@ -165,6 +166,25 @@ export const courseAgentRouter = t.router({
       return StaffCourseAgentConversationSchema.parse(conversation);
     }),
 
+  // A message sent while the agent is working joins the turn that is running. Between turns the
+  // browser sends messages over the chat socket instead.
+  steer: courseAgentProcedure
+    .input(SteerInputSchema.extend({ conversationId: IdSchema }))
+    .mutation(async ({ ctx, input: { conversationId, ...steer } }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (!(await steerCourseAgentConversation(conversation.agent_conversation_id, steer))) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'The agent finished before your message arrived. Send it again.',
+        });
+      }
+    }),
+
   // The agent service generates a title from the first message and publishes it to the
   // conversation's owner, whose browser saves it here.
   setTitle: courseAgentProcedure
@@ -192,4 +212,5 @@ export interface CourseAgentError {
   GetReview: never;
   PostReviewDecision: never;
   SetTitle: never;
+  Steer: never;
 }
