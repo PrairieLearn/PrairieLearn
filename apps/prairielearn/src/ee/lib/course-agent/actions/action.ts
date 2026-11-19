@@ -52,7 +52,10 @@ interface CourseActionDefinition<Schema extends z.ZodObject> {
   description: string;
   /** What students or staff notice afterward. */
   effects: string;
-  /** How to reverse it, or null when it cannot be reversed. */
+  /**
+   * How to reverse it, or null when it cannot be reversed. The instructor reads this on the
+   * request, so it names no actions.
+   */
   undo: string | null;
   permission: CourseActionPermission;
   input: Schema;

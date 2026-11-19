@@ -164,7 +164,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     expect(Object.keys(catalog.actions)).toEqual(Object.keys(COURSE_AGENT_ACTIONS));
     expect(catalog.actions.issues_close).toMatchObject({
       group: 'issues',
-      undo: expect.stringContaining('issues_reopen'),
+      undo: 'Reopen the same issues.',
       input: {
         required: ['issue_ids'],
         // IDs are serialized as strings.
@@ -198,7 +198,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
           { label: 'addNumbers', detail: 'It is broken.' },
         ],
         moreRows: 0,
-        undo: 'Reopen the same issues with issues_reopen.',
+        undo: 'Reopen the same issues.',
       },
     });
     expect(await issuesOpen(issueIds)).toEqual([true, true]);
