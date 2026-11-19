@@ -1,13 +1,16 @@
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { callScalar } from '@prairielearn/postgres';
+import { callScalar, runInTransactionAsync } from '@prairielearn/postgres';
 
 import type { Enrollment, EnumEnrollmentStatus } from '../../../../lib/db-types.js';
 import {
   createPublishingExtensionWithEnrollments,
   deletePublishingExtension,
+  selectEnrollmentsForPublishingExtension,
   selectPublishingExtensionByName,
+  updatePublishingExtension,
+  updatePublishingExtensionEnrollments,
 } from '../../../../models/course-instance-publishing-extensions.js';
 import {
   deleteEnrollment,
@@ -256,23 +259,22 @@ function requireModernPublishing(ctx: CourseInstanceActionContext) {
   }
 }
 
+const ExtensionEndDateSchema = z.iso
+  .datetime({ offset: true })
+  .describe(
+    "When the students' access now ends, as an ISO 8601 timestamp with an offset or Z. Work it out in the course instance's display_timezone.",
+  );
+
 const CreateExtensionInputSchema = z.strictObject({
   ...COURSE_INSTANCE_INPUT,
   name: ExtensionNameSchema,
-  end_date: z.iso
-    .datetime({ offset: true })
-    .describe(
-      "When the students' access now ends, as an ISO 8601 timestamp with an offset or Z. Work it out in the course instance's display_timezone.",
-    ),
+  end_date: ExtensionEndDateSchema,
   uids: UidsSchema,
 });
 
-async function planExtension(
-  ctx: CourseInstanceActionContext,
-  input: z.infer<typeof CreateExtensionInputSchema>,
-) {
-  requireModernPublishing(ctx);
-  const endDate = new Date(input.end_date);
+/** An extension's end date, which must be later than now and than when everyone's access ends. */
+function parseExtensionEndDate(ctx: CourseInstanceActionContext, end_date: string) {
+  const endDate = new Date(end_date);
   if (endDate.getTime() <= Date.now()) {
     throw new CourseActionError('The end date has already passed. Use a later one.');
   }
@@ -282,6 +284,15 @@ async function planExtension(
       `The course instance is already open to everyone until ${formatDate(publishingEnd, ctx.course_instance.display_timezone)}, so an extension must end later than that.`,
     );
   }
+  return endDate;
+}
+
+async function planExtension(
+  ctx: CourseInstanceActionContext,
+  input: z.infer<typeof CreateExtensionInputSchema>,
+) {
+  requireModernPublishing(ctx);
+  const endDate = parseExtensionEndDate(ctx, input.end_date);
   if (
     await selectPublishingExtensionByName({ name: input.name, courseInstance: ctx.course_instance })
   ) {
@@ -309,6 +320,62 @@ async function selectExtension(ctx: CourseInstanceActionContext, name: string) {
     );
   }
   return extension;
+}
+
+const UpdateExtensionInputSchema = z.strictObject({
+  ...COURSE_INSTANCE_INPUT,
+  name: z.string().min(1).describe('Name of the extension to change.'),
+  new_name: ExtensionNameSchema.optional().describe('A new name for the extension.'),
+  end_date: ExtensionEndDateSchema.optional(),
+  add_uids: UidsSchema.optional().describe('UIDs of students to add to the extension.'),
+  remove_uids: UidsSchema.optional().describe('UIDs of students to take out of the extension.'),
+});
+
+async function planExtensionUpdate(
+  ctx: CourseInstanceActionContext,
+  input: z.infer<typeof UpdateExtensionInputSchema>,
+) {
+  const extension = await selectExtension(ctx, input.name);
+  if (
+    input.new_name === undefined &&
+    input.end_date === undefined &&
+    input.add_uids === undefined &&
+    input.remove_uids === undefined
+  ) {
+    throw new CourseActionError('Give new_name, end_date, add_uids, or remove_uids.');
+  }
+  if (
+    input.new_name !== undefined &&
+    input.new_name !== extension.name &&
+    (await selectPublishingExtensionByName({
+      name: input.new_name,
+      courseInstance: ctx.course_instance,
+    }))
+  ) {
+    throw new CourseActionError(
+      `The course instance already has an extension named "${input.new_name}". Use another name.`,
+    );
+  }
+  const endDate = input.end_date === undefined ? null : parseExtensionEndDate(ctx, input.end_date);
+  const current = new Set(
+    (await selectEnrollmentsForPublishingExtension({ extension })).map(({ id }) => id),
+  );
+  const add = (await selectEnrolled(ctx, input.add_uids ?? [])).filter(
+    ({ enrollment }) => !current.has(enrollment.id),
+  );
+  const remove = await selectEnrolled(ctx, input.remove_uids ?? []);
+  const notIn = remove.filter(({ enrollment }) => !current.has(enrollment.id));
+  if (notIn.length > 0) {
+    throw new CourseActionError(
+      `Not in the extension "${input.name}": ${some(notIn.map(({ uid }) => uid))}. Find its students in the publishing_extension_students dataset.`,
+    );
+  }
+  if (current.size + add.length - remove.length === 0) {
+    throw new CourseActionError(
+      `This would leave the extension "${input.name}" with no students. Remove it with publishing_extensions_delete instead.`,
+    );
+  }
+  return { extension, endDate, add, remove };
 }
 
 export const studentActions = {
@@ -459,6 +526,55 @@ export const studentActions = {
       return {
         summary: `Created the extension "${input.name}" for ${count(students.length, 'student')}.`,
       };
+    },
+  }),
+  publishing_extensions_update: courseInstanceAction({
+    group: 'students',
+    description:
+      'Change an extension: when it ends, its name, or which students it covers. Use this instead of creating a second extension for the same students.',
+    effects:
+      'Students added keep access to the course instance until the extension ends. Students taken out lose access when everyone else does.',
+    undo: 'Change the extension back the same way. The request shows how it is now.',
+    permission: ['course_editor', 'student_data_editor'],
+    input: UpdateExtensionInputSchema,
+    describe: async ({ ctx, input }) => {
+      const { extension, endDate, add, remove } = await planExtensionUpdate(ctx, input);
+      const timezone = ctx.course_instance.display_timezone;
+      return {
+        title: `Change the extension "${input.name}"`,
+        context: ctx.course_instance.short_name,
+        rows: [
+          ...(input.new_name === undefined
+            ? []
+            : [{ label: 'Name', detail: `"${input.name}" becomes "${input.new_name}"` }]),
+          ...(endDate === null
+            ? []
+            : [
+                {
+                  label: 'Extended access until',
+                  detail: `${formatDate(endDate, timezone)}, which is now ${formatDate(extension.end_date, timezone)}`,
+                },
+              ]),
+          ...add.map(({ uid }) => ({ label: uid, detail: 'Add' })),
+          ...remove.map(({ uid }) => ({ label: uid, detail: 'Take out' })),
+        ],
+      };
+    },
+    run: async ({ ctx, input }) => {
+      const { extension, endDate, add, remove } = await planExtensionUpdate(ctx, input);
+      await runInTransactionAsync(async () => {
+        await updatePublishingExtension({
+          extension,
+          name: input.new_name ?? extension.name,
+          endDate: endDate ?? extension.end_date,
+        });
+        await updatePublishingExtensionEnrollments({
+          courseInstancePublishingExtension: extension,
+          enrollmentsToAdd: add.map(({ enrollment }) => enrollment),
+          enrollmentsToRemove: remove.map(({ enrollment }) => enrollment),
+        });
+      });
+      return { summary: `Changed the extension "${input.new_name ?? input.name}".` };
     },
   }),
   publishing_extensions_delete: courseInstanceAction({

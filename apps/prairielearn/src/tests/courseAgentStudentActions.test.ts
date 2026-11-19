@@ -294,10 +294,107 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
       'already has an extension',
     );
 
-    await approve('publishing_extensions_delete', { name: 'Makeup week' });
+    const others = [students[1].uid, students[2].uid];
+    expect(
+      await refusal('publishing_extensions_update', { name: 'Makeup week', remove_uids: others }),
+    ).toContain('Not in the extension "Makeup week"');
+    expect(
+      await refusal('publishing_extensions_update', { name: 'Makeup week', remove_uids: uids }),
+    ).toContain('publishing_extensions_delete');
+    const updated = await approve('publishing_extensions_update', {
+      name: 'Makeup week',
+      new_name: 'Makeup fortnight',
+      end_date: '2401-01-15T00:00:00Z',
+      add_uids: others,
+      remove_uids: uids,
+    });
+    expect(updated.card).toMatchObject({
+      title: 'Change the extension "Makeup week"',
+      rows: [
+        { label: 'Name', detail: '"Makeup week" becomes "Makeup fortnight"' },
+        {
+          label: 'Extended access until',
+          detail: expect.stringMatching(/^2401-01-14 .*, which is now 2400-12-31 /),
+        },
+        { label: others[0], detail: 'Add' },
+        { label: others[1], detail: 'Add' },
+        { label: uids[0], detail: 'Take out' },
+      ],
+    });
     expect(await withExtension()).toEqual([]);
-    expect(await refusal('publishing_extensions_delete', { name: 'Makeup week' })).toContain(
-      'no extension named "Makeup week"',
+    expect(
+      await queryScalars(sql.select_extension_uids, { name: 'Makeup fortnight' }, z.string()),
+    ).toEqual([...others].sort());
+
+    await approve('publishing_extensions_delete', { name: 'Makeup fortnight' });
+    expect(await refusal('publishing_extensions_delete', { name: 'Makeup fortnight' })).toContain(
+      'no extension named "Makeup fortnight"',
     );
+  });
+
+  test('creates a group and changes who is in it', async () => {
+    const [first, second, third] = students.map(({ uid }) => uid);
+    const groupWork = { assessment_tid: 'hw5-templateGroupWork' };
+    const members = (name: string) =>
+      queryScalars(sql.select_group_uids, { tid: groupWork.assessment_tid, name }, z.string());
+
+    expect(
+      await refusal('groups_create', { assessment_tid: 'hw1-automaticTestSuite', uids: [first] }),
+    ).toContain('does not use group work');
+    expect(
+      await refusal('groups_create', { ...groupWork, uids: ['stranger@example.com'] }),
+    ).toContain('Not enrolled in the course instance "Sp15": stranger@example.com');
+
+    const created = await approve('groups_create', {
+      ...groupWork,
+      name: 'owls',
+      uids: [first, second],
+    });
+    expect(created.card).toMatchObject({
+      title: 'Create the group "owls" with 2 students',
+      context: 'Group Activity Template · Sp15',
+      rows: [{ label: first }, { label: second }],
+    });
+    expect(created.result.outcome.summary).toBe('Created the group "owls" with 2 students.');
+    expect(await members('owls')).toEqual([first, second].sort());
+
+    expect(await refusal('groups_create', { ...groupWork, name: 'owls', uids: [third] })).toContain(
+      'already has a group named "owls"',
+    );
+    expect(await refusal('groups_create', { ...groupWork, uids: [first, third] })).toContain(
+      `${first} is in owls`,
+    );
+    expect(
+      await refusal('groups_set_members', {
+        ...groupWork,
+        group_name: 'owls',
+        remove_uids: [third],
+      }),
+    ).toContain('Not in the group "owls"');
+    expect(
+      await refusal('groups_set_members', {
+        ...groupWork,
+        group_name: 'owls',
+        remove_uids: [first, second],
+      }),
+    ).toContain('with no one in it');
+
+    const changed = await approve('groups_set_members', {
+      ...groupWork,
+      group_name: 'owls',
+      add_uids: [third],
+      remove_uids: [first],
+    });
+    expect(changed.card).toMatchObject({
+      title: 'Change who is in the group "owls"',
+      rows: [
+        { label: third, detail: 'Add' },
+        { label: first, detail: 'Take out' },
+      ],
+    });
+    expect(changed.result.outcome.summary).toBe(
+      'Changed the group "owls": added 1 student and took out 1 student.',
+    );
+    expect(await members('owls')).toEqual([second, third].sort());
   });
 });

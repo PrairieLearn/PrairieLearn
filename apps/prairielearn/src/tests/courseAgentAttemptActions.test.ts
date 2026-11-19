@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { afterAll, assert, beforeAll, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { DateFromISOString } from '@prairielearn/zod';
 
@@ -113,6 +113,12 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     // An action that runs as a job delivers its result once the job finishes.
     await vi.waitFor(() => expect(delivered.has(requested.id)).toBe(true), { timeout: 30_000 });
     return { card: requested.body.card, result: delivered.get(requested.id)! };
+  }
+
+  async function refusal(action: string, input: Record<string, unknown>) {
+    const refused = await request(action, input);
+    assert.equal(refused.status, 400, JSON.stringify(refused.body));
+    return z.string().parse(refused.body.message);
   }
 
   const attempt = () =>
@@ -265,6 +271,95 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     });
     expect(byPoints.result.outcome.summary).toBe('Set the total of dev@example.com to 7 points.');
     expect((await attempt()).points).toBe(7);
+  });
+
+  test('sets the score on one question, and sends questions to a grader', async () => {
+    const questions = () =>
+      queryRows(
+        sql.select_instance_questions,
+        { assessment_instance_id: attemptId },
+        z.object({
+          id: z.string(),
+          qid: z.string(),
+          points: z.number().nullable(),
+          max_points: z.number().nullable(),
+          requires_manual_grading: z.boolean(),
+          assigned_grader_uid: z.string().nullable(),
+        }),
+      );
+    const [first, second] = await questions();
+
+    expect(
+      await refusal('instance_questions_set_score', {
+        instance_question_id: first.id,
+        points: 1,
+        score_perc: 50,
+      }),
+    ).toContain('Set the score one way');
+    expect(
+      await refusal('instance_questions_set_score', { instance_question_id: '999999', points: 1 }),
+    ).toContain('has no instance question with ID 999999');
+
+    const scored = await approve('instance_questions_set_score', {
+      instance_question_id: first.id,
+      points: 3,
+    });
+    expect(scored.card).toMatchObject({
+      title: `Set the score on ${first.qid} for dev@example.com`,
+      rows: [
+        { label: 'Now', detail: expect.stringContaining(`of ${first.max_points} points`) },
+        { label: 'New', detail: '3 points in total' },
+      ],
+    });
+    expect(scored.result.outcome.summary).toContain(`is now 3 of ${first.max_points} points`);
+    expect((await questions())[0].points).toBe(3);
+
+    const ids = { instance_question_ids: [first.id, second.id] };
+    expect(await refusal('instance_questions_set_manual_grading', ids)).toContain(
+      'Give requires_manual_grading, assigned_grader_uid, or both.',
+    );
+    expect(
+      await refusal('instance_questions_set_manual_grading', {
+        ...ids,
+        assigned_grader_uid: 'nobody@example.com',
+      }),
+    ).toContain('Those who can: owner@example.com');
+
+    const queued = await approve('instance_questions_set_manual_grading', {
+      ...ids,
+      requires_manual_grading: true,
+      assigned_grader_uid: 'owner@example.com',
+    });
+    expect(queued.card).toMatchObject({
+      title: 'Send 2 questions to manual grading and assign owner@example.com to grade',
+      rows: [
+        {
+          label: `${first.qid} · dev@example.com`,
+          detail: 'Now: not in the queue, no assigned grader',
+        },
+        { label: `${second.qid} · dev@example.com` },
+      ],
+    });
+    expect(queued.result.outcome.summary).toBe(
+      'Sent 2 questions to manual grading and assigned owner@example.com to grade.',
+    );
+    expect((await questions()).slice(0, 2)).toMatchObject([
+      { requires_manual_grading: true, assigned_grader_uid: 'owner@example.com' },
+      { requires_manual_grading: true, assigned_grader_uid: 'owner@example.com' },
+    ]);
+
+    const unassigned = await approve('instance_questions_set_manual_grading', {
+      instance_question_ids: [first.id],
+      requires_manual_grading: false,
+      assigned_grader_uid: null,
+    });
+    expect(unassigned.result.outcome.summary).toBe(
+      'Marked 1 question as graded and removed the assigned grader.',
+    );
+    expect((await questions()).slice(0, 2)).toMatchObject([
+      { requires_manual_grading: false, assigned_grader_uid: null },
+      { requires_manual_grading: true, assigned_grader_uid: 'owner@example.com' },
+    ]);
   });
 
   test('closes an open attempt with a grading job, then reopens it', async () => {

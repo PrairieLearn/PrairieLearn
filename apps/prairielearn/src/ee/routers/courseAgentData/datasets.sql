@@ -136,6 +136,7 @@ SELECT
   iq.score_perc,
   iq.highest_submission_score,
   iq.requires_manual_grading,
+  grader.uid AS assigned_grader_uid,
   EXTRACT(
     EPOCH
     FROM
@@ -148,8 +149,9 @@ FROM
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
+  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
   LEFT JOIN questions AS q ON (q.id = aq.question_id)
+  LEFT JOIN users AS grader ON (grader.id = iq.assigned_grader)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -346,3 +348,27 @@ FROM
   JOIN users AS u ON (u.id = cp.user_id)
 WHERE
   cp.course_id = $course_id;
+
+-- BLOCK select_group_members_by_course_id
+SELECT
+  a.course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  a.id AS assessment_id,
+  a.tid AS assessment_tid,
+  g.id AS team_id,
+  g.name AS group_name,
+  u.id AS user_id,
+  u.uid
+FROM
+  course_instances AS ci
+  JOIN assessments AS a ON (a.course_instance_id = ci.id)
+  JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  JOIN teams AS g ON (g.team_config_id = gc.id)
+  JOIN team_users AS gu ON (gu.team_id = g.id)
+  JOIN users AS u ON (u.id = gu.user_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND gc.deleted_at IS NULL
+  AND g.deleted_at IS NULL;

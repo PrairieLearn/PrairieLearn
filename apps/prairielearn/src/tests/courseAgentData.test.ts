@@ -8,7 +8,9 @@ import { insertCourseAgentConversation } from '../ee/models/course-agent-convers
 import { COURSE_DATA_DATASETS } from '../ee/routers/courseAgentData/datasets.js';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
+import { createGroup } from '../lib/groups.js';
 import { insertIssue } from '../lib/issues.js';
+import { selectOptionalAssessmentByTid } from '../models/assessment.js';
 import { createPublishingExtensionWithEnrollments } from '../models/course-instance-publishing-extensions.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
@@ -195,6 +197,17 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
       name: 'Makeup week',
       endDate: new Date('2401-01-01T00:00:00Z'),
       enrollments,
+    });
+    await createGroup({
+      course_instance: courseInstance,
+      assessment: (await selectOptionalAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'hw5-templateGroupWork',
+      }))!,
+      group_name: 'owls',
+      uids: [student.uid],
+      authn_user_id: '1',
+      authzData: dangerousFullSystemAuthz(),
     });
     for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${dataUrl}/${name}`, owner, {

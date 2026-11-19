@@ -250,6 +250,10 @@ export const COURSE_DATA_DATASETS = {
         .nullable()
         .describe('Best submission score, from 0 to 1.'),
       requires_manual_grading: z.boolean().describe('Whether manual grading is pending.'),
+      assigned_grader_uid: z
+        .string()
+        .nullable()
+        .describe('UID of the staff member assigned to grade the question manually, if any.'),
       duration: z
         .number()
         .nullable()
@@ -474,6 +478,21 @@ export const COURSE_DATA_DATASETS = {
       end_date: TimestampSchema.describe("When the extension's access ends."),
       enrollment_id: IdSchema,
       uid: z.string().nullable().describe('UID of the student with the extension.'),
+    }),
+  }),
+  group_members: dataset({
+    description:
+      'Which students are in which group, for assessments that use group work. One row per student per group. Change groups with the groups_ actions.',
+    query: sql.select_group_members_by_course_id,
+    schema: z.object({
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      assessment_id: IdSchema,
+      assessment_tid: AssessmentTidSchema,
+      team_id: IdSchema.describe('The group, as team_id in assessment_instances.'),
+      group_name: z.string().describe('Name of the group, unique in the assessment.'),
+      user_id: IdSchema,
+      uid: z.string().describe('UID of the student in the group.'),
     }),
   }),
   staff: dataset({
