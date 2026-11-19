@@ -607,9 +607,19 @@ export class CourseSandbox extends DurableObject<Env> {
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
-    const started = Date.now();
-    // Codex tells the model the date from its own clock, and commands the agent runs inherit it.
+    // Codex tells the model the date and zone of the system clock, and commands the agent runs
+    // print times in it. A zone the image does not know leaves the clock on UTC.
     const timezone = request.headers.get('X-Course-Timezone');
+    if (timezone) {
+      await this.exec([
+        'sh',
+        '-c',
+        'test -f "/usr/share/zoneinfo/$1" || exit 0; ln -sfn "/usr/share/zoneinfo/$1" /etc/localtime && echo "$1" > /etc/timezone',
+        'sh',
+        timezone,
+      ]);
+    }
+    const started = Date.now();
     this.process = await this.container.exec(
       [
         'codex-app-server',
@@ -625,11 +635,7 @@ export class CourseSandbox extends DurableObject<Env> {
         // Threads set their own cwd to the course. Home exists before course files are added, so
         // the runner can start while the repository is still being cloned.
         cwd: `${SESSION}/home`,
-        env: {
-          HOME: `${SESSION}/home`,
-          CODEX_HOME: `${SESSION}/home/.codex`,
-          ...(timezone && { TZ: timezone }),
-        },
+        env: { HOME: `${SESSION}/home`, CODEX_HOME: `${SESSION}/home/.codex` },
         stdout: 'ignore',
         stderr: 'ignore',
       },

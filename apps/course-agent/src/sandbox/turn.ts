@@ -31,7 +31,7 @@ export class SandboxTurn {
       /** Runs alongside the runner start; the thread starts only after both finish. */
       addCourseFiles?: () => Promise<void>;
       thread: Parameters<CodexAppServerClient['thread']>[0];
-      /** The course's timezone, for the runner's clock. */
+      /** The course's timezone, for the sandbox's clock. */
       timezone?: string;
       onThread: (id: string) => void;
       onReady: () => void;

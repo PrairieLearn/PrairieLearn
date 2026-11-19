@@ -182,6 +182,28 @@ describe('course agent turns', () => {
     disconnect();
   });
 
+  it('sets the sandbox clock and sends the time rules as application context', async () => {
+    const { sandbox, native, commands, disconnect } = runner();
+    native.beginTurn('assistant');
+    await native.connect('America/Chicago');
+    expect(sandbox.fetch).toHaveBeenCalledWith('http://codex.internal/', {
+      headers: { Upgrade: 'websocket', 'X-Course-Timezone': 'America/Chicago' },
+    });
+    await native.thread({ ...thread, threadId: 'thread' });
+    await native.run(
+      { tag: 'message:1', text: 'Fix this', page: 'On "algebra/add".', timezone: 'Use Central.' },
+      () => {},
+    );
+    expect(commands.find((command) => command.method === 'turn/start')?.params).toMatchObject({
+      additionalContext: {
+        prairielearn_page: { kind: 'untrusted', value: 'On "algebra/add".' },
+        course_timezone: { kind: 'application', value: 'Use Central.' },
+      },
+    });
+    native.closeStream();
+    disconnect();
+  });
+
   it('reuses the native session for follow-ups and stops processes only on explicit Stop', async () => {
     const { sandbox, native, commands, emit } = runner();
     for (const threadId of [null, 'thread']) {

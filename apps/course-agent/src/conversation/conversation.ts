@@ -61,7 +61,7 @@ import {
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
-import { buildInstructions, describePageLocation } from './instructions.js';
+import { buildInstructions, describePageLocation, describeTimezone } from './instructions.js';
 import { resolveNavigation } from './navigation.js';
 import { generateTitle } from './title.js';
 
@@ -164,8 +164,14 @@ const CourseContextSchema = z.object({
   courseId: z.string().regex(/^\d+$/).optional(),
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
-  // Optional while a PrairieLearn deployment that does not send it may still connect.
-  timezone: z.string().max(100).optional(),
+  // Optional while a PrairieLearn deployment that does not send it may still connect. The sandbox
+  // uses it as a path under its zone files, so anything but a zone name counts as none.
+  timezone: z
+    .string()
+    .max(100)
+    .regex(/^[\w+-]+(\/[\w+-]+)*$/)
+    .optional()
+    .catch(undefined),
 });
 
 /**
@@ -961,6 +967,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const delivered = continuation && review?.result ? review : null;
     const metadata = message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data;
     const location = metadata?.location;
+    const timezone = this.record.courseContext?.timezone;
     // File parts are left out rather than joined as blank lines.
     const messageText = sent
       .map((entry) =>
@@ -984,6 +991,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             images: attachments.filter(({ id }) => images.has(id)).map(attachmentPath),
             ...(location ? { page: describePageLocation(location) } : {}),
           }),
+      ...(timezone ? { timezone: describeTimezone(timezone) } : {}),
       // A restored or new thread may lack turns that chat history has.
       ...((startup || this.record.threadMayBeBehind) && earlier.length > 0
         ? { catchUp: (latestTag) => buildCatchUp(missedTurns(earlier, latestTag), source.type) }
@@ -1051,7 +1059,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         threadId: this.record.nativeThreadId,
         pages: this.record.pages ?? [],
       },
-      timezone: this.record.courseContext?.timezone,
+      timezone,
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.
       onThread: (id) => {
