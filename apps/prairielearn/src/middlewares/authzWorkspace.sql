@@ -1,5 +1,6 @@
 -- BLOCK select_auth_data_from_workspace
 SELECT
+  w.state AS workspace_state,
   v.id AS variant_id,
   v.question_id,
   v.instance_question_id,

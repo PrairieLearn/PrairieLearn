@@ -415,6 +415,18 @@ export const ConfigSchema = z.object({
    */
   workspaceLogsExpirationDays: z.number().nullable().default(120),
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
+  /**
+   * Whether workspace containers use the main application host or workspace-specific hosts.
+   */
+  workspaceHostMode: z.enum(['same-origin', 'cross-origin']).default('same-origin'),
+  /** Base domain used for workspace hostnames in cross-origin mode. */
+  workspaceSandboxBaseDomain: z
+    .string()
+    .regex(
+      /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/,
+    )
+    .nullable()
+    .default(null),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),
   workspaceHeartbeatIntervalSec: z.number().default(60),
@@ -818,6 +830,44 @@ export async function loadConfig(paths: string[]) {
 
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
     throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
+  }
+
+  if (config.workspaceHostMode === 'cross-origin') {
+    if (!config.workspaceSandboxBaseDomain) {
+      throw new Error(
+        'workspaceSandboxBaseDomain must be set when workspaceHostMode is "cross-origin"',
+      );
+    }
+    if (!config.serverCanonicalHost) {
+      throw new Error('serverCanonicalHost must be set when workspaceHostMode is "cross-origin"');
+    }
+
+    const cookieDomain = config.cookieDomain?.replace(/^\./, '').toLowerCase();
+    const sandboxDomain = config.workspaceSandboxBaseDomain.toLowerCase();
+    if (
+      cookieDomain &&
+      (sandboxDomain === cookieDomain || sandboxDomain.endsWith(`.${cookieDomain}`))
+    ) {
+      throw new Error('workspaceSandboxBaseDomain must not be covered by cookieDomain');
+    }
+
+    // Workspace hosts must not be same-site with PrairieLearn. An exact check would need the
+    // Public Suffix List, and bundling it made startup fail once the sandbox domain itself was
+    // listed. Rejecting anything under the application host's parent domain (for example,
+    // ws.prairielearn.com for us.prairielearn.com) catches realistic misconfigurations.
+    const applicationHost = new URL(config.serverCanonicalHost).hostname.toLowerCase();
+    const applicationHostLabels = applicationHost.split('.');
+    const applicationParentDomain =
+      applicationHostLabels.length > 2 ? applicationHostLabels.slice(1).join('.') : applicationHost;
+    if (
+      sandboxDomain === applicationParentDomain ||
+      sandboxDomain.endsWith(`.${applicationParentDomain}`) ||
+      applicationHost.endsWith(`.${sandboxDomain}`)
+    ) {
+      throw new Error(
+        'workspaceSandboxBaseDomain must not share a parent domain with serverCanonicalHost',
+      );
+    }
   }
 }
 

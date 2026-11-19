@@ -55,7 +55,9 @@ export interface SessionOptions {
   };
 }
 
+export type { Session } from './session.js';
 export type { SessionStore };
+export { loadExistingSession } from './session.js';
 
 const DEFAULT_COOKIE_NAME = 'session';
 const DEFAULT_COOKIE_MAX_AGE = 86400000; // 1 day

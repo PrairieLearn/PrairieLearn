@@ -18,7 +18,7 @@ import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCo
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import type { ResLocalsConfig } from './config.js';
-import type { Course, CourseInstance } from './db-types.js';
+import type { Course, CourseInstance, Workspace } from './db-types.js';
 
 interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
@@ -58,6 +58,11 @@ interface ResLocalsForPageLookup {
     ResLocalsAssessment &
     ResLocalsAssessmentInstance;
   assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
+  workspace: ResLocals & {
+    workspace_access_authorized: boolean;
+    workspace_id: string;
+    workspace_state: Workspace['state'];
+  };
 }
 
 // Only apply MergeUnion when T is a union of page types; preserve unions for single types

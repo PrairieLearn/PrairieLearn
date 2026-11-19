@@ -2,6 +2,8 @@ import type { NextFunction, Request, Response } from 'express';
 
 import * as Sentry from '@prairielearn/sentry';
 
+import { redactSensitiveRequestBody } from './request-redaction.js';
+
 export function enrichSentryEventMiddleware(req: Request, res: Response, next: NextFunction) {
   // This will ensure that this middleware is always run in an isolated
   // context so that we don't accidentally leak data between requests.
@@ -15,6 +17,11 @@ export function enrichSentryEventMiddleware(req: Request, res: Response, next: N
       event.tags.response_id = res.locals.response_id;
       event.tags.method = req.method;
       event.tags.url = req.originalUrl;
+
+      const redactedBody = redactSensitiveRequestBody(req.path, req.body);
+      if (event.request != null && redactedBody !== req.body) {
+        event.request.data = redactedBody;
+      }
 
       if (res.locals.error_id) {
         event.tags.error_id = res.locals.error_id;

@@ -2,6 +2,8 @@ import { type NextFunction, type Request, type Response } from 'express';
 
 import { logger } from '@prairielearn/logger';
 
+import { redactSensitiveRequestBody } from '../lib/request-redaction.js';
+
 export default function (req: Request, res: Response, next: NextFunction) {
   if (req.method !== 'OPTIONS') {
     logger.verbose('request', {
@@ -13,7 +15,7 @@ export default function (req: Request, res: Response, next: NextFunction) {
       method: req.method,
       path: req.path,
       params: req.params,
-      body: req.body,
+      body: redactSensitiveRequestBody(req.path, req.body),
       response_id: res.locals.response_id,
     });
   }

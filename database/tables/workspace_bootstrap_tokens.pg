@@ -1,0 +1,17 @@
+columns
+    authorization_cookies: jsonb not null
+    expires_at: timestamp with time zone not null
+    id: bigint not null default nextval('workspace_bootstrap_tokens_id_seq'::regclass)
+    public_question_endpoint: boolean not null
+    session_id: text not null
+    token_hash: text not null
+    workspace_id: bigint not null
+
+indexes
+    workspace_bootstrap_tokens_pkey: PRIMARY KEY (id) USING btree (id)
+    workspace_bootstrap_tokens_token_hash_key: UNIQUE (token_hash) USING btree (token_hash)
+    workspace_bootstrap_tokens_expires_at_idx: USING btree (expires_at)
+    workspace_bootstrap_tokens_workspace_id_idx: USING btree (workspace_id)
+
+foreign-key constraints
+    workspace_bootstrap_tokens_workspace_id_fkey: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE

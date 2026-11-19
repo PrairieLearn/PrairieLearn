@@ -1784,6 +1784,17 @@ export const WorkspaceSchema = z.object({
 });
 export type Workspace = z.infer<typeof WorkspaceSchema>;
 
+export const WorkspaceBootstrapTokenSchema = z.object({
+  authorization_cookies: z.record(z.string(), z.string()),
+  expires_at: DateFromISOString,
+  id: IdSchema,
+  public_question_endpoint: z.boolean(),
+  session_id: z.string(),
+  token_hash: z.string(),
+  workspace_id: IdSchema,
+});
+export type WorkspaceBootstrapToken = z.infer<typeof WorkspaceBootstrapTokenSchema>;
+
 export const WorkspaceHostSchema = z.object({
   hostname: z.string().nullable(),
   id: IdSchema,
@@ -1947,6 +1958,7 @@ export const TableNames = [
   'user_settings',
   'users',
   'variants',
+  'workspace_bootstrap_tokens',
   'workspace_host_logs',
   'workspace_hosts',
   'workspace_logs',
