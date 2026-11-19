@@ -170,6 +170,12 @@ export async function postCourseActionDecision({
     result: null,
   });
   if (!row) return await settleRepeat();
-  await recordAndDeliverResult(conversation, row, await runCourseAction(ctx, action));
+  const result = await runCourseAction(ctx, action);
+  // As for a file review, the agent's next turn starts once it has the result, so the result is
+  // sent after this request answers. A failed send is retried by the result sweep.
+  void recordAndDeliverResult(conversation, row, result).catch((error: unknown) => {
+    logger.error('Course agent action result was not recorded; it will be retried.', error);
+    Sentry.captureException(error);
+  });
   return { decision };
 }

@@ -36,18 +36,23 @@ export function ActionCard({
     ...trpc.courseAgent.getAction.queryOptions(actionInput),
     retry: false,
   });
+  // Set when the instructor clicks "Always approve", so the mode changes once the approval succeeds.
+  const alwaysApproveRef = useRef(false);
+  const reviewKey = trpc.courseAgent.getReview.queryKey({ conversationId, reviewId: actionId });
   const decision = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
+    // Callbacks given to mutate() are dropped if the card unmounts first, and these are not.
+    onSuccess: () => {
+      if (alwaysApproveRef.current) onAlwaysApprove();
+    },
     // The chat reads the same request through getReview to decide what a new message does.
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({
           queryKey: trpc.courseAgent.getAction.queryKey(actionInput),
         }),
-        queryClient.invalidateQueries({
-          queryKey: trpc.courseAgent.getReview.queryKey({ conversationId, reviewId: actionId }),
-        }),
+        queryClient.invalidateQueries({ queryKey: reviewKey }),
       ]),
   });
   const resume = useMutation({
@@ -60,8 +65,10 @@ export function ActionCard({
     getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
     getAppError<CourseAgentError['Resume']>(resume.error);
   const pending = data?.decision === null;
-  const decide = (value: 'approved' | 'denied') =>
+  const decide = (value: 'approved' | 'denied', always = false) => {
+    alwaysApproveRef.current = always;
     decision.mutate({ conversationId, reviewId: actionId, decision: value });
+  };
   // Approves a pending request on the instructor's behalf once it has loaded. It tries once: if
   // the approval fails, the card's buttons are left for the instructor to decide.
   const autoApprovedRef = useRef(false);
@@ -132,12 +139,7 @@ export function ActionCard({
                     size="sm"
                     className="course-agent-composer-button course-agent-review-always"
                     disabled={disabled}
-                    onClick={() =>
-                      decision.mutate(
-                        { conversationId, reviewId: actionId, decision: 'approved' },
-                        { onSuccess: onAlwaysApprove },
-                      )
-                    }
+                    onClick={() => decide('approved', true)}
                   >
                     Always approve
                   </Button>
