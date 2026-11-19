@@ -151,19 +151,17 @@ export function parseChatDiff(
   const isFileHeader = (i: number) =>
     lines[i].startsWith('--- ') && lines[i + 1]?.startsWith('+++ ');
   /**
-   * Inside a hunk, such a pair of lines could also be a removed and an added line. Naming the same
-   * path twice is taken as a header only once the hunk has all the lines its own header promised.
+   * Inside a hunk, such a pair of lines could also be a removed and an added line. Paths written
+   * the way Git writes them always name a file. Otherwise the hunk's own header decides: while it
+   * still expects a line on each side, the pair is two of its lines.
    */
   const namesOneFile = (i: number, hunk: Hunk) => {
     const before = lines[i].slice(4).split('\t')[0].trim();
     const after = lines[i + 1].slice(4).split('\t')[0].trim();
-    return (
-      lines[i + 2]?.startsWith('@@') ||
-      before === '/dev/null' ||
-      after === '/dev/null' ||
-      (before.startsWith('a/') && after.startsWith('b/')) ||
-      (before === after && hunk.remaining.old <= 0 && hunk.remaining.new <= 0)
-    );
+    if (before === '/dev/null' || after === '/dev/null') return true;
+    if (before.startsWith('a/') && after.startsWith('b/')) return true;
+    if (hunk.remaining.old > 0 && hunk.remaining.new > 0) return false;
+    return before === after || lines[i + 2]?.startsWith('@@');
   };
   const firstHeader = lines.findIndex(
     (line, i) => line.startsWith('diff --git ') || line.startsWith('@@') || isFileHeader(i),

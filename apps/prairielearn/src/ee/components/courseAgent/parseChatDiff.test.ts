@@ -113,6 +113,11 @@ describe('parseChatDiff', () => {
     // A removed `-- marker` and an added `++ marker`, inside a hunk that says it has both.
     const marker = parseChatDiff('@@ -1 +1 @@\n--- marker\n+++ marker\n');
     expect(marker?.files).toMatchObject([{ path: '', additions: 1, deletions: 1 }]);
+    // The same pair is still two lines of its hunk when another hunk follows it.
+    const hunks = parseChatDiff(
+      '--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n--- marker\n+++ marker\n@@ -3 +3 @@\n-old\n+new\n',
+    );
+    expect(hunks?.files).toMatchObject([{ path: 'file.txt', additions: 2, deletions: 2 }]);
     // A context line straight after the file names, with no hunk header before it.
     const context = parseChatDiff('--- a/a.py\n+++ b/a.py\nimport math\n-x = 1\n+x = 2\n');
     expect(context?.files[0].patch).toBe(
