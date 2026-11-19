@@ -2405,9 +2405,9 @@
     "brotli": 239404
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionAiGrade.ts": {
-    "raw": 1424726,
-    "gzip": 400635,
-    "brotli": 342529
+    "raw": 1425031,
+    "gzip": 400746,
+    "brotli": 342620
   },
   "scripts/esm-bundles/hydrated-components/InstanceQuestionGradingConflictModal.ts": {
     "raw": 902281,
@@ -2420,9 +2420,9 @@
     "brotli": 355836
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1801246,
-    "gzip": 507418,
-    "brotli": 415774
+    "raw": 1801773,
+    "gzip": 507603,
+    "brotli": 415934
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
     "raw": 1895790,
