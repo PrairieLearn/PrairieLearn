@@ -103,12 +103,15 @@ export function ActionCard({
           {data.card.rows.length > 0 && (
             <ul className="list-unstyled small border-top border-bottom my-2 py-2 mb-2">
               {data.card.rows.map((row, index) => (
-                // Rows are fixed once requested, so their positions identify them.
+                // Rows are fixed once requested, so their positions identify them. The instructor
+                // decides on these, so a long detail wraps instead of being cut off.
                 // oxlint-disable-next-line react/no-array-index-key
-                <li key={index} className="d-flex gap-2 py-1">
-                  <span className="text-break">{row.label}</span>
+                <li key={index} className="d-flex gap-3 py-1">
+                  <span className="flex-shrink-0 course-agent-action-row-label">{row.label}</span>
                   {row.detail && (
-                    <span className="text-body-secondary text-truncate ms-auto">{row.detail}</span>
+                    <span className="text-body-secondary ms-auto text-end course-agent-action-row-detail">
+                      {row.detail}
+                    </span>
                   )}
                 </li>
               ))}
