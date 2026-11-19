@@ -4,6 +4,7 @@ import type { Page } from 'playwright';
 import type { DocxSource } from './docx-browser.js';
 import type { DocxFigure } from './docx-content-context.js';
 import { type PrintedPageGeometry, createDocxDocument } from './docx-document.js';
+import type { PrintFooter } from './print-cover.js';
 import type { PrintableCover } from './printable-cover.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 
@@ -17,14 +18,13 @@ export interface DocxOutputOptions {
   cover?:
     | PrintableCover
     | ((pageDataset: Readonly<Record<string, string | undefined>>) => PrintableCover);
-  /** Text placed before the page counter in every footer, for example `Form ID 13`. */
-  footerLabel: string;
+  footer: PrintFooter;
 }
 
 /** Builds an editable Word document from questions captured before pagination. */
 export function createDocxOutput({
   cover,
-  footerLabel,
+  footer,
   source,
 }: DocxOutputOptions): PrintablePageOutput<Buffer> {
   return {
@@ -45,7 +45,7 @@ export function createDocxOutput({
       const wordDocument = createDocxDocument({
         geometry,
         cover: typeof cover === 'function' ? cover(pageDataset) : cover,
-        footerLabel,
+        footer,
         source,
         figures,
       });

@@ -13,11 +13,22 @@ import {
   BLANK_NAME_PLACEHOLDER,
   DEFAULT_ASSESSMENT_INSTRUCTIONS,
   HONOR_CODE_HEADING,
+  PRINT_FOOTER_SEPARATOR,
   answerKeyDescription,
   getPrintCoverFields,
-  getPrintFooterLabel,
+  getPrintFooter,
 } from '../../lib/printing/print-cover.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+
+function cssContent(value: string) {
+  // Keep nonbreaking footer spaces while escaping CSS and HTML delimiters in the style tag.
+  return unsafeHtml(
+    JSON.stringify(value.replaceAll(/[ \t\r\n\f]+/g, ' '))
+      .replaceAll('<', '\\3c ')
+      .replaceAll('>', '\\3e ')
+      .replaceAll('&', '\\26 '),
+  );
+}
 
 export function InstructorAssessmentPrintForm({
   resLocals,
@@ -54,7 +65,8 @@ export function InstructorAssessmentPrintForm({
 }) {
   const isAnswerKey = document === 'answer_key';
   const documentLabel = isAnswerKey ? 'Answer key' : resLocals.assessment.type;
-  const footerLabel = getPrintFooterLabel({
+  const footer = getPrintFooter({
+    resLocals,
     document,
     formLabel,
   });
@@ -120,9 +132,24 @@ export function InstructorAssessmentPrintForm({
         ${unsafeHtml(extraHeadersHtml)} ${compiledStylesheetTag('assessment-printing.css')}
         <style>
           @page {
+            @bottom-left {
+              color: #555;
+              content: ${cssContent(footer.left)};
+              font-family: system-ui, sans-serif;
+              font-size: 8pt;
+            }
+
+            @bottom-center {
+              color: #555;
+              content: ${cssContent(footer.center)};
+              font-family: system-ui, sans-serif;
+              font-size: 8pt;
+            }
+
             @bottom-right {
               color: #555;
-              content: '${footerLabel}  |  Page ' counter(page) ' of ' counter(pages);
+              content: ${cssContent(`${footer.right}${PRINT_FOOTER_SEPARATOR}Page `)} counter(page)
+                ' of ' counter(pages);
               font-family: system-ui, sans-serif;
               font-size: 8pt;
             }
@@ -256,16 +283,6 @@ export function InstructorAssessmentPrintForm({
                           `
                         : ''
                     }
-
-                    <footer>
-                      ${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}
-                      <span
-                        >${getPrintFooterLabel({
-                          document: 'assessment',
-                          formLabel,
-                        })}</span
-                      >
-                    </footer>
                   </article>
                 `
               : ''

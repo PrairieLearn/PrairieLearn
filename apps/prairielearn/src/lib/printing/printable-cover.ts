@@ -52,7 +52,6 @@ export interface PrintableCover {
   summary: PrintableCoverSummaryItem[];
   sections: PrintableCoverSection[];
   gradingTable?: { questionNumbers: string[]; rowsPerColumn: number };
-  footer: string;
 }
 
 function normalizeRuns(runs: PrintableTextRun[]): PrintableTextRun[] {

@@ -188,16 +188,6 @@ body {
   position: relative;
 }
 
-.assessment-cover footer {
-  border-top: 0.5pt solid #aaa;
-  color: #555;
-  display: flex;
-  font-size: 8pt;
-  justify-content: space-between;
-  margin-top: auto;
-  padding-top: 0.06in;
-}
-
 .printing-question-page {
   break-after: page;
 }

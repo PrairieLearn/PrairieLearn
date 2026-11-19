@@ -59,7 +59,7 @@ async function readWordOutput(page: Page, source: DocxSource) {
   );
   const docx = createDocxDocument({
     geometry,
-    footerLabel: 'Browser Word test',
+    footer: { left: 'Browser Word test', center: 'Assessment', right: 'Form A1' },
     source,
     figures,
   });

@@ -39,7 +39,7 @@ import {
   BLANK_NAME_PLACEHOLDER,
   HONOR_CODE_HEADING,
   buildPrintableCover,
-  getPrintFooterLabel,
+  getPrintFooter,
 } from '../../lib/printing/print-cover.js';
 import { startPrintRequest } from '../../lib/printing/print-request.js';
 import {
@@ -336,7 +336,8 @@ router.post(
       layout.excludedQuestionNumbers,
     );
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-    const footerLabel = getPrintFooterLabel({
+    const footer = getPrintFooter({
+      resLocals: res.locals,
       document,
       formLabel: res.locals.print_form.label,
     });
@@ -375,7 +376,7 @@ router.post(
                 : undefined,
             )
         : undefined,
-      footerLabel,
+      footer,
     });
     const contents = await getPrintRenderer().render(
       {

@@ -22,6 +22,7 @@ import { assertNever } from '@prairielearn/utils';
 import type { DocxSource } from './docx-browser.js';
 import type { DocxFigure } from './docx-content-context.js';
 import { buildDocxContent } from './docx-content.js';
+import { PRINT_FOOTER_SEPARATOR, type PrintFooter } from './print-cover.js';
 import type {
   PrintableCover,
   PrintableCoverField,
@@ -305,21 +306,58 @@ function buildCover(cover: PrintableCover, contentWidthDxa: number): (Paragraph 
           buildGradingTable(cover.gradingTable, contentWidthDxa),
         ]
       : []),
-    line(cover.footer, { size: SMALL_FONT_SIZE, color: '555555' }, { before: 400, after: 0 }),
   ];
 }
 
-function buildFooter(footerLabel: string): Footer {
+function buildFooter(footer: PrintFooter, contentWidthDxa: number): Footer {
   const footerText = { size: SMALL_FONT_SIZE, color: '555555', font: FONT };
+  const leftWidth = Math.floor(contentWidthDxa / 3);
+  const centerWidth = leftWidth;
+  const rightWidth = contentWidthDxa - leftWidth - centerWidth;
+  const widths = [leftWidth, centerWidth, rightWidth];
+  const cell = (
+    width: number,
+    alignment: (typeof AlignmentType)[keyof typeof AlignmentType],
+    children: TextRun[],
+  ) =>
+    new TableCell({
+      width: { size: width, type: WidthType.DXA },
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      children: [new Paragraph({ alignment, spacing: { before: 0, after: 0 }, children })],
+    });
   return new Footer({
     children: [
-      new Paragraph({
-        alignment: AlignmentType.RIGHT,
-        children: [
-          new TextRun({ text: `${footerLabel}  |  Page `, ...footerText }),
-          new TextRun({ children: [PageNumber.CURRENT], ...footerText }),
-          new TextRun({ text: ' of ', ...footerText }),
-          new TextRun({ children: [PageNumber.TOTAL_PAGES], ...footerText }),
+      new Table({
+        width: { size: contentWidthDxa, type: WidthType.DXA },
+        columnWidths: widths,
+        borders: {
+          top: NO_BORDER,
+          bottom: NO_BORDER,
+          left: NO_BORDER,
+          right: NO_BORDER,
+          insideHorizontal: NO_BORDER,
+          insideVertical: NO_BORDER,
+        },
+        rows: [
+          new TableRow({
+            children: [
+              cell(leftWidth, AlignmentType.LEFT, [
+                new TextRun({ text: footer.left, ...footerText }),
+              ]),
+              cell(centerWidth, AlignmentType.CENTER, [
+                new TextRun({ text: footer.center, ...footerText }),
+              ]),
+              cell(rightWidth, AlignmentType.RIGHT, [
+                new TextRun({
+                  text: `${footer.right}${PRINT_FOOTER_SEPARATOR}Page `,
+                  ...footerText,
+                }),
+                new TextRun({ children: [PageNumber.CURRENT], ...footerText }),
+                new TextRun({ text: ' of ', ...footerText }),
+                new TextRun({ children: [PageNumber.TOTAL_PAGES], ...footerText }),
+              ]),
+            ],
+          }),
         ],
       }),
     ],
@@ -329,13 +367,13 @@ function buildFooter(footerLabel: string): Footer {
 export function createDocxDocument({
   geometry,
   cover,
-  footerLabel,
+  footer,
   source,
   figures,
 }: {
   geometry: PrintedPageGeometry;
   cover?: PrintableCover;
-  footerLabel: string;
+  footer: PrintFooter;
   source: DocxSource;
   figures: DocxFigure[];
 }): Document {
@@ -396,7 +434,7 @@ export function createDocxDocument({
             },
           },
         },
-        footers: { default: buildFooter(footerLabel) },
+        footers: { default: buildFooter(footer, toDxa(contentWidthPx)) },
         children: [...(cover ? buildCover(cover, toDxa(contentWidthPx)) : []), ...content.children],
       },
     ],
