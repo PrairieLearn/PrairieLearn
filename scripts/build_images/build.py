@@ -318,7 +318,7 @@ def build_images(
         # Pushing to a Docker Hub repository that doesn't exist yet creates it
         # publicly. Only let builds of merged code do that, so experimental
         # PRs don't leave behind public repositories that look supported.
-        should_push_image = should_push
+        push_this_image = should_push
         if (
             should_push
             and not allow_new_repositories
@@ -327,13 +327,13 @@ def build_images(
             print(
                 f"Not pushing {image} because its Docker Hub repository doesn't exist yet. It will be created when this image is built from merged code."
             )
-            should_push_image = False
+            push_this_image = False
 
         digest = build_image(
             image,
             platform=platform,
             builder=builder,
-            should_push=should_push_image,
+            should_push=push_this_image,
             base_image_digest=base_image_digest,
             metadata_dir=metadata_dir,
             cache_strategy=cache_strategy,
