@@ -9,6 +9,7 @@ import {
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
+import { CodexAppServerClient } from '../sandbox/codex.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import { Conversation, type MeteringState } from './conversation.js';
@@ -143,6 +144,14 @@ function fixture(saved = new Map<string, unknown>()) {
     checkpoint: vi.fn(async () => ({ id: 'checkpoint' })),
     destroy: vi.fn(),
     authorizeModel: vi.fn(async (_config: { executionId: string }) => {}),
+    captureReview: vi.fn(async () => ({
+      type: 'github',
+      repository: 'PrairieLearn/course',
+      branch: 'master',
+      baseCommit: 'a'.repeat(40),
+      additions: [],
+      deletions: [{ path: 'question.html' }],
+    })),
   };
   const env = {
     OPENAI_MODEL: 'test',
