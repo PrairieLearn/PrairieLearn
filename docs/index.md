@@ -13,7 +13,9 @@ Paid hosting and support: [https://www.prairielearn.com/](https://www.prairielea
 - [x] **Randomized, custom questions** - Questions variants can be generated and autograded using a Python script, with easily customizable partial credit rules. [Learn more](./question/overview.md/#grading-student-answers)
 - [x] **Custom HTML-based questions** - Create questions using arbitrary HTML, CSS, and JavaScript. [Learn more](question/overview.md/#html-questionhtml)
 - [x] **Rich standard library of question elements** - Include graphs, symbolic algebra, common question types, and more. [Learn more](./elements/index.md)
+- [x] **AI-assisted course authoring (pilot)** - Use the course agent to create and revise course content through conversation, then review and approve changes before applying them. Available to course owners on Enterprise installations where enabled.
 - [x] **Flexible access controls** - Granular control over who can access course content, student submissions, etc. [Learn more](./assessment/accessControl.md)
+- [x] **PrairieTest integration** - Connect assessments to PrairieTest for exam scheduling, proctoring, and accommodations. [Learn more](./assessment/remoteExams.md#exams-in-a-prairietest-managed-testing-center)
 - [x] **Support for code autograding** - Run student code in a sandbox, with support for C, C++, Java, Python, etc. [Learn more](./externalGrading.md)
 
 You can view a comprehensive list of features on the [PrairieLearn homepage](https://www.prairielearn.com/).
