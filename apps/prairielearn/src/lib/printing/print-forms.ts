@@ -63,6 +63,7 @@ interface CreatePrintFormOptions {
   userId: string;
   authnUserId: string;
   replacesPrintFormId?: string;
+  sourcePrintFormId?: string;
   settings?: PrintSettings;
 }
 
@@ -149,6 +150,39 @@ async function copySavedPrintFormQuestions(printFormId: string) {
   return questions;
 }
 
+function mapQuestionSettingsToNewForm(
+  settings: PrintSettings,
+  sourceQuestions: Awaited<ReturnType<typeof selectPrintFormQuestions>>,
+  newQuestions: Pick<PrintFormQuestion, 'assessment_question_id' | 'question_number'>[],
+): PrintSettings {
+  const newNumberByQuestionId = new Map(
+    newQuestions.map((question) => [question.assessment_question_id, question.question_number]),
+  );
+  const newNumberByOldNumber = new Map<string, string>();
+  for (const { print_form_question: question } of sourceQuestions) {
+    const newNumber = newNumberByQuestionId.get(question.assessment_question_id);
+    if (newNumber !== undefined) newNumberByOldNumber.set(question.question_number, newNumber);
+  }
+
+  return {
+    ...settings,
+    questionSizes: Object.fromEntries(
+      Object.entries(settings.questionSizes).flatMap(([number, size]) => {
+        const newNumber = newNumberByOldNumber.get(number);
+        return newNumber === undefined ? [] : [[newNumber, size]];
+      }),
+    ),
+    excludedQuestions: [
+      ...new Set(
+        settings.excludedQuestions.flatMap((number) => {
+          const newNumber = newNumberByOldNumber.get(number);
+          return newNumber === undefined ? [] : [newNumber];
+        }),
+      ),
+    ].sort((left, right) => left.localeCompare(right, undefined, { numeric: true })),
+  };
+}
+
 /** Creates a form, or rerandomizes an unlocked form in place. */
 export async function createPrintForm(options: CreatePrintFormOptions) {
   if (options.replacesPrintFormId) {
@@ -228,6 +262,7 @@ async function createPrintFormInternal({
   userId,
   authnUserId,
   replacesPrintFormId,
+  sourcePrintFormId,
   settings,
   ensureInitial,
 }: CreatePrintFormOptions & { ensureInitial: boolean }) {
@@ -295,9 +330,25 @@ async function createPrintFormInternal({
     const inheritedSettings = replacedForm
       ? { ...replacedForm.settings, questionSizes: {}, excludedQuestions: [] }
       : (settings ?? defaultSettings);
+    const sourceForm = sourcePrintFormId
+      ? await selectOptionalPrintForm({
+          printFormId: sourcePrintFormId,
+          assessmentId: assessment.id,
+        })
+      : null;
+    if (sourcePrintFormId && !sourceForm) {
+      throw new HttpStatusError(404, 'The form used for the new form is no longer available.');
+    }
+    const mappedSettings = sourceForm
+      ? mapQuestionSettingsToNewForm(
+          inheritedSettings,
+          await selectPrintFormQuestions(sourceForm.id),
+          questions,
+        )
+      : inheritedSettings;
     const formSettings = {
-      ...inheritedSettings,
-      paperSize: activeForms[0]?.settings.paperSize ?? inheritedSettings.paperSize,
+      ...mappedSettings,
+      paperSize: activeForms[0]?.settings.paperSize ?? mappedSettings.paperSize,
     };
     const form = await insertPrintForm({
       assessmentId: assessment.id,

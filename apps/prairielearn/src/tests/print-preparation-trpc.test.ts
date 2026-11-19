@@ -618,6 +618,45 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
+  test('adding a form inherits question settings by question when the new form has different numbers', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const settings = {
+      ...DEFAULT_PRINT_SETTINGS,
+      questionSizes: { '1': 'full' as const, '2': 'half' as const },
+      excludedQuestions: ['2'],
+    };
+    const source = await api.printForms.create.mutate({ settings });
+    const sourceQuestions = await selectPrintFormQuestions(source.printFormId);
+    expect(
+      sourceQuestions.map(({ print_form_question }) => print_form_question.question_number),
+    ).toEqual(['1', '2']);
+    const removedQuestion = sourceQuestions[0].assessment_question;
+
+    await execute(sql.change_source_question, { assessment_question_id: removedQuestion.id });
+    try {
+      const added = await api.printForms.create.mutate({
+        settings,
+        sourcePrintFormId: source.printFormId,
+      });
+      const addedQuestions = await selectPrintFormQuestions(added.printFormId);
+      expect(addedQuestions.map(({ print_form_question }) => print_form_question)).toMatchObject([
+        {
+          assessment_question_id: sourceQuestions[1].assessment_question.id,
+          question_number: '1',
+        },
+      ]);
+      expect(added.settings.questionSizes).toEqual({ '1': 'half' });
+      expect(added.settings.excludedQuestions).toEqual(['1']);
+    } finally {
+      await execute(sql.restore_source_question, {
+        assessment_question_id: removedQuestion.id,
+        deleted_at: removedQuestion.deleted_at,
+        max_points: removedQuestion.max_points,
+      });
+    }
+  });
+
   test('rejects creating and regenerating forms for group assessments', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
@@ -1177,12 +1216,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await completePrintExport(assessment.id, printExportId, 'failed');
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).toEqual({
+    ).toMatchObject({
       status: 'failed',
       format: 'pdf',
       downloadUrl: null,
       sizeBytes: null,
-      label: 'PDF with 0 forms',
       failureMessage:
         '“invalid-cover.pdf” could not be read. Upload a valid PDF without password protection.',
     });

@@ -5,7 +5,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
 import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
-import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
+import {
+  StaffPrintFormSchema,
+  StaffPrintPreparationFormSchema,
+} from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { PAPER_SIZES } from '../../lib/printing/paper-size.js';
 import {
@@ -15,13 +18,12 @@ import {
   revisePrintFormSelection,
   setPrintFormPaperSize,
 } from '../../lib/printing/print-forms.js';
-import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
-import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-settings.js';
 import {
-  selectOptionalPrintForm,
-  selectPrintFormsForAssessment,
-  updatePrintFormSettings,
-} from '../../models/print-form.js';
+  inspectPrintPreparationQuestions,
+  selectPrintPreparationForms,
+} from '../../lib/printing/print-preparation.js';
+import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-settings.js';
+import { selectOptionalPrintForm, updatePrintFormSettings } from '../../models/print-form.js';
 
 import { type createContext, requireCoursePermissionPreview, t } from './init.js';
 
@@ -94,11 +96,13 @@ function rethrowPrintFormError(error: unknown): never {
 async function createForm({
   ctx,
   replacesPrintFormId,
+  sourcePrintFormId,
   settings,
   ensureInitial = false,
 }: {
   ctx: ReturnType<typeof createContext>;
   replacesPrintFormId?: string;
+  sourcePrintFormId?: string;
   settings?: PrintSettings;
   ensureInitial?: boolean;
 }) {
@@ -112,7 +116,7 @@ async function createForm({
     };
     const form = ensureInitial
       ? await ensureInitialPrintForm(options)
-      : await createPrintForm({ ...options, replacesPrintFormId, settings });
+      : await createPrintForm({ ...options, replacesPrintFormId, sourcePrintFormId, settings });
     return {
       printFormId: form.id,
       label: form.label,
@@ -128,14 +132,25 @@ export const printFormsRouter = t.router({
     return await inspectPrintPreparationQuestions(input.printFormId);
   }),
   list: printFormProcedure.query(async ({ ctx }) =>
-    StaffPrintFormSchema.array().parse(
-      await selectPrintFormsForAssessment({ assessmentId: ctx.assessment.id }),
+    StaffPrintPreparationFormSchema.array().parse(
+      await selectPrintPreparationForms(ctx.assessment.id),
     ),
   ),
   create: printFormProcedure
     .use(rejectGroupWork)
-    .input(z.object({ settings: PrintSettingsSchema }).optional())
-    .mutation(async ({ ctx, input }) => await createForm({ ctx, settings: input?.settings })),
+    .input(
+      z
+        .object({ settings: PrintSettingsSchema, sourcePrintFormId: IdSchema.optional() })
+        .optional(),
+    )
+    .mutation(
+      async ({ ctx, input }) =>
+        await createForm({
+          ctx,
+          settings: input?.settings,
+          sourcePrintFormId: input?.sourcePrintFormId,
+        }),
+    ),
   ensureInitial: printFormProcedure
     .use(rejectGroupWork)
     .mutation(async ({ ctx }) => await createForm({ ctx, ensureInitial: true })),
