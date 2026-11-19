@@ -1,3 +1,6 @@
+/* For math in replies, which `ChatMarkdown` typesets with KaTeX. */
+@import url('katex/dist/katex.min.css');
+
 .course-agent-launcher {
   --bs-btn-color: var(--bs-navbar-color);
   --bs-btn-border-color: var(--bs-navbar-color);
@@ -86,15 +89,33 @@
   height: 1.25rem;
 }
 
+.course-agent-attachment-download {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.course-agent-attachment:has(:focus-visible) .course-agent-attachment-download {
+  opacity: 1;
+}
+
 /*
  * Touch can't hover, so any device with a touch screen always shows the remove button, as does a
- * tile that has to be removed before sending.
+ * tile that has to be removed before sending. A tap opens a sent attachment without the overlay.
  */
 @media not all and (any-pointer: coarse) {
+  .course-agent-attachment:hover .course-agent-attachment-download {
+    opacity: 1;
+  }
+
   .course-agent-attachment:not(:hover, :focus-within, .course-agent-attachment-invalid)
     .course-agent-attachment-remove {
     opacity: 0;
   }
+}
+
+.course-agent-image-viewer img {
+  max-height: 80vh;
+  object-fit: contain;
 }
 
 .course-agent-drop-target {
@@ -112,6 +133,13 @@
 
 .course-agent-panel .markdown-body p:last-child {
   margin-bottom: 0;
+}
+
+/* Wide display math scrolls instead of widening the panel. */
+.course-agent-panel .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
 }
 
 .course-agent-page-link {
