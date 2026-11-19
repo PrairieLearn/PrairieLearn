@@ -63,6 +63,8 @@ Each review supports at most 100 changed files, with a 1 MiB limit on each origi
 
 The sandbox image (`container/Dockerfile`) is Debian slim with Codex's app server, a few CLI tools, and Python with pandas and numpy for analyzing course data. It has no Node.js, so the agent can't run `node`, `npm`, or `npx`. Each sandbox installs the Codex config from `container/codex-config.toml` into its workspace, and installs it again after restoring a checkpoint.
 
+The runner starts with `TZ` set to the course's timezone, which PrairieLearn sends with the course context. Codex tells the model the date from that clock, and commands the agent runs, such as `date` and `git log`, print course-local times.
+
 `SANDBOX_INSTANCE_TYPE` selects the Cloudflare instance type for each environment. It defaults to `standard-2` because cloning large courses is CPU-bound.
 
 To upgrade Codex, update the release version and the asset's SHA-256 digest (shown on the GitHub release) in the Dockerfile. Then update the feature flags in `container/codex-config.toml` to match the new release.

@@ -163,6 +163,8 @@ const CourseContextSchema = z.object({
   courseId: z.string().regex(/^\d+$/).optional(),
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
+  // Optional while a PrairieLearn deployment that does not send it may still connect.
+  timezone: z.string().max(100).optional(),
 });
 
 /**
@@ -1045,6 +1047,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         threadId: this.record.nativeThreadId,
         pages: this.record.pages ?? [],
       },
+      timezone: this.record.courseContext?.timezone,
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.
       onThread: (id) => {
