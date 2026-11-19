@@ -44,6 +44,7 @@ function mapRow(
     assessment_instance_score_perc: raw.assessment_instance.score_perc,
     grading_pending: gradingPending.get(raw.assessment_instance.id) ?? null,
     show_closed_assessment_score: raw.show_closed_assessment_score,
+    active: raw.active,
     start_new_set,
   };
 }

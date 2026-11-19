@@ -16,7 +16,7 @@ export function AssessmentScorePanel({
 }: {
   assessment_instance: AssessmentInstance;
   gradingPending: GradingPending | null;
-  active: boolean | null;
+  active: boolean;
   assessment_set: AssessmentSet;
   assessment: Assessment;
   urlPrefix: string;

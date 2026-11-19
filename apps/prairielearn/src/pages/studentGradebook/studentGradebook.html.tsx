@@ -14,6 +14,7 @@ export interface StudentGradebookTableRow {
   assessment_instance_score_perc: number | null;
   grading_pending: GradingPending | null;
   show_closed_assessment_score: boolean;
+  active: boolean;
   start_new_set: boolean;
 }
 
@@ -99,8 +100,7 @@ export function StudentGradebook({
                           <AssessmentScore
                             score={row.assessment_instance_score_perc}
                             gradingPending={row.grading_pending}
-                            // The gradebook does not know whether each assessment is still active.
-                            active={null}
+                            active={row.active}
                             className="mx-auto"
                           />
                         ) : (

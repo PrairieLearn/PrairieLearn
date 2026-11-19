@@ -4,6 +4,7 @@ SELECT
   to_jsonb(ai.*) AS assessment_instance,
   to_jsonb(aset.*) AS assessment_set,
   aa.show_closed_assessment_score,
+  aa.active,
   a.modern_access_control,
   a.id AS assessment_id
 FROM

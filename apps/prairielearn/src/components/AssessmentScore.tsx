@@ -10,19 +10,12 @@ import { Scorebar } from './Scorebar.js';
 interface AssessmentScoreProps {
   score: number | null;
   gradingPending: GradingPending | null;
-  /**
-   * Whether the student can currently work on the assessment, or `null` if
-   * that is not known where the score is shown.
-   */
-  active: boolean | null;
+  /** Whether the student can currently work on the assessment. */
+  active: boolean;
   className?: string;
 }
 
-function savedAnswersMessage({ assessment_type, open }: GradingPending, active: boolean | null) {
-  if (!open) return 'Some saved answers were not graded.';
-  // Homework instances stay open after the homework can no longer be worked
-  // on, so only tell the student what to do when they can still do it.
-  if (!active) return 'Some saved answers have not been graded.';
+function savedAnswersMessage({ assessment_type }: GradingPending) {
   // Homework answers are only graded when the student asks; exams grade
   // whatever is saved when the student finishes.
   return assessment_type === 'Homework'
@@ -36,7 +29,13 @@ export function AssessmentScore({
   active,
   className,
 }: AssessmentScoreProps) {
-  if (!gradingPending) return <Scorebar score={score} className={className} />;
+  // A saved answer only counts while the student can still have it graded.
+  // Homework instances stay open after the homework can no longer be worked
+  // on, and nothing will ever grade those answers.
+  const saved = gradingPending?.saved && gradingPending.open && active;
+  if (!gradingPending || !(gradingPending.manual || gradingPending.grading || saved)) {
+    return <Scorebar score={score} className={className} />;
+  }
   return (
     <div className={clsx('text-center', className)} style={{ minWidth: '5em', maxWidth: '20em' }}>
       <Scorebar score={score} />
@@ -57,7 +56,7 @@ export function AssessmentScore({
         data-bs-content={[
           gradingPending.manual ? 'Some answers are waiting for manual grading.' : null,
           gradingPending.grading ? 'Some answers are being graded.' : null,
-          gradingPending.saved ? savedAnswersMessage(gradingPending, active) : null,
+          saved ? savedAnswersMessage(gradingPending) : null,
           'Your score may not reflect all submitted work.',
         ]
           .filter((sentence) => sentence != null)

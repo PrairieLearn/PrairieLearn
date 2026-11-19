@@ -92,7 +92,7 @@ export interface GradingPending {
   saved: boolean;
   /** At least one answer has a grading job that is queued or running. */
   grading: boolean;
-  /** What happens to saved answers depends on the assessment type and whether it is still open. */
+  /** Saved answers only count while the instance is open, and how they get graded depends on the type. */
   assessment_type: Assessment['type'];
   open: boolean;
 }
