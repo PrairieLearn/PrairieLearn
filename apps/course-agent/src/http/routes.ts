@@ -163,14 +163,15 @@ conversations.get('/:id/uploads/:uploadId/thumbnail', async (c) => {
   });
 });
 
-// A file the agent sent with `send_files`. Like an upload, it is served as a download.
+// A file the agent sent with `send_files`. An image is served with the type recorded when it was
+// stored, so PrairieLearn can display it; anything else is a download.
 conversations.get('/:id/sent-files/:fileId', async (c) => {
   if (!UUID_PATTERN.test(c.req.param('fileId'))) return c.notFound();
   const file = await c.env.CHECKPOINTS.get(sentFileKey(c.req.param('id'), c.req.param('fileId')));
   if (!file) return c.notFound();
   return new Response(file.body, {
     headers: {
-      'Content-Type': 'application/octet-stream',
+      'Content-Type': file.httpMetadata?.contentType ?? 'application/octet-stream',
       'Content-Length': String(file.size),
     },
   });

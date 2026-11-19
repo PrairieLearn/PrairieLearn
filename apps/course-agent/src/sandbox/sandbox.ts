@@ -21,6 +21,7 @@ import {
   type Attachment,
   UPLOADS_DIR,
   attachmentPath,
+  streamImageType,
   uploadKey,
 } from '../conversation/attachments.js';
 import { logEvent } from '../monitoring.js';
@@ -443,9 +444,14 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /**
    * Copy a file of the size `statFiles()` reported into the bucket; R2 needs the length. A file
-   * the agent can't read is returned as a problem, like one it can't measure.
+   * the agent can't read is returned as a problem, like one it can't measure. An image the
+   * browser can display is stored with its type, recognized by its contents, so it can be shown.
    */
-  async storeFile(path: string, size: number, key: string): Promise<{ problem: string } | null> {
+  async storeFile(
+    path: string,
+    size: number,
+    key: string,
+  ): Promise<{ problem: string } | { mediaType: string | null }> {
     let file;
     try {
       file = await new Files(this.container).readFile(path, AGENT_FILE_OPTIONS);
@@ -453,9 +459,13 @@ export class CourseSandbox extends DurableObject<Env> {
       if (!SandboxFileError.is(error)) throw error;
       return { problem: fileProblem(error) };
     }
+    const [head, body] = file.body!.tee();
+    const mediaType = await streamImageType(head);
     // A file that changed size since it was measured fails here instead of being cut short.
-    await this.env.CHECKPOINTS.put(key, file.body!.pipeThrough(new FixedLengthStream(size)));
-    return null;
+    await this.env.CHECKPOINTS.put(key, body.pipeThrough(new FixedLengthStream(size)), {
+      httpMetadata: mediaType ? { contentType: mediaType } : undefined,
+    });
+    return { mediaType };
   }
 
   /**

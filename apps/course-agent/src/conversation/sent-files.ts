@@ -77,8 +77,11 @@ export async function sendFiles({
     throw failure.reason;
   }
   for (const [index, result] of stored.entries()) {
-    if (result.status === 'fulfilled' && result.value) {
+    if (result.status === 'rejected') continue;
+    if ('problem' in result.value) {
       problems.push(`${paths[index]}: ${result.value.problem}`);
+    } else if (result.value.mediaType) {
+      files[index].mediaType = result.value.mediaType;
     }
   }
   if (problems.length > 0) {
@@ -91,6 +94,6 @@ export async function sendFiles({
   }
   return {
     success: true,
-    text: `Sent ${files.map(({ filename }) => filename).join(', ')}. The instructor sees them in the chat and can download them; do not repeat their contents in your message.`,
+    text: `Sent ${files.map(({ filename }) => filename).join(', ')}. The instructor sees them in the chat, where images are displayed, and can download them; do not repeat their contents in your message.`,
   };
 }

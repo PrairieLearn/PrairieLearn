@@ -12,8 +12,12 @@ function setup(stats: Record<string, Stat>, room = MAX_CONVERSATION_ATTACHMENTS)
   const sandbox = {
     statFiles: vi.fn(async (paths: string[]) => paths.map((path) => stats[path])),
     storeFile: vi.fn<
-      (path: string, size: number, key: string) => Promise<{ problem: string } | null>
-    >(async () => null),
+      (
+        path: string,
+        size: number,
+        key: string,
+      ) => Promise<{ problem: string } | { mediaType: string | null }>
+    >(async (path) => ({ mediaType: path.endsWith('.png') ? 'image/png' : null })),
   };
   const bucket = { delete: vi.fn(async () => {}) };
   const quota = new UploadQuota(async () => ({
@@ -37,7 +41,7 @@ function setup(stats: Record<string, Stat>, room = MAX_CONVERSATION_ATTACHMENTS)
 }
 
 describe('send_files', () => {
-  it('stores and shows every file, named by the last part of its path', async () => {
+  it('stores and shows every file, named by the last part of its path, with any image type', async () => {
     const { sandbox, shown, send } = setup({
       'data/grades.csv': { size: 12 },
       '/tmp/a.png': { size: 3 },
@@ -49,9 +53,9 @@ describe('send_files', () => {
       success: true,
       text: expect.stringContaining('grades.csv, a.png'),
     });
-    expect(shown).toMatchObject([
-      { filename: 'grades.csv', size: 12 },
-      { filename: 'a.png', size: 3 },
+    expect(shown).toEqual([
+      { id: expect.any(String), filename: 'grades.csv', size: 12 },
+      { id: expect.any(String), filename: 'a.png', size: 3, mediaType: 'image/png' },
     ]);
     expect(sandbox.storeFile.mock.calls.map(([path, size, key]) => [path, size, key])).toEqual(
       shown.map(({ id }, index) => [
@@ -96,7 +100,7 @@ describe('send_files', () => {
       name: 'a file cannot be read',
       fail: (storeFile: ReturnType<typeof setup>['sandbox']['storeFile']) =>
         storeFile
-          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({ mediaType: null })
           .mockResolvedValueOnce({ problem: 'permission denied' }),
       show: true,
       outcome: { success: false, text: 'No files were sent. b: permission denied.' },
@@ -126,7 +130,7 @@ describe('send_files', () => {
     sandbox.storeFile
       .mockRejectedValueOnce(new Error('file changed size'))
       .mockImplementationOnce(
-        () => new Promise((resolve) => (finishSlowStore = () => resolve(null))),
+        () => new Promise((resolve) => (finishSlowStore = () => resolve({ mediaType: null }))),
       );
 
     const reply = send(['a', 'b']);

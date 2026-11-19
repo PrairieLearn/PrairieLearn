@@ -153,7 +153,8 @@ The agent gives the instructor a file with the `send_files` tool, which takes sa
 - A call sends every file or none. Any file that can't be sent fails the call with the reason for each, and the agent can correct it in the same turn.
 - Files are stored under `uploads/<conversation>/sent/<id>`, so the lifecycle rule that expires uploads expires them too. The level below the uploads keeps them out of the upload count; they have their own cap of 100 files and 200 MB, so neither the agent nor the instructor can use up the other's room. They are never copied into a sandbox.
 - Each file is a `data-file` part in the reply, holding its ID, name, and size, at the point where the agent sent it. A successful call has no tool call entry; a failed one does. Catch-up names sent files.
-- Staff download a sent file through PrairieLearn under the rules for uploads: always as `application/octet-stream`, with the sandboxing Content-Security-Policy and `nosniff`.
+- The sandbox recognizes a PNG, JPEG, GIF, or WebP by its first bytes as it stores the file. The Worker records that type on the stored object and in the part, and serves the file with it; anything else is served as `application/octet-stream`. There is no separate thumbnail: the tile of an image up to 4 MB shows the image itself, and any such image opens in the same viewer as uploaded images.
+- Staff download or view a sent file through PrairieLearn under the rules for uploads: only those image types display, anything else downloads as `application/octet-stream`, and every response has the sandboxing Content-Security-Policy and `nosniff`.
 
 ## Local course sources
 

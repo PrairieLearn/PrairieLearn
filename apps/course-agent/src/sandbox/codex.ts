@@ -624,7 +624,7 @@ const sendFilesTool = {
   type: 'function',
   name: 'send_files',
   description:
-    'Send files from the sandbox to the instructor, who can download them from the chat. Either every file is sent or none is; the reply says why a file could not be sent.',
+    'Send files from the sandbox to the instructor, who can download them from the chat. PNG, JPEG, GIF, and WebP images are also shown in the chat. Either every file is sent or none is; the reply says why a file could not be sent.',
   inputSchema: toolInputSchema(SendFilesArguments),
 } satisfies DynamicToolSpec;
 

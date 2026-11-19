@@ -435,6 +435,8 @@ export const SentFilePartSchema = z.object({
   id: z.uuid(),
   filename: z.string(),
   size: z.number(),
+  /** Set for an image the browser can display, recognized by its contents. */
+  mediaType: z.string().optional(),
 });
 
 export type SentFilePart = z.infer<typeof SentFilePartSchema>;
