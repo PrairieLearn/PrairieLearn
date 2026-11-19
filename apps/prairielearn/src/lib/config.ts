@@ -1,4 +1,3 @@
-import { getDomain } from 'tldts';
 import { z } from 'zod';
 
 import {
@@ -852,16 +851,21 @@ export async function loadConfig(paths: string[]) {
       throw new Error('workspaceSandboxBaseDomain must not be covered by cookieDomain');
     }
 
-    const applicationDomain = getDomain(new URL(config.serverCanonicalHost).hostname, {
-      allowPrivateDomains: true,
-    });
-    const sandboxRegistrableDomain = getDomain(sandboxDomain, { allowPrivateDomains: true });
-    if (applicationDomain == null || sandboxRegistrableDomain == null) {
-      throw new Error('Workspace sandbox and application hosts must use valid domain names');
-    }
-    if (applicationDomain === sandboxRegistrableDomain) {
+    // Workspace hosts must not be same-site with PrairieLearn. An exact check would need the
+    // Public Suffix List, and bundling it made startup fail once the sandbox domain itself was
+    // listed. Rejecting anything under the application host's parent domain (for example,
+    // ws.prairielearn.com for us.prairielearn.com) catches realistic misconfigurations.
+    const applicationHost = new URL(config.serverCanonicalHost).hostname.toLowerCase();
+    const applicationHostLabels = applicationHost.split('.');
+    const applicationParentDomain =
+      applicationHostLabels.length > 2 ? applicationHostLabels.slice(1).join('.') : applicationHost;
+    if (
+      sandboxDomain === applicationParentDomain ||
+      sandboxDomain.endsWith(`.${applicationParentDomain}`) ||
+      applicationHost.endsWith(`.${sandboxDomain}`)
+    ) {
       throw new Error(
-        'workspaceSandboxBaseDomain must not share a registrable domain with serverCanonicalHost',
+        'workspaceSandboxBaseDomain must not share a parent domain with serverCanonicalHost',
       );
     }
   }

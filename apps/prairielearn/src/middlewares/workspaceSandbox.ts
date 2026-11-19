@@ -10,7 +10,7 @@ import {
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import * as Sentry from '@prairielearn/sentry';
 import { loadExistingSession } from '@prairielearn/session';
 import { parseRequestBody } from '@prairielearn/zod';
@@ -50,6 +50,11 @@ const BootstrapBodySchema = z.object({ token: z.string().min(1).max(256) });
 
 function getWorkspaceSandboxResponseHeaders(): Record<string, string> {
   return {
+    // Until browsers ship the Public Suffix List entry for the sandbox domain, all workspace
+    // hosts are the same site. Origin-keyed agent clusters stop one workspace from relaxing
+    // `document.domain` to script another and let the browser isolate each workspace in its
+    // own process. Chrome already defaults to this; Firefox and Safari need the header.
+    'Origin-Agent-Cluster': '?1',
     // The RStudio workspace proxy uses referrers to preserve HTTPS when rewriting redirects.
     // https://docs.posit.co/ide/server-pro/admin/access_and_security/running_with_a_proxy.html
     'Referrer-Policy': 'same-origin',
@@ -57,17 +62,103 @@ function getWorkspaceSandboxResponseHeaders(): Record<string, string> {
   };
 }
 
+// Matches the page the load balancer serves for workspace-host paths that never reach
+// PrairieLearn, so a workspace host looks the same whichever one answers.
+function renderWorkspaceUnavailablePage({
+  heading,
+  message,
+  script,
+}: {
+  heading: string;
+  message: string;
+  script?: string;
+}) {
+  const prairieLearnOrigin = getTrustedPrairieLearnOrigin();
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="robots" content="noindex" />
+        <title>${heading}</title>
+        <style>
+          body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f3f4f6;
+            color: #1f2937;
+            font:
+              16px/1.5 system-ui,
+              -apple-system,
+              'Segoe UI',
+              Roboto,
+              sans-serif;
+          }
+          main {
+            box-sizing: border-box;
+            max-width: 28rem;
+            margin: 1rem;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+          }
+          h1 {
+            margin: 0 0 0.5rem;
+            font-size: 1.5rem;
+          }
+          a {
+            color: #1d4ed8;
+          }
+          footer {
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+          }
+        </style>
+      </head>
+      <body>
+        <main>
+          <h1>${heading}</h1>
+          <p>${message}</p>
+          <p><a href="${prairieLearnOrigin}">Go to PrairieLearn</a></p>
+          <footer><a href="https://www.prairielearn.com/abuse">Report abuse</a></footer>
+        </main>
+        ${script ? unsafeHtml(`<script>${script}</script>`) : ''}
+      </body>
+    </html>
+  `.toString();
+}
+
+function sendWorkspaceNotFound(res: Response) {
+  res
+    .status(404)
+    .type('html')
+    .send(
+      renderWorkspaceUnavailablePage({
+        heading: 'Workspace unavailable',
+        message:
+          'Open this workspace from PrairieLearn to continue. Workspace links only work from within your PrairieLearn session.',
+      }),
+    );
+}
+
 function sendAuthorizationExpired(res: Response, status = 401) {
   const message = JSON.stringify({ type: WORKSPACE_SANDBOX_AUTHORIZATION_EXPIRED_MESSAGE });
   const targetOrigin = JSON.stringify(getTrustedPrairieLearnOrigin());
-  res.status(status).type('html').send(`<!doctype html>
-<html lang="en">
-  <head><meta charset="utf-8"><title>Workspace authorization expired</title></head>
-  <body>
-    <p>Workspace authorization expired. Return to PrairieLearn to reconnect.</p>
-    <script>window.parent.postMessage(${message}, ${targetOrigin});</script>
-  </body>
-</html>`);
+  res
+    .status(status)
+    .type('html')
+    .send(
+      renderWorkspaceUnavailablePage({
+        heading: 'Workspace connection expired',
+        message: 'Your files remain saved. Return to PrairieLearn to reconnect.',
+        script: `window.parent.postMessage(${message}, ${targetOrigin});`,
+      }),
+    );
 }
 
 function isClientError(err: unknown): err is { status: number } {
@@ -261,7 +352,7 @@ export function makeWorkspaceSandboxMiddleware({
       'Content-Security-Policy': `frame-ancestors 'self' ${getTrustedPrairieLearnOrigin()};`,
     });
     if (workspaceHost.type === 'invalid-sandbox-host') {
-      res.status(404).send('Not Found');
+      sendWorkspaceNotFound(res);
       return;
     }
 
@@ -342,7 +433,7 @@ export function makeWorkspaceSandboxMiddleware({
   );
 
   router.use((_req, res) => {
-    res.status(404).send('Not Found');
+    sendWorkspaceNotFound(res);
   });
 
   router.use(((err, req, res, next) => {
