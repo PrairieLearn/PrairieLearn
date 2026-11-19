@@ -119,7 +119,8 @@ describe('resolveRubricTree', () => {
       /non-negative integer/,
     );
     assert.throws(
-      () => resolveRubricTree([group(0, { min_selections: 2, max_selections: 1 }), leaf(1), leaf(1)]),
+      () =>
+        resolveRubricTree([group(0, { min_selections: 2, max_selections: 1 }), leaf(1), leaf(1)]),
       /cannot be more than/,
     );
   });
