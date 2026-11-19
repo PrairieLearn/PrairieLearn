@@ -13,6 +13,12 @@ import type { PrintDocument } from './index.js';
 export const HONOR_CODE_HEADING = 'Academic integrity pledge';
 export const PRINT_FOOTER_SEPARATOR = '\u00a0\u00a0|\u00a0\u00a0';
 
+export interface PrintFooter {
+  left: string;
+  center: string;
+  right: string;
+}
+
 /** Leaves space for a handwritten name on printed honor-code pledges. */
 export const BLANK_NAME_PLACEHOLDER = '____________________________';
 
@@ -49,6 +55,27 @@ export function getPrintFooterLabel({
   formLabel: string;
 }): string {
   return `${document === 'answer_key' ? `Answer key${PRINT_FOOTER_SEPARATOR}` : ''}Form ${formLabel}`;
+}
+
+export function getPrintFooter({
+  resLocals,
+  document,
+  formLabel,
+}: {
+  resLocals: ResLocalsForPage<'print-form'>;
+  document: PrintDocument;
+  formLabel: string;
+}): PrintFooter {
+  return {
+    left: [
+      resLocals.course.title ?? resLocals.course.short_name,
+      resLocals.course_instance.long_name ?? resLocals.course_instance.short_name,
+    ]
+      .filter(Boolean)
+      .join(PRINT_FOOTER_SEPARATOR),
+    center: resLocals.assessment.title || resLocals.assessment_label,
+    right: getPrintFooterLabel({ document, formLabel }),
+  };
 }
 
 /**
@@ -128,6 +155,5 @@ export function buildPrintableCover({
     ],
     sections,
     gradingTable: isAnswerKey ? undefined : gradingTable,
-    footer: `${resLocals.course_instance.long_name ?? resLocals.course_instance.short_name}${PRINT_FOOTER_SEPARATOR}${getPrintFooterLabel({ document: 'assessment', formLabel })}`,
   };
 }

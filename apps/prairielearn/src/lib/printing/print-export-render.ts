@@ -43,7 +43,7 @@ export const PrintExportWorkSchema = z.discriminatedUnion('format', [
     snapshot: PrintExportSnapshotSchema,
     source: DocxSourceSchema,
     cover: PrintableCoverSchema.optional(),
-    footerLabel: z.string(),
+    footer: z.object({ left: z.string(), center: z.string(), right: z.string() }),
   }),
 ]);
 export type PrintExportWork = z.infer<typeof PrintExportWorkSchema>;
@@ -87,7 +87,7 @@ export async function renderPrintExport(
     const output = createDocxOutput({
       source: work.source,
       cover: work.cover,
-      footerLabel: work.footerLabel,
+      footer: work.footer,
     });
     return await renderer.render(
       {

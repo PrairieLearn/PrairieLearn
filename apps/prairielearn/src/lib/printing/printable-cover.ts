@@ -55,7 +55,6 @@ export interface PrintableCover {
   summary: PrintableCoverSummaryItem[];
   sections: PrintableCoverSection[];
   gradingTable?: { questionNumbers: string[]; rowsPerColumn: number };
-  footer: string;
 }
 
 const PrintableTextRunSchema = z.object({
@@ -94,7 +93,6 @@ export const PrintableCoverSchema = z.object({
     }),
   ),
   gradingTable: PrintGradingTableSchema.optional(),
-  footer: z.string(),
 }) satisfies z.ZodType<PrintableCover>;
 
 function normalizeRuns(runs: PrintableTextRun[]): PrintableTextRun[] {

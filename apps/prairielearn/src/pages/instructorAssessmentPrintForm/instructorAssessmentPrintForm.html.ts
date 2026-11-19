@@ -16,7 +16,7 @@ import {
   PRINT_FOOTER_SEPARATOR,
   answerKeyDescription,
   getPrintCoverFields,
-  getPrintFooterLabel,
+  getPrintFooter,
 } from '../../lib/printing/print-cover.js';
 import { PRINT_FONT_STYLESHEET_URL } from '../../lib/printing/print-fonts.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -66,17 +66,11 @@ export function InstructorAssessmentPrintForm({
 }) {
   const isAnswerKey = document === 'answer_key';
   const documentLabel = isAnswerKey ? 'Answer key' : resLocals.assessment.type;
-  const footerLabel = getPrintFooterLabel({
+  const footer = getPrintFooter({
+    resLocals,
     document,
     formLabel,
   });
-  const footerCourseAndInstance = [
-    resLocals.course.title ?? resLocals.course.short_name,
-    resLocals.course_instance.long_name ?? resLocals.course_instance.short_name,
-  ]
-    .filter(Boolean)
-    .join(PRINT_FOOTER_SEPARATOR);
-  const footerAssessmentName = resLocals.assessment.title || resLocals.assessment_label;
   const { width: paperWidth, height: paperHeight } = PAPER_DIMENSIONS[paperSize];
 
   return html`<!doctype html>
@@ -144,21 +138,21 @@ export function InstructorAssessmentPrintForm({
           @page {
             @bottom-left {
               color: #555;
-              content: ${cssContent(footerCourseAndInstance)};
+              content: ${cssContent(footer.left)};
               font-family: 'Plus Jakarta Sans', Arial, sans-serif;
               font-size: 8pt;
             }
 
             @bottom-center {
               color: #555;
-              content: ${cssContent(footerAssessmentName)};
+              content: ${cssContent(footer.center)};
               font-family: 'Plus Jakarta Sans', Arial, sans-serif;
               font-size: 8pt;
             }
 
             @bottom-right {
               color: #555;
-              content: ${cssContent(`${footerLabel}${PRINT_FOOTER_SEPARATOR}Page `)} counter(page)
+              content: ${cssContent(`${footer.right}${PRINT_FOOTER_SEPARATOR}Page `)} counter(page)
                 ' of ' counter(pages);
               font-family: 'Plus Jakarta Sans', Arial, sans-serif;
               font-size: 8pt;

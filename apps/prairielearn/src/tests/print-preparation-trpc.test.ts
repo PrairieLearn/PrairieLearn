@@ -1155,7 +1155,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
       expect(render.mock.calls[0][0]).toMatchObject({
         format: 'docx',
         source,
-        footerLabel: `Form ${label}`,
+        footer: {
+          left: expect.stringContaining('Spring 2015'),
+          center: 'Exam with assessment tools',
+          right: `Form ${label}`,
+        },
         cover: {
           summary: [
             { term: 'Questions', value: '1' },
