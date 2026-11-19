@@ -9,8 +9,11 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { config } from '../lib/config.js';
-import type { CourseAgentConversation, User } from '../lib/db-types.js';
-import { EnumEnrollmentStatusSchema } from '../lib/db-types.js';
+import {
+  type CourseAgentConversation,
+  EnumEnrollmentStatusSchema,
+  type User,
+} from '../lib/db-types.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,

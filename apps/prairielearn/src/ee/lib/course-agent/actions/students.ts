@@ -477,9 +477,7 @@ export const studentActions = {
         rows: [
           {
             label: 'Extended access until',
-            detail: extension.end_date
-              ? formatDate(extension.end_date, ctx.course_instance.display_timezone)
-              : 'No date',
+            detail: formatDate(extension.end_date, ctx.course_instance.display_timezone),
           },
         ],
       };
