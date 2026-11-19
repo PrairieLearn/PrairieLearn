@@ -47,7 +47,7 @@ export function buildInstructions(
 export function describeTimezone(timezone: string) {
   return [
     `The course's timezone is ${timezone}. Give every date and time in that timezone and say which zone it is, by its everyday name or abbreviation rather than "${timezone}", unless staff ask for another zone.`,
-    'Commands can report times in UTC or another zone; convert those before quoting them.',
+    'Commands and tools can report times in UTC or another zone; convert those before quoting them.',
     'A course instance can set its own "timezone" in infoCourseInstance.json; use that one for its dates.',
     'Dates and times in course files, such as the access rules in infoAssessment.json, have no zone because they are already in the timezone of their course instance. Read and write them as they are; never convert them.',
   ].join(' ');
