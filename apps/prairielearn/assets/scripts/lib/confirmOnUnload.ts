@@ -1,19 +1,6 @@
+import { consumeSkipNextFormConfirmation } from '../../../src/lib/client/confirm-on-unload.js';
+
 import { initializeQuestionFormState, isQuestionFormDirty } from './questionForm.js';
-
-let skipNextConfirmation = false;
-
-/**
- * Disables the "unsaved changes" confirmation for the next page unload.
- * Call this immediately before intentionally navigating away (e.g., form submission).
- *
- * The flag auto-resets when the `beforeunload` event fires, so:
- * - If navigation succeeds: page unloads, flag doesn't matter
- * - If navigation is cancelled: flag is reset, subsequent attempts show confirmation
- * - If called without navigation: the next unload will skip confirmation once
- */
-export function skipNextFormConfirmation(): void {
-  skipNextConfirmation = true;
-}
 
 export function confirmOnUnload(form: HTMLFormElement): () => void {
   const cleanupFormState = initializeQuestionFormState(form);
@@ -21,8 +8,7 @@ export function confirmOnUnload(form: HTMLFormElement): () => void {
   // Check form state on unload
   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
     // Skip confirmation if explicitly requested (e.g., during intentional form submission)
-    if (skipNextConfirmation) {
-      skipNextConfirmation = false; // Reset in case navigation doesn't happen
+    if (consumeSkipNextFormConfirmation()) {
       return;
     }
 

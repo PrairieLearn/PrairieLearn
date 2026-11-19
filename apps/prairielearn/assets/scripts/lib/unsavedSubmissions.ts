@@ -18,13 +18,43 @@ export function initializeUnsavedSubmissions(
   let captureInFlight = false;
   let captureAttempted = false;
   let submitting = false;
+  let recoveryDirtyTimeoutId: number | undefined;
 
-  const capture = async () => {
+  const clearRecoveryDirtyTimeout = () => {
+    window.clearTimeout(recoveryDirtyTimeoutId);
+    recoveryDirtyTimeoutId = undefined;
+  };
+
+  const recoveryBanner = () => document.getElementById('unsaved-submission-recovery');
+
+  const updateRecoveryDirtyState = (dirty: boolean) => {
+    const banner = recoveryBanner();
+    if (!banner || banner.dataset.recoveryPending === 'true' || !dirty) {
+      clearRecoveryDirtyTimeout();
+      return;
+    }
+    if (recoveryDirtyTimeoutId !== undefined) return;
+    recoveryDirtyTimeoutId = window.setTimeout(() => {
+      recoveryDirtyTimeoutId = undefined;
+      const currentBanner = recoveryBanner();
+      if (!currentBanner || currentBanner.dataset.recoveryPending === 'true' || submitting) return;
+      if (!isQuestionFormDirty(form)) return;
+      currentBanner.dispatchEvent(new Event('unsaved-submission-recovery-expired'));
+      void capture(true);
+    }, 120_000);
+  };
+
+  const capture = async (replaceRecovery = false) => {
     if (captureInFlight || submitting) return;
     captureInFlight = true;
     try {
       const captured = getQuestionFormData(form);
-      if (!isQuestionFormDirty(form, captured)) return;
+      const dirty = isQuestionFormDirty(form, captured);
+      if (!replaceRecovery && recoveryBanner()) {
+        updateRecoveryDirtyState(dirty);
+        return;
+      }
+      if (!dirty) return;
       const formData: Record<string, string | string[]> = Object.fromEntries(
         Array.from(new Set(captured.keys()), (key) => {
           const values = captured.getAll(key).map((value) => value.toString());
@@ -67,6 +97,9 @@ export function initializeUnsavedSubmissions(
 
   const resetSubmitting = () => {
     submitting = false;
+    if (recoveryBanner()) {
+      queueMicrotask(() => updateRecoveryDirtyState(isQuestionFormDirty(form)));
+    }
   };
 
   const handlePageHide = () => {
@@ -85,14 +118,20 @@ export function initializeUnsavedSubmissions(
   form.addEventListener('change', resetSubmitting);
   window.addEventListener('pagehide', handlePageHide);
   window.addEventListener('pageshow', resetSubmitting);
+  window.addEventListener('unsaved-submission-recovery-interaction', clearRecoveryDirtyTimeout);
 
   return () => {
     window.clearInterval(intervalId);
+    clearRecoveryDirtyTimeout();
     form.removeEventListener('submit', handleSubmit);
     form.removeEventListener('click', handleClick, true);
     form.removeEventListener('input', resetSubmitting);
     form.removeEventListener('change', resetSubmitting);
     window.removeEventListener('pagehide', handlePageHide);
     window.removeEventListener('pageshow', resetSubmitting);
+    window.removeEventListener(
+      'unsaved-submission-recovery-interaction',
+      clearRecoveryDirtyTimeout,
+    );
   };
 }

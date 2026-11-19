@@ -1,14 +1,23 @@
+import { randomUUID } from 'node:crypto';
+
 import type { Page } from '@playwright/test';
 
 import type { CourseInstance } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
-import { hasUnsavedSubmission } from '../../models/unsaved-submission.js';
+import {
+  hasUnsavedSubmission,
+  selectOptionalUnsavedSubmission,
+  upsertUnsavedSubmission,
+} from '../../models/unsaved-submission.js';
 import { parseInstanceQuestionId } from '../helperClient.js';
 import { getConfiguredUser } from '../utils/auth.js';
 
 import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ features: { 'unsaved-submissions-collection': true } });
+const recoveryTest = createTest({
+  features: { 'unsaved-submissions-collection': true, 'unsaved-submissions-ui': true },
+});
 
 async function openQuestion(page: Page, courseInstance: CourseInstance) {
   const assessment = await selectAssessmentByTid({
@@ -35,6 +44,25 @@ async function captureWork(page: Page) {
     uuid: string;
     formData: Record<string, string | string[]>;
   };
+}
+
+async function openRecoverableDraft(page: Page, courseInstance: CourseInstance) {
+  await openQuestion(page, courseInstance);
+  const user = await getConfiguredUser();
+  const draftKey = {
+    instance_question_id: String(parseInstanceQuestionId(page.url())),
+    user_id: user.id,
+    variant_id: await page.locator('form.question-form input[name="__variant_id"]').inputValue(),
+  };
+  await upsertUnsavedSubmission({
+    ...draftKey,
+    credit: 100,
+    raw_submitted_answer: { c: '17' },
+    uuid: randomUUID(),
+  });
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'You have unsaved work' })).toBeVisible();
+  return () => selectOptionalUnsavedSubmission(draftKey);
 }
 
 test('captures dirty work and discards it only after navigation is accepted', async ({
@@ -107,3 +135,54 @@ test('retains captured work when a real submission fails', async ({ page, course
     }),
   ).toBe(true);
 });
+
+recoveryTest(
+  'preserves a recoverable draft while editing and restores its saved answers',
+  async ({ page, courseInstance }) => {
+    await page.clock.install();
+    const selectDraft = await openRecoverableDraft(page, courseInstance);
+    await page.locator('input[name="c"]').fill('29');
+    await page.clock.fastForward(30_000);
+    expect((await selectDraft())!.raw_submitted_answer).toEqual({ c: '17' });
+
+    await page.getByRole('button', { name: 'Restore answers' }).click();
+    await expect(page.getByRole('heading', { name: 'You have unsaved work' })).toHaveCount(0);
+    await expect(page.locator('input[name="c"]')).toHaveValue('17');
+    expect(await selectDraft()).toBeNull();
+  },
+);
+
+recoveryTest(
+  'dismisses the recovery banner and resumes collection of current answers',
+  async ({ page, courseInstance }) => {
+    await page.clock.install();
+    const selectDraft = await openRecoverableDraft(page, courseInstance);
+    await page.locator('input[name="c"]').fill('19');
+    await page.getByRole('button', { name: 'Dismiss unsaved work' }).click();
+    await expect(page.getByRole('heading', { name: 'You have unsaved work' })).toHaveCount(0);
+
+    await page.clock.fastForward(30_000);
+    await expect.poll(async () => (await selectDraft())?.raw_submitted_answer).toEqual({ c: '19' });
+  },
+);
+
+recoveryTest(
+  'replaces a recoverable draft only after the form stays dirty for two minutes',
+  async ({ page, courseInstance }) => {
+    await page.clock.install();
+    const selectDraft = await openRecoverableDraft(page, courseInstance);
+    const heading = page.getByRole('heading', { name: 'You have unsaved work' });
+    await page.clock.fastForward(120_000);
+    await expect(heading).toBeVisible();
+    expect((await selectDraft())!.raw_submitted_answer).toEqual({ c: '17' });
+
+    await page.locator('input[name="c"]').fill('29');
+    await page.clock.fastForward(119_000);
+    await expect(heading).toBeVisible();
+    expect((await selectDraft())!.raw_submitted_answer).toEqual({ c: '17' });
+
+    await page.clock.fastForward(1_001);
+    await expect(heading).toHaveCount(0);
+    await expect.poll(async () => (await selectDraft())?.raw_submitted_answer).toEqual({ c: '29' });
+  },
+);

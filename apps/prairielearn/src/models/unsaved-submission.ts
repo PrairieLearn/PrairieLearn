@@ -3,13 +3,14 @@ import { z } from 'zod';
 import {
   execute,
   loadSqlEquiv,
+  queryOptionalRow,
   queryOptionalScalar,
   queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import type { UnsavedSubmission } from '../lib/db-types.js';
+import { type UnsavedSubmission, UnsavedSubmissionSchema } from '../lib/db-types.js';
 
 import { lockVariant } from './variant.js';
 
@@ -83,5 +84,37 @@ export async function hasUnsavedSubmission({
     sql.has_unsaved_submission,
     { instance_question_id, user_id, variant_id },
     z.boolean(),
+  );
+}
+
+export async function selectOptionalUnsavedSubmission({
+  instance_question_id,
+  user_id,
+  variant_id,
+}: {
+  instance_question_id: string;
+  user_id: string;
+  variant_id: string;
+}): Promise<UnsavedSubmission | null> {
+  return await queryOptionalRow(
+    sql.select_optional_unsaved_submission,
+    { instance_question_id, user_id, variant_id },
+    UnsavedSubmissionSchema,
+  );
+}
+
+export async function selectOptionalUnsavedSubmissionUpdatedAt({
+  instance_question_id,
+  user_id,
+  variant_id,
+}: {
+  instance_question_id: string;
+  user_id: string;
+  variant_id: string;
+}): Promise<Date | null> {
+  return await queryOptionalScalar(
+    sql.select_optional_unsaved_submission_updated_at,
+    { instance_question_id, user_id, variant_id },
+    UnsavedSubmissionSchema.shape.updated_at,
   );
 }

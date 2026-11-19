@@ -1,7 +1,8 @@
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { skipNextFormConfirmation } from './lib/confirmOnUnload.js';
+import { skipNextFormConfirmation } from '../../src/lib/client/confirm-on-unload.js';
+
 import { setupCountdown } from './lib/countdown.js';
 
 function showWarningPopup(id: string, message: string) {
