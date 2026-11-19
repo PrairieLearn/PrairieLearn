@@ -279,3 +279,58 @@ FROM
 WHERE
   ss.course_id = $course_id
   AND c.deleted_at IS NULL;
+
+-- BLOCK select_students_by_course_id
+SELECT
+  e.id AS enrollment_id,
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  e.user_id,
+  COALESCE(u.uid, e.pending_uid) AS uid,
+  COALESCE(u.name, e.pending_name) AS name,
+  e.status,
+  e.first_joined_at
+FROM
+  course_instances AS ci
+  JOIN enrollments AS e ON (e.course_instance_id = ci.id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_student_label_members_by_course_id
+SELECT
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  sl.name AS label_name,
+  e.id AS enrollment_id,
+  COALESCE(u.uid, e.pending_uid) AS uid
+FROM
+  course_instances AS ci
+  JOIN student_labels AS sl ON (sl.course_instance_id = ci.id)
+  JOIN student_label_enrollments AS sle ON (sle.student_label_id = sl.id)
+  JOIN enrollments AS e ON (e.id = sle.enrollment_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_publishing_extension_students_by_course_id
+SELECT
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  pe.name AS extension_name,
+  pe.end_date,
+  e.id AS enrollment_id,
+  COALESCE(u.uid, e.pending_uid) AS uid
+FROM
+  course_instances AS ci
+  JOIN course_instance_publishing_extensions AS pe ON (pe.course_instance_id = ci.id)
+  JOIN course_instance_publishing_extension_enrollments AS pee ON (
+    pee.course_instance_publishing_extension_id = pe.id
+  )
+  JOIN enrollments AS e ON (e.id = pee.enrollment_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;

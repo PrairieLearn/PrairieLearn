@@ -6,11 +6,22 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { COURSE_DATA_DATASETS } from '../ee/routers/courseAgentData/datasets.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { insertIssue } from '../lib/issues.js';
+import { createPublishingExtensionWithEnrollments } from '../models/course-instance-publishing-extensions.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { insertCourse } from '../models/course.js';
+import {
+  generateAndEnrollUsers,
+  selectUsersAndEnrollmentsByUidsInCourseInstance,
+} from '../models/enrollment.js';
 import { insertSharingSetCourse } from '../models/sharing-set.js';
+import {
+  addLabelToEnrollments,
+  selectStudentLabelsInCourseInstance,
+} from '../models/student-label.js';
 
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
@@ -166,6 +177,24 @@ describe('course agent course data', { timeout: 60_000, concurrent: false }, fun
         IdSchema,
       ),
       course_sharing_token: consumer.sharing_token,
+    });
+    const courseInstance = await selectCourseInstanceById('1');
+    const [student] = await generateAndEnrollUsers({ count: 1, course_instance_id: '1' });
+    const enrollments = (
+      await selectUsersAndEnrollmentsByUidsInCourseInstance({
+        uids: [student.uid],
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      })
+    ).map(({ enrollment }) => enrollment);
+    const [label] = await selectStudentLabelsInCourseInstance(courseInstance);
+    await addLabelToEnrollments({ enrollments, label, authzData: dangerousFullSystemAuthz() });
+    await createPublishingExtensionWithEnrollments({
+      courseInstance,
+      name: 'Makeup week',
+      endDate: new Date('2401-01-01T00:00:00Z'),
+      enrollments,
     });
     for (const [name, dataset] of Object.entries(COURSE_DATA_DATASETS)) {
       const rows = await getRows(`${dataUrl}/${name}`, owner, {

@@ -6,6 +6,7 @@ import type { CourseAction } from './action.js';
 import { attemptActions } from './attempts.js';
 import { issueActions } from './issues.js';
 import { sharingActions } from './sharing.js';
+import { studentActions } from './students.js';
 
 /**
  * The actions the course agent can request: the single source of truth for what it can change
@@ -17,6 +18,7 @@ export const COURSE_AGENT_ACTIONS: Record<string, CourseAction> = {
   ...issueActions,
   ...attemptActions,
   ...sharingActions,
+  ...studentActions,
 };
 
 const COURSE_ACTIONS_VERSION = 1;

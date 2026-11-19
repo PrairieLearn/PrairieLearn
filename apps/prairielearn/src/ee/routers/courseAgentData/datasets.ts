@@ -6,6 +6,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import {
   EnumAssessmentTypeSchema,
+  EnumEnrollmentStatusSchema,
   EnumGradingMethodSchema,
   EnumInstanceQuestionStatusSchema,
   EnumModeSchema,
@@ -425,6 +426,53 @@ export const COURSE_DATA_DATASETS = {
         .nullable()
         .describe('Short name of the course that has access, such as CS 101.'),
       course_title: z.string().nullable().describe('Title of the course that has access.'),
+    }),
+  }),
+  students: dataset({
+    description:
+      'People enrolled in or invited to each course instance. Course staff are not listed. Act on them with the students_ actions, by uid.',
+    query: sql.select_students_by_course_id,
+    schema: z.object({
+      enrollment_id: IdSchema,
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      user_id: IdSchema.nullable().describe(
+        'The user, as user_id in other datasets. Null for an invitation not yet accepted.',
+      ),
+      uid: z
+        .string()
+        .nullable()
+        .describe('UID the student signs in with, such as an email address.'),
+      name: z.string().nullable().describe("The student's name."),
+      status: EnumEnrollmentStatusSchema.describe(
+        'invited: invited but not yet joined. joined: enrolled. rejected: declined the invitation. left: left on their own. removed: removed by staff. blocked: blocked by staff.',
+      ),
+      first_joined_at: TimestampSchema.nullable().describe('When the student first joined.'),
+    }),
+  }),
+  student_label_members: dataset({
+    description:
+      'Which students are in which student labels. Labels are defined in "studentLabels" in infoCourseInstance.json.',
+    query: sql.select_student_label_members_by_course_id,
+    schema: z.object({
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      label_name: z.string().describe('Name of the label.'),
+      enrollment_id: IdSchema,
+      uid: z.string().nullable().describe('UID of the student in the label.'),
+    }),
+  }),
+  publishing_extension_students: dataset({
+    description:
+      'Students with extended access to a course instance after it closes for everyone else, one row per student per extension.',
+    query: sql.select_publishing_extension_students_by_course_id,
+    schema: z.object({
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      extension_name: z.string().nullable().describe('Name of the extension.'),
+      end_date: TimestampSchema.describe("When the extension's access ends."),
+      enrollment_id: IdSchema,
+      uid: z.string().nullable().describe('UID of the student with the extension.'),
     }),
   }),
 };
