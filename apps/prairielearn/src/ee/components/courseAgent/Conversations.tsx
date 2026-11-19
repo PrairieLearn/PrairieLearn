@@ -27,6 +27,7 @@ import {
   InputRequestPartSchema,
   type ReviewPart,
   ReviewPartSchema,
+  SteerPartSchema,
   type ToolCall,
   ToolCallSchema,
   reviewTag,
@@ -438,6 +439,10 @@ function Chat({
   });
   const denyError = getAppError<CourseAgentError['PostReviewDecision']>(deny.error);
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
+  // A message sent while the agent works joins the turn that is running, so it is not sent over
+  // the chat socket, which would start a turn of its own.
+  const steer = useMutation(trpc.courseAgent.steer.mutationOptions());
+  const steerError = getAppError<CourseAgentError['Steer']>(steer.error);
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
 
@@ -552,19 +557,33 @@ function Chat({
       : null;
   // An input request is open until staff send their next message, which answers it however it is sent.
   const latest = messages.at(-1);
+  const latestPartTypes = latest?.role === 'assistant' ? latest.parts.map(({ type }) => type) : [];
   const inputRequestOpen =
-    latest?.role === 'assistant' && latest.parts.some((part) => part.type === 'data-input-request');
+    latestPartTypes.lastIndexOf('data-input-request') > latestPartTypes.lastIndexOf('data-steer');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
   const canSend = connected && readyToSend && !responseActive && !sending;
+  // Files reach the agent when a turn starts, so a message with files waits for the next one.
+  const waitingToSendFiles = canStop && !pendingReview && drafts.attachments.length > 0;
+  const canSteer = connected && canStop && !pendingReview && drafts.attachments.length === 0;
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || responseActive || !connected || sending || deny.isPending) return;
+    if (!text || !connected || sending || deny.isPending || steer.isPending) return;
+    if (canSteer) {
+      steer.mutate(
+        { conversationId, id: crypto.randomUUID(), text, location: currentPageLocation() },
+        { onSuccess: () => setDraft('') },
+      );
+      return;
+    }
+    if (responseActive) return;
     if (!replyDenies && !canSend) return;
+    // An earlier message the agent finished too soon to take goes out this way instead.
+    steer.reset();
     void send(text, drafts.attachments, replyDenies ? lifecycle.reviewId! : undefined).then(
       (sent) => {
         if (sent) setDraft('');
@@ -641,6 +660,9 @@ function Chat({
           {deny.isError && (
             <AppErrorAlert error={denyError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
+          {steer.isError && (
+            <AppErrorAlert error={steerError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
           {(connectionError || connectionFailed) && (
             <Alert variant="danger">
               Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
@@ -655,16 +677,20 @@ function Chat({
       </div>
       <Composer
         draft={draft}
-        disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
+        disabled={!connected || !(readyToSend || replyDenies || canSteer) || deny.isPending}
         placeholder={
           replyDenies
             ? 'Explain what to change…'
             : inputRequestOpen
               ? 'Reply to the agent, or ask something else…'
-              : undefined
+              : canSteer
+                ? 'Add a message while the agent works…'
+                : undefined
         }
         sendLabel={replyDenies ? 'Deny and send' : undefined}
-        pending={sending || deny.isPending}
+        pending={sending || deny.isPending || steer.isPending}
+        notice={waitingToSendFiles ? 'You can send files once the agent finishes.' : undefined}
+        sendWhileRunning={canSteer}
         attachments={drafts.attachments}
         approvalMode={shownApprovalMode}
         stopDisabled={!connected || !canStop}
@@ -691,6 +717,8 @@ function Composer({
   placeholder = 'Ask the course agent…',
   sendLabel = 'Send',
   pending = false,
+  notice,
+  sendWhileRunning = false,
   attachments,
   approvalMode,
   onApprovalModeChange,
@@ -708,6 +736,10 @@ function Composer({
   sendLabel?: string;
   /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
+  /** Why the message can't be sent yet. */
+  notice?: string;
+  /** Show Send beside Stop: the agent takes messages while it works. */
+  sendWhileRunning?: boolean;
   attachments: DraftAttachment[];
   approvalMode: ApprovalMode;
   onApprovalModeChange: (mode: ApprovalMode) => void;
@@ -756,7 +788,8 @@ function Composer({
           value={draft}
           placeholder={placeholder}
           aria-label="Message"
-          disabled={pending}
+          // Read-only rather than disabled, so the box keeps focus for the next message.
+          readOnly={pending}
           onChange={(event) => onDraftChange(event.target.value)}
           onKeyDown={onKeyDown}
           onPaste={(event) => {
@@ -772,6 +805,7 @@ function Composer({
             onAttach([...event.clipboardData.files]);
           }}
         />
+        {notice && <div className="small text-body-secondary mt-1">{notice}</div>}
         <div className="d-flex align-items-center gap-2 mt-2">
           <input
             ref={fileInputRef}
@@ -796,7 +830,7 @@ function Composer({
           <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
           <div className="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
             {children}
-            {onStop ? (
+            {onStop && (
               <Button
                 variant="link"
                 size="sm"
@@ -808,7 +842,8 @@ function Composer({
                 <i className="bi bi-stop-fill" aria-hidden="true" />
                 <span className="course-agent-composer-wide-only">Stop</span>
               </Button>
-            ) : (
+            )}
+            {(!onStop || sendWhileRunning) && (
               <Button
                 type="submit"
                 size="sm"
@@ -946,14 +981,19 @@ function Message({
     );
   }
   // Consecutive tool calls render together so runs of the same kind can be grouped.
-  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
+  type Segment = { key: string; index: number } & (
+    | { calls: ToolCall[] }
+    | { part: UIMessage['parts'][number] }
+  );
   const segments: Segment[] = [];
   message.parts.forEach((part, index) => {
     const call = toolCallOf(part);
     const last = segments.at(-1);
     if (call && last && 'calls' in last) last.calls.push(call);
-    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
+    else segments.push({ key: `part-${index}`, index, ...(call ? { calls: [call] } : { part }) });
   });
+  // A message staff sent while the agent worked also answers what the agent asked before it.
+  const lastSteerIndex = message.parts.map(({ type }) => type).lastIndexOf('data-steer');
   // A review ends the agent's turn even though the agent usually writes more after submitting it,
   // so its card goes at the end of that turn: where the agent's turn that receives the result
   // begins, or the end of the message until then.
@@ -989,7 +1029,7 @@ function Message({
           />
         );
       }
-      const { key, part } = segment;
+      const { key, index, part } = segment;
       if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) return null;
       if (part.type === 'text') {
         return <TextPart key={key} part={part} urlTransform={linkTransform} />;
@@ -1004,10 +1044,20 @@ function Message({
           <InputRequestCard
             key={key}
             part={request}
-            answered={answered}
+            answered={answered || index < lastSteerIndex}
             canAnswer={canAnswer}
             onAnswer={onAnswer}
           />
+        );
+      }
+      if (part.type === 'data-steer') {
+        const steer = SteerPartSchema.safeParse(part.data).data;
+        if (!steer) return null;
+        // Spaced like a message of its own, which is how staff sent it.
+        return (
+          <div key={key} className="d-flex flex-column my-2">
+            <UserMessage text={steer.text} />
+          </div>
         );
       }
       if (part.type === 'data-turn') {

@@ -6,7 +6,11 @@ import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
 /** `history` lists thread items newest first, as thread/items/list returns them. */
-function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
+function runner({
+  loseAcceptance = false,
+  history = [] as unknown[],
+  steer = 'accept' as 'accept' | 'refuse' | 'lose',
+} = {}) {
   const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -36,6 +40,13 @@ function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
       }
       if (frame.method === 'turn/start' && !loseAcceptance) {
         emit({ id: frame.id, result: { turn: { id: 'turn' } } });
+      }
+      if (frame.method === 'turn/steer' && steer !== 'lose') {
+        emit(
+          steer === 'accept'
+            ? { id: frame.id, result: { turnId: 'turn' } }
+            : { id: frame.id, error: { code: -32600, message: 'no active turn to steer' } },
+        );
       }
       if (frame.method === 'turn/interrupt') {
         emit({ id: frame.id, result: {} });
@@ -180,6 +191,43 @@ describe('course agent turns', () => {
     });
     native.closeStream();
     disconnect();
+  });
+
+  it('adds a message to the running turn, and reports a refusal without failing the turn', async () => {
+    const message = { tag: 'steer:1', text: 'Use SI units', page: 'On "algebra/add".' };
+    const start = async (steer: 'accept' | 'refuse' | 'lose') => {
+      const state = runner({ steer });
+      state.native.beginTurn('assistant');
+      await state.native.connect();
+      await state.native.thread({ ...thread, threadId: 'thread' });
+      await state.native.run({ tag: 'message:1', text: 'Edit my question' }, () => {});
+      return state;
+    };
+    const running = await start('accept');
+    expect(await running.native.steer(message)).toBe(true);
+    expect(running.commands.find((command) => command.method === 'turn/steer')?.params).toEqual({
+      threadId: 'thread',
+      expectedTurnId: 'turn',
+      clientUserMessageId: 'steer:1',
+      input: [{ type: 'text', text: 'Use SI units', text_elements: [] }],
+      additionalContext: { prairielearn_page: { kind: 'untrusted', value: 'On "algebra/add".' } },
+    });
+    running.native.closeStream();
+    running.disconnect();
+
+    // Codex refuses once the turn has ended. The connection stays usable for the next turn.
+    const ended = await start('refuse');
+    expect(await ended.native.steer(message)).toBe(false);
+    await expect(ended.native.interrupt()).resolves.toBeUndefined();
+    ended.native.closeStream();
+    ended.disconnect();
+
+    // A lost connection leaves acceptance unknown, which is not a refusal.
+    const lost = await start('lose');
+    const unanswered = lost.native.steer(message);
+    lost.disconnect();
+    await expect(unanswered).rejects.toThrow();
+    lost.native.closeStream();
   });
 
   it('reuses the native session for follow-ups and stops processes only on explicit Stop', async () => {

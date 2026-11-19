@@ -68,6 +68,8 @@ function historyUrl(conversationId: string) {
 
 describe('Course agent access and conversation privacy', () => {
   let serviceConversationId = crypto.randomUUID();
+  /** Answers the next request with this status instead of success. */
+  let serviceRefusal: number | null = null;
   const serviceRequests: { path: string; body: unknown; authorization: string | undefined }[] = [];
   const service = createServer(async (request, response) => {
     const chunks: Buffer[] = [];
@@ -86,7 +88,8 @@ describe('Course agent access and conversation privacy', () => {
     });
     response.setHeader('Content-Type', 'application/json');
     const creating = request.url === '/conversations' || request.url === '/conversations/local';
-    response.statusCode = creating ? 201 : 200;
+    response.statusCode = serviceRefusal ?? (creating ? 201 : 200);
+    serviceRefusal = null;
     response.end(JSON.stringify(creating ? { id: serviceConversationId } : { recovered: true }));
   });
   let owner: User;
@@ -315,6 +318,28 @@ describe('Course agent access and conversation privacy', () => {
         path: `/conversations/${own.agent_conversation_id}/approval-mode`,
         body: { approvalMode: 'always_approve' },
       },
+    ]);
+  });
+
+  test("adds a message only to the caller's own running conversation", async () => {
+    const own = await createConversation(owner);
+    const other = await createConversation(otherOwner);
+    const message = { id: crypto.randomUUID(), text: 'Use SI units' };
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      await expect(
+        client.courseAgent.steer.mutate({ conversationId: other.id, ...message }),
+      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      await client.courseAgent.steer.mutate({ conversationId: own.id, ...message });
+      // The service refuses a message once the agent has finished, so staff are told to resend.
+      serviceRefusal = 409;
+      await expect(
+        client.courseAgent.steer.mutate({ conversationId: own.id, ...message }),
+      ).rejects.toMatchObject({ data: { code: 'CONFLICT' } });
+    });
+    expect(serviceRequests.map(({ path, body }) => ({ path, body }))).toEqual([
+      { path: `/conversations/${own.agent_conversation_id}/steer`, body: message },
+      { path: `/conversations/${own.agent_conversation_id}/steer`, body: message },
     ]);
   });
 

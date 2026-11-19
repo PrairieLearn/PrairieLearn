@@ -334,6 +334,34 @@ export const UserMessageMetadataSchema = z.object({
   approvalMode: ApprovalModeSchema.optional().catch(undefined),
 });
 
+/** Tags a message sent while the agent was working, on its part and on Codex's copy of it. */
+export const steerTag = (steerId: string) => `steer:${steerId}`;
+
+/**
+ * A message staff send while the agent is working. The agent takes it into account in the turn
+ * that is running, so it has no reply of its own. The browser chooses the ID, which makes a
+ * repeated request harmless.
+ */
+export const SteerInputSchema = z.strictObject({
+  id: z.uuid(),
+  text: z.string().trim().min(1).max(20_000),
+  location: PageLocationSchema.optional(),
+});
+
+export type SteerInput = z.infer<typeof SteerInputSchema>;
+
+/**
+ * A `data-steer` part: a message staff sent while the agent was working, placed in the agent's
+ * reply where it arrived. Unknown fields are stripped, so either side can add one before the other.
+ */
+export const SteerPartSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  location: PageLocationSchema.optional(),
+});
+
+export type SteerPart = z.infer<typeof SteerPartSchema>;
+
 /**
  * A `data-review` part, which shows a review in chat history by ID. `autoApprove` records that the
  * review was submitted under `always_approve`; the instructor's browser then approves it.

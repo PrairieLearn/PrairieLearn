@@ -57,6 +57,33 @@ describe('approval mode', () => {
   });
 });
 
+describe('messages for a running turn', () => {
+  it('passes a valid message to the conversation and reports when no turn takes it', async () => {
+    const steer = vi.fn(async () => true);
+    vi.mocked(getAgentByName).mockResolvedValue({ steer } as unknown as Awaited<
+      ReturnType<typeof getAgentByName>
+    >);
+    const post = (body: unknown) =>
+      app.request(
+        `/conversations/${crypto.randomUUID()}/steer`,
+        {
+          method: 'POST',
+          headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+        { PL_SERVICE_TOKEN: 'test-token' } as unknown as Env,
+      );
+    const message = { id: crypto.randomUUID(), text: 'Use SI units' };
+    expect((await post({ ...message, text: ' ' })).status).toBe(400);
+    expect((await post({ ...message, id: 'not-an-id' })).status).toBe(400);
+    expect(steer).not.toHaveBeenCalled();
+    expect((await post(message)).status).toBe(200);
+    expect(steer).toHaveBeenCalledWith(message);
+    steer.mockResolvedValueOnce(false);
+    expect((await post(message)).status).toBe(409);
+  });
+});
+
 describe('uploads', () => {
   const bytes = new Uint8Array([1, 2, 3]);
 

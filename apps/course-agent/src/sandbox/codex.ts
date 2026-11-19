@@ -1,5 +1,10 @@
 import type { UIMessageChunk } from 'ai';
-import { type MessageConnection, ParameterStructures } from 'vscode-jsonrpc/browser';
+import {
+  ErrorCodes,
+  type MessageConnection,
+  ParameterStructures,
+  ResponseError,
+} from 'vscode-jsonrpc/browser';
 import { z } from 'zod';
 
 import {
@@ -21,6 +26,7 @@ import type { ThreadResumeParams } from '../../generated/types/v2/ThreadResumePa
 import type { ThreadStartParams } from '../../generated/types/v2/ThreadStartParams.js';
 import type { TurnInterruptParams } from '../../generated/types/v2/TurnInterruptParams.js';
 import type { TurnStartParams } from '../../generated/types/v2/TurnStartParams.js';
+import type { TurnSteerParams } from '../../generated/types/v2/TurnSteerParams.js';
 
 import { createCodexConnection } from './codex-connection.js';
 import type { CourseSandbox } from './sandbox.js';
@@ -30,6 +36,7 @@ import { MESSAGE_TOOL_CHARS, toolCallFromItem } from './tool-calls.js';
 const EmptyResult = z.object({});
 const ThreadResult = z.object({ thread: z.object({ id: z.string() }) });
 const TurnResult = z.object({ turn: z.object({ id: z.string() }) });
+const SteerResult = z.object({ turnId: z.string() });
 const TextDelta = z.object({
   threadId: z.string(),
   turnId: z.string(),
@@ -399,6 +406,37 @@ export class CodexAppServerClient {
     );
     this.turnId = result.turn.id;
     accepted(this.turnId);
+  }
+
+  /**
+   * Add a message to the running turn, which Codex gives the model at its next request and saves
+   * under the tag. Returns false if Codex refuses it, which it does once the turn has ended.
+   */
+  async steer(input: Pick<TurnInput, 'text' | 'tag' | 'page'>) {
+    if (!this.turnId) throw new Error('Native turn acceptance is unknown');
+    try {
+      await this.request(
+        'turn/steer',
+        {
+          threadId: this.threadId!,
+          expectedTurnId: this.turnId,
+          clientUserMessageId: input.tag,
+          input: [{ type: 'text', text: input.text, text_elements: [] }],
+          ...(input.page
+            ? { additionalContext: { prairielearn_page: { kind: 'untrusted', value: input.page } } }
+            : {}),
+        } satisfies TurnSteerParams,
+        SteerResult,
+      );
+      return true;
+    } catch (error) {
+      // An error reply is Codex's answer. A closed connection also rejects with a response
+      // error, and like any other failure it leaves acceptance unknown.
+      if (error instanceof ResponseError && error.code !== ErrorCodes.PendingResponseRejected) {
+        return false;
+      }
+      throw error;
+    }
   }
 
   /** The client ID of the thread's most recent user message, read newest first. */

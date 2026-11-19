@@ -13,6 +13,7 @@ import {
   type PageCatalog,
   type RequestChangesResult,
   ReviewSchema,
+  type SteerInput,
 } from '@prairielearn/course-agent-types';
 import * as error from '@prairielearn/error';
 
@@ -156,6 +157,25 @@ export async function setCourseAgentApprovalMode(
     signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) throw new error.HttpStatusError(502, 'Could not change the approval mode.');
+}
+
+/**
+ * Adds a message to the turn the agent is running. Returns false if no turn could take it, which
+ * happens when the agent finishes first.
+ */
+export async function steerCourseAgentConversation(agentConversationId: string, steer: SteerInput) {
+  const { url, headers } = buildCourseAgentServiceRequest(
+    `conversations/${encodeURIComponent(agentConversationId)}/steer`,
+  );
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(steer),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (response.status === 409) return false;
+  if (!response.ok) throw new error.HttpStatusError(502, 'Could not send the message.');
+  return true;
 }
 
 /** The review and its snapshot, or null once the agent has received its result. */

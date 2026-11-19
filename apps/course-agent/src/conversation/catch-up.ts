@@ -4,8 +4,11 @@ import {
   InputRequestPartSchema,
   NavigationPartSchema,
   type RequestChangesResult,
+  type SteerPart,
+  SteerPartSchema,
   ToolCallSchema,
   UserMessageMetadataSchema,
+  steerTag,
 } from '@prairielearn/course-agent-types';
 
 import { attachmentOf, attachmentPath } from './attachments.js';
@@ -136,6 +139,14 @@ export function denialMarker(reviewId: string): UIMessageChunk {
   return { type: 'data-denial', id: `denial:${reviewId}`, data: { reviewId } };
 }
 
+/**
+ * Marks, in chat history, a message staff sent while the agent was working. It sits in the
+ * agent's reply where it arrived, since the turn that receives it is already running.
+ */
+export function steerMarker(steer: SteerPart): UIMessageChunk {
+  return { type: 'data-steer', id: steerTag(steer.id), data: steer };
+}
+
 interface Turn {
   tag: string;
   entries: string[];
@@ -220,6 +231,18 @@ function splitTurns(history: UIMessage[]) {
       if (part.type === 'data-turn') {
         const { tag, summary } = part.data as { tag: string; summary: string };
         turns.push({ tag, entries: [`PrairieLearn: ${summary}`] });
+        continue;
+      }
+      if (part.type === 'data-steer') {
+        // Codex saves the message under its own tag, so the thread's position can be found from
+        // it. Anything the agent wrote after it is missed along with it.
+        const steer = SteerPartSchema.safeParse(part.data).data;
+        if (steer) {
+          turns.push({
+            tag: steerTag(steer.id),
+            entries: [`${staffSpeaker({ location: steer.location })}: ${steer.text.trim()}`],
+          });
+        }
         continue;
       }
       if (part.type === 'data-denial') {
