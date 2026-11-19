@@ -42,7 +42,7 @@ import {
   BLANK_NAME_PLACEHOLDER,
   HONOR_CODE_HEADING,
   buildPrintableCover,
-  getPrintFooterLabel,
+  getPrintFooter,
 } from '../../lib/printing/print-cover.js';
 import { queuePrintExport } from '../../lib/printing/print-exports.js';
 import { startPrintRequest } from '../../lib/printing/print-request.js';
@@ -340,7 +340,8 @@ router.post(
       layout.excludedQuestionNumbers,
     );
     const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
-    const footerLabel = getPrintFooterLabel({
+    const footer = getPrintFooter({
+      resLocals: res.locals,
       document,
       formLabel: res.locals.print_form.label,
     });
@@ -438,7 +439,7 @@ router.post(
         },
         source: snapshot.source,
         cover,
-        footerLabel,
+        footer,
       },
     });
     res.setHeader('Cache-Control', 'private, no-store');
