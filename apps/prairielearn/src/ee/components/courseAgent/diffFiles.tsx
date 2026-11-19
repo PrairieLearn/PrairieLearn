@@ -42,9 +42,12 @@ export const CHANGES = {
 } as const;
 
 // Pierre puts +/− flush against the line numbers; leave room on both sides, as GitHub does.
-const INDICATOR_CSS = `
+// Without line numbers, Pierre still draws their column as a thin strip down the side of a diff,
+// which reads as a stray bar next to the +/−; give it no width, as Pierre does for plain files.
+const DIFF_CSS = `
 [data-indicators='classic'] :is([data-line], [data-no-newline]) { padding-inline-start: 3ch; }
 [data-indicators='classic'] :is([data-line], [data-no-newline])::before { left: 1ch; }
+[data-disable-line-numbers] :is([data-gutter-buffer], [data-column-number]) { min-width: 0; border-right: 0; }
 `;
 
 /** What the viewer needs to know about a changed file. */
@@ -236,7 +239,7 @@ export function FileChanges({
         lineDiffType: 'word',
         // Mark changed lines with +/−, not just color.
         diffIndicators: 'classic',
-        unsafeCSS: INDICATOR_CSS,
+        unsafeCSS: DIFF_CSS,
         disableFileHeader: !showFileName,
         disableLineNumbers: !showLineNumbers,
       }}
