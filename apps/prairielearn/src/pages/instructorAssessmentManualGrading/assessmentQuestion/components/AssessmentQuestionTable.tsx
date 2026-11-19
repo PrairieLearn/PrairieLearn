@@ -775,7 +775,13 @@ export function AssessmentQuestionTable({
           hasCourseInstancePermissionEdit && (
             <>
               <Dropdown>
-                <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
+                <Dropdown.Toggle
+                  variant="light"
+                  size="sm"
+                  // Overlapping tag requests would skip all but the last request's
+                  // `onSuccess`, leaving AI grading statuses undismissed.
+                  disabled={selectedIds.length === 0 || setRequiresManualGradingMutation.isPending}
+                >
                   <i className="fas fa-tags" aria-hidden="true" />{' '}
                   <span className="d-none d-sm-inline">Tag for grading</span>
                 </Dropdown.Toggle>

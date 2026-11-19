@@ -45,7 +45,8 @@ export function useServerJobProgress({
   /**
    * Per job, the items whose terminal status the user has dismissed. Kept apart
    * from `jobsProgress` so that progress re-fetched on reconnect doesn't
-   * bring dismissed statuses back.
+   * bring dismissed statuses back. Only terminal statuses are hidden, so an item
+   * dismissed while still queued or in progress keeps showing that status.
    */
   const [dismissedItemIds, setDismissedItemIds] = useState<
     Partial<Record<string, ReadonlySet<string>>>
@@ -95,7 +96,12 @@ export function useServerJobProgress({
       const dismissed = dismissedItemIds[job.job_sequence_id];
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
         if (dropQueued && status === JobItemStatus.queued) continue;
-        if (dismissed?.has(itemId)) continue;
+        if (
+          dismissed?.has(itemId) &&
+          (status === JobItemStatus.complete || status === JobItemStatus.failed)
+        ) {
+          continue;
+        }
         if (!(itemId in merged) || status < merged[itemId]) {
           merged[itemId] = status;
         }
@@ -165,25 +171,17 @@ export function useServerJobProgress({
   }
 
   /**
-   * Stops displaying the terminal (complete or failed) statuses of the given items,
-   * e.g. once the user has changed an item's grading status and the job's status
-   * for it no longer describes the item. Items still queued or in progress are
-   * unaffected.
+   * Stops displaying the terminal (complete or failed) statuses of the given items
+   * for the jobs known so far, e.g. once the user has changed an item's grading
+   * status and the job's status for it no longer describes the item. Jobs started
+   * later still display their statuses for these items.
    */
   const handleDismissItemStatuses = useCallback(
     (itemIds: string[]) =>
       setDismissedItemIds((prev) => {
         const next = { ...prev };
-        for (const job of Object.values(jobsProgress)) {
-          const terminalItemIds = itemIds.filter((itemId) => {
-            const status = job.item_statuses?.[itemId];
-            return status === JobItemStatus.complete || status === JobItemStatus.failed;
-          });
-          if (terminalItemIds.length === 0) continue;
-          next[job.job_sequence_id] = new Set([
-            ...(prev[job.job_sequence_id] ?? []),
-            ...terminalItemIds,
-          ]);
+        for (const jobSequenceId of Object.keys(jobsProgress)) {
+          next[jobSequenceId] = new Set([...(prev[jobSequenceId] ?? []), ...itemIds]);
         }
         return next;
       }),
