@@ -3,6 +3,7 @@ import { createElement } from 'react';
 import type { UrlTransform } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import {
+  type AnimateOptions,
   type Components,
   type MathPlugin,
   Streamdown,
@@ -83,25 +84,39 @@ const mathPlugins = {
   } satisfies MathPlugin,
 };
 
+/** Words fade in as they arrive, so a streaming reply reads as flowing in, not jumping. */
+const STREAM_ANIMATION = {
+  animation: 'fadeIn',
+  duration: 400,
+  easing: 'ease-out',
+  sep: 'word',
+} satisfies AnimateOptions;
+
 /**
  * Renders a chat reply's markdown. With `math`, TeX is typeset with KaTeX; the
- * page must then include KaTeX's stylesheet (see `courseAgent.css`).
+ * page must then include KaTeX's stylesheet (see `courseAgent.css`). With
+ * `animated`, text fades in as it streams; the page must then include
+ * Streamdown's stylesheet.
  */
 export function ChatMarkdown({
   content,
   streaming,
   math = false,
+  animated = false,
   className,
   urlTransform,
 }: {
   content: string;
   streaming: boolean;
   math?: boolean;
+  animated?: boolean;
   className?: string;
   urlTransform?: UrlTransform;
 }) {
   return (
     <Streamdown
+      animated={animated && STREAM_ANIMATION}
+      isAnimating={animated && streaming}
       // Question pages typeset the whole page with MathJax, which would read
       // prices like `$5 and $10` in a message as math.
       className={clsx(math && 'mathjax_ignore', className)}

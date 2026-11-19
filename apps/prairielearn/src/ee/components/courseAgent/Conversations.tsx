@@ -239,7 +239,7 @@ function ConversationPicker({
           <div className="flex-grow-1 p-3">
             {create.isPending ? (
               <div className="d-flex flex-column gap-3">
-                <UserMessage text={create.variables.text} />
+                <UserMessage text={create.variables.text} entering />
                 <PendingStatus label="Getting ready…" />
               </div>
             ) : (
@@ -362,7 +362,7 @@ function ActivityStatus({
     return () => sessionStorage.removeItem(storageKey);
   }, [storageKey, startedAt]);
   return (
-    <div className="small text-body-secondary" role="status">
+    <div className="course-agent-fade small text-body-secondary" role="status">
       {/* The label changes with every step and the time every second, too often to announce. */}
       <span className="visually-hidden">
         {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
@@ -469,6 +469,9 @@ function Chat({
   const [initialText, setInitialText] = useState(initialMessage?.text);
   // Bridges sending to an offline sandbox and the server reporting that it is starting.
   const [awaitingStart, setAwaitingStart] = useState(initialMessage !== undefined);
+  // Messages from this position on arrived while the chat was open, and ease in. A conversation's
+  // first message rose into view before this chat existed, so only the reply to it eases in.
+  const [enteringFrom, setEnteringFrom] = useState(initialMessage ? 1 : Infinity);
   const agent = useAgent<ConversationState>({
     agent: 'Conversation',
     basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
@@ -674,6 +677,7 @@ function Chat({
     const text = draft.trim();
     if (!text || responseActive || !connected || sending || deny.isPending) return;
     if (!replyDenies && !canSend) return;
+    setEnteringFrom(messages.length);
     void send(text, drafts.attachments, replyDenies ? lifecycle.reviewId! : undefined).then(
       (sent) => {
         if (sent) setDraft('');
@@ -696,6 +700,7 @@ function Chat({
               key={message.id}
               message={message}
               live={responseActive && index === messages.length - 1}
+              entering={index >= enteringFrom}
               conversationId={conversationId}
               uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
@@ -770,9 +775,9 @@ function Chat({
           )}
         </div>
       </div>
-      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
       <Composer
         draft={draft}
+        above={plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
         placeholder={
           replyDenies
@@ -815,6 +820,7 @@ function Composer({
   onAttach,
   onRemoveAttachment,
   stopDisabled = false,
+  above,
   children,
   onStop,
 }: {
@@ -832,6 +838,8 @@ function Composer({
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
+  /** Shown over the message box, inside the same margins. */
+  above?: ReactNode;
   children?: ReactNode;
   onStop?: () => void;
 }) {
@@ -869,6 +877,7 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
+      {above}
       <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
         <DraftAttachmentList
           attachments={attachments}
@@ -1042,6 +1051,7 @@ function toolCallOf(part: UIMessage['parts'][number]) {
 function Message({
   message,
   live,
+  entering,
   conversationId,
   uploadsUrl,
   awaitingReviewId,
@@ -1062,6 +1072,8 @@ function Message({
   onAnswer: (text: string) => void;
   /** Whether this message is still streaming. */
   live: boolean;
+  /** Whether this message arrived while the chat was open, so it eases in. */
+  entering: boolean;
   conversationId: string;
   uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
@@ -1081,7 +1093,7 @@ function Message({
     return (
       <div className="d-flex flex-column align-items-end gap-2">
         <SentAttachments message={message} uploadsUrl={uploadsUrl} />
-        <UserMessage text={text} />
+        <UserMessage text={text} entering={entering} />
       </div>
     );
   }
@@ -1134,7 +1146,7 @@ function Message({
     }
     if (reply) {
       rendered.push(
-        <TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} math />,
+        <TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} math animated />,
       );
     }
     work = null;
@@ -1192,5 +1204,9 @@ function Message({
   rendered.push(...cards.filter((card) => card.kind === 'review' || !turnRunning).map(renderCard));
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;
-  return <div className="d-flex flex-column gap-2">{rendered}</div>;
+  return (
+    <div className={clsx('d-flex flex-column gap-2', entering && 'course-agent-fade')}>
+      {rendered}
+    </div>
+  );
 }

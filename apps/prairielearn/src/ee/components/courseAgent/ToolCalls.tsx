@@ -421,6 +421,7 @@ function Update({ part }: { part: TextUIPart }) {
       content={part.text}
       streaming={part.state === 'streaming'}
       math
+      animated
     />
   );
 }

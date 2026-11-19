@@ -1,5 +1,7 @@
 /* For math in replies, which `ChatMarkdown` typesets with KaTeX. */
 @import url('katex/dist/katex.min.css');
+/* For text that fades in as a reply streams, which `ChatMarkdown` does when `animated`. */
+@import url('streamdown/styles.css');
 
 .course-agent-launcher {
   --bs-btn-color: var(--bs-navbar-color);
@@ -313,17 +315,32 @@
 }
 
 /* The plan eases in when the agent first shares it, and each tick pops as its step finishes. */
+/* A message that was just sent rises into the chat, and what the agent shows in reply fades in. */
+.course-agent-rise {
+  animation: course-agent-rise 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes course-agent-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+.course-agent-fade {
+  animation: course-agent-fade 300ms ease-out;
+}
+
+@keyframes course-agent-fade {
+  from {
+    opacity: 0;
+  }
+}
+
 .course-agent-plan {
   /* The same inset as the message box under it, on every side. */
   padding: 0.75rem;
-  animation: course-agent-plan-in 250ms ease-out;
-}
-
-@keyframes course-agent-plan-in {
-  from {
-    opacity: 0;
-    transform: translateY(0.5rem);
-  }
+  animation: course-agent-rise 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .course-agent-plan-done {
@@ -500,8 +517,14 @@ body:has(.course-agent-panel-animate) .app-main {
   }
 
   .course-agent-composer-pulse,
+  .course-agent-rise,
+  .course-agent-fade,
   .course-agent-plan,
   .course-agent-plan-done {
+    animation: none;
+  }
+
+  [data-sd-animate] {
     animation: none;
   }
 

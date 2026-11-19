@@ -19,13 +19,13 @@ export function planOf(message: UIMessage | undefined): PlanPart | null {
 }
 
 /**
- * The agent's plan for the running turn, pinned above the message box: a plain list in which only
+ * The agent's plan for the running turn, shown with the message box: a plain list in which only
  * the step in progress stands out.
  */
 export function PlanChecklist({ plan }: { plan: PlanPart }) {
   return (
     <ol
-      className="course-agent-plan list-unstyled small border rounded-3 mx-3 mb-3 d-flex flex-column gap-1 overflow-y-auto"
+      className="course-agent-plan list-unstyled small border rounded-3 mb-3 d-flex flex-column gap-1 overflow-y-auto"
       style={{ maxHeight: '11rem' }}
       aria-label="Plan"
     >

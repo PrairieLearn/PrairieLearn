@@ -78,10 +78,12 @@ export function ReasoningBlock({ part, math = false }: { part: ReasoningUIPart; 
 export function TextPart({
   part,
   math = false,
+  animated = false,
   urlTransform,
 }: {
   part: TextUIPart;
   math?: boolean;
+  animated?: boolean;
   urlTransform?: UrlTransform;
 }) {
   return (
@@ -89,6 +91,7 @@ export function TextPart({
       className="markdown-body"
       content={part.text}
       math={math}
+      animated={animated}
       streaming={part.state === 'streaming'}
       urlTransform={urlTransform}
     />
