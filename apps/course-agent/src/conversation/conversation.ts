@@ -757,7 +757,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       } catch (error) {
         // Turn completion aborts requests nothing reads anymore; that is not a failure. Handle it
         // inside the callback: this runs from an RPC call with no Sentry scope, so Sentry's wrapper
-        // around the inherited keepAliveWhile() reports any rejection as unhandled.
+        // around the inherited keepAliveWhile() reports any rejection as unhandled. Once
+        // https://github.com/getsentry/sentry-javascript/issues/26673 is fixed, this can move back
+        // to a .catch() on keepAliveWhile().
         if (!signal.aborted) this.reportError(error);
       } finally {
         // Charges the estimate unless the usage was recorded above.
