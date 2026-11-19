@@ -10,7 +10,11 @@ import {
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { type UnsavedSubmission, UnsavedSubmissionSchema } from '../lib/db-types.js';
+import {
+  type UnsavedSubmission,
+  UnsavedSubmissionSchema,
+  UnsavedSubmissionStateSchema,
+} from '../lib/db-types.js';
 
 import { lockVariant } from './variant.js';
 
@@ -23,6 +27,7 @@ export async function upsertUnsavedSubmission({
   credit,
   raw_submitted_answer,
   uuid,
+  generation,
 }: {
   variant_id: string;
   instance_question_id: string;
@@ -30,9 +35,11 @@ export async function upsertUnsavedSubmission({
   credit: number | null;
   raw_submitted_answer: UnsavedSubmission['raw_submitted_answer'];
   uuid: string;
+  generation: number;
 }): Promise<boolean> {
   return await runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
+    await execute(sql.lock_unsaved_submission_state, { instance_question_id, user_id });
     const id = await queryOptionalScalar(
       sql.upsert_unsaved_submission,
       {
@@ -42,6 +49,7 @@ export async function upsertUnsavedSubmission({
         credit,
         raw_submitted_answer,
         uuid,
+        generation,
       },
       IdSchema,
     );
@@ -53,12 +61,22 @@ export async function deleteUnsavedSubmission({
   instance_question_id,
   user_id,
   uuid,
+  generation,
 }: {
   instance_question_id: string;
   user_id: string;
   uuid: string;
+  generation: number;
 }) {
-  await execute(sql.delete_unsaved_submission, { instance_question_id, user_id, uuid });
+  await runInTransactionAsync(async () => {
+    await execute(sql.lock_unsaved_submission_state, { instance_question_id, user_id });
+    await execute(sql.delete_unsaved_submission, {
+      instance_question_id,
+      user_id,
+      uuid,
+      generation,
+    });
+  });
 }
 
 export async function deleteUnsavedSubmissions({
@@ -69,6 +87,20 @@ export async function deleteUnsavedSubmissions({
   user_id: string;
 }) {
   await execute(sql.delete_unsaved_submissions, { instance_question_id, user_id });
+}
+
+export async function selectUnsavedSubmissionGeneration({
+  instance_question_id,
+  user_id,
+}: {
+  instance_question_id: string;
+  user_id: string;
+}): Promise<number> {
+  return await queryScalar(
+    sql.select_unsaved_submission_generation,
+    { instance_question_id, user_id },
+    UnsavedSubmissionStateSchema.shape.generation,
+  );
 }
 
 export async function hasUnsavedSubmission({

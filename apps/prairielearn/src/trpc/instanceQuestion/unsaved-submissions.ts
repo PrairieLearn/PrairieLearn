@@ -21,6 +21,7 @@ import {
   deleteUnsavedSubmission,
   deleteUnsavedSubmissions,
   selectOptionalUnsavedSubmission,
+  selectUnsavedSubmissionGeneration,
   upsertUnsavedSubmission,
 } from '../../models/unsaved-submission.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
@@ -31,9 +32,11 @@ export interface UnsavedSubmissionsError {
   upsert: never;
   restore: never;
   dismiss: never;
+  generation: never;
 }
 
 const meter = metrics.getMeter('prairielearn');
+const GenerationSchema = z.number().int().nonnegative();
 const SubmissionSchema = z.object({
   variant_id: IdSchema,
   submitted_answer: z.record(z.string(), z.unknown()),
@@ -55,6 +58,7 @@ const upsert = t.procedure
   .input(
     z.object({
       uuid: z.uuid(),
+      generation: GenerationSchema,
       formData: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
     }),
   )
@@ -100,9 +104,11 @@ const upsert = t.procedure
         credit: ctx.authz_result.credit,
         raw_submitted_answer: submitted_answer,
         uuid: input.uuid,
+        generation: input.generation,
       }),
     );
     getCounter(meter, 'unsaved_submissions.captures').add(1, { saved });
+    return { saved };
   });
 
 const recoveryProcedure = t.procedure
@@ -171,9 +177,27 @@ const dismiss = recoveryProcedure.mutation(async ({ ctx }) => {
   });
 });
 
-export const unsavedSubmissionsRouter = t.router({ upsert, restore, dismiss });
+// Student ownership is checked by the instance-question permission middleware.
+// oxlint-disable-next-line @prairielearn/require-trpc-permission-middleware
+const generation = t.procedure.use(requireInstanceQuestionEdit).query(async ({ ctx }) => {
+  if (
+    !canCollectUnsavedSubmissions(ctx.locals) ||
+    !(await features.enabledFromLocals('unsaved-submissions-collection', ctx.locals))
+  ) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Unsaved submissions are not available' });
+  }
+  return await selectUnsavedSubmissionGeneration({
+    instance_question_id: ctx.instance_question.id,
+    user_id: ctx.user.id,
+  });
+});
 
-const PostBodySchema = z.object({ uuid: z.uuid() });
+export const unsavedSubmissionsRouter = t.router({ upsert, generation, restore, dismiss });
+
+const PostBodySchema = z.object({
+  uuid: z.uuid(),
+  generation: z.coerce.number().int().nonnegative(),
+});
 
 export const unsavedSubmissionDiscardRouter = Router({ mergeParams: true });
 unsavedSubmissionDiscardRouter.post(
@@ -192,6 +216,7 @@ unsavedSubmissionDiscardRouter.post(
         instance_question_id: res.locals.instance_question.id,
         user_id: res.locals.user.id,
         uuid: body.uuid,
+        generation: body.generation,
       });
       getCounter(meter, 'unsaved_submissions.discards').add(1);
     }

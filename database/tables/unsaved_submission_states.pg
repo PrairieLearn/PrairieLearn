@@ -1,0 +1,15 @@
+columns
+    discarded_uuids: uuid[] not null default '{}'::uuid[]
+    generation: integer not null default 0
+    id: bigint not null default nextval('unsaved_submission_states_id_seq'::regclass)
+    instance_question_id: bigint not null
+    user_id: bigint not null
+
+indexes
+    unsaved_submission_states_pkey: PRIMARY KEY (id) USING btree (id)
+    unsaved_submission_states_instance_question_id_user_id_key: UNIQUE (instance_question_id, user_id) USING btree (instance_question_id, user_id)
+    unsaved_submission_states_user_id_idx: USING btree (user_id)
+
+foreign-key constraints
+    unsaved_submission_states_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    unsaved_submission_states_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

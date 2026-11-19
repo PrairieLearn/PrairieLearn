@@ -14,5 +14,6 @@ export type InstanceQuestionRouter = typeof instanceQuestionRouter;
 export const instanceQuestionTrpcRouter = createExpressMiddleware({
   router: instanceQuestionRouter,
   createContext,
+  responseMeta: () => ({ headers: { 'Cache-Control': 'no-store' } }),
   onError: handleTrpcError,
 });

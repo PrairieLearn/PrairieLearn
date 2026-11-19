@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
-import type { Page } from '@playwright/test';
+import type { Page, Response } from '@playwright/test';
 
 import type { CourseInstance } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import {
   hasUnsavedSubmission,
   selectOptionalUnsavedSubmission,
+  selectUnsavedSubmissionGeneration,
   upsertUnsavedSubmission,
 } from '../../models/unsaved-submission.js';
 import { parseInstanceQuestionId } from '../helperClient.js';
@@ -15,6 +16,7 @@ import { getConfiguredUser } from '../utils/auth.js';
 import { createTest, expect } from './fixtures.js';
 
 const test = createTest({ features: { 'unsaved-submissions-collection': true } });
+
 const recoveryTest = createTest({
   features: { 'unsaved-submissions-collection': true, 'unsaved-submissions-ui': true },
 });
@@ -56,6 +58,7 @@ async function openRecoverableDraft(page: Page, courseInstance: CourseInstance) 
   };
   await upsertUnsavedSubmission({
     ...draftKey,
+    generation: await selectUnsavedSubmissionGeneration(draftKey),
     credit: 100,
     raw_submitted_answer: { c: '17' },
     uuid: randomUUID(),
@@ -64,6 +67,123 @@ async function openRecoverableDraft(page: Page, courseInstance: CourseInstance) 
   await expect(page.getByRole('heading', { name: 'You have unsaved work' })).toBeVisible();
   return () => selectOptionalUnsavedSubmission(draftKey);
 }
+
+test('retries failed captures and uploads only changes since the last successful snapshot', async ({
+  page,
+  courseInstance,
+}) => {
+  await page.clock.install();
+  await openQuestion(page, courseInstance);
+  const uploads: string[] = [];
+  let releaseRetry!: () => void;
+  let retryArrived!: () => void;
+  const retryGate = new Promise<void>((resolve) => {
+    releaseRetry = resolve;
+  });
+  const retryStarted = new Promise<void>((resolve) => {
+    retryArrived = resolve;
+  });
+  await page.route('**/trpc/unsavedSubmissions.upsert', async (route) => {
+    uploads.push(route.request().postDataJSON().json.formData.c);
+    if (uploads.length === 1) {
+      await route.fulfill({ status: 503, body: 'Capture temporarily unavailable' });
+      return;
+    }
+    if (uploads.length === 2) {
+      retryArrived();
+      await retryGate;
+    }
+    await route.continue();
+  });
+
+  const isCapture = (response: Response) =>
+    response.url().includes('/trpc/unsavedSubmissions.upsert');
+  await page.locator('input[name="c"]').fill('first');
+  const failed = page.waitForResponse(isCapture);
+  await page.clock.fastForward(30_000);
+  expect((await failed).status()).toBe(503);
+  await (await failed).finished();
+
+  await page.clock.fastForward(30_000);
+  await retryStarted;
+  await page.locator('input[name="c"]').fill('second');
+  const retried = page.waitForResponse(isCapture);
+  releaseRetry();
+  expect((await retried).status()).toBe(200);
+  await (await retried).finished();
+
+  const changed = page.waitForResponse(isCapture);
+  await page.clock.fastForward(30_000);
+  expect((await changed).status()).toBe(200);
+  await (await changed).finished();
+
+  await page.clock.runFor(90_000);
+  await page.locator('input[name="c"]').fill('third');
+  const changedAgain = page.waitForResponse(isCapture);
+  await page.clock.fastForward(30_000);
+  expect((await changedAgain).status()).toBe(200);
+  expect(uploads).toEqual(['first', 'first', 'second', 'third']);
+});
+
+test('leaves an obsolete capture cleared and captures later edits from the same tab', async ({
+  page,
+  courseInstance,
+}) => {
+  await page.clock.install();
+  await openQuestion(page, courseInstance);
+  let uploads = 0;
+  let generationQueries = 0;
+  let releaseCapture!: () => void;
+  let captureArrived!: () => void;
+  const captureGate = new Promise<void>((resolve) => {
+    releaseCapture = resolve;
+  });
+  const captureStarted = new Promise<void>((resolve) => {
+    captureArrived = resolve;
+  });
+  page.on('request', (request) => {
+    if (request.url().includes('/trpc/unsavedSubmissions.generation')) generationQueries++;
+  });
+  await page.route('**/trpc/unsavedSubmissions.upsert', async (route) => {
+    uploads++;
+    if (uploads === 1) {
+      captureArrived();
+      await captureGate;
+    }
+    await route.continue();
+  });
+  await page.locator('input[name="c"]').fill('unfinished');
+  await page.clock.fastForward(30_000);
+  await captureStarted;
+
+  const otherTab = await page.context().newPage();
+  await otherTab.goto(page.url());
+  await otherTab.locator('input[name="c"]').fill('17');
+  await otherTab.getByRole('button', { name: 'Save only', exact: true }).click();
+  await expect(otherTab.getByRole('heading', { name: 'Submitted answer' })).toBeVisible();
+  await otherTab.close();
+
+  const isCapture = (response: Response) =>
+    response.url().includes('/trpc/unsavedSubmissions.upsert');
+  const obsolete = page.waitForResponse(isCapture);
+  releaseCapture();
+  const obsoleteResponse = await obsolete;
+  expect(obsoleteResponse.status()).toBe(200);
+  expect((await obsoleteResponse.json()).result.data.json).toEqual({ saved: false });
+
+  await page.clock.runFor(90_000);
+  expect(uploads).toBe(1);
+  expect(generationQueries).toBe(1);
+
+  await page.locator('input[name="c"]').fill('19');
+  const changed = page.waitForResponse(isCapture);
+  await page.clock.fastForward(30_000);
+  const changedResponse = await changed;
+  expect(changedResponse.status()).toBe(200);
+  expect((await changedResponse.json()).result.data.json).toEqual({ saved: true });
+  expect(uploads).toBe(2);
+  expect(generationQueries).toBe(2);
+});
 
 test('captures dirty work and discards it only after navigation is accepted', async ({
   page,

@@ -13,16 +13,51 @@ export function initializeUnsavedSubmissions(
     instanceQuestionId: string;
   },
 ): () => void {
-  const uuid = (pageUuid ??= crypto.randomUUID());
+  let uuid = (pageUuid ??= crypto.randomUUID());
   const client = createInstanceQuestionTrpcClient(config);
   let captureInFlight = false;
-  let captureAttempted = false;
   let submitting = false;
   let recoveryDirtyTimeoutId: number | undefined;
+  let lifecycleVersion = 0;
+  let lastCaptureGeneration: number | undefined;
+  let lastCapture: { fingerprint: Uint8Array; saved: boolean } | undefined;
+
+  const readSnapshot = async (replaceRecovery: boolean) => {
+    const captured = getQuestionFormData(form);
+    const dirty = isQuestionFormDirty(form, captured);
+    const banner = recoveryBanner();
+    if (banner && (!replaceRecovery || banner.dataset.recoveryPending === 'true')) {
+      updateRecoveryDirtyState(dirty);
+      return null;
+    }
+    if (!dirty) return null;
+    const formData: Record<string, string | string[]> = Object.fromEntries(
+      Array.from(new Set(captured.keys()))
+        .sort()
+        .map((key) => {
+          const values = captured.getAll(key).map((value) => value.toString());
+          return [key, values.length === 1 ? values[0] : values];
+        }),
+    );
+    // Keep only a digest because form data can contain large base64 uploads.
+    const fingerprint = new Uint8Array(
+      await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(formData))),
+    );
+    if (recoveryBanner()?.dataset.recoveryPending === 'true') return null;
+    return { formData, fingerprint };
+  };
+
+  const alreadyHandled = (fingerprint: Uint8Array) =>
+    fingerprint.every((value, index) => value === lastCapture?.fingerprint[index]);
 
   const clearRecoveryDirtyTimeout = () => {
     window.clearTimeout(recoveryDirtyTimeoutId);
     recoveryDirtyTimeoutId = undefined;
+  };
+
+  const handleRecoveryInteraction = () => {
+    lifecycleVersion++;
+    clearRecoveryDirtyTimeout();
   };
 
   const recoveryBanner = () => document.getElementById('unsaved-submission-recovery');
@@ -47,22 +82,29 @@ export function initializeUnsavedSubmissions(
   const capture = async (replaceRecovery = false) => {
     if (captureInFlight || submitting) return;
     captureInFlight = true;
+    const captureVersion = lifecycleVersion;
     try {
-      const captured = getQuestionFormData(form);
-      const dirty = isQuestionFormDirty(form, captured);
-      if (!replaceRecovery && recoveryBanner()) {
-        updateRecoveryDirtyState(dirty);
-        return;
-      }
-      if (!dirty) return;
-      const formData: Record<string, string | string[]> = Object.fromEntries(
-        Array.from(new Set(captured.keys()), (key) => {
-          const values = captured.getAll(key).map((value) => value.toString());
-          return [key, values.length === 1 ? values[0] : values];
-        }),
-      );
-      captureAttempted = true;
-      await client.unsavedSubmissions.upsert.mutate({ uuid, formData });
+      const previous = await readSnapshot(replaceRecovery);
+      if (!previous || alreadyHandled(previous.fingerprint)) return;
+      if (captureVersion !== lifecycleVersion) return;
+
+      // Read the generation before taking the upload's snapshot so new edits in an
+      // already-open tab can still be captured after a Save in another tab.
+      const generation = await client.unsavedSubmissions.generation.query();
+      if (captureVersion !== lifecycleVersion) return;
+      const snapshot = await readSnapshot(replaceRecovery);
+      if (!snapshot || alreadyHandled(snapshot.fingerprint)) return;
+      if (captureVersion !== lifecycleVersion) return;
+
+      lastCaptureGeneration = generation;
+      const { saved } = await client.unsavedSubmissions.upsert.mutate({
+        uuid,
+        generation,
+        formData: snapshot.formData,
+      });
+      if (captureVersion !== lifecycleVersion) return;
+      // A rejected generation is obsolete; retrying it would recreate cleared work.
+      lastCapture = { fingerprint: snapshot.fingerprint, saved };
     } catch {
       // Background persistence is best effort; the next interval retries without interrupting work.
     } finally {
@@ -77,6 +119,7 @@ export function initializeUnsavedSubmissions(
       form.querySelector<HTMLInputElement>('input[name="__action"]')?.value;
     if (action !== 'save' && action !== 'grade') return;
 
+    lifecycleVersion++;
     submitting = true;
     queueMicrotask(() => {
       if (event.defaultPrevented) submitting = false;
@@ -89,6 +132,7 @@ export function initializeUnsavedSubmissions(
     if (!(event.target instanceof Element)) return;
     if (!event.target.closest('button.question-save, button.question-grade')) return;
 
+    lifecycleVersion++;
     submitting = true;
     queueMicrotask(() => {
       if (event.defaultPrevented) submitting = false;
@@ -100,15 +144,30 @@ export function initializeUnsavedSubmissions(
     if (recoveryBanner()) {
       queueMicrotask(() => updateRecoveryDirtyState(isQuestionFormDirty(form)));
     }
+    if (lastCapture?.saved === false) lastCapture = undefined;
+  };
+
+  const handlePageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) {
+      uuid = pageUuid = crypto.randomUUID();
+      lastCaptureGeneration = undefined;
+      lastCapture = undefined;
+    }
+    resetSubmitting();
   };
 
   const handlePageHide = () => {
+    lifecycleVersion++;
     // A failed submission must retain its backup until the server accepts a real submission.
-    if (submitting || !captureAttempted) return;
+    if (submitting || lastCaptureGeneration === undefined) return;
 
     navigator.sendBeacon(
       getInstanceQuestionUnsavedSubmissionDiscardUrl(config),
-      new URLSearchParams({ __csrf_token: config.csrfToken, uuid }),
+      new URLSearchParams({
+        __csrf_token: config.csrfToken,
+        uuid,
+        generation: lastCaptureGeneration.toString(),
+      }),
     );
   };
 
@@ -117,10 +176,11 @@ export function initializeUnsavedSubmissions(
   form.addEventListener('input', resetSubmitting);
   form.addEventListener('change', resetSubmitting);
   window.addEventListener('pagehide', handlePageHide);
-  window.addEventListener('pageshow', resetSubmitting);
-  window.addEventListener('unsaved-submission-recovery-interaction', clearRecoveryDirtyTimeout);
+  window.addEventListener('pageshow', handlePageShow);
+  window.addEventListener('unsaved-submission-recovery-interaction', handleRecoveryInteraction);
 
   return () => {
+    lifecycleVersion++;
     window.clearInterval(intervalId);
     clearRecoveryDirtyTimeout();
     form.removeEventListener('submit', handleSubmit);
@@ -128,10 +188,10 @@ export function initializeUnsavedSubmissions(
     form.removeEventListener('input', resetSubmitting);
     form.removeEventListener('change', resetSubmitting);
     window.removeEventListener('pagehide', handlePageHide);
-    window.removeEventListener('pageshow', resetSubmitting);
+    window.removeEventListener('pageshow', handlePageShow);
     window.removeEventListener(
       'unsaved-submission-recovery-interaction',
-      clearRecoveryDirtyTimeout,
+      handleRecoveryInteraction,
     );
   };
 }
