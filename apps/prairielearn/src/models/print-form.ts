@@ -8,6 +8,7 @@ import {
   queryRow,
   queryRows,
   queryScalar,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -153,6 +154,14 @@ export async function selectActivePrintFormsForAssessment({
     sql.select_active_print_forms_for_assessment,
     { assessment_id: assessmentId },
     PrintFormSchema,
+  );
+}
+
+export async function selectRandomizablePrintFormIds(assessmentId: string) {
+  return await queryScalars(
+    sql.select_randomizable_print_form_ids,
+    { assessment_id: assessmentId },
+    IdSchema,
   );
 }
 

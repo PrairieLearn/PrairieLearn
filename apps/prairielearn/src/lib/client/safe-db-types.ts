@@ -167,6 +167,11 @@ export const RawStaffPrintFormSchema = RawPrintFormSchema.pick({
 export const StaffPrintFormSchema = RawStaffPrintFormSchema.brand<'StaffPrintForm'>();
 export type StaffPrintForm = z.infer<typeof StaffPrintFormSchema>;
 
+export const StaffPrintPreparationFormSchema = RawStaffPrintFormSchema.extend({
+  has_randomizable_questions: z.boolean(),
+}).brand<'StaffPrintPreparationForm'>();
+export type StaffPrintPreparationForm = z.infer<typeof StaffPrintPreparationFormSchema>;
+
 /** Assessment Instance Authz Results */
 export const RawStudentAssessmentInstanceAuthzResultSchema =
   RawAssessmentInstanceAuthzResultSchema.pick({

@@ -6,16 +6,18 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
+import { StaffPrintPreparationFormSchema } from '../../lib/client/safe-db-types.js';
 import { getAssessmentTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { assessmentHasPrintRandomization } from '../../lib/printing/print-preparation.js';
+import {
+  assessmentHasPrintRandomization,
+  selectPrintPreparationForms,
+} from '../../lib/printing/print-preparation.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
 import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js';
-import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
 import { InstructorAssessmentPrint } from './instructorAssessmentPrint.html.js';
 
@@ -34,8 +36,8 @@ router.get(
       pageType: 'assessment',
       accessType: 'instructor',
     });
-    const forms = StaffPrintFormSchema.array().parse(
-      await selectPrintFormsForAssessment({ assessmentId: assessment.id }),
+    const forms = StaffPrintPreparationFormSchema.array().parse(
+      await selectPrintPreparationForms(assessment.id),
     );
     const studentCount = await countJoinedStudentsInCourseInstance(course_instance);
     const trpcCsrfToken = generatePrefixCsrfToken(

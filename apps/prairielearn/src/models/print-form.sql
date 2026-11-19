@@ -104,6 +104,19 @@ WHERE
 ORDER BY
   pf.id DESC;
 
+-- BLOCK select_randomizable_print_form_ids
+SELECT DISTINCT
+  pfq.print_form_id
+FROM
+  print_forms AS pf
+  JOIN print_form_questions AS pfq ON pfq.print_form_id = pf.id
+  JOIN assessment_questions AS aq ON aq.id = pfq.assessment_question_id
+  JOIN questions AS q ON q.id = aq.question_id
+WHERE
+  pf.assessment_id = $assessment_id
+  AND pf.archived_at IS NULL
+  AND q.single_variant IS DISTINCT FROM TRUE;
+
 -- BLOCK archive_print_form
 UPDATE print_forms
 SET

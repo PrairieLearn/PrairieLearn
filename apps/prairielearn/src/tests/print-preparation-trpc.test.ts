@@ -30,7 +30,10 @@ import {
 } from '../lib/printing/print-exports.js';
 import { createPrintForm } from '../lib/printing/print-forms.js';
 import { PrintPacketMetadataSchema } from '../lib/printing/print-packet-schema.js';
-import { assessmentHasPrintRandomization } from '../lib/printing/print-preparation.js';
+import {
+  assessmentHasPrintRandomization,
+  selectPrintPreparationForms,
+} from '../lib/printing/print-preparation.js';
 import { DEFAULT_PRINT_SETTINGS } from '../lib/printing/print-settings.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
@@ -255,6 +258,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         'archived_at',
         'assessment_id',
         'created_at',
+        'has_randomizable_questions',
         'id',
         'label',
         'question_selection_locked_at',
@@ -1348,11 +1352,27 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ['alternative selection', sql.enable_alternative_selection],
   ])('detects randomized %s even when all question variants are fixed', async (_, query) => {
     const assessment = await printAssessment();
+    const form = await client(assessment.id).printForms.create.mutate();
+    expect(
+      (await selectPrintPreparationForms(assessment.id)).find(
+        (item) => item.id === form.printFormId,
+      )?.has_randomizable_questions,
+    ).toBe(true);
     await runInTransactionAndRollback(async () => {
       await execute(sql.set_static_assessment, { assessment_id: assessment.id });
       expect(await assessmentHasPrintRandomization(assessment.id)).toBe(false);
+      expect(
+        (await selectPrintPreparationForms(assessment.id)).find(
+          (item) => item.id === form.printFormId,
+        )?.has_randomizable_questions,
+      ).toBe(false);
       await execute(query, { assessment_id: assessment.id });
       expect(await assessmentHasPrintRandomization(assessment.id)).toBe(true);
+      expect(
+        (await selectPrintPreparationForms(assessment.id)).find(
+          (item) => item.id === form.printFormId,
+        )?.has_randomizable_questions,
+      ).toBe(false);
     });
   });
 
