@@ -26,6 +26,20 @@ import { EnumAssessmentToolSchema } from '../schemas/infoAssessment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+export async function selectAssessmentsWithExternalDependencies(course_id: string) {
+  return await queryRows(
+    sql.select_assessments_with_external_dependencies,
+    { course_id },
+    z.object({
+      id: IdSchema,
+      short_name: z.string(),
+      tid: z.string(),
+      has_sync_errors: z.boolean(),
+      has_import_placeholders: z.boolean(),
+    }),
+  );
+}
+
 export async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
   return await queryRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
 }

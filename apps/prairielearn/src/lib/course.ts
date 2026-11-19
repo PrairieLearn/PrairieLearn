@@ -18,6 +18,7 @@ import {
   updateCourseSyncConfiguration,
 } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
+import { assessmentDependenciesRequireFullSync } from '../sync/assessmentDependencies.js';
 import * as courseDB from '../sync/course-db.js';
 import { getQuestionContentPlan } from '../sync/questionContent.js';
 import { getSyncConfiguration } from '../sync/syncConfiguration.js';
@@ -75,6 +76,7 @@ export async function syncCourseFromDisk({
   preparedCourseData,
   editedPaths = [],
   forceFull = false,
+  checkExternalDependencies = false,
 }: {
   course: Course;
   startGitHash: string | null;
@@ -82,6 +84,7 @@ export async function syncCourseFromDisk({
   preparedCourseData?: PreparedCourseData;
   editedPaths?: string[];
   forceFull?: boolean;
+  checkExternalDependencies?: boolean;
 }): Promise<{ status: 'complete'; hadJsonErrors: boolean } | { status: 'sharing_error' }> {
   const configuration = await getSyncConfiguration(course);
   return await features.runWithOverrides(configuration.features, async () => {
@@ -98,7 +101,7 @@ export async function syncCourseFromDisk({
     if (configurationChanged) {
       job.info('Sync configuration changed; reprocessing all course metadata');
     }
-    const qids =
+    let qids =
       config.fileEditorUseGit && !forceFull && !configurationChanged
         ? await getQuestionContentPlan({
             course,
@@ -107,6 +110,15 @@ export async function syncCourseFromDisk({
             editedPaths,
           })
         : null;
+
+    if (
+      qids !== null &&
+      checkExternalDependencies &&
+      (await assessmentDependenciesRequireFullSync(course))
+    ) {
+      job.info('External assessment dependencies require full course sync');
+      qids = null;
+    }
 
     if (qids !== null) {
       job.info(`Syncing question content: ${qids.join(', ') || 'no changes'}`);
@@ -274,7 +286,12 @@ export async function pullAndUpdateCourse({
         }
 
         job.info('Sync git repository to database');
-        const syncResult = await syncCourseFromDisk({ course, startGitHash, job });
+        const syncResult = await syncCourseFromDisk({
+          course,
+          startGitHash,
+          job,
+          checkExternalDependencies: true,
+        });
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);

@@ -379,3 +379,45 @@ SELECT
   ) AS min_total
 FROM
   zone_totals;
+
+-- BLOCK select_assessments_with_external_dependencies
+SELECT
+  a.id,
+  ci.short_name,
+  a.tid,
+  NULLIF(a.sync_errors, '') IS NOT NULL AS has_sync_errors,
+  EXISTS (
+    SELECT
+      1
+    FROM
+      assessment_questions AS aq
+      JOIN questions AS q ON q.id = aq.question_id
+    WHERE
+      aq.assessment_id = a.id
+      AND aq.deleted_at IS NULL
+      AND q.qid LIKE '@%'
+  ) AS has_import_placeholders
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON ci.id = a.course_instance_id
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND (
+    NULLIF(a.sync_errors, '') IS NOT NULL
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        assessment_questions AS aq
+        JOIN questions AS q ON q.id = aq.question_id
+      WHERE
+        aq.assessment_id = a.id
+        AND aq.deleted_at IS NULL
+        AND (
+          q.course_id <> $course_id
+          OR q.qid LIKE '@%'
+        )
+    )
+  );

@@ -21,15 +21,23 @@ import { b64EncodeUnicode } from '../lib/base64-util.js';
 import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
 import { pullAndUpdateCourse } from '../lib/course.js';
-import { ChunkSchema, QuestionSchema, type User } from '../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  AssessmentSchema,
+  ChunkSchema,
+  QuestionSchema,
+  type User,
+} from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editorUtil.js';
 import { FileModifyEditor, classifyEditOutcome } from '../lib/editors.js';
 import { features } from '../lib/features/index.js';
 import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
+import { selectAssessmentQuestionByQuestionId } from '../models/assessment-question.js';
 import * as courseModel from '../models/course.js';
 import { getCourseCommitHash, selectCourseById, updateCourseColumn } from '../models/course.js';
-import { selectQuestionByQid } from '../models/question.js';
+import { selectQuestionByQid, updateQuestion } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
+import { assessmentDependenciesRequireFullSync } from '../sync/assessmentDependencies.js';
 import * as courseDB from '../sync/course-db.js';
 
 import {
@@ -550,6 +558,213 @@ describe('content-only question save', () => {
     assert.lengthOf(await chunks.selectChunksForCourse(courseId), beforeChunks.length);
   });
 
+  async function prepareSharedAssessment({ available = true, splitPoints = false } = {}) {
+    await features.enable('question-sharing');
+    const sourceData = util.getCourseData();
+    sourceData.courseInstances = {};
+    sourceData.questions = {
+      shared: {
+        ...sourceData.questions[util.QUESTION_ID],
+        uuid: randomUUID(),
+        sharePublicly: available,
+        preferences: { mode: { type: 'string', enum: ['a', 'b'], default: 'a' } },
+      },
+    };
+    const sourceDir = path.join(fixture.baseDir, 'source');
+    await util.writeCourseToDirectory(sourceData, sourceDir);
+    const { courseId: sourceId } = await util.syncCourseData(sourceDir);
+    await courseModel.updateCourseSharingName({ course_id: sourceId, sharing_name: 'source' });
+    const assessmentPath = path.join(
+      fixture.courseOriginDir,
+      'courseInstances',
+      util.COURSE_INSTANCE_ID,
+      'assessments',
+      util.ASSESSMENT_ID,
+      'infoAssessment.json',
+    );
+    const assessment = await fs.readJson(assessmentPath);
+    await fs.writeJson(assessmentPath, {
+      ...assessment,
+      zones: [
+        {
+          questions: [
+            {
+              ...(splitPoints ? { autoPoints: 7, manualPoints: 3 } : { points: 10 }),
+              alternatives: [
+                { id: util.QUESTION_ID },
+                { id: '@source/shared', preferences: { mode: 'a' } },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    await execa('git', ['add', '.'], { cwd: fixture.courseOriginDir });
+    await execa('git', ['commit', '-m', 'Import shared question'], {
+      cwd: fixture.courseOriginDir,
+    });
+    await sync();
+    return { sourceData, sourceDir, sourceId };
+  }
+
+  it('revalidates incompatible shared preferences without a consumer Git change and keeps the preflight read-only', async () => {
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const { sourceData, sourceDir } = await prepareSharedAssessment();
+      const beforeCourse = await selectCourseById(courseId);
+      const beforeAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
+      sourceData.questions.shared.preferences = {
+        mode: { type: 'string', enum: ['b'], default: 'b' },
+      };
+      await util.overwriteAndSyncCourseData(sourceData, sourceDir);
+      assert.isTrue(await assessmentDependenciesRequireFullSync(beforeCourse));
+      assert.deepEqual(
+        await util.dumpTableWithSchema('assessments', AssessmentSchema),
+        beforeAssessments,
+      );
+      assert.deepEqual(await selectCourseById(courseId), beforeCourse);
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      await sync();
+      expect(load).toHaveBeenCalledOnce();
+      const errored = await util.dumpTableWithSchema('assessments', AssessmentSchema);
+      assert.include(errored[0].sync_errors!, 'mode');
+      assert.equal(await getCourseCommitHash(courseDir), beforeCourse.commit_hash);
+    });
+  });
+
+  it.each([true, false])(
+    'reconciles an unavailable import with sharing validation enabled=%s',
+    async (checkSharingOnSync) => {
+      await withConfig({ checkSharingOnSync }, async () => {
+        const { sourceId } = await prepareSharedAssessment({ available: false });
+        const previousError = (await util.dumpTableWithSchema('assessments', AssessmentSchema))[0]
+          .sync_errors;
+        if (checkSharingOnSync) assert.isNotNull(previousError);
+        else assert.isNull(previousError);
+        const source = await selectQuestionByQid({ course_id: sourceId, qid: 'shared' });
+        assert.isFalse(
+          (await util.dumpTableWithSchema('assessment_questions', AssessmentQuestionSchema)).some(
+            (aq) => aq.question_id === source.id && aq.deleted_at === null,
+          ),
+        );
+        await updateQuestion({ question_id: source.id, patch: { share_publicly: true } });
+        const load = vi.spyOn(courseDB, 'loadFullCourse');
+        await sync();
+        expect(load).toHaveBeenCalledOnce();
+        assert.isNull(
+          (await util.dumpTableWithSchema('assessments', AssessmentSchema))[0].sync_errors,
+        );
+        assert.isTrue(
+          (await util.dumpTableWithSchema('assessment_questions', AssessmentQuestionSchema)).some(
+            (aq) => aq.question_id === source.id && aq.deleted_at === null,
+          ),
+        );
+      });
+    },
+  );
+
+  it('keeps partial sync when imported preferences stay compatible after their default changes', async () => {
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const { sourceData, sourceDir } = await prepareSharedAssessment();
+      sourceData.questions.shared.preferences = {
+        mode: { type: 'string', enum: ['a', 'b'], default: 'b' },
+      };
+      await util.overwriteAndSyncCourseData(sourceData, sourceDir);
+      const before = await util.dumpTableWithSchema('assessments', AssessmentSchema);
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      await sync();
+      expect(load).not.toHaveBeenCalled();
+      assert.deepEqual(await util.dumpTableWithSchema('assessments', AssessmentSchema), before);
+    });
+  });
+
+  it('relinks the assessment when the shared reference resolves to a new question ID', async () => {
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const { sourceData, sourceDir, sourceId } = await prepareSharedAssessment();
+      const [{ id: assessmentId }] = await util.dumpTableWithSchema(
+        'assessments',
+        AssessmentSchema,
+      );
+      const original = await selectQuestionByQid({ course_id: sourceId, qid: 'shared' });
+      const selectLink = (question_id: string) =>
+        selectAssessmentQuestionByQuestionId({ assessment_id: assessmentId, question_id });
+      assert.isNull((await selectLink(original.id)).deleted_at);
+
+      sourceData.questions.shared.uuid = randomUUID();
+      await util.overwriteAndSyncCourseData(sourceData, sourceDir);
+      const replacement = await selectQuestionByQid({ course_id: sourceId, qid: 'shared' });
+      assert.notEqual(replacement.id, original.id);
+
+      const load = vi.spyOn(courseDB, 'loadFullCourse');
+      await sync();
+      expect(load).toHaveBeenCalledOnce();
+      assert.isNotNull((await selectLink(original.id)).deleted_at);
+      assert.isNull((await selectLink(replacement.id)).deleted_at);
+    });
+  });
+
+  it.each([false, true])(
+    'reconciles a shared grading-method change according to the explicit point split (%s)',
+    async (splitPoints) => {
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        const { sourceData, sourceDir, sourceId } = await prepareSharedAssessment({ splitPoints });
+        const [{ id: assessment_id }] = await util.dumpTableWithSchema(
+          'assessments',
+          AssessmentSchema,
+        );
+        const source = await selectQuestionByQid({ course_id: sourceId, qid: 'shared' });
+        const linkedQuestion = { assessment_id, question_id: source.id };
+        expect(await selectAssessmentQuestionByQuestionId(linkedQuestion)).toMatchObject({
+          max_auto_points: splitPoints ? 7 : 10,
+          max_manual_points: splitPoints ? 3 : 0,
+        });
+
+        sourceData.questions.shared.gradingMethod = 'Manual';
+        await util.overwriteAndSyncCourseData(sourceData, sourceDir);
+        const load = vi.spyOn(courseDB, 'loadFullCourse');
+        await sync();
+        expect(load).toHaveBeenCalledTimes(splitPoints ? 0 : 1);
+        expect(await selectAssessmentQuestionByQuestionId(linkedQuestion)).toMatchObject({
+          max_auto_points: splitPoints ? 7 : 0,
+          max_manual_points: splitPoints ? 3 : 10,
+        });
+      });
+    },
+  );
+
+  it.each(['access', 'deletion', 'rename'] as const)(
+    'uses full sync when an imported reference becomes unavailable through %s',
+    async (reason) => {
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        const { sourceData, sourceDir, sourceId } = await prepareSharedAssessment();
+        const source = await selectQuestionByQid({ course_id: sourceId, qid: 'shared' });
+        if (reason === 'rename') {
+          sourceData.questions.renamed = sourceData.questions.shared;
+          delete sourceData.questions.shared;
+          // Exercise a stale consumer reference even if producer-side checks normally reject it.
+          await withConfig({ checkSharingOnSync: false }, () =>
+            util.overwriteAndSyncCourseData(sourceData, sourceDir),
+          );
+          assert.equal(
+            (await selectQuestionByQid({ course_id: sourceId, qid: 'renamed' })).id,
+            source.id,
+          );
+        } else {
+          await updateQuestion({
+            question_id: source.id,
+            patch: reason === 'access' ? { share_publicly: false } : { deleted_at: new Date() },
+          });
+        }
+        const load = vi.spyOn(courseDB, 'loadFullCourse');
+        await sync();
+        expect(load).toHaveBeenCalledOnce();
+        assert.include(
+          (await util.dumpTableWithSchema('assessments', AssessmentSchema))[0].sync_errors!,
+          '@source/shared',
+        );
+      });
+    },
+  );
+
   it('uses partial processing for sync-only remote content changes', async () => {
     const beforeChunks = await chunks.selectChunksForCourse(courseId);
     await fs.writeFile(
@@ -560,6 +775,7 @@ describe('content-only question save', () => {
     await execa('git', ['commit', '-m', 'Remote edit'], { cwd: fixture.courseOriginDir });
     assert.equal(await fs.readFile(filePath, 'utf8'), originContents);
     const load = vi.spyOn(courseDB, 'loadFullCourse');
+    const readInfo = vi.spyOn(courseDB, 'loadInfoFile');
     const { jobPromise } = await pullAndUpdateCourse({
       course: await selectCourseById(courseId),
       userId: user.id,
@@ -567,6 +783,9 @@ describe('content-only question save', () => {
     });
     await jobPromise;
     expect(load).not.toHaveBeenCalled();
+    assert.isFalse(
+      readInfo.mock.calls.some(([{ filePath }]) => filePath.endsWith('infoAssessment.json')),
+    );
     assert.equal(
       (await selectCourseById(courseId)).commit_hash,
       await getCourseCommitHash(courseDir),
