@@ -16,6 +16,7 @@ import {
   useState,
 } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
+import { createPortal } from 'react-dom';
 import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 import { z } from 'zod';
@@ -259,36 +260,48 @@ function ConversationPicker({
   );
 }
 
-/** Openings for staff who are not sure what to ask. Each leaves the rest for them to fill in. */
+/** Requests staff can send as they are, for those who are not sure what to ask. */
 const STARTERS = [
-  { label: 'Review a question', text: 'Review this question and suggest improvements: ' },
-  { label: 'Write a new question', text: 'Write a new question about ' },
-  { label: 'See how students are doing', text: 'Which questions are students finding hardest in ' },
-  { label: 'Ask how PrairieLearn works', text: 'How do I ' },
+  { icon: 'bi-pencil-square', text: 'Suggest three new practice questions for this course' },
+  { icon: 'bi-clipboard-check', text: 'Review my questions and tell me which need the most work' },
+  { icon: 'bi-bar-chart', text: 'Which questions are students finding hardest?' },
+  { icon: 'bi-question-circle', text: 'How do I give one student extra time on an exam?' },
 ];
 
 function EmptyConversation({ onStart }: { onStart: (text: string) => void }) {
   return (
-    <div className="text-center my-4">
-      <p className="text-muted">Ask the course agent about your course or about PrairieLearn.</p>
-      <div className="d-flex flex-wrap justify-content-center gap-2">
-        {STARTERS.map(({ label, text }) => (
-          <Button
-            key={label}
-            variant="outline-secondary"
-            size="sm"
-            className="rounded-pill"
+    <div className="my-3">
+      <h3 className="h5 mb-3">What can I help with?</h3>
+      <div className="course-agent-starters">
+        {STARTERS.map(({ icon, text }) => (
+          <button
+            key={text}
+            type="button"
+            className="course-agent-starter btn border rounded-3 p-2 d-flex flex-column gap-2 small text-start"
             onClick={(event) => {
               onStart(text);
-              // The opening is unfinished, so typing carries on from it in the message box.
-              event.currentTarget
+              // The request goes to the message box, not straight to the agent, so staff can
+              // change it first. The pulse shows where it went.
+              const composer = event.currentTarget
                 .closest('.course-agent-panel')
-                ?.querySelector<HTMLTextAreaElement>('.course-agent-composer textarea')
-                ?.focus();
+                ?.querySelector<HTMLElement>('.course-agent-composer');
+              composer?.querySelector('textarea')?.focus();
+              composer?.classList.add('course-agent-composer-pulse');
+              composer?.addEventListener(
+                'animationend',
+                () => composer.classList.remove('course-agent-composer-pulse'),
+                { once: true },
+              );
             }}
           >
-            {label}
-          </Button>
+            <span
+              className="course-agent-starter-icon rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+              aria-hidden="true"
+            >
+              <i className={clsx('bi', icon)} />
+            </span>
+            {text}
+          </button>
         ))}
       </div>
     </div>
@@ -322,10 +335,13 @@ function ActivityStatus({
   conversationId,
   startingSandbox,
   message,
+  planSlot,
 }: {
   conversationId: string;
   startingSandbox: boolean;
   message: UIMessage | undefined;
+  /** The place under the plan's step in progress, when the plan is showing one. */
+  planSlot: HTMLElement | null;
 }) {
   const call = latestCall(message);
   const storageKey = `course-agent-working-since:${conversationId}`;
@@ -342,19 +358,25 @@ function ActivityStatus({
     sessionStorage.setItem(storageKey, String(startedAt));
     return () => sessionStorage.removeItem(storageKey);
   }, [storageKey, startedAt]);
-  return (
-    <div className="small text-body-secondary" role="status">
-      {/* The label changes with every step and the time every second, too often to announce. */}
-      <span className="visually-hidden">
-        {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
-      </span>
-      <div className="d-flex gap-2" aria-hidden="true">
+  const visible = (
+    <>
+      <span className="d-flex gap-2" aria-hidden="true">
         <span className="text-truncate course-agent-shimmer">
           {startingSandbox ? 'Getting ready' : activityLabel(message)}…
         </span>
         <span className="flex-shrink-0">{formatInterval(now - startedAt)}</span>
-      </div>
+      </span>
       {call?.status === 'running' && <LiveOutput call={call} lines={1} />}
+    </>
+  );
+  return (
+    <div className={clsx('small text-body-secondary', planSlot && 'visually-hidden')} role="status">
+      {/* The label changes with every step and the time every second, too often to announce. */}
+      <span className="visually-hidden">
+        {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
+      </span>
+      {/* The plan shows this under its step in progress, when it has one. */}
+      {planSlot ? createPortal(visible, planSlot) : visible}
     </div>
   );
 }
@@ -582,6 +604,7 @@ function Chat({
     !connectionFailed &&
     !connectionError;
   const plan = working ? planOf(messages.at(-1)) : null;
+  const [planSlot, setPlanSlot] = useState<HTMLElement | null>(null);
   // The server reports the turn's lifecycle before the SDK marks the response active.
   const startingSandbox =
     !connectionFailed &&
@@ -670,6 +693,7 @@ function Chat({
               conversationId={conversationId}
               startingSandbox={startingSandbox}
               message={messages.at(-1)}
+              planSlot={planSlot}
             />
           )}
           {lifecycle?.status === 'blocked' && (
@@ -710,7 +734,7 @@ function Chat({
           )}
         </div>
       </div>
-      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
+      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} activitySlot={setPlanSlot} />}
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}

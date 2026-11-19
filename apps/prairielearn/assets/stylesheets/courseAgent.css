@@ -114,6 +114,63 @@
   margin-bottom: 0;
 }
 
+.course-agent-starters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.course-agent-starter {
+  --bs-btn-font-size: 0.875rem;
+  --bs-btn-line-height: 1.4;
+
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+
+.course-agent-starter:hover,
+.course-agent-starter:focus-visible {
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-primary) !important;
+}
+
+.course-agent-starter-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+/* Draws the eye to the message box when a starter fills it. */
+.course-agent-composer-pulse {
+  animation: course-agent-composer-pulse 400ms ease-out;
+}
+
+@keyframes course-agent-composer-pulse {
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* The line that joins a plan's steps runs from under each step's icon to the next one. */
+.course-agent-plan-step {
+  position: relative;
+}
+
+.course-agent-plan-step:not(:last-child)::before {
+  position: absolute;
+  top: 1.5em;
+  bottom: -0.375rem;
+  left: calc(0.5rem - 0.5px);
+  width: 1px;
+  content: '';
+  background-color: var(--bs-border-color);
+}
+
+.course-agent-plan-icon {
+  width: 1rem;
+  height: 1.5em;
+}
+
 /* A highlight sweeps across the label of whatever the agent is doing now. */
 .course-agent-shimmer {
   color: transparent;
@@ -261,6 +318,10 @@ body:has(.course-agent-panel-animate) .app-main {
   /* Slowed rather than stopped, as Bootstrap does for spinners, so work in progress stays visible. */
   .course-agent-shimmer {
     animation-duration: 3s;
+  }
+
+  .course-agent-composer-pulse {
+    animation: none;
   }
 
   .course-agent-panel-animate,
