@@ -92,3 +92,30 @@ export type RubricItemInput = Partial<Omit<RubricItem, 'show_to_students' | 'par
    */
   depth?: number;
 };
+
+export const RubricSettingsBodySchema = z.object({
+  use_rubric: z.boolean(),
+  replace_auto_points: z.boolean(),
+  starting_points: z.coerce.number(),
+  min_points: z.coerce.number(),
+  max_extra_points: z.coerce.number(),
+  tag_for_manual_grading: z.boolean().default(false),
+  grader_guidelines: z.string().nullable(),
+  rubric_items: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        order: z.coerce.number(),
+        points: z.coerce.number(),
+        description: z.string(),
+        explanation: z.string().nullable().optional(),
+        grader_note: z.string().nullable().optional(),
+        always_show_to_students: z.boolean(),
+        depth: z.coerce.number().int().nonnegative().optional(),
+        is_group: z.boolean().optional(),
+        min_selections: z.coerce.number().int().nullable().optional(),
+        max_selections: z.coerce.number().int().nullable().optional(),
+      }),
+    )
+    .default([]),
+});

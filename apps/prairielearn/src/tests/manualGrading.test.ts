@@ -1305,6 +1305,41 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
           assert.equal(await selectManualPoints(), manualPointsBefore);
         });
 
+        test('the assessment question page validates rubric items', async () => {
+          assert.isDefined(rubric_items);
+          setUser(mockStaff[0]);
+          const manualGradingAQPage = await (
+            await fetch(manualGradingAssessmentQuestionUrl)
+          ).text();
+          const payload = buildRubricSettingsPayload({
+            manualGradingIQPage: manualGradingAQPage,
+            replace_auto_points: false,
+            starting_points: 6,
+            min_points: -0.6,
+            max_extra_points: 0.6,
+            rubric_items,
+          });
+          const rowsBefore = await selectRubricRows();
+          const response = await fetch(manualGradingAssessmentQuestionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              ...payload,
+              rubric_items: payload.rubric_items.map((item) => ({ ...item, depth: -1 })),
+            }),
+          });
+          assert.equal(response.status, 400);
+          assert.deepEqual(await selectRubricRows(), rowsBefore);
+
+          const validResponse = await fetch(manualGradingAssessmentQuestionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          assert.equal(validResponse.status, 200);
+          assert.deepEqual(await selectRubricRows(), rowsBefore);
+        });
+
         checkSettingsResults(6, -0.6, 0.6, '');
       });
     });
