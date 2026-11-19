@@ -1,6 +1,5 @@
 import * as url from 'node:url';
 
-import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -21,11 +20,12 @@ import type {
   RubricData,
   RubricGradingData,
 } from '../lib/manualGrading.types.js';
+import { getSubmissionInfo, isAutograded } from '../lib/submission-info.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
-import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
+import { SubmissionInfoModal } from './SubmissionInfoModal.js';
 
 const detailedSubmissionColumns = {
   feedback: true,
@@ -48,7 +48,6 @@ const SubmissionGradingJobSchema = GradingJobSchema.pick({
   graded_at: true,
   grading_request_canceled_at: true,
 });
-type SubmissionGradingJob = z.infer<typeof SubmissionGradingJobSchema>;
 
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
   grading_job: SubmissionGradingJobSchema.nullable(),
@@ -65,6 +64,7 @@ export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
   };
 
 export function getSubmissionRenderUrl({
+  questionHostingUpdate,
   questionContext,
   urlPrefix,
   question,
@@ -74,6 +74,7 @@ export function getSubmissionRenderUrl({
   submissionId,
   renderSubmissionSearchParams,
 }: {
+  questionHostingUpdate: boolean;
   questionContext: QuestionContext;
   urlPrefix: string;
   question: Question;
@@ -83,6 +84,9 @@ export function getSubmissionRenderUrl({
   submissionId: string;
   renderSubmissionSearchParams?: URLSearchParams;
 }): string {
+  // Keep subsequent renders in this page's mode even if the feature flag changes.
+  const searchParams = new URLSearchParams(renderSubmissionSearchParams);
+  searchParams.set('question_hosting_update', String(questionHostingUpdate));
   const renderUrlPrefix =
     questionContext === 'instructor' || questionContext === 'public'
       ? `${urlPrefix}/question/${question.id}/preview`
@@ -91,11 +95,12 @@ export function getSubmissionRenderUrl({
         : `${urlPrefix}/instance_question/${instance_question?.id}`;
   return url.format({
     pathname: `${renderUrlPrefix}/variant/${variant_id}/submission/${submissionId}`,
-    search: renderSubmissionSearchParams?.toString(),
+    search: searchParams.toString(),
   });
 }
 
 export function SubmissionPanel({
+  questionHostingUpdate = false,
   questionContext,
   questionRenderContext,
   question,
@@ -112,6 +117,7 @@ export function SubmissionPanel({
   expanded,
   renderSubmissionSearchParams,
 }: {
+  questionHostingUpdate?: boolean;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   question: Question;
@@ -136,6 +142,7 @@ export function SubmissionPanel({
   expanded = expanded || isLatestSubmission;
 
   const renderUrl = getSubmissionRenderUrl({
+    questionHostingUpdate,
     questionContext,
     urlPrefix,
     question,
@@ -285,8 +292,12 @@ export function SubmissionPanel({
               type="button"
               class="btn btn-outline-dark btn-sm ms-2"
               data-submission-id="${submission.id}"
-              data-bs-toggle="modal"
-              data-bs-target="#submissionInfoModal-${submission.id}"
+              ${
+                questionHostingUpdate
+                  ? html`data-question-dialog="submission-info"`
+                  : html`data-bs-toggle="modal"
+                    data-bs-target="#submissionInfoModal-${submission.id}"`
+              }
               aria-label="Submission info"
             >
               <i class="fa fa-info-circle"></i>
@@ -330,14 +341,20 @@ export function SubmissionPanel({
           </div>
         </div>
 
-        ${SubmissionInfoModal({
-          submission,
-          question,
-          assessment_question,
-          formattedDate,
-          course_id: question.course_id,
-          course_instance_id: course_instance?.id,
-        })}
+        ${
+          questionHostingUpdate
+            ? ''
+            : SubmissionInfoModal(
+                getSubmissionInfo({
+                  submission,
+                  question,
+                  assessment_question,
+                  courseId: question.course_id,
+                  courseInstanceId: course_instance?.id,
+                  timezone: course_instance?.display_timezone || course.display_timezone,
+                }),
+              )
+        }
       </div>
     </div>
   `;
@@ -472,138 +489,6 @@ function SubmissionStatusBadge({
   return html`${manualGradingBadge} ${autoGradingBadge}`;
 }
 
-function isAutograded({
-  question,
-  assessment_question,
-}: {
-  question: Question;
-  assessment_question?: AssessmentQuestion | null;
-}) {
-  return assessment_question
-    ? !!assessment_question.max_auto_points || !assessment_question.max_manual_points
-    : question.grading_method !== 'Manual';
-}
-
-function SubmissionInfoModal({
-  submission,
-  question,
-  assessment_question,
-  course_id,
-  course_instance_id,
-  formattedDate,
-}: {
-  submission: SubmissionForRender;
-  question: Question;
-  assessment_question?: AssessmentQuestion | null;
-  course_id: string;
-  course_instance_id?: string | null;
-  formattedDate: string;
-}) {
-  const gradingJobStats = buildGradingJobStats(submission.grading_job);
-  const gradingJobUrl =
-    course_instance_id == null
-      ? `/pl/course/${course_id}/grading_job/${submission.grading_job?.id}`
-      : `/pl/course_instance/${course_instance_id}/instructor/grading_job/${
-          submission.grading_job?.id
-        }`;
-  return Modal({
-    id: `submissionInfoModal-${submission.id}`,
-    title: 'Submission info',
-    body: html`
-      <table
-        class="table table-sm table-borderless two-column-description mb-0"
-        aria-label="Submission info"
-      >
-        <tbody>
-          <tr>
-            <th>Submission time</th>
-            <td>${formattedDate}</td>
-          </tr>
-          ${
-            submission.user_uid
-              ? html`
-                  <tr>
-                    <th>Submitted by</th>
-                    <td>${submission.user_uid}</td>
-                  </tr>
-                `
-              : ''
-          }
-          ${
-            gradingJobStats?.grading_method === 'External'
-              ? html`
-                  <tr>
-                    <th><span class="text-dark me-2">&bull;</span>Submit duration</th>
-                    <td>${gradingJobStats.submitDuration}</td>
-                  </tr>
-                  <tr>
-                    <th><span class="text-warning me-2">&bull;</span>Queue duration</th>
-                    <td>${gradingJobStats.queueDuration}</td>
-                  </tr>
-                  <tr>
-                    <th><span class="text-primary me-2">&bull;</span>Prepare duration</th>
-                    <td>${gradingJobStats.prepareDuration}</td>
-                  </tr>
-                  <tr>
-                    <th><span class="text-success me-2">&bull;</span>Run duration</th>
-                    <td>${gradingJobStats.runDuration}</td>
-                  </tr>
-                  <tr>
-                    <th><span class="text-danger me-2">&bull;</span>Report duration</th>
-                    <td>${gradingJobStats.reportDuration}</td>
-                  </tr>
-                  <tr>
-                    <th>Total duration</th>
-                    <td>${gradingJobStats.totalDuration}</td>
-                  </tr>
-                `
-              : ''
-          }
-        </tbody>
-      </table>
-      ${
-        gradingJobStats || !isAutograded({ question, assessment_question })
-          ? ''
-          : html`<p class="mt-2">This submission was not automatically graded.</p>`
-      }
-      ${
-        gradingJobStats?.grading_method === 'External'
-          ? html`
-              <div class="d-flex mt-2 mb-2">
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[0]}%; height: 10px;"
-                  class="bg-dark m-0"
-                ></span>
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[1]}%; height: 10px;"
-                  class="bg-warning m-0"
-                ></span>
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[2]}%; height: 10px;"
-                  class="bg-primary m-0"
-                ></span>
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[3]}%; height: 10px;"
-                  class="bg-success m-0"
-                ></span>
-                <span
-                  style="display: inline-block; width: ${gradingJobStats.phases[4]}%; height: 10px;"
-                  class="bg-danger m-0"
-                ></span>
-              </div>
-              <a class="btn btn-primary mt-2" href="${gradingJobUrl}">
-                View grading job ${submission.grading_job?.id}
-              </a>
-            `
-          : ''
-      }
-    `,
-    footer: html`
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-    `,
-  });
-}
-
 function RubricItem({
   item,
   item_grading,
@@ -643,34 +528,4 @@ function RubricItem({
       </label>
     </div>
   `;
-}
-
-function buildGradingJobStats(job: SubmissionGradingJob | null) {
-  if (!job) return null;
-
-  const durations: (number | null)[] = [];
-  const formatDiff = (start: Date | null, end: Date | null, addToPhases = true) => {
-    const duration = end == null || start == null ? null : differenceInMilliseconds(end, start);
-    if (addToPhases) durations.push(duration);
-    return duration == null ? '\u2212' : (duration / 1000).toFixed(3).replace(/\.?0+$/, '') + 's';
-  };
-
-  const stats = {
-    submitDuration: formatDiff(job.grading_requested_at, job.grading_submitted_at),
-    queueDuration: formatDiff(job.grading_submitted_at, job.grading_received_at),
-    prepareDuration: formatDiff(job.grading_received_at, job.grading_started_at),
-    runDuration: formatDiff(job.grading_started_at, job.grading_finished_at),
-    reportDuration: formatDiff(job.grading_finished_at, job.graded_at),
-    totalDuration: formatDiff(job.grading_requested_at, job.graded_at, false),
-  };
-  const totalDuration = durations.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) || 1;
-
-  return {
-    ...stats,
-    grading_method: job.grading_method,
-    phases: durations.map(
-      // Round down to avoid width being greater than 100% with floating point errors
-      (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
-    ),
-  };
 }

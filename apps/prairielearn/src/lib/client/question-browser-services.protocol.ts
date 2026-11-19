@@ -4,6 +4,8 @@ import z from 'zod';
 // adapters on either side; IDs associate messages with those local objects.
 const id = z.number().int().nonnegative();
 export const QuestionServiceRequestSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('open-copy-question'), id }),
+  z.object({ type: z.literal('open-submission-info'), id, submissionId: z.string() }),
   z.object({
     type: z.literal('render'),
     id,
@@ -18,6 +20,7 @@ export const QuestionServiceRequestSchema = z.discriminatedUnion('type', [
 export type QuestionServiceRequest = z.infer<typeof QuestionServiceRequestSchema>;
 
 export const QuestionServiceResponseSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('dialog-closed'), id }),
   z.object({
     type: z.literal('result'),
     id,

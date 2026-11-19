@@ -19,6 +19,10 @@ to authorize requests. Native form submission is unchanged.
 - A render request carries a request ID, submission ID, and purpose. Results and
   errors echo the request ID, so responses may arrive in any order. Internal error
   details are not forwarded.
+- Dialog requests identify either copy-question or a submission ID. The application
+  creates the dialog from its own data and replies when it closes, allowing the UI
+  to restore focus. Copy credentials and submission metadata stay in the host.
+  Disposing the connection closes its dialog and rejects pending UI promises.
 - The client rejects immediately on cancellation and sends a cancel message. The
   host owns a separate abort controller. Late results are ignored. Cancellation
   cannot undo an application update that has already completed.

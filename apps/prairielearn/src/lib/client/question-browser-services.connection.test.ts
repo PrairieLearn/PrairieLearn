@@ -12,6 +12,8 @@ it('checks the frame origin and source before connecting ports in a simulated ha
   const frameWindow = frame.contentWindow!;
   const host = {
     services: {
+      openCopyQuestion: vi.fn(),
+      openSubmissionInfo: vi.fn(),
       renderSubmission: vi
         .fn()
         .mockResolvedValue({ submissionPanel: 'feedback', extraHeadersHtml: null }),

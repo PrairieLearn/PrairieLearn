@@ -1,5 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
+import { withResolvers } from '@prairielearn/utils';
+
 import type { StatusMessageSubmission } from '../externalGradingSocket.types.js';
 
 import {
@@ -25,29 +27,26 @@ function connect(services: QuestionBrowserServices) {
   return { ...client, host, disposeHost };
 }
 
-function deferredPanels() {
-  let resolve!: (panels: QuestionContentPanels) => void;
-  const promise = new Promise<QuestionContentPanels>((done) => {
-    resolve = done;
-  });
-  return { promise, resolve };
-}
-
 const panels = (text: string): QuestionContentPanels => ({
   submissionPanel: text,
   extraHeadersHtml: null,
 });
 
 it('matches concurrent responses to requests across real ports and propagates failures', async () => {
-  const first = deferredPanels();
-  const second = deferredPanels();
+  const first = withResolvers<QuestionContentPanels>();
+  const second = withResolvers<QuestionContentPanels>();
   const renderSubmission = vi
     .fn<QuestionBrowserServices['renderSubmission']>()
     .mockReturnValueOnce(first.promise)
     .mockReturnValueOnce(second.promise)
     .mockRejectedValueOnce(new Error('Internal details'))
     .mockRejectedValueOnce(new DOMException('Question view was removed', 'AbortError'));
-  const { services } = connect({ renderSubmission, subscribeToGradingStatus: () => () => {} });
+  const { services } = connect({
+    openCopyQuestion: vi.fn(),
+    openSubmissionInfo: vi.fn(),
+    renderSubmission,
+    subscribeToGradingStatus: () => () => {},
+  });
   const options = { signal: new AbortController().signal };
   const a = services.renderSubmission({ submissionId: '1', purpose: 'history' }, options);
   const b = services.renderSubmission({ submissionId: '2', purpose: 'grading-result' }, options);
@@ -58,18 +57,23 @@ it('matches concurrent responses to requests across real ports and propagates fa
   expect(await a).toEqual(panels('first'));
   await expect(
     services.renderSubmission({ submissionId: '3', purpose: 'history' }, options),
-  ).rejects.toThrow('Failed to fetch submission');
+  ).rejects.toThrow('Question service request failed');
   await expect(
     services.renderSubmission({ submissionId: '4', purpose: 'history' }, options),
   ).rejects.toMatchObject({ name: 'AbortError' });
 });
 
 it('rejects cancellation locally and aborts host work', async () => {
-  const result = deferredPanels();
+  const result = withResolvers<QuestionContentPanels>();
   const renderSubmission = vi
     .fn<QuestionBrowserServices['renderSubmission']>()
     .mockReturnValue(result.promise);
-  const { services } = connect({ renderSubmission, subscribeToGradingStatus: () => () => {} });
+  const { services } = connect({
+    openCopyQuestion: vi.fn(),
+    openSubmissionInfo: vi.fn(),
+    renderSubmission,
+    subscribeToGradingStatus: () => () => {},
+  });
   const controller = new AbortController();
   const pending = services.renderSubmission(
     { submissionId: '1', purpose: 'history' },
@@ -90,6 +94,8 @@ it('delivers initial status, unsubscribes, and rejects pending work when the hos
     () => new Promise(() => {}),
   );
   const { services, disposeHost, host } = connect({
+    openCopyQuestion: vi.fn(),
+    openSubmissionInfo: vi.fn(),
     renderSubmission,
     subscribeToGradingStatus(listener) {
       publish = listener;
@@ -114,4 +120,40 @@ it('delivers initial status, unsubscribes, and rejects pending work when the hos
   expect(listener).toHaveBeenCalledOnce();
   expect(renderSubmission.mock.calls[0][1].signal.aborted).toBe(true);
   expect(host.dispose).toHaveBeenCalledOnce();
+});
+
+it('waits for dialog closure and rejects dialog requests on failure or disposal', async () => {
+  const closed = withResolvers<undefined>();
+  const openCopyQuestion = vi.fn(() => closed.promise);
+  const openSubmissionInfo = vi
+    .fn<QuestionBrowserServices['openSubmissionInfo']>()
+    .mockRejectedValueOnce(new Error('Internal details'))
+    .mockRejectedValueOnce(new DOMException('Question view was removed', 'AbortError'))
+    .mockImplementation(() => new Promise(() => {}));
+  const { services, disposeHost } = connect({
+    openCopyQuestion,
+    openSubmissionInfo,
+    renderSubmission: vi.fn(),
+    subscribeToGradingStatus: () => () => {},
+  });
+  const onClosed = vi.fn();
+  const copy = services.openCopyQuestion().then(onClosed);
+  await vi.waitFor(() => expect(openCopyQuestion).toHaveBeenCalledOnce());
+  expect(onClosed).not.toHaveBeenCalled();
+  closed.resolve(undefined);
+  await copy;
+  expect(onClosed).toHaveBeenCalledOnce();
+
+  await expect(services.openSubmissionInfo({ submissionId: '2' })).rejects.toThrow(
+    'Question service request failed',
+  );
+  expect(openSubmissionInfo).toHaveBeenCalledWith({ submissionId: '2' });
+  await expect(services.openSubmissionInfo({ submissionId: '2' })).rejects.toMatchObject({
+    name: 'AbortError',
+  });
+  const pending = services.openSubmissionInfo({ submissionId: '2' });
+  const rejected = pending.catch((error: unknown) => error);
+  await vi.waitFor(() => expect(openSubmissionInfo).toHaveBeenCalledTimes(3));
+  disposeHost();
+  expect(await rejected).toMatchObject({ name: 'AbortError' });
 });
