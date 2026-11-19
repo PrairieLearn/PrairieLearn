@@ -143,15 +143,8 @@
 }
 
 /* Code and diffs stand in for a plain code block, so they are spaced like one. */
-.course-agent-panel
-  .markdown-body
-  :is(.course-agent-diff, .course-agent-code, .course-agent-code-loading) {
+.course-agent-panel .markdown-body :is(.course-agent-diff, .course-agent-code) {
   margin-bottom: 1rem;
-}
-
-/* Holds the place of code or a diff while its viewer loads. */
-.course-agent-code-loading {
-  height: 3rem;
 }
 
 /* A long diff scrolls in place instead of pushing the rest of the reply out of view. */

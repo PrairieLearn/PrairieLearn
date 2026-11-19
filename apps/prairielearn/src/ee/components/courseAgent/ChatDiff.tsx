@@ -31,14 +31,9 @@ function PlainCode({ className, children }: { className?: string; children?: Rea
   );
 }
 
-/** Holds a block's place the first time the viewer loads, so the block never appears in two forms. */
-function Loading() {
-  return <div className="course-agent-code-loading border rounded" />;
-}
-
 /**
  * Shows a diff the agent wrote or made as highlighted changes. A diff that is still streaming is
- * shown as far as it has come. Text the viewer can't show is rendered as `fallback`.
+ * shown as far as it has come. Text the viewer can't show is left as plain text.
  */
 export function ChatDiff({
   text,
@@ -46,7 +41,6 @@ export function ChatDiff({
   change,
   showFileNames = true,
   streaming = false,
-  fallback,
 }: {
   text: string;
   /** The file the diff is for, used when the diff itself names no file. */
@@ -55,7 +49,6 @@ export function ChatDiff({
   showFileNames?: boolean;
   /** Whether more of the diff is still to come. */
   streaming?: boolean;
-  fallback: ReactNode;
 }) {
   // The viewer parses and highlights again whenever it is given a new diff.
   const diff = useMemo(
@@ -66,11 +59,12 @@ export function ChatDiff({
       }),
     [text, path, change, streaming],
   );
+  const plain = <PlainCode>{text}</PlainCode>;
   // Nothing of a diff can be shown before its first line arrives, and an empty one stays empty.
-  if (!diff) return streaming || text.trim() === '' ? null : fallback;
+  if (!diff) return streaming || text.trim() === '' ? null : plain;
   return (
-    <Suspense fallback={<Loading />}>
-      <LazyChatDiffView diff={diff} showFileNames={showFileNames} fallback={fallback} />
+    <Suspense>
+      <LazyChatDiffView diff={diff} showFileNames={showFileNames} fallback={plain} />
     </Suspense>
   );
 }
@@ -92,16 +86,10 @@ export function ChatCodeBlock({
   if (typeof code !== 'string') return <PlainCode className={className}>{children}</PlainCode>;
   const language = /(?:^|\s)language-(\S+)/.exec(className ?? '')?.[1];
   if (language === 'diff' || language === 'patch') {
-    return (
-      <ChatDiff
-        text={code}
-        streaming={streaming}
-        fallback={<PlainCode className={className}>{code}</PlainCode>}
-      />
-    );
+    return <ChatDiff text={code} streaming={streaming} />;
   }
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense>
       <LazyChatCodeView code={code.replace(/\n$/, '')} language={language} />
     </Suspense>
   );

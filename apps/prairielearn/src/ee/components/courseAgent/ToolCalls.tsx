@@ -393,11 +393,6 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
                 change={FILE_CHANGES[change.change]}
                 // The row above already names the file.
                 showFileNames={false}
-                fallback={
-                  <OutputText label={`Changes to ${change.path}`}>
-                    <DiffLines diff={change.diff.text} />
-                  </OutputText>
-                }
               />
               <ClipNote clip={change.diff} />
             </div>
@@ -435,27 +430,6 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
 
 const FILE_CHANGES = { add: 'added', delete: 'deleted', update: 'modified' } as const;
 
-/** The diff as colored lines of text, for when the diff viewer can't show it. */
-function DiffLines({ diff }: { diff: string }) {
-  return diff
-    .replace(/\n$/, '')
-    .split('\n')
-    .map((line, i) => (
-      <div
-        // Diff lines have no identity beyond their position.
-        // oxlint-disable-next-line react/no-array-index-key
-        key={i}
-        className={clsx({
-          'bg-success-subtle': line.startsWith('+'),
-          'bg-danger-subtle': line.startsWith('-'),
-          'text-body-secondary': line.startsWith('@@'),
-        })}
-      >
-        {line || ' '}
-      </div>
-    ));
-}
-
 /** A scrollable, keyboard-focusable block of text, noting what history did not keep. */
 function Output({
   label,
@@ -468,25 +442,19 @@ function Output({
 }) {
   return (
     <div>
-      <OutputText label={label}>{children}</OutputText>
+      <pre
+        className="bg-body-tertiary border rounded p-2 mb-0 small overflow-auto"
+        style={{ maxHeight: '20rem', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+        // Scrollable regions must be reachable by keyboard.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        role="region"
+        aria-label={label}
+      >
+        {children}
+      </pre>
       <ClipNote clip={clip} />
     </div>
-  );
-}
-
-function OutputText({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <pre
-      className="bg-body-tertiary border rounded p-2 mb-0 small overflow-auto"
-      style={{ maxHeight: '20rem', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
-      // Scrollable regions must be reachable by keyboard.
-      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={0}
-      role="region"
-      aria-label={label}
-    >
-      {children}
-    </pre>
   );
 }
 
