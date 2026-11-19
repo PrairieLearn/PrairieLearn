@@ -1,0 +1,22 @@
+columns
+    code_challenge: text
+    created_at: timestamp with time zone not null default now()
+    expires_at: timestamp with time zone not null
+    id: bigint not null default nextval('oauth_tokens_id_seq'::regclass)
+    oauth_grant_id: bigint not null
+    redirect_uri: text
+    token_hash: text not null
+    type: text not null
+    used_at: timestamp with time zone
+
+indexes
+    oauth_tokens_pkey: PRIMARY KEY (id) USING btree (id)
+    oauth_tokens_token_hash_key: UNIQUE (token_hash) USING btree (token_hash)
+    oauth_tokens_oauth_grant_id_idx: USING btree (oauth_grant_id)
+
+check constraints
+    oauth_tokens_code_fields_check: CHECK ((type = 'code'::text) = (redirect_uri IS NOT NULL AND code_challenge IS NOT NULL))
+    oauth_tokens_type_check: CHECK (type = ANY (ARRAY['code'::text, 'access'::text, 'refresh'::text]))
+
+foreign-key constraints
+    oauth_tokens_oauth_grant_id_fkey: FOREIGN KEY (oauth_grant_id) REFERENCES oauth_grants(id) ON UPDATE CASCADE ON DELETE CASCADE
