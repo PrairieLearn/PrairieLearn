@@ -1,12 +1,25 @@
 import type { UIMessageChunk } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CodexAppServerClient } from './codex.js';
+import { CodexAppServerClient, type CourseDataRequest, type ToolReply } from './codex.js';
 import type { CourseSandbox } from './sandbox.js';
 import { SandboxTurn } from './turn.js';
 
 /** `history` lists thread items newest first, as thread/items/list returns them. */
-function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
+function runner({
+  loseAcceptance = false,
+  history = [] as unknown[],
+  courseData = {
+    listCourseDatasets: async (): Promise<ToolReply> => ({
+      success: false,
+      text: 'Not used in this test',
+    }),
+    getCourseData: async (_request: CourseDataRequest): Promise<ToolReply> => ({
+      success: false,
+      text: 'Not used in this test',
+    }),
+  },
+} = {}) {
   const commands: { id: number; method: string; params: unknown; result?: unknown }[] = [];
   const emit = (frame: unknown) =>
     socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(frame) }));
@@ -50,7 +63,7 @@ function runner({ loseAcceptance = false, history = [] as unknown[] } = {}) {
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox, async (target) => {
+  const native = new CodexAppServerClient(sandbox, courseData, async (target) => {
     if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
     const { assessment } = target.params;
     if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
@@ -299,6 +312,71 @@ describe('course agent turns', () => {
     ]);
   });
 
+  it('offers the course data tools to new threads and returns their replies to the model', async () => {
+    const courseData = {
+      listCourseDatasets: vi.fn(async () => ({ success: true, text: 'Course datasets' })),
+      getCourseData: vi.fn(async ({ dataset }: CourseDataRequest) => {
+        if (dataset === 'missing') throw new Error('404: Unknown dataset "missing"');
+        return { success: true, text: `Wrote rows for ${dataset}` };
+      }),
+    };
+    const { native, commands, emit } = runner({ courseData });
+    await native.connect();
+    await native.thread(thread);
+    expect(commands.find((command) => command.method === 'thread/start')?.params).toMatchObject({
+      dynamicTools: [
+        { name: 'list_course_datasets' },
+        { name: 'get_course_data' },
+        { name: 'offer_page' },
+        { name: 'offer_reload' },
+      ],
+    });
+    const call = (id: number, tool: string, args: unknown) =>
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: `call-${id}`,
+          namespace: null,
+          tool,
+          arguments: args,
+        },
+      });
+    call(10, 'list_course_datasets', {});
+    call(11, 'get_course_data', {
+      dataset: 'submissions',
+      filters: [{ column: 'score', op: 'lt', value: 0.5 }],
+      select: ['id'],
+    });
+    call(12, 'get_course_data', { dataset: 'missing', select: ['id'] });
+    call(13, 'get_course_data', { filters: [] });
+    const replies = () => commands.filter((command) => 'result' in command);
+    await vi.waitFor(() => expect(replies()).toHaveLength(4));
+    expect(courseData.listCourseDatasets).toHaveBeenCalledOnce();
+    expect(courseData.getCourseData).toHaveBeenCalledWith({
+      dataset: 'submissions',
+      filters: [{ column: 'score', op: 'lt', value: 0.5 }],
+      select: ['id'],
+    });
+    const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
+    expect(byId[10]).toEqual({
+      success: true,
+      contentItems: [{ type: 'inputText', text: 'Course datasets' }],
+    });
+    expect(byId[11]).toEqual({
+      success: true,
+      contentItems: [{ type: 'inputText', text: 'Wrote rows for submissions' }],
+    });
+    expect(byId[12]).toEqual({
+      success: false,
+      contentItems: [{ type: 'inputText', text: '404: Unknown dataset "missing"' }],
+    });
+    expect(byId[13]).toMatchObject({ success: false });
+    expect(courseData.getCourseData).toHaveBeenCalledTimes(2);
+  });
+
   it('shows input the agent requests as an input request part', async () => {
     const { sandbox, native, emit } = runner();
     const accepted = Promise.withResolvers<undefined>();
@@ -353,7 +431,7 @@ describe('course agent turns', () => {
       options(() => accepted.resolve(undefined)),
     );
     await accepted.promise;
-    const call = async (id: string, args: unknown) => {
+    const call = async (id: string, args: unknown, tool = 'offer_page') => {
       emit({
         id,
         method: 'item/tool/call',
@@ -362,7 +440,7 @@ describe('course agent turns', () => {
           turnId: 'turn',
           callId: id,
           namespace: null,
-          tool: 'offer_page',
+          tool,
           arguments: args,
         },
       });
@@ -387,6 +465,8 @@ describe('course agent turns', () => {
     expect(start).toMatchObject({
       params: {
         dynamicTools: [
+          { name: 'list_course_datasets' },
+          { name: 'get_course_data' },
           {
             name: 'offer_page',
             inputSchema: {
@@ -396,9 +476,11 @@ describe('course agent turns', () => {
               },
             },
           },
+          { name: 'offer_reload' },
         ],
       },
     });
+    expect(await call('reload', {}, 'offer_reload')).toMatchObject({ success: true });
     emit({
       method: 'turn/completed',
       params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
@@ -416,6 +498,9 @@ describe('course agent turns', () => {
           subtitle: 'Assessment · Fa25 / hw1',
         },
       },
+    ]);
+    expect(chunks.filter((chunk) => chunk.type === 'data-reload')).toEqual([
+      { type: 'data-reload', id: 'reload:reload', data: {} },
     ]);
   });
 

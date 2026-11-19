@@ -1,3 +1,6 @@
+/* For math in replies, which `ChatMarkdown` typesets with KaTeX. */
+@import url('katex/dist/katex.min.css');
+
 .course-agent-launcher {
   --bs-btn-color: var(--bs-navbar-color);
   --bs-btn-border-color: var(--bs-navbar-color);
@@ -32,6 +35,7 @@
 .course-agent-composer {
   container-type: inline-size;
   padding: 0.75rem;
+  border: var(--bs-border-width) solid var(--bs-border-color);
 }
 
 /* The approval mode gives up width first, so the other controls never leave the box. */
@@ -40,7 +44,7 @@
 }
 
 .course-agent-composer:focus-within {
-  border-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary);
 }
 
 /* Every control under the message is outlined and one height. */
@@ -161,7 +165,8 @@
 }
 
 .course-agent-composer-input {
-  max-height: 12rem;
+  /* Ten lines. */
+  max-height: 10lh;
   overflow-y: auto;
   resize: none;
 }
@@ -214,11 +219,33 @@
   height: 1.25rem;
 }
 
-/* Touch screens have no hover, so they always show the remove button. */
-@media (hover: hover) {
-  .course-agent-attachment:not(:hover, :focus-within) .course-agent-attachment-remove {
+.course-agent-attachment-download {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.course-agent-attachment:has(:focus-visible) .course-agent-attachment-download {
+  opacity: 1;
+}
+
+/*
+ * Touch can't hover, so any device with a touch screen always shows the remove button, as does a
+ * tile that has to be removed before sending. A tap opens a sent attachment without the overlay.
+ */
+@media not all and (any-pointer: coarse) {
+  .course-agent-attachment:hover .course-agent-attachment-download {
+    opacity: 1;
+  }
+
+  .course-agent-attachment:not(:hover, :focus-within, .course-agent-attachment-invalid)
+    .course-agent-attachment-remove {
     opacity: 0;
   }
+}
+
+.course-agent-image-viewer img {
+  max-height: 80vh;
+  object-fit: contain;
 }
 
 .course-agent-drop-target {
@@ -236,6 +263,13 @@
 
 .course-agent-panel .markdown-body p:last-child {
   margin-bottom: 0;
+}
+
+/* Wide display math scrolls instead of widening the panel. */
+.course-agent-panel .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
 }
 
 .course-agent-page-link {
