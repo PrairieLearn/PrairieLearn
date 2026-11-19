@@ -1,4 +1,10 @@
-import { QueryClient, skipToken, useMutation, useQuery } from '@tanstack/react-query';
+import {
+  QueryClient,
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { TRPCClientError } from '@trpc/client';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
@@ -207,6 +213,7 @@ function PrintPreparation({
   docxCsrfToken,
 }: PrintPreparationProps) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const forms = useQuery(
     trpc.printForms.list.queryOptions(undefined, {
       initialData: initialForms,
@@ -275,6 +282,11 @@ function PrintPreparation({
       }
     | null
   >(null);
+  const pendingRegenerateLocked =
+    pendingFormAction?.action === 'regenerate' &&
+    forms.data.some(
+      (form) => form.id === pendingFormAction.id && form.question_selection_locked_at !== null,
+    );
   const [pendingPaperSizeChange, setPendingPaperSizeChange] =
     useState<PendingPaperSizeChange | null>(null);
   const [paperSizeApplying, setPaperSizeApplying] = useState(false);
@@ -301,6 +313,7 @@ function PrintPreparation({
   } | null>(null);
   const [pdfPreparationError, setPdfPreparationError] = useState<Error | null>(null);
   const snapshotsRef = useRef(new Map<string, PrintSnapshot>());
+  const previewGenerationRef = useRef(new Map<string, number>());
   const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
   const [snapshotStale, setSnapshotStale] = useState(false);
   const [exportId, setExportId] = useQueryState('export', parseAsString);
@@ -533,6 +546,7 @@ function PrintPreparation({
   ) {
     const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
     const url = `${base}/preview?${printLayoutSearch(appliedSettings)}&document=${printDocument}`;
+    const generation = previewGenerationRef.current.get(id) ?? 0;
     const cached = snapshotsRef.current.get(url);
     if (cached) return cached;
     let snapshot: PrintSnapshot;
@@ -546,7 +560,9 @@ function PrintPreparation({
         },
       );
     }
-    snapshotsRef.current.set(url, snapshot);
+    if ((previewGenerationRef.current.get(id) ?? 0) === generation) {
+      snapshotsRef.current.set(url, snapshot);
+    }
     return snapshot;
   }
 
@@ -804,6 +820,23 @@ function PrintPreparation({
     });
   }
 
+  function invalidateFormPreview(id: string, nextSettings: PrintSettings) {
+    const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
+    const prefix = `${base}/preview?`;
+    const nextUrl = `${prefix}${printLayoutSearch(nextSettings)}&document=${document}`;
+    previewGenerationRef.current.set(id, (previewGenerationRef.current.get(id) ?? 0) + 1);
+    for (const url of snapshotsRef.current.keys()) {
+      if (url.startsWith(prefix)) snapshotsRef.current.delete(url);
+    }
+    if (previewDocumentRef.current?.url.startsWith(prefix)) previewDocumentRef.current = null;
+    setCachedPreviews((entries) => entries.filter((entry) => !entry.url.startsWith(prefix)));
+    setPreviewVersions((versions) => ({
+      ...versions,
+      [nextUrl]: (versions[nextUrl] ?? 0) + 1,
+    }));
+    return nextUrl;
+  }
+
   function switchDocument(next: PrintDocument) {
     if (next === document) return;
     const nextUrl = `${printBase}/preview?${layout}&document=${next}`;
@@ -839,6 +872,12 @@ function PrintPreparation({
 
   async function regenerateForm(id: string) {
     const result = await regenerate.mutateAsync({ printFormId: id });
+    if (result.printFormId === id) {
+      invalidateFormPreview(id, result.settings);
+      await queryClient.invalidateQueries(
+        trpc.printForms.questions.queryFilter({ printFormId: id }),
+      );
+    }
     switchForm(result.printFormId, result.settings);
     return result.printFormId;
   }
@@ -1197,19 +1236,7 @@ function PrintPreparation({
       }
       reset(values, { keepDirtyValues: false });
       if (nextFormId) {
-        const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: nextFormId });
-        const nextUrl = `${base}/preview?${printLayoutSearch(values)}&document=${document}`;
-        for (const url of snapshotsRef.current.keys()) {
-          if (url.startsWith(`${base}/preview?`)) snapshotsRef.current.delete(url);
-        }
-        setCachedPreviews((entries) =>
-          entries.filter((entry) => !entry.url.startsWith(`${base}/preview?`)),
-        );
-        setPreviewVersions((versions) => ({
-          ...versions,
-          [nextUrl]: (versions[nextUrl] ?? 0) + 1,
-        }));
-        setPreviewUrl(nextUrl);
+        setPreviewUrl(invalidateFormPreview(nextFormId, values));
       }
     } catch (error) {
       setPreviewPending(false);
@@ -1601,8 +1628,8 @@ function PrintPreparation({
                     <details>
                       <summary className="h6 mb-0">Previous forms ({archivedForms.length})</summary>
                       <p className="small text-muted mt-2 mb-2">
-                        Forms that have been regenerated or archived are kept here for reference.
-                        Click a previous form below to view its layout settings, question
+                        Earlier versions of exported forms and archived forms are kept here for
+                        reference. Select a previous form to view its layout settings, question
                         selections, and print preview.
                       </p>
                       <div className="d-flex flex-column gap-2">
@@ -2435,13 +2462,21 @@ function PrintPreparation({
         </Modal.Header>
         <Modal.Body>
           {pendingFormAction?.action === 'regenerate' ? (
-            <p className="mb-0">
-              This will replace <strong>Form {pendingFormAction.label}</strong> with{' '}
-              <strong>Form {nextPrintFormLabel(forms.data, pendingFormAction.label)}</strong>
-              {hasRandomization ? ' applying fresh randomization' : ''}.{' '}
-              <strong>Form {pendingFormAction.label}</strong> will remain available for reference in
-              the 'Previous forms' section with its chosen questions and settings.
-            </p>
+            pendingRegenerateLocked ? (
+              <p className="mb-0">
+                This will replace <strong>Form {pendingFormAction.label}</strong> with{' '}
+                <strong>Form {nextPrintFormLabel(forms.data, pendingFormAction.label)}</strong>
+                {hasRandomization ? ' applying fresh randomization' : ''}.{' '}
+                <strong>Form {pendingFormAction.label}</strong> will remain available for reference
+                in the 'Previous forms' section with its chosen questions and settings.
+              </p>
+            ) : (
+              <p className="mb-0">
+                This will regenerate <strong>Form {pendingFormAction.label}</strong> while keeping
+                its label, selected questions, and print settings.
+                {hasRandomization ? ' Questions that use randomness will get new values.' : ''}
+              </p>
+            )
           ) : pendingFormAction?.action === 'reviseSelection' ? (
             <p className="mb-0">
               A download has started for this form.{' '}

@@ -727,44 +727,59 @@ test('combines current forms and answer keys with equal page counts and custom c
   const originalFormId = new URL(page.url()).searchParams.get('form')!;
   const originalLabel = await printFormLabel(page, originalFormId);
   expect(originalLabel).toMatch(/^A[1-9]\d*$/);
-  const nextLabel = `A${Number(originalLabel.slice(1)) + 1}`;
   const originalQuestions = await selectPrintFormQuestions(originalFormId);
+  const preview = page.locator(ACTIVE_PREVIEW_FRAME_SELECTOR);
+  await preview.evaluate((frame) => {
+    (frame as HTMLIFrameElement).contentDocument!.documentElement.dataset.cacheMarker =
+      'before-regeneration';
+  });
   await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
   const regenerateDialog = page.getByRole('dialog', {
     name: `Regenerate Form ${originalLabel}`,
   });
-  await expect(regenerateDialog.getByText(`Form ${nextLabel}`, { exact: true })).toBeVisible();
+  await expect(regenerateDialog).toContainText('while keeping its label');
   await regenerateDialog.getByRole('button', { name: 'Cancel' }).click();
   expect(new URL(page.url()).searchParams.get('form')).toBe(originalFormId);
   await page.getByRole('button', { name: `Regenerate Form ${originalLabel}` }).click();
   await regenerateDialog.getByRole('button', { name: 'Regenerate form' }).click();
-  await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(originalFormId);
-  const replacementId = new URL(page.url()).searchParams.get('form')!;
-  const replacementLabel = await printFormLabel(page, replacementId);
-  expect(replacementLabel).toBe(nextLabel);
+  await expect(regenerateDialog).toBeHidden();
+  const regeneratedId = new URL(page.url()).searchParams.get('form')!;
+  const regeneratedLabel = await printFormLabel(page, regeneratedId);
+  expect(regeneratedId).toBe(originalFormId);
+  expect(regeneratedLabel).toBe(originalLabel);
   await expect(
-    page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
+    page.getByRole('button', { name: new RegExp(`^Form ${regeneratedLabel}`) }),
   ).toBeFocused();
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
   await expect(
-    page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
+    page.getByRole('button', { name: new RegExp(`^Form ${regeneratedLabel}`) }),
   ).toHaveAttribute('aria-pressed', 'true');
-  expect(await selectPrintFormQuestions(originalFormId)).toEqual(originalQuestions);
-  await page.getByText(/^Previous forms \(/).click();
+  const regeneratedQuestions = await selectPrintFormQuestions(regeneratedId);
+  expect(
+    regeneratedQuestions.map(({ print_form_question }) => print_form_question.variant_id),
+  ).not.toEqual(originalQuestions.map(({ print_form_question }) => print_form_question.variant_id));
   await expect(
-    page.getByRole('button', { name: `Form ${originalLabel}`, exact: true }),
-  ).toBeVisible();
+    page
+      .frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR)
+      .locator('.question-container[data-variant-id]')
+      .first(),
+  ).toHaveAttribute('data-variant-id', regeneratedQuestions[0].print_form_question.variant_id);
+  expect(
+    await preview.evaluate(
+      (frame) => (frame as HTMLIFrameElement).contentDocument?.documentElement.dataset.cacheMarker,
+    ),
+  ).toBeUndefined();
 
-  const formIds = [replacementId];
-  const labels = [replacementLabel];
+  const formIds = [regeneratedId];
+  const labels = [regeneratedLabel];
   await page.getByRole('button', { name: 'Add form', exact: true }).click();
-  await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(replacementId);
+  await expect.poll(() => new URL(page.url()).searchParams.get('form')).not.toBe(regeneratedId);
   const newId = new URL(page.url()).searchParams.get('form')!;
   const newLabel = await printFormLabel(page, newId);
   await expect(
-    page.getByRole('button', { name: `Archive Form ${replacementLabel}` }),
+    page.getByRole('button', { name: `Archive Form ${regeneratedLabel}` }),
   ).toBeEnabled();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeFocused();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toHaveAttribute(
@@ -887,7 +902,7 @@ test('combines current forms and answer keys with equal page counts and custom c
   });
   await page
     .getByRole('combobox', { name: 'Preview form', exact: true })
-    .selectOption({ label: `Form ${replacementLabel}` });
+    .selectOption({ label: `Form ${regeneratedLabel}` });
   await expect(downloadMenu(page)).toBeEnabled({
     timeout: 120_000,
   });
@@ -895,6 +910,15 @@ test('combines current forms and answer keys with equal page counts and custom c
   await page.getByRole('button', { name: 'Remove cover extended-instructions.pdf' }).click();
   await expect(page.getByText('extended-instructions.pdf', { exact: true })).toHaveCount(0);
   await expect(downloadMenu(page)).toBeEnabled();
+  await page.getByRole('button', { name: `Regenerate Form ${regeneratedLabel}` }).click();
+  const lockedRegenerateDialog = page.getByRole('dialog', {
+    name: `Regenerate Form ${regeneratedLabel}`,
+  });
+  const nextLabel = `A${Number(regeneratedLabel.slice(1)) + 1}`;
+  await expect(
+    lockedRegenerateDialog.getByText(`Form ${nextLabel}`, { exact: true }),
+  ).toBeVisible();
+  await lockedRegenerateDialog.getByRole('button', { name: 'Cancel' }).click();
 
   const printPath = new URL(page.url()).pathname;
   await page.context().clearCookies();
@@ -904,36 +928,33 @@ test('combines current forms and answer keys with equal page counts and custom c
       page.getByRole('button', { name: new RegExp(`^Form ${label}(?: Previewing)?$`) }),
     ).toBeVisible();
   }
-  await expect(
-    page.getByRole('button', { name: new RegExp(`^Form ${originalLabel}(?: Previewing)?$`) }),
-  ).toHaveCount(0);
-  await page.getByText(/^Previous forms \(/).click();
-  await page.getByRole('button', { name: `Form ${originalLabel}`, exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Student copy', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
-  await expect(
-    page.getByRole('button', { name: `Form ${originalLabel} Previewing` }),
-  ).toHaveAttribute('aria-pressed', 'true');
-  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await page.getByRole('button', { name: `Archive Form ${replacementLabel}` }).click();
+  await page.getByRole('button', { name: `Archive Form ${regeneratedLabel}` }).click();
   const archiveDialog = page.getByRole('dialog', {
-    name: `Archive Form ${replacementLabel}`,
+    name: `Archive Form ${regeneratedLabel}`,
   });
   await expect(
     archiveDialog.getByText(/preview or download it under Previous forms/),
   ).toBeVisible();
   await archiveDialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(
-    page.getByRole('button', { name: new RegExp(`^Form ${replacementLabel}`) }),
+    page.getByRole('button', { name: new RegExp(`^Form ${regeneratedLabel}`) }),
   ).toBeVisible();
-  await page.getByRole('button', { name: `Archive Form ${replacementLabel}` }).click();
+  await page.getByRole('button', { name: `Archive Form ${regeneratedLabel}` }).click();
   await archiveDialog.getByRole('button', { name: 'Archive form' }).click();
-  await expect(
-    page.getByRole('button', { name: `Form ${replacementLabel}`, exact: true }),
-  ).toBeVisible();
   await expect(page.getByRole('button', { name: new RegExp(`^Form ${newLabel}`) })).toBeFocused();
+  await page.getByText(/^Previous forms \(/).click();
+  await expect(
+    page.getByRole('button', { name: `Form ${regeneratedLabel}`, exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: `Form ${regeneratedLabel}`, exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Student copy', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(
+    page.getByRole('button', { name: `Form ${regeneratedLabel} Previewing` }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
   await expect(page.getByRole('button', { name: `Archive Form ${newLabel}` })).toBeDisabled();
   await page.reload();
   await expect(page.getByRole('button', { name: `Archive Form ${newLabel}` })).toBeDisabled();
