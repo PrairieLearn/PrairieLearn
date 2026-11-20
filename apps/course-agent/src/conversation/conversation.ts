@@ -102,8 +102,10 @@ const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
 // Codex makes one provider request at a time; this bounds how many a misbehaving sandbox can
 // have running at once.
 const MAX_PROVIDER_REQUESTS = 4;
-// How long after a turn ends the Worker keeps reading a reply the agent dropped, to charge what
-// the provider reports for it. A reply still running after that is charged its estimate.
+// A message sent during a turn makes Codex abandon the reply it was reading and request a new one.
+// The provider keeps writing the abandoned reply and reports its usage only when it ends, which
+// can be after the turn ends. The Worker waits this long after the turn for that report; a reply
+// still running then is aborted and charged the estimate instead.
 const DROPPED_REPLY_SECONDS = 120;
 
 const OPENAI_API = 'https://api.openai.com';
