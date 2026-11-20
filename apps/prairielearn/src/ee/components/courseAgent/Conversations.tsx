@@ -18,12 +18,15 @@ import {
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
-import { z } from 'zod';
 
 import {
+  type ApprovalMode,
+  ApprovalModeSchema,
   type ConversationState,
   type InputRequestPart,
   InputRequestPartSchema,
+  type ReviewPart,
+  ReviewPartSchema,
   type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
@@ -56,9 +59,6 @@ import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 import { currentPageLocation } from './pageLocation.js';
-
-/** The agent service shows a review in chat history by its ID only. */
-const ReviewPartSchema = z.object({ reviewId: z.string() });
 
 const NEW_CONVERSATION = 'new';
 
@@ -140,6 +140,9 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
+  // A conversation keeps its own mode once it exists. Until then the choice waits here, and
+  // every new conversation starts by asking.
+  const [newApprovalMode, setNewApprovalMode] = useState<ApprovalMode>('approval_required');
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -206,6 +209,7 @@ function ConversationPicker({
             disabled={create.isPending}
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
+              setNewApprovalMode('approval_required');
               setDraft('');
               drafts.clear();
               create.reset();
@@ -221,6 +225,7 @@ function ConversationPicker({
           courseId={courseId}
           conversationId={selectedId}
           showConversationStats={showConversationStats}
+          initialApprovalMode={create.data?.id === selectedId ? newApprovalMode : undefined}
           chatCsrfToken={chatCsrfToken}
           initialMessage={
             create.data?.id === selectedId && create.variables
@@ -251,6 +256,8 @@ function ConversationPicker({
             disabled={create.isPending}
             pending={create.isPending}
             attachments={drafts.attachments}
+            approvalMode={newApprovalMode}
+            onApprovalModeChange={setNewApprovalMode}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
@@ -288,12 +295,15 @@ function Chat({
   initialMessage,
   onInitialMessageSent,
   showConversationStats,
+  initialApprovalMode,
 }: {
   courseId: string;
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
   initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
+  /** The mode chosen before this conversation existed, which its first message gives it. */
+  initialApprovalMode: ApprovalMode | undefined;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -316,6 +326,30 @@ function Chat({
   const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
+  // The conversation keeps its own mode. A choice made here shows at once instead of waiting for
+  // the agent service to report it back.
+  const [chosenApprovalMode, setChosenApprovalMode] = useState(initialApprovalMode);
+  // Undefined until the agent service reports the conversation's state.
+  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode;
+  // The service takes a moment to report, so the message box shows the mode this browser last
+  // saw for the conversation instead of flipping from the default. Only a reported mode approves
+  // a review or goes out with a message.
+  const approvalModeKey = `course-agent:approval-mode:${conversationId}`;
+  const [lastSeenApprovalMode] = useState(
+    () => ApprovalModeSchema.safeParse(localStorage.getItem(approvalModeKey)).data,
+  );
+  const shownApprovalMode = approvalMode ?? lastSeenApprovalMode ?? 'approval_required';
+  // Remember the conversation's mode for the next time this browser opens it.
+  useEffect(() => {
+    if (approvalMode) localStorage.setItem(approvalModeKey, approvalMode);
+  }, [approvalMode, approvalModeKey]);
+  const { mutate: saveApprovalMode } = useMutation(
+    trpc.courseAgent.setApprovalMode.mutationOptions(),
+  );
+  const changeApprovalMode = (mode: ApprovalMode) => {
+    setChosenApprovalMode(mode);
+    saveApprovalMode({ conversationId, approvalMode: mode });
+  };
   const [connectionFailed, setConnectionFailed] = useState(false);
   // Chat remounts per conversation, so this is the message that created it.
   const [initialText, setInitialText] = useState(initialMessage?.text);
@@ -371,6 +405,7 @@ function Chat({
   const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   // A new conversation's first attachments start in the composer, where their uploads show progress.
   const drafts = useDraftAttachments(initialMessage?.attachments);
   const [sending, setSending] = useState(false);
@@ -440,7 +475,11 @@ function Chat({
       if (offline) setAwaitingStart(true);
       // A refused denial's error no longer applies once the message goes out normally.
       resetDeny();
-      void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
+      void sendMessage({
+        text,
+        files,
+        metadata: { location: currentPageLocation(), approvalMode },
+      });
       // An answer chosen on an input request leaves the composer's attachments alone.
       if (attachments.length > 0) {
         revokePreviews(attachments);
@@ -458,6 +497,7 @@ function Chat({
       denyAsync,
       sendMessage,
       offline,
+      approvalMode,
     ],
   );
 
@@ -513,7 +553,6 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   // An input request is open until staff send their next message, which answers it however it is sent.
-  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   const latest = messages.at(-1);
   // The agent writes its closing message after requesting a review or input, so the request's card
   // waits for the turn to end rather than moving down as that text arrives. A review being
@@ -563,11 +602,13 @@ function Chat({
               conversationId={conversationId}
               uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
+              approvalMode={approvalMode ?? 'approval_required'}
               hiddenReviewId={hiddenReviewId}
               turnRunning={turnRunning && index === messages.length - 1}
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
+              onAlwaysApprove={changeApprovalMode}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={(text) => void send(text, [])}
             />
@@ -583,6 +624,8 @@ function Chat({
                 conversationId={conversationId}
                 reviewId={lifecycle.reviewId}
                 canResume={awaitingReviewId === lifecycle.reviewId}
+                autoApprove={false}
+                onAlwaysApprove={() => changeApprovalMode('always_approve')}
               />
             )}
           {pendingLabel && <PendingStatus label={pendingLabel} />}
@@ -637,7 +680,9 @@ function Chat({
         sendLabel={replyDenies ? 'Deny and send' : undefined}
         pending={sending || deny.isPending}
         attachments={drafts.attachments}
+        approvalMode={shownApprovalMode}
         stopDisabled={!connected || !canStop}
+        onApprovalModeChange={changeApprovalMode}
         onAttach={drafts.add}
         onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
@@ -661,6 +706,8 @@ function Composer({
   sendLabel = 'Send',
   pending = false,
   attachments,
+  approvalMode,
+  onApprovalModeChange,
   onAttach,
   onRemoveAttachment,
   stopDisabled = false,
@@ -676,6 +723,8 @@ function Composer({
   /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
   attachments: DraftAttachment[];
+  approvalMode: ApprovalMode;
+  onApprovalModeChange: (mode: ApprovalMode) => void;
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
@@ -726,7 +775,7 @@ function Composer({
           ref={textareaRef}
           as="textarea"
           rows={2}
-          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
+          className="course-agent-composer-input border-0 shadow-none bg-transparent p-0"
           value={draft}
           placeholder={placeholder}
           aria-label="Message"
@@ -746,7 +795,7 @@ function Composer({
             onAttach([...event.clipboardData.files]);
           }}
         />
-        <div className="d-flex align-items-center gap-2 px-2 pb-2">
+        <div className="d-flex align-items-center gap-2 mt-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -760,29 +809,33 @@ function Composer({
           <Button
             variant="link"
             size="sm"
-            className="course-agent-icon-button"
+            className="course-agent-composer-button course-agent-composer-icon-button"
             aria-label="Attach files"
             disabled={pending}
             onClick={() => fileInputRef.current?.click()}
           >
             <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
-          <div className="d-flex align-items-center gap-2 ms-auto">
+          <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
+          <div className="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
             {children}
             {onStop ? (
               <Button
-                variant="outline-secondary"
+                variant="link"
                 size="sm"
+                className="course-agent-composer-button"
+                aria-label="Stop"
                 disabled={stopDisabled}
                 onClick={onStop}
               >
-                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-                Stop
+                <i className="bi bi-stop-fill" aria-hidden="true" />
+                <span className="course-agent-composer-wide-only">Stop</span>
               </Button>
             ) : (
               <Button
                 type="submit"
                 size="sm"
+                className="course-agent-composer-button course-agent-composer-icon-button course-agent-composer-send"
                 aria-label={sendLabel}
                 disabled={!draft.trim() || disabled || pending || invalidAttachment}
               >
@@ -797,6 +850,67 @@ function Composer({
         </div>
       </div>
     </Form>
+  );
+}
+
+const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
+  approval_required: {
+    label: 'Ask first',
+    description: 'You review course changes before they are saved.',
+    icon: 'bi-hand-index-thumb',
+  },
+  always_approve: {
+    label: 'Always approve',
+    description: 'The agent saves course changes without your review.',
+    icon: 'bi-shield-exclamation',
+  },
+};
+
+function ApprovalModePicker({
+  mode,
+  onChange,
+}: {
+  mode: ApprovalMode;
+  onChange: (mode: ApprovalMode) => void;
+}) {
+  const current = APPROVAL_MODES[mode];
+  return (
+    <Dropdown drop="up" className="course-agent-composer-shrink">
+      <Dropdown.Toggle
+        variant="link"
+        size="sm"
+        className="course-agent-composer-button mw-100"
+        aria-label={`Approval mode: ${current.label}`}
+      >
+        <i className={clsx('bi', current.icon)} aria-hidden="true" />
+        <span className="course-agent-composer-wide-only text-truncate">{current.label}</span>
+        <i className="bi bi-chevron-down" aria-hidden="true" />
+      </Dropdown.Toggle>
+      <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
+        <Dropdown.Header>Saving course changes</Dropdown.Header>
+        {ApprovalModeSchema.options.map((option) => {
+          const { label, description, icon } = APPROVAL_MODES[option];
+          return (
+            <Dropdown.Item
+              key={option}
+              as="button"
+              type="button"
+              className="d-flex align-items-start gap-2 py-2"
+              active={option === mode}
+              onClick={() => onChange(option)}
+            >
+              <i className={clsx('bi fs-5 lh-1 mt-1', icon)} aria-hidden="true" />
+              <span className="flex-grow-1">
+                <span className="d-block">{label}</span>
+                <span className="course-agent-approval-description d-block small">
+                  {description}
+                </span>
+              </span>
+            </Dropdown.Item>
+          );
+        })}
+      </Dropdown.Menu>
+    </Dropdown>
   );
 }
 
@@ -827,6 +941,8 @@ function Message({
   conversationId,
   uploadsUrl,
   awaitingReviewId,
+  approvalMode,
+  onAlwaysApprove,
   hiddenReviewId,
   turnRunning,
   linkTransform,
@@ -846,6 +962,8 @@ function Message({
   uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
+  approvalMode: ApprovalMode;
+  onAlwaysApprove: (mode: 'always_approve') => void;
   /** A review requested by the running turn, whose card waits for the turn to end. */
   hiddenReviewId: string | null;
   /** The agent's turn that writes this message is running, so its input requests wait too. */
@@ -876,7 +994,7 @@ function Message({
   // before the marker of the turn that continues this message (a review result's delivery), or at
   // the end of the message.
   type Card =
-    | { kind: 'review'; reviewId: string }
+    | ({ kind: 'review' } & ReviewPart)
     | { kind: 'input'; key: string; request: InputRequestPart };
   const renderCard = (card: Card) =>
     card.kind === 'review' ? (
@@ -886,6 +1004,9 @@ function Message({
         conversationId={conversationId}
         reviewId={card.reviewId}
         canResume={awaitingReviewId === card.reviewId}
+        // Switching back to requiring approval also applies to a review already submitted.
+        autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
+        onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
     ) : (
       <InputRequestCard
@@ -921,8 +1042,8 @@ function Message({
     } else if (isReloadPart(part)) {
       rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
-      const { reviewId } = ReviewPartSchema.parse(part.data);
-      if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId });
+      const { reviewId, autoApprove } = ReviewPartSchema.parse(part.data);
+      if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId, autoApprove });
     } else if (part.type === 'data-input-request') {
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
