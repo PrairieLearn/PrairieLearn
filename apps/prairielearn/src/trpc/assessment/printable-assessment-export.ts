@@ -148,6 +148,7 @@ export const printableAssessmentExportRouter = t.router({
   pdf: t.procedure
     .use(requireCoursePermissionPreview)
     .use(requirePrintableAssessments)
+    .use(requireCoursePermissionEdit)
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
       let metadata: z.infer<typeof PrintPacketMetadataSchema>;
