@@ -1356,7 +1356,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ['alternative selection', sql.enable_alternative_selection],
   ])('detects randomized %s even when all question variants are fixed', async (_, query) => {
     const assessment = await printAssessment();
-    const form = await client(assessment.id).printForms.create.mutate();
+    const form = await client(assessment.id).printForms.ensureInitial.mutate();
     expect(
       (await selectPrintPreparationForms(assessment.id)).find(
         (item) => item.id === form.printFormId,
