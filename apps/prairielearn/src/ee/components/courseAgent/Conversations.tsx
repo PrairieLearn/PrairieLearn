@@ -913,9 +913,9 @@ function Message({
     const { key, part } = segment;
     const navigation = navigationOf(part);
     if (part.type === 'text' && part.text.trim()) {
-      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} />);
+      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} math />);
     } else if (part.type === 'reasoning' && part.text.trim()) {
-      rendered.push(<ReasoningBlock key={key} part={part} />);
+      rendered.push(<ReasoningBlock key={key} part={part} math />);
     } else if (navigation) {
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
     } else if (isReloadPart(part)) {
