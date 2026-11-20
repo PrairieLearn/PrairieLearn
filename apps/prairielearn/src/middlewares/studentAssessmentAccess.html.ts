@@ -4,21 +4,24 @@ import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
 } from '../components/AssessmentRegenerate.js';
+import { AssessmentScoreHtml } from '../components/AssessmentScore.js';
 import { PageLayout } from '../components/PageLayout.js';
-import { ScorebarHtml } from '../components/Scorebar.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.js';
 import type { AssessmentInstance } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
+import type { GradingPending } from '../models/assessment-instance.js';
 
 export function StudentAssessmentAccess({
   resLocals,
   showClosedScore = true,
+  gradingPending = null,
   showTimeLimitExpiredModal = false,
   userCanDeleteAssessmentInstance = false,
 }: {
   resLocals: ResLocalsForPage<'assessment' | 'assessment-instance'>;
   showClosedScore?: boolean;
+  gradingPending?: GradingPending | null;
   showTimeLimitExpiredModal?: boolean;
   userCanDeleteAssessmentInstance?: boolean;
 }) {
@@ -59,7 +62,7 @@ export function StudentAssessmentAccess({
                       )}
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${ScorebarHtml(assessment_instance.score_perc)}
+                      ${AssessmentScoreHtml({ score: assessment_instance.score_perc, gradingPending, active: authz_result.active })}
                     </div>
 
                     ${AssessmentStatusDescription({

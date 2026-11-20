@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { selectAssessmentInstanceGradingPending } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
@@ -128,6 +129,8 @@ describe(
         AssessmentInstanceSchema,
       );
       assert.equal(result.open, false);
+      await sqldb.execute(sql.mark_grading_pending, { assessment_instance_id: result.id });
+      assert.isNotNull(await selectAssessmentInstanceGradingPending(result.id));
     });
 
     test('check that accessing a question gives the "assessment closed" message', async () => {
@@ -138,6 +141,7 @@ describe(
 
       assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
       assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+      assert.notInclude(response.$('body').text(), 'Grading pending');
     });
 
     test('check that accessing assessment list shows score as withheld', async () => {
@@ -150,14 +154,16 @@ describe(
       assert.lengthOf(row, 1);
       assert.lengthOf(row.find('td:contains("Score not shown")'), 1);
       assert.lengthOf(row.find('div.progress'), 0);
+      assert.notInclude(row.text(), 'Grading pending');
     });
 
     test('check that accessing gradebook shows score as withheld', async () => {
-      const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+      const response = await helperClient.fetchCheerio(context.gradeBookUrl, { headers });
       assert.equal(response.status, 200);
 
       assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
       assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+      assert.notInclude(response.$('body').text(), 'Grading pending');
     });
   },
 );

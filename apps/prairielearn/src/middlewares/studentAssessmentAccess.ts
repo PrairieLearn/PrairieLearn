@@ -10,10 +10,11 @@ import { deleteAssessmentInstance } from '../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../lib/assessment.shared.js';
 import { config } from '../lib/config.js';
 import { setCookie } from '../lib/cookie.js';
+import { selectAssessmentInstanceGradingPending } from '../models/assessment-instance.js';
 
 import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
-export function checkStudentAssessmentAccess(req: Request, res: Response): boolean {
+export async function checkStudentAssessmentAccess(req: Request, res: Response): Promise<boolean> {
   const showClosedAssessment = res.locals.authz_result?.show_closed_assessment ?? true;
   const assessmentInstanceOpen = res.locals.assessment_instance?.open ?? true;
   const assessmentActive = res.locals.authz_result?.active ?? true;
@@ -37,11 +38,16 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
     (!assessmentInstanceOpen || !assessmentActive) &&
     !isExpiredTimeLimitFinish(req, res)
   ) {
+    const showClosedScore = res.locals.authz_result?.show_closed_assessment_score ?? true;
     res.status(403).send(
       StudentAssessmentAccess({
         // @ts-expect-error The types on checkStudentAssessmentAccess aren't perfect
         resLocals: res.locals,
-        showClosedScore: res.locals.authz_result?.show_closed_assessment_score ?? true,
+        showClosedScore,
+        gradingPending:
+          showClosedScore && res.locals.assessment_instance != null
+            ? await selectAssessmentInstanceGradingPending(res.locals.assessment_instance.id)
+            : null,
         showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
       }),
@@ -92,7 +98,7 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  const hasAccess = checkStudentAssessmentAccess(req, res);
+  const hasAccess = await checkStudentAssessmentAccess(req, res);
   if (!hasAccess) {
     // We've already sent a response (either a 403, or a redirect to enter a password).
     return;

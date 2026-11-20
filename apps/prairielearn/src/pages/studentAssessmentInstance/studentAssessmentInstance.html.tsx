@@ -6,12 +6,12 @@ import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
+import { AssessmentScoreHtml } from '../../components/AssessmentScore.js';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
-import { ScorebarHtml } from '../../components/Scorebar.js';
 import { StudentAvailableCredit } from '../../components/StudentAvailableCredit.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import type { AssessmentInstanceAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
@@ -20,6 +20,7 @@ import { type Assessment, type AssessmentInstance, type GroupConfig } from '../.
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { GradingPending } from '../../models/assessment-instance.js';
 
 import { ExamFooterContent } from './components/ExamFooterContent.js';
 import { QuestionTableBody } from './components/QuestionTableBody.js';
@@ -27,6 +28,7 @@ import type { InstanceQuestionRow } from './studentAssessmentInstance.types.js';
 
 export function StudentAssessmentInstance({
   instance_question_rows,
+  gradingPending,
   showTimeLimitExpiredModal,
   groupConfig,
   groupInfo,
@@ -35,6 +37,7 @@ export function StudentAssessmentInstance({
   resLocals,
 }: {
   instance_question_rows: InstanceQuestionRow[];
+  gradingPending: GradingPending | null;
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
   resLocals: ResLocalsForPage<'assessment-instance'> & {
@@ -270,6 +273,9 @@ export function StudentAssessmentInstance({
                 const allQuestionsDisabled = instance_question_rows.every(
                   (row) => !row.assessment_question.allow_real_time_grading,
                 );
+                // No score is shown in this case, so there is nothing for the
+                // grading pending indicator to qualify. The page already says
+                // that grading happens once the assessment is finished.
                 return allQuestionsDisabled && resLocals.assessment_instance.open;
               })
                 ? html`
@@ -313,7 +319,7 @@ export function StudentAssessmentInstance({
                       }
                     </div>
                     <div class="col-md-3 col-sm-6">
-                      ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
+                      ${AssessmentScoreHtml({ score: resLocals.assessment_instance.score_perc, gradingPending, active: resLocals.authz_result.active })}
                     </div>
                     <div class="col-md-6 col-sm-12">
                       ${AssessmentStatus({

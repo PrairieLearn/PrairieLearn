@@ -17,6 +17,7 @@ const StudentGradebookRowSchema = z
     assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
     assessment_set: RawStudentAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
+    active: z.boolean(),
     modern_access_control: z.boolean(),
     assessment_id: IdSchema,
   })
@@ -41,6 +42,7 @@ const StaffGradebookRowSchema = z
     assessment_instance: RawStaffAssessmentInstanceSchema,
     assessment_set: RawStaffAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
+    active: z.boolean(),
     modern_access_control: z.boolean(),
     assessment_id: IdSchema,
   })

@@ -28,6 +28,7 @@ async function applyModernAccessControl<
     modern_access_control: boolean;
     assessment_id: string;
     show_closed_assessment_score: boolean;
+    active: boolean;
     assessment_instance: {
       open: boolean | null;
       date_limit: Date | null;
@@ -58,6 +59,7 @@ async function applyModernAccessControl<
         reqDate: params.reqDate,
       });
       row.show_closed_assessment_score = authzResult.show_closed_assessment_score;
+      row.active = authzResult.active;
       if (params.auth === 'student' && !authzResult.show_closed_assessment_score) {
         row.assessment_instance.points = null;
         row.assessment_instance.score_perc = null;

@@ -134,7 +134,7 @@ export default function authzWorkspace(
       if (result.instance_question_id) {
         req.params.instance_question_id = result.instance_question_id;
         await selectAndAuthzInstanceQuestion(req, res);
-        if (!checkStudentAssessmentAccess(req, res)) {
+        if (!(await checkStudentAssessmentAccess(req, res))) {
           // We've already sent a response, just bail.
           return;
         }

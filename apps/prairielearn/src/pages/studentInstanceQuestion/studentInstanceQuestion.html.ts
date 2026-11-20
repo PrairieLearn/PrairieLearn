@@ -25,6 +25,7 @@ import type { AssessmentTool, User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.shared.js';
 import type { ResLocalsInstanceQuestionRender } from '../../lib/question-render.types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { GradingPending } from '../../models/assessment-instance.js';
 import { CalculatorSettingsSchema } from '../../schemas/infoAssessment.js';
 
 export function StudentInstanceQuestion({
@@ -36,6 +37,7 @@ export function StudentInstanceQuestion({
   lastGrader,
   questionCopyTargets,
   enabledTools = [],
+  gradingPending,
 }: {
   independentScrolling: boolean;
   resLocals: ResLocalsForPage<'instance-question'>;
@@ -45,6 +47,7 @@ export function StudentInstanceQuestion({
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
   enabledTools?: AssessmentTool[];
+  gradingPending: GradingPending | null;
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
@@ -228,6 +231,8 @@ export function StudentInstanceQuestion({
                   assessment: resLocals.assessment,
                   assessment_set: resLocals.assessment_set,
                   assessment_instance: resLocals.assessment_instance,
+                  gradingPending,
+                  active: resLocals.authz_result.active,
                 })
           }
           ${QuestionScorePanel({
