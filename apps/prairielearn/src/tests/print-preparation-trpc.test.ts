@@ -29,7 +29,6 @@ import {
   waitForPrintExportWorkers,
 } from '../lib/printing/print-exports.js';
 import { createPrintForm } from '../lib/printing/print-forms.js';
-import { PrintPacketMetadataSchema } from '../lib/printing/print-packet-schema.js';
 import {
   assessmentHasPrintRandomization,
   selectPrintPreparationForms,
@@ -71,7 +70,7 @@ function packetInput(printFormId: string, document: 'assessment' | 'answer_key' 
   data.set(
     'metadata',
     JSON.stringify({
-      forms: [{ printFormId, settings: DEFAULT_PRINT_SETTINGS }],
+      forms: [{ printFormId }],
       document,
     }),
   );
@@ -709,13 +708,15 @@ describe('print preparation', { timeout: 60_000 }, () => {
 
   test('returns an actionable error for a reserved cover label', async () => {
     const assessment = await printAssessment();
-    const input = packetInput('1');
-    const metadata = PrintPacketMetadataSchema.parse(JSON.parse(input.get('metadata')!.toString()));
-    metadata.forms[0].settings.identityFields = 'Name';
-    input.set('metadata', JSON.stringify(metadata));
-    await expect(client(assessment.id).printableAssessmentExport.pdf.mutate(input)).rejects.toThrow(
-      'Name and Date',
-    );
+    const api = client(assessment.id);
+    const form = await api.printForms.ensureInitial.mutate();
+    await expect(
+      api.printForms.updateSettings.mutate({
+        printFormId: form.printFormId,
+        settings: { ...form.settings, identityFields: 'Name' },
+        expectedSettings: form.settings,
+      }),
+    ).rejects.toThrow('Name and Date');
   });
 
   test('validates export settings and cover PDFs before queueing', async () => {
@@ -789,10 +790,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     data.set(
       'metadata',
       JSON.stringify({
-        forms: forms.map(({ printFormId }) => ({
-          printFormId,
-          settings: DEFAULT_PRINT_SETTINGS,
-        })),
+        forms: forms.map(({ printFormId }) => ({ printFormId })),
         document: 'assessment',
       }),
     );
@@ -930,10 +928,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     data.set(
       'metadata',
       JSON.stringify({
-        forms: [first, second].map(({ printFormId }) => ({
-          printFormId,
-          settings: DEFAULT_PRINT_SETTINGS,
-        })),
+        forms: [first, second].map(({ printFormId }) => ({ printFormId })),
         document: 'answer_key',
       }),
     );
@@ -967,19 +962,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test('rejects a PDF with question exclusions that differ from the saved form', async () => {
+  test('rejects a PDF previewed with question exclusions that differ from the saved form', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const form = await api.printForms.create.mutate();
     const settings = { ...DEFAULT_PRINT_SETTINGS, excludedQuestions: ['1'] };
-    const data = new FormData();
-    data.set(
-      'metadata',
-      JSON.stringify({
-        forms: [{ printFormId: form.printFormId, settings }],
-        document: 'assessment',
-      }),
-    );
+    const data = packetInput(form.printFormId);
     const html =
       '<!doctype html><html data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0"></html>';
     const search = new URLSearchParams(printLayoutSearch(settings));
@@ -1051,10 +1039,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     data.set(
       'metadata',
       JSON.stringify({
-        forms: [first, second].map(({ printFormId }) => ({
-          printFormId,
-          settings: DEFAULT_PRINT_SETTINGS,
-        })),
+        forms: [first, second].map(({ printFormId }) => ({ printFormId })),
         document: 'assessment',
       }),
     );
@@ -1096,10 +1081,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
       assessmentId: assessment.id,
       printFormId: form.printFormId,
     });
-    const search = new URLSearchParams({
-      paper_size: 'Letter',
-      grading_table: 'true',
-    });
+    const settings = { ...form.settings, includeGradingTable: true };
+    const search = new URLSearchParams(printLayoutSearch(settings));
+    search.set('document', 'assessment');
     const source = {
       html: '<p><strong>Queued editable question</strong></p><img data-docx-figure="1">',
       figures: [{ id: '1', width: 120, height: 60, alt: 'Queued diagram' }],
@@ -1123,11 +1107,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
         config.secretKey,
       ),
     };
-    const docx = Buffer.from('PK queued Word document');
-    const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(docx);
-    let printExportId: string;
-    try {
-      const response = await fetch(`${siteUrl}${printUrl}/docx?${search}`, {
+    const postDocx = () =>
+      fetch(`${siteUrl}${printUrl}/docx?document=assessment`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -1136,6 +1117,19 @@ describe('print preparation', { timeout: 60_000 }, () => {
         },
         body: JSON.stringify(snapshot),
       });
+    const unsaved = await postDocx();
+    expect(unsaved.status).toBe(400);
+    expect((await unsaved.json()).error).toContain('This print preview has expired or changed.');
+    await api.printForms.updateSettings.mutate({
+      printFormId: form.printFormId,
+      settings,
+      expectedSettings: form.settings,
+    });
+    const docx = Buffer.from('PK queued Word document');
+    const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(docx);
+    let printExportId: string;
+    try {
+      const response = await postDocx();
       expect(response.status).toBe(200);
       ({ printExportId } = z.object({ printExportId: IdSchema }).parse(await response.json()));
       expect(render).not.toHaveBeenCalled();

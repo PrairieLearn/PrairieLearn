@@ -157,10 +157,7 @@ export const printableAssessmentExportRouter = t.router({
       } catch (error) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message:
-            (error instanceof z.ZodError
-              ? error.issues.find((issue) => issue.path.includes('identityFields'))?.message
-              : undefined) ?? 'Invalid print export settings.',
+          message: 'Invalid print export settings.',
           cause: error,
         });
       }
@@ -171,10 +168,11 @@ export const printableAssessmentExportRouter = t.router({
         if (!saved || (metadata.forms.length > 1 && saved.archived_at)) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'A print form is not available.' });
         }
-        if (selected.settings.paperSize !== saved.settings.paperSize) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
-        }
-        return { ...selected, formLabel: saved.label };
+        return {
+          printFormId: saved.id,
+          formLabel: saved.label,
+          settings: saved.settings,
+        };
       });
       assertSharedPaperSize(forms);
       const files = uploadedCoverFiles(input);

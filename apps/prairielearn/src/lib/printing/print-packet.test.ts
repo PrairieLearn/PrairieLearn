@@ -9,7 +9,7 @@ import {
 
 import { PrintPacketMetadataSchema } from './print-packet-schema.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
-import { DEFAULT_PRINT_SETTINGS } from './print-settings.js';
+import { DEFAULT_PRINT_SETTINGS, PrintSettingsSchema } from './print-settings.js';
 
 async function pdfWithPages(widths: number[]): Promise<Uint8Array> {
   const document = await PDFDocument.create();
@@ -155,20 +155,31 @@ describe('print packets', () => {
   });
 });
 
-describe('print packet settings', () => {
-  const form = { printFormId: '1', settings: DEFAULT_PRINT_SETTINGS };
+describe('print packet metadata', () => {
+  const form = { printFormId: '1' };
   const metadata = { forms: [form], document: 'assessment' };
 
-  test('rejects duplicate form IDs, supplied labels, unknown settings, and invalid layout values', () => {
+  test('rejects duplicate form IDs and client-supplied labels or settings', () => {
+    expect(PrintPacketMetadataSchema.safeParse(metadata).success).toBe(true);
     for (const forms of [
-      [{ ...form, formLabel: 'B' }],
       [form, { ...form }],
-      [{ ...form, settings: { ...form.settings, paperSize: 'Legal' } }],
-      [{ ...form, settings: { ...form.settings, extra: true } }],
-      [{ ...form, settings: { ...form.settings, excludedQuestions: ['1', '1'] } }],
-      [{ ...form, settings: { ...form.settings, identityFields: 'a'.repeat(41) } }],
+      [{ ...form, formLabel: 'B' }],
+      [{ ...form, settings: DEFAULT_PRINT_SETTINGS }],
     ]) {
       expect(PrintPacketMetadataSchema.safeParse({ ...metadata, forms }).success).toBe(false);
+    }
+  });
+});
+
+describe('print settings', () => {
+  test('rejects unknown settings and invalid layout values', () => {
+    for (const settings of [
+      { ...DEFAULT_PRINT_SETTINGS, paperSize: 'Legal' },
+      { ...DEFAULT_PRINT_SETTINGS, extra: true },
+      { ...DEFAULT_PRINT_SETTINGS, excludedQuestions: ['1', '1'] },
+      { ...DEFAULT_PRINT_SETTINGS, identityFields: 'a'.repeat(41) },
+    ]) {
+      expect(PrintSettingsSchema.safeParse(settings).success).toBe(false);
     }
   });
 });

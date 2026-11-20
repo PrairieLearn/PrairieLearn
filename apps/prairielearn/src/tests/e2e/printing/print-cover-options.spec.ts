@@ -7,7 +7,12 @@ import * as unzipper from 'unzipper';
 import { syncCourse } from '../../helperCourse.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { createPrintableForm, downloadPrintableWord, waitForPrintablePage } from './utils.js';
+import {
+  createPrintableForm,
+  downloadPrintableWord,
+  savePrintSettings,
+  waitForPrintablePage,
+} from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
@@ -121,8 +126,9 @@ test('uses the configured honor code for printed pledges when requireHonorCode i
       }),
     );
     await syncCourse(testCoursePath);
-    const { printUrl: base } = await createPrintableForm(courseInstance, tid);
-    await page.goto(`${base}/preview?paper_size=Letter&include_honor_code=true`);
+    const { printUrl: base, printForm } = await createPrintableForm(courseInstance, tid);
+    const search = await savePrintSettings(printForm, { includeHonorCode: true });
+    await page.goto(`${base}/preview?${search}`);
     await waitForPrintablePage(page);
     const pledge = page.getByRole('region', { name: 'Academic integrity pledge' });
     await expect(pledge.getByRole('heading', { name: 'Academic integrity pledge' })).toHaveCount(1);
@@ -131,11 +137,7 @@ test('uses the configured honor code for printed pledges when requireHonorCode i
     );
     await expect(pledge.locator('strong')).toHaveText('course collaboration policy');
     await expect(pledge).not.toContainText('I pledge on my honor');
-    const response = await downloadPrintableWord(
-      page,
-      base,
-      'paper_size=Letter&include_honor_code=true',
-    );
+    const response = await downloadPrintableWord(page, base);
     expect(response.status()).toBe(200);
     const archive = await unzipper.Open.buffer(await response.body());
     const xml = (

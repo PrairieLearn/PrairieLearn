@@ -20,6 +20,7 @@ import {
   PrintIdentityFieldsSchema,
 } from '../../lib/client/printing/print-cover.js';
 import { serializePrintDocument } from '../../lib/client/printing/print-document.js';
+import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import { MAX_PRINT_SNAPSHOT_BYTES } from '../../lib/client/printing/print-snapshot-limits.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { config } from '../../lib/config.js';
@@ -126,7 +127,7 @@ const PrintSnapshotSchema = z.strictObject({
 });
 
 const DocxPostRequestSchemas = {
-  query: DocumentQuerySchema,
+  query: DocumentQuerySchema.pick({ document: true }).strict(),
   body: z
     .instanceof(Buffer)
     .transform((body) => body.toString('utf8'))
@@ -159,6 +160,18 @@ function parsePrintLayout(query: z.infer<typeof LayoutQuerySchema>): PrintLayout
     ),
     excludedQuestionNumbers: new Set(query.exclude_question),
   };
+}
+
+/** Exports use the form's saved settings, parsed the same way as the preview's URL. */
+function savedPrintLayout(resLocals: ResLocalsForPage<'print-form'>) {
+  const search = new URLSearchParams(printLayoutSearch(resLocals.print_form.settings));
+  const query = Object.fromEntries(
+    [...new Set(search.keys())].map((key) => {
+      const values = search.getAll(key);
+      return [key, values.length === 1 ? values[0] : values];
+    }),
+  );
+  return { search, layout: parsePrintLayout(LayoutQuerySchema.parse(query)) };
 }
 
 function getCoverHtml(resLocals: ResLocalsForPage<'print-form'>) {
@@ -330,9 +343,11 @@ router.post(
   '/docx',
   parseDocxBody,
   typedAsyncHandler<'print-form'>(async (req, res) => {
-    const { query, body: snapshot } = parseRequest(req, DocxPostRequestSchemas);
-    const layout = parsePrintLayout(query);
-    const { document } = query;
+    const {
+      query: { document },
+      body: snapshot,
+    } = parseRequest(req, DocxPostRequestSchemas);
+    const { search, layout } = savedPrintLayout(res.locals);
 
     const printFormQuestionIds = await getPrintableFormQuestionIds(
       res.locals.print_form.id,
@@ -364,11 +379,11 @@ router.post(
         gradingTable,
       });
 
+    search.set('document', document);
     const localPreviewUrl = new URL(
-      req.originalUrl,
+      `${req.baseUrl}/preview?${search}`,
       `${config.serverType}://localhost:${config.serverPort}`,
     );
-    localPreviewUrl.pathname = `${req.baseUrl}/preview`;
     const questionListDigest = await getPrintableQuestionListDigest(
       res.locals.print_form.id,
       layout.excludedQuestionNumbers,

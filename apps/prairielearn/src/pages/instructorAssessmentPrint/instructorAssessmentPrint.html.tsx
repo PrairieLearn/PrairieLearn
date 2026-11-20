@@ -29,7 +29,6 @@ import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/reac
 import { NuqsAdapter, OverlayTrigger } from '@prairielearn/ui';
 import { IdSchema } from '@prairielearn/zod';
 
-import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { PrintIdentityFieldsTextSchema } from '../../lib/client/printing/print-cover.js';
 import {
   nextPrintFormLabel,
@@ -65,6 +64,7 @@ import type { PrintFormsError } from '../../trpc/assessment/print-forms.js';
 import type { PrintableAssessmentExportError } from '../../trpc/assessment/printable-assessment-export.js';
 
 import { CombinedPdfDownloadModal } from './CombinedPdfDownloadModal.js';
+import { AutomaticExportDownloads, PrintExports, usePrintExports } from './PrintExports.js';
 import { type PreviewState, PrintPreview } from './PrintPreview.js';
 
 const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
@@ -74,7 +74,6 @@ const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
   full: 'A full page',
 };
 
-const SNAPSHOT_PREPARATION_BATCH_SIZE = 3;
 const MAX_CACHED_PREVIEWS = 3;
 const COVER_SIZE_LIMIT = filesize(MAX_COVER_BYTES, { base: 10 });
 
@@ -127,41 +126,6 @@ export function InstructorAssessmentPrint(props: PrintPreparationProps) {
   );
 }
 InstructorAssessmentPrint.displayName = 'InstructorAssessmentPrint';
-
-function AutomaticExportDownload({
-  printExportId,
-  onFinished,
-}: {
-  printExportId: string;
-  onFinished: (id: string, succeeded: boolean, failureMessage: string | null) => void;
-}) {
-  const trpc = useTRPC();
-  const completedRef = useRef(false);
-  const status = useQuery(
-    trpc.printableAssessmentExport.status.queryOptions(
-      { printExportId },
-      {
-        refetchInterval: (query) =>
-          query.state.data && query.state.data.status !== 'pending' ? false : 2_000,
-      },
-    ),
-  );
-  useEffect(() => {
-    // A newly queued export starts one download when its background job succeeds.
-    if (!status.data || status.data.status === 'pending' || completedRef.current) return;
-    completedRef.current = true;
-    if (status.data.status === 'succeeded' && status.data.downloadUrl) {
-      const link = window.document.createElement('a');
-      link.href = status.data.downloadUrl;
-      onFinished(printExportId, true, null);
-      link.click();
-    } else {
-      // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent -- The parent owns the form-to-export mapping and must mark stale forms.
-      onFinished(printExportId, false, status.data.failureMessage);
-    }
-  }, [status.data, onFinished, printExportId]);
-  return null;
-}
 
 function PreviewFrame({
   cacheKey,
@@ -321,9 +285,6 @@ function PrintPreparation({
   const staleFormIdsRef = useRef(new Set<string>());
   const stalePreviewRefreshesRef = useRef(new Map<string, string>());
   const snapshotStale = formId !== null && staleFormIds.has(formId);
-  const [exportId, setExportId] = useQueryState('export', parseAsString);
-  const [automaticExportIds, setAutomaticExportIds] = useState<string[]>([]);
-  const [recentExportsOpen, setRecentExportsOpen] = useState(false);
   const prepareButtonRef = useRef<HTMLButtonElement>(null);
   const prepareStatusRef = useRef<HTMLDivElement>(null);
   const applyPreviewButtonRef = useRef<HTMLButtonElement>(null);
@@ -449,25 +410,8 @@ function PrintPreparation({
   }, [updateSettings.isPending, paperSizeApplying]);
   const packet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
   const preflight = useMutation(trpc.printableAssessmentExport.preflight.mutationOptions());
-  const recentExports = useQuery(
-    trpc.printableAssessmentExport.list.queryOptions(undefined, {
-      refetchInterval: (query) =>
-        query.state.data?.some((item) => item.status === 'pending') ? 2_000 : false,
-    }),
-  );
-  const listedExport = recentExports.data?.find((item) => item.id === exportId);
-  const exportStatus = useQuery(
-    trpc.printableAssessmentExport.status.queryOptions(
-      exportId === null || listedExport ? skipToken : { printExportId: exportId },
-      {
-        refetchInterval: (query) => (query.state.data?.status === 'pending' ? 2_000 : false),
-        retry: (failureCount, error) =>
-          failureCount < 3 &&
-          !(error instanceof TRPCClientError && error.data?.code === 'NOT_FOUND'),
-      },
-    ),
-  );
-  const displayedExport = listedExport ?? exportStatus.data;
+  const printExports = usePrintExports({ onAutomaticExportFinished: finishAutomaticExport });
+  const { exportId, setExportId, displayedExport } = printExports;
   const busy =
     ensureInitial.isPending ||
     create.isPending ||
@@ -516,29 +460,20 @@ function PrintPreparation({
         stalePreviewRefreshesRef.current.delete(id);
       }
       setStaleFormIds(new Set(staleFormIdsRef.current));
+      // Exports use saved settings, so another tab's save also makes previews stale.
+      void forms.refetch();
     }
   }
 
-  function settingsForForm(id: string, appliedSettings = settings): PrintSettings {
+  function settingsForForm(id: string): PrintSettings {
     const form = forms.data.find((item) => item.id === id);
     if (!form) throw new Error('This print form is not available.');
-    const formSettings = id === formId ? appliedSettings : form.settings;
-    return {
-      ...formSettings,
-      identityFields: formSettings.includeCoverPage ? formSettings.identityFields : '',
-    };
+    return form.settings;
   }
 
-  function packetMetadata(
-    ids: string[],
-    outputDocument: PrintDocument,
-    appliedSettings = settings,
-  ) {
+  function packetMetadata(ids: string[], outputDocument: PrintDocument) {
     return {
-      forms: ids.map((id) => ({
-        printFormId: id,
-        settings: settingsForForm(id, appliedSettings),
-      })),
+      forms: ids.map((id) => ({ printFormId: id })),
       document: outputDocument,
     };
   }
@@ -579,33 +514,20 @@ function PrintPreparation({
     }
     const snapshotRequests = metadata.forms;
     setPdfPreparationProgress({ completed: 0, total: snapshotRequests.length });
-    for (let index = 0; index < snapshotRequests.length; index += SNAPSHOT_PREPARATION_BATCH_SIZE) {
-      const batch = snapshotRequests.slice(index, index + SNAPSHOT_PREPARATION_BATCH_SIZE);
-      const snapshots = await Promise.all(
-        batch.map((form) =>
-          snapshotFor(
-            form.printFormId,
-            formLabel(form.printFormId),
-            form.settings,
-            metadata.document,
-          ),
-        ),
+    // Forms render one at a time so one export doesn't hold several shared render slots.
+    for (const [index, form] of snapshotRequests.entries()) {
+      const snapshot = await snapshotFor(
+        form.printFormId,
+        formLabel(form.printFormId),
+        settingsForForm(form.printFormId),
+        metadata.document,
       );
-      for (const [batchIndex, snapshot] of snapshots.entries()) {
-        const form = batch[batchIndex];
-        input.append(
-          'pages',
-          new File(
-            [snapshot.html],
-            `form-${formLabel(form.printFormId)}-${metadata.document}.html`,
-          ),
-        );
-        input.append('snapshotIds', snapshot.id);
-      }
-      setPdfPreparationProgress({
-        completed: index + batch.length,
-        total: snapshotRequests.length,
-      });
+      input.append(
+        'pages',
+        new File([snapshot.html], `form-${formLabel(form.printFormId)}-${metadata.document}.html`),
+      );
+      input.append('snapshotIds', snapshot.id);
+      setPdfPreparationProgress({ completed: index + 1, total: snapshotRequests.length });
     }
     return input;
   }
@@ -628,7 +550,7 @@ function PrintPreparation({
   }
 
   function receiveExport(
-    result: Awaited<ReturnType<typeof packet.mutateAsync>>,
+    result: { printExportId: string },
     formIds: string[],
     includedCoverIds: string[] = [],
   ) {
@@ -636,11 +558,9 @@ function PrintPreparation({
     if (includedCoverIds.length > 0) {
       exportCoverIdsRef.current.set(result.printExportId, includedCoverIds);
     }
-    void setExportId(result.printExportId);
-    setAutomaticExportIds((ids) => [...ids, result.printExportId]);
-    setRecentExportsOpen(true);
+    // Starting an export locks the forms' question selections.
     void forms.refetch();
-    return recentExports.refetch();
+    return printExports.receiveExport(result);
   }
 
   function finishAutomaticExport(id: string, succeeded: boolean, failureMessage: string | null) {
@@ -653,7 +573,6 @@ function PrintPreparation({
     }
     exportCoverIdsRef.current.delete(id);
     exportFormIdsRef.current.delete(id);
-    setAutomaticExportIds((ids) => ids.filter((value) => value !== id));
   }
 
   async function downloadPacket(ids: string[], outputDocument: PrintDocument) {
@@ -691,7 +610,7 @@ function PrintPreparation({
       label: formLabel(id),
       settings: settingsForForm(id),
     }));
-    const settingsKey = JSON.stringify(packetMetadata(ids, outputDocument));
+    const settingsKey = JSON.stringify(selectedForms.map((form) => form.settings));
     const request = ++combinedRequestRef.current;
     preflight.reset();
     packet.reset();
@@ -725,41 +644,35 @@ function PrintPreparation({
       setCombinedDownload(
         (current) => current && { ...current, progress: { completed: 0, total: ids.length } },
       );
-      for (let index = 0; index < selectedForms.length; index += SNAPSHOT_PREPARATION_BATCH_SIZE) {
-        const batch = selectedForms.slice(index, index + SNAPSHOT_PREPARATION_BATCH_SIZE);
-        const snapshots = await Promise.allSettled(
-          batch.map((form) => snapshotFor(form.id, form.label, form.settings, outputDocument)),
-        );
-        if (request !== combinedRequestRef.current) return;
-        for (const [batchIndex, snapshot] of snapshots.entries()) {
-          if (snapshot.status === 'rejected') {
-            const form = batch[batchIndex];
-            setCombinedDownload(
-              (current) =>
-                current && {
-                  ...current,
-                  preparing: false,
-                  progress: null,
-                  failure: {
-                    printFormId: form.id,
-                    formLabel: form.label,
-                    message:
-                      snapshot.reason instanceof Error
-                        ? snapshot.reason.message
-                        : `Form ${form.label} could not be prepared.`,
-                  },
+      for (const [index, form] of selectedForms.entries()) {
+        let snapshot: PrintSnapshot;
+        try {
+          snapshot = await snapshotFor(form.id, form.label, form.settings, outputDocument);
+        } catch (error) {
+          if (request !== combinedRequestRef.current) return;
+          setCombinedDownload(
+            (current) =>
+              current && {
+                ...current,
+                preparing: false,
+                progress: null,
+                failure: {
+                  printFormId: form.id,
+                  formLabel: form.label,
+                  message:
+                    error instanceof Error
+                      ? error.message
+                      : `Form ${form.label} could not be prepared.`,
                 },
-            );
-            return;
-          }
-          pageCounts.push(countPrintSnapshotPages(snapshot.value.html));
+              },
+          );
+          return;
         }
+        if (request !== combinedRequestRef.current) return;
+        pageCounts.push(countPrintSnapshotPages(snapshot.html));
         setCombinedDownload(
           (current) =>
-            current && {
-              ...current,
-              progress: { completed: index + batch.length, total: ids.length },
-            },
+            current && { ...current, progress: { completed: index + 1, total: ids.length } },
         );
       }
       const pageCount = Math.max(...pageCounts) + result.coverPageCount;
@@ -802,7 +715,7 @@ function PrintPreparation({
     if (!combinedDownload || combinedSubmitting || combinedDownload.pageCount === null) return;
     if (
       JSON.stringify(formIds) !== JSON.stringify(combinedDownload.formIds) ||
-      JSON.stringify(packetMetadata(combinedDownload.formIds, combinedDownload.document)) !==
+      JSON.stringify(combinedDownload.formIds.map((id) => settingsForForm(id))) !==
         combinedDownload.settingsKey ||
       JSON.stringify(coverPages.map(({ id }) => id)) !==
         JSON.stringify(combinedDownload.coverPageIds)
@@ -937,7 +850,7 @@ function PrintPreparation({
         'X-CSRF-Token': docxCsrfToken,
         'Content-Type': 'application/octet-stream',
       });
-      const response = await fetch(`${base}/docx?${search}&document=${printDocument}`, {
+      const response = await fetch(`${base}/docx?document=${printDocument}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(snapshot),
@@ -1284,9 +1197,7 @@ function PrintPreparation({
 
   return (
     <div className="print-preparation">
-      {automaticExportIds.map((id) => (
-        <AutomaticExportDownload key={id} printExportId={id} onFinished={finishAutomaticExport} />
-      ))}
+      <AutomaticExportDownloads exports={printExports} />
       <nav aria-label="breadcrumb" className="mb-3">
         <ol className="breadcrumb mb-0">
           <li className="breadcrumb-item">
@@ -1398,94 +1309,12 @@ function PrintPreparation({
           focusAfterDismiss();
         }}
       />
-      <AppErrorAlert
-        error={getAppError<PrintableAssessmentExportError['list']>(recentExports.error)}
-        render={{ UNKNOWN: ({ message }) => message }}
+      <PrintExports
+        exports={printExports}
+        displayTimezone={displayTimezone}
+        detailsRef={recentExportsRef}
+        onDismiss={focusAfterDismiss}
       />
-      {recentExports.data && recentExports.data.length > 0 && (
-        <section aria-label="Recent exports" className="mb-3">
-          <Card>
-            <Card.Body>
-              <details
-                ref={recentExportsRef}
-                open={recentExportsOpen}
-                onToggle={(event) => setRecentExportsOpen(event.currentTarget.open)}
-              >
-                <summary className="h6 mb-0">Recent exports ({recentExports.data.length})</summary>
-                <p className="small text-muted mt-2 mb-2">
-                  Files are available here for up to 24 hours after you request them.
-                </p>
-                <ol className="mb-0 ps-3">
-                  {recentExports.data.map((item) => (
-                    <li key={item.id} className="mb-2">
-                      {item.status === 'succeeded' ? (
-                        <a href={item.downloadUrl ?? undefined}>
-                          Download {item.label}
-                          {item.sizeBytes !== null &&
-                            ` (${filesize(item.sizeBytes, { base: 10, round: 1 })})`}
-                        </a>
-                      ) : (
-                        <span>{item.label}</span>
-                      )}
-                      <span className="small text-muted ms-2">
-                        <FriendlyDate date={item.createdAt} timezone={displayTimezone} />
-                      </span>
-                      {item.status === 'pending' && (
-                        <span className="small text-muted ms-2">Preparing…</span>
-                      )}
-                      {item.status === 'failed' && (
-                        <span className="small text-danger ms-2">
-                          {item.failureMessage ?? 'The file could not be prepared.'}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            </Card.Body>
-          </Card>
-        </section>
-      )}
-      {exportId && !listedExport && !recentExports.isPending && (
-        <Alert
-          variant={
-            exportStatus.data?.status === 'failed' || exportStatus.isError ? 'danger' : 'info'
-          }
-          role={
-            exportStatus.isPending || exportStatus.data?.status === 'pending' ? 'status' : 'alert'
-          }
-        >
-          {exportStatus.data?.status === 'succeeded' ? (
-            <a href={exportStatus.data.downloadUrl ?? undefined}>
-              Download {exportStatus.data.label}
-              {exportStatus.data.sizeBytes !== null &&
-                ` (${filesize(exportStatus.data.sizeBytes, { base: 10, round: 1 })})`}
-            </a>
-          ) : exportStatus.data?.status === 'failed' ? (
-            (exportStatus.data.failureMessage ??
-            'The file could not be prepared. Try again or contact support if it keeps failing.')
-          ) : exportStatus.isError ? (
-            'Could not check whether the file is ready. Refresh the page to try again.'
-          ) : exportStatus.data?.status === 'expired' ? (
-            'This file is no longer available. Start a new download.'
-          ) : (
-            'Preparing your file. You can return to this page to download it within 24 hours.'
-          )}
-          {exportStatus.data?.status !== 'pending' && !exportStatus.isPending && (
-            <Button
-              variant="link"
-              size="sm"
-              className="ms-2 p-0"
-              onClick={() => {
-                void setExportId(null);
-                focusAfterDismiss();
-              }}
-            >
-              Dismiss
-            </Button>
-          )}
-        </Alert>
-      )}
       {groupWork && <Alert variant="info">Printing group assessments is not available yet.</Alert>}
       {reviewCount > 0 &&
         (includedOmittedCount > 0 || dismissedReviewWarning !== reviewWarningKey) && (

@@ -4,11 +4,15 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
-import { updatePrintFormSettings } from '../../../models/print-form.js';
 import { syncCourse } from '../../helperCourse.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { createPrintableForm, downloadPrintableWord, waitForPrintablePage } from './utils.js';
+import {
+  createPrintableForm,
+  downloadPrintableWord,
+  savePrintSettings,
+  waitForPrintablePage,
+} from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 
@@ -37,7 +41,7 @@ test('reports omitted questions and exports the selected Word content', async ({
     courseInstance,
     'exam24-printingOmittedQuestion',
   );
-  const query = 'paper_size=Letter&identity_field=Section&identity_field=Student+ID';
+  const query = await savePrintSettings(printForm, { identityFields: 'Section\nStudent ID' });
 
   await page.goto(`${printUrl}/preview?${query}`);
   await waitForPrintablePage(page);
@@ -63,7 +67,7 @@ test('reports omitted questions and exports the selected Word content', async ({
     expect(printedQuestionNumbers).not.toContain(warning.question_number);
   }
 
-  const incomplete = await downloadPrintableWord(page, printUrl, query);
+  const incomplete = await downloadPrintableWord(page, printUrl);
   expect(incomplete.status()).toBe(400);
   expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
 
@@ -83,24 +87,16 @@ test('reports omitted questions and exports the selected Word content', async ({
   const excludedQuestionNumber = printedQuestionNumbers.find(
     (number) => number !== retainedQuestionNumber,
   )!;
-  const selectedQuery = new URLSearchParams(query);
-  selectedQuery.append('exclude_question', excludedQuestionNumber);
-  for (const warning of warnings) {
-    selectedQuery.append('exclude_question', warning.question_number);
-  }
-  await updatePrintFormSettings({
-    printFormId: printForm.id,
-    assessmentId: printForm.assessment_id,
-    settings: {
-      ...printForm.settings,
-      excludedQuestions: selectedQuery.getAll('exclude_question'),
-    },
-    expectedSettings: printForm.settings,
+  const selectedQuery = await savePrintSettings(printForm, {
+    excludedQuestions: [
+      excludedQuestionNumber,
+      ...warnings.map((warning) => warning.question_number),
+    ],
   });
   await page.goto(`${printUrl}/preview?${selectedQuery}`);
   await waitForPrintablePage(page);
   expect(await readWarnings(page)).toEqual([]);
-  const documentResponse = await downloadPrintableWord(page, printUrl, String(selectedQuery));
+  const documentResponse = await downloadPrintableWord(page, printUrl);
   expect(documentResponse.status()).toBe(200);
   expect(documentResponse.headers()['content-type']).toContain(DOCX_CONTENT_TYPE);
   expect(documentResponse.headers()['content-disposition']).toMatch(
@@ -147,8 +143,11 @@ test('prints representative controls, editable Word content, and an ordered answ
   page,
   courseInstance,
 }) => {
-  const { printUrl } = await createPrintableForm(courseInstance, 'exam25-printingAutomated');
-  const search = new URLSearchParams({ paper_size: 'Letter' });
+  const { printUrl, printForm } = await createPrintableForm(
+    courseInstance,
+    'exam25-printingAutomated',
+  );
+  const search = await savePrintSettings(printForm, {});
   await page.goto(`${printUrl}/preview?${search}`);
   await waitForPrintablePage(page);
   const questions = page.locator('.pagedjs_page .printing-question');
@@ -194,7 +193,7 @@ test('prints representative controls, editable Word content, and an ordered answ
     })),
   ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
 
-  const response = await downloadPrintableWord(page, printUrl, String(search));
+  const response = await downloadPrintableWord(page, printUrl);
   expect(response.status()).toBe(200);
   const archive = await unzipper.Open.buffer(await response.body());
   const documentXml = (
@@ -226,8 +225,8 @@ test('prints representative controls, editable Word content, and an ordered answ
 });
 
 test('rejects changed Word source before queuing an export', async ({ page, courseInstance }) => {
-  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
-  const query = 'paper_size=Letter';
+  const { printUrl, printForm } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const query = await savePrintSettings(printForm, {});
   await page.goto(`${printUrl}/preview?${query}`);
   await waitForPrintablePage(page);
   await page.evaluate(() => {
@@ -237,7 +236,7 @@ test('rejects changed Word source before queuing an export', async ({ page, cour
     element.textContent = JSON.stringify(source);
   });
 
-  const response = await downloadPrintableWord(page, printUrl, query);
+  const response = await downloadPrintableWord(page, printUrl);
   expect(response.status()).toBe(400);
   expect((await response.json()).error).toContain('This print preview has expired or changed');
 });
@@ -253,13 +252,16 @@ test('preserves literal dollar patterns in Word exports', async ({
   try {
     await fs.writeFile(questionPath, `${original}\n<pre>${text}</pre>\n`);
     await syncCourse(testCoursePath);
-    const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
-    const query = 'paper_size=Letter';
+    const { printUrl, printForm } = await createPrintableForm(
+      courseInstance,
+      'exam20-assessmentTools',
+    );
+    const query = await savePrintSettings(printForm, {});
     await page.goto(`${printUrl}/preview?${query}`);
     await waitForPrintablePage(page);
     await expect(page.locator('.pagedjs_page').getByText(text, { exact: true })).toBeVisible();
 
-    const response = await downloadPrintableWord(page, printUrl, query);
+    const response = await downloadPrintableWord(page, printUrl);
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toContain(DOCX_CONTENT_TYPE);
   } finally {
@@ -273,7 +275,8 @@ test('omits failed question and answer-key renders and recovers after a correcti
   courseInstance,
   testCoursePath,
 }) => {
-  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const { printUrl, printForm } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const search = await savePrintSettings(printForm, {});
   const serverPath = path.join(testCoursePath, 'questions/addNumbers/server.py');
   const original = await fs.readFile(serverPath, 'utf8');
   try {
@@ -290,7 +293,7 @@ test('omits failed question and answer-key renders and recovers after a correcti
         panel === 'question' ? ['render_error'] : [],
       );
 
-      const query = 'paper_size=Letter&document=answer_key';
+      const query = `${search}&document=answer_key`;
       const answerKey = await page.goto(`${printUrl}/preview?${query}`);
       expect(answerKey!.status()).toBe(200);
       await waitForPrintablePage(page);
@@ -300,7 +303,7 @@ test('omits failed question and answer-key renders and recovers after a correcti
       ]);
       await expect(page.getByText('Consider two numbers')).toHaveCount(0);
 
-      const incomplete = await downloadPrintableWord(page, printUrl, query);
+      const incomplete = await downloadPrintableWord(page, printUrl, 'answer_key');
       expect(incomplete.status()).toBe(400);
       expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
 
@@ -313,14 +316,10 @@ test('omits failed question and answer-key renders and recovers after a correcti
     await fs.writeFile(serverPath, original);
     await syncCourse(testCoursePath);
   }
-  await page.goto(`${printUrl}/preview?paper_size=Letter&document=answer_key`);
+  await page.goto(`${printUrl}/preview?${search}&document=answer_key`);
   await waitForPrintablePage(page);
   expect(await readWarnings(page)).toEqual([]);
   await expect(page.getByText('Consider two numbers')).toBeVisible();
-  const recovered = await downloadPrintableWord(
-    page,
-    printUrl,
-    'paper_size=Letter&document=answer_key',
-  );
+  const recovered = await downloadPrintableWord(page, printUrl, 'answer_key');
   expect(recovered.status()).toBe(200);
 });
