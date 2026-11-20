@@ -5,7 +5,7 @@
 }
 
 .pl-rich-text-editor-container .ql-tooltip {
-  z-index: 1;
+  z-index: 6;
 }
 
 .pl-rich-text-editor-container:focus-within {
@@ -17,7 +17,8 @@
   box-shadow: 3px 3px 3px grey;
 }
 
-.pl-rich-text-editor-counter-container {
+.pl-rich-text-editor-counter-container,
+.pl-rich-text-editor-keyboard-hint {
   border-style: solid;
   border-color: #ccc;
   border-width: 0 1px 1px;
@@ -31,4 +32,9 @@
 .pl-rich-text-editor-container .ql-formula-selected {
   background: rgba(0, 123, 255, 0.25);
   color: black;
+}
+
+/* Keep bubble editors framed while allowing Snow's toolbar seam to share one border. */
+.pl-rich-text-editor-container .ql-container {
+  border: 1px solid #ccc;
 }
