@@ -10,6 +10,7 @@ interface CalculatorAtom {
   value?: string;
   leftDelim?: string;
   rightDelim?: string;
+  isDirty: boolean;
   body: CalculatorAtom[];
   siblings: CalculatorAtom[];
   parent: CalculatorAtom;
@@ -20,6 +21,7 @@ interface CalculatorAtom {
 
 interface CalculatorMathLiveInternals {
   model: {
+    atoms: CalculatorAtom[];
     at(position: number): CalculatorAtom;
     offsetOf(atom: CalculatorAtom): number;
     getSiblingsRange(position: number): [number, number];
@@ -42,6 +44,28 @@ interface CalculatorMathLiveInternals {
 
 function getMathLiveInternals(input: MathfieldElement) {
   return (input as unknown as { _mathfield: CalculatorMathLiveInternals })._mathfield;
+}
+
+/** Display LaTeX serializes a pending fence just like a closed one. Save only the missing edit information, not MathLive's private model or its undo history. */
+export function getPendingCalculatorFences(input: MathfieldElement) {
+  const fences = getMathLiveInternals(input).model.atoms.flatMap((atom, offset) =>
+    atom.type === 'leftright' && atom.rightDelim === '?' ? [offset] : [],
+  );
+  return fences.length > 0 ? { fences, position: input.position } : undefined;
+}
+
+export function restorePendingCalculatorFences(
+  input: MathfieldElement,
+  draft: { fences: number[]; position: number },
+) {
+  const { model } = getMathLiveInternals(input);
+  for (const offset of draft.fences) {
+    const atom = model.atoms.at(offset);
+    if (atom?.type !== 'leftright') continue;
+    atom.rightDelim = '?';
+    atom.isDirty = true;
+  }
+  input.position = draft.position;
 }
 
 function hasOnlyClosingParenthesis(atom: CalculatorAtom) {
@@ -85,7 +109,7 @@ export function wrapInMultiplicationParentheses(input: MathfieldElement) {
       }
       return false;
     });
-    const close = contents[closeIndex];
+    const close = closeIndex === -1 ? undefined : contents[closeIndex];
     const halfFence = close && hasOnlyClosingParenthesis(close);
     const reuseClose = halfFence || (!!close && !outerDepth);
     const reuseParent = !close && !depth && !outerDepth && hasOnlyClosingParenthesis(parent);
@@ -106,6 +130,7 @@ export function wrapInMultiplicationParentheses(input: MathfieldElement) {
     if (close) parent.addChildrenAfter(contents.slice(closeIndex + (reuseClose ? 1 : 0)), group);
     if (reuseParent) {
       parent.parent.addChildrenAfter(parent.removeBranch('body'), parent);
+      // eslint-disable-next-line unicorn/prefer-dom-node-remove -- This is a MathLive atom, not a DOM node.
       parent.parent.removeChild(parent);
     }
     // Leave the caret after the dot and opening fence, before the original contents.
@@ -122,8 +147,9 @@ export function wrapInMultiplicationParentheses(input: MathfieldElement) {
         (event.inputType || event.data) !== 'deleteContentBackward' ||
         !input.selectionIsCollapsed ||
         model.at(input.position) !== start
-      )
+      ) {
         return;
+      }
       event.preventDefault();
       model.setState(before, { silenceNotifications: false });
       field.snapshot();

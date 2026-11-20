@@ -124,6 +124,10 @@ async function checkParenthesisMultiplication(page: Page) {
   await input.pressSequentially('(4');
   await expectLatex(input, String.raw`2\cdot\left(4+3\right)`);
   await expectLatex(output, '=14');
+  await page.reload();
+  await input.press(')');
+  await expectLatex(input, String.raw`2\cdot\left(4\right)+3`);
+  await expectLatex(output, '=11');
   await page.locator('[name="clear"]:visible').click();
 
   for (const seed of ['2+3)+5', '2+(3)+5']) {
