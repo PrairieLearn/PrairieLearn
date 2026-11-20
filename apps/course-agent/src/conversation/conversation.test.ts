@@ -479,9 +479,11 @@ it('refuses messages while limited, and Resume after the reset sends them', asyn
 
 it('adds a message to the running turn, and nothing once the turn cannot take it', async () => {
   stubFetch({ usage: async () => decision() });
-  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const streaming = vi
+    .spyOn(CodexAppServerClient.prototype, 'streaming', 'get')
+    .mockReturnValue(true);
   const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
-  const steer = vi.spyOn(CodexAppServerClient.prototype, 'steer').mockResolvedValue(true);
+  const steer = vi.spyOn(CodexAppServerClient.prototype, 'steer').mockResolvedValue(null);
   const state = await runningConversation();
   const { conversation } = state;
   const steerParts = () =>
@@ -503,9 +505,18 @@ it('adds a message to the running turn, and nothing once the turn cannot take it
   expect(steer).toHaveBeenCalledOnce();
 
   // Codex refuses a message that arrives as the turn ends, and chat history shows none.
-  steer.mockResolvedValueOnce(false);
+  steer.mockResolvedValueOnce('no active turn to steer');
   expect(await conversation.steer({ id: crypto.randomUUID(), text: 'Too late' })).toBe(false);
   expect(steerParts()).toHaveLength(1);
+
+  // Stop closes the response while Codex takes a message, so chat cannot show it.
+  steer.mockImplementationOnce(async () => {
+    streaming.mockReturnValue(false);
+    return null;
+  });
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'As it stops' })).toBe(false);
+  expect(steerParts()).toHaveLength(1);
+  streaming.mockReturnValue(true);
 
   // A review awaiting its result holds new input here as it does between turns.
   const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
@@ -522,14 +533,14 @@ it('adds a message to the running turn, and nothing once the turn cannot take it
 
   await state.finish();
   expect(await conversation.steer({ id: crypto.randomUUID(), text: 'After' })).toBe(false);
-  expect(steer).toHaveBeenCalledTimes(2);
+  expect(steer).toHaveBeenCalledTimes(3);
 });
 
 it('holds a message sent before Codex accepts the turn, and refuses one after Stop', async () => {
   stubFetch({ usage: async () => decision() });
   vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
   const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
-  const steer = vi.spyOn(CodexAppServerClient.prototype, 'steer').mockResolvedValue(true);
+  const steer = vi.spyOn(CodexAppServerClient.prototype, 'steer').mockResolvedValue(null);
   const { conversation } = fixture();
   await conversation.onStart();
   await conversation.persistMessages([

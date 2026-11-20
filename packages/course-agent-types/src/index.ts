@@ -335,13 +335,13 @@ export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema
 /** Tags a message sent while the agent was working, on its part and on Codex's copy of it. */
 export const steerTag = (steerId: string) => `steer:${steerId}`;
 
+export const MAX_STEER_CHARS = 20_000;
+
 /**
  * A message staff send while the agent is working. The agent takes it into account in the turn
  * that is running, so it has no reply of its own. The browser chooses the ID, which makes a
  * repeated request harmless.
  */
-export const MAX_STEER_CHARS = 20_000;
-
 export const SteerInputSchema = z.strictObject({
   id: z.uuid(),
   text: z.string().trim().min(1).max(MAX_STEER_CHARS),

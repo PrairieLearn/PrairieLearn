@@ -143,7 +143,7 @@ export async function resumeCourseAgentConversation(agentConversationId: string)
 
 /**
  * Adds a message to the turn the agent is running. Returns false if no turn could take it, which
- * happens when the agent finishes first.
+ * mostly happens when the agent finishes first.
  */
 export async function steerCourseAgentConversation(agentConversationId: string, steer: SteerInput) {
   const { url, headers } = buildCourseAgentServiceRequest(

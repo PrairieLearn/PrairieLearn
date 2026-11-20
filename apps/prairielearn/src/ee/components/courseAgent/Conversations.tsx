@@ -569,6 +569,7 @@ function Chat({
     if (!replyDenies && !canSend) return;
     // An earlier message the agent finished too soon to take goes out this way instead.
     steer.reset();
+    steerAttemptRef.current = null;
     void send(text, drafts.attachments, replyDenies ? lifecycle.reviewId! : undefined).then(
       (sent) => {
         if (sent) setDraft('');
@@ -799,7 +800,11 @@ function Composer({
             onAttach([...event.clipboardData.files]);
           }}
         />
-        {notice && <div className="small text-body-secondary px-2 pb-2">{notice}</div>}
+        {notice && (
+          <div className="small text-body-secondary px-2 pb-2" role="status">
+            {notice}
+          </div>
+        )}
         <div className="d-flex align-items-center gap-2 px-2 pb-2">
           <input
             ref={fileInputRef}

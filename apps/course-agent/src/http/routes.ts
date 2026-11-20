@@ -108,7 +108,7 @@ conversations.post('/:id/resume', async (c) => {
 });
 
 // A message for the turn that is running. Between turns the browser sends messages over the chat
-// socket instead, so a refusal here means the turn ended first.
+// socket instead.
 conversations.post('/:id/steer', async (c) => {
   const steer = SteerInputSchema.safeParse(await c.req.json().catch(() => null));
   if (!steer.success) return c.text('Invalid message', 400);

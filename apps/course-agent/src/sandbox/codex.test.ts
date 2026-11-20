@@ -214,7 +214,7 @@ describe('course agent turns', () => {
       return state;
     };
     const running = await start('accept');
-    expect(await running.native.steer(message)).toBe(true);
+    expect(await running.native.steer(message)).toBeNull();
     expect(running.commands.find((command) => command.method === 'turn/steer')?.params).toEqual({
       threadId: 'thread',
       expectedTurnId: 'turn',
@@ -227,7 +227,7 @@ describe('course agent turns', () => {
 
     // Codex refuses once the turn has ended. The connection stays usable for the next turn.
     const ended = await start('refuse');
-    expect(await ended.native.steer(message)).toBe(false);
+    expect(await ended.native.steer(message)).toBe('-32600: no active turn to steer');
     await expect(ended.native.interrupt()).resolves.toBeUndefined();
     ended.native.closeStream();
     ended.disconnect();

@@ -446,10 +446,11 @@ export class CodexAppServerClient {
   /**
    * Add a message to the running turn. Codex saves it under the tag at once and cuts off the model
    * reply in progress to start a request that includes it; a running tool call is left to finish.
-   * Returns false if Codex refuses it, which it does once the turn has ended.
+   * Returns null once Codex has it, or Codex's reason for refusing it, which it mostly does
+   * because the turn has ended.
    */
-  async steer(input: Pick<TurnInput, 'text' | 'tag' | 'page'>) {
-    if (!this.turnId) throw new Error('Native turn acceptance is unknown');
+  async steer(input: Pick<TurnInput, 'text' | 'tag' | 'page'>): Promise<string | null> {
+    if (!this.turnId) return 'no native turn';
     try {
       await this.request(
         'turn/steer',
@@ -464,12 +465,12 @@ export class CodexAppServerClient {
         } satisfies TurnSteerParams,
         SteerResult,
       );
-      return true;
+      return null;
     } catch (error) {
       // An error reply is Codex's answer. A closed connection also rejects with a response
       // error, and like any other failure it leaves acceptance unknown.
       if (error instanceof ResponseError && error.code !== ErrorCodes.PendingResponseRejected) {
-        return false;
+        return `${error.code}: ${error.message}`;
       }
       throw error;
     }

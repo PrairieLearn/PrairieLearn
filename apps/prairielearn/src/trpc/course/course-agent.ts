@@ -180,7 +180,7 @@ export const courseAgentRouter = t.router({
       if (!(await steerCourseAgentConversation(conversation.agent_conversation_id, steer))) {
         throw new TRPCError({
           code: 'CONFLICT',
-          message: 'The agent was no longer working when your message arrived. Send it again.',
+          message: 'The agent did not get your message. Send it again.',
         });
       }
     }),

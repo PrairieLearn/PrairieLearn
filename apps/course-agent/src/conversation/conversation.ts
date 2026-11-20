@@ -252,11 +252,8 @@ interface ProviderRequest {
 
 /** Messages staff send while a turn runs, which Codex adds to that turn. */
 interface TurnSteers {
-  /**
-   * Codex's ID for the turn once it accepts the turn's input, or null if an earlier attempt
-   * already delivered that input and no native turn runs.
-   */
-  nativeTurnId?: string | null;
+  /** Whether Codex has accepted the turn's input, so there is a native turn to add to. */
+  accepted: boolean;
   /** Messages sent before Codex accepted the turn, submitted in order once it does. */
   waiting: Parameters<CodexAppServerClient['steer']>[0][];
   /** A repeated request for a message this turn already has adds nothing. */
@@ -1059,7 +1056,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
-    const steers: TurnSteers = { waiting: [], ids: new Set(), order: Promise.resolve() };
+    const steers: TurnSteers = {
+      accepted: false,
+      waiting: [],
+      ids: new Set(),
+      order: Promise.resolve(),
+    };
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
       messageId: crypto.randomUUID(),
@@ -1118,13 +1120,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           native.emit(turnMarker(input.tag, summarizeReview(delivered.result)));
           this.settleReview(delivered.id);
         }
-        steers.nativeTurnId = nativeTurnId;
+        steers.accepted = true;
         for (const waiting of steers.waiting.splice(0)) {
-          void this.keepAliveWhile(async () => {
-            if (!(await this.submitSteer(steers, native, waiting))) {
-              log('steer_refused', { tag: waiting.tag });
-            }
-          }).catch((error: unknown) => this.reportError(error));
+          void this.keepAliveWhile(() => this.submitSteer(steers, native, waiting)).catch(
+            (error: unknown) => this.reportError(error),
+          );
         }
       },
       log,
@@ -1175,6 +1175,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const active = this.active;
     const native = this.native;
     const status = this.record.lifecycle.status;
+    const tag = steerTag(steer.id);
+    // A request repeated after a lost reply adds nothing.
+    if (active?.steers.ids.has(steer.id)) return true;
     // A review awaiting its result and the usage limit refuse input here as they do between
     // turns. A turn that is stopping or whose response has closed can no longer show the message.
     if (
@@ -1183,27 +1186,30 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       active.finishing ||
       (status !== 'starting' && status !== 'waiting_for_agent') ||
       this.record.review ||
-      this.metering.limitedUntil ||
-      active.steers.nativeTurnId === null
+      this.metering.limitedUntil
     ) {
-      return false;
+      // Not a refusal if this repeats a request whose turn has since ended.
+      return this.messages.some(({ parts }) =>
+        parts.some((part) => part.type === 'data-steer' && part.id === tag),
+      );
     }
     const { steers } = active;
-    if (steers.ids.has(steer.id)) return true;
     steers.ids.add(steer.id);
     const input = {
-      tag: steerTag(steer.id),
+      tag,
       text: steer.text,
       ...(steer.location ? { page: describePageLocation(steer.location) } : {}),
     };
-    if (steers.nativeTurnId === undefined) {
+    if (!steers.accepted) {
       // Captured with the turn's input, like its prompt: submitted once Codex accepts the turn,
       // and never submitted later if the turn ends first.
       native.emit(steerMarker(steer));
       steers.waiting.push(input);
       return true;
     }
-    if (!(await this.submitSteer(steers, native, input))) {
+    // Stop can close the response while Codex takes the message. Chat can no longer show it
+    // then, so it counts as not sent and staff keep the text.
+    if (!(await this.submitSteer(steers, native, input)) || !native.streaming) {
       steers.ids.delete(steer.id);
       return false;
     }
@@ -1211,14 +1217,18 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     return true;
   }
 
-  private submitSteer(
+  private async submitSteer(
     steers: TurnSteers,
     native: CodexAppServerClient,
     input: TurnSteers['waiting'][number],
   ) {
     const submitted = steers.order.then(() => native.steer(input));
     steers.order = submitted.catch(() => {});
-    return submitted;
+    const refusal = await submitted;
+    if (refusal !== null) {
+      logEvent('steer_refused', { conversationId: this.name, tag: input.tag, reason: refusal });
+    }
+    return refusal === null;
   }
 
   /** Runs alongside sandbox startup, so the title adds no latency to the first turn. */
