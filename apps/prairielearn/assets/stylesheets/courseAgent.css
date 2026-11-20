@@ -142,6 +142,17 @@
   padding: 0.25em 0;
 }
 
+/* Highlighted code stands in for a plain code block, so it is spaced like one. */
+.course-agent-panel .markdown-body .course-agent-code {
+  margin-bottom: 1rem;
+}
+
+/* A long diff scrolls in place instead of pushing the rest of the reply out of view. */
+.course-agent-diff-file {
+  max-height: 24rem;
+  overflow: auto;
+}
+
 .course-agent-page-link {
   background-color: var(--bs-body-bg);
   transition:
