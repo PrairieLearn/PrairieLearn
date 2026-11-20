@@ -391,8 +391,6 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
                 text={change.diff.text}
                 path={change.path}
                 change={FILE_CHANGES[change.change]}
-                // The row above already names the file.
-                showFileNames={false}
               />
               <ClipNote clip={change.diff} />
             </div>

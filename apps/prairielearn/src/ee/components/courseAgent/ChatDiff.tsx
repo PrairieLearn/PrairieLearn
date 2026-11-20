@@ -1,7 +1,6 @@
 import { type ReactNode, Suspense, lazy, useMemo } from 'react';
-import { useIsCodeFenceIncomplete } from 'streamdown';
 
-import { type ChatDiffFile, MAX_DIFF_CHARS, parseChatDiff } from './parseChatDiff.js';
+import type { DiffFile } from './diffFiles.js';
 
 // The viewer and its syntax highlighter are a large download, so they are kept out of the chat's
 // own code. Loading starts as soon as the chat does, rather than at the first code block, so that a
@@ -31,52 +30,38 @@ function PlainCode({ className, children }: { className?: string; children?: Rea
   );
 }
 
-/**
- * Shows a diff the agent wrote or made as highlighted changes. A diff that is still streaming is
- * shown as far as it has come. Text the viewer can't show is left as plain text.
- */
+/** One file's changes from an agent's edit, which start at the first hunk, with no file header. */
 export function ChatDiff({
   text,
   path,
   change,
-  showFileNames = true,
-  streaming = false,
 }: {
   text: string;
-  /** The file the diff is for, used when the diff itself names no file. */
-  path?: string;
-  change?: ChatDiffFile['change'];
-  showFileNames?: boolean;
-  /** Whether more of the diff is still to come. */
-  streaming?: boolean;
+  path: string;
+  change: DiffFile['change'];
 }) {
-  // The viewer parses and highlights again whenever it is given a new diff.
-  const diff = useMemo(
-    () =>
-      parseChatDiff(text, {
-        known: path === undefined ? undefined : { path, change: change ?? 'modified' },
-        streaming,
-      }),
-    [text, path, change, streaming],
+  // The viewer parses and highlights again whenever it is given a new file.
+  const file = useMemo(
+    () => ({
+      path,
+      change,
+      patch: [
+        `--- ${change === 'added' ? '/dev/null' : path}`,
+        `+++ ${change === 'deleted' ? '/dev/null' : path}`,
+        text,
+      ].join('\n'),
+    }),
+    [text, path, change],
   );
-  const plain = <PlainCode>{text}</PlainCode>;
-  if (!diff) {
-    // Nothing of a diff can be shown before its first line arrives, and an empty one stays empty.
-    // A diff too large for the viewer is plain text from the moment it passes the limit.
-    const nothingYet = text.length <= MAX_DIFF_CHARS && (streaming || text.trim() === '');
-    return nothingYet ? null : plain;
-  }
+  if (text.trim() === '') return null;
   return (
     <Suspense>
-      <LazyChatDiffView diff={diff} showFileNames={showFileNames} fallback={plain} />
+      <LazyChatDiffView file={file} fallback={<PlainCode>{text}</PlainCode>} />
     </Suspense>
   );
 }
 
-/**
- * A fenced code block in a reply. Code is syntax-highlighted, and a `diff` block is shown as
- * highlighted changes. Both render this way from their first line, including while streaming.
- */
+/** A fenced code block in a reply, syntax-highlighted by the language named after the fence. */
 export function ChatCodeBlock({
   className,
   children,
@@ -84,14 +69,10 @@ export function ChatCodeBlock({
   className?: string;
   children?: ReactNode;
 }) {
-  const streaming = useIsCodeFenceIncomplete();
   // An empty block has no children at all.
   const code = children ?? '';
   if (typeof code !== 'string') return <PlainCode className={className}>{children}</PlainCode>;
   const language = /(?:^|\s)language-(\S+)/.exec(className ?? '')?.[1];
-  if (language === 'diff' || language === 'patch') {
-    return <ChatDiff text={code} streaming={streaming} />;
-  }
   return (
     <Suspense>
       <LazyChatCodeView code={code.replace(/\n$/, '')} language={language} />

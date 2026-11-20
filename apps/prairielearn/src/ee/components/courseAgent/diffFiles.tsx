@@ -42,16 +42,13 @@ export const CHANGES = {
 } as const;
 
 // Pierre puts +/− flush against the line numbers; leave room on both sides, as GitHub does.
-// Without line numbers, Pierre still draws their column as a thin strip down the side of a diff,
-// which reads as a stray bar next to the +/−; give it no width, as Pierre does for plain files.
-const DIFF_CSS = `
+const INDICATOR_CSS = `
 [data-indicators='classic'] :is([data-line], [data-no-newline]) { padding-inline-start: 3ch; }
 [data-indicators='classic'] :is([data-line], [data-no-newline])::before { left: 1ch; }
-[data-disable-line-numbers] :is([data-gutter-buffer], [data-column-number]) { min-width: 0; border-right: 0; }
 `;
 
 /** What the viewer needs to know about a changed file. */
-interface DiffFile {
+export interface DiffFile {
   path: string;
   change: 'added' | 'modified' | 'deleted';
   /** A unified diff, or `null` for binary files. */
@@ -229,8 +226,6 @@ export function FileChanges({
   split = false,
   binaryNotice = "Binary file can't be previewed.",
   showFileName = true,
-  showLineNumbers = true,
-  css = '',
 }: {
   file: DiffFile;
   /** The parsed patch, or `null` for a binary file. */
@@ -240,9 +235,6 @@ export function FileChanges({
   split?: boolean;
   binaryNotice?: string;
   showFileName?: boolean;
-  showLineNumbers?: boolean;
-  /** More CSS for inside the viewer, which page stylesheets can't reach. */
-  css?: string;
 }) {
   if (!diff) return <FileNotice file={file} message={binaryNotice} />;
   if (diff.hunks.length === 0) {
@@ -265,9 +257,8 @@ export function FileChanges({
         lineDiffType: 'word',
         // Mark changed lines with +/−, not just color.
         diffIndicators: 'classic',
-        unsafeCSS: DIFF_CSS + css,
+        unsafeCSS: INDICATOR_CSS,
         disableFileHeader: !showFileName,
-        disableLineNumbers: !showLineNumbers,
       }}
     />
   );

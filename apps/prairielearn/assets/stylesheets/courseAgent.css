@@ -142,8 +142,8 @@
   padding: 0.25em 0;
 }
 
-/* Code and diffs stand in for a plain code block, so they are spaced like one. */
-.course-agent-panel .markdown-body :is(.course-agent-diff, .course-agent-code) {
+/* Highlighted code stands in for a plain code block, so it is spaced like one. */
+.course-agent-panel .markdown-body .course-agent-code {
   margin-bottom: 1rem;
 }
 

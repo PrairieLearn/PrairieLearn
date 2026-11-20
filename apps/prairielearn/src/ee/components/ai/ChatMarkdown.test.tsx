@@ -1,5 +1,4 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { useIsCodeFenceIncomplete } from 'streamdown';
 import { describe, expect, it } from 'vitest';
 
 import { ChatMarkdown } from './ChatMarkdown.js';
@@ -185,25 +184,5 @@ describe('ChatMarkdown', () => {
     );
 
     expect(html).toContain('<a href="/pl/course/1/file/info.json">info.json</a>');
-  });
-
-  it('tells a custom code block whether more of it is still streaming', () => {
-    function CodeBlock({ children }: { children?: React.ReactNode }) {
-      const unfinished = useIsCodeFenceIncomplete();
-      return (
-        <pre data-unfinished={unfinished}>
-          <code>{children}</code>
-        </pre>
-      );
-    }
-    const html = (content: string, streaming: boolean) =>
-      renderToStaticMarkup(
-        <ChatMarkdown content={content} streaming={streaming} codeBlock={CodeBlock} />,
-      );
-
-    expect(html('```diff\n-a\n+b', true)).toContain('<pre data-unfinished="true"><code>-a\n+b');
-    expect(html('```diff\n-a\n+b\n```\n\nDone', true)).toContain('data-unfinished="false"');
-    // A reply that was cut off is no longer streaming.
-    expect(html('```diff\n-a\n+b', false)).toContain('data-unfinished="false"');
   });
 });

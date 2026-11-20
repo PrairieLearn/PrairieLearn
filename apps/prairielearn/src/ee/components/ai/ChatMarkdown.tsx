@@ -114,7 +114,7 @@ export function ChatMarkdown({
       // prices like `$5 and $10` in a message as math.
       className={clsx(math && 'mathjax_ignore', className)}
       components={allComponents}
-      // Lets a code block know, through `useIsCodeFenceIncomplete`, that more of it is to come.
+      // Streamdown's own streaming behavior, such as `useIsCodeFenceIncomplete`, keys off this.
       isAnimating={streaming}
       // Closing unfinished syntax would also rewrite finished messages, e.g.
       // dropping the `[` from a half-open interval like `[0, 1)`.
