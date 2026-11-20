@@ -1435,10 +1435,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
 
     await withUser(viewer, async () => {
       const api = client(assessment.id, viewer.id);
-      expect((await api.printForms.list.query()).some(({ id }) => id === form.printFormId)).toBe(
-        true,
-      );
-      expect(await api.printForms.questions.query(form)).not.toHaveLength(0);
+      const forms = await api.printForms.list.query();
+      expect(forms.some(({ id }) => id === form.printFormId)).toBe(true);
+      const questions = await api.printForms.questions.query(form);
+      expect(questions).not.toHaveLength(0);
       await expect(api.printForms.create.mutate()).rejects.toMatchObject({
         data: { code: 'FORBIDDEN' },
       });
@@ -1451,6 +1451,33 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await expect(api.printForms.archive.mutate(form)).rejects.toMatchObject({
         data: { code: 'FORBIDDEN' },
       });
+      await expect(
+        api.printForms.reviseSelection.mutate({
+          printFormId: form.printFormId,
+          questionNumber: questions[0].number,
+          included: true,
+        }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(
+        api.printForms.setPaperSize.mutate({
+          printFormId: form.printFormId,
+          paperSize: form.settings.paperSize,
+          expectedForms: forms
+            .filter(({ archived_at }) => archived_at === null)
+            .map((current) => ({
+              id: current.id,
+              paperSize: current.settings.paperSize,
+              locked: current.question_selection_locked_at !== null,
+            })),
+        }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(
+        api.printForms.updateSettings.mutate({
+          printFormId: form.printFormId,
+          settings: form.settings,
+          expectedSettings: form.settings,
+        }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
       await expect(
         api.printableAssessmentExport.pdf.mutate(packetInput(form.printFormId)),
       ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
