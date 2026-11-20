@@ -5,6 +5,8 @@ export const MAX_TITLE_LENGTH = 60;
 // The start of a message is enough to title it. Title requests are not metered, so this also
 // bounds what a huge first message costs.
 export const MAX_TITLE_INPUT_LENGTH = 2000;
+// Titles don't use the agent's model, which may not support reasoning effort 'none'.
+const TITLE_MODEL = 'gpt-6-luna';
 
 const INSTRUCTIONS = [
   'Write a short title for a conversation with the PrairieLearn course agent, based on its first user message.',
@@ -39,18 +41,16 @@ export function normalizeTitle(text: string): string {
 /** Summarizes a conversation's first message into a title, or null if the model gave none. */
 export async function generateTitle({
   apiKey,
-  model,
   message,
 }: {
   apiKey: string;
-  model: string;
   message: string;
 }): Promise<string | null> {
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model,
+      model: TITLE_MODEL,
       instructions: INSTRUCTIONS,
       // Capped by code point, so a surrogate pair is never split.
       input: [...message].slice(0, MAX_TITLE_INPUT_LENGTH).join(''),

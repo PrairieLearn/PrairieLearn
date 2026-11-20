@@ -18,7 +18,7 @@ describe('generateTitle', () => {
     );
     vi.stubGlobal('fetch', fetch);
     const message = '😀'.repeat(MAX_TITLE_INPUT_LENGTH + 10);
-    expect(await generateTitle({ apiKey: 'key', model: 'model', message })).toBe('Edit a question');
+    expect(await generateTitle({ apiKey: 'key', message })).toBe('Edit a question');
     const { input } = JSON.parse(fetch.mock.calls[0][1].body as string) as { input: string };
     expect(input).toBe('😀'.repeat(MAX_TITLE_INPUT_LENGTH));
   });
