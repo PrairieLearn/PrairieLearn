@@ -15,13 +15,104 @@ async function openRawInputRenderingQuestion(page: Page, courseInstance: CourseI
   );
 }
 
-test('restores literal matrix input after grading', async ({ page, courseInstance }) => {
+test.beforeEach(async ({ page, courseInstance }) => {
   await openRawInputRenderingQuestion(page, courseInstance);
+});
+
+test('shows safe raw-input diagnostics and restores literal matrix input', async ({ page }) => {
+  await page.getByRole('textbox', { name: 'String value' }).fill('café\u200b<img src=x>');
+  await page.getByRole('textbox', { name: 'Big O value' }).fill('n');
+  await page.getByRole('textbox', { name: 'Integer value' }).fill('1');
+  await page.getByRole('textbox', { name: 'Number value', exact: true }).fill('1');
+  await page.getByRole('textbox', { name: 'Units value' }).fill('1 meter');
+  for (const [name, value] of [
+    ['Row 1, Column 1', '１'],
+    ['Row 1, Column 2', '2'],
+    ['Row 2, Column 1', '3'],
+    ['Row 2, Column 2', '4'],
+  ] as const) {
+    await page.getByRole('textbox', { name }).fill(value);
+  }
+  await page.getByRole('button', { name: /Save & Grade/ }).click();
+  await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
+    timeout: 15_000,
+  });
+
+  await expect(page.getByRole('textbox', { name: 'Matrix value', exact: true })).toHaveValue(
+    '[1,\u200b 2]',
+  );
+
+  for (const label of ['String value', 'Big O value', 'Units value', 'Valid matrix value']) {
+    await expect(
+      page.getByRole('button', { name: `Answer as entered for ${label}` }),
+    ).toBeVisible();
+  }
+  for (const label of ['Integer value', 'Number value', 'Invalid number value', 'Matrix value']) {
+    await expect(page.getByRole('button', { name: `Answer as entered for ${label}` })).toHaveCount(
+      0,
+    );
+  }
+  await expect(page.getByText('1<U+200b>', { exact: true })).toBeVisible();
+
+  const stringButton = page.getByRole('button', { name: 'Answer as entered for String value' });
+  await stringButton.click();
+  const popover = page.getByRole('dialog').filter({ hasText: 'café<U+200b>' });
+  await expect(popover).toHaveClass(/popover-wide/);
+  await expect(popover).toHaveClass(/popover-scrollable/);
+  await expect(popover).toContainText('café<U+200b><img src=x>');
+  await expect(popover.getByRole('img')).toHaveCount(0);
+  await expect(popover).toContainText('caf<U+e9><U+200b><img src=x>');
+  await popover.getByRole('button', { name: 'Close' }).click();
+
+  const button = page.getByRole('button', { name: 'Answer as entered for Matrix grid' });
+  await button.click();
+
+  const matrixPopover = page.getByRole('dialog').filter({ hasText: '<U+ff11>' });
+  const tables = matrixPopover.getByRole('table');
+  await expect(tables).toHaveCount(2);
+  await expect(matrixPopover.getByRole('row')).toHaveCount(4);
+  await expect(matrixPopover.getByRole('cell')).toHaveCount(8);
+  await expect(matrixPopover).toContainText('１');
+  await expect(matrixPopover).toContainText('<U+ff11>');
+});
+
+test('shows text and formula editor diagnostics for symbolic input', async ({ page }) => {
+  const editedLatex = 'x+1';
+  const formulaEditor = page.getByLabel('Symbolic formula value');
+  await formulaEditor.evaluate((element, value) => {
+    (element as HTMLElement & { value: string }).value = value;
+    element.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+  }, editedLatex);
+  await expect(page.locator('input[name="symbolic_formula_value-latex"]')).toHaveValue(editedLatex);
 
   await page.getByRole('button', { name: /Save & Grade/ }).click();
   await expect(page.getByRole('heading', { name: 'Submitted answer' })).toBeVisible({
     timeout: 15_000,
   });
 
-  await expect(page.getByRole('textbox', { name: 'Matrix value' })).toHaveValue('[1,\u200b 2]');
+  const textButton = page.getByRole('button', { name: 'Answer as entered for Symbolic value' });
+  await expect(textButton).toBeVisible();
+  await textButton.click();
+  const textPopover = page.getByRole('dialog').filter({ hasText: 'x<U+200b>' });
+  await expect(textPopover).toBeVisible();
+  await textPopover.getByRole('button', { name: 'Close' }).click();
+
+  const formulaButton = page.getByRole('button', {
+    name: 'Answer as entered for Symbolic formula value',
+  });
+  await expect(formulaButton).toBeVisible();
+  await formulaButton.click();
+
+  const formulaPopover = page.getByRole('dialog').filter({ hasText: 'Formula editor input:' });
+  await expect(formulaPopover).toBeVisible();
+  const formulaPreview = formulaPopover.locator('math-field');
+  await expect(formulaPreview).toHaveCount(1);
+  await expect
+    .poll(() =>
+      formulaPreview.evaluate((element) =>
+        (element as HTMLElement & { getValue(format: string): string }).getValue('latex'),
+      ),
+    )
+    .toBe(editedLatex);
+  await expect(formulaPopover.locator('pre')).toHaveText(editedLatex);
 });

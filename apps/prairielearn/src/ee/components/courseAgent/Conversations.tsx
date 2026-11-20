@@ -1,20 +1,31 @@
 import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
-import type { UIMessage } from 'ai';
+import { type UIMessage } from 'ai';
+import clsx from 'clsx';
 import {
   type KeyboardEvent,
   type ReactNode,
   type SyntheticEvent,
+  useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
+import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
+import { z } from 'zod';
 
-import type { ConversationState } from '@prairielearn/course-agent-types';
+import {
+  type ConversationState,
+  type InputRequestPart,
+  InputRequestPartSchema,
+  type ToolCall,
+  ToolCallSchema,
+} from '@prairielearn/course-agent-types';
 import { run } from '@prairielearn/run';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
@@ -25,16 +36,29 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
 
+import {
+  type DraftAttachment,
+  DraftAttachmentList,
+  FileDropArea,
+  SentAttachments,
+  hasInvalidAttachment,
+  revokePreviews,
+  uploadDraftAttachments,
+  useDraftAttachments,
+} from './Attachments.js';
+import { BlockedNotice } from './BlockedNotice.js';
+import { ChatCodeBlock } from './ChatDiff.js';
 import { ConversationStats } from './ConversationStats.js';
+import { InputRequestCard } from './InputRequestCard.js';
+import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
+import { RequestChangesCard } from './RequestChangesCard.js';
+import { ToolCalls } from './ToolCalls.js';
+import { UserMessage } from './UserMessage.js';
+import { courseFileLinkTransform } from './courseFileLinks.js';
+import { currentPageLocation } from './pageLocation.js';
 
-const BLOCKED_MESSAGES = {
-  startup_failed:
-    'Your workspace could not start. Resume to clear the incomplete setup, then send a new message.',
-  runtime_failed:
-    'The course agent was interrupted. Some edits may have completed, and its reply may be incomplete. Resume to recover your workspace. Your previous message will not run again.',
-  checkpoint_failed: 'Your workspace could not be saved. Resume to try saving it again.',
-  cleanup_failed: 'Your workspace is saved, but cleanup did not finish. Resume to finish cleanup.',
-} satisfies Record<Extract<ConversationState, { status: 'blocked' }>['reason'], string>;
+/** The agent service shows a review in chat history by its ID only. */
+const ReviewPartSchema = z.object({ reviewId: z.string() });
 
 const NEW_CONVERSATION = 'new';
 
@@ -116,6 +140,9 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
+  const drafts = useDraftAttachments();
+  // A new conversation's first message uploads its attachments once the conversation exists.
+  const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
   const create = useMutation({
     ...trpc.courseAgent.create.mutationOptions(),
     onSuccess: (conversation) => {
@@ -124,16 +151,20 @@ function ConversationPicker({
         ...(current ?? []),
       ]);
       setPickedId(conversation.id);
-      setDraft('');
+      // The new conversation's chat now owns the attachments and their previews.
+      drafts.setAttachments([]);
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
+    onError: (_error, { text }) => setDraft(text),
   });
 
   const submitNew = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
     if (!text || create.isPending) return;
+    setInitialAttachments(drafts.attachments);
     create.mutate({ text });
+    setDraft('');
   };
 
   const createError = getAppError<CourseAgentError['Create']>(create.error);
@@ -176,6 +207,7 @@ function ConversationPicker({
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
               setDraft('');
+              drafts.clear();
               create.reset();
             }}
           >
@@ -190,15 +222,26 @@ function ConversationPicker({
           conversationId={selectedId}
           showConversationStats={showConversationStats}
           chatCsrfToken={chatCsrfToken}
-          initialMessage={create.data?.id === selectedId ? create.variables?.text : undefined}
+          initialMessage={
+            create.data?.id === selectedId && create.variables
+              ? { text: create.variables.text, attachments: initialAttachments }
+              : undefined
+          }
           onInitialMessageSent={create.reset}
         />
       ) : active ? (
-        <>
+        <FileDropArea enabled={!create.isPending} onDrop={drafts.add}>
           <div className="flex-grow-1 p-3">
-            <p className="text-muted text-center my-4">
-              Ask the course agent about your course or about PrairieLearn.
-            </p>
+            {create.isPending ? (
+              <div className="d-flex flex-column gap-3">
+                <UserMessage text={create.variables.text} />
+                <PendingStatus label="Starting sandbox…" />
+              </div>
+            ) : (
+              <p className="text-muted text-center my-4">
+                Ask the course agent about your course or about PrairieLearn.
+              </p>
+            )}
             {create.isError && (
               <AppErrorAlert error={createError} render={{ UNKNOWN: ({ message }) => message }} />
             )}
@@ -207,10 +250,13 @@ function ConversationPicker({
             draft={draft}
             disabled={create.isPending}
             pending={create.isPending}
+            attachments={drafts.attachments}
+            onAttach={drafts.add}
+            onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
             onSubmit={submitNew}
           />
-        </>
+        </FileDropArea>
       ) : null}
     </div>
   );
@@ -222,6 +268,15 @@ function Loading() {
       <Spinner animation="border" size="sm" role="status">
         <span className="visually-hidden">Loading</span>
       </Spinner>
+    </div>
+  );
+}
+
+function PendingStatus({ label }: { label: string }) {
+  return (
+    <div className="text-muted small" role="status">
+      <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
+      {label}
     </div>
   );
 }
@@ -238,24 +293,58 @@ function Chat({
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
-  initialMessage: string | undefined;
+  initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const setTitle = useMutation({
+    ...trpc.courseAgent.setTitle.mutationOptions(),
+    onSuccess: async (updated) => {
+      // A list fetch that started before the save would otherwise restore the old title.
+      await queryClient.cancelQueries({ queryKey: trpc.courseAgent.list.queryKey() });
+      queryClient.setQueryData(trpc.courseAgent.list.queryKey(), (current) =>
+        current?.map((conversation) => (conversation.id === updated.id ? updated : conversation)),
+      );
+    },
+    // The next state update retries the save.
+    onError: () => {
+      savingTitleRef.current = null;
+    },
+  });
+  // State updates repeat while a save is in flight, so save each generated title once.
+  const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
   const [connectionFailed, setConnectionFailed] = useState(false);
+  // Chat remounts per conversation, so this is the message that created it.
+  const [initialText, setInitialText] = useState(initialMessage?.text);
+  // Bridges sending to an offline sandbox and the server reporting that it is starting.
+  const [awaitingStart, setAwaitingStart] = useState(initialMessage !== undefined);
   const agent = useAgent<ConversationState>({
     agent: 'Conversation',
     basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
     query: { csrfToken: chatCsrfToken },
-    onStateUpdate: setLifecycle,
+    onStateUpdate: (state) => {
+      setLifecycle(state);
+      if (state.status !== 'offline') setAwaitingStart(false);
+      // The agent service generates the title; the owner's browser saves it to the list.
+      const savedTitle = queryClient
+        .getQueryData(trpc.courseAgent.list.queryKey())
+        ?.find((conversation) => conversation.id === conversationId)?.title;
+      if (state.title && state.title !== savedTitle && state.title !== savingTitleRef.current) {
+        savingTitleRef.current = state.title;
+        setTitle.mutate({ conversationId, title: state.title });
+      }
+    },
     onOpen: () => setConnectionFailed(false),
     onError: () => setConnectionFailed(true),
     onClose: () => {
       setHistoryReady(false);
       setLifecycle(null);
       setConnectionFailed(true);
+      // A send may have been lost with the socket, so let the reconnect's lifecycle decide.
+      setAwaitingStart(false);
     },
     onMessage: (event) => {
       const message = JSON.parse(event.data) as OutgoingMessage;
@@ -278,24 +367,124 @@ function Chat({
   });
   const resume = useMutation(trpc.courseAgent.resume.mutationOptions());
   const resumeError = getAppError<CourseAgentError['Resume']>(resume.error);
-  const readyToSend = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
-  const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
+  const pendingReview = lifecycle?.reviewId != null;
+  const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
+  const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
+  // A new conversation's first attachments start in the composer, where their uploads show progress.
+  const drafts = useDraftAttachments(initialMessage?.attachments);
+  const [sending, setSending] = useState(false);
+  const reviewInput = lifecycle?.reviewId
+    ? { conversationId, reviewId: lifecycle.reviewId }
+    : skipToken;
+  const review = useQuery({
+    ...trpc.courseAgent.getReview.queryOptions(reviewInput),
+    retry: false,
+  });
+  // A message sent while a review awaits a decision denies it, and the agent receives the denial
+  // with the message. A denial by message the agent has not received can be sent again.
+  const replyDenies =
+    pendingReview &&
+    agentIdle &&
+    (review.data?.status === 'pending' ||
+      (review.data?.status === 'decided' && review.data.result?.viaMessage === true));
+  const deny = useMutation({
+    ...trpc.courseAgent.postReviewDecision.mutationOptions(),
+    retry: false,
+    // On a conflict the draft stays, and the review shows the decision that won.
+    // Not awaited: the message is sent once the denial is delivered, not after the refetch.
+    onSettled: (_, __, { conversationId, reviewId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: trpc.courseAgent.getReview.queryKey({ conversationId, reviewId }),
+      });
+    },
+  });
+  const denyError = getAppError<CourseAgentError['PostReviewDecision']>(deny.error);
+  const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
+
+  const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
+  const { setStatus, setAttachments } = drafts;
+  const { reset: resetDeny, mutateAsync: denyAsync } = deny;
+  const offline = lifecycle?.status === 'offline';
+  /**
+   * Upload the attachments, deny the review if the message replies to one, then send. A failed
+   * upload or a refused denial keeps the draft for another try.
+   */
+  const send = useCallback(
+    async (text: string, attachments: DraftAttachment[], deniedReviewId?: string) => {
+      setSending(true);
+      const files = await uploadDraftAttachments(attachments, {
+        url: uploadsUrl,
+        csrfToken: chatCsrfToken,
+        setStatus,
+      });
+      // Denying only after the uploads succeed means a failed upload can't leave the review denied
+      // without its message. PrairieLearn has delivered the denial when this resolves, so the
+      // message's turn follows it. On a conflict the review shows the decision that won.
+      const denied =
+        files && deniedReviewId
+          ? await denyAsync({
+              conversationId,
+              reviewId: deniedReviewId,
+              decision: 'denied',
+              viaMessage: true,
+            }).then(
+              () => true,
+              () => false,
+            )
+          : true;
+      setSending(false);
+      if (!files || !denied) return false;
+      if (offline) setAwaitingStart(true);
+      // A refused denial's error no longer applies once the message goes out normally.
+      resetDeny();
+      void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
+      // An answer chosen on an input request leaves the composer's attachments alone.
+      if (attachments.length > 0) {
+        revokePreviews(attachments);
+        setAttachments([]);
+      }
+      return true;
+    },
+    [
+      uploadsUrl,
+      chatCsrfToken,
+      conversationId,
+      setStatus,
+      setAttachments,
+      resetDeny,
+      denyAsync,
+      sendMessage,
+      offline,
+    ],
+  );
+
   const initialMessageSentRef = useRef(false);
   // A newly created conversation must receive history before its first prompt is handed to the SDK.
   useEffect(() => {
     if (!connected || !readyToSend || !initialMessage || initialMessageSentRef.current) return;
     initialMessageSentRef.current = true;
-    void sendMessage({ text: initialMessage });
+    const { text, attachments } = initialMessage;
+    void send(text, attachments).then((sent) => {
+      if (sent) return;
+      // The first message was shown as sent, so return it to the composer for another try.
+      setInitialText(undefined);
+      setAwaitingStart(false);
+      setDraft(text);
+    });
     onInitialMessageSent();
-  }, [connected, readyToSend, initialMessage, onInitialMessageSent, sendMessage]);
+  }, [connected, readyToSend, initialMessage, onInitialMessageSent, send]);
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
   const showThinking = run(() => {
-    if (!responseActive || connectionFailed || connectionError) {
+    if (
+      !(responseActive || lifecycle?.status === 'waiting_for_agent') ||
+      connectionFailed ||
+      connectionError
+    ) {
       return false;
     }
     const lastMessage = messages.at(-1);
@@ -306,60 +495,131 @@ function Chat({
       if (part.type === 'text' || part.type === 'reasoning') {
         return part.text.trim().length > 0;
       }
-      return false;
+      return toolCallOf(part) !== null || navigationOf(part) !== null || isReloadPart(part);
     });
   });
+  // The server reports the turn's lifecycle before the SDK marks the response active.
+  const startingSandbox =
+    !connectionFailed &&
+    !connectionError &&
+    (lifecycle?.status === 'starting' ||
+      ((lifecycle === null || lifecycle.status === 'offline') &&
+        (awaitingStart || responseActive)));
+  const pendingLabel = startingSandbox ? 'Starting sandbox…' : showThinking ? 'Thinking…' : null;
+  const showInitialText =
+    initialText !== undefined && !messages.some((message) => message.role === 'user');
+  const awaitingReviewId =
+    !responseActive && (lifecycle?.status === 'waiting_for_user' || lifecycle?.status === 'offline')
+      ? (lifecycle.reviewId ?? null)
+      : null;
+  // An input request is open until staff send their next message, which answers it however it is sent.
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
+  const latest = messages.at(-1);
+  // The agent writes its closing message after requesting a review or input, so the request's card
+  // waits for the turn to end rather than moving down as that text arrives. A review being
+  // delivered is already decided and stays shown.
+  const turnRunning = canStop;
+  const hiddenReviewId =
+    turnRunning && review.data?.status !== 'decided' ? (lifecycle.reviewId ?? null) : null;
+  const inputRequestOpen =
+    !turnRunning &&
+    latest?.role === 'assistant' &&
+    latest.parts.some((part) => part.type === 'data-input-request');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  // A stable transform lets memoized Markdown blocks skip re-rendering.
+  const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
+
+  const canSend = connected && readyToSend && !responseActive && !sending;
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || responseActive || !connected || !readyToSend) return;
-    void sendMessage({ text });
-    setDraft('');
+    if (!text || responseActive || !connected || sending || deny.isPending) return;
+    if (!replyDenies && !canSend) return;
+    void send(text, drafts.attachments, replyDenies ? lifecycle.reviewId! : undefined).then(
+      (sent) => {
+        if (sent) setDraft('');
+      },
+    );
   };
 
   return (
-    <div className="d-flex flex-column flex-grow-1 overflow-hidden">
-      <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
+    <FileDropArea enabled={!sending} onDrop={drafts.add}>
+      <div
+        ref={stickToBottom.scrollRef}
+        className="flex-grow-1 overflow-y-auto"
+        // Scrollable regions must be reachable by keyboard. Safari only scrolls with Page Up, Page
+        // Down, or the arrow keys when the scrollable area itself has focus.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        role="region"
+        aria-label="Conversation"
+      >
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
-          {!historyReady && !connectionError && !connectionFailed && <Loading />}
-          {historyReady && messages.length === 0 && (
+          {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
+            <Loading />
+          )}
+          {historyReady && !showInitialText && messages.length === 0 && (
             <p className="text-muted text-center my-4">
               Ask the course agent about your course or about PrairieLearn.
             </p>
           )}
-          {messages.map((message) => (
-            <Message key={message.id} message={message} />
+          {messages.map((message, index) => (
+            <Message
+              key={message.id}
+              message={message}
+              live={responseActive && index === messages.length - 1}
+              conversationId={conversationId}
+              uploadsUrl={uploadsUrl}
+              awaitingReviewId={awaitingReviewId}
+              hiddenReviewId={hiddenReviewId}
+              turnRunning={turnRunning && index === messages.length - 1}
+              linkTransform={linkTransform}
+              answered={index < lastUserIndex}
+              canAnswer={canSend}
+              onToolCallExpand={stickToBottom.stopScroll}
+              onAnswer={(text) => void send(text, [])}
+            />
           ))}
-          {showThinking && (
-            <div className="text-muted small">
-              <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
-              Thinking…
-            </div>
-          )}
+          {showInitialText && <UserMessage text={initialText} />}
+          {/* Stop can end the stream before history records the review, which would otherwise
+              leave the conversation waiting on a review with no card to decide it. */}
+          {historyReady &&
+            lifecycle?.reviewId &&
+            lifecycle.reviewId !== hiddenReviewId &&
+            !reviewInHistory(messages, lifecycle.reviewId) && (
+              <RequestChangesCard
+                conversationId={conversationId}
+                reviewId={lifecycle.reviewId}
+                canResume={awaitingReviewId === lifecycle.reviewId}
+              />
+            )}
+          {pendingLabel && <PendingStatus label={pendingLabel} />}
           {lifecycle?.status === 'blocked' && (
+            <BlockedNotice
+              state={lifecycle}
+              disabled={!connected || resume.isPending}
+              onResume={() => resume.mutate({ conversationId })}
+            />
+          )}
+          {lifecycle?.sandboxLost && (
             <Alert variant="warning">
-              <p>{BLOCKED_MESSAGES[lifecycle.reason]}</p>
-              <Button
-                variant="outline-dark"
-                size="sm"
-                disabled={!connected || resume.isPending}
-                onClick={() => resume.mutate({ conversationId })}
-              >
-                Resume
-              </Button>
+              The course agent stopped unexpectedly and lost the changes it made since it last
+              paused. Reviews you already decided are not affected; each shows what was saved.
             </Alert>
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
             <p className="text-muted" role="status">
               {lifecycle.status === 'stopping'
                 ? 'Stopping the course agent…'
-                : 'Saving your workspace…'}
+                : 'Pausing the course agent…'}
             </p>
           )}
           {resume.isError && (
             <AppErrorAlert error={resumeError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
+          {deny.isError && (
+            <AppErrorAlert error={denyError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
           {(connectionError || connectionFailed) && (
             <Alert variant="danger">
@@ -375,15 +635,29 @@ function Chat({
       </div>
       <Composer
         draft={draft}
-        disabled={!connected || !readyToSend}
+        disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
+        placeholder={
+          replyDenies
+            ? 'Explain what to change…'
+            : inputRequestOpen
+              ? 'Reply to the agent, or ask something else…'
+              : undefined
+        }
+        sendLabel={replyDenies ? 'Deny and send' : undefined}
+        pending={sending || deny.isPending}
+        attachments={drafts.attachments}
         stopDisabled={!connected || !canStop}
+        onAttach={drafts.add}
+        onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
         onSubmit={submit}
         onStop={responseActive || canStop ? () => void stop() : undefined}
       >
-        {showConversationStats && <ConversationStats state={lifecycle} />}
+        {showConversationStats && (
+          <ConversationStats state={lifecycle} conversationId={conversationId} />
+        )}
       </Composer>
-    </div>
+    </FileDropArea>
   );
 }
 
@@ -392,7 +666,12 @@ function Composer({
   onDraftChange,
   onSubmit,
   disabled,
+  placeholder = 'Ask the course agent…',
+  sendLabel = 'Send',
   pending = false,
+  attachments,
+  onAttach,
+  onRemoveAttachment,
   stopDisabled = false,
   children,
   onStop,
@@ -401,63 +680,250 @@ function Composer({
   onDraftChange: (draft: string) => void;
   onSubmit: (event?: SyntheticEvent) => void;
   disabled: boolean;
+  placeholder?: string;
+  sendLabel?: string;
+  /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
+  attachments: DraftAttachment[];
+  onAttach: (files: File[]) => void;
+  onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
   children?: ReactNode;
   onStop?: () => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const invalidAttachment = hasInvalidAttachment(attachments);
+  const submit = (event: SyntheticEvent) => {
+    event.preventDefault();
+    if (!invalidAttachment) onSubmit(event);
+  };
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-      onSubmit(event);
+      submit(event);
     }
   };
 
   return (
-    <Form className="border-top p-3" onSubmit={onSubmit}>
-      <Form.Control
-        as="textarea"
-        rows={3}
-        value={draft}
-        placeholder="Ask the course agent…"
-        aria-label="Message"
-        disabled={pending}
-        onChange={(event) => onDraftChange(event.target.value)}
-        onKeyDown={onKeyDown}
-      />
-      <div className="d-flex justify-content-end gap-2 mt-2">
-        {children}
-        {onStop ? (
-          <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
-            <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-            Stop
+    <Form className="border-top p-3" onSubmit={submit}>
+      <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
+        <DraftAttachmentList
+          attachments={attachments}
+          sending={pending}
+          onRemove={onRemoveAttachment}
+        />
+        <Form.Control
+          as="textarea"
+          rows={2}
+          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
+          value={draft}
+          placeholder={placeholder}
+          aria-label="Message"
+          disabled={pending}
+          onChange={(event) => onDraftChange(event.target.value)}
+          onKeyDown={onKeyDown}
+          onPaste={(event) => {
+            if (pending || event.clipboardData.files.length === 0) return;
+            // Copied cells and rich text carry an image of themselves beside their text; paste the text.
+            if (
+              event.clipboardData.getData('text/plain') &&
+              event.clipboardData.getData('text/html')
+            ) {
+              return;
+            }
+            event.preventDefault();
+            onAttach([...event.clipboardData.files]);
+          }}
+        />
+        <div className="d-flex align-items-center gap-2 px-2 pb-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(event) => {
+              onAttach([...(event.target.files ?? [])]);
+              event.target.value = '';
+            }}
+          />
+          <Button
+            variant="link"
+            size="sm"
+            className="course-agent-icon-button"
+            aria-label="Attach files"
+            disabled={pending}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
-        ) : (
-          <Button type="submit" size="sm" aria-label="Send" disabled={!draft.trim() || disabled}>
-            <i className="bi bi-send" aria-hidden="true" />
-          </Button>
-        )}
+          <div className="d-flex align-items-center gap-2 ms-auto">
+            {children}
+            {onStop ? (
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                disabled={stopDisabled}
+                onClick={onStop}
+              >
+                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+                Stop
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="sm"
+                aria-label={sendLabel}
+                disabled={!draft.trim() || disabled || pending || invalidAttachment}
+              >
+                {pending ? (
+                  <Spinner animation="border" size="sm" aria-hidden="true" />
+                ) : (
+                  <i className="bi bi-send" aria-hidden="true" />
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </Form>
   );
 }
 
-function Message({ message }: { message: UIMessage }) {
+function reviewInHistory(messages: UIMessage[], reviewId: string) {
+  return messages.some((message) =>
+    message.parts.some(
+      (part) =>
+        part.type === 'data-review' &&
+        ReviewPartSchema.safeParse(part.data).data?.reviewId === reviewId,
+    ),
+  );
+}
+
+/** Parts from an older or newer agent service may not match; show only what parses. */
+function toolCallOf(part: UIMessage['parts'][number]) {
+  if (part.type !== 'data-tool') return null;
+  return ToolCallSchema.safeParse(part.data).data ?? null;
+}
+
+function Message({
+  message,
+  live,
+  conversationId,
+  uploadsUrl,
+  awaitingReviewId,
+  hiddenReviewId,
+  turnRunning,
+  linkTransform,
+  onToolCallExpand,
+  answered,
+  canAnswer,
+  onAnswer,
+}: {
+  message: UIMessage;
+  /** Staff have sent a message since this one, which answers any input it requests. */
+  answered: boolean;
+  canAnswer: boolean;
+  onAnswer: (text: string) => void;
+  /** Whether this message is still streaming. */
+  live: boolean;
+  conversationId: string;
+  uploadsUrl: string;
+  /** An idle conversation's review whose result the agent has not received. */
+  awaitingReviewId: string | null;
+  /** A review requested by the running turn, whose card waits for the turn to end. */
+  hiddenReviewId: string | null;
+  /** The agent's turn that writes this message is running, so its input requests wait too. */
+  turnRunning: boolean;
+  linkTransform: UrlTransform;
+  /** Opening a tool call must not scroll it out from under the pointer. */
+  onToolCallExpand: () => void;
+}) {
   if (message.role === 'user') {
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     return (
-      <div className="align-self-end course-agent-user-message bg-body-secondary rounded-3 px-3 py-2">
-        {text}
+      <div className="d-flex flex-column align-items-end gap-2">
+        <SentAttachments message={message} uploadsUrl={uploadsUrl} />
+        <UserMessage text={text} />
       </div>
     );
   }
-  return (
-    <div className="d-flex flex-column gap-2">
-      {message.parts.map((part, index) => {
-        const key = `part-${index}`;
-        if (part.type === 'text') return <TextPart key={key} part={part} />;
-        if (part.type === 'reasoning') return <ReasoningBlock key={key} part={part} />;
-        return null;
-      })}
-    </div>
-  );
+  // Consecutive tool calls render together so runs of the same kind can be grouped.
+  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
+  const segments: Segment[] = [];
+  message.parts.forEach((part, index) => {
+    const call = toolCallOf(part);
+    const last = segments.at(-1);
+    if (call && last && 'calls' in last) last.calls.push(call);
+    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
+  });
+  // Reviews and input requests end the agent's turn, so their cards go at the end of that turn:
+  // before the marker of the turn that continues this message (a review result's delivery), or at
+  // the end of the message.
+  type Card =
+    | { kind: 'review'; reviewId: string }
+    | { kind: 'input'; key: string; request: InputRequestPart };
+  const renderCard = (card: Card) =>
+    card.kind === 'review' ? (
+      // One key per review, so the card keeps its state when the marker arrives.
+      <RequestChangesCard
+        key={`review-${card.reviewId}`}
+        conversationId={conversationId}
+        reviewId={card.reviewId}
+        canResume={awaitingReviewId === card.reviewId}
+      />
+    ) : (
+      <InputRequestCard
+        key={card.key}
+        part={card.request}
+        answered={answered}
+        canAnswer={canAnswer}
+        onAnswer={onAnswer}
+      />
+    );
+  const rendered: ReactNode[] = [];
+  let cards: Card[] = [];
+  for (const segment of segments) {
+    if ('calls' in segment) {
+      rendered.push(
+        <ToolCalls
+          key={segment.key}
+          calls={segment.calls}
+          live={live}
+          onExpand={onToolCallExpand}
+        />,
+      );
+      continue;
+    }
+    const { key, part } = segment;
+    const navigation = navigationOf(part);
+    if (part.type === 'text' && part.text.trim()) {
+      rendered.push(
+        <TextPart
+          key={key}
+          part={part}
+          urlTransform={linkTransform}
+          codeBlock={ChatCodeBlock}
+          math
+        />,
+      );
+    } else if (part.type === 'reasoning' && part.text.trim()) {
+      rendered.push(<ReasoningBlock key={key} part={part} math />);
+    } else if (navigation) {
+      rendered.push(<NavigationCard key={key} navigation={navigation} />);
+    } else if (isReloadPart(part)) {
+      rendered.push(<ReloadCard key={key} />);
+    } else if (part.type === 'data-review') {
+      const { reviewId } = ReviewPartSchema.parse(part.data);
+      if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId });
+    } else if (part.type === 'data-input-request') {
+      const request = InputRequestPartSchema.safeParse(part.data).data;
+      if (request) cards.push({ kind: 'input', key, request });
+    } else if (part.type === 'data-turn') {
+      rendered.push(...cards.map(renderCard));
+      cards = [];
+    }
+  }
+  rendered.push(...cards.filter((card) => card.kind === 'review' || !turnRunning).map(renderCard));
+  // A just-started reply has no visible parts yet and would otherwise add an empty gap.
+  if (rendered.length === 0) return null;
+  return <div className="d-flex flex-column gap-2">{rendered}</div>;
 }

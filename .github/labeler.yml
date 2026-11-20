@@ -36,3 +36,15 @@ schema:
   - changed-files:
       - any-glob-to-any-file:
           - 'apps/prairielearn/src/schemas/**'
+'feature: course agent':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/course-agent/**'
+          - 'packages/course-agent-types/**'
+          - 'apps/prairielearn/src/ee/components/courseAgent/**'
+          - 'apps/prairielearn/src/ee/lib/course-agent/**'
+          - 'apps/prairielearn/src/ee/pages/courseAgentPanelSettings/**'
+          # Course-agent-only files that live alongside shared code.
+          - 'apps/prairielearn/**/*{courseAgent,CourseAgent,course-agent,course_agent}*'
+          - 'apps/prairielearn/**/*{courseAgent,CourseAgent,course-agent,course_agent}*/**'
+          - 'database/**/*course_agent*'

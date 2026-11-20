@@ -165,6 +165,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
+        submitted_raw_answer = data["raw_submitted_answers"].get(name)
         html_params = {
             "submission": True,
             "label": label,
@@ -182,15 +183,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if a_sub is None:
                 raise RuntimeError("submitted answer is None")
 
-            html_params["escaped_submitted_answer"] = html.escape(
-                pl.escape_unicode_string(a_sub)
-            )
             html_params["a_sub"] = a_sub
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        else:
-            html_params["raw_submitted_answer"] = raw_submitted_answer
+        elif submitted_raw_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                submitted_raw_answer
+            )
+
+        if submitted_raw_answer is not None:
+            html_params["raw_input_popover"] = pl.render_raw_input_popover(
+                submitted_raw_answer, aria_label or name
+            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)

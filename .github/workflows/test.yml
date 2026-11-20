@@ -106,7 +106,7 @@ jobs:
         timeout-minutes: 30
 
   # Vitest shards are balanced using per-file durations from a previous run (see
-  # `vitest.durations.ts`). Every shard must use the same durations, or files
+  # `vitest.durations.mts`). Every shard must use the same durations, or files
   # could be skipped or run twice, so we pick them once here instead of having
   # each shard restore the latest ones from the cache itself.
   vitest-durations:

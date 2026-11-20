@@ -2,7 +2,7 @@ import { join } from 'path';
 
 import { defineConfig, mergeConfig } from 'vitest/config';
 
-import { sharedConfig } from '../../vitest.shared';
+import { sharedConfig } from '../../vitest.shared.mts';
 
 // We support running our tests in two modes:
 //

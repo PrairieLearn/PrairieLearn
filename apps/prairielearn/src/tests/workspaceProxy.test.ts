@@ -1,6 +1,6 @@
 import { once } from 'node:events';
 import { type IncomingMessage, createServer, request } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { type AddressInfo, connect } from 'node:net';
 
 import * as cheerio from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -85,6 +85,21 @@ describe('Workspace proxy', { timeout: 20_000 }, () => {
     assert.equal(await upgradeWorkspace(workspaceId, cookie), 101);
     assert.equal(forwardedUpgrade?.url, '/');
     assert.equal(forwardedUpgrade?.headers.cookie, 'keep=1');
+  });
+
+  test('closes upgrades pipelined behind an in-flight request', async () => {
+    const socket = connect(Number(config.serverPort), 'localhost');
+    await once(socket, 'connect');
+    socket.resume();
+    socket.write(
+      'GET /pl HTTP/1.1\r\nHost: localhost\r\n\r\n' +
+        `GET /pl/workspace/${workspaceId}/container/ HTTP/1.1\r\nHost: localhost\r\n` +
+        'Connection: Upgrade\r\nUpgrade: websocket\r\n\r\n',
+    );
+    await once(socket, 'close');
+
+    const res = await fetch(`${siteUrl}/pl`);
+    assert.equal(res.status, 200);
   });
 
   test('rejects WebSocket upgrades from users without workspace access', async () => {

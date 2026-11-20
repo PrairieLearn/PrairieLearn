@@ -50,7 +50,7 @@ import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { QuestionAuthorUidsSchema, normalizeQuestionAuthors } from '../../lib/question-authors.js';
+import { QuestionAuthorUidsSchema } from '../../lib/question-authors.js';
 import { selectQuestionsBlockingDeletion } from '../../lib/question-deletion-validation.js';
 import { validatePreferencesSchema } from '../../lib/question-settings/validation.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
@@ -738,9 +738,7 @@ router.get(
     const origHash = infoContents === null ? '' : computeFileContentHash(infoContents);
     const initialAuthors = run(() => {
       const info = AuthorsFileSchema.safeParse(infoContents);
-      if (!info.success) return null;
-      const { uids, warnings } = normalizeQuestionAuthors(info.data.authors);
-      return warnings.length === 0 ? uids : null;
+      return info.success ? info.data.authors : null;
     });
     const authorStaff = await sqldb.queryRows(
       sql.select_authors,

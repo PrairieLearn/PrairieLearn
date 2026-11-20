@@ -68,10 +68,8 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  let currentContents = '';
-  if (options.currentContents) {
-    currentContents = this.b64DecodeUnicode(options.currentContents);
-  }
+  const encodedContents = this.inputElement.val();
+  const currentContents = encodedContents ? this.b64DecodeUnicode(encodedContents) : '';
   this.setEditorContents(currentContents, { resetUndo: true });
 
   this.previewVersion = 0;

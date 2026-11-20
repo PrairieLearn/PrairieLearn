@@ -29,6 +29,7 @@ function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>)
     explanation: null,
     grader_note: null,
     always_show_to_students: true,
+    show_to_students: 'always',
     deleted_at: null,
     key_binding: null,
     ...overrides,

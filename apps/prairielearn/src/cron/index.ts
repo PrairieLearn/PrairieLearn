@@ -132,6 +132,12 @@ export async function init() {
         intervalSec:
           config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
       },
+      {
+        name: 'courseAgentReviewResults',
+        module: await import('../ee/cron/courseAgentReviewResults.js'),
+        intervalSec:
+          config.cronOverrideAllIntervalsSec || config.cronIntervalCourseAgentReviewResultsSec,
+      },
     );
   }
 

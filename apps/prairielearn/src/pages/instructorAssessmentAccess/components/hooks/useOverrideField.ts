@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { getOverrideFieldPaths } from '../overrideFields.js';
 import type { AccessControlFormData, OverridableFieldName } from '../types.js';
 
 /**
@@ -11,7 +10,7 @@ import type { AccessControlFormData, OverridableFieldName } from '../types.js';
  * to `undefined`, which react-hook-form does not support.
  */
 export function useOverrideField(index: number, fieldName: OverridableFieldName) {
-  const { setValue, getValues, clearErrors, trigger } = useFormContext<AccessControlFormData>();
+  const { setValue, getValues } = useFormContext<AccessControlFormData>();
 
   const overriddenFields = useWatch<AccessControlFormData, `overrides.${number}.overriddenFields`>({
     name: `overrides.${index}.overriddenFields`,
@@ -26,9 +25,8 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
         shouldDirty: true,
         shouldValidate: true,
       });
-      void trigger(getOverrideFieldPaths(index, fieldName));
     }
-  }, [index, fieldName, setValue, getValues, trigger]);
+  }, [index, fieldName, setValue, getValues]);
 
   const removeOverride = useCallback(() => {
     const current = getValues(`overrides.${index}.overriddenFields`);
@@ -37,12 +35,7 @@ export function useOverrideField(index: number, fieldName: OverridableFieldName)
       current.filter((f) => f !== fieldName),
       { shouldDirty: true, shouldValidate: true },
     );
-    // The resolver ignores inactive override fields, but errors already stored
-    // on the field or its sub-paths can linger in formState while the UI is
-    // hiding those inputs. Clear them with the same path set we validate when
-    // enabling the override.
-    clearErrors(getOverrideFieldPaths(index, fieldName));
-  }, [index, fieldName, setValue, getValues, clearErrors]);
+  }, [index, fieldName, setValue, getValues]);
 
   return { isOverridden, addOverride, removeOverride };
 }

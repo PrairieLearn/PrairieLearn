@@ -57,6 +57,7 @@ docker-compose.override.yml
 /site/
 
 ## Runtime artifacts
+/.local/
 
 ### Logs
 /server.log

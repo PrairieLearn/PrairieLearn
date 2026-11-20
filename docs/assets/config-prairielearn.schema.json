@@ -166,6 +166,22 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "printingCloudflareAccountId": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "printingCloudflareApiToken": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "printExportQueuePrefix": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "printExportWorkerActive": {
+      "default": true,
+      "type": "boolean"
+    },
     "runMigrations": {
       "default": true,
       "type": "boolean"
@@ -293,6 +309,10 @@
     },
     "cronIntervalChunksHostAutoScalingSec": {
       "default": 10,
+      "type": "number"
+    },
+    "cronIntervalCourseAgentReviewResultsSec": {
+      "default": 60,
       "type": "number"
     },
     "cronIntervalCleanTimeSeriesSec": {
@@ -1270,6 +1290,14 @@
     },
     "aiQuestionGenerationRateLimitDollars": {
       "default": 1,
+      "type": "number"
+    },
+    "courseAgentRateLimitDollars": {
+      "default": 50,
+      "type": "number"
+    },
+    "courseAgentWebSearchCallCostDollars": {
+      "default": 0.01,
       "type": "number"
     },
     "administratorOpenAiApiKey": {

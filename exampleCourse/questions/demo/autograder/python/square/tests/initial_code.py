@@ -1,5 +1,3 @@
-import numpy as np
-
 # This default code is defined in "initial_code.py"
 
-x_sq = # fill in this code here...
+x_sq = 0  # fill in this code here...

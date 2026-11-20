@@ -18,6 +18,7 @@ export function Navbar({
   sideNavEnabled = false,
   hideSessionControls = false,
   showInstructorSupport = false,
+  courseAgentPanel,
 }: {
   resLocals: UntypedResLocals;
   navPage?: NavPage;
@@ -30,6 +31,7 @@ export function Navbar({
   hideSessionControls?: boolean;
   /** Enables instructor support on pages without a course authorization context. */
   showInstructorSupport?: boolean;
+  courseAgentPanel?: HtmlValue;
 }) {
   const navbarResLocals = hideSessionControls ? {} : resLocals;
   const { __csrf_token, course } = navbarResLocals;
@@ -112,18 +114,21 @@ export function Navbar({
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
           </span>
         </a>
-        <button
-          id="course-nav-toggler"
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#course-nav"
-          data-bs-animation="false"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
-        </button>
+        <div class="d-flex d-md-none align-items-center gap-2">
+          ${courseAgentPanel ? html`<div id="course-agent-mobile-launcher" class="d-flex"></div>` : ''}
+          <button
+            id="course-nav-toggler"
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#course-nav"
+            data-bs-animation="false"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
+          </button>
+        </div>
         <div id="course-nav" class="collapse navbar-collapse mobile-collapsed">
           <ul class="nav navbar-nav me-auto" id="main-nav">
             ${NavbarByType({
@@ -133,37 +138,46 @@ export function Navbar({
             })}
           </ul>
 
-          ${
-            config.devMode
-              ? html`
-                  <a
-                    id="navbar-load-from-disk"
-                    class="btn btn-success btn-sm"
-                    href="/pl/loadFromDisk"
-                  >
-                    Load from disk
-                  </a>
-                `
-              : ''
-          }
-          ${ReportCheatingControl({ resLocals: navbarResLocals, navPage })}
-          ${EndExamControl({ resLocals: navbarResLocals })}
-          ${
-            showSupport
-              ? html`
-                  <button
-                    type="button"
-                    class="btn btn-outline-light btn-sm ms-md-2 me-md-2 mb-2 mb-md-0"
-                    style="--bs-btn-color: var(--bs-navbar-color); --bs-btn-border-color: var(--bs-navbar-color)"
-                    data-bs-toggle="modal tooltip"
-                    data-bs-target="#supportModal"
-                    data-bs-title="Get help with PrairieLearn"
-                  >
-                    Get help
-                  </button>
-                `
-              : ''
-          }
+          <div class="d-md-flex align-items-md-stretch">
+            ${
+              config.devMode
+                ? html`
+                    <a
+                      id="navbar-load-from-disk"
+                      class="btn btn-success btn-sm mb-2 mb-md-0"
+                      href="/pl/loadFromDisk"
+                    >
+                      Load from disk
+                    </a>
+                  `
+                : ''
+            }
+            ${ReportCheatingControl({ resLocals: navbarResLocals, navPage })}
+            ${EndExamControl({ resLocals: navbarResLocals })}
+            ${
+              showSupport
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-outline-light btn-sm ms-md-2 me-md-2 mb-2 mb-md-0"
+                      style="--bs-btn-color: var(--bs-navbar-color); --bs-btn-border-color: var(--bs-navbar-color)"
+                      data-bs-toggle="modal tooltip"
+                      data-bs-target="#supportModal"
+                      data-bs-title="Get help with PrairieLearn"
+                    >
+                      Get help
+                    </button>
+                  `
+                : ''
+            }
+            ${
+              courseAgentPanel
+                ? html`<div class="d-none d-md-flex flex-shrink-0 me-md-2">
+                    ${courseAgentPanel}
+                  </div>`
+                : ''
+            }
+          </div>
           ${
             hideSessionControls
               ? ''

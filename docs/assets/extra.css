@@ -3,6 +3,21 @@
   --md-accent-fg-color: #106eb0; /* arbitrary darker blue */
 }
 
+/* Keep the mascot at its original aspect ratio. */
+.md-header__button.md-logo img,
+.md-nav__title .md-nav__button.md-logo img {
+  width: auto;
+  max-width: 100%;
+}
+
+.md-header__button.md-logo img {
+  height: 1.6rem;
+}
+
+.md-nav__title .md-nav__button.md-logo img {
+  height: 2.4rem;
+}
+
 /* Custom CSS for the link color */
 [data-md-color-scheme='default'],
 [data-md-color-scheme='full-width'] {

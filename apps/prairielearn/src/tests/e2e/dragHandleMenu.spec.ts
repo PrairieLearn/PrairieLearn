@@ -63,12 +63,18 @@ test('the rich text visibility menu opens from the keyboard and changes the sele
   await expect(trigger).toBeFocused();
 
   await editor.focus();
-  await page.keyboard.press('Control+End');
-  await page.keyboard.press('ArrowDown');
-  await editor.getByText('First block', { exact: true }).hover();
-  expect(await editor.evaluate(() => window.getSelection()?.anchorNode?.textContent)).toBe(
-    'Second block',
-  );
+  // Shortly after the editor gains focus, ProseMirror restores its previous
+  // selection if it hasn't yet seen a `selectionchange` event, which can undo
+  // keys pressed immediately after focusing. Later attempts don't refocus the
+  // editor, so they aren't affected.
+  await expect(async () => {
+    await page.keyboard.press('Control+End');
+    await page.keyboard.press('ArrowDown');
+    await editor.getByText('First block', { exact: true }).hover();
+    expect(await editor.evaluate(() => window.getSelection()?.anchorNode?.textContent)).toBe(
+      'Second block',
+    );
+  }).toPass();
   await page.keyboard.press('Tab');
   await expect(trigger).toBeFocused();
   await trigger.press('Enter');

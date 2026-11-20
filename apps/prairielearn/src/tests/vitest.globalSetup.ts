@@ -2,7 +2,7 @@ import tmp from 'tmp-promise';
 
 import { createTemplate, dropTemplate } from './helperDb.js';
 
-// Several projects share this setup (see `vitest.config.ts` at the repository
+// Several projects share this setup (see `vitest.config.mts` at the repository
 // root), and Vitest runs it once for each of them that has tests to run. Global
 // setup always runs in the main Vitest process, so only the first project to
 // get here creates the template database, and only it drops it afterwards.

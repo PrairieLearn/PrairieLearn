@@ -253,6 +253,10 @@ const SKIP_ROUTES = [
   /\.json$/,
   '/pl/request_course/check',
 
+  // The print form preview requires browser-side pagination, and its question asset routes
+  // serve files rather than pages.
+  /\/instructor\/assessment\/:assessment_id\/print_form\/:print_form_id\//,
+
   // Static assets.
   '/assets/elements/:cachebuster/*',
   '/pl/static/elements/*',
@@ -297,6 +301,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/gradebook/raw_data.json',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion/*',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/submission/:unsafe_submission_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
@@ -421,14 +426,17 @@ const SKIP_ROUTES = [
   // API routes.
   '/pl/course_instance/lookup',
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_preparation/exports/:printExportId',
 ];
 
 function shouldSkipPath(path: string) {
+  // A router mounted at the root can be reported with two leading slashes.
+  const normalizedPath = path.replace(/^\/+/, '/');
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
-      return r === path;
+      return r === normalizedPath;
     } else if (r instanceof RegExp) {
-      return r.test(path);
+      return r.test(normalizedPath);
     } else {
       assertNever(r);
     }
@@ -452,7 +460,7 @@ describe('accessibility', () => {
 
     // When run from the root config, each of several projects checks only its
     // own slice of the pages so that they can run in parallel (see
-    // `vitest.config.ts` at the repository root). Otherwise, check every page.
+    // `vitest.config.mts` at the repository root). Otherwise, check every page.
     const slice = inject('accessibilitySlice');
     if (slice) {
       endpoints = endpoints.filter((_, i) => i % slice.count === slice.index);

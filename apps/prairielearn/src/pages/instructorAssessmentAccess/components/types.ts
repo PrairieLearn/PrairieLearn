@@ -156,15 +156,44 @@ export function isOverrideEditable(
   return true;
 }
 
+export function getOverrideName(appliesTo: AppliesTo, index: number): string {
+  if (appliesTo.targetType === 'student_label') {
+    const studentLabels = appliesTo.studentLabels;
+    if (studentLabels.length === 0) return `Override ${index + 1}`;
+    if (studentLabels.length === 1) return studentLabels[0].name;
+    if (studentLabels.length === 2) {
+      return `${studentLabels[0].name} and ${studentLabels[1].name}`;
+    }
+    const remaining = studentLabels.length - 2;
+    return `${studentLabels[0].name}, ${studentLabels[1].name}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
+  } else {
+    const enrollments = appliesTo.enrollments;
+    if (enrollments.length === 0) return `Override ${index + 1}`;
+    const getName = (e: (typeof enrollments)[0]) => e.name || e.uid;
+    if (enrollments.length === 1) return getName(enrollments[0]);
+    if (enrollments.length === 2) {
+      return `${getName(enrollments[0])} and ${getName(enrollments[1])}`;
+    }
+    const remaining = enrollments.length - 2;
+    return `${getName(enrollments[0])}, ${getName(enrollments[1])}, and ${remaining} ${remaining === 1 ? 'other' : 'others'}`;
+  }
+}
+
 /**
  * Whether a (timezone-naive) datetime string is at or before "now" in the
  * given display timezone. A null/empty value is treated as released.
  */
 export function isReleasedNow(value: string | null, displayTimezone: string): boolean {
+  return isReleasedAt(value, Temporal.Now.plainDateTimeISO(displayTimezone));
+}
+
+/**
+ * Like `isReleasedNow`, but compares against a precomputed "now" so callers
+ * checking many dates avoid recomputing it in the display timezone each time.
+ */
+export function isReleasedAt(value: string | null, now: Temporal.PlainDateTime): boolean {
   if (!value) return true;
-  const release = Temporal.PlainDateTime.from(value);
-  const now = Temporal.Now.plainDateTimeISO(displayTimezone);
-  return Temporal.PlainDateTime.compare(release, now) <= 0;
+  return Temporal.PlainDateTime.compare(Temporal.PlainDateTime.from(value), now) <= 0;
 }
 
 /**

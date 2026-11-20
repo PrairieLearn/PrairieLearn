@@ -125,7 +125,7 @@ from _pygraphviz_compat import patch_pygraphviz
 mpl.use("PDF")
 patch_pygraphviz()
 
-# Construct initial unit registry to create initial cache file.
+# Construct the unit registry so that forked workers inherit it.
 prairielearn.get_unit_registry()
 
 

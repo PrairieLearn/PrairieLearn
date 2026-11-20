@@ -1,6 +1,6 @@
 # `@prairielearn/course-agent-types`
 
-Private contracts shared by the Cloudflare course-agent service and PrairieLearn. This package contains the public workspace lifecycle types and the validated conversation-creation input. It must stay usable in both Workers and Node; do not add server-specific dependencies or private workspace records here.
+Private contracts shared by the Cloudflare course-agent service and PrairieLearn. This package contains the public sandbox lifecycle types and the validated conversation-creation input. It must stay usable in both Workers and Node; do not add server-specific dependencies or private sandbox records here.
 
 ## Deployment compatibility
 
