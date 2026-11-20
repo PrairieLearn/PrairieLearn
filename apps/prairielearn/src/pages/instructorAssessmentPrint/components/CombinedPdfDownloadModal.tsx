@@ -3,7 +3,7 @@ import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
-import type { PrintDocument } from '../../lib/printing/index.js';
+import type { PrintDocument } from '../../../lib/printing/index.js';
 
 export function CombinedPdfDownloadModal({
   show,

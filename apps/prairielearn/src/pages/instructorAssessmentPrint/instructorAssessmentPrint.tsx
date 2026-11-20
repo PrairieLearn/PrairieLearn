@@ -16,14 +16,14 @@ import {
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
+import { requirePrintingAvailable } from '../../middlewares/requirePrintingAvailable.js';
 import { countJoinedStudentsInCourseInstance } from '../../models/enrollment.js';
 
 import { InstructorAssessmentPrint } from './instructorAssessmentPrint.html.js';
 
 const router = Router();
 
-router.use(requirePrintableAssessments);
+router.use(requirePrintingAvailable);
 
 router.get(
   '/',
@@ -63,7 +63,7 @@ router.get(
         resLocals: res.locals,
         pageTitle: 'Print',
         navContext: { type: 'instructor', page: 'assessment', subPage: 'questions' },
-        headContent: [compiledStylesheetTag('instructor-assessment-print.css')],
+        headContent: [compiledStylesheetTag('instructorAssessmentPrint.css')],
         options: { fullWidth: true, contentContainerClassName: 'print-preparation-container' },
         content: (
           <Hydrate className="print-preparation-root">

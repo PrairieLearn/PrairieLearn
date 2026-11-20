@@ -60,12 +60,16 @@ import {
 import type { QuestionBlockSize } from '../../lib/printing/question-block-size.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
+import type { PrintExportsError } from '../../trpc/assessment/print-exports.js';
 import type { PrintFormsError } from '../../trpc/assessment/print-forms.js';
-import type { PrintableAssessmentExportError } from '../../trpc/assessment/printable-assessment-export.js';
 
-import { CombinedPdfDownloadModal } from './CombinedPdfDownloadModal.js';
-import { AutomaticExportDownloads, PrintExports, usePrintExports } from './PrintExports.js';
-import { type PreviewState, PrintPreview } from './PrintPreview.js';
+import { CombinedPdfDownloadModal } from './components/CombinedPdfDownloadModal.js';
+import {
+  AutomaticExportDownloads,
+  PrintExports,
+  usePrintExports,
+} from './components/PrintExports.js';
+import { type PreviewState, PrintPreview } from './components/PrintPreview.js';
 
 const BLOCK_SIZE_LABELS: Record<QuestionBlockSize, string> = {
   auto: 'Fit to content',
@@ -416,8 +420,8 @@ function PrintPreparation({
       }
     });
   }, [updateSettings.isPending, paperSizeApplying]);
-  const packet = useMutation(trpc.printableAssessmentExport.pdf.mutationOptions());
-  const preflight = useMutation(trpc.printableAssessmentExport.preflight.mutationOptions());
+  const packet = useMutation(trpc.printExports.pdf.mutationOptions());
+  const preflight = useMutation(trpc.printExports.preflight.mutationOptions());
   const printExports = usePrintExports({ onAutomaticExportFinished: finishAutomaticExport });
   const { exportId, setExportId, displayedExport } = printExports;
   const busy =
@@ -1321,9 +1325,7 @@ function PrintPreparation({
         error={
           combinedDownload
             ? null
-            : getAppError<PrintableAssessmentExportError['pdf']>(
-                pdfPreparationError ?? packet.error,
-              )
+            : getAppError<PrintExportsError['pdf']>(pdfPreparationError ?? packet.error)
         }
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => {
@@ -2233,9 +2235,7 @@ function PrintPreparation({
                     aria-hidden="true"
                   />
                   <h3 className="h5">
-                    {canEditPrintForms
-                      ? 'Your printable assessment starts here'
-                      : 'No printable forms yet'}
+                    {canEditPrintForms ? 'Set up your first form' : 'No forms yet'}
                   </h3>
                   <p className="text-muted mb-0">
                     {!canEditPrintForms

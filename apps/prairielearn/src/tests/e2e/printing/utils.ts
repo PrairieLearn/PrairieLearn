@@ -114,13 +114,13 @@ export async function downloadPrintableWord(
   await expect
     .poll(
       async () => {
-        const status = await api.printableAssessmentExport.status.query({ printExportId });
+        const status = await api.printExports.status.query({ printExportId });
         return { status: status.status, failureMessage: status.failureMessage };
       },
       { timeout: 90_000 },
     )
     .toMatchObject({ status: 'succeeded' });
-  const completed = await api.printableAssessmentExport.status.query({ printExportId });
+  const completed = await api.printExports.status.query({ printExportId });
   expect(completed.format).toBe('docx');
   return await page.request.get(completed.downloadUrl!);
 }

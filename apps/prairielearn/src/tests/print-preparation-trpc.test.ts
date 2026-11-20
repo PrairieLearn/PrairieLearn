@@ -204,7 +204,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test('rejects printable assessment procedures while the feature is disabled', async () => {
+  test('rejects print procedures while the feature is disabled', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     await features.disable('printable-assessments');
@@ -215,14 +215,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await expect(api.printForms.create.mutate()).rejects.toMatchObject({
         data: { code: 'NOT_FOUND' },
       });
-      await expect(
-        api.printableAssessmentExport.pdf.mutate(packetInput('1')),
-      ).rejects.toMatchObject({
+      await expect(api.printExports.pdf.mutate(packetInput('1'))).rejects.toMatchObject({
         data: { code: 'NOT_FOUND' },
       });
-      await expect(
-        api.printableAssessmentExport.status.query({ printExportId: '1' }),
-      ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+      await expect(api.printExports.status.query({ printExportId: '1' })).rejects.toMatchObject({
+        data: { code: 'NOT_FOUND' },
+      });
     } finally {
       await features.enable('printable-assessments');
     }
@@ -577,9 +575,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await expect(
       api.printForms.regenerate.mutate({ printFormId: otherUserForm.id }),
     ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
-    await expect(
-      api.printableAssessmentExport.pdf.mutate(packetInput(otherUserForm.id)),
-    ).rejects.toThrow('The preview pages are incomplete. Update the preview and try again.');
+    await expect(api.printExports.pdf.mutate(packetInput(otherUserForm.id))).rejects.toThrow(
+      'The preview pages are incomplete. Update the preview and try again.',
+    );
     const otherAssessmentApi = client(otherAssessment.id);
     const otherForm = await otherAssessmentApi.printForms.create.mutate();
     expect(otherForm.label).toBe('A1');
@@ -599,9 +597,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
         expectedSettings: DEFAULT_PRINT_SETTINGS,
       }),
     ).rejects.toThrow('This print form is not available.');
-    await expect(
-      api.printableAssessmentExport.pdf.mutate(packetInput(otherForm.printFormId)),
-    ).rejects.toThrow('A print form is not available.');
+    await expect(api.printExports.pdf.mutate(packetInput(otherForm.printFormId))).rejects.toThrow(
+      'A print form is not available.',
+    );
   });
 
   test('question inspection keeps saved labels and points after the source assessment changes', async () => {
@@ -725,7 +723,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const api = client(assessment.id);
     const invalid = packetInput('1');
     invalid.set('metadata', JSON.stringify({ forms: [], document: 'assessment' }));
-    await expect(api.printableAssessmentExport.pdf.mutate(invalid)).rejects.toThrow(
+    await expect(api.printExports.pdf.mutate(invalid)).rejects.toThrow(
       'Invalid print export settings.',
     );
     const form = await api.printForms.create.mutate();
@@ -734,7 +732,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       'coverPages',
       new File(['invalid PDF'], 'bad.pdf', { type: 'application/pdf' }),
     );
-    await expect(api.printableAssessmentExport.pdf.mutate(invalidCover)).rejects.toThrow(
+    await expect(api.printExports.pdf.mutate(invalidCover)).rejects.toThrow(
       'valid PDF without password protection',
     );
     const answerKeyCover = packetInput(form.printFormId, 'answer_key');
@@ -742,7 +740,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       'coverPages',
       new File(['unused'], 'cover.pdf', { type: 'application/pdf' }),
     );
-    await expect(api.printableAssessmentExport.pdf.mutate(answerKeyCover)).rejects.toThrow(
+    await expect(api.printExports.pdf.mutate(answerKeyCover)).rejects.toThrow(
       'Answer key exports do not use uploaded cover pages.',
     );
   });
@@ -758,7 +756,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     data.set('formIds', JSON.stringify([first.printFormId, second.printFormId]));
     data.set('document', 'assessment');
     data.append('coverPages', new File([Buffer.from(await cover.save())], 'cover.pdf'));
-    expect(await api.printableAssessmentExport.preflight.mutate(data)).toEqual({
+    expect(await api.printExports.preflight.mutate(data)).toEqual({
       coverPageCount: 1,
       failure: null,
     });
@@ -767,7 +765,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       broken: true,
     });
     try {
-      expect(await api.printableAssessmentExport.preflight.mutate(data)).toEqual({
+      expect(await api.printExports.preflight.mutate(data)).toEqual({
         coverPageCount: 0,
         failure: {
           printFormId: second.printFormId,
@@ -802,7 +800,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       );
       data.append('snapshotIds', 'placeholder');
     }
-    await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
+    await expect(api.printExports.pdf.mutate(data)).rejects.toThrow(
       'The export would exceed 10,000 pages.',
     );
   });
@@ -825,19 +823,17 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(pdf);
     let printExportId: string;
     try {
-      const result = await api.printableAssessmentExport.pdf.mutate(data);
+      const result = await api.printExports.pdf.mutate(data);
       expect(result).toEqual({ printExportId: expect.any(String) });
       printExportId = result.printExportId;
       expect(render).not.toHaveBeenCalled();
-      expect(await api.printableAssessmentExport.status.query({ printExportId })).toMatchObject({
+      expect(await api.printExports.status.query({ printExportId })).toMatchObject({
         status: 'pending',
         format: 'pdf',
         downloadUrl: null,
       });
       expect(
-        (await api.printableAssessmentExport.list.query()).find(
-          (item) => item.id === printExportId,
-        ),
+        (await api.printExports.list.query()).find((item) => item.id === printExportId),
       ).toMatchObject({ status: 'pending', label: `Form ${label} PDF`, downloadUrl: null });
       expect(
         (await selectOptionalPrintForm({
@@ -860,9 +856,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     } finally {
       render.mockRestore();
     }
-    expect(
-      await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).toEqual({
+    expect(await client(assessment.id).printExports.status.query({ printExportId })).toEqual({
       status: 'succeeded',
       format: 'pdf',
       downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`,
@@ -871,7 +865,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       failureMessage: null,
     });
     expect(
-      (await api.printableAssessmentExport.list.query()).find((item) => item.id === printExportId),
+      (await api.printExports.list.query()).find((item) => item.id === printExportId),
     ).toMatchObject({
       status: 'succeeded',
       downloadUrl: `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`,
@@ -896,10 +890,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
       tid: 'exam23-printing',
     });
     await expect(
-      client(otherAssessment.id).printableAssessmentExport.status.query({ printExportId }),
+      client(otherAssessment.id).printExports.status.query({ printExportId }),
     ).rejects.toThrow('NOT_FOUND');
     expect(
-      (await client(otherAssessment.id).printableAssessmentExport.list.query()).some(
+      (await client(otherAssessment.id).printExports.list.query()).some(
         (item) => item.id === printExportId,
       ),
     ).toBe(false);
@@ -911,12 +905,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
       ).status,
     ).toBe(404);
     await execute(sql.age_print_export, { print_export_id: printExportId, age: '25 hours' });
-    expect(
-      await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).toMatchObject({ status: 'expired', downloadUrl: null });
-    expect(
-      (await api.printableAssessmentExport.list.query()).some((item) => item.id === printExportId),
-    ).toBe(false);
+    expect(await client(assessment.id).printExports.status.query({ printExportId })).toMatchObject({
+      status: 'expired',
+      downloadUrl: null,
+    });
+    expect((await api.printExports.list.query()).some((item) => item.id === printExportId)).toBe(
+      false,
+    );
     expect((await fetch(url)).status).toBe(404);
   });
 
@@ -942,13 +937,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
       .spyOn(printExportRender, 'renderPrintExport')
       .mockResolvedValueOnce(Buffer.from('%PDF-1.4 combined answer keys'));
     try {
-      const { printExportId } = await api.printableAssessmentExport.pdf.mutate(data);
+      const { printExportId } = await api.printExports.pdf.mutate(data);
       await completePrintExport(assessment.id, printExportId);
       expect(render.mock.calls[0][0]).toMatchObject({
         document: 'answer_key',
         snapshots: [{ printDocument: 'answer_key' }, { printDocument: 'answer_key' }],
       });
-      expect(await api.printableAssessmentExport.status.query({ printExportId })).toMatchObject({
+      expect(await api.printExports.status.query({ printExportId })).toMatchObject({
         label: 'PDF with 2 form answer keys',
       });
       expect(
@@ -991,7 +986,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         config.secretKey,
       ),
     );
-    await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
+    await expect(api.printExports.pdf.mutate(data)).rejects.toThrow(
       'This print preview has expired or changed.',
     );
     expect(
@@ -1055,7 +1050,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       '<html data-print-question-count="1" data-print-omitted-question-count="1"></html>',
     );
 
-    await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toMatchObject({
+    await expect(api.printExports.pdf.mutate(data)).rejects.toMatchObject({
       data: { code: 'BAD_REQUEST' },
       message: expect.stringContaining(`Form ${second.label} has missing or unprintable questions`),
     });
@@ -1134,7 +1129,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       expect(response.status).toBe(200);
       ({ printExportId } = z.object({ printExportId: IdSchema }).parse(await response.json()));
       expect(render).not.toHaveBeenCalled();
-      expect(await api.printableAssessmentExport.status.query({ printExportId })).toMatchObject({
+      expect(await api.printExports.status.query({ printExportId })).toMatchObject({
         status: 'pending',
         format: 'docx',
         downloadUrl: null,
@@ -1167,7 +1162,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     } finally {
       render.mockRestore();
     }
-    const status = await api.printableAssessmentExport.status.query({ printExportId });
+    const status = await api.printExports.status.query({ printExportId });
     const downloadUrl = `/pl/course_instance/1/instructor/assessment/${assessment.id}/print/exports/${printExportId}`;
     expect(status).toEqual({
       status: 'succeeded',
@@ -1217,9 +1212,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       },
     });
     await completePrintExport(assessment.id, printExportId, 'failed');
-    expect(
-      await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).toMatchObject({
+    expect(await client(assessment.id).printExports.status.query({ printExportId })).toMatchObject({
       status: 'failed',
       format: 'pdf',
       downloadUrl: null,
@@ -1320,9 +1313,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       inputKey: 'print-exports/input/stale-export.json',
     });
     await execute(sql.age_print_export, { print_export_id: printExportId, age: '31 minutes' });
-    expect(
-      await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).toMatchObject({
+    expect(await client(assessment.id).printExports.status.query({ printExportId })).toMatchObject({
       status: 'failed',
       failureMessage: 'The export took too long to finish. Try again.',
     });
@@ -1345,10 +1336,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         startPrintExportWorker();
       }
       await expect
-        .poll(
-          async () =>
-            await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-        )
+        .poll(async () => await client(assessment.id).printExports.status.query({ printExportId }))
         .toMatchObject({
           status: 'failed',
           failureMessage:
@@ -1382,7 +1370,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       ),
     );
     data.append('pages', new File([html], 'stale.html'));
-    await expect(api.printableAssessmentExport.pdf.mutate(data)).rejects.toThrow(
+    await expect(api.printExports.pdf.mutate(data)).rejects.toThrow(
       'This print preview has expired or changed.',
     );
   });
@@ -1518,11 +1506,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
           expectedSettings: form.settings,
         }),
       ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(api.printExports.preflight.mutate(new FormData())).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
       await expect(
-        api.printableAssessmentExport.preflight.mutate(new FormData()),
-      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-      await expect(
-        api.printableAssessmentExport.pdf.mutate(packetInput(form.printFormId)),
+        api.printExports.pdf.mutate(packetInput(form.printFormId)),
       ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
 
       const printUrl = getPrintFormUrl({
@@ -1561,7 +1549,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       uin: '000000001',
     });
     const trpcUrl = getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId: assessment.id });
-    const exportResponse = await fetch(`${siteUrl}${trpcUrl}/printableAssessmentExport.pdf`, {
+    const exportResponse = await fetch(`${siteUrl}${trpcUrl}/printExports.pdf`, {
       method: 'POST',
       headers: {
         'X-TRPC': 'true',

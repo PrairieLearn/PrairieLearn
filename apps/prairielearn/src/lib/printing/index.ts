@@ -205,7 +205,7 @@ function selectIncludedQuestions(
     (question) => !excludedQuestionNumbers.has(question.print_form_question.question_number),
   );
   if (includedQuestions.length === 0) {
-    throw new HttpStatusError(400, 'Include at least one question in the printable assessment');
+    throw new HttpStatusError(400, 'Include at least one question in this form');
   }
   return includedQuestions;
 }

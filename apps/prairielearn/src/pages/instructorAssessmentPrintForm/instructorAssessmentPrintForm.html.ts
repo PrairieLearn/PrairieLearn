@@ -91,7 +91,7 @@ export function InstructorAssessmentPrintForm({
           resLocals,
           pageTitle: isAnswerKey
             ? `${resLocals.assessment_label} answer key`
-            : `${resLocals.assessment_label} printable assessment`,
+            : `${resLocals.assessment_label} student copy`,
         })}
         <meta name="referrer" content="no-referrer" />
         <style data-pagedjs-ignore>

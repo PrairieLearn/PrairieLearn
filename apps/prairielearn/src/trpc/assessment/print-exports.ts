@@ -39,9 +39,9 @@ import { selectPrintFormQuestionViability } from '../../models/print-form-questi
 import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
 import { requireCoursePermissionEdit, requireCoursePermissionPreview, t } from './init.js';
-import { requirePrintableAssessments } from './print-forms.js';
+import { requirePrintingAvailable } from './print-forms.js';
 
-export interface PrintableAssessmentExportError {
+export interface PrintExportsError {
   list: never;
   pdf: never;
   preflight: never;
@@ -74,10 +74,10 @@ function assertSharedPaperSize(forms: { settings: { paperSize: string } }[]) {
   }
 }
 
-export const printableAssessmentExportRouter = t.router({
+export const printExportsRouter = t.router({
   preflight: t.procedure
     .use(requireCoursePermissionPreview)
-    .use(requirePrintableAssessments)
+    .use(requirePrintingAvailable)
     .use(requireCoursePermissionEdit)
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
@@ -147,7 +147,7 @@ export const printableAssessmentExportRouter = t.router({
     }),
   pdf: t.procedure
     .use(requireCoursePermissionPreview)
-    .use(requirePrintableAssessments)
+    .use(requirePrintingAvailable)
     .use(requireCoursePermissionEdit)
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
@@ -363,7 +363,7 @@ export const printableAssessmentExportRouter = t.router({
     }),
   list: t.procedure
     .use(requireCoursePermissionPreview)
-    .use(requirePrintableAssessments)
+    .use(requirePrintingAvailable)
     .query(async ({ ctx }) => {
       const baseUrl = getAssessmentUrl({
         courseInstanceId: ctx.course_instance.id,
@@ -389,7 +389,7 @@ export const printableAssessmentExportRouter = t.router({
     }),
   status: t.procedure
     .use(requireCoursePermissionPreview)
-    .use(requirePrintableAssessments)
+    .use(requirePrintingAvailable)
     .input(z.object({ printExportId: IdSchema }))
     .query(async ({ ctx, input }) => {
       const printExport = await selectOptionalPrintExport({

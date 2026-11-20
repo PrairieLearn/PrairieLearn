@@ -59,7 +59,7 @@ import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.j
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import authzHasCoursePreview from '../../middlewares/authzHasCoursePreview.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
+import { requirePrintingAvailable } from '../../middlewares/requirePrintingAvailable.js';
 import { selectOptionalPrintForm } from '../../models/print-form.js';
 
 import { InstructorAssessmentPrintForm } from './instructorAssessmentPrintForm.html.js';
@@ -213,7 +213,7 @@ const parseDocxBody: RequestHandler = (req, res, next) => {
 
 const router = Router({ mergeParams: true });
 
-router.use(requirePrintableAssessments);
+router.use(requirePrintingAvailable);
 
 router.use(authzHasCoursePreview);
 router.use(

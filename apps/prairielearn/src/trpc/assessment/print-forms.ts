@@ -44,7 +44,7 @@ export interface PrintFormsError {
   updateSettings: never;
 }
 
-export const requirePrintableAssessments = t.middleware(async (opts) => {
+export const requirePrintingAvailable = t.middleware(async (opts) => {
   // Everyone has preview access to example courses, so shared print forms there would be one
   // pool that any user could fill or regenerate.
   if (
@@ -58,7 +58,7 @@ export const requirePrintableAssessments = t.middleware(async (opts) => {
 
 const printFormProcedure = t.procedure
   .use(requireCoursePermissionPreview)
-  .use(requirePrintableAssessments);
+  .use(requirePrintingAvailable);
 const editorPrintFormProcedure = printFormProcedure.use(requireCoursePermissionEdit);
 
 const rejectGroupWork = t.middleware(async ({ ctx, next }) => {

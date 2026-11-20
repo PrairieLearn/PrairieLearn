@@ -67,7 +67,7 @@ async function downloadPreparedFile(
     return (
       response.request().method() === 'POST' &&
       (format === 'pdf'
-        ? path.endsWith('/printableAssessmentExport.pdf')
+        ? path.endsWith('/printExports.pdf')
         : /\/print_form\/\d+\/docx$/.test(path))
     );
   });
@@ -140,7 +140,7 @@ viewerTest(
     await page.goto(
       `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print`,
     );
-    await expect(page.getByRole('heading', { name: 'No printable forms yet' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'No forms yet' })).toBeVisible();
     expect(await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })).toHaveLength(
       0,
     );
@@ -391,7 +391,7 @@ test('keeps multiple export links after another file is queued and the page relo
     const submitted = page.waitForResponse(
       (response) =>
         response.request().method() === 'POST' &&
-        new URL(response.url()).pathname.endsWith('/printableAssessmentExport.pdf'),
+        new URL(response.url()).pathname.endsWith('/printExports.pdf'),
     );
     await chooseDownload(page, item);
     const response = await submitted;
@@ -1132,11 +1132,11 @@ test('retries a failed combined PDF download from its modal', async ({ page, cou
   const modal = page.getByRole('dialog', { name: 'Download all answer keys PDF', exact: true });
   const submit = modal.getByRole('button', { name: 'Download all answer keys PDF', exact: true });
   await expect(submit).toBeEnabled({ timeout: 120_000 });
-  await page.route('**/printableAssessmentExport.pdf', (route) => route.abort(), { times: 1 });
+  await page.route('**/printExports.pdf', (route) => route.abort(), { times: 1 });
   await submit.click();
   await expect(modal.getByRole('alert')).toBeVisible();
   await expect(submit).toBeEnabled();
-  await page.unroute('**/printableAssessmentExport.pdf');
+  await page.unroute('**/printExports.pdf');
 
   const downloaded = await downloadPreparedFile(page, async () => {
     await submit.click();

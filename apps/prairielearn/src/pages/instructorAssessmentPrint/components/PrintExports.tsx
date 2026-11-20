@@ -8,9 +8,9 @@ import { Alert, Button, Card } from 'react-bootstrap';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
-import { FriendlyDate } from '../../components/FriendlyDate.js';
-import { useTRPC } from '../../trpc/assessment/context.js';
-import type { PrintableAssessmentExportError } from '../../trpc/assessment/printable-assessment-export.js';
+import { FriendlyDate } from '../../../components/FriendlyDate.js';
+import { useTRPC } from '../../../trpc/assessment/context.js';
+import type { PrintExportsError } from '../../../trpc/assessment/print-exports.js';
 
 /** Tracks the user's recent exports and the export most recently started on this page. */
 export function usePrintExports({
@@ -27,14 +27,14 @@ export function usePrintExports({
   const [automaticExportIds, setAutomaticExportIds] = useState<string[]>([]);
   const [recentExportsOpen, setRecentExportsOpen] = useState(false);
   const recentExports = useQuery(
-    trpc.printableAssessmentExport.list.queryOptions(undefined, {
+    trpc.printExports.list.queryOptions(undefined, {
       refetchInterval: (query) =>
         query.state.data?.some((item) => item.status === 'pending') ? 2_000 : false,
     }),
   );
   const listedExport = recentExports.data?.find((item) => item.id === exportId);
   const exportStatus = useQuery(
-    trpc.printableAssessmentExport.status.queryOptions(
+    trpc.printExports.status.queryOptions(
       exportId === null || listedExport ? skipToken : { printExportId: exportId },
       {
         refetchInterval: (query) => (query.state.data?.status === 'pending' ? 2_000 : false),
@@ -83,7 +83,7 @@ function AutomaticExportDownload({
   const trpc = useTRPC();
   const completedRef = useRef(false);
   const status = useQuery(
-    trpc.printableAssessmentExport.status.queryOptions(
+    trpc.printExports.status.queryOptions(
       { printExportId },
       {
         refetchInterval: (query) =>
@@ -137,7 +137,7 @@ export function PrintExports({
   return (
     <>
       <AppErrorAlert
-        error={getAppError<PrintableAssessmentExportError['list']>(recentExports.error)}
+        error={getAppError<PrintExportsError['list']>(recentExports.error)}
         render={{ UNKNOWN: ({ message }) => message }}
       />
       {recentExports.data && recentExports.data.length > 0 && (

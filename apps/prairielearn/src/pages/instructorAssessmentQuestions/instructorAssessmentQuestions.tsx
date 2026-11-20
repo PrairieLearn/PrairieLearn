@@ -153,7 +153,7 @@ router.get(
       assessmentToolDefaults[row.tool] = row.enabled;
     }
 
-    const [questionSharingEnabled, consumePublicQuestionsEnabled, printableAssessmentsAvailable] =
+    const [questionSharingEnabled, consumePublicQuestionsEnabled, printingAvailable] =
       await Promise.all([
         features.enabledFromLocals('question-sharing', res.locals),
         features.enabledFromLocals('consume-public-questions', res.locals),
@@ -224,7 +224,7 @@ router.get(
                 pageContext.authz_data.has_course_instance_permission_edit
               }
               canEdit={canEdit}
-              printableAssessmentsAvailable={printableAssessmentsAvailable}
+              printingAvailable={printingAvailable}
               courseHasQuestions={courseHasQuestions}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}
