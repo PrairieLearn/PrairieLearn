@@ -1,6 +1,6 @@
 # Printing assessments
 
-Course editors can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. Course viewers can inspect existing forms and previews, but cannot change forms or start downloads. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
+Course editors can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. Course viewers can preview and download existing forms, but cannot change forms or their settings. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
 
 For assessments with randomization, you can prepare multiple _forms_, such as A1 and B1. Each form keeps its selected questions, their order and any random values, and its print settings. Changing paper size updates all current forms; previous forms keep the size they used. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
 

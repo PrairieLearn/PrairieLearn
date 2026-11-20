@@ -1011,7 +1011,6 @@ function PrintPreparation({
     activeForms.length > 0 &&
     activeForms.length < MAX_ACTIVE_PRINT_FORMS;
   const canDownload =
-    canEditPrintForms &&
     validForm &&
     !isDirty &&
     previewIsCurrent &&
@@ -1406,7 +1405,7 @@ function PrintPreparation({
                       preview it
                       {canEditPrintForms
                         ? ' or make changes.'
-                        : '. Ask a course editor to change forms or start a download.'}
+                        : ' or download it. Ask a course editor to change forms.'}
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
                       {activeForms.map((form) => {
@@ -1714,16 +1713,12 @@ function PrintPreparation({
                       </Form.Text>
                     </div>
                   )}
-                  <Form.Group
-                    controlId="print-cover-pages"
-                    className="mt-3"
-                    hidden={!canEditPrintForms}
-                  >
+                  <Form.Group controlId="print-cover-pages" className="mt-3">
                     <Form.Label>Custom cover pages (PDF)</Form.Label>
                     <Form.Control
                       type="file"
                       accept="application/pdf,.pdf"
-                      disabled={controlsBusy || !canEditPrintForms}
+                      disabled={controlsBusy}
                       aria-describedby="print-cover-pages-help"
                       aria-invalid={!!uploadError}
                       aria-errormessage={uploadError ? 'print-cover-pages-error' : undefined}
@@ -1765,7 +1760,7 @@ function PrintPreparation({
                       {COVER_SIZE_LIMIT} total, and {MAX_COVER_PAGES} pages.
                     </Form.Text>
                   </Form.Group>
-                  {canEditPrintForms && coverPages.length > 0 && (
+                  {coverPages.length > 0 && (
                     <>
                       <ol className="small ps-3 mt-2 mb-1">
                         {coverPages.map(({ id, file }) => (
@@ -2135,7 +2130,7 @@ function PrintPreparation({
                       'Preparing file… It will download automatically.'
                     ) : null}
                   </div>
-                  <div className="print-preparation-download" hidden={!canEditPrintForms}>
+                  <div className="print-preparation-download">
                     <Dropdown align="end">
                       <Dropdown.Toggle
                         ref={prepareButtonRef}
@@ -2254,14 +2249,12 @@ function PrintPreparation({
                   </p>
                 </div>
               )}
-              {canEditPrintForms && (
-                <Card.Footer className="bg-white p-3">
-                  <div className="print-preparation-download-help text-muted small">
-                    Word exports exclude uploaded cover pages. Formatting and page breaks may differ
-                    from the preview and between apps.
-                  </div>
-                </Card.Footer>
-              )}
+              <Card.Footer className="bg-white p-3">
+                <div className="print-preparation-download-help text-muted small">
+                  Word exports exclude uploaded cover pages. Formatting and page breaks may differ
+                  from the preview and between apps.
+                </div>
+              </Card.Footer>
             </Card>
           </div>
         </fieldset>
