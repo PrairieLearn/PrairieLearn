@@ -20,6 +20,7 @@ import {
   getSharedTopic,
   hasAltPoolChooseExceedsCount,
   hasPointsMismatch,
+  hasUnavailableQuestions,
   resolveRolePermissionCascade,
   validatePositiveInteger,
 } from '../../utils/questions.js';
@@ -202,6 +203,11 @@ export function AltPoolDetailPanel({
     }) ?? false;
 
   const Wrapper = editMode ? 'div' : 'dl';
+  const membershipLocked = hasUnavailableQuestions(zoneQuestionBlock, questionMetadata);
+  const hasLegacyPoints =
+    zoneQuestionBlock.points != null ||
+    zoneQuestionBlock.maxPoints != null ||
+    zoneQuestionBlock.alternatives?.some((alt) => alt.points != null || alt.maxPoints != null);
 
   return (
     <div className="p-3">
@@ -265,6 +271,29 @@ export function AltPoolDetailPanel({
 
       <DetailSectionHeader>Settings</DetailSectionHeader>
 
+      {membershipLocked && (
+        <p className="text-muted small">
+          Alternatives in this pool are read-only while questions are unavailable locally.
+        </p>
+      )}
+
+      {(zoneQuestionBlock.points != null || zoneQuestionBlock.maxPoints != null) && (
+        <dl className={clsx(editMode ? 'mb-3' : 'mb-2')}>
+          {zoneQuestionBlock.points != null && (
+            <>
+              <dt>Points (default)</dt>
+              <dd>{formatPoints(zoneQuestionBlock.points)}</dd>
+            </>
+          )}
+          {zoneQuestionBlock.maxPoints != null && (
+            <>
+              <dt>Max points (default)</dt>
+              <dd>{formatPoints(zoneQuestionBlock.maxPoints)}</dd>
+            </>
+          )}
+        </dl>
+      )}
+
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
           editMode={editMode}
@@ -290,7 +319,7 @@ export function AltPoolDetailPanel({
         {assessmentType === 'Homework' ? (
           <>
             <FormField
-              editMode={editMode}
+              editMode={editMode && !hasLegacyPoints}
               id={`${idPrefix}-autoPoints`}
               label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock.autoPoints)}
@@ -338,7 +367,7 @@ export function AltPoolDetailPanel({
               )}
             </FormField>
             <FormField
-              editMode={editMode}
+              editMode={editMode && !hasLegacyPoints}
               id={`${idPrefix}-maxAutoPoints`}
               label="Max auto points (default)"
               viewValue={
@@ -375,7 +404,7 @@ export function AltPoolDetailPanel({
               )}
             </FormField>
             <FormField
-              editMode={editMode}
+              editMode={editMode && !hasLegacyPoints}
               id={`${idPrefix}-manualPoints`}
               label="Manual points (default)"
               viewValue={
@@ -431,7 +460,7 @@ export function AltPoolDetailPanel({
         ) : (
           <>
             <FormField
-              editMode={editMode}
+              editMode={editMode && !hasLegacyPoints}
               id={`${idPrefix}-points`}
               label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock.autoPoints)}
@@ -455,7 +484,7 @@ export function AltPoolDetailPanel({
               )}
             </FormField>
             <FormField
-              editMode={editMode}
+              editMode={editMode && !hasLegacyPoints}
               id={`${idPrefix}-manualPoints`}
               label="Manual points (default)"
               viewValue={

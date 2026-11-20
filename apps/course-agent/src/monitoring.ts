@@ -48,7 +48,8 @@ export function sentryOptions(bindings: Env & { SENTRY_DSN?: string }): Sentry.C
     environment: bindings.SENTRY_ENVIRONMENT,
     release: bindings.VERSION_METADATA.id,
     defaultIntegrations: false,
-    integrations: [Sentry.requestDataIntegration()],
+    // Errors that cross RPC keep only the caller's frames, so `cause` often holds the real failure.
+    integrations: [Sentry.requestDataIntegration(), Sentry.linkedErrorsIntegration()],
     tracesSampleRate: 0,
     dataCollection: {
       userInfo: false,

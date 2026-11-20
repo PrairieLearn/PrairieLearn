@@ -19,7 +19,7 @@ import {
 import {
   type AccessControlAuthorization,
   type AccessControlResolverResult,
-  formatDateShort,
+  formatAccessDate,
   resolveAccessControl,
 } from './resolver.js';
 
@@ -57,6 +57,7 @@ function resolverResultToAssessmentAuthzResult(
   result: AccessControlResolverResult,
   authzMode: EnumMode,
   displayTimezone: string,
+  reqDate: Date,
   hasCompletedInstance: boolean,
 ): AssessmentAuthzResult {
   return {
@@ -76,7 +77,7 @@ function resolverResultToAssessmentAuthzResult(
     mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     show_before_release: result.showBeforeRelease,
     next_active_time: result.nextActiveDate
-      ? formatDateShort(result.nextActiveDate, displayTimezone)
+      ? formatAccessDate(result.nextActiveDate, displayTimezone, reqDate)
       : null,
     access_rules: [],
     access_timeline: result.accessTimeline,
@@ -115,6 +116,7 @@ export async function resolveModernAssessmentAccess(
     result,
     input.authzData.mode,
     input.courseInstance.display_timezone,
+    input.reqDate,
     false,
   );
 }
@@ -276,6 +278,7 @@ export function resolverResultToAssessmentAuthzResultForInstance({
     resultForInstance,
     authzMode,
     displayTimezone,
+    reqDate,
     hasCompletedInstance,
   );
 }
