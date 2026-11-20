@@ -371,7 +371,11 @@ export function Work({
   }
   const calls = items.filter(isCall);
   const updates = blocks.filter((block): block is TextUIPart => !Array.isArray(block));
-  const update = updates.at(-1);
+  // A new update starts out empty; the one before it stays up until there is text to replace it.
+  let update: TextUIPart | undefined;
+  for (const part of updates) {
+    if (part.text.trim()) update = part;
+  }
   // With no steps to fold away, an update is all there is to show.
   if (calls.length === 0) {
     const shown = settled ? updates : showUpdate && update ? [update] : [];

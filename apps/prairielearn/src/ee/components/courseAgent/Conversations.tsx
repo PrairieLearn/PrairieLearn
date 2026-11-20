@@ -325,6 +325,35 @@ function Loading() {
   );
 }
 
+/** How long a status label stays up before the next one may replace it. */
+const MIN_LABEL_MS = 1000;
+
+/**
+ * Holds each label on screen long enough to read. A step that takes a tenth of a second would
+ * otherwise flash its label and make the line flicker.
+ */
+function useSteadyLabel(label: string) {
+  const [shown, setShown] = useState(label);
+  const shownAtRef = useRef(0);
+  // Switches to a new label once the current one has had its time on screen.
+  useEffect(() => {
+    if (label === shown) return;
+    const wait = Math.max(0, MIN_LABEL_MS - (Date.now() - shownAtRef.current));
+    const timeout = setTimeout(() => {
+      shownAtRef.current = Date.now();
+      setShown(label);
+    }, wait);
+    return () => clearTimeout(timeout);
+  }, [label, shown]);
+  return shown;
+}
+
+/** The agent service marks text the model wrote on its way to the reply, not as the reply. */
+function isUpdate(part: TextUIPart) {
+  const metadata: { update?: unknown } | undefined = part.providerMetadata?.courseAgent;
+  return metadata?.update === true;
+}
+
 function PendingStatus({ label }: { label: string }) {
   return (
     <div className="small text-body-secondary" role="status">
@@ -350,6 +379,7 @@ function ActivityStatus({
   const storageKey = `course-agent-working-since:${conversationId}`;
   const [startedAt] = useState(() => Number(sessionStorage.getItem(storageKey)) || Date.now());
   const [now, setNow] = useState(() => Date.now());
+  const label = useSteadyLabel(startingSandbox ? 'Getting ready' : activityLabel(message));
   // Advances the elapsed time once a second.
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -368,10 +398,11 @@ function ActivityStatus({
         {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
       </span>
       <span className="d-flex gap-2" aria-hidden="true">
-        <span className="text-truncate course-agent-shimmer">
-          {startingSandbox ? 'Getting ready' : activityLabel(message)}…
+        <span className="text-truncate course-agent-shimmer">{label}…</span>
+        {/* At the edge of the line, the time stays put while the label beside it changes. */}
+        <span className="course-agent-status-time flex-shrink-0 ms-auto">
+          {formatInterval(now - startedAt)}
         </span>
-        <span className="flex-shrink-0">{formatInterval(now - startedAt)}</span>
       </span>
       {call?.status === 'running' && <LiveOutput call={call} lines={1} />}
     </div>
@@ -398,7 +429,8 @@ function activityLabel(message: UIMessage | undefined) {
   const call = latestCall(message);
   if (call?.status === 'running') return runningLabel(call);
   const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
-  if (part?.type === 'text' && part.state === 'streaming') return 'Writing';
+  // An update is over in a moment, so only the reply is worth calling writing.
+  if (part?.type === 'text' && part.state === 'streaming' && !isUpdate(part)) return 'Writing';
   return (part?.type === 'reasoning' && reasoningHeading(part.text)) || 'Thinking';
 }
 
@@ -1167,8 +1199,7 @@ function Message({
       }
       reply = { key, part };
       // The agent service says so when the model labels its updates, which saves waiting to see.
-      const metadata: { update?: unknown } | undefined = part.providerMetadata?.courseAgent;
-      if (metadata?.update === true) {
+      if (isUpdate(part)) {
         work ??= { key, items: [] };
         work.items.push(part);
         reply = null;

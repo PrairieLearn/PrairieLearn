@@ -391,6 +391,11 @@
   background-color: transparent !important;
 }
 
+/* Digits of one width keep the elapsed time from shifting as it counts. */
+.course-agent-status-time {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Each line is cut off rather than wrapped, so the block keeps a steady height as output arrives. */
 .course-agent-live-output {
   padding-left: 0.5rem;
