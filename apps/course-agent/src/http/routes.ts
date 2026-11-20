@@ -8,7 +8,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   MAX_THUMBNAIL_BYTES,
   PageCatalogSchema,
-  RequestChangesResultSchema,
+  ReviewResultSchema,
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
 
@@ -182,7 +182,7 @@ conversations.get('/:id/reviews/:reviewId', async (c) => {
 
 // PrairieLearn may send a result more than once; the review ID makes repeats harmless.
 conversations.post('/:id/reviews/:reviewId/outcome', async (c) => {
-  const result = RequestChangesResultSchema.safeParse(await c.req.json().catch(() => null));
+  const result = ReviewResultSchema.safeParse(await c.req.json().catch(() => null));
   if (!result.success) return c.text('Invalid result', 400);
   const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
   if (!(await conversation.recordReviewResult(c.req.param('reviewId'), result.data))) {

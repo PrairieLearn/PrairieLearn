@@ -38,9 +38,12 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  // The course agent service reads course data with its own credentials, so these requests have
-  // no session. The path matches where server.ts mounts the course data router.
-  const courseAgentData = /^\/pl\/course\/(\d+)\/course_agent\/data(?:\/|$)/.exec(req.path);
+  // The course agent service reads course data and requests course actions with its own
+  // credentials, so these requests have no session. The path matches where server.ts mounts the
+  // course data and course action routers.
+  const courseAgentData = /^\/pl\/course\/(\d+)\/course_agent\/(?:data|actions)(?:\/|$)/.exec(
+    req.path,
+  );
   if (courseAgentData && isEnterprise()) {
     const { authenticateCourseAgentDataRequest } = await import('../ee/lib/course-agent/authn.js');
     const agent = await authenticateCourseAgentDataRequest({

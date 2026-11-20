@@ -1,0 +1,15 @@
+columns
+    action: text not null
+    agent_action_id: uuid not null
+    card: jsonb not null
+    course_agent_conversation_id: bigint not null
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('course_agent_actions_id_seq'::regclass)
+    input: jsonb not null
+
+indexes
+    course_agent_actions_pkey: PRIMARY KEY (id) USING btree (id)
+    course_agent_actions_conversation_action_key: UNIQUE (course_agent_conversation_id, agent_action_id) USING btree (course_agent_conversation_id, agent_action_id)
+
+foreign-key constraints
+    course_agent_actions_course_agent_conversation_id_fkey: FOREIGN KEY (course_agent_conversation_id) REFERENCES course_agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE

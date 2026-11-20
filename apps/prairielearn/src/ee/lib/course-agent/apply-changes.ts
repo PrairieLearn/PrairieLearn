@@ -13,6 +13,8 @@ import {
   type RequestChangesResult,
   RequestChangesResultSchema,
   type Review,
+  type ReviewResult,
+  ReviewResultSchema,
   type ReviewSnapshot,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
@@ -31,6 +33,7 @@ import { parseGithubRepository } from '../../../lib/github-utils.js';
 import { type ServerJobExecutor, getJobSequence } from '../../../lib/server-jobs.js';
 import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
 import { selectCourseById } from '../../../models/course.js';
+import { selectOptionalCourseAgentAction } from '../../models/course-agent-action.js';
 import {
   expireUndeliveredCourseAgentReviews,
   insertCourseAgentReview,
@@ -41,6 +44,7 @@ import {
   updateCourseAgentReviewStuckReported,
 } from '../../models/course-agent-review.js';
 
+import { unknownCourseActionResult } from './actions/results.js';
 import {
   deliverCourseAgentReviewResult,
   getCourseAgentReview,
@@ -140,14 +144,14 @@ export async function getReview(
 }
 
 /** Repeated decisions must agree with the first; the unique review row makes the first win. */
-function matchDecision(
+export function matchDecision(
   review: CourseAgentReview,
   decision: 'approved' | 'denied',
   viaMessage = false,
 ) {
   // The browser sends the message only after this succeeds, and only a denial via message
   // leaves the agent waiting for it; after any other decision the agent is busy continuing.
-  if (viaMessage && !RequestChangesResultSchema.nullable().parse(review.result)?.viaMessage) {
+  if (viaMessage && !ReviewResultSchema.nullable().parse(review.result)?.viaMessage) {
     throw new HttpStatusError(
       409,
       review.decision === 'approved'
@@ -165,12 +169,12 @@ function matchDecision(
  * The agent refuses the browser's message until it has the denial, so a delivery that failed
  * fails the request, and a retry delivers again.
  */
-async function deliverDenialByMessage(
+export async function deliverDenialByMessage(
   conversation: CourseAgentConversation,
   row: CourseAgentReview,
 ) {
   if (row.result_delivered_at !== null) return;
-  if (!(await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result)))) {
+  if (!(await deliverResult(conversation, row, ReviewResultSchema.parse(row.result)))) {
     throw new HttpStatusError(
       503,
       'The changes were denied, but the course agent could not be reached, so your message was not sent. Try again.',
@@ -303,10 +307,10 @@ async function reportStuckDelivery(row: CourseAgentReview, error: unknown) {
 }
 
 /** Record a result once; whichever caller records it first decides what the agent receives. */
-async function recordAndDeliverResult(
+export async function recordAndDeliverResult(
   conversation: CourseAgentConversation,
   row: CourseAgentReview,
-  result: RequestChangesResult,
+  result: ReviewResult,
 ) {
   const recorded = await updateCourseAgentReviewResult({ id: row.id, result });
   return recorded ? await deliverResult(conversation, recorded, result) : true;
@@ -316,10 +320,10 @@ async function recordAndDeliverResult(
  * A failed send leaves the result undelivered for the sweeper or Resume to retry. Returns false
  * when the service did not answer, so the sweeper can stop instead of waiting out each timeout.
  */
-async function deliverResult(
+export async function deliverResult(
   conversation: CourseAgentConversation,
   row: CourseAgentReview,
-  result: RequestChangesResult,
+  result: ReviewResult,
 ) {
   try {
     await deliverCourseAgentReviewResult(
@@ -410,12 +414,20 @@ async function deliverUndeliveredReviewResult(
 ) {
   try {
     if (row.result !== null) {
-      return await deliverResult(conversation, row, RequestChangesResultSchema.parse(row.result));
+      return await deliverResult(conversation, row, ReviewResultSchema.parse(row.result));
     }
     // Only approvals wait for a result. Each creates a job, so a missing one was deleted before
     // its result was recorded.
     if (row.job_sequence_id === null) {
-      return await recordAndDeliverResult(conversation, row, UNKNOWN);
+      const action = await selectOptionalCourseAgentAction({
+        course_agent_conversation_id: row.course_agent_conversation_id,
+        agent_action_id: row.agent_review_id,
+      });
+      return await recordAndDeliverResult(
+        conversation,
+        row,
+        action ? unknownCourseActionResult(action) : UNKNOWN,
+      );
     }
     const sequence = await getJobSequence(row.job_sequence_id, conversation.course_id);
     if (sequence.jobs[0].status === 'Running' || sequence.jobs[0].status === 'Stopping') {

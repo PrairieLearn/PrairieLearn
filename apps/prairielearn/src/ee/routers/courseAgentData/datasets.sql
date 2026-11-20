@@ -227,3 +227,31 @@ WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
   AND a.deleted_at IS NULL;
+
+-- BLOCK select_issues_by_course_id
+SELECT
+  i.id,
+  i.course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  i.assessment_id,
+  a.tid AS assessment_tid,
+  i.question_id,
+  q.qid,
+  i.instance_question_id,
+  i.variant_id,
+  i.user_id,
+  i.date AS reported_at,
+  i.open IS TRUE AS open,
+  i.manually_reported IS TRUE AS manually_reported,
+  i.student_message,
+  i.instructor_message
+FROM
+  issues AS i
+  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
+  LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
+  LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
+  LEFT JOIN questions AS q ON (q.id = i.question_id)
+WHERE
+  i.course_id = $course_id
+  -- Issues caused by PrairieLearn itself are not the course's to resolve.
+  AND i.course_caused;

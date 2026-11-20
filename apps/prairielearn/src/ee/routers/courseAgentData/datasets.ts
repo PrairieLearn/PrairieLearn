@@ -10,6 +10,7 @@ import {
   EnumInstanceQuestionStatusSchema,
   EnumModeSchema,
 } from '../../../lib/db-types.js';
+import { toJsonSchema } from '../../lib/course-agent/json-schema.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -364,6 +365,44 @@ export const COURSE_DATA_DATASETS = {
     }),
     largeColumns: ['submitted_answer', 'partial_scores', 'feedback'],
   }),
+  issues: dataset({
+    description:
+      "Problems reported on the course's questions, by students or by PrairieLearn when a question's code fails. Close or reopen them with the issues_close and issues_reopen actions.",
+    query: sql.select_issues_by_course_id,
+    schema: z.object({
+      id: IdSchema,
+      course_instance_id: IdSchema.nullable().describe(
+        'Course instance the issue was reported in. Null when reported from a question preview.',
+      ),
+      course_instance_short_name: CourseInstanceShortNameSchema.nullable(),
+      assessment_id: IdSchema.nullable().describe(
+        'Assessment the issue was reported in. Null when reported outside an assessment.',
+      ),
+      assessment_tid: AssessmentTidSchema,
+      question_id: IdSchema.nullable(),
+      qid: QidSchema,
+      instance_question_id: IdSchema.nullable(),
+      variant_id: IdSchema.nullable().describe(
+        'Version of the question the reporter was looking at, as in the variants dataset when a student reported it.',
+      ),
+      user_id: IdSchema.nullable().describe('User who was working on the question.'),
+      reported_at: TimestampSchema.nullable().describe('When the issue was reported.'),
+      open: z.boolean().describe('Whether the issue still waits for staff to resolve it.'),
+      manually_reported: z
+        .boolean()
+        .describe(
+          "True when a person reported it with the question's report button. False when PrairieLearn reported it because the question's code failed.",
+        ),
+      student_message: z
+        .string()
+        .nullable()
+        .describe("The reporter's description, or a short description of the failure."),
+      instructor_message: z
+        .string()
+        .nullable()
+        .describe("Detail for staff, such as the error the question's code raised."),
+    }),
+  }),
 };
 
 type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;
@@ -373,18 +412,6 @@ export function isCourseDataset(name: string): name is CourseDatasetName {
 }
 
 const COURSE_DATA_VERSION = 1;
-
-/** Columns are serialized JSON, so an ID is a string of digits. */
-function toJsonSchema(schema: z.ZodType) {
-  return z.toJSONSchema(schema, {
-    unrepresentable: 'any',
-    override: ({ zodSchema, jsonSchema }) => {
-      if (zodSchema !== IdSchema) return;
-      for (const key of Object.keys(jsonSchema)) delete jsonSchema[key];
-      Object.assign(jsonSchema, { type: 'string', pattern: '^\\d+$' });
-    },
-  });
-}
 
 /** The dataset list endpoint's response. */
 export function courseDataSchema() {

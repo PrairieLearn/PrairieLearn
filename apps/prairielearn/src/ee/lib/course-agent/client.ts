@@ -11,7 +11,7 @@ import { z } from 'zod';
 import {
   type ApprovalMode,
   type PageCatalog,
-  type RequestChangesResult,
+  type ReviewResult,
   ReviewSchema,
 } from '@prairielearn/course-agent-types';
 import * as error from '@prairielearn/error';
@@ -173,7 +173,7 @@ export async function getCourseAgentReview(agentConversationId: string, reviewId
 export async function deliverCourseAgentReviewResult(
   agentConversationId: string,
   reviewId: string,
-  result: RequestChangesResult,
+  result: ReviewResult,
 ) {
   const { url, headers } = buildCourseAgentServiceRequest(
     `conversations/${encodeURIComponent(agentConversationId)}/reviews/${encodeURIComponent(reviewId)}/outcome`,

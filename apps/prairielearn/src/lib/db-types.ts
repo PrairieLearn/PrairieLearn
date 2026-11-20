@@ -724,6 +724,17 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+export const CourseAgentActionSchema = z.object({
+  action: z.string(),
+  agent_action_id: z.string(),
+  card: z.unknown(),
+  course_agent_conversation_id: IdSchema,
+  created_at: DateFromISOString,
+  id: IdSchema,
+  input: z.unknown(),
+});
+export type CourseAgentAction = z.infer<typeof CourseAgentActionSchema>;
+
 export const CourseAgentConversationSchema = z.object({
   agent_conversation_id: z.string(),
   course_id: IdSchema,
@@ -1912,6 +1923,7 @@ export const TableNames = [
   'batched_migrations',
   'chunks',
   'client_fingerprints',
+  'course_agent_actions',
   'course_agent_conversations',
   'course_agent_reviews',
   'course_agent_usage_reports',

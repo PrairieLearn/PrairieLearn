@@ -7,6 +7,10 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { courseAgentEnabled } from '../../ee/lib/course-agent/access.js';
 import {
+  getCourseAction,
+  postCourseActionDecision,
+} from '../../ee/lib/course-agent/actions/requests.js';
+import {
   getReview,
   postReviewDecision,
   resumeConversation,
@@ -18,6 +22,7 @@ import {
 } from '../../ee/lib/course-agent/client.js';
 import { buildPageCatalog } from '../../ee/lib/course-agent/pages.js';
 import { formatCourseAgentConversationTitle } from '../../ee/lib/course-agent/title.js';
+import { selectOptionalCourseAgentAction } from '../../ee/models/course-agent-action.js';
 import {
   insertCourseAgentConversation,
   selectCourseAgentConversationsForUser,
@@ -56,6 +61,11 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      // A requested course action waits in the review slot; its card reads it with getAction.
+      const action = await getCourseAction(conversation, input.reviewId);
+      if (action) {
+        return { status: 'action' as const, decision: action.decision, result: action.result };
+      }
       return getReview(ctx.course, conversation, input.reviewId);
     }),
   postReviewDecision: courseAgentProcedure
@@ -81,6 +91,25 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      // A requested course action waits in the review slot, so it is decided here too, including
+      // when the instructor denies it by sending a message.
+      const action = await selectOptionalCourseAgentAction({
+        course_agent_conversation_id: conversation.id,
+        agent_action_id: input.reviewId,
+      });
+      if (action) {
+        return postCourseActionDecision({
+          ctx: {
+            course: ctx.locals.course,
+            user: ctx.locals.authn_user,
+            authz_data: ctx.locals.authz_data,
+          },
+          conversation,
+          action,
+          decision: input.decision,
+          viaMessage: input.decision === 'denied' && input.viaMessage === true,
+        });
+      }
       return postReviewDecision({
         ...input,
         course: ctx.course,
@@ -88,6 +117,19 @@ export const courseAgentRouter = t.router({
         user: ctx.locals.user,
         authzData: ctx.authz_data,
       });
+    }),
+  getAction: courseAgentProcedure
+    .input(z.object({ conversationId: IdSchema, actionId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      const conversation = await selectOptionalCourseAgentConversation({
+        id: input.conversationId,
+        course_id: ctx.course.id,
+        user_id: ctx.locals.authn_user.id,
+      });
+      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
+      const action = await getCourseAction(conversation, input.actionId);
+      if (!action) throw new TRPCError({ code: 'NOT_FOUND' });
+      return action;
     }),
   list: courseAgentProcedure.query(async ({ ctx }) => {
     const conversations = await selectCourseAgentConversationsForUser({
@@ -205,6 +247,7 @@ export interface CourseAgentError {
   Create: never;
   Resume: never;
   GetReview: never;
+  GetAction: never;
   PostReviewDecision: never;
   SetTitle: never;
   SetApprovalMode: never;
