@@ -1,9 +1,17 @@
 -- BLOCK age_print_export
 UPDATE print_exports
 SET
-  created_at = CURRENT_TIMESTAMP - INTERVAL '25 hours'
+  created_at = CURRENT_TIMESTAMP - $age::interval
 WHERE
   id = $print_export_id;
+
+-- BLOCK fail_pending_print_exports
+UPDATE print_exports
+SET
+  status = 'failed',
+  failure_message = 'Test cleanup'
+WHERE
+  status = 'pending';
 
 -- BLOCK select_print_export_by_filename
 SELECT

@@ -45,7 +45,10 @@ export async function insertPrintExport({
   );
 }
 
-const PrintExportWithExpirySchema = PrintExportSchema.extend({ expired: z.boolean() });
+const PrintExportWithExpirySchema = PrintExportSchema.extend({
+  expired: z.boolean(),
+  overdue: z.boolean(),
+});
 const RecentPrintExportSchema = PrintExportSchema.pick({
   id: true,
   created_at: true,
@@ -55,9 +58,12 @@ const RecentPrintExportSchema = PrintExportSchema.pick({
   label: true,
   size_bytes: true,
   failure_message: true,
+}).extend({
+  expired: z.boolean(),
+  overdue: z.boolean(),
 });
 
-/** Downloads expire 24 hours after the export was queued. */
+/** Downloads expire 24 hours after the export was queued; pending exports are overdue after 30 minutes. */
 export async function selectOptionalPrintExport({
   printExportId,
   assessmentId,
@@ -89,9 +95,24 @@ export async function selectRecentPrintExportsForAssessment({
   );
 }
 
-/** Counts an attempt and returns the export, or null if it is no longer pending. */
-export async function claimPrintExport(id: string): Promise<PrintExport | null> {
-  return await queryOptionalRow(sql.claim_print_export, { id }, PrintExportSchema);
+/** Counts the user's pending exports for an assessment that aren't yet overdue. */
+export async function selectUnfinishedPrintExportCount({
+  assessmentId,
+  authnUserId,
+}: {
+  assessmentId: string;
+  authnUserId: string;
+}): Promise<number> {
+  return await queryScalar(
+    sql.select_unfinished_print_export_count,
+    { assessment_id: assessmentId, authn_user_id: authnUserId },
+    z.number(),
+  );
+}
+
+/** Returns null if the export was already finished, e.g. by a duplicate run. */
+export async function selectOptionalPendingPrintExport(id: string): Promise<PrintExport | null> {
+  return await queryOptionalRow(sql.select_pending_print_export, { id }, PrintExportSchema);
 }
 
 /** Returns false if the export was already finished, e.g. by a duplicate run. */

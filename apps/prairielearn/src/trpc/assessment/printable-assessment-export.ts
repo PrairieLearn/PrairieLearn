@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { load } from 'cheerio';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -22,6 +21,7 @@ import {
   assertPrintDocumentReady,
   getPrintableFormQuestionIds,
   getPrintableQuestionListDigest,
+  loadPrintSnapshotRoot,
 } from '../../lib/printing/index.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import type { PrintExportWork } from '../../lib/printing/print-export-render.js';
@@ -281,9 +281,7 @@ export const printableAssessmentExportRouter = t.router({
         // The worker checks the full signed page. Check its root here to reject exports that
         // are already known to contain omitted questions.
         for (const [index, form] of forms.entries()) {
-          const root = load(`${/<html\b[^>]*>/i.exec(pageHtmls[index])?.[0] ?? '<html>'}</html>`)(
-            'html',
-          );
+          const root = loadPrintSnapshotRoot(pageHtmls[index]);
           assertPrintDocumentReady({
             questionCount: Number(root.attr('data-print-question-count')),
             omittedCount: Number(root.attr('data-print-omitted-question-count')),
@@ -339,6 +337,9 @@ export const printableAssessmentExportRouter = t.router({
           }),
         };
       } catch (error) {
+        if (error instanceof HttpStatusError && error.status === 429) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message, cause: error });
+        }
         if (error instanceof HttpStatusError && error.status === 503) {
           throw new TRPCError({
             code: 'SERVICE_UNAVAILABLE',
@@ -372,17 +373,19 @@ export const printableAssessmentExportRouter = t.router({
         assessmentId: ctx.assessment.id,
         authnUserId: ctx.authn_user.id,
       });
-      return exports.map((printExport) => ({
-        id: printExport.id,
-        createdAt: printExport.created_at,
-        status: printExport.status,
-        format: printExport.format,
-        downloadUrl:
-          printExport.status === 'succeeded' ? `${baseUrl}/print/exports/${printExport.id}` : null,
-        sizeBytes: printExport.size_bytes,
-        label: printExport.label,
-        failureMessage: printExport.failure_message,
-      }));
+      return exports.map((printExport) => {
+        const { status, failureMessage } = printExportResult(printExport);
+        return {
+          id: printExport.id,
+          createdAt: printExport.created_at,
+          status,
+          format: printExport.format,
+          downloadUrl: status === 'succeeded' ? `${baseUrl}/print/exports/${printExport.id}` : null,
+          sizeBytes: printExport.size_bytes,
+          label: printExport.label,
+          failureMessage,
+        };
+      });
     }),
   status: t.procedure
     .use(requireCoursePermissionPreview)

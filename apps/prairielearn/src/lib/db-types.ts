@@ -1446,7 +1446,6 @@ export type PlanGrant = z.infer<typeof PlanGrantSchema>;
 
 export const PrintExportSchema = z.object({
   assessment_id: IdSchema,
-  attempts: z.number(),
   authn_user_id: IdSchema,
   created_at: DateFromISOString,
   failure_message: z.string().nullable(),

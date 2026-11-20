@@ -2836,7 +2836,6 @@ async function close() {
   // Stop polling and scheduled work and finish pending workspace startups while
   // their shared dependencies are still available.
   await settleShutdownTasks([
-    closePrintRenderer(),
     externalGraderDeadLetters.stop(),
     externalGraderResults.stop(),
     cron.stop(),
