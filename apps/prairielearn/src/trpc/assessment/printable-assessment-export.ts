@@ -30,7 +30,7 @@ import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectOptionalPrintExport } from '../../models/print-export.js';
 import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
-import { requireCoursePermissionPreview, t } from './init.js';
+import { requireCoursePermissionEdit, requireCoursePermissionPreview, t } from './init.js';
 import { requirePrintableAssessments } from './print-forms.js';
 
 /** @knipignore Consumed by the preparation UI in the following PR. */
@@ -43,6 +43,7 @@ export const printableAssessmentExportRouter = t.router({
   pdf: t.procedure
     .use(requireCoursePermissionPreview)
     .use(requirePrintableAssessments)
+    .use(requireCoursePermissionEdit)
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
       let metadata: z.infer<typeof PrintPacketMetadataSchema>;

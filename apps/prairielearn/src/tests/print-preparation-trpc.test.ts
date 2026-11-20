@@ -929,6 +929,28 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await expect(api.printForms.archive.mutate(form)).rejects.toMatchObject({
         data: { code: 'FORBIDDEN' },
       });
+      await expect(
+        api.printableAssessmentExport.pdf.mutate(packetInput(form.printFormId)),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+
+      const printUrl = getPrintFormUrl({
+        courseInstanceId: '1',
+        assessmentId: assessment.id,
+        printFormId: form.printFormId,
+      });
+      const response = await fetch(`${siteUrl}${printUrl}/docx`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-CSRF-Token': generateCsrfToken({
+            url: `${printUrl}/docx`,
+            authnUserId: viewer.id,
+          }),
+        },
+        body: '{}',
+      });
+      expect(response.status).toBe(403);
+      expect(await response.text()).toContain('course editor');
     });
   });
 
