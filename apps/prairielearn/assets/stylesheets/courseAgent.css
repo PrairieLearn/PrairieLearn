@@ -40,7 +40,12 @@
   border-color: var(--bs-primary);
 }
 
-.course-agent-composer-input {
+/* The element selector outweighs Bootstrap's own minimum height for a text area. */
+textarea.course-agent-composer-input {
+  /* Grows with its text where supported; browsers without this are sized by script. */
+  field-sizing: content;
+  /* Two lines plus the vertical padding of .form-control, as `rows` gives without `field-sizing`. */
+  min-height: calc(2lh + 0.75rem);
   /* Ten lines plus the vertical padding of .form-control. */
   max-height: calc(10lh + 0.75rem);
   overflow-y: auto;

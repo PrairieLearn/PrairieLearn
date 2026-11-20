@@ -545,7 +545,15 @@ function Chat({
 
   return (
     <FileDropArea enabled={!sending} onDrop={drafts.add}>
-      <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
+      <div
+        ref={stickToBottom.scrollRef}
+        className="flex-grow-1 overflow-y-auto"
+        // Scrollable regions must be reachable by keyboard, and Safari only scrolls a focused one.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        role="region"
+        aria-label="Conversation"
+      >
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
@@ -687,12 +695,12 @@ function Composer({
   // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
   // the height.
   useLayoutEffect(() => {
-    if (textareaRef.current) fitToText(textareaRef.current);
+    if (!SUPPORTS_FIELD_SIZING && textareaRef.current) fitToText(textareaRef.current);
   }, [draft]);
   // The text rewraps when the box's width changes, such as when the window or panel is resized.
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (!textarea) return;
+    if (SUPPORTS_FIELD_SIZING || !textarea) return;
     let width = textarea.clientWidth;
     const observer = new ResizeObserver(() => {
       // Fitting changes the height, which this also observes.
@@ -799,6 +807,13 @@ function Composer({
     </Form>
   );
 }
+
+/**
+ * With `field-sizing: content`, the browser grows the message box with its text. Without it, a
+ * script has to set the height. Safari must use the CSS: the script briefly collapses the box to
+ * measure it, and in Safari that moves the conversation's scroll position.
+ */
+const SUPPORTS_FIELD_SIZING = typeof CSS !== 'undefined' && CSS.supports('field-sizing', 'content');
 
 function fitToText(textarea: HTMLTextAreaElement) {
   textarea.style.height = 'auto';
