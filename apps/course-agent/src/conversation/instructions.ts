@@ -41,10 +41,10 @@ export function buildInstructions(
 }
 
 /**
- * How to state times for a course in this timezone. Turns repeat it as context, because a thread
- * keeps the instructions it started with.
+ * How to state times for a course in this timezone. Threads that started without these rules
+ * still get the course's zone from the sandbox clock, which Codex reports to the model.
  */
-export function describeTimezone(timezone: string) {
+function describeTimezone(timezone: string) {
   return [
     `The course's timezone is ${timezone}. Give every date and time in that timezone and say which zone it is, by its everyday name or abbreviation rather than "${timezone}", unless staff ask for another zone.`,
     'Commands and tools can report times in UTC or another zone; convert those before quoting them.',

@@ -120,12 +120,6 @@ export interface TurnInput {
    * drops that page until it changes: https://github.com/openai/codex/issues/38269
    */
   page?: string;
-  /**
-   * How to state times in the course's timezone, sent as application context. Developer
-   * instructions reach only threads started with them, so this covers threads that started
-   * before the timezone was known or before it changed.
-   */
-  timezone?: string;
   /** Text to prepend given the thread's latest tag (undefined for a thread started this turn). */
   catchUp?: (latestTag: string | null | undefined) => string | null;
 }
@@ -423,12 +417,6 @@ export class CodexAppServerClient {
       return;
     }
     const context = input.catchUp?.(latestTag) ?? null;
-    const additionalContext = {
-      ...(input.page && { prairielearn_page: { kind: 'untrusted' as const, value: input.page } }),
-      ...(input.timezone && {
-        course_timezone: { kind: 'application' as const, value: input.timezone },
-      }),
-    };
     const result = await this.request(
       'turn/start',
       {
@@ -439,7 +427,9 @@ export class CodexAppServerClient {
           { type: 'text', text: input.text, text_elements: [] },
           ...(input.images ?? []).map((path) => ({ type: 'localImage' as const, path })),
         ],
-        ...(Object.keys(additionalContext).length > 0 ? { additionalContext } : {}),
+        ...(input.page
+          ? { additionalContext: { prairielearn_page: { kind: 'untrusted', value: input.page } } }
+          : {}),
       } satisfies TurnStartParams,
       TurnResult,
     );

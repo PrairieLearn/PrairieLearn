@@ -63,7 +63,7 @@ Each review supports at most 100 changed files, with a 1 MiB limit on each origi
 
 The sandbox image (`container/Dockerfile`) is Debian slim with Codex's app server, a few CLI tools, and Python with pandas and numpy for analyzing course data. It has no Node.js, so the agent can't run `node`, `npm`, or `npx`. Each sandbox installs the Codex config from `container/codex-config.toml` into its workspace, and installs it again after restoring a checkpoint.
 
-PrairieLearn sends the course's timezone with the course context. Before starting the runner, the sandbox sets its system timezone (`/etc/localtime` and `/etc/timezone`) to it. Codex tells the model the date and zone from that clock, and commands the agent runs, such as `date` and `git log`, print course-local times. Codex keeps a thread's developer instructions as they were when the thread started, so the rules for stating times are also sent with each turn as `application` context, which reaches threads that started before the timezone was known or before it changed.
+PrairieLearn sends the course's timezone with the course context. New threads get rules for stating times in it, and before starting each runner the sandbox sets its system timezone (`/etc/localtime` and `/etc/timezone`) to it, or to UTC when the zone is missing or unknown. Codex tells the model the date and zone from that clock, including in threads that started before the zone was known or before it changed, and commands such as `date` print course-local times. A changed zone reaches the clock when the next runner starts.
 
 `SANDBOX_INSTANCE_TYPE` selects the Cloudflare instance type for each environment. It defaults to `standard-2` because cloning large courses is CPU-bound.
 

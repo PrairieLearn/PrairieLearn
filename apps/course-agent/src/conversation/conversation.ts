@@ -60,7 +60,7 @@ import {
   turnMarker,
 } from './catch-up.js';
 import { getCourseData, listCourseDatasets } from './course-data.js';
-import { buildInstructions, describePageLocation, describeTimezone } from './instructions.js';
+import { buildInstructions, describePageLocation } from './instructions.js';
 import { resolveNavigation } from './navigation.js';
 import { generateTitle } from './title.js';
 
@@ -158,7 +158,7 @@ function estimateUsage(body: string): Usage {
   };
 }
 
-const CourseContextSchema = z.object({
+export const CourseContextSchema = z.object({
   // Optional while a PrairieLearn deployment that does not send it may still connect.
   courseId: z.string().regex(/^\d+$/).optional(),
   courseTitle: z.string().max(500),
@@ -958,7 +958,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const delivered = continuation && review?.result ? review : null;
     const location =
       message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
-    const timezone = this.record.courseContext?.timezone;
     // File parts are left out rather than joined as blank lines.
     const messageText = sent
       .map((entry) =>
@@ -982,7 +981,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             images: attachments.filter(({ id }) => images.has(id)).map(attachmentPath),
             ...(location ? { page: describePageLocation(location) } : {}),
           }),
-      ...(timezone ? { timezone: describeTimezone(timezone) } : {}),
       // A restored or new thread may lack turns that chat history has.
       ...((startup || this.record.threadMayBeBehind) && earlier.length > 0
         ? { catchUp: (latestTag) => buildCatchUp(missedTurns(earlier, latestTag), source.type) }
@@ -1055,7 +1053,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         threadId: this.record.nativeThreadId,
         pages: this.record.pages ?? [],
       },
-      timezone,
+      timezone: this.record.courseContext?.timezone,
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.
       onThread: (id) => {

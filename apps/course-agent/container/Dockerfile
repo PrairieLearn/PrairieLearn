@@ -15,15 +15,12 @@ ARG CACHEBUST=2026-09-15-14-09-16
 # slim base image does not include them.
 # Without an identity, Git guesses one from the hostname with a DNS lookup that times out in the
 # offline sandbox, stalling every command that writes a commit or reflog (about 28 s per clone).
-# Git prints each commit's time in its author's zone; iso-local prints them all in the sandbox's
-# zone, which the Worker sets to the course's.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends git ca-certificates ripgrep jq procps zstd tini poppler-utils \
     python3 python-is-python3 python3-pandas python3-numpy tzdata \
   && rm -rf /var/lib/apt/lists/* \
   && git config --system user.name "PrairieLearn" \
   && git config --system user.email "course-agent@prairielearn.com" \
-  && git config --system log.date iso-local \
   && useradd --uid 1000 --user-group --shell /bin/bash agent \
   && mkdir -p /workspace /uploads \
   && chown agent:agent /workspace

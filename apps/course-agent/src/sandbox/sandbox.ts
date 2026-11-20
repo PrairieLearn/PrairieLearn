@@ -22,7 +22,7 @@ import {
   attachmentPath,
   uploadKey,
 } from '../conversation/attachments.js';
-import { logEvent } from '../monitoring.js';
+import { logEvent, reportError } from '../monitoring.js';
 
 import { codexRequestKind, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
@@ -613,16 +613,19 @@ export class CourseSandbox extends DurableObject<Env> {
       byte.toString(16).padStart(2, '0'),
     ).join('');
     // Codex tells the model the date and zone of the system clock, and commands the agent runs
-    // print times in it. A zone the image does not know leaves the clock on UTC.
-    const timezone = request.headers.get('X-Course-Timezone');
-    if (timezone) {
+    // print times in it. A missing zone, or one the image does not know, sets the clock to UTC,
+    // replacing an earlier runner's zone. The clock only affects how times read, so a failure to
+    // set it is reported rather than failing the turn.
+    try {
       await this.exec([
         'sh',
         '-c',
-        'test -f "/usr/share/zoneinfo/$1" || exit 0; ln -sfn "/usr/share/zoneinfo/$1" /etc/localtime && echo "$1" > /etc/timezone',
+        'zone=$1; test -f "/usr/share/zoneinfo/$zone" || zone=Etc/UTC; ln -sfn "/usr/share/zoneinfo/$zone" /etc/localtime && echo "$zone" > /etc/timezone',
         'sh',
-        timezone,
+        request.headers.get('X-Course-Timezone') ?? 'Etc/UTC',
       ]);
+    } catch (error) {
+      reportError(error, { step: 'set_timezone' });
     }
     const started = Date.now();
     this.process = await this.container.exec(
