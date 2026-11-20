@@ -135,3 +135,42 @@ SET
   team_work = $team_work
 WHERE
   id = $assessment_id;
+
+-- BLOCK set_print_form_question_broken
+UPDATE variants
+SET
+  broken_at = CASE
+    WHEN $broken THEN now()
+    ELSE NULL
+  END
+WHERE
+  id = (
+    SELECT
+      variant_id
+    FROM
+      print_form_questions
+    WHERE
+      print_form_id = $print_form_id
+    ORDER BY
+      position
+    LIMIT
+      1
+  );
+
+-- BLOCK select_print_form_variant_data
+SELECT
+  pfq.assessment_question_id,
+  pfq.position,
+  pfq.question_number,
+  pfq.max_points,
+  pfq.variant_id,
+  v.variant_seed,
+  v.params,
+  v.true_answer
+FROM
+  print_form_questions AS pfq
+  JOIN variants AS v ON v.id = pfq.variant_id
+WHERE
+  pfq.print_form_id = $print_form_id
+ORDER BY
+  pfq.position;

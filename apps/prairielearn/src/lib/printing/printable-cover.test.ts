@@ -6,10 +6,10 @@ describe('htmlToTextBlocks', () => {
   it('maps headings, paragraphs, and lists to text blocks', () => {
     expect(
       htmlToTextBlocks(
-        '<h2>Academic integrity pledge</h2>\n<p>I, <strong>____</strong>, pledge that\n the work is my own.</p><ol><li>First</li><li>Second <em>item</em></li></ol><ul><li>Bullet</li></ul>',
+        '<h2>Honor code</h2>\n<p>I, <strong>____</strong>, pledge that\n the work is my own.</p><ol><li>First</li><li>Second <em>item</em></li></ol><ul><li>Bullet</li></ul>',
       ),
     ).toEqual([
-      { type: 'heading', runs: [{ text: 'Academic integrity pledge' }] },
+      { type: 'heading', runs: [{ text: 'Honor code' }] },
       {
         type: 'paragraph',
         runs: [

@@ -5,7 +5,7 @@ export interface DocxSource {
 
 /** To keep each equation editable in the docx, we save its MathML before printing copies or replaces it. */
 export function annotateDocxMath(source: HTMLElement): void {
-  const mathJax = window.MathJax as
+  const mathJax = Reflect.get(window, 'MathJax') as
     | {
         startup?: {
           document?: { math?: Iterable<{ typesetRoot: Element; math: string; display: boolean }> };

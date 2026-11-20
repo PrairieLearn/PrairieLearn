@@ -5,14 +5,17 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
 import { serializePrintDocument } from '../../../lib/client/printing/print-document.js';
+import { printLayoutSearch } from '../../../lib/client/printing/print-preparation.js';
 import { getAssessmentTrpcUrl, getPrintFormUrl } from '../../../lib/client/url.js';
 import * as codeCaller from '../../../lib/code-caller/index.js';
 import { config } from '../../../lib/config.js';
-import type { CourseInstance } from '../../../lib/db-types.js';
+import type { CourseInstance, PrintForm } from '../../../lib/db-types.js';
 import { createPrintForm } from '../../../lib/printing/print-forms.js';
+import type { PrintSettings } from '../../../lib/printing/print-settings.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseById } from '../../../models/course.js';
+import { selectOptionalPrintForm, updatePrintFormSettings } from '../../../models/print-form.js';
 import * as freeformServer from '../../../question-servers/freeform.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { getConfiguredUser } from '../../utils/auth.js';
@@ -56,14 +59,34 @@ export async function waitForPrintablePage(page: Page): Promise<void> {
   expect(state).toEqual({ status: 'ready', error: undefined });
 }
 
-export async function downloadPrintableWord(page: Page, printUrl: string, search: string) {
+/** Saves layout settings for a form and returns the preview search that its exports match. */
+export async function savePrintSettings(printForm: PrintForm, settings: Partial<PrintSettings>) {
+  const current = (await selectOptionalPrintForm({
+    printFormId: printForm.id,
+    assessmentId: printForm.assessment_id,
+  }))!.settings;
+  const updated = { ...current, ...settings };
+  await updatePrintFormSettings({
+    printFormId: printForm.id,
+    assessmentId: printForm.assessment_id,
+    settings: updated,
+    expectedSettings: current,
+  });
+  return printLayoutSearch(updated);
+}
+
+export async function downloadPrintableWord(
+  page: Page,
+  printUrl: string,
+  printDocument: 'assessment' | 'answer_key' = 'assessment',
+) {
   const source = await page.evaluate(() =>
     JSON.parse(document.getElementById('pl-print-docx-source')!.textContent),
   );
   const id = await page.locator(':root').getAttribute('data-print-snapshot-id');
   const html = await page.locator(':root').evaluate(serializePrintDocument);
   const { id: authnUserId } = await getConfiguredUser();
-  const queued = await page.request.post(`${printUrl}/docx?${search}`, {
+  const queued = await page.request.post(`${printUrl}/docx?document=${printDocument}`, {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/octet-stream',
@@ -91,13 +114,13 @@ export async function downloadPrintableWord(page: Page, printUrl: string, search
   await expect
     .poll(
       async () => {
-        const status = await api.printableAssessmentExport.status.query({ printExportId });
+        const status = await api.printExports.status.query({ printExportId });
         return { status: status.status, failureMessage: status.failureMessage };
       },
       { timeout: 90_000 },
     )
     .toMatchObject({ status: 'succeeded' });
-  const completed = await api.printableAssessmentExport.status.query({ printExportId });
+  const completed = await api.printExports.status.query({ printExportId });
   expect(completed.format).toBe('docx');
   return await page.request.get(completed.downloadUrl!);
 }

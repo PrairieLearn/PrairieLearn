@@ -5,18 +5,16 @@ import { execute, loadSqlEquiv, queryRow, queryRows, queryScalars } from '@prair
 import { IdSchema } from '@prairielearn/zod';
 
 import { makeAssessmentInstance, updateAssessmentInstance } from '../lib/assessment.js';
+import { nextPrintFormLabel } from '../lib/client/printing/print-form-label.js';
 import { VariantSchema } from '../lib/db-types.js';
-import {
-  createPrintForm,
-  ensureInitialPrintForm,
-  nextPrintFormLabel,
-} from '../lib/printing/print-forms.js';
+import { createPrintForm, ensureInitialPrintForm } from '../lib/printing/print-forms.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { selectPrintFormQuestions } from '../models/print-form-question.js';
 import {
   archivePrintForm,
+  lockPrintFormQuestionSelections,
   selectActivePrintFormsForAssessment,
   selectOptionalPrintForm,
   selectPrintFormsForAssessment,
@@ -39,9 +37,9 @@ describe('print forms', { timeout: 60_000 }, () => {
     });
     expect(nextPrintFormLabel([])).toBe('A1');
     expect(nextPrintFormLabel([form('A1')], 'A1')).toBe('A2');
+    expect(nextPrintFormLabel([form('A')], 'A')).toBe('A2');
     expect(nextPrintFormLabel([form('A1', true), form('A2')], 'A2')).toBe('A3');
     expect(nextPrintFormLabel([form('A1'), form('B1'), form('C1', true)])).toBe('C2');
-    expect(nextPrintFormLabel([form('A')], 'A')).toBe('A2');
   });
 
   it('saves assessment-shared form versions without creating student records', () =>
@@ -109,6 +107,25 @@ describe('print forms', { timeout: 60_000 }, () => {
       expect(
         await selectActivePrintFormsForAssessment({ assessmentId: assessment.id }),
       ).toContainEqual(form);
+      const rerandomized = await createPrintForm({
+        ...options,
+        userId: authnUser.id,
+        replacesPrintFormId: form.id,
+      });
+      expect(rerandomized).toEqual(form);
+      const rerandomizedQuestions = await selectPrintFormQuestions(form.id);
+      expect(rerandomizedQuestions[0].print_form_question).toMatchObject({
+        id: saved.id,
+        assessment_question_id: saved.assessment_question_id,
+        position: saved.position,
+        question_number: saved.question_number,
+        max_points: saved.max_points,
+      });
+      expect(rerandomizedQuestions[0].print_form_question.variant_id).not.toBe(saved.variant_id);
+      await lockPrintFormQuestionSelections({
+        assessmentId: assessment.id,
+        printFormIds: [form.id],
+      });
       const regenerated = await createPrintForm({
         ...options,
         userId: authnUser.id,
@@ -119,7 +136,9 @@ describe('print forms', { timeout: 60_000 }, () => {
       expect((await ensureInitialPrintForm(options)).id).toBe(regenerated.id);
       expect(regenerated.archived_at).toBeNull();
       const regeneratedQuestions = await selectPrintFormQuestions(regenerated.id);
-      expect(regeneratedQuestions[0].print_form_question.variant_id).not.toBe(variant.id);
+      expect(regeneratedQuestions[0].print_form_question.variant_id).not.toBe(
+        rerandomizedQuestions[0].print_form_question.variant_id,
+      );
       const archived = await selectOptionalPrintForm({
         printFormId: form.id,
         assessmentId: assessment.id,
@@ -163,7 +182,7 @@ describe('print forms', { timeout: 60_000 }, () => {
         assessment_question_id: saved.assessment_question_id,
       });
       const reread = await selectPrintFormQuestions(form.id);
-      expect(reread[0].print_form_question).toEqual(saved);
+      expect(reread[0].print_form_question).toEqual(rerandomizedQuestions[0].print_form_question);
       expect(reread[0].assessment_question.deleted_at).not.toBeNull();
     }));
 

@@ -78,7 +78,6 @@ export function InstructorAssessmentPrintForm({
       data-print-form-id="${resLocals.print_form.id}"
       data-print-document="${document}"
       data-print-form-label="${formLabel}"
-      data-print-paper-size="${paperSize}"
       data-print-include-cover="${includeCoverPage}"
       data-print-status="loading"
       data-print-question-count="${questionHtmls.length}"
@@ -91,8 +90,9 @@ export function InstructorAssessmentPrintForm({
           resLocals,
           pageTitle: isAnswerKey
             ? `${resLocals.assessment_label} answer key`
-            : `${resLocals.assessment_label} printable assessment`,
+            : `${resLocals.assessment_label} student copy`,
         })}
+        <meta name="referrer" content="no-referrer" />
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
           window.PagedConfig = { auto: false };
@@ -124,7 +124,7 @@ export function InstructorAssessmentPrintForm({
         <style data-pagedjs-ignore>
           @media print {
             @page {
-              size: ${paperSize};
+              size: ${paperWidth} ${paperHeight};
               margin: 0;
             }
           }

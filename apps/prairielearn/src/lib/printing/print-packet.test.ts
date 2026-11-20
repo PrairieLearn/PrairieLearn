@@ -9,7 +9,7 @@ import {
 
 import { PrintPacketMetadataSchema } from './print-packet-schema.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
-import { DEFAULT_PRINT_SETTINGS } from './print-settings.js';
+import { DEFAULT_PRINT_SETTINGS, PrintSettingsSchema } from './print-settings.js';
 
 async function pdfWithPages(widths: number[]): Promise<Uint8Array> {
   const document = await PDFDocument.create();
@@ -24,7 +24,7 @@ async function coverFile(widths: number[]): Promise<File> {
 }
 
 describe('print packets', () => {
-  test('cycles complete copies and inserts every cover after a multipage standard cover', async () => {
+  test('inserts uploaded covers and pads shorter student forms', async () => {
     const covers = await readPrintCoverPages([await coverFile([501, 502]), await coverFile([503])]);
     const packet = await assemblePrintPacket({
       forms: [
@@ -33,50 +33,35 @@ describe('print packets', () => {
         { pdf: await pdfWithPages([301, 302]), coverPageCount: 1 },
       ],
       covers,
-      copies: 4,
     });
     const result = await PDFDocument.load(packet);
     expect(result.getPages().map((page) => Math.round(page.getWidth()))).toEqual([
-      101, 102, 501, 502, 503, 103, 201, 501, 502, 503, 202, 301, 501, 502, 503, 302, 101, 102, 501,
-      502, 503, 103,
+      101, 102, 501, 502, 503, 103, 201, 501, 502, 503, 202, 202, 301, 501, 502, 503, 302, 302,
     ]);
     expect(new Set(result.getPages().map((page) => page.ref.toString())).size).toBe(
       result.getPageCount(),
     );
   });
 
-  test('prints repeated copies without uploaded covers', async () => {
+  test('keeps a single document unchanged when there are no uploaded covers', async () => {
     const pdf = Buffer.from(await pdfWithPages([101, 102]));
-    expect(
-      await assemblePrintPacket({ forms: [{ pdf, coverPageCount: 1 }], covers: [], copies: 1 }),
-    ).toEqual(pdf);
-    const result = await PDFDocument.load(
-      await assemblePrintPacket({
-        forms: [{ pdf, coverPageCount: 1 }],
-        covers: [],
-        copies: 3,
-      }),
+    expect(await assemblePrintPacket({ forms: [{ pdf, coverPageCount: 1 }], covers: [] })).toEqual(
+      pdf,
     );
-    expect(result.getPages().map((page) => Math.round(page.getWidth()))).toEqual([
-      101, 102, 101, 102, 101, 102,
-    ]);
   });
 
-  test('appends each answer key once after all student copies with uploaded covers', async () => {
-    const covers = await readPrintCoverPages([await coverFile([501, 502])]);
+  test('pads shorter answer keys without adding uploaded covers', async () => {
     const result = await PDFDocument.load(
       await assemblePrintPacket({
         forms: [
-          { pdf: await pdfWithPages([101, 102]), coverPageCount: 1 },
-          { pdf: await pdfWithPages([201, 202]), coverPageCount: 1 },
+          { pdf: await pdfWithPages([601, 602]), coverPageCount: 1 },
+          { pdf: await pdfWithPages([701, 702, 703]), coverPageCount: 1 },
         ],
-        covers,
-        copies: 3,
-        answerKeys: [await pdfWithPages([601, 602]), await pdfWithPages([701, 702, 703])],
+        covers: [],
       }),
     );
     expect(result.getPages().map((page) => Math.round(page.getWidth()))).toEqual([
-      101, 501, 502, 102, 201, 501, 502, 202, 101, 501, 502, 102, 601, 602, 701, 702, 703,
+      601, 602, 602, 701, 702, 703,
     ]);
   });
 
@@ -101,9 +86,11 @@ describe('print packets', () => {
     const covers = await readPrintCoverPages([await asFile()]);
     const packet = await PDFDocument.load(
       await assemblePrintPacket({
-        forms: [{ pdf: await pdfWithPages([100]), coverPageCount: 0 }],
+        forms: [
+          { pdf: await pdfWithPages([100]), coverPageCount: 0 },
+          { pdf: await pdfWithPages([200]), coverPageCount: 0 },
+        ],
         covers,
-        copies: 2,
       }),
     );
     for (const index of [0, 2]) {
@@ -157,46 +144,42 @@ describe('print packets', () => {
     ).rejects.toThrow('100 pages in total');
   });
 
-  test('bounds total output pages before copying pages', async () => {
+  test('bounds normalized output pages before copying pages', async () => {
+    const pdf = await pdfWithPages(Array.from({ length: 385 }, () => 100));
     await expect(
       assemblePrintPacket({
-        forms: [
-          { pdf: await pdfWithPages(Array.from({ length: 21 }, () => 100)), coverPageCount: 1 },
-        ],
+        forms: Array.from({ length: 26 }, () => ({ pdf, coverPageCount: 1 })),
         covers: [],
-        copies: 500,
-      }),
-    ).rejects.toThrow('exceeds 10,000 pages');
-  });
-
-  test('includes appended answer keys in the total page limit', async () => {
-    await expect(
-      assemblePrintPacket({
-        forms: [
-          { pdf: await pdfWithPages(Array.from({ length: 20 }, () => 100)), coverPageCount: 1 },
-        ],
-        covers: [],
-        copies: 500,
-        answerKeys: [await pdfWithPages([200])],
       }),
     ).rejects.toThrow('exceeds 10,000 pages');
   });
 });
 
-describe('print packet settings', () => {
-  const form = { printFormId: '1', settings: DEFAULT_PRINT_SETTINGS };
-  const metadata = { forms: [form], copies: 45, document: 'assessment' };
+describe('print packet metadata', () => {
+  const form = { printFormId: '1' };
+  const metadata = { forms: [form], document: 'assessment' };
 
-  test('rejects duplicate form IDs, supplied labels, unknown settings, and invalid layout values', () => {
+  test('rejects duplicate form IDs and client-supplied labels or settings', () => {
+    expect(PrintPacketMetadataSchema.safeParse(metadata).success).toBe(true);
     for (const forms of [
-      [{ ...form, formLabel: 'B' }],
       [form, { ...form }],
-      [{ ...form, settings: { ...form.settings, paperSize: 'Legal' } }],
-      [{ ...form, settings: { ...form.settings, extra: true } }],
-      [{ ...form, settings: { ...form.settings, excludedQuestions: ['1', '1'] } }],
-      [{ ...form, settings: { ...form.settings, identityFields: 'a'.repeat(41) } }],
+      [{ ...form, formLabel: 'B' }],
+      [{ ...form, settings: DEFAULT_PRINT_SETTINGS }],
     ]) {
       expect(PrintPacketMetadataSchema.safeParse({ ...metadata, forms }).success).toBe(false);
+    }
+  });
+});
+
+describe('print settings', () => {
+  test('rejects unknown settings and invalid layout values', () => {
+    for (const settings of [
+      { ...DEFAULT_PRINT_SETTINGS, paperSize: 'Legal' },
+      { ...DEFAULT_PRINT_SETTINGS, extra: true },
+      { ...DEFAULT_PRINT_SETTINGS, excludedQuestions: ['1', '1'] },
+      { ...DEFAULT_PRINT_SETTINGS, identityFields: 'a'.repeat(41) },
+    ]) {
+      expect(PrintSettingsSchema.safeParse(settings).success).toBe(false);
     }
   });
 });
