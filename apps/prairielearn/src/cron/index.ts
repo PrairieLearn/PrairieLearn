@@ -104,12 +104,6 @@ export async function init() {
       module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
-    {
-      name: 'processPrintExports',
-      module: await import('./processPrintExports.js'),
-      // Recovery and expiry tolerate a minute of delay; normal exports publish immediately.
-      intervalSec: config.cronOverrideAllIntervalsSec || 60,
-    },
   ];
 
   if (config.newsFeedUrl) {

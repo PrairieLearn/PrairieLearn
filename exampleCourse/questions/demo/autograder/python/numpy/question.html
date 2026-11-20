@@ -1,7 +1,7 @@
 <pl-question-panel>
     <p>
         <i>
-            This question uses the built-in methods in <code>code_feedback.py</code> to check NumPy arrays. In addition, specific library functions can be disabled by hooking them in the setup autograder code.
+            This question checks the type, data type, shape and values of a NumPy array, following the original <code>Feedback.check_numpy_array_allclose()</code> method. In addition, specific library functions can be disabled by listing them in <code>import_blacklist</code> in the <code>ConfigObject</code> in <code>tests/test_student.py</code>.
         </i>
     </p>
 
@@ -23,7 +23,7 @@
         <pl-variable name="x" type="numpy array (length $n$)">Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable>
     </pl-external-grader-variables>
     <pl-file-editor
-        file-name="user_code.py"
+        file-name="student_code.py"
         ace-mode="ace/mode/python"
         source-file-name="tests/initial_code.py"></pl-file-editor>
 </pl-question-panel>

@@ -23,6 +23,7 @@ import {
   selectPrintFormsForAssessment,
   updatePrintFormPaperSize,
 } from '../../models/print-form.js';
+import { selectAssessmentQuestionIdsForInstance } from '../assessment.js';
 import { nextPrintFormLabel, printFormLabelBase } from '../client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../client/printing/print-form-limits.js';
 import {
@@ -276,9 +277,13 @@ async function createPrintFormInternal({
     );
   }
   assertCanCreatePrintForm(initialActiveForms, replacesPrintFormId);
+  const assessmentQuestionIds = await selectAssessmentQuestionIdsForInstance({
+    assessment_id: assessment.id,
+    assessment_instance_id: null,
+  });
   const selectedQuestions = await queryRows(
     sql.select_questions_for_new_form,
-    { assessment_id: assessment.id },
+    { assessment_question_ids: assessmentQuestionIds },
     z.object({
       assessment_question: AssessmentQuestionSchema,
       question: QuestionSchema,

@@ -186,7 +186,7 @@ describe('print forms', { timeout: 60_000 }, () => {
       expect(reread[0].assessment_question.deleted_at).not.toBeNull();
     }));
 
-  it('shares alternative-group and zone selection with student instances without changing saved questions', () =>
+  it('applies alternative-group and zone selection to print forms without changing student instances', () =>
     runInTransactionAndRollback(async () => {
       const courseInstance = await selectCourseInstanceById('1');
       const course = await selectCourseById(courseInstance.course_id);
@@ -199,31 +199,6 @@ describe('print forms', { timeout: 60_000 }, () => {
       await execute(sql.remove_unused_questions, { assessment_id: assessment.id });
       await execute(sql.limit_alternatives, { assessment_id: assessment.id });
       await execute(sql.limit_zones, { assessment_id: assessment.id });
-      const chosen = await queryScalars(
-        sql.select_chosen_questions,
-        {
-          assessment_id: assessment.id,
-          existing_ids: [],
-        },
-        IdSchema,
-      );
-      expect(chosen).toHaveLength(2);
-      const groups = await queryScalars(
-        sql.select_question_groups,
-        { question_ids: chosen },
-        IdSchema,
-      );
-      expect(new Set(groups).size).toBe(2);
-      const retained = await queryScalars(
-        sql.select_chosen_questions,
-        {
-          assessment_id: assessment.id,
-          existing_ids: chosen,
-        },
-        IdSchema,
-      );
-      expect(retained.sort()).toEqual(chosen.sort());
-
       const instanceId = await makeAssessmentInstance({
         assessment,
         user_id: user.id,
@@ -266,5 +241,15 @@ describe('print forms', { timeout: 60_000 }, () => {
       expect(
         formQuestions.map(({ print_form_question }) => print_form_question.question_number),
       ).toEqual(['1', '2']);
+      const groups = await queryScalars(
+        sql.select_question_groups,
+        {
+          question_ids: formQuestions.map(
+            ({ print_form_question }) => print_form_question.assessment_question_id,
+          ),
+        },
+        IdSchema,
+      );
+      expect(new Set(groups).size).toBe(2);
     }));
 });
