@@ -370,6 +370,11 @@ class OrderBlocksOptions:
                 )
 
     def _validate_order_blocks_options(self) -> None:
+        if self.weight < 0:
+            raise ValueError(
+                f'Attribute "weight" must be a non-negative integer, not {self.weight}'
+            )
+
         if (
             self.grading_method not in LCS_GRADABLE_TYPES
             and self.partial_credit != PARTIAL_CREDIT_DEFAULT

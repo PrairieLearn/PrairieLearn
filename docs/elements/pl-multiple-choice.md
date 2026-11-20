@@ -37,7 +37,7 @@ generation if two (or more) choices are identical.
 | `order`                      | `"random"`, `"ascend"`, `"descend"`, or `"fixed"`    | `"random"`                  | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                                                |
 | `placeholder`                | string                                               | `"Select an option"`        | String to be used as the placeholder text when `display` is set to `"dropdown"`. Will also accept an empty string as `placeholder=""`.                                                                      |
 | `size`                       | integer                                              | —                           | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`.                  |
-| `weight`                     | integer                                              | 1                           | Weight to use when computing a weighted average score over elements.                                                                                                                                        |
+| `weight`                     | non-negative integer                                 | 1                           | Weight to use when computing a weighted average score over elements.                                                                                                                                        |
 
 ### Automatically added answer choices
 

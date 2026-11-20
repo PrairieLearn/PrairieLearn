@@ -62,6 +62,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         optional_attribs=["blank", "allow-blank", "weight", "sort", "aria-label"],
     )
 
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    if weight < 0:
+        raise ValueError(
+            f'Attribute "weight" must be a non-negative integer, not {weight}'
+        )
+
     if pl.get_boolean_attrib(
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
