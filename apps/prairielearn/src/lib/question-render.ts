@@ -69,6 +69,7 @@ import {
   type SubmissionPanels,
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
+import { getSubmissionInfo } from './submission-info.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -769,6 +770,7 @@ export async function getAndRenderVariant(
  * set, also the side panels for score, navigation and the question footer.
  */
 export async function renderPanelsForSubmission({
+  questionHostingUpdate = false,
   unsafe_submission_id,
   course,
   question,
@@ -784,6 +786,7 @@ export async function renderPanelsForSubmission({
   groupRolePermissions,
   authz_result,
 }: {
+  questionHostingUpdate?: boolean;
   unsafe_submission_id: string;
   course: Course;
   question: Question;
@@ -844,6 +847,18 @@ export async function renderPanelsForSubmission({
   const panels: SubmissionPanels = {
     submissionPanel: null,
     extraHeadersHtml: null,
+    ...(questionHostingUpdate
+      ? {
+          submissionInfo: getSubmissionInfo({
+            submission: { ...submission, grading_job, user_uid },
+            question,
+            assessment_question,
+            courseId: question.course_id,
+            courseInstanceId: course_instance?.id,
+            timezone: course_instance?.display_timezone || course.display_timezone,
+          }),
+        }
+      : {}),
   };
 
   const locals = {
@@ -897,6 +912,7 @@ export async function renderPanelsForSubmission({
       await manualGrading.populateManualGradingData(submission);
 
       panels.submissionPanel = SubmissionPanel({
+        questionHostingUpdate,
         questionContext,
         questionRenderContext,
         question,

@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 
 import type { StatusMessage, StatusMessageSubmission } from '../externalGradingSocket.types.js';
+import type { QuestionDialogData } from '../question-dialogs.types.js';
 import type { SubmissionPanels } from '../question-render.types.js';
 
 import {
@@ -8,6 +9,7 @@ import {
   serveQuestionServices,
 } from './question-browser-services.transport.js';
 import type { QuestionBrowserServices } from './question-browser-services.types.js';
+import { createQuestionDialogs } from './question-dialogs.js';
 import { updateQuestionPagePanels } from './question-page-panels.js';
 
 /** Application implementation; endpoints and credentials never cross the port. */
@@ -16,15 +18,18 @@ export function createQuestionServicesHost({
   variantId,
   variantToken,
   submissionRenderUrls,
+  dialogData,
   isCurrent,
 }: {
   document: Document;
   variantId: string;
   variantToken: string;
   submissionRenderUrls: ReadonlyMap<string, string>;
+  dialogData: QuestionDialogData;
   isCurrent: () => boolean;
 }): { services: QuestionBrowserServices; dispose: () => void } {
   const abortController = new AbortController();
+  const dialogs = createQuestionDialogs(document, dialogData);
   const subscriptions = new Set<{
     listener: (submissions: StatusMessageSubmission[]) => void;
   }>();
@@ -44,6 +49,16 @@ export function createQuestionServicesHost({
   }
 
   const services: QuestionBrowserServices = {
+    async openCopyQuestion() {
+      assertCurrent();
+      await dialogs.openCopyQuestion();
+    },
+
+    async openSubmissionInfo(request) {
+      assertCurrent();
+      await dialogs.openSubmissionInfo(request);
+    },
+
     async renderSubmission({ submissionId, purpose }, { signal }) {
       assertCurrent();
       const renderUrl = submissionRenderUrls.get(submissionId);
@@ -64,6 +79,7 @@ export function createQuestionServicesHost({
       requestSignal.throwIfAborted();
       assertCurrent();
       updateQuestionPagePanels(document, panels);
+      if (panels.submissionInfo) dialogs.updateSubmissionInfo(panels.submissionInfo);
 
       // Select these fields explicitly: the question renderer must not receive
       // application score or navigation panels. Returning `panels` would include
@@ -112,6 +128,7 @@ export function createQuestionServicesHost({
     services,
     dispose() {
       abortController.abort();
+      dialogs.dispose();
       subscriptions.clear();
       closeGradingSocket();
     },

@@ -24,6 +24,7 @@ export function createQuestionServicesClient(port: MessagePort): {
     number,
     { resolve: (panels: QuestionContentPanels) => void; reject: (error: Error) => void }
   >();
+  const dialogs = new Map<number, { resolve: () => void; reject: (error: Error) => void }>();
   const listeners = new Map<
     number,
     Parameters<QuestionBrowserServices['subscribeToGradingStatus']>[0]
@@ -36,6 +37,8 @@ export function createQuestionServicesClient(port: MessagePort): {
     send({ type: 'dispose' });
     requests.forEach(({ reject }) => reject(abortError()));
     requests.clear();
+    dialogs.forEach(({ reject }) => reject(abortError()));
+    dialogs.clear();
     listeners.clear();
     port.onmessage = null;
     port.onmessageerror = null;
@@ -51,15 +54,18 @@ export function createQuestionServicesClient(port: MessagePort): {
     }
     const message = parsed.data;
     switch (message.type) {
+      case 'dialog-closed':
+        dialogs.get(message.id)?.resolve();
+        dialogs.delete(message.id);
+        break;
       case 'result':
         requests.get(message.id)?.resolve(message.panels);
         break;
       case 'error':
-        requests
-          .get(message.id)
-          ?.reject(
-            message.code === 'aborted' ? abortError() : new Error('Failed to fetch submission'),
-          );
+        (requests.get(message.id) ?? dialogs.get(message.id))?.reject(
+          message.code === 'aborted' ? abortError() : new Error('Question service request failed'),
+        );
+        dialogs.delete(message.id);
         break;
       case 'status':
         listeners.get(message.id)?.(message.submissions);
@@ -70,8 +76,24 @@ export function createQuestionServicesClient(port: MessagePort): {
     }
   };
 
+  function openDialog(
+    request:
+      | { type: 'open-copy-question' }
+      | { type: 'open-submission-info'; submissionId: string },
+  ): Promise<void> {
+    if (disposed) return Promise.reject(abortError());
+    const id = nextId++;
+    return new Promise((resolve, reject) => {
+      dialogs.set(id, { resolve, reject });
+      send({ ...request, id });
+    });
+  }
+
   return {
     services: {
+      openCopyQuestion: () => openDialog({ type: 'open-copy-question' }),
+      openSubmissionInfo: ({ submissionId }) =>
+        openDialog({ type: 'open-submission-info', submissionId }),
       renderSubmission(request, { signal }) {
         if (disposed || signal.aborted) return Promise.reject(abortError());
         const id = nextId++;
@@ -172,6 +194,35 @@ export function serveQuestionServices(
     }
   }
 
+  async function openDialog(
+    message: Extract<
+      QuestionServiceRequest,
+      { type: 'open-copy-question' | 'open-submission-info' }
+    >,
+  ) {
+    const controller = new AbortController();
+    requests.set(message.id, controller);
+    try {
+      if (message.type === 'open-copy-question') {
+        await host.services.openCopyQuestion();
+      } else {
+        await host.services.openSubmissionInfo({ submissionId: message.submissionId });
+      }
+      if (!controller.signal.aborted) send({ type: 'dialog-closed', id: message.id });
+    } catch (error) {
+      send({
+        type: 'error',
+        id: message.id,
+        code:
+          controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')
+            ? 'aborted'
+            : 'failed',
+      });
+    } finally {
+      requests.delete(message.id);
+    }
+  }
+
   port.onmessageerror = dispose;
   port.onmessage = ({ data }: MessageEvent<unknown>) => {
     const parsed = QuestionServiceRequestSchema.safeParse(data);
@@ -181,13 +232,20 @@ export function serveQuestionServices(
     }
     const message = parsed.data;
     if (
-      (message.type === 'render' || message.type === 'subscribe') &&
+      (message.type === 'render' ||
+        message.type === 'subscribe' ||
+        message.type === 'open-copy-question' ||
+        message.type === 'open-submission-info') &&
       (requests.has(message.id) || subscriptions.has(message.id))
     ) {
       dispose();
       return;
     }
     switch (message.type) {
+      case 'open-copy-question':
+      case 'open-submission-info':
+        void openDialog(message);
+        break;
       case 'render':
         void render(message);
         break;
