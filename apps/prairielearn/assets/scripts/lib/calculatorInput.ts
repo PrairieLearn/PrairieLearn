@@ -8,13 +8,20 @@ import {
 interface CalculatorAtom {
   type: string;
   value?: string;
+  leftDelim?: string;
+  rightDelim?: string;
   body: CalculatorAtom[];
-  parent: { addChildrenAfter(children: CalculatorAtom[], after: CalculatorAtom): void };
+  siblings: CalculatorAtom[];
+  parent: CalculatorAtom;
+  addChildrenAfter(children: CalculatorAtom[], after: CalculatorAtom): void;
+  removeChild(child: CalculatorAtom): void;
+  removeBranch(name: 'body'): CalculatorAtom[];
 }
 
 interface CalculatorMathLiveInternals {
   model: {
     at(position: number): CalculatorAtom;
+    offsetOf(atom: CalculatorAtom): number;
     getSiblingsRange(position: number): [number, number];
     extractAtoms(range: [number, number]): CalculatorAtom[];
     deferNotifications(
@@ -37,6 +44,14 @@ function getMathLiveInternals(input: MathfieldElement) {
   return (input as unknown as { _mathfield: CalculatorMathLiveInternals })._mathfield;
 }
 
+function hasOnlyClosingParenthesis(atom: CalculatorAtom) {
+  return (
+    atom.type === 'leftright' &&
+    atom.rightDelim === ')' &&
+    (atom.leftDelim === '.' || atom.leftDelim === '?')
+  );
+}
+
 export function wrapInMultiplicationParentheses(input: MathfieldElement) {
   const field = getMathLiveInternals(input);
   const { model } = field;
@@ -45,12 +60,23 @@ export function wrapInMultiplicationParentheses(input: MathfieldElement) {
   // Move the existing atoms, as MathLive's smart fences do. Its #0 insertion
   // template round-trips them through LaTeX, committing any nested pending fences.
   model.deferNotifications({ content: true, selection: true, type: 'insertText' }, () => {
+    const cursor = model.at(position);
+    const parent = cursor.parent;
     const [, end] = model.getSiblingsRange(position);
     const contents = model.extractAtoms([position, end]);
+    // A pasted outer pair may be two literal siblings rather than a MathLive fence.
+    // Its closing delimiter is a boundary, but belongs to the opener left of the caret.
+    let outerDepth = 0;
+    for (const { type, value } of cursor.siblings) {
+      if (type === 'mopen' && value === '(') outerDepth++;
+      if (type === 'mclose' && value === ')') outerDepth = Math.max(0, outerDepth - 1);
+    }
     let depth = 0;
     // Structured pairs are single siblings. Literal parentheses (e.g. pasted LaTeX)
     // can also occur as separate siblings; only an unmatched close ends this group.
-    const closeIndex = contents.findIndex(({ type, value }) => {
+    const closeIndex = contents.findIndex((atom) => {
+      const { type, value } = atom;
+      if (depth === 0 && hasOnlyClosingParenthesis(atom)) return true;
       if (type === 'mopen' && value === '(') depth++;
       if (type === 'mclose' && value === ')') {
         if (depth === 0) return true;
@@ -58,20 +84,31 @@ export function wrapInMultiplicationParentheses(input: MathfieldElement) {
       }
       return false;
     });
+    const close = contents[closeIndex];
+    const halfFence = close && hasOnlyClosingParenthesis(close);
+    const reuseClose = halfFence || (!!close && !outerDepth);
+    const reuseParent = !close && !depth && !outerDepth && hasOnlyClosingParenthesis(parent);
     // Only the completed edit should appear in undo history.
     field.stopRecording();
     try {
-      input.insert(`\\cdot\\left(\\right${closeIndex === -1 ? '?' : ')'}`, {
+      input.insert(`\\cdot\\left(\\right${reuseClose || reuseParent ? ')' : '?'}`, {
         selectionMode: 'after',
       });
     } finally {
       field.startRecording();
     }
     const group = model.at(input.position);
-    group.body = closeIndex === -1 ? contents : contents.slice(0, closeIndex);
-    if (closeIndex !== -1) group.parent.addChildrenAfter(contents.slice(closeIndex + 1), group);
+    const body = close ? contents.slice(0, closeIndex) : contents;
+    // Deleting an opening delimiter leaves its body inside a one-sided fence.
+    if (halfFence) body.push(...close.removeBranch('body'));
+    group.body = body;
+    if (close) parent.addChildrenAfter(contents.slice(closeIndex + (reuseClose ? 1 : 0)), group);
+    if (reuseParent) {
+      parent.parent.addChildrenAfter(parent.removeBranch('body'), parent);
+      parent.parent.removeChild(parent);
+    }
     // Leave the caret after the dot and opening fence, before the original contents.
-    input.position = position + 2;
+    input.position = model.offsetOf(group.body[0]);
   });
   field.snapshot();
 }
