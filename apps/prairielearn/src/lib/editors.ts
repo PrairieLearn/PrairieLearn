@@ -30,7 +30,7 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
 import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import { type ChunkUpdateMode, logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
 import {
@@ -83,12 +83,10 @@ function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJson
 
 async function syncCourseFromDisk(
   course: Course,
-  startGitHash: string,
+  chunkUpdate: ChunkUpdateMode & { commitHash: string | null },
   job: ServerJob,
   courseData?: courseDB.CourseData,
 ) {
-  const endGitHash = await getCourseCommitHash(course.path);
-
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
 
   if (syncResult.status === 'sharing_error') {
@@ -100,13 +98,14 @@ async function syncCourseFromDisk(
       coursePath: course.path,
       courseId: course.id,
       courseData: syncResult.courseData,
-      oldHash: startGitHash,
-      newHash: endGitHash,
+      ...chunkUpdate,
     });
     logChunkChangesToJob(chunkChanges, job);
   }
 
-  await updateCourseCommitHash(course);
+  if (config.fileEditorUseGit) {
+    await updateCourseCommitHash(course);
+  }
 
   // JSON errors mean individual entities failed to sync (e.g., a question has
   // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
@@ -260,8 +259,6 @@ export abstract class Editor {
 
       const lockName = getLockNameForCoursePath(this.course.path);
       await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
-
         if (!config.fileEditorUseGit) {
           // If we are not using git (e.g., if we are running locally), then we:
           //
@@ -273,16 +270,28 @@ export abstract class Editor {
           job.info('Write changes to disk');
           job.data.saveAttempted = true;
           await beforeWrite?.(job);
-          await this.write();
+          const writeResult = await this.write();
           job.data.saveSucceeded = true;
 
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
+          await syncCourseFromDisk(
+            this.course,
+            {
+              mode: 'changed-files',
+              changedFiles: (writeResult?.pathsToAdd ?? []).map((p) =>
+                path.relative(this.course.path, p),
+              ),
+              commitHash: null,
+            },
+            job,
+          );
           job.data.syncSucceeded = true;
 
           return;
         }
+
+        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
         // Safety check: refuse to perform git operations if the course is a
         // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
@@ -457,7 +466,18 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
+          const endGitHash = await getCourseCommitHash(this.course.path);
+          await syncCourseFromDisk(
+            this.course,
+            {
+              mode: 'git-diff',
+              oldHash: startGitHash,
+              newHash: endGitHash,
+              commitHash: endGitHash,
+            },
+            job,
+            courseData,
+          );
           job.data.syncSucceeded = true;
         }
       });

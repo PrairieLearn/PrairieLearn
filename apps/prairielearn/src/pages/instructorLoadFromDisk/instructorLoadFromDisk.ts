@@ -14,6 +14,7 @@ import { CourseSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { createServerJob } from '../../lib/server-jobs.js';
+import { getCourseCommitHash } from '../../models/course.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -64,6 +65,8 @@ async function update(locals: UntypedResLocals) {
           coursePath: courseDir,
           courseId: syncResult.courseId,
           courseData: syncResult.courseData,
+          commitHash: await getCourseCommitHash(courseDir),
+          mode: 'git-diff',
           oldHash: 'HEAD~1',
           newHash: 'HEAD',
         });

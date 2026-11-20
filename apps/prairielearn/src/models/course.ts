@@ -142,12 +142,25 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
     return stdout.trim();
   } catch (err: any) {
     throw new error.AugmentedError(`Could not get git status; exited with code ${err.exitCode}`, {
+      cause: err,
       data: {
         stdout: err.stdout,
         stderr: err.stderr,
       },
     });
   }
+}
+
+/**
+ * Returns whether the given commit exists in the git repository at the course path.
+ */
+export async function gitCommitExists(coursePath: string, commitHash: string): Promise<boolean> {
+  const { exitCode } = await execa('git', ['cat-file', '-e', `${commitHash}^{commit}`], {
+    cwd: coursePath,
+    env: process.env,
+    reject: false,
+  });
+  return exitCode === 0;
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
+  gitCommitExists,
   updateCourseCommitHash,
 } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
@@ -125,6 +126,13 @@ export async function pullAndUpdateCourse({
             cwd: '/',
             env: gitEnv,
           });
+
+          // The course may have been synced from a previous clone, e.g. if its
+          // disk was replaced. If that commit is still reachable, diff from it so
+          // that only stale chunks are rebuilt.
+          if (commit_hash && (await gitCommitExists(path, commit_hash))) {
+            startGitHash = commit_hash;
+          }
         } else {
           // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
@@ -209,8 +217,12 @@ export async function pullAndUpdateCourse({
             coursePath: path,
             courseId: course.id,
             courseData: syncResult.courseData,
-            oldHash: startGitHash,
-            newHash: endGitHash,
+            commitHash: endGitHash,
+            // Without a starting commit, we can't tell which existing chunks are
+            // stale, so rebuild all of them.
+            ...(startGitHash
+              ? { mode: 'git-diff', oldHash: startGitHash, newHash: endGitHash }
+              : { mode: 'full' }),
           });
           chunks.logChunkChangesToJob(chunkChanges, job);
         }
