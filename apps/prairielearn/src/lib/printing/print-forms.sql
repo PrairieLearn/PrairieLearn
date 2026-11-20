@@ -27,6 +27,7 @@ SELECT
   to_jsonb(aq.*) AS assessment_question,
   to_jsonb(q.*) AS question,
   oq.position,
+  -- Keep in sync with the question_number formatting in sprocs/question_order.sql.
   CASE
     WHEN a.type = 'Homework' THEN CASE
       WHEN a.shuffle_questions THEN '#' || q.number::text
