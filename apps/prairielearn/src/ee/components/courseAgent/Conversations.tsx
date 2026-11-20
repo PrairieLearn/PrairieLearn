@@ -744,12 +744,12 @@ function Composer({
   // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
   // the height.
   useLayoutEffect(() => {
-    if (FIT_BY_HAND && textareaRef.current) fitToText(textareaRef.current);
+    if (!SUPPORTS_FIELD_SIZING && textareaRef.current) fitToText(textareaRef.current);
   }, [draft]);
   // The text rewraps when the box's width changes, such as when the window or panel is resized.
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (!FIT_BY_HAND || !textarea) return;
+    if (SUPPORTS_FIELD_SIZING || !textarea) return;
     let width = textarea.clientWidth;
     const observer = new ResizeObserver(() => {
       // Fitting changes the height, which this also observes.
@@ -923,11 +923,11 @@ function ApprovalModePicker({
 }
 
 /**
- * CSS sizes the message box to its text where `field-sizing` is supported. Elsewhere it is measured
- * by hand, which Safari must never do: collapsing the box to measure it moves the conversation's
- * scroll position there.
+ * With `field-sizing: content`, the browser grows the message box with its text. Without it, a
+ * script has to set the height. Safari must use the CSS: the script briefly collapses the box to
+ * measure it, and in Safari that moves the conversation's scroll position.
  */
-const FIT_BY_HAND = typeof CSS !== 'undefined' && !CSS.supports('field-sizing', 'content');
+const SUPPORTS_FIELD_SIZING = typeof CSS !== 'undefined' && CSS.supports('field-sizing', 'content');
 
 function fitToText(textarea: HTMLTextAreaElement) {
   textarea.style.height = 'auto';
