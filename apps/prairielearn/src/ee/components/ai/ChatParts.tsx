@@ -6,7 +6,7 @@ import type { UrlTransform } from 'react-markdown';
 import { ChatMarkdown } from './ChatMarkdown.js';
 
 /** A chevron and summary that show or hide the details beneath them. */
-export function Disclosure({
+function Disclosure({
   summary,
   expanded,
   onToggle,
@@ -78,10 +78,12 @@ export function ReasoningBlock({ part, math = false }: { part: ReasoningUIPart; 
 export function TextPart({
   part,
   math = false,
+  animated = false,
   urlTransform,
 }: {
   part: TextUIPart;
   math?: boolean;
+  animated?: boolean;
   urlTransform?: UrlTransform;
 }) {
   return (
@@ -89,6 +91,7 @@ export function TextPart({
       className="markdown-body"
       content={part.text}
       math={math}
+      animated={animated}
       streaming={part.state === 'streaming'}
       urlTransform={urlTransform}
     />

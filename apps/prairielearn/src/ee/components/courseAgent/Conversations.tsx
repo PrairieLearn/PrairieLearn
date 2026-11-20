@@ -2,7 +2,7 @@ import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
-import { type UIMessage } from 'ai';
+import { type TextUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import {
   type KeyboardEvent,
@@ -18,16 +18,18 @@ import {
 import { Alert, Button, Dropdown, Form, Spinner } from 'react-bootstrap';
 import type { UrlTransform } from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
-import { z } from 'zod';
 
 import {
+  type ApprovalMode,
+  ApprovalModeSchema,
   type ConversationState,
   type InputRequestPart,
   InputRequestPartSchema,
-  type ToolCall,
+  type ReviewPart,
+  ReviewPartSchema,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
-import { run } from '@prairielearn/run';
+import { formatInterval } from '@prairielearn/formatter';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -35,7 +37,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
-import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
+import { TextPart } from '../ai/ChatParts.js';
 
 import {
   type DraftAttachment,
@@ -51,14 +53,12 @@ import { BlockedNotice } from './BlockedNotice.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
+import { PlanChecklist, planOf } from './Plan.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
-import { ToolCalls } from './ToolCalls.js';
+import { LiveOutput, Work, type WorkItem, reasoningHeading, runningLabel } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 import { currentPageLocation } from './pageLocation.js';
-
-/** The agent service shows a review in chat history by its ID only. */
-const ReviewPartSchema = z.object({ reviewId: z.string() });
 
 const NEW_CONVERSATION = 'new';
 
@@ -140,6 +140,9 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
+  // A conversation keeps its own mode once it exists. Until then the choice waits here, and
+  // every new conversation starts by asking.
+  const [newApprovalMode, setNewApprovalMode] = useState<ApprovalMode>('approval_required');
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -206,6 +209,7 @@ function ConversationPicker({
             disabled={create.isPending}
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
+              setNewApprovalMode('approval_required');
               setDraft('');
               drafts.clear();
               create.reset();
@@ -221,6 +225,7 @@ function ConversationPicker({
           courseId={courseId}
           conversationId={selectedId}
           showConversationStats={showConversationStats}
+          initialApprovalMode={create.data?.id === selectedId ? newApprovalMode : undefined}
           chatCsrfToken={chatCsrfToken}
           initialMessage={
             create.data?.id === selectedId && create.variables
@@ -234,13 +239,11 @@ function ConversationPicker({
           <div className="flex-grow-1 p-3">
             {create.isPending ? (
               <div className="d-flex flex-column gap-3">
-                <UserMessage text={create.variables.text} />
-                <PendingStatus label="Starting sandbox…" />
+                <UserMessage text={create.variables.text} entering />
+                <PendingStatus label="Getting ready…" />
               </div>
             ) : (
-              <p className="text-muted text-center my-4">
-                Ask the course agent about your course or about PrairieLearn.
-              </p>
+              <EmptyConversation onStart={setDraft} />
             )}
             {create.isError && (
               <AppErrorAlert error={createError} render={{ UNKNOWN: ({ message }) => message }} />
@@ -251,6 +254,8 @@ function ConversationPicker({
             disabled={create.isPending}
             pending={create.isPending}
             attachments={drafts.attachments}
+            approvalMode={newApprovalMode}
+            onApprovalModeChange={setNewApprovalMode}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
@@ -258,6 +263,54 @@ function ConversationPicker({
           />
         </FileDropArea>
       ) : null}
+    </div>
+  );
+}
+
+/** Requests staff can send as they are, for those who are not sure what to ask. */
+const STARTERS = [
+  { icon: 'bi-pencil-square', text: 'Suggest three new practice questions for this course' },
+  { icon: 'bi-clipboard-check', text: 'Review my questions and tell me which need the most work' },
+  { icon: 'bi-bar-chart', text: 'Which questions are students finding hardest?' },
+  { icon: 'bi-question-circle', text: 'How do I give one student extra time on an exam?' },
+];
+
+function EmptyConversation({ onStart }: { onStart: (text: string) => void }) {
+  return (
+    <div className="my-3">
+      <h3 className="h5 mb-3">What can I help with?</h3>
+      <div className="course-agent-starters">
+        {STARTERS.map(({ icon, text }) => (
+          <button
+            key={text}
+            type="button"
+            className="course-agent-starter btn border rounded-3 p-2 d-flex flex-column gap-2 small text-start"
+            onClick={(event) => {
+              onStart(text);
+              // The request goes to the message box, not straight to the agent, so staff can
+              // change it first. The pulse shows where it went.
+              const composer = event.currentTarget
+                .closest('.course-agent-panel')
+                ?.querySelector<HTMLElement>('.course-agent-composer');
+              composer?.querySelector('textarea')?.focus();
+              composer?.classList.add('course-agent-composer-pulse');
+              composer?.addEventListener(
+                'animationend',
+                () => composer.classList.remove('course-agent-composer-pulse'),
+                { once: true },
+              );
+            }}
+          >
+            <span
+              className="course-agent-starter-icon rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+              aria-hidden="true"
+            >
+              <i className={clsx('bi', icon)} />
+            </span>
+            {text}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -272,13 +325,113 @@ function Loading() {
   );
 }
 
+/** How long a status label stays up before the next one may replace it. */
+const MIN_LABEL_MS = 1000;
+
+/**
+ * Holds each label on screen long enough to read. A step that takes a tenth of a second would
+ * otherwise flash its label and make the line flicker.
+ */
+function useSteadyLabel(label: string) {
+  const [shown, setShown] = useState(label);
+  const shownAtRef = useRef(0);
+  // Switches to a new label once the current one has had its time on screen.
+  useEffect(() => {
+    if (label === shown) return;
+    const wait = Math.max(0, MIN_LABEL_MS - (Date.now() - shownAtRef.current));
+    const timeout = setTimeout(() => {
+      shownAtRef.current = Date.now();
+      setShown(label);
+    }, wait);
+    return () => clearTimeout(timeout);
+  }, [label, shown]);
+  return shown;
+}
+
+/** The agent service marks text the model wrote on its way to the reply, not as the reply. */
+function isUpdate(part: TextUIPart) {
+  const metadata: { update?: unknown } | undefined = part.providerMetadata?.courseAgent;
+  return metadata?.update === true;
+}
+
 function PendingStatus({ label }: { label: string }) {
   return (
-    <div className="text-muted small" role="status">
-      <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
-      {label}
+    <div className="small text-body-secondary" role="status">
+      <span className="course-agent-shimmer">{label}</span>
     </div>
   );
+}
+
+/**
+ * What the agent is doing now and for how long, shown for as long as it works. It stays mounted
+ * from the sandbox starting to the turn ending, so the time covers both.
+ */
+function ActivityStatus({
+  conversationId,
+  startingSandbox,
+  message,
+}: {
+  conversationId: string;
+  startingSandbox: boolean;
+  message: UIMessage | undefined;
+}) {
+  const call = latestCall(message);
+  const storageKey = `course-agent-working-since:${conversationId}`;
+  const [startedAt] = useState(() => Number(sessionStorage.getItem(storageKey)) || Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const label = useSteadyLabel(startingSandbox ? 'Getting ready' : activityLabel(message));
+  // Advances the elapsed time once a second.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  // Remembers when the agent started, so reloading the page mid-turn does not restart the time.
+  // Leaving the page skips the cleanup; the turn ending runs it.
+  useEffect(() => {
+    sessionStorage.setItem(storageKey, String(startedAt));
+    return () => sessionStorage.removeItem(storageKey);
+  }, [storageKey, startedAt]);
+  return (
+    <div className="course-agent-fade small text-body-secondary" role="status">
+      {/* The label changes with every step and the time every second, too often to announce. */}
+      <span className="visually-hidden">
+        {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
+      </span>
+      <span className="d-flex gap-2" aria-hidden="true">
+        <span className="text-truncate course-agent-shimmer">{label}…</span>
+        {/* At the edge of the line, the time stays put while the label beside it changes. */}
+        <span className="course-agent-status-time flex-shrink-0 ms-auto">
+          {formatInterval(now - startedAt)}
+        </span>
+      </span>
+      {call?.status === 'running' && <LiveOutput call={call} lines={1} />}
+    </div>
+  );
+}
+
+/** The call the agent made last, if nothing has followed it. */
+function latestCall(message: UIMessage | undefined) {
+  if (message?.role !== 'assistant') return null;
+  for (let i = message.parts.length - 1; i >= 0; i--) {
+    const part = message.parts[i];
+    const call = toolCallOf(part);
+    if (call) return call;
+    if ((part.type === 'text' || part.type === 'reasoning') && part.text.trim()) return null;
+  }
+  return null;
+}
+
+/**
+ * What the agent is doing now, in plain words: the call it is running, the reply it is writing,
+ * or what it is thinking about. The plan above the message box already shows its current step.
+ */
+function activityLabel(message: UIMessage | undefined) {
+  const call = latestCall(message);
+  if (call?.status === 'running') return runningLabel(call);
+  const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
+  // An update is over in a moment, so only the reply is worth calling writing.
+  if (part?.type === 'text' && part.state === 'streaming' && !isUpdate(part)) return 'Writing';
+  return (part?.type === 'reasoning' && reasoningHeading(part.text)) || 'Thinking';
 }
 
 function Chat({
@@ -288,12 +441,15 @@ function Chat({
   initialMessage,
   onInitialMessageSent,
   showConversationStats,
+  initialApprovalMode,
 }: {
   courseId: string;
   conversationId: string;
   showConversationStats: boolean;
   chatCsrfToken: string;
   initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
+  /** The mode chosen before this conversation existed, which its first message gives it. */
+  initialApprovalMode: ApprovalMode | undefined;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -316,11 +472,38 @@ function Chat({
   const savingTitleRef = useRef<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
   const [lifecycle, setLifecycle] = useState<ConversationState | null>(null);
+  // The conversation keeps its own mode. A choice made here shows at once instead of waiting for
+  // the agent service to report it back.
+  const [chosenApprovalMode, setChosenApprovalMode] = useState(initialApprovalMode);
+  // Undefined until the agent service reports the conversation's state.
+  const approvalMode = chosenApprovalMode ?? lifecycle?.approvalMode;
+  // The service takes a moment to report, so the message box shows the mode this browser last
+  // saw for the conversation instead of flipping from the default. Only a reported mode approves
+  // a review or goes out with a message.
+  const approvalModeKey = `course-agent:approval-mode:${conversationId}`;
+  const [lastSeenApprovalMode] = useState(
+    () => ApprovalModeSchema.safeParse(localStorage.getItem(approvalModeKey)).data,
+  );
+  const shownApprovalMode = approvalMode ?? lastSeenApprovalMode ?? 'approval_required';
+  // Remember the conversation's mode for the next time this browser opens it.
+  useEffect(() => {
+    if (approvalMode) localStorage.setItem(approvalModeKey, approvalMode);
+  }, [approvalMode, approvalModeKey]);
+  const { mutate: saveApprovalMode } = useMutation(
+    trpc.courseAgent.setApprovalMode.mutationOptions(),
+  );
+  const changeApprovalMode = (mode: ApprovalMode) => {
+    setChosenApprovalMode(mode);
+    saveApprovalMode({ conversationId, approvalMode: mode });
+  };
   const [connectionFailed, setConnectionFailed] = useState(false);
   // Chat remounts per conversation, so this is the message that created it.
   const [initialText, setInitialText] = useState(initialMessage?.text);
   // Bridges sending to an offline sandbox and the server reporting that it is starting.
   const [awaitingStart, setAwaitingStart] = useState(initialMessage !== undefined);
+  // Messages from this position on arrived while the chat was open, and ease in. A conversation's
+  // first message rose into view before this chat existed, so only the reply to it eases in.
+  const [enteringFrom, setEnteringFrom] = useState(initialMessage ? 1 : Infinity);
   const agent = useAgent<ConversationState>({
     agent: 'Conversation',
     basePath: `pl/course/${courseId}/course_agent/conversations/${conversationId}`,
@@ -371,6 +554,7 @@ function Chat({
   const agentIdle = lifecycle?.status === 'offline' || lifecycle?.status === 'waiting_for_user';
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
+  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   // A new conversation's first attachments start in the composer, where their uploads show progress.
   const drafts = useDraftAttachments(initialMessage?.attachments);
   const [sending, setSending] = useState(false);
@@ -440,7 +624,11 @@ function Chat({
       if (offline) setAwaitingStart(true);
       // A refused denial's error no longer applies once the message goes out normally.
       resetDeny();
-      void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
+      void sendMessage({
+        text,
+        files,
+        metadata: { location: currentPageLocation(), approvalMode },
+      });
       // An answer chosen on an input request leaves the composer's attachments alone.
       if (attachments.length > 0) {
         revokePreviews(attachments);
@@ -458,6 +646,7 @@ function Chat({
       denyAsync,
       sendMessage,
       offline,
+      approvalMode,
     ],
   );
 
@@ -479,25 +668,11 @@ function Chat({
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
-  const showThinking = run(() => {
-    if (
-      !(responseActive || lifecycle?.status === 'waiting_for_agent') ||
-      connectionFailed ||
-      connectionError
-    ) {
-      return false;
-    }
-    const lastMessage = messages.at(-1);
-    if (lastMessage?.role !== 'assistant') {
-      return true;
-    }
-    return !lastMessage.parts.some((part) => {
-      if (part.type === 'text' || part.type === 'reasoning') {
-        return part.text.trim().length > 0;
-      }
-      return toolCallOf(part) !== null || navigationOf(part) !== null || isReloadPart(part);
-    });
-  });
+  const working =
+    (responseActive || lifecycle?.status === 'waiting_for_agent') &&
+    !connectionFailed &&
+    !connectionError;
+  const plan = working ? planOf(messages.at(-1)) : null;
   // The server reports the turn's lifecycle before the SDK marks the response active.
   const startingSandbox =
     !connectionFailed &&
@@ -505,7 +680,6 @@ function Chat({
     (lifecycle?.status === 'starting' ||
       ((lifecycle === null || lifecycle.status === 'offline') &&
         (awaitingStart || responseActive)));
-  const pendingLabel = startingSandbox ? 'Starting sandbox…' : showThinking ? 'Thinking…' : null;
   const showInitialText =
     initialText !== undefined && !messages.some((message) => message.role === 'user');
   const awaitingReviewId =
@@ -513,7 +687,6 @@ function Chat({
       ? (lifecycle.reviewId ?? null)
       : null;
   // An input request is open until staff send their next message, which answers it however it is sent.
-  const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
   const latest = messages.at(-1);
   // The agent writes its closing message after requesting a review or input, so the request's card
   // waits for the turn to end rather than moving down as that text arrives. A review being
@@ -536,6 +709,7 @@ function Chat({
     const text = draft.trim();
     if (!text || responseActive || !connected || sending || deny.isPending) return;
     if (!replyDenies && !canSend) return;
+    setEnteringFrom(messages.length);
     void send(text, drafts.attachments, replyDenies ? lifecycle.reviewId! : undefined).then(
       (sent) => {
         if (sent) setDraft('');
@@ -551,23 +725,24 @@ function Chat({
             <Loading />
           )}
           {historyReady && !showInitialText && messages.length === 0 && (
-            <p className="text-muted text-center my-4">
-              Ask the course agent about your course or about PrairieLearn.
-            </p>
+            <EmptyConversation onStart={setDraft} />
           )}
           {messages.map((message, index) => (
             <Message
               key={message.id}
               message={message}
               live={responseActive && index === messages.length - 1}
+              entering={index >= enteringFrom}
               conversationId={conversationId}
               uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
+              approvalMode={approvalMode ?? 'approval_required'}
               hiddenReviewId={hiddenReviewId}
               turnRunning={turnRunning && index === messages.length - 1}
               linkTransform={linkTransform}
               answered={index < lastUserIndex}
               canAnswer={canSend}
+              onAlwaysApprove={changeApprovalMode}
               onToolCallExpand={stickToBottom.stopScroll}
               onAnswer={(text) => void send(text, [])}
             />
@@ -583,9 +758,17 @@ function Chat({
                 conversationId={conversationId}
                 reviewId={lifecycle.reviewId}
                 canResume={awaitingReviewId === lifecycle.reviewId}
+                autoApprove={false}
+                onAlwaysApprove={() => changeApprovalMode('always_approve')}
               />
             )}
-          {pendingLabel && <PendingStatus label={pendingLabel} />}
+          {(startingSandbox || working) && (
+            <ActivityStatus
+              conversationId={conversationId}
+              startingSandbox={startingSandbox}
+              message={messages.at(-1)}
+            />
+          )}
           {lifecycle?.status === 'blocked' && (
             <BlockedNotice
               state={lifecycle}
@@ -600,7 +783,7 @@ function Chat({
             </Alert>
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
-            <p className="text-muted" role="status">
+            <p className="small text-body-secondary mb-0" role="status">
               {lifecycle.status === 'stopping'
                 ? 'Stopping the course agent…'
                 : 'Pausing the course agent…'}
@@ -624,6 +807,7 @@ function Chat({
           )}
         </div>
       </div>
+      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
@@ -637,7 +821,9 @@ function Chat({
         sendLabel={replyDenies ? 'Deny and send' : undefined}
         pending={sending || deny.isPending}
         attachments={drafts.attachments}
+        approvalMode={shownApprovalMode}
         stopDisabled={!connected || !canStop}
+        onApprovalModeChange={changeApprovalMode}
         onAttach={drafts.add}
         onRemoveAttachment={drafts.remove}
         onDraftChange={setDraft}
@@ -661,6 +847,8 @@ function Composer({
   sendLabel = 'Send',
   pending = false,
   attachments,
+  approvalMode,
+  onApprovalModeChange,
   onAttach,
   onRemoveAttachment,
   stopDisabled = false,
@@ -676,6 +864,8 @@ function Composer({
   /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
   attachments: DraftAttachment[];
+  approvalMode: ApprovalMode;
+  onApprovalModeChange: (mode: ApprovalMode) => void;
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
   stopDisabled?: boolean;
@@ -726,7 +916,7 @@ function Composer({
           ref={textareaRef}
           as="textarea"
           rows={2}
-          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
+          className="course-agent-composer-input border-0 shadow-none bg-transparent p-0"
           value={draft}
           placeholder={placeholder}
           aria-label="Message"
@@ -746,7 +936,7 @@ function Composer({
             onAttach([...event.clipboardData.files]);
           }}
         />
-        <div className="d-flex align-items-center gap-2 px-2 pb-2">
+        <div className="d-flex align-items-center gap-2 mt-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -760,29 +950,33 @@ function Composer({
           <Button
             variant="link"
             size="sm"
-            className="course-agent-icon-button"
+            className="course-agent-composer-button course-agent-composer-icon-button"
             aria-label="Attach files"
             disabled={pending}
             onClick={() => fileInputRef.current?.click()}
           >
             <i className="bi bi-plus-lg" aria-hidden="true" />
           </Button>
-          <div className="d-flex align-items-center gap-2 ms-auto">
+          <ApprovalModePicker mode={approvalMode} onChange={onApprovalModeChange} />
+          <div className="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
             {children}
             {onStop ? (
               <Button
-                variant="outline-secondary"
+                variant="link"
                 size="sm"
+                className="course-agent-composer-button"
+                aria-label="Stop"
                 disabled={stopDisabled}
                 onClick={onStop}
               >
-                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-                Stop
+                <i className="bi bi-stop-fill" aria-hidden="true" />
+                <span className="course-agent-composer-wide-only">Stop</span>
               </Button>
             ) : (
               <Button
                 type="submit"
                 size="sm"
+                className="course-agent-composer-button course-agent-composer-icon-button course-agent-composer-send"
                 aria-label={sendLabel}
                 disabled={!draft.trim() || disabled || pending || invalidAttachment}
               >
@@ -797,6 +991,67 @@ function Composer({
         </div>
       </div>
     </Form>
+  );
+}
+
+const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
+  approval_required: {
+    label: 'Ask first',
+    description: 'You review course changes before they are saved.',
+    icon: 'bi-hand-index-thumb',
+  },
+  always_approve: {
+    label: 'Always approve',
+    description: 'The agent saves course changes without your review.',
+    icon: 'bi-shield-exclamation',
+  },
+};
+
+function ApprovalModePicker({
+  mode,
+  onChange,
+}: {
+  mode: ApprovalMode;
+  onChange: (mode: ApprovalMode) => void;
+}) {
+  const current = APPROVAL_MODES[mode];
+  return (
+    <Dropdown drop="up" className="course-agent-composer-shrink">
+      <Dropdown.Toggle
+        variant="link"
+        size="sm"
+        className="course-agent-composer-button mw-100"
+        aria-label={`Approval mode: ${current.label}`}
+      >
+        <i className={clsx('bi', current.icon)} aria-hidden="true" />
+        <span className="course-agent-composer-wide-only text-truncate">{current.label}</span>
+        <i className="bi bi-chevron-down" aria-hidden="true" />
+      </Dropdown.Toggle>
+      <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
+        <Dropdown.Header>Saving course changes</Dropdown.Header>
+        {ApprovalModeSchema.options.map((option) => {
+          const { label, description, icon } = APPROVAL_MODES[option];
+          return (
+            <Dropdown.Item
+              key={option}
+              as="button"
+              type="button"
+              className="d-flex align-items-start gap-2 py-2"
+              active={option === mode}
+              onClick={() => onChange(option)}
+            >
+              <i className={clsx('bi fs-5 lh-1 mt-1', icon)} aria-hidden="true" />
+              <span className="flex-grow-1">
+                <span className="d-block">{label}</span>
+                <span className="course-agent-approval-description d-block small">
+                  {description}
+                </span>
+              </span>
+            </Dropdown.Item>
+          );
+        })}
+      </Dropdown.Menu>
+    </Dropdown>
   );
 }
 
@@ -824,9 +1079,12 @@ function toolCallOf(part: UIMessage['parts'][number]) {
 function Message({
   message,
   live,
+  entering,
   conversationId,
   uploadsUrl,
   awaitingReviewId,
+  approvalMode,
+  onAlwaysApprove,
   hiddenReviewId,
   turnRunning,
   linkTransform,
@@ -842,10 +1100,14 @@ function Message({
   onAnswer: (text: string) => void;
   /** Whether this message is still streaming. */
   live: boolean;
+  /** Whether this message arrived while the chat was open, so it eases in. */
+  entering: boolean;
   conversationId: string;
   uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
+  approvalMode: ApprovalMode;
+  onAlwaysApprove: (mode: 'always_approve') => void;
   /** A review requested by the running turn, whose card waits for the turn to end. */
   hiddenReviewId: string | null;
   /** The agent's turn that writes this message is running, so its input requests wait too. */
@@ -859,24 +1121,15 @@ function Message({
     return (
       <div className="d-flex flex-column align-items-end gap-2">
         <SentAttachments message={message} uploadsUrl={uploadsUrl} />
-        <UserMessage text={text} />
+        <UserMessage text={text} entering={entering} />
       </div>
     );
   }
-  // Consecutive tool calls render together so runs of the same kind can be grouped.
-  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
-  const segments: Segment[] = [];
-  message.parts.forEach((part, index) => {
-    const call = toolCallOf(part);
-    const last = segments.at(-1);
-    if (call && last && 'calls' in last) last.calls.push(call);
-    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
-  });
   // Reviews and input requests end the agent's turn, so their cards go at the end of that turn:
   // before the marker of the turn that continues this message (a review result's delivery), or at
   // the end of the message.
   type Card =
-    | { kind: 'review'; reviewId: string }
+    | ({ kind: 'review' } & ReviewPart)
     | { kind: 'input'; key: string; request: InputRequestPart };
   const renderCard = (card: Card) =>
     card.kind === 'review' ? (
@@ -886,6 +1139,9 @@ function Message({
         conversationId={conversationId}
         reviewId={card.reviewId}
         canResume={awaitingReviewId === card.reviewId}
+        // Switching back to requiring approval also applies to a review already submitted.
+        autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
+        onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
     ) : (
       <InputRequestCard
@@ -898,41 +1154,86 @@ function Message({
     );
   const rendered: ReactNode[] = [];
   let cards: Card[] = [];
-  for (const segment of segments) {
-    if ('calls' in segment) {
+  // What the agent does before a reply folds into one line. Text it writes is its reply unless
+  // the agent carries on afterwards, which makes that text an update along the way.
+  let work: { key: string; items: WorkItem[] } | null = null;
+  let reply: { key: string; part: TextUIPart } | null = null;
+  const flush = (settled: boolean) => {
+    if (work) {
       rendered.push(
-        <ToolCalls
-          key={segment.key}
-          calls={segment.calls}
+        <Work
+          key={work.key}
+          items={work.items}
           live={live}
+          settled={settled}
+          // The reply under it, which may yet turn out to be an update, is the latest word.
+          showUpdate={!reply}
           onExpand={onToolCallExpand}
         />,
       );
+    }
+    if (reply) {
+      rendered.push(
+        <TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} math animated />,
+      );
+    }
+    work = null;
+    reply = null;
+  };
+  for (const [index, part] of message.parts.entries()) {
+    const key = `part-${index}`;
+    if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) continue;
+    const step = toolCallOf(part) ?? (part.type === 'reasoning' ? part : null);
+    if (step) {
+      work ??= { key: reply?.key ?? key, items: [] };
+      if (reply) work.items.push(reply.part);
+      reply = null;
+      work.items.push(step);
       continue;
     }
-    const { key, part } = segment;
+    if (part.type === 'text') {
+      // More text after it also makes it an update; the plan tool, for one, leaves no step between.
+      if (reply) {
+        work ??= { key: reply.key, items: [] };
+        work.items.push(reply.part);
+      }
+      reply = { key, part };
+      // The agent service says so when the model labels its updates, which saves waiting to see.
+      if (isUpdate(part)) {
+        work ??= { key, items: [] };
+        work.items.push(part);
+        reply = null;
+      }
+      continue;
+    }
     const navigation = navigationOf(part);
-    if (part.type === 'text' && part.text.trim()) {
-      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} math />);
-    } else if (part.type === 'reasoning' && part.text.trim()) {
-      rendered.push(<ReasoningBlock key={key} part={part} math />);
-    } else if (navigation) {
+    if (navigation) {
+      flush(true);
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
     } else if (isReloadPart(part)) {
+      flush(true);
       rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
-      const { reviewId } = ReviewPartSchema.parse(part.data);
-      if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId });
+      // Cards wait for the end of the turn, so they do not split the work before the reply.
+      const { reviewId, autoApprove } = ReviewPartSchema.parse(part.data);
+      if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId, autoApprove });
     } else if (part.type === 'data-input-request') {
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
     } else if (part.type === 'data-turn') {
+      flush(true);
       rendered.push(...cards.map(renderCard));
       cards = [];
     }
   }
+  // Until the turn ends, text that looks like the reply may be followed by more work.
+  flush(!live);
   rendered.push(...cards.filter((card) => card.kind === 'review' || !turnRunning).map(renderCard));
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;
-  return <div className="d-flex flex-column gap-2">{rendered}</div>;
+  return (
+    <div className={clsx('d-flex flex-column gap-2', entering && 'course-agent-fade')}>
+      {rendered}
+    </div>
+  );
 }
