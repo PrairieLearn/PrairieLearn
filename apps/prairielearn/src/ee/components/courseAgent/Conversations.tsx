@@ -547,19 +547,14 @@ function Chat({
       <div
         ref={stickToBottom.scrollRef}
         className="flex-grow-1 overflow-y-auto"
-        // Safari fix (keyboard scrolling): Safari only scrolls an area with Page Up, Page Down, or
-        // the arrow keys when that area has focus, so the conversation has to be focusable. The
-        // role and label tell screen readers what the focusable area is.
+        // Scrollable regions must be reachable by keyboard. Safari only scrolls with Page Up, Page
+        // Down, or the arrow keys when the scrollable area itself has focus.
         // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
         role="region"
         aria-label="Conversation"
       >
-        <div
-          ref={stickToBottom.contentRef}
-          className="d-flex flex-column gap-3 px-3 pt-3"
-          style={{ paddingBottom: '2.5rem' }}
-        >
+        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 px-3 pt-3 pb-5">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
           )}
