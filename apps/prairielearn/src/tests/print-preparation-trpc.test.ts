@@ -6,7 +6,7 @@ import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import * as PrairieMQ from '@prairielearn/prairiemq';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
@@ -22,7 +22,6 @@ import * as printExportRender from '../lib/printing/print-export-render.js';
 import {
   beginPrintExportShutdown,
   initPrintExportWorker,
-  processQueuedPrintExports,
   queuePrintExport,
   waitForPrintExportWorkers,
 } from '../lib/printing/print-exports.js';
@@ -36,7 +35,7 @@ import { selectAssessmentById, selectAssessmentByTid } from '../models/assessmen
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
-import { selectOptionalPrintExport } from '../models/print-export.js';
+import { insertPrintExport, selectOptionalPrintExport } from '../models/print-export.js';
 import { selectPrintFormQuestions } from '../models/print-form-question.js';
 import { selectOptionalPrintForm } from '../models/print-form.js';
 import { selectQuestionById } from '../models/question.js';
@@ -119,7 +118,6 @@ describe('print preparation', { timeout: 60_000 }, () => {
     printExportId: string,
     status: 'succeeded' | 'failed' = 'succeeded',
   ) {
-    await processQueuedPrintExports();
     await printQueue.resume();
     await expect
       .poll(
@@ -725,34 +723,30 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
   });
 
-  test('recovers a lost queue publication without rendering a durable job twice', async () => {
-    const render = vi
-      .spyOn(printExportRender, 'renderPrintExport')
-      .mockResolvedValue(Buffer.from('%PDF-1.4 recovered export'));
+  test('fails an export immediately when its job cannot be queued', async () => {
     const publish = vi
       .spyOn(PrairieMQ.Queue.prototype, 'add')
       .mockRejectedValueOnce(new Error('Redis publication unavailable'));
     try {
-      const { assessment, printExportId } = await queueTestPdf('recovered-export.pdf');
-      expect(publish).toHaveBeenCalledOnce();
-      publish.mockRestore();
-      expect(
-        await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-      ).toMatchObject({ status: 'pending' });
-      expect(render).not.toHaveBeenCalled();
-
-      await processQueuedPrintExports();
-      await processQueuedPrintExports();
-      expect(await printQueue.getJobCounts()).toMatchObject({ waiting: 1, active: 0 });
-      await completePrintExport(assessment.id, printExportId);
-      expect(render).toHaveBeenCalledOnce();
+      await expect(queueTestPdf('unqueued-export.pdf')).rejects.toThrow(
+        'Downloads are unavailable right now.',
+      );
     } finally {
       publish.mockRestore();
-      render.mockRestore();
     }
+    expect(
+      await queryRow(
+        sql.select_print_export_by_filename,
+        { filename: 'unqueued-export.pdf' },
+        z.object({ status: z.string(), failure_message: z.string().nullable() }),
+      ),
+    ).toEqual({
+      status: 'failed',
+      failure_message: 'Downloads are unavailable right now. Try again later or contact support.',
+    });
   });
 
-  test('does not count a run interrupted by shutdown as an attempt', async () => {
+  test('reruns an export interrupted by shutdown on another worker', async () => {
     const render = vi
       .spyOn(printExportRender, 'renderPrintExport')
       .mockImplementationOnce(
@@ -774,7 +768,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
           assessmentId: assessment.id,
           authnUserId: '1',
         }),
-      ).toMatchObject({ status: 'pending', attempts: 0 });
+      ).toMatchObject({ status: 'pending' });
 
       startPrintExportWorker();
       await completePrintExport(assessment.id, printExportId);
@@ -784,10 +778,19 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test('fails exports that no worker finished within 24 hours', async () => {
-    const { assessment, printExportId } = await queueTestPdf('stale-export.pdf');
+  test('reports exports that no worker finished within 24 hours as failed', async () => {
+    const assessment = await printAssessment();
+    // A row without a queued job, as if Redis had lost it.
+    const printExportId = await insertPrintExport({
+      assessmentId: assessment.id,
+      userId: '1',
+      authnUserId: '1',
+      format: 'pdf',
+      filename: 'stale-export.pdf',
+      label: 'Stale export',
+      inputKey: 'print-exports/input/stale-export.json',
+    });
     await execute(sql.age_print_export, { print_export_id: printExportId });
-    await processQueuedPrintExports();
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
     ).toMatchObject({
@@ -796,21 +799,35 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
   });
 
-  test('stops retrying after two crashed rendering attempts', async () => {
-    const { assessment, printExportId } = await queueTestPdf('retry-export.pdf');
-    await execute(sql.exhaust_print_export_attempts, { print_export_id: printExportId });
-    await completePrintExport(assessment.id, printExportId, 'failed');
-    expect(
-      await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
-    ).toEqual({
-      status: 'failed',
-      format: 'pdf',
-      downloadUrl: null,
-      sizeBytes: null,
-      label: expect.any(String),
-      failureMessage:
-        'The PDF could not be prepared after repeated attempts. Try fewer forms or copies, or contact support.',
-    });
+  test('fails an export that is interrupted on every attempt', async () => {
+    const render = vi.spyOn(printExportRender, 'renderPrintExport').mockImplementation(
+      async (_work, signal) =>
+        await new Promise((_resolve, reject) => {
+          signal?.addEventListener('abort', () => reject(new Error('Interrupted')));
+        }),
+    );
+    try {
+      const { assessment, printExportId } = await queueTestPdf('exhausted-export.pdf');
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        await printQueue.resume();
+        await vi.waitFor(() => expect(render).toHaveBeenCalledTimes(attempt), { timeout: 10_000 });
+        beginPrintExportShutdown();
+        await waitForPrintExportWorkers();
+        startPrintExportWorker();
+      }
+      await expect
+        .poll(
+          async () =>
+            await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
+        )
+        .toMatchObject({
+          status: 'failed',
+          failureMessage:
+            'The file could not be prepared after repeated attempts. Try again or contact support.',
+        });
+    } finally {
+      render.mockRestore();
+    }
   });
 
   test('rejects a PDF snapshot from an outdated question list', async () => {

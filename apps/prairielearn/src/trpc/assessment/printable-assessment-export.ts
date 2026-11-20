@@ -22,7 +22,7 @@ import {
 } from '../../lib/printing/index.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import type { PrintExportWork } from '../../lib/printing/print-export-render.js';
-import { queuePrintExport } from '../../lib/printing/print-exports.js';
+import { printExportResult, queuePrintExport } from '../../lib/printing/print-exports.js';
 import { PrintPacketMetadataSchema } from '../../lib/printing/print-packet-schema.js';
 import { PrintPacketError, readPrintCoverPages } from '../../lib/printing/print-packet.js';
 import { checkPrintSnapshotId } from '../../lib/printing/print-snapshot-id.js';
@@ -277,8 +277,7 @@ export const printableAssessmentExportRouter = t.router({
         authnUserId: ctx.authn_user.id,
       });
       if (!printExport) throw new TRPCError({ code: 'NOT_FOUND' });
-      const status =
-        printExport.status === 'succeeded' && printExport.expired ? 'expired' : printExport.status;
+      const { status, failureMessage } = printExportResult(printExport);
       return {
         status,
         format: printExport.format,
@@ -288,7 +287,7 @@ export const printableAssessmentExportRouter = t.router({
             : null,
         sizeBytes: printExport.size_bytes,
         label: printExport.label,
-        failureMessage: printExport.failure_message,
+        failureMessage,
       };
     }),
 });
