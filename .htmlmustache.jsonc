@@ -218,6 +218,28 @@
       ]
     },
     {
+      "name": "pl-sketch",
+      "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch.json",
+      "children": [
+        {
+          "name": "pl-sketch-grade",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-grade.json"
+        },
+        {
+          "name": "pl-sketch-initial",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-initial.json"
+        },
+        {
+          "name": "pl-sketch-solution",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-solution.json"
+        },
+        {
+          "name": "pl-sketch-tool",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-tool.json"
+        }
+      ]
+    },
+    {
       "name": "pl-string-input",
       "schema": "./apps/prairielearn/elements/pl-string-input/schemas/pl-string-input.json"
     },
@@ -898,18 +920,23 @@
       "name": "pl-sketch",
       "children": [
         {
-          "name": "pl-sketch-grade"
+          "name": "pl-sketch-grade",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-grade.json"
         },
         {
-          "name": "pl-sketch-initial"
+          "name": "pl-sketch-initial",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-initial.json"
         },
         {
-          "name": "pl-sketch-solution"
+          "name": "pl-sketch-solution",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-solution.json"
         },
         {
-          "name": "pl-sketch-tool"
+          "name": "pl-sketch-tool",
+          "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch-tool.json"
         }
-      ]
+      ],
+      "schema": "./apps/prairielearn/elements/pl-sketch/schemas/pl-sketch.json"
     },
     {
       "name": "clickable-image"

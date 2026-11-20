@@ -1,6 +1,7 @@
 import base64
 import copy
 import json
+import pathlib
 import random
 import re
 import string
@@ -20,6 +21,8 @@ from sketchresponse.types import (
     SketchTool,
 )
 from sketchresponse.utils import format_drawing, parse_function_string
+
+SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 
 
 class _AxesLabel(TypedDict):
@@ -105,23 +108,7 @@ ALLOW_BLANK_DEFAULT = False
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers-name"]
-    optional_attribs = [
-        "weight",
-        "x-range",
-        "y-range",
-        "x-axis-label",
-        "y-axis-label",
-        "label-off-axis",
-        "label-down-axis",
-        "width",
-        "height",
-        "enforce-bounds",
-        "read-only",
-        "overlay-solution",
-        "allow-blank",
-    ]
-    pl.check_attribs(element, required_attribs, optional_attribs)
+    pl.validate_element_tree(element, SCHEMA_MANIFEST_PATH)
 
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
