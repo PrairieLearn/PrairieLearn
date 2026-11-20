@@ -1,0 +1,51 @@
+
+.pl-matching-radio-matrix-container {
+
+  --header-bg-color: #f3f4f6;
+  --header-fg-color: #374151;
+  --row-border-color: #e5e7eb;
+
+  thead th {
+    background-color: rgb(var(--bs-primary-rgb));
+    color: rgb(var(--bs-light-rgb));
+  }
+
+  .visually-hidden {
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: normal;
+    /* the browswer applies font-weight: bold to all th automatically, need to disable */
+  }
+
+  tr.radio-matrix-row {
+
+    td.option-cell {
+
+      label {
+        align-items: center;
+        cursor: pointer;
+        display: flex;
+        height: 3rem;
+        justify-content: center;
+        width: 100%;
+
+        input[type="radio"] {
+          accent-color: rgb(var(--bs-primary-rgb));
+          cursor: pointer;
+          height: 1.2rem;
+          width: 1.2rem;
+        }
+      }
+    }
+  }
+}
