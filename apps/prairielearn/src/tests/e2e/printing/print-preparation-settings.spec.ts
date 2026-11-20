@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 
 import { z } from 'zod';
 
-import { queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
 import { insertCoursePermissionsByUserUid } from '../../../models/course-permissions.js';
 import {
@@ -20,12 +20,13 @@ import {
   openPrintPreparation,
   preparePreview,
   printFormLabel,
-  sql,
   test,
   viewer,
   viewerTest,
 } from './print-preparation-utils.js';
 import { createPrintableForm } from './utils.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 test.describe.configure({ timeout: 180_000 });
 

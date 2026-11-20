@@ -12,6 +12,7 @@ export type PendingFormAction =
 
 /** Confirms regenerating, archiving, or creating a new version of a form. */
 export function FormActionModal({
+  show,
   action,
   pending,
   regenerateLocked,
@@ -21,6 +22,8 @@ export function FormActionModal({
   onConfirm,
   onExited,
 }: {
+  show: boolean;
+  /** Stays set while the modal closes so its content doesn't change mid-animation. */
   action: PendingFormAction | null;
   pending: boolean;
   /** Regenerating a downloaded form creates its next version instead of rerandomizing it. */
@@ -34,11 +37,11 @@ export function FormActionModal({
 }) {
   return (
     <Modal
-      show={action !== null}
+      show={show}
       aria-labelledby="print-form-action-title"
       backdrop="static"
       keyboard={!pending}
-      enforceFocus={action !== null}
+      enforceFocus={show}
       restoreFocus={false}
       onHide={onCancel}
       onExited={onExited}

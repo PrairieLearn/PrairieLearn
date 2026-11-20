@@ -11,25 +11,33 @@ export interface PendingPaperSizeChange {
 
 /** Confirms a paper size change that creates new versions of downloaded forms. */
 export function PaperSizeChangeModal({
+  show,
   change,
   applying,
   onCancel,
   onApply,
+  onExited,
 }: {
+  show: boolean;
+  /** Stays set while the modal closes so its content doesn't change mid-animation. */
   change: PendingPaperSizeChange | null;
   applying: boolean;
   onCancel: () => void;
   onApply: (change: PendingPaperSizeChange) => void;
+  onExited: () => void;
 }) {
   return (
     <Modal
-      show={change !== null}
+      show={show}
       aria-labelledby="print-paper-size-change-title"
       backdrop="static"
       keyboard={!applying}
       restoreFocus={false}
       onHide={onCancel}
-      onExited={() => window.document.getElementById('print-paper-size')?.focus()}
+      onExited={() => {
+        onExited();
+        window.document.getElementById('print-paper-size')?.focus();
+      }}
     >
       <Modal.Header closeButton={!applying}>
         <Modal.Title as="h2" className="h5" id="print-paper-size-change-title">

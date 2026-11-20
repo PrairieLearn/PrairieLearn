@@ -9,19 +9,3 @@ DELETE FROM print_forms AS pf USING assessments AS a
 WHERE
   pf.assessment_id = a.id
   AND a.course_instance_id = $course_instance_id;
-
--- BLOCK count_assessment_instances
-SELECT
-  count(*)::integer
-FROM
-  assessment_instances
-WHERE
-  assessment_id = $assessment_id;
-
--- BLOCK count_print_forms
-SELECT
-  count(*)::integer
-FROM
-  print_forms
-WHERE
-  assessment_id = $assessment_id;

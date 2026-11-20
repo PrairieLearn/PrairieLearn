@@ -28,8 +28,15 @@ export function usePrintExports({
   const [recentExportsOpen, setRecentExportsOpen] = useState(false);
   const recentExports = useQuery(
     trpc.printExports.list.queryOptions(undefined, {
+      // Automatic downloads read their status from this list, so keep polling until each
+      // one appears finished, even if a refresh failed before it was listed.
       refetchInterval: (query) =>
-        query.state.data?.some((item) => item.status === 'pending') ? 2_000 : false,
+        query.state.data?.some((item) => item.status === 'pending') ||
+        automaticExportIds.some(
+          (id) => !query.state.data?.some((item) => item.id === id && item.status !== 'pending'),
+        )
+          ? 2_000
+          : false,
     }),
   );
   const listedExport = recentExports.data?.find((item) => item.id === exportId);
@@ -100,7 +107,6 @@ function AutomaticExportDownload({
       onFinished(printExportId, true, null);
       link.click();
     } else {
-      // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent -- The parent owns the form-to-export mapping and must mark stale forms.
       onFinished(printExportId, false, printExport.failureMessage);
     }
   }, [printExport, onFinished, printExportId]);

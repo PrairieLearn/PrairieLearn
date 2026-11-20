@@ -6,7 +6,7 @@ import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectOptionalPrintForm } from '../../../models/print-form.js';
 import { createTest, expect } from '../fixtures.js';
 
-export const sql = loadSqlEquiv(import.meta.url);
+const sql = loadSqlEquiv(import.meta.url);
 export const test = createTest({ features: { 'printable-assessments': true } });
 export const viewer = {
   uid: 'print-viewer@example.com',

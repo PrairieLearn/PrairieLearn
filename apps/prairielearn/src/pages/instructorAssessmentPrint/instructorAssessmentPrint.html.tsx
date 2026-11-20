@@ -15,7 +15,7 @@ import { z } from 'zod';
 
 import { getAppError, renderAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
-import { NuqsAdapter } from '@prairielearn/ui';
+import { NuqsAdapter, useModalState } from '@prairielearn/ui';
 import { IdSchema } from '@prairielearn/zod';
 
 import { PrintIdentityFieldsTextSchema } from '../../lib/client/printing/print-cover.js';
@@ -49,12 +49,12 @@ import type { PrintExportsError } from '../../trpc/assessment/print-exports.js';
 import type { PrintFormsError } from '../../trpc/assessment/print-forms.js';
 
 import { CombinedPdfDownloadModal } from './components/CombinedPdfDownloadModal.js';
-import { type CoverPageFile, CoverPageCard } from './components/CoverPageCard.js';
+import { CoverPageCard, type CoverPageFile } from './components/CoverPageCard.js';
 import { FormActionModal, type PendingFormAction } from './components/FormActionModal.js';
 import { PaperLayoutCard } from './components/PaperLayoutCard.js';
 import {
-  type PendingPaperSizeChange,
   PaperSizeChangeModal,
+  type PendingPaperSizeChange,
 } from './components/PaperSizeChangeModal.js';
 import { PreviewEmptyState } from './components/PreviewEmptyState.js';
 import { PrintDownloadMenu } from './components/PrintDownloadMenu.js';
@@ -185,14 +185,14 @@ function PrintPreparation({
   const combinedRequestRef = useRef(0);
   const [combinedSubmitting, setCombinedSubmitting] = useState(false);
   const combinedReturnFocusRef = useRef<'menu' | 'recent' | { formId: string }>('menu');
-  const [pendingFormAction, setPendingFormAction] = useState<PendingFormAction | null>(null);
-  const pendingRegenerateLocked =
-    pendingFormAction?.action === 'regenerate' &&
-    forms.data.some(
-      (form) => form.id === pendingFormAction.id && form.question_selection_locked_at !== null,
-    );
-  const [pendingPaperSizeChange, setPendingPaperSizeChange] =
-    useState<PendingPaperSizeChange | null>(null);
+  const formActionModal = useModalState<{
+    action: PendingFormAction;
+    regenerateLocked: boolean;
+    nextLabel: string;
+  }>();
+  const pendingFormAction = formActionModal.data?.action ?? null;
+  const paperSizeModal = useModalState<PendingPaperSizeChange>();
+  const pendingPaperSizeChange = paperSizeModal.data;
   const [paperSizeApplying, setPaperSizeApplying] = useState(false);
   const [paperSizeRefreshFailed, setPaperSizeRefreshFailed] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -225,7 +225,6 @@ function PrintPreparation({
   const snapshotStale = formId !== null && staleFormIds.has(formId);
   const downloadMenuButtonRef = useRef<HTMLButtonElement>(null);
   const prepareStatusRef = useRef<HTMLDivElement>(null);
-  const applyPreviewButtonRef = useRef<HTMLButtonElement>(null);
   const settingFocusRef = useRef<HTMLElement | null>(null);
   const printHeadingRef = useRef<HTMLHeadingElement>(null);
   const recentExportsRef = useRef<HTMLDetailsElement>(null);
@@ -392,7 +391,20 @@ function PrintPreparation({
   function closeFormAction() {
     if (formActionPending) return;
     nextFormFocusRef.current = pendingFormAction?.id ?? null;
-    setPendingFormAction(null);
+    formActionModal.hide();
+  }
+
+  /** Fixes the modal's wording when it opens, since forms refresh after the action. */
+  function openFormAction(action: PendingFormAction) {
+    formActionModal.showWithData({
+      action,
+      regenerateLocked:
+        action.action === 'regenerate' &&
+        forms.data.some(
+          (form) => form.id === action.id && form.question_selection_locked_at !== null,
+        ),
+      nextLabel: nextPrintFormLabel(forms.data, action.label),
+    });
   }
 
   function markStaleSnapshot(error: unknown, ids: string[]) {
@@ -1019,7 +1031,7 @@ function PrintPreparation({
       }));
     const change = { paperSize, sourceFormId: formId, expectedForms, versionedForms };
     if (versionedForms.length > 0) {
-      setPendingPaperSizeChange(change);
+      paperSizeModal.showWithData(change);
     } else {
       void applyPaperSizeChange(change).catch(() => {});
     }
@@ -1031,7 +1043,7 @@ function PrintPreparation({
     setValue('paperSize', selected?.settings.paperSize ?? settings.paperSize, {
       shouldDirty: true,
     });
-    setPendingPaperSizeChange(null);
+    paperSizeModal.hide();
   }
 
   async function saveSetting<K extends keyof PrintSettings>(field: K, value: PrintSettings[K]) {
@@ -1341,11 +1353,9 @@ function PrintPreparation({
                   onSwitchForm={switchForm}
                   onAddForm={() => void addForm().catch(() => {})}
                   onRegenerate={({ id, label }) =>
-                    setPendingFormAction({ action: 'regenerate', id, label })
+                    openFormAction({ action: 'regenerate', id, label })
                   }
-                  onArchive={({ id, label }) =>
-                    setPendingFormAction({ action: 'archive', id, label })
-                  }
+                  onArchive={({ id, label }) => openFormAction({ action: 'archive', id, label })}
                 />
                 <PaperLayoutCard
                   settings={settings}
@@ -1393,7 +1403,7 @@ function PrintPreparation({
                     saveSetting={saveSetting}
                     onReviseSelection={(questionNumber, included) => {
                       if (!formId) return;
-                      setPendingFormAction({
+                      openFormAction({
                         action: 'reviseSelection',
                         id: formId,
                         label: formLabel(formId),
@@ -1413,7 +1423,6 @@ function PrintPreparation({
                   </p>
                 )}
                 <Button
-                  ref={applyPreviewButtonRef}
                   type="submit"
                   className={clsx('w-100', { disabled: !canApplySettings })}
                   aria-disabled={!canApplySettings}
@@ -1531,7 +1540,11 @@ function PrintPreparation({
                       ) : exportId && displayedExport?.status === 'expired' ? (
                         'This file has expired.'
                       ) : exportId ? (
-                        'Preparing file… It will download automatically.'
+                        printExports.automaticExportIds.includes(exportId) ? (
+                          'Preparing file… It will download automatically.'
+                        ) : (
+                          'Preparing file…'
+                        )
                       ) : null}
                     </div>
                     <PrintDownloadMenu
@@ -1621,25 +1634,27 @@ function PrintPreparation({
         onDownload={() => void downloadCombined()}
       />
       <PaperSizeChangeModal
+        show={paperSizeModal.show}
         change={pendingPaperSizeChange}
+        onExited={paperSizeModal.onExited}
         applying={paperSizeApplying}
         onCancel={cancelPaperSizeChange}
         onApply={(change) => {
           void applyPaperSizeChange(change)
             .catch(() => {})
-            .finally(() => setPendingPaperSizeChange(null));
+            .finally(() => paperSizeModal.hide());
         }}
       />
       <FormActionModal
+        show={formActionModal.show}
         action={pendingFormAction}
         pending={formActionPending}
-        regenerateLocked={pendingRegenerateLocked}
+        regenerateLocked={formActionModal.data?.regenerateLocked ?? false}
         hasRandomization={hasRandomization}
-        nextLabel={
-          pendingFormAction ? nextPrintFormLabel(forms.data, pendingFormAction.label) : null
-        }
+        nextLabel={formActionModal.data?.nextLabel ?? null}
         onCancel={closeFormAction}
         onExited={() => {
+          formActionModal.onExited();
           const id = nextFormFocusRef.current;
           nextFormFocusRef.current = null;
           if (id) requestFormFocus(id);
@@ -1656,7 +1671,7 @@ function PrintPreparation({
             } catch {
               nextFormFocusRef.current = action.id;
             } finally {
-              setPendingFormAction(null);
+              formActionModal.hide();
             }
           })();
         }}
