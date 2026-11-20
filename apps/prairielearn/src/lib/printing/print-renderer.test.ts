@@ -12,8 +12,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { config } from '../config.js';
 
-import { PRINT_FONT_STYLESHEET_URL } from './print-fonts.js';
-
 const playwrightMocks = {
   connectOverCDP: vi.fn(),
   launch: vi.fn(),
@@ -337,42 +335,6 @@ describe('PrintRenderer', () => {
       code: 1008,
       reason: 'WebSockets are disabled while printing',
     });
-  });
-
-  it('loads only font files named by the brand stylesheet', async () => {
-    const harness = createBrowserHarness();
-    await renderPdf(new PrintRenderer(), { url: 'http://localhost:3000/print' });
-    const routeHandler = harness.getRouteHandler()!;
-    const fontUrl = 'https://fonts.gstatic.com/s/plusjakartasans/v12/brand.woff2';
-    const otherFontUrl = 'https://fonts.gstatic.com/s/plusjakartasans/v12/other.woff2';
-    const abort = vi.fn(async () => undefined);
-    const fulfill = vi.fn(async () => undefined);
-    const fontResponse = { status: () => 200 };
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce({
-        status: () => 200,
-        text: async () => `@font-face { src: url(${fontUrl}); }`,
-      })
-      .mockResolvedValueOnce(fontResponse);
-    const request = (url: string, resourceType: string) => ({
-      request: () => ({ method: () => 'GET', url: () => url, resourceType: () => resourceType }),
-      abort,
-      fetch,
-      fulfill,
-    });
-
-    await routeHandler(request(otherFontUrl, 'font') as unknown as Route);
-    await routeHandler(request(PRINT_FONT_STYLESHEET_URL, 'stylesheet') as unknown as Route);
-    await routeHandler(request(fontUrl, 'font') as unknown as Route);
-    await routeHandler(request(otherFontUrl, 'font') as unknown as Route);
-
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch).toHaveBeenCalledWith({ maxRedirects: 0, timeout: 3_000 });
-    expect(fulfill).toHaveBeenCalledTimes(2);
-    expect(fulfill).toHaveBeenLastCalledWith({ response: fontResponse });
-    expect(abort).toHaveBeenCalledTimes(2);
-    expect(abort).toHaveBeenCalledWith('blockedbyclient');
   });
 
   it('sends a job credential only to selected print assets', async () => {

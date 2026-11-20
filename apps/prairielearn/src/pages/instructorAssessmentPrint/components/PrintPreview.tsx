@@ -198,3 +198,43 @@ export function PrintPreview({
     </div>
   );
 }
+
+/** Binds a cached preview to its cache key so the page can track each preview's state. */
+export function PreviewFrame({
+  cacheKey,
+  url,
+  document,
+  active,
+  selectedQuestion,
+  onStateChange,
+  onSnapshotReady,
+}: {
+  cacheKey: string;
+  url: string;
+  document: PrintDocument;
+  active: boolean;
+  selectedQuestion: { number: string } | null;
+  onStateChange: (key: string, url: string, document: PrintDocument, state: PreviewState) => void;
+  onSnapshotReady: (key: string, url: string, snapshot: PrintSnapshot, doc: Document) => void;
+}) {
+  const handleStateChange = useCallback(
+    (state: PreviewState) => onStateChange(cacheKey, url, document, state),
+    [cacheKey, url, document, onStateChange],
+  );
+  const handleSnapshotReady = useCallback(
+    (snapshot: PrintSnapshot, doc: Document) => onSnapshotReady(cacheKey, url, snapshot, doc),
+    [cacheKey, url, onSnapshotReady],
+  );
+
+  return (
+    <PrintPreview
+      url={url}
+      document={document}
+      paperWidth={new URLSearchParams(url.split('?')[1]).get('paper_size') === 'Letter' ? 816 : 794}
+      active={active}
+      selectedQuestion={selectedQuestion}
+      onStateChange={handleStateChange}
+      onSnapshotReady={handleSnapshotReady}
+    />
+  );
+}

@@ -23,6 +23,8 @@ import {
   sameExcludedQuestions,
 } from '../lib/printing/print-settings.js';
 
+import { selectPrintFormQuestions } from './print-form-question.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function insertPrintForm({
@@ -77,6 +79,13 @@ export async function updatePrintFormSettings({
     }
     if (current?.archived_at === null && !isDeepStrictEqual(current.settings, expectedSettings)) {
       throw new HttpStatusError(409, PRINT_SETTINGS_CHANGED_MESSAGE);
+    }
+    if (current?.archived_at === null) {
+      const questions = await selectPrintFormQuestions(printFormId);
+      assertSettingsMatchQuestions(
+        settings,
+        questions.map(({ print_form_question }) => print_form_question.question_number),
+      );
     }
     return await queryOptionalRow(
       sql.update_print_form_settings,
@@ -177,4 +186,21 @@ export async function archivePrintForm({
     { print_form_id: printFormId, assessment_id: assessmentId },
     PrintFormSchema,
   );
+}
+
+/** Rejects settings that name questions outside the form, which would break its previews. */
+export function assertSettingsMatchQuestions(
+  settings: PrintSettings,
+  questionNumbers: Iterable<string>,
+): void {
+  const numbers = new Set(questionNumbers);
+  if (
+    !Object.keys(settings.questionSizes).every((number) => numbers.has(number)) ||
+    !settings.excludedQuestions.every((number) => numbers.has(number))
+  ) {
+    throw new HttpStatusError(
+      400,
+      'These print settings refer to questions that are not in this form.',
+    );
+  }
 }

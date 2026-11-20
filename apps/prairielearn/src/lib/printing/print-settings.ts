@@ -48,3 +48,9 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   questionSizes: {},
   excludedQuestions: [],
 };
+
+/** Saves one setting on the current form. */
+export type SavePrintSetting = <K extends keyof PrintSettings>(
+  field: K,
+  value: PrintSettings[K],
+) => Promise<void>;

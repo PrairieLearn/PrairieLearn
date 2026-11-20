@@ -16,6 +16,7 @@ import {
 } from '../../models/print-form-question.js';
 import {
   archivePrintForm,
+  assertSettingsMatchQuestions,
   insertPrintForm,
   lockAssessmentForPrintForms,
   selectActivePrintFormsForAssessment,
@@ -355,6 +356,10 @@ async function createPrintFormInternal({
       ...mappedSettings,
       paperSize: activeForms[0]?.settings.paperSize ?? mappedSettings.paperSize,
     };
+    assertSettingsMatchQuestions(
+      formSettings,
+      questions.map((question) => question.question_number),
+    );
     const form = await insertPrintForm({
       assessmentId: assessment.id,
       userId,
@@ -513,14 +518,12 @@ export async function setPrintFormPaperSize({
 /** Creates a new version with one changed selection while keeping the saved form intact. */
 export async function revisePrintFormSelection({
   assessment,
-  course,
-  courseInstance,
   userId,
   authnUserId,
   printFormId,
   questionNumber,
   included,
-}: Omit<CreatePrintFormOptions, 'replacesPrintFormId' | 'settings'> & {
+}: Pick<CreatePrintFormOptions, 'assessment' | 'userId' | 'authnUserId'> & {
   printFormId: string;
   questionNumber: string;
   included: boolean;
@@ -542,15 +545,9 @@ export async function revisePrintFormSelection({
     throw new HttpStatusError(400, 'This question is not part of the print form.');
   }
 
-  // Question generation can be slow, so the assessment lock is only held while saving the
-  // replacement. The saved question set cannot change after the form has been exported.
-  const questions = await createSavedPrintFormQuestions({
-    savedQuestions,
-    course,
-    courseInstance,
-    userId,
-    authnUserId,
-  });
+  // The saved question set cannot change after the form has been exported, so copying its
+  // variants outside the assessment lock keeps the replacement's random values.
+  const questions = await copySavedPrintFormQuestions(printFormId);
 
   return await runInTransactionAsync(async () => {
     await lockAssessmentForPrintForms(assessment.id);

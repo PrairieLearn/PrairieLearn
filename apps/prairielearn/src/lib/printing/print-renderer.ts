@@ -14,7 +14,6 @@ import {
   beginPrintAssetAccess,
   classifyPrintAssetPath,
 } from './print-asset-access.js';
-import { PRINT_FONT_STYLESHEET_URL } from './print-fonts.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import { RenderQueue } from './render-queue.js';
 
@@ -35,9 +34,6 @@ const CLOUDFLARE_KEEP_ALIVE_MS = 180_000;
 const DEFAULT_CONTEXT_CLOSE_GRACE_MS = 5_000;
 const BROWSER_CLOSE_GRACE_MS = 5_000;
 const SOCKET_IO_PATH = '/socket.io/';
-const FONT_ASSET_URL_PATTERN =
-  /^https:\/\/fonts\.gstatic\.com\/s\/(?:plusjakartasans|zalandosans)\/[^'"()\s]+\.(?:woff2?|ttf)$/;
-const FONT_FETCH_TIMEOUT_MS = 3_000;
 
 async function fetchCloudflareAsset(url: URL, signal: AbortSignal, assetToken?: string) {
   const headers = assetToken ? { [PRINT_ASSET_TOKEN_HEADER]: assetToken } : undefined;
@@ -363,54 +359,16 @@ export class PrintRenderer {
       }
       state.context = context;
 
-      const allowedFontUrls = new Set<string>();
-      // Only required same-origin assets and the printed document's brand fonts may be loaded.
-      // Realtime traffic is refused outright: with WebSockets closed, socket.io would otherwise
-      // fall back to HTTP long-polling and starve the page's own script and image loads.
+      // Only required same-origin assets may be loaded. Realtime traffic is refused
+      // outright: with WebSockets closed, socket.io would otherwise fall back to HTTP long-polling,
+      // and a handful of open polls can occupy every HTTP/1.1 connection to the server and starve
+      // the page's own script and image loads.
       await context.route('**/*', async (route) => {
         try {
           const request = route.request();
           const requestUrl = new URL(request.url());
           if (requestUrl.href === navigationUrl && request.isNavigationRequest()) {
             await route.fulfill({ status: 200, contentType: 'text/html', body: html });
-            return;
-          }
-          if (
-            request.method() === 'GET' &&
-            requestUrl.href === PRINT_FONT_STYLESHEET_URL &&
-            request.resourceType() === 'stylesheet'
-          ) {
-            const response = await route.fetch({
-              maxRedirects: 0,
-              timeout: FONT_FETCH_TIMEOUT_MS,
-            });
-            if (response.status() !== 200) {
-              await route.abort('blockedbyclient');
-              return;
-            }
-            const css = await response.text();
-            for (const match of css.matchAll(
-              /url\((['"]?)(https:\/\/fonts\.gstatic\.com\/s\/[^'"()\s]+)\1\)/g,
-            )) {
-              if (FONT_ASSET_URL_PATTERN.test(match[2])) allowedFontUrls.add(match[2]);
-            }
-            await route.fulfill({ response });
-            return;
-          }
-          if (
-            request.method() === 'GET' &&
-            allowedFontUrls.has(requestUrl.href) &&
-            request.resourceType() === 'font'
-          ) {
-            const response = await route.fetch({
-              maxRedirects: 0,
-              timeout: FONT_FETCH_TIMEOUT_MS,
-            });
-            if (response.status() >= 300 && response.status() < 400) {
-              await route.abort('blockedbyclient');
-              return;
-            }
-            await route.fulfill({ response });
             return;
           }
           const assetRoute = classifyPrintAssetPath(

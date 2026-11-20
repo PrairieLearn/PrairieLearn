@@ -1162,7 +1162,8 @@ function AssessmentEditorInner({
                       {!editMode &&
                         hasCoursePermissionPreview &&
                         printingAvailable &&
-                        !groupsConfigured && (
+                        !groupsConfigured &&
+                        questionRows.length > 0 && (
                           <a
                             className="btn btn-outline-secondary btn-sm"
                             href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print`}

@@ -186,7 +186,7 @@ overrides:
   s3rver>busboy: npm:@fastify/busboy@^3.2.4
   jsdom>undici: ^8.12.3
 
-packageExtensionsChecksum: sha256-k/ngwj1c+6dbCXGq3h3Vi2gIrEcqQUeF/0tTLFnIkSk=
+packageExtensionsChecksum: sha256-LckhG+wN9aD0P/2uyuYtxEB0UnE8W92DruMPvPTkFtM=
 
 importers:
 
@@ -1178,7 +1178,7 @@ importers:
         version: 2.3.8
       resumable-stream:
         specifier: ^2.2.13
-        version: 2.2.13(supports-color@10.2.2)
+        version: 2.2.13
       rss-parser:
         specifier: ^3.13.0
         version: 3.13.0
@@ -20135,11 +20135,7 @@ snapshots:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-  resumable-stream@2.2.13(supports-color@10.2.2):
-    dependencies:
-      ioredis: 6.0.0(supports-color@10.2.2)
-    transitivePeerDependencies:
-      - supports-color
+  resumable-stream@2.2.13: {}
 
   ret@0.1.15: {}
 

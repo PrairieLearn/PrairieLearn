@@ -99,10 +99,9 @@ export function CombinedPdfDownloadModal({
               </p>
             )}
             <p className="small text-muted mb-0">
-              Click below to export your printable{' '}
-              {document === 'assessment' ? 'assessment' : 'answer keys'} as a PDF file. It will
-              begin downloading once it's ready, and will remain in 'Recent exports' for up to 24
-              hours after you request it.
+              Click below to export your {document === 'assessment' ? 'forms' : 'answer keys'} as
+              one PDF file. It will begin downloading once it's ready, and will remain in 'Recent
+              exports' for up to 24 hours after you request it.
             </p>
           </>
         )}

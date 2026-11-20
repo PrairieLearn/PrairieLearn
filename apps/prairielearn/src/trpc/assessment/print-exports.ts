@@ -19,8 +19,7 @@ import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import {
   assertPrintDocumentReady,
-  getPrintableFormQuestionIds,
-  getPrintableQuestionListDigest,
+  getPrintableFormQuestions,
   loadPrintSnapshotRoot,
 } from '../../lib/printing/index.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
@@ -222,21 +221,17 @@ export const printExportsRouter = t.router({
           { questionListDigest: string; assetScope: PrintAssetScope }
         >();
         for (const form of forms) {
-          const excludedQuestions = new Set(form.settings.excludedQuestions);
-          const printFormQuestionIds = await getPrintableFormQuestionIds(
+          const { printFormQuestionIds, questionListDigest } = await getPrintableFormQuestions(
             form.printFormId,
             new Map(
               Object.entries(form.settings.questionSizes).flatMap(([number, size]) =>
                 size ? [[number, size] as const] : [],
               ),
             ),
-            excludedQuestions,
+            new Set(form.settings.excludedQuestions),
           );
           formContexts.set(form.printFormId, {
-            questionListDigest: await getPrintableQuestionListDigest(
-              form.printFormId,
-              excludedQuestions,
-            ),
+            questionListDigest,
             assetScope: {
               courseInstanceId: ctx.course_instance.id,
               assessmentId: ctx.assessment.id,

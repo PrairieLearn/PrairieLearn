@@ -20,6 +20,7 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as printing from '../lib/printing/index.js';
+import { digestPrintCoverHtml, getPrintCoverHtml } from '../lib/printing/print-cover.js';
 import * as printExportRender from '../lib/printing/print-export-render.js';
 import {
   beginPrintExportShutdown,
@@ -97,6 +98,7 @@ async function appendPrintSnapshot(
         search,
         questionListDigest: await printing.getPrintableQuestionListDigest(printFormId, new Set()),
         html,
+        coverDigest: 'unused-by-pdf-exports',
         source: { html: '', figures: [] },
       },
       config.secretKey,
@@ -282,6 +284,19 @@ describe('print preparation', { timeout: 60_000 }, () => {
     },
   );
 
+  test('rejects settings for questions that are not in the form', async () => {
+    const assessment = await printAssessment();
+    const api = client(assessment.id);
+    const form = await api.printForms.ensureInitial.mutate();
+    await expect(
+      api.printForms.updateSettings.mutate({
+        printFormId: form.printFormId,
+        settings: { ...form.settings, excludedQuestions: ['999'] },
+        expectedSettings: form.settings,
+      }),
+    ).rejects.toThrow('refer to questions that are not in this form');
+  });
+
   test('regeneration replaces a locked form and preserves the saved original', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
@@ -394,6 +409,20 @@ describe('print preparation', { timeout: 60_000 }, () => {
         ({ print_form_question }) => !originalVariantIds.has(print_form_question.variant_id),
       ),
     ).toBe(true);
+    const randomValues = async (printFormId: string) =>
+      await queryRows(
+        sql.select_print_form_variant_data,
+        { print_form_id: printFormId },
+        z.object({
+          question_number: z.string(),
+          variant_seed: z.string(),
+          params: z.unknown(),
+          true_answer: z.unknown(),
+        }),
+      );
+    expect(await randomValues(revised.printFormId)).toEqual(
+      await randomValues(original.printFormId),
+    );
     expect(await selectPrintFormQuestions(original.printFormId)).toEqual(originalQuestions);
     expect(
       (await selectOptionalPrintForm({
@@ -981,6 +1010,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
             new Set(['1']),
           ),
           html,
+          coverDigest: 'unused-by-pdf-exports',
           source: { html: '', figures: [] },
         },
         config.secretKey,
@@ -1096,6 +1126,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
           questionListDigest: await printing.getPrintableQuestionListDigest(
             form.printFormId,
             new Set(),
+          ),
+          coverDigest: digestPrintCoverHtml(
+            getPrintCoverHtml(assessment, '/pl/course_instance/1/instructor'),
           ),
           html,
           source,
@@ -1364,6 +1397,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
           search,
           questionListDigest: 'outdated-question-list',
           html,
+          coverDigest: 'unused-by-pdf-exports',
           source: { html: '', figures: [] },
         },
         config.secretKey,

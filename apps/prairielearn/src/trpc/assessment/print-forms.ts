@@ -173,8 +173,6 @@ export const printFormsRouter = t.router({
       try {
         const form = await revisePrintFormSelection({
           assessment: ctx.assessment,
-          course: ctx.course,
-          courseInstance: ctx.course_instance,
           userId: ctx.locals.user.id,
           authnUserId: ctx.authn_user.id,
           printFormId: input.printFormId,
@@ -249,10 +247,7 @@ export const printFormsRouter = t.router({
         }
         return StaffPrintFormSchema.parse(form);
       } catch (error) {
-        if (error instanceof HttpStatusError && error.status === 409) {
-          throw new TRPCError({ code: 'CONFLICT', message: error.message, cause: error });
-        }
-        throw error;
+        rethrowPrintFormError(error);
       }
     }),
 });

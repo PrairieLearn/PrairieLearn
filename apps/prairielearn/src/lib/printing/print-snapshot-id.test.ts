@@ -12,6 +12,7 @@ const snapshot = {
   authnUserId: '45',
   search: new URLSearchParams('paper_size=Letter&include_cover=true&document=assessment'),
   questionListDigest: 'question-list-1',
+  coverDigest: 'cover-1',
   html: '<!doctype html>\n<html><head></head><body>Question 1</body></html>',
   source: { html: '<section>Question 1</section>', figures: [] },
 };
@@ -20,7 +21,7 @@ const htmlDigest = digestPrintHtml(snapshot.html);
 afterEach(() => vi.useRealTimers());
 
 describe('print snapshot IDs', () => {
-  it('binds a preview to its form, layout, question list, and Word source', () => {
+  it('binds a preview to its form, layout, question list, cover text, and Word source', () => {
     const id = createPrintSnapshotId(snapshot, secretKey);
     expect(checkPrintSnapshotId({ ...snapshot, id }, secretKey)).toBe(htmlDigest);
     expect(
@@ -39,6 +40,7 @@ describe('print snapshot IDs', () => {
     expect(
       checkPrintSnapshotId({ ...snapshot, id, questionListDigest: 'question-list-2' }, secretKey),
     ).toBeNull();
+    expect(checkPrintSnapshotId({ ...snapshot, id, coverDigest: 'cover-2' }, secretKey)).toBeNull();
     expect(checkPrintSnapshotId({ ...snapshot, id, printFormId: '124' }, secretKey)).toBeNull();
     expect(
       checkPrintSnapshotId(

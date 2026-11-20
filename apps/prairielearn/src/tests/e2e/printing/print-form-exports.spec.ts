@@ -225,7 +225,10 @@ test('prints representative controls, editable Word content, and an ordered answ
 });
 
 test('rejects changed Word source before queuing an export', async ({ page, courseInstance }) => {
-  const { printUrl, printForm } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const { printUrl, printForm } = await createPrintableForm(
+    courseInstance,
+    'exam20-assessmentTools',
+  );
   const query = await savePrintSettings(printForm, {});
   await page.goto(`${printUrl}/preview?${query}`);
   await waitForPrintablePage(page);
@@ -275,7 +278,10 @@ test('omits failed question and answer-key renders and recovers after a correcti
   courseInstance,
   testCoursePath,
 }) => {
-  const { printUrl, printForm } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  const { printUrl, printForm } = await createPrintableForm(
+    courseInstance,
+    'exam20-assessmentTools',
+  );
   const search = await savePrintSettings(printForm, {});
   const serverPath = path.join(testCoursePath, 'questions/addNumbers/server.py');
   const original = await fs.readFile(serverPath, 'utf8');

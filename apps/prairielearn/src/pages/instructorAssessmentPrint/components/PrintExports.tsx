@@ -73,38 +73,37 @@ export function usePrintExports({
   };
 }
 
+type RecentExport = NonNullable<
+  ReturnType<typeof usePrintExports>['recentExports']['data']
+>[number];
+
 function AutomaticExportDownload({
   printExportId,
+  printExport,
   onFinished,
 }: {
   printExportId: string;
+  printExport: RecentExport | undefined;
   onFinished: (id: string, succeeded: boolean, failureMessage: string | null) => void;
 }) {
-  const trpc = useTRPC();
   const completedRef = useRef(false);
-  const status = useQuery(
-    trpc.printExports.status.queryOptions(
-      { printExportId },
-      {
-        refetchInterval: (query) =>
-          query.state.data && query.state.data.status !== 'pending' ? false : 2_000,
-      },
-    ),
-  );
   useEffect(() => {
-    // A newly queued export starts one download when its background job succeeds.
-    if (!status.data || status.data.status === 'pending' || completedRef.current) return;
+    // A newly queued export starts one download when its background job succeeds. The
+    // recent exports list polls while it is pending, so this reads its status from there.
+    if (!printExport || printExport.status === 'pending' || completedRef.current) return;
     completedRef.current = true;
-    if (status.data.status === 'succeeded' && status.data.downloadUrl) {
+    if (printExport.status === 'succeeded' && printExport.downloadUrl) {
       const link = window.document.createElement('a');
-      link.href = status.data.downloadUrl;
+      link.href = printExport.downloadUrl;
+      // Downloading instead of navigating keeps the page's unsaved-cover warning from firing.
+      link.download = '';
       onFinished(printExportId, true, null);
       link.click();
     } else {
       // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent -- The parent owns the form-to-export mapping and must mark stale forms.
-      onFinished(printExportId, false, status.data.failureMessage);
+      onFinished(printExportId, false, printExport.failureMessage);
     }
-  }, [status.data, onFinished, printExportId]);
+  }, [printExport, onFinished, printExportId]);
   return null;
 }
 
@@ -117,6 +116,7 @@ export function AutomaticExportDownloads({
     <AutomaticExportDownload
       key={id}
       printExportId={id}
+      printExport={exports.recentExports.data?.find((item) => item.id === id)}
       onFinished={exports.finishAutomaticExport}
     />
   ));
@@ -157,7 +157,7 @@ export function PrintExports({
                   {recentExports.data.map((item) => (
                     <li key={item.id} className="mb-2">
                       {item.status === 'succeeded' ? (
-                        <a href={item.downloadUrl ?? undefined}>
+                        <a href={item.downloadUrl ?? undefined} download>
                           Download {item.label}
                           {item.sizeBytes !== null &&
                             ` (${filesize(item.sizeBytes, { base: 10, round: 1 })})`}
@@ -194,7 +194,7 @@ export function PrintExports({
           }
         >
           {exportStatus.data?.status === 'succeeded' ? (
-            <a href={exportStatus.data.downloadUrl ?? undefined}>
+            <a href={exportStatus.data.downloadUrl ?? undefined} download>
               Download {exportStatus.data.label}
               {exportStatus.data.sizeBytes !== null &&
                 ` (${filesize(exportStatus.data.sizeBytes, { base: 10, round: 1 })})`}

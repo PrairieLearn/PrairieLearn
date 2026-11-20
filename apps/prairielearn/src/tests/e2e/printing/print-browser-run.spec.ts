@@ -1,4 +1,4 @@
-import { getPrintableFormQuestionIds } from '../../../lib/printing/index.js';
+import { getPrintableFormQuestions } from '../../../lib/printing/index.js';
 import { PrintRenderer } from '../../../lib/printing/print-renderer.js';
 import { getConfiguredUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
@@ -30,7 +30,8 @@ test('loads course assets in the rendering browser', async ({ page, courseInstan
       courseInstanceId: courseInstance.id,
       assessmentId: printForm.assessment_id,
       printFormId: printForm.id,
-      printFormQuestionIds: await getPrintableFormQuestionIds(printForm.id, new Map(), new Set()),
+      printFormQuestionIds: (await getPrintableFormQuestions(printForm.id, new Map(), new Set()))
+        .printFormQuestionIds,
       authnUserId: user.id,
       userId: user.id,
     };

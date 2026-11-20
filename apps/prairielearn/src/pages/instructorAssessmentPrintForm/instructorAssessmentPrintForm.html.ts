@@ -18,7 +18,6 @@ import {
   getPrintCoverFields,
   getPrintFooter,
 } from '../../lib/printing/print-cover.js';
-import { PRINT_FONT_STYLESHEET_URL } from '../../lib/printing/print-fonts.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 function cssContent(value: string) {
@@ -94,9 +93,6 @@ export function InstructorAssessmentPrintForm({
             : `${resLocals.assessment_label} student copy`,
         })}
         <meta name="referrer" content="no-referrer" />
-        <style data-pagedjs-ignore>
-          @import url('${unsafeHtml(PRINT_FONT_STYLESHEET_URL)}');
-        </style>
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
           window.PagedConfig = { auto: false };
@@ -139,14 +135,14 @@ export function InstructorAssessmentPrintForm({
             @bottom-left {
               color: #555;
               content: ${cssContent(footer.left)};
-              font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+              font-family: system-ui, sans-serif;
               font-size: 8pt;
             }
 
             @bottom-center {
               color: #555;
               content: ${cssContent(footer.center)};
-              font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+              font-family: system-ui, sans-serif;
               font-size: 8pt;
             }
 
@@ -154,7 +150,7 @@ export function InstructorAssessmentPrintForm({
               color: #555;
               content: ${cssContent(`${footer.right}${PRINT_FOOTER_SEPARATOR}Page `)} counter(page)
                 ' of ' counter(pages);
-              font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+              font-family: system-ui, sans-serif;
               font-size: 8pt;
             }
           }

@@ -1,10 +1,7 @@
 import { type ErrorRequestHandler, type RequestHandler, Router, raw } from 'express';
-import mustache from 'mustache';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { markdownToHtml } from '@prairielearn/markdown';
-import { escapeRegExp } from '@prairielearn/sanitize';
 import {
   IdSchema,
   JsonFromStringSchema,
@@ -13,7 +10,6 @@ import {
   parseRequestQuery,
 } from '@prairielearn/zod';
 
-import { renderText as renderAssessmentText } from '../../lib/assessment.js';
 import {
   PrintGradingTableSchema,
   PrintIdentityFieldsSchema,
@@ -30,8 +26,7 @@ import {
   assertPrintDocumentReady,
   describeOmittedQuestions,
   getPrintRenderer,
-  getPrintableFormQuestionIds,
-  getPrintableQuestionListDigest,
+  getPrintableFormQuestions,
   isBrowserRenderingAvailable,
   loadPrintSnapshotRoot,
   renderPrintFormQuestions,
@@ -40,9 +35,9 @@ import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import { createPrintFormQuestionAssetRouter } from '../../lib/printing/print-asset-routes.js';
 import {
-  BLANK_NAME_PLACEHOLDER,
-  HONOR_CODE_HEADING,
   buildPrintableCover,
+  digestPrintCoverHtml,
+  getPrintCoverHtml,
   getPrintFooter,
 } from '../../lib/printing/print-cover.js';
 import { queuePrintExport } from '../../lib/printing/print-exports.js';
@@ -175,20 +170,6 @@ function savedPrintLayout(resLocals: ResLocalsForPage<'print-form'>) {
   return { search, layout: parsePrintLayout(LayoutQuerySchema.parse(query)) };
 }
 
-function getCoverHtml(resLocals: ResLocalsForPage<'print-form'>) {
-  return {
-    assessmentTextHtml: renderAssessmentText(resLocals.assessment, resLocals.urlPrefix),
-    honorCodeHtml: resLocals.assessment.honor_code
-      ? markdownToHtml(
-          mustache.render(resLocals.assessment.honor_code, {
-            user_name: BLANK_NAME_PLACEHOLDER,
-          }),
-          { allowHtml: false, interpretMath: false },
-        ).replace(new RegExp(`^<h([1-6])>${escapeRegExp(HONOR_CODE_HEADING)}</h\\1>\\s*`, 'i'), '')
-      : null,
-  };
-}
-
 function printAssetScope(
   resLocals: ResLocalsForPage<'print-form'>,
   printFormQuestionIds: string[],
@@ -255,7 +236,8 @@ router.get(
       excludedQuestionNumbers: layout.excludedQuestionNumbers,
       document,
     });
-    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const coverHtml = getPrintCoverHtml(res.locals.assessment, res.locals.urlPrefix);
+    const { assessmentTextHtml, honorCodeHtml } = coverHtml;
     const warnings = describeOmittedQuestions(printingResult.questionResults);
 
     const rawHtml = InstructorAssessmentPrintForm({
@@ -318,6 +300,7 @@ router.get(
         authnUserId: res.locals.authn_user.id,
         search: localPreviewUrl.searchParams,
         questionListDigest: printingResult.questionListDigest,
+        coverDigest: digestPrintCoverHtml(coverHtml),
         html,
         source,
       },
@@ -333,7 +316,7 @@ router.get(
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-ancestors 'self';",
+      "default-src 'self' data: blob:; script-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self';",
     );
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.send(snapshotHtml);
@@ -354,12 +337,13 @@ router.post(
     } = parseRequest(req, DocxPostRequestSchemas);
     const { search, layout } = savedPrintLayout(res.locals);
 
-    const printFormQuestionIds = await getPrintableFormQuestionIds(
+    const { printFormQuestionIds, questionListDigest } = await getPrintableFormQuestions(
       res.locals.print_form.id,
       layout.questionBlockSizeOverrides,
       layout.excludedQuestionNumbers,
     );
-    const { assessmentTextHtml, honorCodeHtml } = getCoverHtml(res.locals);
+    const coverHtml = getPrintCoverHtml(res.locals.assessment, res.locals.urlPrefix);
+    const { assessmentTextHtml, honorCodeHtml } = coverHtml;
     const footer = getPrintFooter({
       resLocals: res.locals,
       document,
@@ -389,10 +373,6 @@ router.post(
       `${req.baseUrl}/preview?${search}`,
       `${config.serverType}://localhost:${config.serverPort}`,
     );
-    const questionListDigest = await getPrintableQuestionListDigest(
-      res.locals.print_form.id,
-      layout.excludedQuestionNumbers,
-    );
     const htmlDigest = checkPrintSnapshotId(
       {
         id: snapshot.id,
@@ -401,6 +381,7 @@ router.post(
         authnUserId: res.locals.authn_user.id,
         search: localPreviewUrl.searchParams,
         questionListDigest,
+        coverDigest: digestPrintCoverHtml(coverHtml),
       },
       config.secretKey,
     );

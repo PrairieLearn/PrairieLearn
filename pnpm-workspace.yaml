@@ -11,10 +11,6 @@ packageExtensions:
   cosmiconfig:
     dependencies:
       typescript: npm:@typescript/typescript6@^6.0.2
-  # resumable-stream imports ioredis at runtime but declares it only as a dev dependency.
-  resumable-stream@2.2.13:
-    dependencies:
-      ioredis: ^6.0.0
 
 overrides:
   # TypeScript 6 is installed via packageExtensions above.
