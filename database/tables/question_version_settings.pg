@@ -1,0 +1,34 @@
+columns
+    client_files: text[]
+    dependencies: jsonb not null
+    directory: text not null
+    external_grading_enable_networking: boolean
+    external_grading_entrypoint: text
+    external_grading_environment: jsonb not null
+    external_grading_files: text[]
+    external_grading_image: text
+    external_grading_timeout: integer
+    grading_method: enum_grading_method not null
+    options: jsonb
+    partial_credit: boolean
+    preferences_schema: jsonb
+    question_version_id: bigint not null
+    show_correct_answer: boolean
+    single_variant: boolean
+    template_directory: text
+    title: text not null
+    type: enum_question_type not null
+    workspace_args: text
+    workspace_enable_networking: boolean
+    workspace_environment: jsonb not null
+    workspace_graded_files: text[]
+    workspace_home: text
+    workspace_image: text
+    workspace_port: integer
+    workspace_url_rewrite: boolean
+
+indexes
+    question_version_settings_pkey: PRIMARY KEY (question_version_id) USING btree (question_version_id)
+
+foreign-key constraints
+    question_version_settings_question_version_id_fkey: FOREIGN KEY (question_version_id) REFERENCES question_versions(id) ON UPDATE CASCADE ON DELETE CASCADE
