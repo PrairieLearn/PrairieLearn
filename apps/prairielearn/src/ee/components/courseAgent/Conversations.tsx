@@ -554,7 +554,7 @@ function Chat({
         role="region"
         aria-label="Conversation"
       >
-        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 px-3 pt-3 pb-5">
+        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
           )}
