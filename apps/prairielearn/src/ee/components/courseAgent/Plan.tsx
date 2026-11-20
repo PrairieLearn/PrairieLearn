@@ -49,12 +49,12 @@ function StepIcon({ status }: { status: PlanStep['status'] }) {
 export function PlanChecklist({ plan }: { plan: PlanPart }) {
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
-  const done = plan.steps.filter((step) => step.status === 'completed').length;
-  const progress = `${done} of ${plan.steps.length}`;
-  const current =
-    plan.steps.find((step) => step.status === 'inProgress') ??
-    plan.steps.find((step) => step.status === 'pending') ??
-    plan.steps.at(-1);
+  const inProgress = plan.steps.findIndex((step) => step.status === 'inProgress');
+  const pending = plan.steps.findIndex((step) => step.status === 'pending');
+  // Between steps, the next one to start is the current one; after the last, the last is.
+  const index = inProgress !== -1 ? inProgress : pending !== -1 ? pending : plan.steps.length - 1;
+  const current = plan.steps.at(index);
+  const position = `${index + 1} of ${plan.steps.length}`;
 
   return (
     <div className="course-agent-plan small border-top">
@@ -66,14 +66,14 @@ export function PlanChecklist({ plan }: { plan: PlanPart }) {
         onClick={() => setExpanded(!expanded)}
       >
         {expanded || !current ? (
-          <span className="flex-grow-1 text-body-secondary">{progress} done</span>
+          <span className="flex-grow-1 text-body-secondary">Step {position}</span>
         ) : (
           <>
             <StepIcon status={current.status} />
             <span className="flex-grow-1 text-truncate fw-semibold">{current.text}</span>
             <span className="flex-shrink-0 text-body-secondary">
-              {progress}
-              <span className="visually-hidden"> steps done</span>
+              <span className="visually-hidden">Step </span>
+              {position}
             </span>
           </>
         )}
