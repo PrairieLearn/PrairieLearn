@@ -15,7 +15,12 @@ import {
   selectPrintFormsForAssessment,
 } from '../../models/print-form.js';
 
-import { type createContext, requireCoursePermissionPreview, t } from './init.js';
+import {
+  type createContext,
+  requireCoursePermissionEdit,
+  requireCoursePermissionPreview,
+  t,
+} from './init.js';
 
 /** @knipignore Consumed by the preparation UI in the following PR. */
 export interface PrintFormsError {
@@ -42,6 +47,7 @@ export const requirePrintableAssessments = t.middleware(async (opts) => {
 const printFormProcedure = t.procedure
   .use(requireCoursePermissionPreview)
   .use(requirePrintableAssessments);
+const editorPrintFormProcedure = printFormProcedure.use(requireCoursePermissionEdit);
 
 const rejectGroupWork = t.middleware(async ({ ctx, next }) => {
   if (ctx.assessment.team_work) {
@@ -65,6 +71,7 @@ const assessmentFormProcedure = printFormProcedure
     }
     return next({ ctx: { printForm: form } });
   });
+const editorAssessmentFormProcedure = assessmentFormProcedure.use(requireCoursePermissionEdit);
 
 async function createForm({
   ctx,
@@ -112,18 +119,18 @@ export const printFormsRouter = t.router({
       await selectPrintFormsForAssessment({ assessmentId: ctx.assessment.id }),
     ),
   ),
-  create: printFormProcedure
+  create: editorPrintFormProcedure
     .use(rejectGroupWork)
     .mutation(async ({ ctx }) => await createForm({ ctx })),
-  ensureInitial: printFormProcedure
+  ensureInitial: editorPrintFormProcedure
     .use(rejectGroupWork)
     .mutation(async ({ ctx }) => await createForm({ ctx, ensureInitial: true })),
-  regenerate: assessmentFormProcedure
+  regenerate: editorAssessmentFormProcedure
     .use(rejectGroupWork)
     .mutation(
       async ({ ctx, input }) => await createForm({ ctx, replacesPrintFormId: input.printFormId }),
     ),
-  archive: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
+  archive: editorAssessmentFormProcedure.mutation(async ({ ctx, input }) => {
     if (ctx.printForm.archived_at === null && printFormLabelBase(ctx.printForm.label) === 'A') {
       throw new TRPCError({
         code: 'BAD_REQUEST',

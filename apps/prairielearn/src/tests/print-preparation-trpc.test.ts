@@ -44,18 +44,21 @@ import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import { runInTransactionAndRollback } from './helperDb.js';
 import * as helperServer from './helperServer.js';
-import { getOrCreateUser } from './utils/auth.js';
+import { getOrCreateUser, withUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const sql = loadSqlEquiv(import.meta.url);
 
-function client(assessmentId: string) {
+function client(assessmentId: string, authnUserId = '1') {
   return createAssessmentTrpcClient({
     courseInstanceId: '1',
     assessmentId,
     urlBase: siteUrl,
     csrfToken: generatePrefixCsrfToken(
-      { url: getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId }), authn_user_id: '1' },
+      {
+        url: getAssessmentTrpcUrl({ courseInstanceId: '1', assessmentId }),
+        authn_user_id: authnUserId,
+      },
       config.secretKey,
     ),
   });
@@ -890,6 +893,44 @@ describe('print preparation', { timeout: 60_000 }, () => {
       }
     },
   );
+
+  test('lets course viewers inspect forms without changing them', async () => {
+    const assessment = await printAssessment();
+    const form = await client(assessment.id).printForms.ensureInitial.mutate();
+    const courseInstance = await selectCourseInstanceById('1');
+    const viewer = await getOrCreateUser({
+      uid: 'print-viewer@example.com',
+      name: 'Print viewer',
+      uin: 'print-viewer',
+      email: 'print-viewer@example.com',
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid: viewer.uid,
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+
+    await withUser(viewer, async () => {
+      const api = client(assessment.id, viewer.id);
+      expect((await api.printForms.list.query()).some(({ id }) => id === form.printFormId)).toBe(
+        true,
+      );
+      expect(await api.printForms.questions.query(form)).not.toHaveLength(0);
+      await expect(api.printForms.create.mutate()).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
+      await expect(api.printForms.ensureInitial.mutate()).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
+      await expect(api.printForms.regenerate.mutate(form)).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
+      await expect(api.printForms.archive.mutate(form)).rejects.toMatchObject({
+        data: { code: 'FORBIDDEN' },
+      });
+    });
+  });
 
   test('requires course preview permission', async () => {
     const assessment = await printAssessment();
