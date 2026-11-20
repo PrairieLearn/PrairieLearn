@@ -63,17 +63,26 @@ function runner({
     fetch: vi.fn(async () => ({ status: 101, webSocket: socket })),
     stopProcesses: vi.fn(async () => {}),
   } as unknown as DurableObjectStub<CourseSandbox>;
-  const native = new CodexAppServerClient(sandbox, courseData, async (target) => {
-    if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
-    const { assessment } = target.params;
-    if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
-    return {
-      url: '/pl/course_instance/1/instructor/assessment/2/settings',
-      label: 'Settings',
-      subtitle: 'Assessment · Fa25 / hw1',
-    };
-  });
-  return { sandbox, native, commands, emit, disconnect: () => socket.close() };
+  const sendFiles = vi.fn(async (paths: string[]) => ({
+    success: true,
+    text: `Sent ${paths.join(', ')}.`,
+  }));
+  const native = new CodexAppServerClient(
+    sandbox,
+    courseData,
+    async (target) => {
+      if (target.page !== 'assessment.settings') throw new Error(`No page named "${target.page}".`);
+      const { assessment } = target.params;
+      if (assessment !== 'hw1') throw new Error(`No assessment named "${assessment}".`);
+      return {
+        url: '/pl/course_instance/1/instructor/assessment/2/settings',
+        label: 'Settings',
+        subtitle: 'Assessment · Fa25 / hw1',
+      };
+    },
+    sendFiles,
+  );
+  return { sandbox, native, sendFiles, commands, emit, disconnect: () => socket.close() };
 }
 
 const thread = {
@@ -312,6 +321,59 @@ describe('course agent turns', () => {
     ]);
   });
 
+  it('tells the agent why a send_files call failed instead of failing the turn', async () => {
+    const { sandbox, native, sendFiles, commands, emit } = runner();
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(
+      sandbox,
+      native,
+      options(() => accepted.resolve(undefined)),
+    );
+    await accepted.promise;
+    const call = (id: number, args: unknown) =>
+      emit({
+        id,
+        method: 'item/tool/call',
+        params: {
+          threadId: 'thread',
+          turnId: 'turn',
+          callId: `call-${id}`,
+          namespace: null,
+          tool: 'send_files',
+          arguments: args,
+        },
+      });
+    const reply = (id: number) =>
+      vi.waitFor(() => {
+        const frame = commands.find((command) => command.id === id && !command.method);
+        expect(frame).toBeDefined();
+        return (frame as unknown as { result: unknown }).result;
+      });
+
+    call(101, { paths: ['grades.csv'] });
+    expect(await reply(101)).toEqual({
+      success: true,
+      contentItems: [{ type: 'inputText', text: 'Sent grades.csv.' }],
+    });
+
+    call(102, { path: 'grades.csv' });
+    expect(await reply(102)).toMatchObject({ success: false });
+    expect(sendFiles).toHaveBeenCalledTimes(1);
+
+    sendFiles.mockRejectedValueOnce(new Error('Storage is unavailable'));
+    call(103, { paths: ['grades.csv'] });
+    expect(await reply(103)).toEqual({
+      success: false,
+      contentItems: [{ type: 'inputText', text: 'Storage is unavailable' }],
+    });
+
+    emit({
+      method: 'turn/completed',
+      params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },
+    });
+    expect(await turn.finished).toMatchObject({ stopped: false });
+  });
+
   it('offers the course data tools to new threads and returns their replies to the model', async () => {
     const courseData = {
       listCourseDatasets: vi.fn(async () => ({ success: true, text: 'Course datasets' })),
@@ -329,6 +391,7 @@ describe('course agent turns', () => {
         { name: 'get_course_data' },
         { name: 'offer_page' },
         { name: 'offer_reload' },
+        { name: 'send_files' },
       ],
     });
     const call = (id: number, tool: string, args: unknown) =>
@@ -477,6 +540,7 @@ describe('course agent turns', () => {
             },
           },
           { name: 'offer_reload' },
+          { name: 'send_files' },
         ],
       },
     });
