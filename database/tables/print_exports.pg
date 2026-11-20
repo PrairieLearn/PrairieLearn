@@ -1,6 +1,5 @@
 columns
     assessment_id: bigint not null
-    attempts: integer not null default 0
     authn_user_id: bigint not null
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     failure_message: text
@@ -18,7 +17,6 @@ columns
 indexes
     print_exports_pkey: PRIMARY KEY (id) USING btree (id)
     print_exports_assessment_id_authn_user_id_created_at_id_idx: USING btree (assessment_id, authn_user_id, created_at DESC, id DESC)
-    print_exports_pending_idx: USING btree (id) WHERE status = 'pending'::text
 
 check constraints
     print_exports_format_check: CHECK (format = ANY (ARRAY['pdf'::text, 'docx'::text]))

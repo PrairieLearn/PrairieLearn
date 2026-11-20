@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 
+import { load } from 'cheerio';
 import { chromium } from 'playwright';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -63,7 +65,7 @@ export function isBrowserRenderingAvailable(): boolean {
 }
 
 /** Previews may omit broken questions for review; downloads must include every selected question. */
-function assertPrintDocumentReady(state: {
+export function assertPrintDocumentReady(state: {
   questionCount: number;
   omittedCount: number;
   coverPageCount: number;
@@ -78,6 +80,17 @@ function assertPrintDocumentReady(state: {
       `${label} has missing or unprintable questions. Review its preview and exclude or fix those questions before exporting.`,
     );
   }
+}
+
+/**
+ * Parses only a snapshot's root element. Snapshots are large client-submitted pages that
+ * the export worker checks in full, so request handlers avoid parsing or backtracking
+ * regexes over the whole page.
+ */
+export function loadPrintSnapshotRoot(snapshotHtml: string) {
+  const start = snapshotHtml.search(/<html\b/i);
+  const end = start === -1 ? -1 : snapshotHtml.indexOf('>', start);
+  return load(`${end === -1 ? '<html>' : snapshotHtml.slice(start, end + 1)}</html>`)('html');
 }
 
 // Snapshot metadata is client-editable. These checks detect incomplete exports;
@@ -197,6 +210,27 @@ function selectIncludedQuestions(
   return includedQuestions;
 }
 
+function digestPrintableQuestions(questions: PrintableQuestion[]): string {
+  const identities = questions.map(({ print_form_question, question }) => [
+    print_form_question.id,
+    print_form_question.assessment_question_id,
+    print_form_question.variant_id,
+    print_form_question.position,
+    print_form_question.question_number,
+    print_form_question.max_points,
+    question.id,
+  ]);
+  return createHash('sha256').update(JSON.stringify(identities)).digest('hex');
+}
+
+export async function getPrintableQuestionListDigest(
+  printFormId: string,
+  excludedQuestionNumbers: ReadonlySet<string>,
+): Promise<string> {
+  const questions = await selectPrintFormQuestions(printFormId);
+  return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
+}
+
 /** Validates a Word export's layout against the form and returns the included question IDs. */
 export async function getPrintableFormQuestionIds(
   printFormId: string,
@@ -230,6 +264,7 @@ async function renderPrintFormQuestionsUnbounded(
   }: RenderPrintFormQuestionsOptions,
 ): Promise<{
   questionHtmls: string[];
+  questionListDigest: string;
   questionResults: PrintingQuestionResult[];
   extraHeadersHtml: string;
   maxPoints: number;
@@ -370,6 +405,7 @@ async function renderPrintFormQuestionsUnbounded(
 
   return {
     questionHtmls: await namespaceQuestionHtmls(renderedQuestions),
+    questionListDigest: digestPrintableQuestions(includedQuestions),
     questionResults,
     extraHeadersHtml: combineQuestionHeaders(extraHeaderHtmls),
     maxPoints,

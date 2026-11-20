@@ -436,6 +436,14 @@
       "default": null,
       "type": ["string", "null"]
     },
+    "printExportQueuePrefix": {
+      "default": null,
+      "type": ["string", "null"]
+    },
+    "printExportWorkerActive": {
+      "default": true,
+      "type": "boolean"
+    },
     "runMigrations": {
       "default": true,
       "type": "boolean"

@@ -274,7 +274,11 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
           authnUserId: String(context.userIdInstructor),
         }),
       },
-      body: JSON.stringify({ html: '<html></html>', source: { html: '', figures: [] } }),
+      body: JSON.stringify({
+        id: 'unused',
+        html: '<html></html>',
+        source: { html: '', figures: [] },
+      }),
     };
     assert.equal((await helperClient.fetchCheerio(docxUrl, docxRequest)).status, 403);
     await features.disable('printable-assessments');

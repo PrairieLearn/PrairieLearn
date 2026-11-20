@@ -28,9 +28,11 @@ const pdf = await renderer.renderPdf({
 await renderer.close(); // during shutdown
 ```
 
+The preview response carries a signed snapshot ID covering its HTML, editable Word source, saved print form, generating user, layout query, and selected question identities and order. Export requests verify the ID and current question list; the export worker loads the submitted pages in the browser and compares their normalized HTML with the signed digest before rendering, so the check doesn't block the Node event loop. IDs expire after 24 hours; a changed or expired preview must be refreshed before downloading.
+
 Build `assetScope` from the already authorized course instance, assessment, saved print form, selected print-form question IDs, and user IDs. The renderer uses it to mint a credential for that render.
 
-The renderer connects to one Cloudflare browser on first use and runs up to four independent contexts concurrently. Another 64 requests may wait. HTTP print requests share a 45-second deadline across question preparation, queueing, and rendering. Local development uses one Chromium render at a time and a queue of 16. Set `maxConcurrentRenders` or `maxQueuedRenders` to override those limits. Each render has its own short-lived context. A browser that disconnects is reconnected on the next render, and `close()` rejects queued renders and closes the browser.
+The renderer connects to one Cloudflare browser on first use and runs up to four independent contexts concurrently. Another 64 requests may wait. Preview HTTP requests share a 45-second deadline across question preparation and rendering, including time in the render queue. PDF and Word requests enqueue background exports; each render in an export has its own 45-second deadline. Local development uses one Chromium render at a time and a queue of 16. Set `maxConcurrentRenders` or `maxQueuedRenders` to override those limits. Each render has its own short-lived context. A browser that disconnects is reconnected on the next render, and `close()` rejects queued renders and closes the browser.
 
 Set both `printingCloudflareAccountId` and `printingCloudflareApiToken` on every server that handles print requests to use Cloudflare Browser Run. If both are unset, the renderer uses local Chromium. A missing or empty value in either setting is a configuration error. The token needs Browser Run Edit permission. Without Cloudflare credentials, a Playwright-compatible Chromium executable must be installed locally for development and tests.
 
@@ -45,6 +47,8 @@ For each render with `assetScope`, the renderer issues a five-minute, job-specif
 The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative for the physical paper size.
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
+
+`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy printed pages, sharing fonts and images across repeated copies. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
 
 ### Word output
 
@@ -64,19 +68,23 @@ Omit the `cover` option to start with questions on the first page.
 
 Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. The first form is A1. Regenerating archives a form and creates the next numbered version of its letter, such as A2; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
-The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` exports a submitted page snapshot. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
+The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. Course staff with preview permission can inspect any form for the assessment, including archived forms. Creating or changing forms and starting PDF or Word exports require Course Editor permission.
 
 `document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
 
 The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
-The form's saved label appears on covers and footers. New forms use the first available letter with version 1 among up to 26 active slots. Archiving a slot makes its letter available again with the next numbered version, such as C2. Query parameters cannot change labels.
+The form's saved label appears on covers and footers. New forms use the first available letter with version 1 among up to 26 active slots. Archiving a slot makes its letter available again with the next numbered version, such as C2. The active A slot cannot be archived directly. Query parameters cannot change labels.
 
 `include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
 
 `include_honor_code=true` or `false` controls the student cover pledge independently of the online assessment requirement. Omitting it uses the assessment’s `requireHonorCode` setting. The printed pledge uses the configured `honorCode` when present, with a blank name line for `{{user_name}}`; otherwise it uses the standard pledge.
 
 `grading_table=true` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
+
+The print preparation page can combine multiple saved print forms and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included in student copies, including individual form downloads. Answer key downloads exclude uploaded covers. Generated page numbers and identification codes continue to identify pages within the original form; uploaded pages retain their own appearance and have no generated identification codes.
+
+PDF and Word exports are queued. Each export is a row in `print_exports`, which records its status and result; its input is stored in S3, and its ID is published to PrairieMQ for dispatch. If the publication fails, the export is marked failed and the request returns an error. Each user can have at most five exports in progress per assessment. Exports are grouped by course so courses take turns, and total throughput scales with the number of workers. Workers run on hosts with `printExportWorkerActive` and a browser renderer (local Chromium or Cloudflare). PrairieMQ retries a run interrupted by a graceful shutdown on another worker and recovers crashed runs as stalls; an export that runs out of retries is marked failed. An export still pending after 30 minutes, e.g. because Redis lost its job, reads as failed. Downloads are available to the requesting user for 24 hours. The app doesn't delete export files: configure an S3 lifecycle rule on the `print-exports/` prefix that also expires noncurrent versions. PrairieMQ requires a non-clustered Redis without eviction through `nonVolatileRedisUrl`. The queue namespace defaults to a hash of the PostgreSQL host and database, so deployments sharing a Redis stay separate; set `printExportQueuePrefix` when hosts use different aliases for the same database.
 
 Automatic blocks are measured at the final printable width after asynchronous question content, MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an exact fraction of the printable content height, including the question's internal spacing, when the content fits. Taller content uses its measured height and moves to the next page or flows across pages when needed.
 

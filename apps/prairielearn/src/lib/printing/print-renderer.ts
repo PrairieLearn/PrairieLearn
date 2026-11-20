@@ -3,6 +3,7 @@ import * as https from 'node:https';
 import { type Browser, type BrowserContext, chromium } from 'playwright';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { ValueType, getHistogram, metrics } from '@prairielearn/opentelemetry';
 
 import { config } from '../config.js';
 
@@ -167,6 +168,11 @@ export class PrintRenderer {
     const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs;
     return this.worker.run(
       (queueWaitMs) => {
+        // Rising queue waits mean previews and exports need more rendering capacity.
+        getHistogram(metrics.getMeter('prairielearn'), 'print.render.queue_wait', {
+          unit: 'milliseconds',
+          valueType: ValueType.DOUBLE,
+        }).record(queueWaitMs, { output: output.label });
         if (this.closed) throw new Error('The print renderer has been closed');
         const remainingTimeoutMs = timeoutMs === 0 ? 0 : Math.max(1, timeoutMs - queueWaitMs);
         return this.renderWithPermit(

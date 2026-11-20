@@ -2,8 +2,9 @@ import type { Page } from '@playwright/test';
 import axe from 'axe-core';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { VariantSchema } from '../../../lib/db-types.js';
 import { createTest, expect } from '../fixtures.js';
 
 import { createPrintableForm, waitForPrintablePage } from './utils.js';
@@ -80,6 +81,39 @@ async function expectAccessiblePreview(page: Page) {
   expect(violations).toEqual([]);
 }
 
+test('reuses saved closed variants for student copies and answer keys', async ({
+  page,
+  courseInstance,
+}) => {
+  const { printUrl, printForm } = await createPrintableForm(
+    courseInstance,
+    'hw20-afterCompleteVisibility',
+  );
+  const url = `${printUrl}/preview?paper_size=Letter`;
+  const variants = await queryRows(
+    sql.select_form_variants,
+    { print_form_id: printForm.id },
+    VariantSchema.pick({ id: true, open: true }),
+  );
+  expect(variants).toHaveLength(1);
+  await execute(sql.close_variants, { print_form_id: printForm.id });
+
+  for (const document of ['assessment', 'answer_key']) {
+    await page.goto(`${url}&document=${document}`);
+    const layout = await readPaginatedQuestionLayout(page);
+    expect(Object.keys(layout.questionPages)).toHaveLength(1);
+    await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
+    await expect(page.locator(':root')).toHaveAttribute('data-print-omitted-question-count', '0');
+    expect(
+      await queryRows(
+        sql.select_form_variants,
+        { print_form_id: printForm.id },
+        VariantSchema.pick({ id: true, open: true }),
+      ),
+    ).toEqual(variants.map((variant) => ({ ...variant, open: false })));
+  }
+});
+
 test('renders accessible previews and readable answer keys for every student question', async ({
   page,
   courseInstance,
@@ -90,7 +124,8 @@ test('renders accessible previews and readable answer keys for every student que
     'exam20-assessmentTools',
   );
   const initialRecords = await queryRow(sql.select_record_counts, {}, RecordCountsSchema);
-  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID&form_label=Z`;
+  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
+  expect((await page.request.get(`${endpoint}&form_label=Z`)).status()).toBe(400);
 
   const assessmentResponse = await page.goto(endpoint);
   await expect(page.locator(':root')).toHaveAttribute('data-print-form-label', printForm.label);
