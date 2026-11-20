@@ -12,11 +12,8 @@ import { IdSchema } from '@prairielearn/zod';
 
 import {
   claimPrintExport,
-  failStalePrintExports,
   finishPrintExport,
   insertPrintExport,
-  releasePrintExport,
-  selectPendingPrintExports,
 } from '../../models/print-export.js';
 import {
   lockAssessmentForPrintForms,
@@ -26,6 +23,7 @@ import {
 import { deleteFromS3, getFromS3, uploadToS3 } from '../aws.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../client/printing/print-snapshot.js';
 import { config } from '../config.js';
+import type { PrintExport } from '../db-types.js';
 import { getFileStoreS3Bucket } from '../file-store.js';
 
 import type { PaperSize } from './paper-size.js';
@@ -45,8 +43,13 @@ const QUEUE_NAME = 'print-exports';
 // throughput scales with the number of workers. PrairieMQ persists this value in Redis
 // and stops workers that disagree, so changing it also requires a new queue prefix.
 const COURSE_CONCURRENCY = 2;
-// Graceful shutdowns release their attempt, so only runs that crash or stall count.
-const MAX_ATTEMPTS = 2;
+// A run interrupted by a graceful shutdown counts as an attempt, so allow for a rolling
+// deploy interrupting it more than once. Crashed runs are recovered separately as stalls.
+const MAX_ATTEMPTS = 3;
+const UNAVAILABLE_MESSAGE =
+  'Downloads are unavailable right now. Try again later or contact support.';
+const EXHAUSTED_MESSAGE =
+  'The file could not be prepared after repeated attempts. Try again or contact support.';
 let queue: Queue<{ printExportId: string }, void> | null = null;
 let worker: Worker<{ printExportId: string }, void> | null = null;
 let workerClosing: Promise<void> | null = null;
@@ -68,12 +71,12 @@ function queueConnection(redisUrl: string) {
   };
 }
 
-/** Connects lazily so hosts that never queue or reconcile exports don't need Redis. */
+/** Connects lazily so hosts that never queue exports don't need Redis. */
 function getQueue() {
   if (!queue && config.nonVolatileRedisUrl) {
     queue = new Queue(QUEUE_NAME, {
       ...queueConnection(config.nonVolatileRedisUrl),
-      defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
+      defaultJobOptions: { attempts: MAX_ATTEMPTS, removeOnComplete: true, removeOnFail: true },
     });
     queue.on('error', reportQueueError);
   }
@@ -102,7 +105,22 @@ export function initPrintExportWorker() {
     },
   );
   worker.on('error', reportQueueError);
-  worker.on('failed', (_job, error) => reportQueueError(error));
+  // Runs that finish normally record their own result, so these only see exports that
+  // ran out of attempts or stalled too often.
+  worker.on('failed', (job, error) => {
+    reportQueueError(error);
+    void failExhaustedPrintExport(job.data.printExportId);
+  });
+  worker.on('stalled', (jobId, failed) => {
+    if (failed) void failExhaustedPrintExport(jobId.replace(/^print-export-/, ''));
+  });
+}
+
+async function failExhaustedPrintExport(printExportId: string) {
+  await finishPrintExport(printExportId, {
+    status: 'failed',
+    failureMessage: EXHAUSTED_MESSAGE,
+  }).catch(reportQueueError);
 }
 
 export function beginPrintExportShutdown() {
@@ -120,23 +138,6 @@ export async function waitForPrintExportWorkers() {
     workerClosing = null;
     // Vite can restart the server without restarting this process.
     shutdownController = new AbortController();
-  }
-}
-
-async function publishPrintExport({
-  printExportId,
-  courseId,
-}: {
-  printExportId: string;
-  courseId: string;
-}) {
-  const currentQueue = getQueue();
-  if (currentQueue && !shutdownController.signal.aborted) {
-    await currentQueue.add(
-      'render',
-      { printExportId },
-      { jobId: `print-export-${printExportId}`, group: { id: courseId } },
-    );
   }
 }
 
@@ -188,11 +189,9 @@ export async function queuePrintExport({
     questionListDigest: string;
   }[];
 }): Promise<string> {
-  if (shutdownController.signal.aborted || !getQueue()) {
-    throw new HttpStatusError(
-      503,
-      'Downloads are unavailable right now. Try again later or contact support.',
-    );
+  const currentQueue = getQueue();
+  if (shutdownController.signal.aborted || !currentQueue) {
+    throw new HttpStatusError(503, UNAVAILABLE_MESSAGE);
   }
   const bucket = getFileStoreS3Bucket();
   const inputKey = `${KEY_PREFIX}input/${randomUUID()}.json`;
@@ -252,14 +251,26 @@ export async function queuePrintExport({
     await deleteFromS3(bucket, inputKey);
     throw error;
   }
-  // The PostgreSQL row survives a lost or failed Redis publication.
-  await publishPrintExport({ printExportId, courseId: owner.courseId }).catch(reportQueueError);
+  try {
+    await currentQueue.add(
+      'render',
+      { printExportId },
+      { jobId: `print-export-${printExportId}`, group: { id: owner.courseId } },
+    );
+  } catch (error) {
+    reportQueueError(error);
+    await finishPrintExport(printExportId, {
+      status: 'failed',
+      failureMessage: UNAVAILABLE_MESSAGE,
+    });
+    throw new HttpStatusError(503, UNAVAILABLE_MESSAGE);
+  }
   return printExportId;
 }
 
 async function processPrintExport(printExportId: string) {
-  if (shutdownController.signal.aborted) return;
   const signal = shutdownController.signal;
+  signal.throwIfAborted();
   const printExport = await claimPrintExport(printExportId);
   if (!printExport) return;
   const { format } = printExport;
@@ -272,9 +283,6 @@ async function processPrintExport(printExportId: string) {
   }).record(Date.now() - printExport.created_at.getTime(), attributes);
   const startedAt = performance.now();
   try {
-    if (printExport.attempts > MAX_ATTEMPTS) {
-      throw new HttpStatusError(400, exhaustedFailureMessage(format));
-    }
     const work = PrintExportWorkSchema.parse(
       JSON.parse((await getFromS3(bucket, printExport.input_key, true)).toString('utf8')),
     );
@@ -289,11 +297,8 @@ async function processPrintExport(printExportId: string) {
     });
     if (!finished) await deleteFromS3(bucket, outputKey);
   } catch (error) {
-    if (signal.aborted) {
-      // Another worker reruns the export once the reconciliation republishes it.
-      await releasePrintExport(printExport.id).catch(reportQueueError);
-      return;
-    }
+    // PrairieMQ retries a run interrupted by shutdown on another worker.
+    if (signal.aborted) throw error;
     getCounter(meter, 'print.export.failures', { valueType: ValueType.INT }).add(1, attributes);
     const failureMessage = printableFailureMessage(error, format);
     if (failureMessage === null) {
@@ -313,30 +318,21 @@ async function processPrintExport(printExportId: string) {
   }
 }
 
-function exhaustedFailureMessage(format: PrintExportWork['format']) {
-  return format === 'docx'
-    ? 'The Word document could not be prepared after repeated attempts. Try again or contact support.'
-    : 'The PDF could not be prepared after repeated attempts. Try fewer forms or contact support.';
-}
-
-/** Republishes pending exports whose Redis job was lost, failed, or interrupted. */
-export async function processQueuedPrintExports(): Promise<void> {
-  if (!config.nonVolatileRedisUrl) return;
-  // Exports that no worker finished before they would expire, such as when no host runs a
-  // worker, would otherwise stay pending and be republished forever.
-  await failStalePrintExports();
-  const pending = await selectPendingPrintExports();
-  if (pending.length === 0) return;
-  const currentQueue = getQueue();
-  if (!currentQueue) return;
-  for (const { id, course_id } of pending) {
-    if (shutdownController.signal.aborted) return;
-    // Completed and failed jobs are removed from Redis, so they also read as unknown.
-    const { state } = await currentQueue.getJobStatus(`print-export-${id}`);
-    if (state === 'unknown') {
-      await publishPrintExport({ printExportId: id, courseId: course_id });
-    }
+/**
+ * Downloads expire 24 hours after the export was queued. An export that is still pending
+ * by then, e.g. because Redis lost its job, reads as failed.
+ */
+export function printExportResult(printExport: PrintExport & { expired: boolean }) {
+  if (printExport.expired && printExport.status === 'succeeded') {
+    return { status: 'expired' as const, failureMessage: null };
   }
+  if (printExport.expired && printExport.status === 'pending') {
+    return {
+      status: 'failed' as const,
+      failureMessage: 'The export did not finish within 24 hours. Try again.',
+    };
+  }
+  return { status: printExport.status, failureMessage: printExport.failure_message };
 }
 
 export async function getPrintExportStream(key: string) {

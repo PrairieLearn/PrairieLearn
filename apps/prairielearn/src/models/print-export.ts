@@ -89,21 +89,9 @@ export async function selectRecentPrintExportsForAssessment({
   );
 }
 
-export async function selectPendingPrintExports() {
-  return await queryRows(
-    sql.select_pending_print_exports,
-    z.object({ id: IdSchema, course_id: IdSchema }),
-  );
-}
-
 /** Counts an attempt and returns the export, or null if it is no longer pending. */
 export async function claimPrintExport(id: string): Promise<PrintExport | null> {
   return await queryOptionalRow(sql.claim_print_export, { id }, PrintExportSchema);
-}
-
-/** Returns the attempt of a run that stopped for a graceful shutdown. */
-export async function releasePrintExport(id: string) {
-  await execute(sql.release_print_export, { id });
 }
 
 /** Returns false if the export was already finished, e.g. by a duplicate run. */
@@ -121,8 +109,4 @@ export async function finishPrintExport(
     failure_message: result.status === 'failed' ? result.failureMessage : null,
   });
   return updated > 0;
-}
-
-export async function failStalePrintExports() {
-  await execute(sql.fail_stale_print_exports);
 }

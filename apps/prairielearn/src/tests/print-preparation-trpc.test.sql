@@ -5,12 +5,14 @@ SET
 WHERE
   id = $print_export_id;
 
--- BLOCK exhaust_print_export_attempts
-UPDATE print_exports
-SET
-  attempts = 2
+-- BLOCK select_print_export_by_filename
+SELECT
+  status,
+  failure_message
+FROM
+  print_exports
 WHERE
-  id = $print_export_id;
+  filename = $filename;
 
 -- BLOCK set_static_assessment
 WITH

@@ -55,27 +55,6 @@ ORDER BY
 LIMIT
   10;
 
--- BLOCK fail_stale_print_exports
-UPDATE print_exports
-SET
-  status = 'failed',
-  finished_at = CURRENT_TIMESTAMP,
-  failure_message = 'The export did not finish within 24 hours. Try again.'
-WHERE
-  status = 'pending'
-  AND created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours';
-
--- BLOCK select_pending_print_exports
-SELECT
-  pe.id,
-  ci.course_id
-FROM
-  print_exports AS pe
-  JOIN assessments AS a ON (a.id = pe.assessment_id)
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-WHERE
-  pe.status = 'pending';
-
 -- BLOCK claim_print_export
 UPDATE print_exports
 SET
@@ -85,14 +64,6 @@ WHERE
   AND status = 'pending'
 RETURNING
   *;
-
--- BLOCK release_print_export
-UPDATE print_exports
-SET
-  attempts = greatest(attempts - 1, 0)
-WHERE
-  id = $id
-  AND status = 'pending';
 
 -- BLOCK finish_print_export
 UPDATE print_exports
