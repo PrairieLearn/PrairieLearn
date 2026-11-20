@@ -58,7 +58,6 @@ import {
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import authzHasCoursePreview from '../../middlewares/authzHasCoursePreview.js';
-import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
 import { selectOptionalPrintForm } from '../../models/print-form.js';
 
@@ -342,10 +341,6 @@ router.get(
 
 router.post(
   '/docx',
-  createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_edit'],
-    unauthorizedUsers: 'block',
-  }),
   parseDocxBody,
   typedAsyncHandler<'print-form'>(async (req, res) => {
     const {
