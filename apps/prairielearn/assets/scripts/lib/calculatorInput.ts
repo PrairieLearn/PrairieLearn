@@ -5,11 +5,18 @@ import {
   isSupportedCalculatorInput,
 } from '../../../src/lib/client/calculatorRestrictions.js';
 
+interface CalculatorAtom {
+  type: string;
+  value?: string;
+  body: CalculatorAtom[];
+  parent: { addChildrenAfter(children: CalculatorAtom[], after: CalculatorAtom): void };
+}
+
 interface CalculatorMathLiveInternals {
   model: {
-    at(position: number): { body: unknown[] };
+    at(position: number): CalculatorAtom;
     getSiblingsRange(position: number): [number, number];
-    extractAtoms(range: [number, number]): unknown[];
+    extractAtoms(range: [number, number]): CalculatorAtom[];
     deferNotifications(
       options: { content: boolean; selection: boolean; type: string },
       edit: () => void,
@@ -40,14 +47,29 @@ export function wrapInMultiplicationParentheses(input: MathfieldElement) {
   model.deferNotifications({ content: true, selection: true, type: 'insertText' }, () => {
     const [, end] = model.getSiblingsRange(position);
     const contents = model.extractAtoms([position, end]);
+    let depth = 0;
+    // Structured pairs are single siblings. Literal parentheses (e.g. pasted LaTeX)
+    // can also occur as separate siblings; only an unmatched close ends this group.
+    const closeIndex = contents.findIndex(({ type, value }) => {
+      if (type === 'mopen' && value === '(') depth++;
+      if (type === 'mclose' && value === ')') {
+        if (depth === 0) return true;
+        depth--;
+      }
+      return false;
+    });
     // Only the completed edit should appear in undo history.
     field.stopRecording();
     try {
-      input.insert('\\cdot\\left(\\right?', { selectionMode: 'after' });
+      input.insert(`\\cdot\\left(\\right${closeIndex === -1 ? '?' : ')'}`, {
+        selectionMode: 'after',
+      });
     } finally {
       field.startRecording();
     }
-    model.at(input.position).body = contents;
+    const group = model.at(input.position);
+    group.body = closeIndex === -1 ? contents : contents.slice(0, closeIndex);
+    if (closeIndex !== -1) group.parent.addChildrenAfter(contents.slice(closeIndex + 1), group);
     // Leave the caret after the dot and opening fence, before the original contents.
     input.position = position + 2;
   });
