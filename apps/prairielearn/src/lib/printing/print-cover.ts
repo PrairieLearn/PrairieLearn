@@ -10,7 +10,7 @@ import {
 
 import type { PrintDocument } from './index.js';
 
-export const HONOR_CODE_HEADING = 'Academic integrity pledge';
+export const HONOR_CODE_HEADING = 'Honor code';
 export const PRINT_FOOTER_SEPARATOR = '\u00a0\u00a0|\u00a0\u00a0';
 
 export interface PrintFooter {

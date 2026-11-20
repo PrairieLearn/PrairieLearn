@@ -122,7 +122,7 @@ test('uses the configured honor code for printed pledges when requireHonorCode i
         ...JSON.parse(original),
         requireHonorCode: false,
         honorCode:
-          '## Academic integrity pledge\n\nI, {{user_name}}, agree to follow the **course collaboration policy**.',
+          '## Honor code\n\nI, {{user_name}}, agree to follow the **course collaboration policy**.',
       }),
     );
     await syncCourse(testCoursePath);
@@ -130,8 +130,8 @@ test('uses the configured honor code for printed pledges when requireHonorCode i
     const search = await savePrintSettings(printForm, { includeHonorCode: true });
     await page.goto(`${base}/preview?${search}`);
     await waitForPrintablePage(page);
-    const pledge = page.getByRole('region', { name: 'Academic integrity pledge' });
-    await expect(pledge.getByRole('heading', { name: 'Academic integrity pledge' })).toHaveCount(1);
+    const pledge = page.getByRole('region', { name: 'Honor code' });
+    await expect(pledge.getByRole('heading', { name: 'Honor code' })).toHaveCount(1);
     await expect(pledge).toContainText(
       'I, ____________________________, agree to follow the course collaboration policy.',
     );

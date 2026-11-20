@@ -1212,7 +1212,7 @@ test('lets instructors choose grading and pledge content on the cover', async ({
 }) => {
   await openPrintPreparation(page, courseInstance.id);
   const pledge = page.getByRole('checkbox', {
-    name: 'Include academic integrity pledge',
+    name: 'Include honor code',
     exact: true,
   });
   const grading = page.getByRole('checkbox', { name: 'Include grading table', exact: true });
@@ -1223,11 +1223,11 @@ test('lets instructors choose grading and pledge content on the cover', async ({
   await preparePreview(page);
   const frame = page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR);
   await expect(frame.getByRole('region', { name: 'Grading table' })).toBeVisible();
-  await expect(frame.getByRole('heading', { name: 'Academic integrity pledge' })).toHaveCount(0);
+  await expect(frame.getByRole('heading', { name: 'Honor code' })).toHaveCount(0);
   await pledge.check();
   await page.getByRole('button', { name: 'Update preview', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
-  await expect(frame.getByRole('heading', { name: 'Academic integrity pledge' })).toBeVisible();
+  await expect(frame.getByRole('heading', { name: 'Honor code' })).toBeVisible();
   await page.getByRole('checkbox', { name: 'Include default cover page', exact: true }).uncheck();
   await expect(pledge).toHaveCount(0);
   await expect(grading).toHaveCount(0);

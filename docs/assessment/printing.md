@@ -1,10 +1,10 @@
 # Printing assessments
 
-Course editors can prepare paper copies of an existing assessment. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. Course viewers can inspect existing forms and previews, but cannot change forms or start a new download. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
+Course editors can print an assessment for students to complete on paper. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. Course viewers can inspect existing forms and previews, but cannot change forms or start a new download. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
 
-For assessments with randomization, you can prepare multiple _forms_, such as A1 and B1. Each form keeps its selected questions, their order and any random values, and its print settings. Changing paper size updates all current forms; previous forms keep the size they used. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
+For assessments with randomization, you can print multiple _forms_, such as A1 and B1. Each form keeps its selected questions, their order and any random values, and its print settings. Changing paper size updates all current forms; previous forms keep the size they used. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
 
-## Prepare an assessment
+## Print an assessment
 
 1. Open the assessment's **Questions** page and select **Print**. If the assessment has questions, Form A1 is created automatically the first time a course editor opens this view. Its questions and any random values are chosen then; you can leave questions out before downloading.
 2. Under **Paper and layout**, choose a **Paper size** for all current forms and **Space per question** for the selected form.
@@ -28,7 +28,7 @@ The question list highlights two kinds of items to check:
 
 Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
 
-## Prepare multiple forms
+## Use multiple forms
 
 If your assessment uses randomization, select **Add form** to create another form. The new form copies the overall settings of the form you are viewing and chooses its own questions and random values. For questions shared by both forms, it also copies which ones you left out and their individual spacing. Newly chosen questions start included with **Automatic** spacing. You can have up to 26 current forms. Their first versions are labeled A1 through Z1, and new forms take the first available letter. You can archive a form when at least one other current form remains. Assessments without randomization use a single current form.
 
@@ -52,7 +52,7 @@ The default cover has spaces for **Name**, **Date**, **Student ID**, and **Secti
 
 - Under **Additional student fields:**, enter one label per line, such as “Student ID” or “Section”, then select **Save**.
 - Select **Include grading table** to add a table for recording question scores.
-- Select **Include academic integrity pledge** to add the assessment's honor code, or a standard pledge if the assessment does not have one.
+- Select **Include honor code** to add the assessment's honor code, or the default honor code if the assessment does not have one.
 - Uncheck **Include default cover page** if you do not want this cover.
 
 ### Add your own cover pages

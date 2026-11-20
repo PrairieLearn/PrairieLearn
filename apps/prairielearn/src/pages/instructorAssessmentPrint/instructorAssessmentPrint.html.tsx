@@ -1696,7 +1696,7 @@ function PrintPreparation({
                     <div className="mt-3">
                       <Form.Check
                         id="print-honor-code"
-                        label="Include academic integrity pledge"
+                        label="Include honor code"
                         aria-describedby="print-honor-code-help"
                         defaultChecked={settings.includeHonorCode}
                         disabled={settingsLocked}
@@ -1709,7 +1709,7 @@ function PrintPreparation({
                         })}
                       />
                       <Form.Text id="print-honor-code-help">
-                        Uses the assessment’s honor code, or the standard pledge if none is
+                        Uses the assessment’s honor code, or the default honor code if none is
                         configured.
                       </Form.Text>
                     </div>
