@@ -21,3 +21,23 @@
   border-top-right-radius: 0;
   border-top-left-radius: 0;
 }
+
+[id^='file-preview'] .file-preview-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 1.5rem;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+[id^='file-preview'] .file-preview-code-wrapper:hover .file-preview-copy,
+[id^='file-preview'] .file-preview-copy:focus-visible,
+[id^='file-preview'] .file-preview-copy.copied {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  [id^='file-preview'] .file-preview-copy {
+    opacity: 1;
+  }
+}
