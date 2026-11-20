@@ -54,6 +54,10 @@ A more complete example combining multiple tools, initial drawings, and several 
 | `weight`           | integer | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                      |
 | `x-range`          | string  | `"-5,5"` | x-range of the canvas as a comma-separated pair of numbers. A 10-pixel-wide, ungraded margin is added around this range.                                                                                  |
 | `y-range`          | string  | `"-5,5"` | y-range of the canvas as a comma-separated pair of numbers. A 10-pixel-wide, ungraded margin is added around this range.                                                                                  |
+| `x-axis-label`     | string  | `"x"`    | Label displayed at the end of the x-axis.                                                                                                                                                                 |
+| `y-axis-label`     | string  | `"y"`    | Label displayed at the end of the y-axis.                                                                                                                                                                 |
+| `label-off-axis`   | integer | 10       | Perpendicular offset, in pixels, between each axis and its label.                                                                                                                                         |
+| `label-down-axis`  | integer | 20       | Offset, in pixels, along each axis between its positive end and its label.                                                                                                                                |
 | `width`            | integer | 800      | Maximum display width of the canvas in pixels. Graphs shrink to fit their container if necessary.                                                                                                         |
 | `height`           | integer | 450      | Display height of the canvas in pixels at its configured width. Graphs shrink to fit their container if necessary, preserving the original aspect ratio.                                                  |
 | `read-only`        | boolean | false    | If set to `true`, the graph is not editable and the top toolbar is removed. This setting can be used in combination with `pl-sketch-initial` (see below) to render drawings as static question materials. |
@@ -61,7 +65,7 @@ A more complete example combining multiple tools, initial drawings, and several 
 | `enforce-bounds`   | boolean | false    | If set to `true`, objects cannot be dragged past the edges of the canvas.                                                                                                                                 |
 | `allow-blank`      | boolean | false    | Allows the graph to be graded even if it is empty. If the initial canvas is not empty and is submitted without changes, it is not considered blank and always treated as a valid submission.              |
 
-The customizations above are general settings that apply to the entire sketching canvas. Note that some settings, such as grid lines and axis labels, are determined automatically and are not currently customizable.
+The customizations above are general settings that apply to the entire sketching canvas. Grid lines and other axis settings are determined automatically and are not currently customizable.
 
 To set up the element and to customize grading, four types of elements can be nested inside the main element:
 

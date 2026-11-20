@@ -151,6 +151,45 @@ def _run_submission_lifecycle(
     return data, submission, config
 
 
+def test_axis_labels_are_configurable() -> None:
+    element_html = """
+        <pl-sketch
+            answers-name="graph"
+            width="400"
+            height="400"
+            x-axis-label="Time (s)"
+            y-axis-label="Distance (m)"
+            label-off-axis="7"
+            label-down-axis="13"
+        ></pl-sketch>
+    """
+    data = _make_question_data()
+
+    pl_sketch.prepare(element_html, data)
+
+    axes_plugin = data["params"]["graph"]["config"]["plugins"][0]
+    assert axes_plugin["xaxisLabel"] == {
+        "value": "Time (s)",
+        "dx": 13,
+        "dy": 7,
+    }
+    assert axes_plugin["yaxisLabel"] == {
+        "value": "Distance (m)",
+        "dx": 7,
+        "dy": 13,
+    }
+
+
+def test_axis_label_defaults() -> None:
+    data = _make_question_data()
+
+    pl_sketch.prepare(POINT_SKETCH_HTML, data)
+
+    axes_plugin = data["params"]["graph"]["config"]["plugins"][0]
+    assert axes_plugin["xaxisLabel"] == {"value": "x", "dx": 20, "dy": 10}
+    assert axes_plugin["yaxisLabel"] == {"value": "y", "dx": 10, "dy": 20}
+
+
 @pytest.mark.parametrize(
     ("test_type", "expected_score"),
     [

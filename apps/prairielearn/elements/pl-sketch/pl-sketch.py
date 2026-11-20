@@ -91,6 +91,10 @@ class SketchAnswerParams(TypedDict):
 WEIGHT_DEFAULT = 1
 XRANGE_DEFAULT = "-5,5"
 YRANGE_DEFAULT = "-5,5"
+X_AXIS_LABEL_DEFAULT = "x"
+Y_AXIS_LABEL_DEFAULT = "y"
+LABEL_OFF_AXIS_DEFAULT = 10
+LABEL_DOWN_AXIS_DEFAULT = 20
 WIDTH_DEFAULT = 800
 HEIGHT_DEFAULT = 450
 ENFORCE_BOUNDS_DEFAULT = False
@@ -106,6 +110,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "weight",
         "x-range",
         "y-range",
+        "x-axis-label",
+        "y-axis-label",
+        "label-off-axis",
+        "label-down-axis",
         "width",
         "height",
         "enforce-bounds",
@@ -176,14 +184,29 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         tool_data["fd"] = fd
         toolbar.append(fd)
 
+    label_off_axis = pl.get_integer_attrib(
+        element, "label-off-axis", LABEL_OFF_AXIS_DEFAULT
+    )
+    label_down_axis = pl.get_integer_attrib(
+        element, "label-down-axis", LABEL_DOWN_AXIS_DEFAULT
+    )
+
     # Add axes/grid for the canvas (technically a "tool" on the client side)
     axes_plugins: AxesPlugin = {
         "name": "axes",
-        "xaxisLabel": {"value": "x", "dx": 10, "dy": 10},
+        "xaxisLabel": {
+            "value": pl.get_string_attrib(
+                element, "x-axis-label", X_AXIS_LABEL_DEFAULT
+            ),
+            "dx": label_down_axis,
+            "dy": label_off_axis,
+        },
         "yaxisLabel": {
-            "value": "y",
-            "dx": 10,
-            "dy": 20,
+            "value": pl.get_string_attrib(
+                element, "y-axis-label", Y_AXIS_LABEL_DEFAULT
+            ),
+            "dx": label_off_axis,
+            "dy": label_down_axis,
         },
         "colors": {"xaxisLabel": "blue", "yaxisLabel": "blue"},
         "fontSize": {"xaxisLabel": 14, "yaxisLabel": 14},
