@@ -20,10 +20,10 @@ import {
 
 import {
   configureCalculatorInput,
+  configureCalculatorParentheses,
   getPendingCalculatorFences,
   guardCalculatorInput,
   restorePendingCalculatorFences,
-  wrapInMultiplicationParentheses,
 } from './lib/calculatorInput.js';
 
 interface DrawerElements {
@@ -753,85 +753,7 @@ export function initCalculator(
   });
 
   /** Keyboard handling */
-  function followsNumber() {
-    return (
-      calculatorInputElement.selectionIsCollapsed &&
-      /^[0-9.]$/.test(
-        calculatorInputElement.getElementInfo(calculatorInputElement.position)?.latex ?? '',
-      )
-    );
-  }
-
-  function insertParenthesesAfterNumber() {
-    if (calculatorInputElement.mode !== 'math' || !followsNumber()) return false;
-    // MathLive's repeating-decimal heuristic skips automatic pairing here.
-    wrapInMultiplicationParentheses(calculatorInputElement);
-    return true;
-  }
-
-  function insertPlainTextProduct(text: string) {
-    if (calculatorInputElement.mode !== 'math' || !text.includes('(') || /[\\$]/.test(text)) {
-      return false;
-    }
-    if (text === '(') return insertParenthesesAfterNumber();
-    // Change standalone numbers, not identifiers such as log10 or LaTeX commands.
-    let product = text.replaceAll(/(?<![\p{L}\p{N}_.])(?:\d+(?:\.\d*)?|\.\d+)(?=\()/gu, '$&*');
-    if (text.startsWith('(') && followsNumber()) product = '*' + product;
-    if (product === text) return false;
-    calculatorInputElement.insert(product, { format: 'auto', selectionMode: 'after' });
-    return true;
-  }
-
-  calculatorInputElement.addEventListener('paste', (event) => {
-    const data = event.clipboardData;
-    // MathLive's rich formats carry the author's exact notation (including overlines).
-    if (
-      !data ||
-      ['application/x-latex', 'application/json+mathlive', 'application/json'].some((type) =>
-        data.types.includes(type),
-      )
-    ) {
-      return;
-    }
-    if (insertPlainTextProduct(data.getData('text/plain'))) event.preventDefault();
-  });
-
-  calculatorInputElement.addEventListener(
-    'beforeinput',
-    (event) => {
-      // Text keyboards can insert characters without a keydown. Only intercept native
-      // editing in the shadow input, not MathLive's own beforeinput notifications.
-      if (
-        event.composedPath()[0] !== calculatorInputElement &&
-        event.cancelable &&
-        !event.isComposing &&
-        event.inputType === 'insertText' &&
-        event.data &&
-        insertPlainTextProduct(event.data)
-      ) {
-        event.preventDefault();
-      }
-    },
-    { capture: true },
-  );
-
-  // Handle the numeric case before MathLive inserts an unpaired parenthesis.
-  calculatorInputElement.addEventListener(
-    'keydown',
-    (event) => {
-      if (
-        event.key === '(' &&
-        !event.isComposing &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        insertParenthesesAfterNumber()
-      ) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
-    },
-    { capture: true },
-  );
+  const insertParenthesesAfterNumber = configureCalculatorParentheses(calculatorInputElement);
 
   function handleKeyPress(ev: KeyboardEvent) {
     switch (ev.key) {

@@ -37,13 +37,104 @@ interface CalculatorMathLiveInternals {
     contentDidChange(options: unknown): void;
   };
   stopRecording(): void;
+  stopCoalescingUndo(): void;
   startRecording(): void;
   snapshot(): void;
+  onInput(text: string): void;
+  onCompositionEnd(text: string): void;
   onCompositionUpdate(value: string): void;
 }
 
 function getMathLiveInternals(input: MathfieldElement) {
   return (input as unknown as { _mathfield: CalculatorMathLiveInternals })._mathfield;
+}
+
+export function configureCalculatorParentheses(input: MathfieldElement) {
+  const field = getMathLiveInternals(input);
+
+  function followsNumber() {
+    return (
+      input.selectionIsCollapsed &&
+      /^[0-9.]$/.test(input.getElementInfo(input.position)?.latex ?? '')
+    );
+  }
+
+  function insertParenthesesAfterNumber() {
+    if (input.mode !== 'math' || !followsNumber()) return false;
+    // MathLive's repeating-decimal heuristic skips automatic pairing here.
+    wrapInMultiplicationParentheses(input);
+    return true;
+  }
+
+  function insertPlainTextProduct(text: string) {
+    if (input.mode !== 'math' || !text.includes('(') || /[\\$]/.test(text)) {
+      return false;
+    }
+    if (text === '(') return insertParenthesesAfterNumber();
+    // Change standalone numbers, not identifiers such as log10 or LaTeX commands.
+    let product = text.replaceAll(/(?<![\p{L}\p{N}_.])(?:\d+(?:\.\d*)?|\.\d+)(?=\()/gu, '$&*');
+    if (text.startsWith('(') && followsNumber()) product = '*' + product;
+    if (product === text) return false;
+    // As with native paste, each insertion gets its own undo step.
+    field.stopCoalescingUndo();
+    input.insert(product, { format: 'auto', selectionMode: 'after' });
+    field.stopCoalescingUndo();
+    return true;
+  }
+
+  const onInput = field.onInput.bind(field);
+  field.onInput = (text) => {
+    if (!insertPlainTextProduct(text)) onInput(text);
+  };
+  const commit = field.onCompositionEnd.bind(field);
+  field.onCompositionEnd = (text) => {
+    // Firefox can deliver plain text as an IME commit. Let MathLive clear its
+    // composition preview before inspecting the number to the left of the caret.
+    if (text.includes('(')) {
+      commit('');
+      if (insertPlainTextProduct(text)) return;
+    }
+    commit(text);
+  };
+  input.addEventListener(
+    'paste',
+    (event) => {
+      const data = event.clipboardData;
+      // MathLive's rich formats carry the author's exact notation (including overlines).
+      if (
+        !data ||
+        ['application/x-latex', 'application/json+mathlive', 'application/json'].some((type) =>
+          data.types.includes(type),
+        )
+      ) {
+        return;
+      }
+      if (insertPlainTextProduct(data.getData('text/plain'))) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },
+    { capture: true },
+  );
+
+  // Handle the numeric case before MathLive inserts an unpaired parenthesis.
+  input.addEventListener(
+    'keydown',
+    (event) => {
+      if (
+        event.key === '(' &&
+        !event.isComposing &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        insertParenthesesAfterNumber()
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },
+    { capture: true },
+  );
+  return insertParenthesesAfterNumber;
 }
 
 /** Display LaTeX serializes a pending fence just like a closed one. Save only the missing edit information, not MathLive's private model or its undo history. */
@@ -76,7 +167,7 @@ function hasOnlyClosingParenthesis(atom: CalculatorAtom) {
   );
 }
 
-export function wrapInMultiplicationParentheses(input: MathfieldElement) {
+function wrapInMultiplicationParentheses(input: MathfieldElement) {
   const field = getMathLiveInternals(input);
   const { model } = field;
   const position = input.position;

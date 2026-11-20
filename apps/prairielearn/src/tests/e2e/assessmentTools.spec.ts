@@ -100,6 +100,11 @@ async function checkParenthesisMultiplication(page: Page) {
   });
   await expectLatex(output, '=3.6');
   await page.locator('[name="clear"]:visible').click();
+  await input.pressSequentially('1.2');
+  await page.keyboard.insertText('(');
+  await input.pressSequentially('3)');
+  await expectLatex(output, '=3.6');
+  await page.locator('[name="clear"]:visible').click();
   for (const [prefix, expected] of [
     ['2(', '=23'],
     ['2*(', '=6'],
