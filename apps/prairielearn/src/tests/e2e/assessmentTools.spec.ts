@@ -93,6 +93,13 @@ async function checkParenthesisMultiplication(page: Page) {
   await expectLatex(input, String.raw`1.0342\cdot\left(4\right)`);
   await expectLatex(output, String.raw`=4.136\,8`);
   await page.locator('[name="clear"]:visible').click();
+  await input.evaluate((element) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData('text/plain', '1.2(3)');
+    element.dispatchEvent(new ClipboardEvent('paste', { clipboardData, cancelable: true }));
+  });
+  await expectLatex(output, '=3.6');
+  await page.locator('[name="clear"]:visible').click();
   for (const [prefix, expected] of [
     ['2(', '=23'],
     ['2*(', '=6'],
