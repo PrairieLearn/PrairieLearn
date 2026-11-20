@@ -1479,6 +1479,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
           expectedSettings: form.settings,
         }),
       ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      await expect(
+        api.printableAssessmentExport.preflight.mutate(new FormData()),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
       const data = packetInput(form.printFormId);
       await appendPrintSnapshot(
         data,

@@ -38,7 +38,7 @@ import {
 import { selectPrintFormQuestionViability } from '../../models/print-form-question.js';
 import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
-import { requireCoursePermissionPreview, t } from './init.js';
+import { requireCoursePermissionEdit, requireCoursePermissionPreview, t } from './init.js';
 import { requirePrintableAssessments } from './print-forms.js';
 
 export interface PrintableAssessmentExportError {
@@ -78,6 +78,7 @@ export const printableAssessmentExportRouter = t.router({
   preflight: t.procedure
     .use(requireCoursePermissionPreview)
     .use(requirePrintableAssessments)
+    .use(requireCoursePermissionEdit)
     .input(z.instanceof(FormData))
     .mutation(async ({ ctx, input }) => {
       let formIds: string[];

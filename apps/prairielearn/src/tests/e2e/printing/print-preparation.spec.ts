@@ -128,7 +128,7 @@ async function printFormLabel(page: Page, printFormId?: string) {
 }
 
 viewerTest(
-  'shows download controls to course viewers while form settings stay read-only',
+  'lets course viewers preview existing forms without changing them',
   async ({ page, courseInstance }) => {
     const assessment = await assessmentFor(courseInstance.id);
     await insertCoursePermissionsByUserUid({
@@ -161,7 +161,7 @@ viewerTest(
     await expect(page.getByRole('button', { name: 'Add form' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Regenerate Form A1' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Archive Form A1' })).toHaveCount(0);
-    await expect(page.getByLabel('Custom cover pages (PDF)')).toBeVisible();
+    await expect(page.getByLabel('Custom cover pages (PDF)')).toBeHidden();
 
     await expect(page.getByText('Temporary preview error')).toBeVisible();
     await page.unroute('**/print_form/*/preview?*');
@@ -171,7 +171,7 @@ viewerTest(
       'ready',
       { timeout: 120_000 },
     );
-    await expect(downloadMenu(page)).toBeEnabled();
+    await expect(downloadMenu(page)).toHaveCount(0);
   },
 );
 
