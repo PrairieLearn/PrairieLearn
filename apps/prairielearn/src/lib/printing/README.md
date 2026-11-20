@@ -68,7 +68,7 @@ Omit the `cover` option to start with questions on the first page.
 
 Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. The first form is A1. Regenerating archives a form and creates the next numbered version of its letter, such as A2; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
-The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. Course staff with course preview permission can access any form for the assessment, including archived forms for previously printed copies and answer keys.
+The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. Course staff with preview permission can inspect any form for the assessment, including archived forms. Creating or changing forms and starting PDF or Word exports require Course Editor permission.
 
 `document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
 
