@@ -57,6 +57,7 @@ export function wrapInMultiplicationParentheses(input: MathfieldElement) {
   const { model } = field;
   const position = input.position;
   if (!model.contentWillChange({ inputType: 'insertText', data: '(' })) return;
+  const before = model.getState();
   // Move the existing atoms, as MathLive's smart fences do. Its #0 insertion
   // template round-trips them through LaTeX, committing any nested pending fences.
   model.deferNotifications({ content: true, selection: true, type: 'insertText' }, () => {
@@ -111,6 +112,24 @@ export function wrapInMultiplicationParentheses(input: MathfieldElement) {
     input.position = model.offsetOf(group.body[0]);
   });
   field.snapshot();
+  const start = model.at(input.position);
+  // Backspace immediately after an automatic pair should reverse the whole edit,
+  // including the dot, without deleting an explicitly typed multiplication sign.
+  input.addEventListener(
+    'beforeinput',
+    (event) => {
+      if (
+        (event.inputType || event.data) !== 'deleteContentBackward' ||
+        !input.selectionIsCollapsed ||
+        model.at(input.position) !== start
+      )
+        return;
+      event.preventDefault();
+      model.setState(before, { silenceNotifications: false });
+      field.snapshot();
+    },
+    { once: true },
+  );
 }
 
 /**

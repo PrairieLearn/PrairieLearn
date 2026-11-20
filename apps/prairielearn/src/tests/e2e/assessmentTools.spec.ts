@@ -93,6 +93,16 @@ async function checkParenthesisMultiplication(page: Page) {
   await expectLatex(input, String.raw`1.0342\cdot\left(4\right)`);
   await expectLatex(output, String.raw`=4.136\,8`);
   await page.locator('[name="clear"]:visible').click();
+  for (const [prefix, expected] of [
+    ['2(', '=23'],
+    ['2*(', '=6'],
+  ]) {
+    await input.pressSequentially(prefix);
+    await input.press('Backspace');
+    await input.pressSequentially('3');
+    await expectLatex(output, expected);
+    await page.locator('[name="clear"]:visible').click();
+  }
   await input.pressSequentially('2');
   await page.getByRole('button', { name: '(', exact: true }).click();
   await expectLatex(input, String.raw`2\cdot\left(\right)`);
