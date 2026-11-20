@@ -109,12 +109,6 @@ SET
 WHERE
   assessment_id = $assessment_id;
 
--- BLOCK select_chosen_questions
-SELECT
-  assessment_question_id
-FROM
-  assessment_questions_select ($assessment_id, $existing_ids::bigint[]);
-
 -- BLOCK select_question_groups
 SELECT
   alternative_group_id
