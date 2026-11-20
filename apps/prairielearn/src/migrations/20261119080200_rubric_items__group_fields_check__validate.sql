@@ -1,0 +1,1 @@
+ALTER TABLE rubric_items VALIDATE CONSTRAINT rubric_items_group_fields_check;

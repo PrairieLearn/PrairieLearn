@@ -34,6 +34,7 @@ import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { RubricSettingsBodySchema } from '../../../lib/manualGrading.types.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import type { ResLocalsInstanceQuestionRender } from '../../../lib/question-render.types.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
@@ -453,29 +454,7 @@ const PostBodySchema = z.union([
     skip_graded_submissions: z.preprocess((val) => val === 'true', z.boolean()),
     show_submissions_assigned_to_me_only: z.preprocess((val) => val === 'true', z.boolean()),
   }),
-  z.object({
-    __action: z.literal('modify_rubric_settings'),
-    use_rubric: z.boolean(),
-    replace_auto_points: z.boolean(),
-    starting_points: z.coerce.number(),
-    min_points: z.coerce.number(),
-    max_extra_points: z.coerce.number(),
-    tag_for_manual_grading: z.boolean().default(false),
-    grader_guidelines: z.string().nullable(),
-    rubric_items: z
-      .array(
-        z.object({
-          id: z.string().optional(),
-          order: z.coerce.number(),
-          points: z.coerce.number(),
-          description: z.string(),
-          explanation: z.string().nullable().optional(),
-          grader_note: z.string().nullable().optional(),
-          always_show_to_students: z.boolean(),
-        }),
-      )
-      .default([]),
-  }),
+  RubricSettingsBodySchema.extend({ __action: z.literal('modify_rubric_settings') }),
   z.object({
     __action: z.custom<`reassign_${string}`>(
       (val) => typeof val === 'string' && val.startsWith('reassign_'),
