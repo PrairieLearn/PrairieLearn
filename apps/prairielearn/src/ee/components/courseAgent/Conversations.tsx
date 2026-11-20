@@ -10,7 +10,6 @@ import {
   type SyntheticEvent,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -693,27 +692,6 @@ function Composer({
   onStop?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Only for browsers where CSS can't size the message box (see SUPPORTS_FIELD_SIZING): fit it to
-  // its text by script, including when the draft is cleared after sending. CSS caps the height.
-  useLayoutEffect(() => {
-    if (!SUPPORTS_FIELD_SIZING && textareaRef.current) fitToText(textareaRef.current);
-  }, [draft]);
-  // Same browsers only: refit when the box's width changes and the text rewraps, such as when the
-  // window or panel is resized.
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (SUPPORTS_FIELD_SIZING || !textarea) return;
-    let width = textarea.clientWidth;
-    const observer = new ResizeObserver(() => {
-      // Fitting changes the height, which this also observes.
-      if (textarea.clientWidth === width) return;
-      width = textarea.clientWidth;
-      fitToText(textarea);
-    });
-    observer.observe(textarea);
-    return () => observer.disconnect();
-  }, []);
   const invalidAttachment = hasInvalidAttachment(attachments);
   const submit = (event: SyntheticEvent) => {
     event.preventDefault();
@@ -734,7 +712,6 @@ function Composer({
           onRemove={onRemoveAttachment}
         />
         <Form.Control
-          ref={textareaRef}
           as="textarea"
           rows={2}
           className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
@@ -809,20 +786,6 @@ function Composer({
       </div>
     </Form>
   );
-}
-
-/**
- * Safari fix (conversation jumps while typing): true when the browser can size the message box to
- * its text by itself, using `field-sizing: content` in `courseAgent.css`.
- *
- * When it can, `fitToText` must not run. `fitToText` briefly collapses the box to measure the
- * text, and in Safari that makes the conversation above it jump on every keystroke.
- */
-const SUPPORTS_FIELD_SIZING = typeof CSS !== 'undefined' && CSS.supports('field-sizing', 'content');
-
-function fitToText(textarea: HTMLTextAreaElement) {
-  textarea.style.height = 'auto';
-  textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
 function reviewInHistory(messages: UIMessage[], reviewId: string) {

@@ -43,9 +43,9 @@
 /* `textarea` is in the selector so that `min-height` below overrides Bootstrap's own. */
 textarea.course-agent-composer-input {
   /*
-   * Safari fix (conversation jumps while typing): the browser sizes the box to its text, so no
-   * script has to measure it. Measuring by script makes the conversation jump in Safari. Browsers
-   * without `field-sizing` still use the script.
+   * The browser grows the box with its text. This replaces a script that measured the text on
+   * every keystroke, which made the conversation jump in Safari. Browsers without `field-sizing`
+   * (before Chrome 123, Safari 26.2, Firefox 152) keep a two-line box that scrolls.
    */
   field-sizing: content;
   /*
