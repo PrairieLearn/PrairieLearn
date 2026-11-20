@@ -17,6 +17,7 @@ const featureNames = [
 
   // Can be applied to any context.
   'course-agent',
+  'mcp-server',
   'ai-question-generation',
   'rich-text-editor',
   'question-hosting-update',

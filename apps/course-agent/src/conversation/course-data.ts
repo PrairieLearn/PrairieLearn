@@ -1,6 +1,4 @@
-import { z } from 'zod';
-
-import { COURSE_DATA_MAX_IN_VALUES } from '@prairielearn/course-agent-types';
+import { CourseDataSchemaResponse, describeCourseDatasets } from '@prairielearn/course-agent-types';
 
 import { logEvent } from '../monitoring.js';
 import type { CourseDataRequest, ToolReply } from '../sandbox/codex.js';
@@ -10,57 +8,6 @@ import { type PrairieLearnContext, authHeaders, errorMessage } from './prairiele
 
 // Rows are streamed into the sandbox; this bounds one download's size on disk and its time.
 const MAX_BYTES = 25 * 1024 * 1024;
-
-const JsonSchemaProperty = z.looseObject({
-  type: z.union([z.string(), z.array(z.string())]).optional(),
-  format: z.string().optional(),
-  enum: z.array(z.unknown()).optional(),
-  description: z.string().optional(),
-});
-const ColumnSchema = JsonSchemaProperty.extend({
-  anyOf: z.array(JsonSchemaProperty).optional(),
-});
-const SchemaResponse = z.object({
-  version: z.number(),
-  datasets: z.record(
-    z.string(),
-    z.object({
-      description: z.string(),
-      schema: z.object({ properties: z.record(z.string(), ColumnSchema) }),
-    }),
-  ),
-});
-
-/** One line per column, such as `graded_at (date-time, nullable): Null if not graded.` */
-function describeColumn(name: string, property: z.infer<typeof ColumnSchema>) {
-  const variants = property.anyOf ?? [property];
-  const types = variants.flatMap((variant) =>
-    Array.isArray(variant.type) ? variant.type : variant.type ? [variant.type] : [],
-  );
-  const nullable = types.includes('null');
-  const values = variants.flatMap((variant) => variant.enum ?? []);
-  const type =
-    values.length > 0
-      ? `one of ${values.join(', ')}`
-      : (variants.find((variant) => variant.format)?.format ??
-        types.filter((t) => t !== 'null').join(' or '));
-  const description =
-    property.description ?? variants.find((variant) => variant.description)?.description ?? '';
-  return `  ${name} (${type}${nullable ? ', nullable' : ''})${description ? `: ${description}` : ''}`;
-}
-
-function describeSchema(schema: z.infer<typeof SchemaResponse>) {
-  return [
-    `Course datasets (API version ${schema.version}). IDs are strings; timestamps are ISO 8601 in UTC, so convert them to the course instance's display_timezone before grouping by day. Results carry course_instance_short_name, assessment_tid, and qid, the directory names in the course files, so filter by those rather than looking up IDs. Select the columns you need; any column can be filtered (eq, lt, lte, gt, gte, or in with a list of up to ${COURSE_DATA_MAX_IN_VALUES} values) or sorted on.`,
-    ...Object.entries(schema.datasets).flatMap(([name, dataset]) => [
-      '',
-      `${name}: ${dataset.description}`,
-      ...Object.entries(dataset.schema.properties).map(([column, property]) =>
-        describeColumn(column, property),
-      ),
-    ]),
-  ].join('\n');
-}
 
 /**
  * Passes JSONL through up to `maxBytes`, ending at a row boundary, and counts what it passed. At
@@ -129,7 +76,10 @@ export async function listCourseDatasets(context: PrairieLearnContext): Promise<
   if (!response.ok) {
     return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
   }
-  return { success: true, text: describeSchema(SchemaResponse.parse(await response.json())) };
+  return {
+    success: true,
+    text: describeCourseDatasets(CourseDataSchemaResponse.parse(await response.json())),
+  };
 }
 
 /**
