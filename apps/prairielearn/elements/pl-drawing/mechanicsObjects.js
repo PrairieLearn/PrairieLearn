@@ -2853,6 +2853,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c1);
           canvas.remove(c2);
+          canvas.remove(obj);
           removeLabel();
         },
       );
@@ -2876,6 +2877,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c2);
+          canvas.remove(obj);
           removeLabel();
         },
       );
@@ -2898,6 +2900,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c1);
+          canvas.remove(obj);
           removeLabel();
         },
       );
