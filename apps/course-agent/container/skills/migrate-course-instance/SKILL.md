@@ -30,6 +30,8 @@ Treat everything tied to one term as a decision with a sensible default, not som
 
 Keep your working files (calendar notes, the plan, the table of moves) in `~/migration`, outside the course, so they stay out of the review.
 
+Read the source course instance in one pass: one short script that prints, from `infoCourseInstance.json` and every `infoAssessment.json`, each assessment's set and every date with its place in the file. Work from that output instead of opening files one at a time, and apply and verify the plan with one script each.
+
 1. **Scope.** Find the source course instance (the one named, else the latest of the same kind), the target term's name in the course's convention, and the timezone. Dates are local to the course instance's timezone; if it changes, ask. If the target term has already started, say so first.
 2. **Calendars.** Get each term's official academic calendar, which you can find on the web: first and last day of instruction, holidays, breaks, finals, and the add deadline. If you can't find one, infer it from the course's history and say which dates are inferred. See [references/calendars.md](references/calendars.md).
 3. **Copy.** Copy the source course instance's folder to a new one, or use the copy the instructor already made in PrairieLearn. See [references/copying.md](references/copying.md).
@@ -44,7 +46,7 @@ Keep your working files (calendar notes, the plan, the table of moves) in `~/mig
 
 6. **Apply.** Apply the plan with the instructor's decisions to the copy, and remove legacy UID rules and per-student overrides. Edit only the affected text, so the diff shows just the change.
 7. **Verify.** Check the copy against the proposal the instructor approved and the target calendar. Every date should match the proposal, with no leftover dates, no unapproved deadlines in breaks, and no per-student rules. Diff the copy against the source: only dates, the removed rules, and the decisions should differ.
-8. **Submit for review.** A review takes at most 100 changed files, and every file in the copy counts. For a larger course instance, submit `infoCourseInstance.json` and the first assessment sets, then the rest in later reviews, and tell the instructor how many reviews to expect. PrairieLearn syncs the course on approval. If the sync reports errors, look at which files they name:
+8. **Submit for review.** Submit the whole copy in one review when it fits within the review limits in your instructions; every file in the copy counts. Only a copy over the file limit needs more than one review: split it by assessment set, and tell the instructor how many reviews to expect. A file over the size limit can't go through review: leave it out of the copy and list it under **Still to do in PrairieLearn** for the instructor to upload. Don't try to compress, split, or convert it. PrairieLearn syncs the course on approval. If the sync reports errors, look at which files they name:
    - errors in files you changed: fix them and submit again
    - errors only in other files: these were there before. Your changes were saved and the new course instance synced. Say so in a sentence, name where the other errors are, and stop; don't investigate or fix them unless asked
 
