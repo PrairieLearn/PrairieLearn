@@ -17,6 +17,7 @@
 !turbo.jsonc
 !vitest.config.mts
 !vitest.shared.mts
+!vitest.durations.mts
 !pyproject.toml
 !apps/
 !contrib/
