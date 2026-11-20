@@ -83,4 +83,6 @@ export const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   is_ai_graded: z.boolean(),
 });
 
-export type RubricItemInput = Partial<Omit<RubricItem, 'show_to_students'>> & { order: number };
+export type RubricItemInput = Partial<Omit<RubricItem, 'always_show_to_students'>> & {
+  order: number;
+};
