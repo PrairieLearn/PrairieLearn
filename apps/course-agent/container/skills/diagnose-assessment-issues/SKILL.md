@@ -173,7 +173,8 @@ A gap between alternatives is Observed, but its cause stays Likely until
 per-part scores, submitted answers, or variant parameters show where students
 went wrong. Check them before settling for Likely. For Likely, Predicted and
 Unexplained findings, name the data that would settle it. Add a few words when
-strength varies, for example: "Likely; reversed in one term."
+strength varies, for example: "Likely; reversed in one term." The report says
+these in words; see [Report](#report).
 
 ## 5. Recommend edits
 
@@ -196,61 +197,105 @@ instructor.
 Give the report as your reply, once; don't add it to the course unless the
 instructor asks for a file, and don't follow it with a summary of itself.
 
-Write for an instructor reading in a narrow chat panel. Lead with what to
-change. Say what each question asks in plain words, so the instructor doesn't
-have to open it. Use measures that need no explanation: mean score, share with
-full credit, minutes, and points out of the assessment total. Keep the whole
-reply to about 400 words plus one table.
+The reader is an instructor with a few minutes, reading in a narrow chat panel.
+At a glance they should see which questions have a problem, and for each one
+what to change. Use PrairieLearn's terms (question, alternative, variant,
+submission, points), plain descriptions of what each question asks, and
+measures that need no explanation: mean score, percentage points, students, and
+points of the assessment total. Keep the reply to about 300 words plus the
+table.
 
-Use this shape, adapting it to the assessment:
+Use this shape, adapting it to the assessment. The two opening lines are all
+that comes before the table: no overall score, verdict, or caveats there.
 
 ```markdown
-**Bottom line**
+**<Assessment> · <course instance> · <number> students**
+**<Number> fixes.** <Whether the current definition still has them, or "Nothing needs fixing.">
 
-- <Up to three bullets, most important first: what to change and why.>
+| Question                                      | What it asks               | Students |      Mean | Difference from mean (percentage points) |
+| --------------------------------------------- | -------------------------- | -------: | --------: | ---------------------------------------: |
+| 1 · 1 question, 10 pts                        | <what it asks>             |      240 |     88.0% |                                          |
+| 2 · 4 alternatives, 2 per student, 5 pts each | <what they have in common> |      240 |    90–96% |                                within ±4 |
+| ⚠️ **3** · 2 alternatives, 15 pts             |                            |      238 |     72.0% |                                          |
+| ↳ ⚠️ **3.1**                                  | **<what it asks>**         |  **119** | **62.0%** |                                  **−10** |
+| ↳ 3.2                                         | <what it asks>             |      119 |     82.0% |                                      +10 |
 
-| Question                  | What it asks                                | Students | Mean score |
-| ------------------------- | ------------------------------------------- | -------- | ---------- |
-| **4** (1 of 2, 17 points) |                                             | 226      | 76.9%      |
-| ↳ **4.1**                 | Pin in a slot: find the **acceleration**    | 112      | **66.9%**  |
-| ↳ 4.2                     | Four-bar linkage: find the angular velocity | 114      | 86.8%      |
+**⚠️ 1. <The fix, as an instruction>**
+<Its effect: which students lost how many points of the assessment total.>
 
-### <The idea, in a sentence: "4.1 is harder when the slot is diagonal">
+- <The two or three numbers that show it, each with its number of students.>
+- <What rules out other explanations, when a reader would wonder.>
+- <Why, Likely why, or Cause not found: the cause in the question, linking the file.>
 
-<Two or three numbers that show it, each with its number of students.>
-**Why:** <the cause in the question, in a sentence or two, linking the file>
-**Fix:** <a concrete change, or "No change needed">
-_<Confidence label, and what would settle it if not Observed.>_
+→ <The concrete edit, and where to make it.>
 
-**Also checked:** <one line: slots that are well matched, gaps judged to be noise>
+**Worth a look**
 
-**About the data:** <two or three sentences: the course instance and number of
-students, what was left out, and anything that limits the numbers, such as
-score changes by staff or missing times.>
+- <A smaller or unexplained issue, in one line.>
+
+<One line naming the questions that are well matched.>
+
+_Data: <the offering and number of students, what was left out, and anything
+that limits the conclusions, in one or two sentences.>_
 ```
 
-- **The table** covers the main offering: a bold row per slot that has
-  alternatives, then a row per alternative, with the part that differs in bold.
-  Bold an alternative that is 10 or more points from its slot. The panel is
-  narrow, so keep to these four columns and to question numbers in the first;
-  name QIDs in the findings instead. Leave out slots with one question unless
-  one is a finding.
-- **Findings** are ordered by effect on students: how many were affected and by
-  how many points. Give two to four, each under about 70 words. Merge related
-  minor ones, and move small issues to "Also checked".
-- **Problems with the data** go in "About the data", not the lead. Open with
-  what the results show, and mention a data problem earlier only when it
-  changes a conclusion.
-- **Questions for the instructor** go in one closing line, and only for
-  decisions you can't make.
-- Offer the detail you left out, such as every offering's numbers or how a
-  measure was computed, instead of including it.
+**The table** lists every question with points, in the order of the
+assessment's **Questions** page:
+
+- Describe each question's row by its structure in plain words: "1 question",
+  or "4 alternatives, 2 per student", and its points.
+- **What it asks** is a few plain words a colleague would recognize, not a
+  label you made up.
+- **Students** is the number of students given that question, alternative, or
+  group of variants. Count students, not attempts or assignments.
+- Expand a question into a row per alternative only when it has a problem.
+  Otherwise give one row with the range of its alternatives' means and their
+  largest difference from the question's mean.
+- When the problem is among an alternative's variants, such as which part or
+  case it asks for, add a row per group of variants under that alternative.
+- **Difference from mean** is a row's mean minus the mean on its question's
+  row, in whole percentage points, such as −10 or +4. Every row under a
+  question is compared with that same question row, including variant rows.
+- Mark only the rows whose students were put at a disadvantage, and the
+  question row above them: ⚠️ before the number, and the whole row in bold.
+  The rows they're compared with stay plain, and so does everything else.
+- Use the column headers exactly as shown, no footnotes, and no emoji or
+  symbols besides ⚠️ and ↳. The marks should explain themselves without a
+  legend.
+- Name QIDs in the fixes, not the table.
+
+**Fixes** are the problems that need an edit, ordered by effect on students:
+how many were affected and by how many points. Give at most four.
+
+- The heading is the instruction, numbered and marked ⚠️, and the line under it
+  gives the effect.
+- Say how sure you are in words, not labels: "Why:" when the data shows the
+  cause directly, "Likely why:" when the source and data support it,
+  "Predicted from the source; no student data yet", or "Cause not found". For
+  anything short of "Why:", name the data that would settle it in a few words.
+- End every fix with a → line: one concrete edit, such as a question file, an
+  assessment setting, a rubric, or a process step. If the current definition
+  already fixes it, say so instead.
+- Keep each fix under about 60 words.
+
+**Worth a look** holds unexplained gaps, issues too small to need an edit, and
+questions that are hard for everyone alike. Leave it out when it's empty.
+
+Problems with the data go in the closing data line, in at most two sentences.
+Include only limits that change how the numbers should be read, not what you
+filtered or that no files changed. Mention one earlier only when it changes a
+conclusion. Questions for the instructor go in one line
+after it, only for decisions you can't make. Offer the detail you left out,
+such as every offering's numbers or how a measure was computed, instead of
+including it.
 
 ## Before handing off
 
 - Recompute the numbers each finding uses from the downloaded data, including
   ranges and claims like "in every offering".
 - Confirm each finding cites a source or is marked Unexplained.
+- Check each difference from mean against its question row, and that the
+  rows marked ⚠️ are exactly the rows the fixes are about.
 - Confirm the step 3 explanations were ruled out for each finding.
 - Confirm the report contains no user IDs or per-student rows.
 - Reread the bottom line: could the instructor act on it alone?
