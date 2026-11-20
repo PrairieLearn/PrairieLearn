@@ -548,7 +548,9 @@ function Chat({
       <div
         ref={stickToBottom.scrollRef}
         className="flex-grow-1 overflow-y-auto"
-        // Scrollable regions must be reachable by keyboard, and Safari only scrolls a focused one.
+        // Safari fix (keyboard scrolling): Safari only scrolls an area with Page Up, Page Down, or
+        // the arrow keys when that area has focus, so the conversation has to be focusable. The
+        // role and label tell screen readers what the focusable area is.
         // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
         role="region"
@@ -692,12 +694,13 @@ function Composer({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
-  // the height.
+  // Only for browsers where CSS can't size the message box (see SUPPORTS_FIELD_SIZING): fit it to
+  // its text by script, including when the draft is cleared after sending. CSS caps the height.
   useLayoutEffect(() => {
     if (!SUPPORTS_FIELD_SIZING && textareaRef.current) fitToText(textareaRef.current);
   }, [draft]);
-  // The text rewraps when the box's width changes, such as when the window or panel is resized.
+  // Same browsers only: refit when the box's width changes and the text rewraps, such as when the
+  // window or panel is resized.
   useEffect(() => {
     const textarea = textareaRef.current;
     if (SUPPORTS_FIELD_SIZING || !textarea) return;
@@ -809,9 +812,11 @@ function Composer({
 }
 
 /**
- * With `field-sizing: content`, the browser grows the message box with its text. Without it, a
- * script has to set the height. Safari must use the CSS: the script briefly collapses the box to
- * measure it, and in Safari that moves the conversation's scroll position.
+ * Safari fix (conversation jumps while typing): true when the browser can size the message box to
+ * its text by itself, using `field-sizing: content` in `courseAgent.css`.
+ *
+ * When it can, `fitToText` must not run. `fitToText` briefly collapses the box to measure the
+ * text, and in Safari that makes the conversation above it jump on every keystroke.
  */
 const SUPPORTS_FIELD_SIZING = typeof CSS !== 'undefined' && CSS.supports('field-sizing', 'content');
 

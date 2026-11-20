@@ -40,11 +40,18 @@
   border-color: var(--bs-primary);
 }
 
-/* The element selector outweighs Bootstrap's own minimum height for a text area. */
+/* `textarea` is in the selector so that `min-height` below overrides Bootstrap's own. */
 textarea.course-agent-composer-input {
-  /* Grows with its text where supported; browsers without this are sized by script. */
+  /*
+   * Safari fix (conversation jumps while typing): the browser sizes the box to its text, so no
+   * script has to measure it. Measuring by script makes the conversation jump in Safari. Browsers
+   * without `field-sizing` still use the script.
+   */
   field-sizing: content;
-  /* Two lines plus the vertical padding of .form-control, as `rows` gives without `field-sizing`. */
+  /*
+   * `field-sizing: content` ignores `rows`, so this keeps the empty box two lines tall. The
+   * 0.75rem is the vertical padding of .form-control.
+   */
   min-height: calc(2lh + 0.75rem);
   /* Ten lines plus the vertical padding of .form-control. */
   max-height: calc(10lh + 0.75rem);
