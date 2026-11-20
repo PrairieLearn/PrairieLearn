@@ -213,13 +213,13 @@ that comes before the table: no overall score, verdict, or caveats there.
 
 **<Number> fixes.** <Whether the current definition still has them, or "Nothing needs fixing.">
 
-| Question                                                                   | Students |    Mean | Difference from mean (percentage points) |
-| -------------------------------------------------------------------------- | -------: | ------: | ---------------------------------------: |
-| 1 · <what it asks> · 10 pts                                                |      240 |     88% |                                          |
-| 2 · <what they have in common> · 4 alternatives, 2 per student, 5 pts each |      240 |  90–96% |                                within ±4 |
-| ⚠️ **3 · <what they have in common> · 2 alternatives, 15 pts**             |  **238** | **72%** |                                          |
-| ↳ ⚠️ **3.1 · <what it asks>**                                              |  **119** | **62%** |                                  **−10** |
-| ↳ 3.2 · <what it asks>                                                     |      119 |     82% |                                      +10 |
+| Question                                                                   | Students |    Mean | Difference |
+| -------------------------------------------------------------------------- | -------: | ------: | ---------: |
+| 1 · <what it asks> · 10 pts                                                |      240 |     88% |            |
+| 2 · <what they have in common> · 4 alternatives, 2 per student, 5 pts each |      240 |  90–96% | within ±4% |
+| ⚠️ **3 · <what they have in common> · 2 alternatives, 15 pts**             |  **238** | **72%** |            |
+| ↳ ⚠️ **3.1 · <what it asks>**                                              |  **119** | **62%** |   **−10%** |
+| ↳ 3.2 · <what it asks>                                                     |      119 |     82% |       +10% |
 
 **⚠️ 1. <The fix, as an instruction>**
 
@@ -256,10 +256,11 @@ assessment's **Questions** page:
   largest difference from the question's mean.
 - When the problem is among an alternative's variants, such as which part or
   case it asks for, add a row per group of variants under that alternative.
-- Give means in whole percent, such as 62% or 90–96%. **Difference from mean**
-  is a row's mean minus the mean on its question's row, in whole percentage
-  points, such as −10 or +4. Every row under a
-  question is compared with that same question row, including variant rows.
+- Give means in whole percent, such as 62% or 90–96%. **Difference** is a
+  row's mean minus the mean on its question's row, written with its sign and
+  %, such as −10% when the row has 62% and its question 72%. It is never a
+  relative change. Every row under a question is compared with that same
+  question row, including variant rows; question rows leave it empty.
 - Mark only the rows whose students were put at a disadvantage, and the
   question row above them: ⚠️ before the number, and the whole row in bold.
   The rows they're compared with stay plain, and so does everything else.
@@ -301,7 +302,7 @@ including it.
 - Recompute the numbers each finding uses from the downloaded data, including
   ranges and claims like "in every offering".
 - Confirm each finding cites a source or is marked Unexplained.
-- Check each difference from mean against its question row, and that the
+- Check each difference against its question row, and that the
   rows marked ⚠️ are exactly the rows the fixes are about.
 - Confirm the step 3 explanations were ruled out for each finding.
 - Confirm the report contains no user IDs or per-student rows.
