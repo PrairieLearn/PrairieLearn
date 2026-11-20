@@ -132,7 +132,7 @@ WITH
     FROM
       instance_questions
     WHERE
-      assessment_instance_id IS NOT DISTINCT FROM $assessment_instance_id
+      assessment_instance_id = $assessment_instance_id
   ),
   -- First assign two random orderings to the list of questions, one for
   -- alternative_group question selection and one for zone question
