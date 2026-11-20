@@ -1,8 +1,8 @@
 # Printing assessments
 
-Course editors can print an assessment for students to complete on paper. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. Course viewers can inspect existing forms and previews, but cannot change forms or start a new download. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
+Course editors can print an assessment for students to complete on paper. Choose the questions to include, leave room for written work, and preview student copies and answer keys before downloading a PDF or an editable Word file. Other course staff with preview access can view existing forms and previews, but cannot change forms or start a download. If you do not see **Print** on the assessment's **Questions** page, printing may not be available for your course yet.
 
-For assessments with randomization, you can print multiple _forms_, such as A1 and B1. Each form keeps its selected questions, their order and any random values, and its print settings. Changing paper size updates all current forms; previous forms keep the size they used. Forms are shared with course staff who have preview permission. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
+For assessments with randomization, you can print multiple _forms_, such as A1 and B1. Each form keeps its selected questions, their order and any random values, and its print settings. Forms are shared with all course staff who have preview access. Creating or regenerating a form does not start or change a student attempt. Printing is not currently available for group assessments.
 
 ## Print an assessment
 
@@ -30,7 +30,7 @@ Use **Show only items to review** to find flagged questions. After addressing th
 
 ## Use multiple forms
 
-If your assessment uses randomization, select **Add form** to create another form. The new form copies the overall settings of the form you are viewing and chooses its own questions and random values. For questions shared by both forms, it also copies which ones you left out and their individual spacing. Newly chosen questions start included with **Automatic** spacing. You can have up to 26 current forms. Their first versions are labeled A1 through Z1, and new forms take the first available letter. You can archive a form when at least one other current form remains. Assessments without randomization use a single current form.
+If your assessment uses randomization, select **Add form** to create another form. The new form copies the overall settings of the form you are viewing and chooses its own questions and random values. For questions shared by both forms, it also copies which ones you left out and their individual spacing. Newly chosen questions start included with **Automatic** spacing. You can have up to 26 current forms. Their first versions are labeled A1 through Z1, and new forms take the first available letter. Assessments without randomization use a single current form.
 
 Select a form to review it and choose its questions and spacing. Changes to those settings save as you make them, so you can switch forms before updating the preview. Save any changes to **Additional student fields** before switching. Select **Update preview** before downloading a form.
 
@@ -40,9 +40,9 @@ Changing **Paper size** updates all current forms. If a download has started for
 
 If a form contains questions with variable values, select the circular arrow button beside it, labeled **Regenerate Form A1** (or the corresponding label), to reroll their values. Before starting a download, regeneration keeps the form's label, selected questions, their order, and print settings. To draw a new choice or order of questions, select **Add form**.
 
-After a download starts, regeneration creates a numbered version: A1 becomes A2, then A3. The new version may have a different set or order of questions. It keeps the paper size and default cover settings, but starts with every question in the new form included and returns individual **Spacing** choices to **Automatic**. Review the new student copy and answer key before downloading. The earlier version remains under **Previous forms** with its chosen questions and settings. If a form has no questions with variable values, **Regenerate** appears only after a download starts and creates a new numbered version.
+After a download starts, regeneration creates a numbered version: A1 becomes A2, then A3. The new version may have a different set or order of questions. It keeps the form's paper size, space per question, and cover settings, but starts with every question in the new form included and returns individual **Spacing** choices to **Automatic**. Review the new student copy and answer key before downloading. The earlier version remains under **Previous forms** with its chosen questions and settings. If a form has no questions with variable values, **Regenerate** appears only after a download starts and creates a new numbered version.
 
-Use the archive button beside a form to remove it from the current set. If A1 and B1 remain after you archive C1, adding another form creates C2.
+Use the archive button beside a form to remove it from the current set. You can archive a form when at least one other current form remains. If A1 and B1 remain after you archive C1, adding another form creates C2.
 
 Editing question content, assessment instructions, or the honor code can change a later download of an earlier form. Download and keep the matching student copy and answer key for each form. After editing course content, check both again before printing or grading.
 
@@ -50,7 +50,7 @@ Editing question content, assessment instructions, or the honor code can change 
 
 The default cover has spaces for **Name**, **Date**, **Student ID**, and **Section**, along with the assessment's instructions. You can edit or remove **Student ID** and **Section** under **Cover page**:
 
-- Under **Additional student fields:**, enter one label per line, such as “Student ID” or “Section”, then select **Save**.
+- Under **Additional student fields**, enter one label per line, such as “Student ID” or “Section”, then select **Save**.
 - Select **Include grading table** to add a table for recording question scores.
 - Select **Include honor code** to add the assessment's honor code, or the default honor code if the assessment does not have one.
 - Uncheck **Include default cover page** if you do not want this cover.
@@ -80,11 +80,11 @@ Select **Update preview** after making changes, then open **Download…**. The f
 
 For either combined PDF, PrairieLearn adds blank pages when needed so every form or answer key has the same number of pages. The download dialog shows that page count before you start the download.
 
-If file preparation says the preview has expired or changed, select **Update preview** and try again.
+If a download reports that the preview has expired or changed, select **Update preview** and try again.
 
 Choose Word if you want to make further edits before printing. Formatting and page breaks can differ from the preview and between Word applications, so check the file in the application you plan to use.
 
-Choosing an individual file from **Download…** starts preparing it. For a combined PDF, review the page count in the dialog, then select its download button. PDF and Word files download automatically when ready if you keep this page open. You can start another download while one is being prepared.
+Choosing an individual file from **Download…** starts preparing it. For a combined PDF, review the page count in the dialog, then select its download button. PDF and Word files download automatically when ready if you keep this page open. You can start another download while one is being prepared, with up to five in progress for an assessment at a time.
 
 **Recent exports** shows the progress of your ten newest files for this assessment and links to completed files. Forms are shared with course staff, but only the staff member who requested a file can download it. Use the links if you return later or an automatic download is blocked. Each file is available for up to 24 hours after you request it.
 

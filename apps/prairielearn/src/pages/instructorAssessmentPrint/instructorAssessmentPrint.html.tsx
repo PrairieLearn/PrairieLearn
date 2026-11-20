@@ -287,7 +287,7 @@ function PrintPreparation({
   const staleFormIdsRef = useRef(new Set<string>());
   const stalePreviewRefreshesRef = useRef(new Map<string, string>());
   const snapshotStale = formId !== null && staleFormIds.has(formId);
-  const prepareButtonRef = useRef<HTMLButtonElement>(null);
+  const downloadMenuButtonRef = useRef<HTMLButtonElement>(null);
   const prepareStatusRef = useRef<HTMLDivElement>(null);
   const applyPreviewButtonRef = useRef<HTMLButtonElement>(null);
   const settingFocusRef = useRef<HTMLElement | null>(null);
@@ -2138,7 +2138,7 @@ function PrintPreparation({
                   <div className="print-preparation-download" hidden={!canEditPrintForms}>
                     <Dropdown align="end">
                       <Dropdown.Toggle
-                        ref={prepareButtonRef}
+                        ref={downloadMenuButtonRef}
                         id="print-download-menu"
                         size="sm"
                         disabled={!canDownload}
@@ -2281,7 +2281,7 @@ function PrintPreparation({
         onExited={() => {
           const target = combinedReturnFocusRef.current;
           if (target === 'recent') focusAfterDismiss('summary');
-          else if (target === 'menu') prepareButtonRef.current?.focus();
+          else if (target === 'menu') downloadMenuButtonRef.current?.focus();
           else requestFormFocus(target.formId, true);
         }}
         onReviewForm={(id) => {
