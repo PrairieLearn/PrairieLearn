@@ -288,15 +288,6 @@ function PendingStatus({ label }: { label: string }) {
   );
 }
 
-/**
- * Follows a streaming reply more tightly than the library's default spring, which trails fast text
- * by several lines so that the newest ones stay below the view until the reply ends.
- */
-const FOLLOW_ANIMATION = { damping: 0.36, stiffness: 0.16, mass: 1 };
-
-/** The library rests one pixel above the end, so this is as close to the bottom as it gets. */
-const AT_BOTTOM_PX = 2;
-
 function Chat({
   courseId,
   conversationId,
@@ -449,45 +440,6 @@ function Chat({
   const connected = agent.readyState === 1 && historyReady;
 
   const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
-  const stickToBottom = useStickToBottom({ initial: 'instant', resize: FOLLOW_ANIMATION });
-  const { scrollRef, contentRef, scrollToBottom, state: stickState } = stickToBottom;
-  // Keeps a conversation that is at the bottom there in two cases the library gets wrong:
-  // - Its viewport changes height, as when the message box grows or the window is resized. The
-  //   library only follows its content growing, so a shorter viewport would cover the newest
-  //   messages.
-  // - Its scroll position is moved up by the browser, not by staff: a taller viewport or a shorter
-  //   conversation leaves less to scroll. The library can take that for scrolling away and stop
-  //   following.
-  useEffect(() => {
-    const scroller = scrollRef.current;
-    if (!scroller) return;
-    const distanceFromBottom = (height = scroller.clientHeight) =>
-      scroller.scrollHeight - scroller.scrollTop - height;
-    let height = scroller.clientHeight;
-    const observer = new ResizeObserver(() => {
-      const wasAtBottom = distanceFromBottom(height) <= AT_BOTTOM_PX;
-      height = scroller.clientHeight;
-      if (wasAtBottom) scroller.scrollTop = scroller.scrollHeight;
-    });
-    observer.observe(scroller);
-    let relock: ReturnType<typeof setTimeout> | undefined;
-    const onScroll = () => {
-      clearTimeout(relock);
-      // The library decides whether a scroll was staff scrolling away just after the event.
-      relock = setTimeout(() => {
-        if (!stickState.isAtBottom && distanceFromBottom() <= AT_BOTTOM_PX) {
-          void scrollToBottom('instant');
-        }
-      }, 10);
-    };
-    scroller.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      observer.disconnect();
-      scroller.removeEventListener('scroll', onScroll);
-      clearTimeout(relock);
-    };
-  }, [scrollRef, scrollToBottom, stickState]);
-
   const { setStatus, setAttachments } = drafts;
   const { reset: resetDeny, mutateAsync: denyAsync } = deny;
   const offline = lifecycle?.status === 'offline';
@@ -528,8 +480,6 @@ function Chat({
         files,
         metadata: { location: currentPageLocation(), approvalMode },
       });
-      // Staff who scrolled up to reread would otherwise not see their message or the reply to it.
-      void scrollToBottom();
       // An answer chosen on an input request leaves the composer's attachments alone.
       if (attachments.length > 0) {
         revokePreviews(attachments);
@@ -546,7 +496,6 @@ function Chat({
       resetDeny,
       denyAsync,
       sendMessage,
-      scrollToBottom,
       offline,
       approvalMode,
     ],
@@ -570,27 +519,6 @@ function Chat({
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
-  // Stops the conversation from getting shorter while a reply streams. Markdown that is still
-  // arriving can reflow a line shorter for a moment. At the bottom the browser then moves the scroll
-  // position up, and the library takes that for staff scrolling away and stops following the reply.
-  useEffect(() => {
-    const content = contentRef.current;
-    if (!content || !responseActive) return;
-    const observer = new ResizeObserver(() => {
-      content.style.minHeight = `${content.offsetHeight}px`;
-    });
-    observer.observe(content);
-    // Collapsing a tool call is meant to make the conversation shorter.
-    const release = () => {
-      content.style.minHeight = '';
-    };
-    content.addEventListener('click', release);
-    return () => {
-      observer.disconnect();
-      content.removeEventListener('click', release);
-      release();
-    };
-  }, [contentRef, responseActive]);
   const showThinking = run(() => {
     if (
       !(responseActive || lifecycle?.status === 'waiting_for_agent') ||
@@ -636,6 +564,7 @@ function Chat({
     !turnRunning &&
     latest?.role === 'assistant' &&
     latest.parts.some((part) => part.type === 'data-input-request');
+  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
@@ -656,18 +585,15 @@ function Chat({
   return (
     <FileDropArea enabled={!sending} onDrop={drafts.add}>
       <div
-        ref={scrollRef}
+        ref={stickToBottom.scrollRef}
         className="flex-grow-1 overflow-y-auto"
-        // While following a reply, text above the newest line reflowing shorter would otherwise make
-        // the browser move the scroll position up to keep that line where it was.
-        style={{ overflowAnchor: responseActive && stickToBottom.isAtBottom ? 'none' : undefined }}
         // Scrollable regions must be reachable by keyboard, and Safari only scrolls a focused one.
         // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
         role="region"
         aria-label="Conversation"
       >
-        <div ref={contentRef} className="d-flex flex-column gap-3 p-3">
+        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
           )}
@@ -999,18 +925,13 @@ function ApprovalModePicker({
 /**
  * CSS sizes the message box to its text where `field-sizing` is supported. Elsewhere it is measured
  * by hand, which Safari must never do: collapsing the box to measure it moves the conversation's
- * scroll position there, even while the conversation's own height is held.
+ * scroll position there.
  */
 const FIT_BY_HAND = typeof CSS !== 'undefined' && !CSS.supports('field-sizing', 'content');
 
 function fitToText(textarea: HTMLTextAreaElement) {
-  // Measuring collapses the box for a moment. Holding the form's height meanwhile keeps the
-  // conversation above from resizing, which would move its scroll position on every keystroke.
-  const form = textarea.form;
-  if (form) form.style.minHeight = `${form.offsetHeight}px`;
   textarea.style.height = 'auto';
   textarea.style.height = `${textarea.scrollHeight}px`;
-  if (form) form.style.minHeight = '';
 }
 
 function reviewInHistory(messages: UIMessage[], reviewId: string) {
