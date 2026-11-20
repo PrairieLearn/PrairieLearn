@@ -210,17 +210,19 @@ that comes before the table: no overall score, verdict, or caveats there.
 
 ```markdown
 **<Assessment> · <course instance> · <number> students**
+
 **<Number> fixes.** <Whether the current definition still has them, or "Nothing needs fixing.">
 
-| Question                                      | What it asks               | Students |      Mean | Difference from mean (percentage points) |
-| --------------------------------------------- | -------------------------- | -------: | --------: | ---------------------------------------: |
-| 1 · 1 question, 10 pts                        | <what it asks>             |      240 |     88.0% |                                          |
-| 2 · 4 alternatives, 2 per student, 5 pts each | <what they have in common> |      240 |    90–96% |                                within ±4 |
-| ⚠️ **3** · 2 alternatives, 15 pts             |                            |      238 |     72.0% |                                          |
-| ↳ ⚠️ **3.1**                                  | **<what it asks>**         |  **119** | **62.0%** |                                  **−10** |
-| ↳ 3.2                                         | <what it asks>             |      119 |     82.0% |                                      +10 |
+| Question                                                                   | Students |    Mean | Difference from mean (percentage points) |
+| -------------------------------------------------------------------------- | -------: | ------: | ---------------------------------------: |
+| 1 · <what it asks> · 10 pts                                                |      240 |     88% |                                          |
+| 2 · <what they have in common> · 4 alternatives, 2 per student, 5 pts each |      240 |  90–96% |                                within ±4 |
+| ⚠️ **3 · <what they have in common> · 2 alternatives, 15 pts**             |  **238** | **72%** |                                          |
+| ↳ ⚠️ **3.1 · <what it asks>**                                              |  **119** | **62%** |                                  **−10** |
+| ↳ 3.2 · <what it asks>                                                     |      119 |     82% |                                      +10 |
 
 **⚠️ 1. <The fix, as an instruction>**
+
 <Its effect: which students lost how many points of the assessment total.>
 
 - <The two or three numbers that show it, each with its number of students.>
@@ -242,10 +244,11 @@ that limits the conclusions, in one or two sentences.>_
 **The table** lists every question with points, in the order of the
 assessment's **Questions** page:
 
-- Describe each question's row by its structure in plain words: "1 question",
-  or "4 alternatives, 2 per student", and its points.
-- **What it asks** is a few plain words a colleague would recognize, not a
-  label you made up.
+- Keep to these four columns, since the panel is narrow. A question's cell gives
+  its number, what it asks in a few plain words a colleague would recognize
+  (not a label you made up), then its structure and points: "10 pts", or "4
+  alternatives, 2 per student, 5 pts each". An alternative's or variant
+  group's cell gives its number and what it asks.
 - **Students** is the number of students given that question, alternative, or
   group of variants. Count students, not attempts or assignments.
 - Expand a question into a row per alternative only when it has a problem.
@@ -253,8 +256,9 @@ assessment's **Questions** page:
   largest difference from the question's mean.
 - When the problem is among an alternative's variants, such as which part or
   case it asks for, add a row per group of variants under that alternative.
-- **Difference from mean** is a row's mean minus the mean on its question's
-  row, in whole percentage points, such as −10 or +4. Every row under a
+- Give means in whole percent, such as 62% or 90–96%. **Difference from mean**
+  is a row's mean minus the mean on its question's row, in whole percentage
+  points, such as −10 or +4. Every row under a
   question is compared with that same question row, including variant rows.
 - Mark only the rows whose students were put at a disadvantage, and the
   question row above them: ⚠️ before the number, and the whole row in bold.
@@ -276,6 +280,9 @@ how many were affected and by how many points. Give at most four.
 - End every fix with a → line: one concrete edit, such as a question file, an
   assessment setting, a rubric, or a process step. If the current definition
   already fixes it, say so instead.
+- Link a course file by its full path, such as
+  `[server.py](/workspace/session/course/questions/<qid>/server.py)`. The panel
+  opens only links in that form.
 - Keep each fix under about 60 words.
 
 **Worth a look** holds unexplained gaps, issues too small to need an edit, and
