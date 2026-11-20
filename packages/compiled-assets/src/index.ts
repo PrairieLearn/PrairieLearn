@@ -1,10 +1,21 @@
-import http, { type IncomingMessage, type ServerResponse } from 'node:http';
+import { createHash } from 'node:crypto';
+import http from 'node:http';
+import os from 'node:os';
+import { stripVTControlCharacters } from 'node:util';
 import path from 'path';
 
-import esbuild, { type Metafile } from 'esbuild';
+import esbuild from 'esbuild';
 import expressStaticGzip from 'express-static-gzip';
 import fs from 'fs-extra';
 import { globby } from 'globby';
+import {
+  type InputOptions,
+  type OutputOptions,
+  type RolldownOutput,
+  type RolldownWatcher,
+  rolldown,
+  watch,
+} from 'rolldown';
 
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
@@ -43,8 +54,20 @@ let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
 let esbuildContext: esbuild.BuildContext | null = null;
 let esbuildServer: esbuild.ServeResult | null = null;
 
-let splitEsbuildContext: esbuild.BuildContext | null = null;
-let splitEsbuildServer: esbuild.ServeResult | null = null;
+let splitWatcher: RolldownWatcher | null = null;
+let splitOutputDirectory: string | null = null;
+/** Settles once the split bundles reflect the latest source changes. */
+let splitBuild: Promise<Error | null> = Promise.resolve(null);
+let finishSplitBuild: ((error: Error | null) => void) | null = null;
+
+function startSplitBuild() {
+  if (!finishSplitBuild) splitBuild = new Promise((resolve) => (finishSplitBuild = resolve));
+}
+
+function endSplitBuild(error: Error | null) {
+  finishSplitBuild?.(error);
+  finishSplitBuild = null;
+}
 
 let relativeSourcePaths: string[] | null = null;
 
@@ -54,6 +77,48 @@ let relativeSourcePaths: string[] | null = null;
  * See https://github.com/tree-sitter/tree-sitter/pull/5546.
  */
 const NODE_ONLY_EXTERNALS = ['fs/promises', 'module'];
+
+/**
+ * Options for the code-split ESM bundles. These are built with Rolldown rather
+ * than esbuild: esbuild assigns modules to chunks by file reachability, so an
+ * entry that imports one export from a package's index also loads every module
+ * the index re-exports once another entry uses them. Rolldown links imports
+ * through side-effect-free re-exports to the module that defines them.
+ */
+function splitBundleOptions(sourceDirectory: string, sourcePaths: string[], dev: boolean) {
+  const input: InputOptions = {
+    input: Object.fromEntries(
+      sourcePaths.map((sourcePath) => [
+        path.relative(sourceDirectory, sourcePath).replace(/\.[jt]sx?$/, ''),
+        sourcePath,
+      ]),
+    ),
+    platform: 'browser',
+    external: NODE_ONLY_EXTERNALS,
+    onLog(level, log, defaultHandler) {
+      // React libraries mark modules with "use client", which only matters for
+      // server components and is meaningless in these browser bundles.
+      if (log.code === 'MODULE_LEVEL_DIRECTIVE') return;
+      defaultHandler(level, log);
+    },
+    transform: {
+      target: 'es2022',
+      jsx: 'react-jsx',
+      define: {
+        'process.env.NODE_ENV': dev ? '"development"' : '"production"',
+      },
+    },
+  };
+  const output: OutputOptions = {
+    format: 'esm',
+    sourcemap: dev ? 'inline' : true,
+    minify: !dev,
+    entryFileNames: dev ? '[name].js' : '[name]-[hash].js',
+    // The dev handler routes all shared and dynamically imported chunks by this prefix.
+    chunkFileNames: 'chunk-[hash].js',
+  };
+  return { input, output };
+}
 
 async function serveEsbuildContext(context: esbuild.BuildContext): Promise<esbuild.ServeResult> {
   // This must stay in sync with the Host header workaround in `handler()`.
@@ -123,25 +188,33 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       ...splitSourcePaths.map((p) => path.relative(options.sourceDirectory, p)),
     );
 
-    splitEsbuildContext = await esbuild.context({
-      entryPoints: splitSourcePaths,
-      target: 'es2022',
-      format: 'esm',
-      sourcemap: 'inline',
-      bundle: true,
-      splitting: true,
-      write: false,
-      outbase: options.sourceDirectory,
-      outdir: options.buildDirectory,
-      entryNames: '[dir]/[name]',
-      // The dev proxy routes all shared and dynamically imported chunks by this prefix.
-      chunkNames: 'chunk-[hash]',
-      define: {
-        'process.env.NODE_ENV': '"development"',
-      },
-      external: NODE_ONLY_EXTERNALS,
+    // Rolldown's watcher rebuilds on change and writes to a directory that
+    // `handler()` serves once the latest build has settled. The directory is
+    // derived from the source directory and emptied on startup, so output left
+    // behind by a server that didn't shut down cleanly doesn't accumulate.
+    const sourceHash = createHash('sha256')
+      .update(path.resolve(options.sourceDirectory))
+      .digest('hex')
+      .slice(0, 12);
+    const outputDirectory = path.join(os.tmpdir(), `compiled-assets-${sourceHash}`);
+    await fs.emptyDir(outputDirectory);
+    splitOutputDirectory = outputDirectory;
+    const { input, output } = splitBundleOptions(options.sourceDirectory, splitSourcePaths, true);
+    // Requests that arrive before the initial build has started must still wait for it.
+    startSplitBuild();
+    splitWatcher = watch({ ...input, output: { ...output, dir: outputDirectory } });
+    splitWatcher.on('event', async (event) => {
+      if (event.code === 'START') {
+        startSplitBuild();
+      } else if (event.code === 'BUNDLE_END') {
+        await event.result.close();
+        endSplitBuild(null);
+      } else if (event.code === 'ERROR') {
+        await event.result.close();
+        console.error(event.error);
+        endSplitBuild(event.error);
+      }
     });
-    splitEsbuildServer = await serveEsbuildContext(splitEsbuildContext);
   }
 }
 
@@ -149,7 +222,13 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
  * Shuts down the development assets compiler if it is running.
  */
 export async function close() {
-  await Promise.all([esbuildContext?.dispose(), splitEsbuildContext?.dispose()]);
+  await Promise.all([esbuildContext?.dispose(), splitWatcher?.close()]);
+  endSplitBuild(new Error('Development asset server closed'));
+  splitBuild = Promise.resolve(null);
+  // Keep `splitOutputDirectory` set: callers (e.g. test servers that restart
+  // without re-running `init()`) may still create a handler after closing.
+  if (splitOutputDirectory) await fs.remove(splitOutputDirectory);
+  splitWatcher = null;
 }
 
 export function assertConfigured(): void {
@@ -178,20 +257,36 @@ export function handler() {
     });
   }
 
-  if (!esbuildServer || !splitEsbuildServer) {
-    throw new Error('esbuild server not initialized');
+  if (!esbuildServer || !splitOutputDirectory) {
+    throw new Error('Development asset servers not initialized');
   }
 
   const { port } = esbuildServer;
-  const { port: splitPort } = splitEsbuildServer;
+  const serveSplitBundles = expressStaticGzip(splitOutputDirectory, {
+    // 404 immediately if the file is not found.
+    serveStatic: { fallthrough: false },
+  });
 
-  // We're running in dev mode, so we need to boot up esbuild to start building
-  // and watching our assets.
-  return function (req: IncomingMessage, res: ServerResponse) {
+  // We're running in dev mode, so assets are built on the fly as they change.
+  return function (...[req, res, next]: Parameters<typeof serveSplitBundles>) {
     const isSplitBundle =
       req.url?.startsWith('/scripts/esm-bundles') ||
       // Chunked assets must be served by the split server.
       req.url?.startsWith('/chunk-');
+
+    if (isSplitBundle) {
+      splitBuild
+        .then((error) => {
+          if (error) {
+            res.writeHead(503, { 'Content-Type': 'text/plain' });
+            res.end(stripVTControlCharacters(error.message));
+            return;
+          }
+          serveSplitBundles(req, res, next);
+        })
+        .catch((err: unknown) => next(err));
+      return;
+    }
 
     // esbuild will reject requests that come from hosts other than the host on
     // which the esbuild dev server is listening:
@@ -209,7 +304,7 @@ export function handler() {
     const proxyReq = http.request(
       {
         hostname: '127.0.0.1',
-        port: isSplitBundle ? splitPort : port,
+        port,
         path: req.url,
         method: req.method,
         headers,
@@ -298,7 +393,7 @@ export function compiledScriptPreloadPaths(sourceFile: string): string[] {
   return asset.preloads.map((preload) => options.publicPath + preload);
 }
 
-async function buildAssets(sourceDirectory: string, buildDirectory: string): Promise<Metafile> {
+async function buildAssets(sourceDirectory: string, buildDirectory: string): Promise<BuildOutputs> {
   await fs.ensureDir(buildDirectory);
 
   const scriptFiles = await globby(path.join(sourceDirectory, 'scripts', '*.{js,jsx,ts,tsx}'));
@@ -332,41 +427,58 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
   const scriptBundleFiles = await globby(
     path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
   );
-  const esmBundleBuildResult = await esbuild.build({
-    entryPoints: scriptBundleFiles,
-    target: 'es2022',
-    format: 'esm',
-    sourcemap: 'linked',
-    bundle: true,
-    splitting: true,
-    minify: true,
-    entryNames: '[dir]/[name]-[hash]',
-    outbase: sourceDirectory,
-    outdir: buildDirectory,
-    define: {
-      'process.env.NODE_ENV': '"production"',
-    },
-    external: NODE_ONLY_EXTERNALS,
-    metafile: true,
-  });
+  const { input, output } = splitBundleOptions(sourceDirectory, scriptBundleFiles, false);
+  const bundle = await rolldown(input);
+  let esmBundleOutput: RolldownOutput;
+  try {
+    esmBundleOutput = await bundle.write({ ...output, dir: buildDirectory });
+  } finally {
+    await bundle.close();
+  }
 
-  // Merge the resulting metafiles.
-  const metafile: Metafile = {
-    inputs: { ...buildResult.metafile.inputs, ...esmBundleBuildResult.metafile.inputs },
-    outputs: { ...buildResult.metafile.outputs, ...esmBundleBuildResult.metafile.outputs },
-  };
+  return { ...buildResult.metafile.outputs, ...rolldownOutputs(esmBundleOutput, buildDirectory) };
+}
 
-  return metafile;
+/** The parts of each output file that the manifest needs, keyed by output path. */
+type BuildOutputs = Record<
+  string,
+  {
+    entryPoint?: string;
+    imports: { path: string; kind: string; external?: boolean }[];
+  }
+>;
+
+function rolldownOutputs(output: RolldownOutput, buildDirectory: string): BuildOutputs {
+  const outputs: BuildOutputs = {};
+  const fileNames = new Set(output.output.map((file) => file.fileName));
+  for (const chunk of output.output) {
+    if (chunk.type !== 'chunk') continue;
+    const isEntry = chunk.isEntry || chunk.isDynamicEntry;
+    // Imports of external modules are listed by module ID rather than file name.
+    const toImport = (kind: string) => (fileName: string) => ({
+      path: path.join(buildDirectory, fileName),
+      kind,
+      external: !fileNames.has(fileName),
+    });
+    outputs[path.join(buildDirectory, chunk.fileName)] = {
+      entryPoint: isEntry && chunk.facadeModuleId ? chunk.facadeModuleId : undefined,
+      imports: [
+        ...chunk.imports.map(toImport('import-statement')),
+        ...chunk.dynamicImports.map(toImport('dynamic-import')),
+      ],
+    };
+  }
+  return outputs;
 }
 
 function makeManifest(
-  metafile: Metafile,
+  outputs: BuildOutputs,
   sourceDirectory: string,
   buildDirectory: string,
 ): AssetsManifest {
   const manifest: AssetsManifest = {};
 
-  Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
+  Object.entries(outputs).forEach(([outputPath, meta]) => {
     if (!meta.entryPoint) return;
 
     // Preload the static dependency graph without crossing dynamic import
@@ -382,7 +494,7 @@ function makeManifest(
       const preloadPath = path.relative(buildDirectory, entry.path);
       if (preloads.has(preloadPath)) return;
       preloads.add(preloadPath);
-      for (const imp of metafile.outputs[entry.path]?.imports ?? []) {
+      for (const imp of outputs[entry.path]?.imports ?? []) {
         visit(imp);
       }
     };
@@ -409,8 +521,8 @@ export async function build(
   // Remove existing assets to ensure that no stale assets are left behind.
   await fs.remove(buildDirectory);
 
-  const metafile = await buildAssets(sourceDirectory, buildDirectory);
-  const manifest = makeManifest(metafile, sourceDirectory, buildDirectory);
+  const outputs = await buildAssets(sourceDirectory, buildDirectory);
+  const manifest = makeManifest(outputs, sourceDirectory, buildDirectory);
   const manifestPath = path.join(buildDirectory, 'manifest.json');
   await fs.writeJSON(manifestPath, manifest);
 

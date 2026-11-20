@@ -22,6 +22,7 @@
     "fs-extra": "^11.4.1",
     "globby": "^16.2.4",
     "pretty-bytes": "^7.2.0",
+    "rolldown": "^1.2.16",
     "tmp-promise": "^3.0.3"
   },
   "devDependencies": {

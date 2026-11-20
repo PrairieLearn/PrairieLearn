@@ -7,6 +7,9 @@
     "directory": "packages/ui"
   },
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": "./dist/index.js",
     "./*.css": "./dist/*.css",
