@@ -32,7 +32,7 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const { assessment, course_instance, authn_user } = extractPageContext(res.locals, {
+    const { assessment, course_instance, authn_user, authz_data } = extractPageContext(res.locals, {
       pageType: 'assessment',
       accessType: 'instructor',
     });
@@ -72,6 +72,7 @@ router.get(
               courseInstanceId={course_instance.id}
               hasRandomization={await assessmentHasPrintRandomization(assessment.id)}
               groupWork={assessment.team_work}
+              canEditPrintForms={authz_data.has_course_permission_edit}
               requireHonorCode={!!assessment.require_honor_code}
               displayTimezone={course_instance.display_timezone}
               forms={forms}

@@ -98,6 +98,7 @@ interface PrintPreparationProps {
   displayTimezone: string;
   hasRandomization: boolean;
   groupWork: boolean;
+  canEditPrintForms: boolean;
   requireHonorCode: boolean;
   forms: StaffPrintPreparationForm[];
   enrolledStudents: number;
@@ -172,6 +173,7 @@ function PrintPreparation({
   displayTimezone,
   hasRandomization,
   groupWork,
+  canEditPrintForms,
   requireHonorCode,
   forms: initialForms,
   enrolledStudents,
@@ -357,13 +359,19 @@ function PrintPreparation({
   const initialFormRequestedRef = useRef(false);
   const ensureInitialMutate = ensureInitial.mutate;
   useEffect(() => {
-    // The first staff visit creates the A slot; the server handles concurrent visits.
-    if (groupWork || activeForms.length > 0 || forms.isError || initialFormRequestedRef.current) {
+    // The first editor visit creates the A slot; the server handles concurrent visits.
+    if (
+      !canEditPrintForms ||
+      groupWork ||
+      activeForms.length > 0 ||
+      forms.isError ||
+      initialFormRequestedRef.current
+    ) {
       return;
     }
     initialFormRequestedRef.current = true;
     ensureInitialMutate();
-  }, [activeForms.length, forms.isError, groupWork, ensureInitialMutate]);
+  }, [activeForms.length, canEditPrintForms, forms.isError, groupWork, ensureInitialMutate]);
   useEffect(() => {
     // Keep the URL on the form actually shown, while preserving valid form deep links.
     if (formId && formId !== selectedForm) void setSelectedForm(formId);
@@ -958,11 +966,15 @@ function PrintPreparation({
   const includedOmittedCount = includedOmittedQuestions.length;
   const affectedQuestions =
     includedOmittedCount === 1 ? 'the affected question' : 'the affected questions';
-  const omittedRecovery = archivedPreviewForm
-    ? `Fix ${affectedQuestions} in your course, then reload this page. Previous forms cannot be edited.`
-    : questionSelectionLocked
-      ? `Fix ${affectedQuestions} in your course and update the preview, or deselect ${includedOmittedCount === 1 ? 'it' : 'them'} to create a new form version.`
-      : `Fix or deselect ${includedOmittedCount === 1 ? 'it' : 'them'}, then update the preview.`;
+  const omittedRecovery = !canEditPrintForms
+    ? archivedPreviewForm
+      ? `Ask a course editor to fix ${affectedQuestions}, then reload this page.`
+      : `Ask a course editor to fix or deselect ${affectedQuestions}, then update the preview.`
+    : archivedPreviewForm
+      ? `Fix ${affectedQuestions} in your course, then reload this page. Previous forms cannot be edited.`
+      : questionSelectionLocked
+        ? `Fix ${affectedQuestions} in your course and update the preview, or deselect ${includedOmittedCount === 1 ? 'it' : 'them'} to create a new form version.`
+        : `Fix or deselect ${includedOmittedCount === 1 ? 'it' : 'them'}, then update the preview.`;
   const reviewCount =
     includedQuestions?.filter(
       (question) => question.concerns.length || omitted.has(question.number),
@@ -982,14 +994,16 @@ function PrintPreparation({
     includedQuestions?.find((question) => question.concerns.length > 0);
   const noQuestionsSelected = questions.isSuccess && includedQuestions?.length === 0;
   const previewHasError = currentPreview?.status === 'error' || omitted.size > 0 || snapshotStale;
-  const settingsLocked = controlsBusy || !!archivedPreviewForm;
+  const settingsLocked = controlsBusy || !!archivedPreviewForm || !canEditPrintForms;
   const canApplySettings =
     !controlsBusy &&
     !archivedPreviewForm &&
     !noQuestionsSelected &&
+    (canEditPrintForms || (!!formId && !isDirty)) &&
     (!formId || isDirty || !previewIsCurrent || previewHasError) &&
     !(groupWork && !formId);
   const canAddForm =
+    canEditPrintForms &&
     !controlsBusy &&
     !isDirty &&
     !groupWork &&
@@ -997,6 +1011,7 @@ function PrintPreparation({
     activeForms.length > 0 &&
     activeForms.length < MAX_ACTIVE_PRINT_FORMS;
   const canDownload =
+    canEditPrintForms &&
     validForm &&
     !isDirty &&
     previewIsCurrent &&
@@ -1134,24 +1149,26 @@ function PrintPreparation({
   }
 
   async function applySettings(values: PrintSettings) {
-    if (archivedPreviewForm) return;
-    if (formId) {
-      // Auto-saved fields use saved settings unless an unsuccessful edit is still dirty.
-      const changedFields = (Object.keys(dirtyFields) as (keyof PrintSettings)[]).filter(
-        (field) => dirtyFields[field],
-      );
+    if (archivedPreviewForm || (!canEditPrintForms && !formId)) return;
+    if (canEditPrintForms) {
+      if (formId) {
+        // Auto-saved fields use saved settings unless an unsuccessful edit is still dirty.
+        const changedFields = (Object.keys(dirtyFields) as (keyof PrintSettings)[]).filter(
+          (field) => dirtyFields[field],
+        );
+        values = {
+          ...settings,
+          ...Object.fromEntries(changedFields.map((field) => [field, values[field]])),
+          identityFields: values.identityFields,
+        };
+      }
       values = {
-        ...settings,
-        ...Object.fromEntries(changedFields.map((field) => [field, values[field]])),
-        identityFields: values.identityFields,
+        ...values,
+        identityFields: values.includeCoverPage
+          ? PrintIdentityFieldsTextSchema.parse(values.identityFields)
+          : values.identityFields,
       };
     }
-    values = {
-      ...values,
-      identityFields: values.includeCoverPage
-        ? PrintIdentityFieldsTextSchema.parse(values.identityFields)
-        : values.identityFields,
-    };
     setPreviewPending(true);
     setPreview(null);
     if (snapshotStale) void setExportId(null);
@@ -1165,6 +1182,12 @@ function PrintPreparation({
         void setSelectedForm(result.printFormId);
         nextFormId = result.printFormId;
         values = result.settings;
+      } else if (!canEditPrintForms) {
+        const latest = await forms.refetch({ throwOnError: true });
+        const selected = latest.data?.find((form) => form.id === formId);
+        if (!selected) throw new Error('This print form is no longer available.');
+        values = selected.settings;
+        await questions.refetch({ throwOnError: true });
       } else {
         const updated = await updateSettings.mutateAsync({
           printFormId: formId,
@@ -1380,7 +1403,10 @@ function PrintPreparation({
                     <p className="small text-muted">
                       Each form can contain distinct randomized values, selected questions, and
                       layout settings. Paper size is shared by all current forms. Select a form to
-                      preview it or make changes.
+                      preview it
+                      {canEditPrintForms
+                        ? ' or make changes.'
+                        : '. Ask a course editor to change forms or start a download.'}
                     </p>
                     <div className="d-flex flex-column gap-2" role="group" aria-label="Print forms">
                       {activeForms.map((form) => {
@@ -1400,68 +1426,71 @@ function PrintPreparation({
                               Form {label}
                               {id === formId && <span className="float-end">Previewing</span>}
                             </Button>
-                            {(form.has_randomizable_questions ||
-                              form.question_selection_locked_at !== null) && (
+                            {canEditPrintForms &&
+                              (form.has_randomizable_questions ||
+                                form.question_selection_locked_at !== null) && (
+                                <OverlayTrigger
+                                  placement="top"
+                                  tooltip={{
+                                    props: { id: `print-regenerate-${id}` },
+                                    body: form.has_randomizable_questions
+                                      ? `Regenerate Form ${label} with new randomization`
+                                      : `Create a new version of Form ${label} to change its questions`,
+                                  }}
+                                >
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline-secondary"
+                                    aria-label={`Regenerate Form ${label}`}
+                                    disabled={
+                                      busy ||
+                                      isDirty ||
+                                      isSubmitting ||
+                                      download.isPending ||
+                                      groupWork
+                                    }
+                                    onClick={() =>
+                                      setPendingFormAction({ action: 'regenerate', id, label })
+                                    }
+                                  >
+                                    <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+                                  </Button>
+                                </OverlayTrigger>
+                              )}
+                            {canEditPrintForms && (
                               <OverlayTrigger
                                 placement="top"
                                 tooltip={{
-                                  props: { id: `print-regenerate-${id}` },
-                                  body: form.has_randomizable_questions
-                                    ? `Regenerate Form ${label} with new randomization`
-                                    : `Create a new version of Form ${label} to change its questions`,
+                                  props: { id: `print-archive-${id}` },
+                                  body: `Archive Form ${label}`,
                                 }}
                               >
                                 <Button
                                   type="button"
                                   size="sm"
                                   variant="outline-secondary"
-                                  aria-label={`Regenerate Form ${label}`}
+                                  aria-label={`Archive Form ${label}`}
                                   disabled={
+                                    activeForms.length === 1 ||
                                     busy ||
                                     isDirty ||
                                     isSubmitting ||
-                                    download.isPending ||
-                                    groupWork
+                                    download.isPending
                                   }
                                   onClick={() =>
-                                    setPendingFormAction({ action: 'regenerate', id, label })
+                                    setPendingFormAction({ action: 'archive', id, label })
                                   }
                                 >
-                                  <i className="bi bi-arrow-clockwise" aria-hidden="true" />
+                                  <i className="bi bi-archive" aria-hidden="true" />
                                 </Button>
                               </OverlayTrigger>
                             )}
-                            <OverlayTrigger
-                              placement="top"
-                              tooltip={{
-                                props: { id: `print-archive-${id}` },
-                                body: `Archive Form ${label}`,
-                              }}
-                            >
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline-secondary"
-                                aria-label={`Archive Form ${label}`}
-                                disabled={
-                                  activeForms.length === 1 ||
-                                  busy ||
-                                  isDirty ||
-                                  isSubmitting ||
-                                  download.isPending
-                                }
-                                onClick={() =>
-                                  setPendingFormAction({ action: 'archive', id, label })
-                                }
-                              >
-                                <i className="bi bi-archive" aria-hidden="true" />
-                              </Button>
-                            </OverlayTrigger>
                           </div>
                         );
                       })}
                     </div>
-                    {hasRandomization && !groupWork && (
+                    {canEditPrintForms && hasRandomization && !groupWork && (
                       <Button
                         type="button"
                         variant="outline-primary"
@@ -1537,7 +1566,9 @@ function PrintPreparation({
                     {mixedPaperSizes && (
                       <Alert variant="warning" className="mt-2 mb-0 small">
                         Current forms use different paper sizes.{' '}
-                        {archivedPreviewForm ? (
+                        {!canEditPrintForms ? (
+                          'Ask a course editor to apply one size to all current forms.'
+                        ) : archivedPreviewForm ? (
                           'Select a current form to apply one size to all forms.'
                         ) : (
                           <Button
@@ -1623,24 +1654,26 @@ function PrintPreparation({
                         One label per line. Name and Date are always included. Instructions come
                         from the assessment.
                       </Form.Text>
-                      <div className="mt-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          className={clsx({
-                            disabled: settingsLocked || !dirtyFields.identityFields,
-                          })}
-                          aria-disabled={settingsLocked || !dirtyFields.identityFields}
-                          onClick={() => {
-                            if (settingsLocked || !dirtyFields.identityFields) return;
-                            void handleSubmit(async (values) => {
-                              await saveSetting('identityFields', values.identityFields);
-                            })().catch(() => {});
-                          }}
-                        >
-                          Save
-                        </Button>
-                      </div>
+                      {canEditPrintForms && (
+                        <div className="mt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            className={clsx({
+                              disabled: settingsLocked || !dirtyFields.identityFields,
+                            })}
+                            aria-disabled={settingsLocked || !dirtyFields.identityFields}
+                            onClick={() => {
+                              if (settingsLocked || !dirtyFields.identityFields) return;
+                              void handleSubmit(async (values) => {
+                                await saveSetting('identityFields', values.identityFields);
+                              })().catch(() => {});
+                            }}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      )}
                     </Form.Group>
                   )}
                   {includeCoverPage && (
@@ -1681,12 +1714,16 @@ function PrintPreparation({
                       </Form.Text>
                     </div>
                   )}
-                  <Form.Group controlId="print-cover-pages" className="mt-3">
+                  <Form.Group
+                    controlId="print-cover-pages"
+                    className="mt-3"
+                    hidden={!canEditPrintForms}
+                  >
                     <Form.Label>Custom cover pages (PDF)</Form.Label>
                     <Form.Control
                       type="file"
                       accept="application/pdf,.pdf"
-                      disabled={controlsBusy}
+                      disabled={controlsBusy || !canEditPrintForms}
                       aria-describedby="print-cover-pages-help"
                       aria-invalid={!!uploadError}
                       aria-errormessage={uploadError ? 'print-cover-pages-error' : undefined}
@@ -1728,7 +1765,7 @@ function PrintPreparation({
                       {COVER_SIZE_LIMIT} total, and {MAX_COVER_PAGES} pages.
                     </Form.Text>
                   </Form.Group>
-                  {coverPages.length > 0 && (
+                  {canEditPrintForms && coverPages.length > 0 && (
                     <>
                       <ol className="small ps-3 mt-2 mb-1">
                         {coverPages.map(({ id, file }) => (
@@ -1784,7 +1821,7 @@ function PrintPreparation({
                         The list marks printing concerns and questions that could not be included.
                         Check the preview for layout and complete instructions.
                       </p>
-                      {questionSelectionLocked && !archivedPreviewForm && (
+                      {canEditPrintForms && questionSelectionLocked && !archivedPreviewForm && (
                         <p className="small text-muted mb-0 mt-1">
                           A download has started for this form. Changing its question selection
                           creates a new numbered version; the original stays in Previous forms.
@@ -1951,9 +1988,9 @@ function PrintPreparation({
                               className="small text-nowrap"
                               target="_blank"
                               rel="noopener noreferrer"
-                              aria-label={`Edit question ${question.number} (opens in a new tab)`}
+                              aria-label={`${canEditPrintForms ? 'Edit' : 'View'} question ${question.number} (opens in a new tab)`}
                             >
-                              Edit question
+                              {canEditPrintForms ? 'Edit' : 'View'} question
                             </a>
                           </Form.Group>
                         </div>
@@ -1968,10 +2005,12 @@ function PrintPreparation({
                 </Card>
               )}
             </section>
-            <div className="print-preparation-actions">
+            <div className="print-preparation-actions" hidden={!canEditPrintForms && !formId}>
               {noQuestionsSelected && (
                 <p className="small text-danger mb-2" role="alert">
-                  Select at least one question to download an assessment.
+                  {canEditPrintForms
+                    ? 'Select at least one question to download an assessment.'
+                    : 'Ask a course editor to select at least one question before downloading.'}
                 </p>
               )}
               <Button
@@ -2096,7 +2135,7 @@ function PrintPreparation({
                       'Preparing file… It will download automatically.'
                     ) : null}
                   </div>
-                  <div className="print-preparation-download">
+                  <div className="print-preparation-download" hidden={!canEditPrintForms}>
                     <Dropdown align="end">
                       <Dropdown.Toggle
                         ref={prepareButtonRef}
@@ -2193,24 +2232,36 @@ function PrintPreparation({
                     className="bi bi-file-earmark-text display-4 text-primary mb-3"
                     aria-hidden="true"
                   />
-                  <h3 className="h5">Your printable assessment starts here</h3>
+                  <h3 className="h5">
+                    {canEditPrintForms
+                      ? 'Your printable assessment starts here'
+                      : 'No printable forms yet'}
+                  </h3>
                   <p className="text-muted mb-0">
-                    {ensureInitial.isPending
-                      ? 'Creating Form A1 and its preview.'
-                      : ensureInitial.isError
-                        ? 'Use Try again above to create Form A1.'
-                        : 'Choose your layout, then create a preview.'}
-                    <br />
-                    Review the questions before downloading.
+                    {!canEditPrintForms
+                      ? 'Ask a course editor to create a form.'
+                      : ensureInitial.isPending
+                        ? 'Creating Form A1 and its preview.'
+                        : ensureInitial.isError
+                          ? 'Use Try again above to create Form A1.'
+                          : 'Choose your layout, then create a preview.'}
+                    {canEditPrintForms && (
+                      <>
+                        <br />
+                        Review the questions before downloading.
+                      </>
+                    )}
                   </p>
                 </div>
               )}
-              <Card.Footer className="bg-white p-3">
-                <div className="print-preparation-download-help text-muted small">
-                  Word exports exclude uploaded cover pages. Formatting and page breaks may differ
-                  from the preview and between apps.
-                </div>
-              </Card.Footer>
+              {canEditPrintForms && (
+                <Card.Footer className="bg-white p-3">
+                  <div className="print-preparation-download-help text-muted small">
+                    Word exports exclude uploaded cover pages. Formatting and page breaks may differ
+                    from the preview and between apps.
+                  </div>
+                </Card.Footer>
+              )}
             </Card>
           </div>
         </fieldset>

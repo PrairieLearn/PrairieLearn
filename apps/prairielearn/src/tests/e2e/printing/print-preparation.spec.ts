@@ -19,8 +19,23 @@ import { syncCourse } from '../../helperCourse.js';
 import { getOrCreateUser } from '../../utils/auth.js';
 import { createTest, expect } from '../fixtures.js';
 
+import { createPrintableForm } from './utils.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 const test = createTest({ features: { 'printable-assessments': true } });
+const viewer = {
+  uid: 'print-viewer@example.com',
+  name: 'Print viewer',
+  uin: 'print-viewer',
+  email: 'print-viewer@example.com',
+};
+const viewerTest = createTest({
+  features: { 'printable-assessments': true },
+  authUid: viewer.uid,
+  authName: viewer.name,
+  authUin: viewer.uin,
+  authEmail: viewer.email,
+});
 const ACTIVE_PREVIEW_FRAME_SELECTOR =
   '.print-preparation-preview[data-active="true"] iframe[title="Printable document preview"]';
 
@@ -111,6 +126,54 @@ async function printFormLabel(page: Page, printFormId?: string) {
   const form = await selectOptionalPrintForm({ printFormId: formId, assessmentId });
   return form!.label;
 }
+
+viewerTest(
+  'lets course viewers preview existing forms without changing them',
+  async ({ page, courseInstance }) => {
+    const assessment = await assessmentFor(courseInstance.id);
+    await insertCoursePermissionsByUserUid({
+      course_id: courseInstance.course_id,
+      uid: viewer.uid,
+      course_role: 'Viewer',
+      authn_user_id: '1',
+    });
+    await page.goto(
+      `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/print`,
+    );
+    await expect(page.getByRole('heading', { name: 'No printable forms yet' })).toBeVisible();
+    expect(await selectActivePrintFormsForAssessment({ assessmentId: assessment.id })).toHaveLength(
+      0,
+    );
+
+    await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+    await page.route('**/print_form/*/preview?*', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<!doctype html><html data-print-status="error" data-print-error="Temporary preview error"></html>',
+      }),
+    );
+    await page.reload();
+    await expect(page.getByRole('button', { name: /^Form A1(?: Previewing)?$/ })).toBeVisible();
+    await expect(page.getByLabel('Paper size')).toBeDisabled();
+    await expect(page.getByLabel('Space per question')).toBeDisabled();
+    await expect(page.getByRole('checkbox', { name: 'Include question 1' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Add form' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Regenerate Form A1' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Archive Form A1' })).toHaveCount(0);
+  await expect(page.getByLabel('Custom cover pages (PDF)')).toBeHidden();
+    await expect(downloadMenu(page)).toHaveCount(0);
+
+    await expect(page.getByText('Temporary preview error')).toBeVisible();
+    await page.unroute('**/print_form/*/preview?*');
+    await page.getByRole('button', { name: 'Update preview' }).click();
+    await expect(page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR).locator(':root')).toHaveAttribute(
+      'data-print-status',
+      'ready',
+      { timeout: 120_000 },
+    );
+  },
+);
 
 test('keeps an unsaved student-fields draft when another tab updates the shared form', async ({
   page,
