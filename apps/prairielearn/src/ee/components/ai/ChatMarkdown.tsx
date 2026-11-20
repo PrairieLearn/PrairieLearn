@@ -84,12 +84,16 @@ const mathPlugins = {
   } satisfies MathPlugin,
 };
 
-/** Words fade in as they arrive, so a streaming reply reads as flowing in, not jumping. */
+/**
+ * Text fades in softly as it arrives, so a streaming reply reads as flowing in, not jumping. With
+ * no stagger, the words that arrive together fade in together instead of one after another.
+ */
 const STREAM_ANIMATION = {
   animation: 'fadeIn',
-  duration: 400,
+  duration: 500,
   easing: 'ease-out',
   sep: 'word',
+  stagger: 0,
 } satisfies AnimateOptions;
 
 /**
