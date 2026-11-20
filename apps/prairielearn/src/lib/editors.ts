@@ -30,7 +30,6 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { applyMigrationToAssessmentFile } from './assessment-access-control/migration.js';
 import type { AuthzData } from './authz-data-lib.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
 import {
@@ -89,24 +88,17 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, courseData);
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, {
+    courseData,
+    oldHash: startGitHash,
+    commitHash: endGitHash,
+  });
 
   if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
 
-  if (config.chunksGenerator) {
-    const chunkChanges = await updateChunksForCourse({
-      coursePath: course.path,
-      courseId: course.id,
-      courseData: syncResult.courseData,
-      oldHash: startGitHash,
-      newHash: endGitHash,
-    });
-    logChunkChangesToJob(chunkChanges, job);
-  }
-
-  await updateCourseCommitHash(course);
+  await updateCourseCommitHash(course, endGitHash);
 
   // JSON errors mean individual entities failed to sync (e.g., a question has
   // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`

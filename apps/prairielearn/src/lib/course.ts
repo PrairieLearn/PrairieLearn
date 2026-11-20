@@ -15,7 +15,6 @@ import {
 } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
-import * as chunks from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User, UserSchema } from './db-types.js';
 import { REPOSITORY_ROOT_PATH } from './paths.js';
@@ -195,7 +194,10 @@ export async function pullAndUpdateCourse({
         const endGitHash = await getCourseCommitHash(path);
 
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(course, job);
+        const syncResult = await syncDiskToSqlWithLock(course, job, {
+          oldHash: startGitHash,
+          commitHash: endGitHash,
+        });
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
@@ -204,18 +206,7 @@ export async function pullAndUpdateCourse({
           return;
         }
 
-        if (config.chunksGenerator) {
-          const chunkChanges = await chunks.updateChunksForCourse({
-            coursePath: path,
-            courseId: course.id,
-            courseData: syncResult.courseData,
-            oldHash: startGitHash,
-            newHash: endGitHash,
-          });
-          chunks.logChunkChangesToJob(chunkChanges, job);
-        }
-
-        await updateCourseCommitHash({ id: course.id, path });
+        await updateCourseCommitHash({ id: course.id, path }, endGitHash);
 
         if (syncResult.hadJsonErrors) {
           job.fail('One or more JSON files contained errors and were unable to be synced.');

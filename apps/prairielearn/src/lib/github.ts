@@ -10,7 +10,6 @@ import * as Sentry from '@prairielearn/sentry';
 import { insertCourse, updateCourseCommitHash } from '../models/course.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User } from './db-types.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
@@ -480,17 +479,6 @@ export async function createCourseRepoJob(
       // Sync should never fail when creating a brand new repository, if we hit this
       // then we have a problem.
       throw new Error('Sync failed on brand new course repository');
-    }
-
-    // If we have chunks enabled, then create associated chunks for the new course
-    if (config.chunksGenerator) {
-      job.info('Create course chunks');
-      const chunkChanges = await updateChunksForCourse({
-        coursePath: inserted_course.path,
-        courseId: inserted_course.id,
-        courseData: syncResult.courseData,
-      });
-      logChunkChangesToJob(chunkChanges, job);
     }
 
     job.info('Update course commit hash');

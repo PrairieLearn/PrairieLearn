@@ -4,6 +4,7 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -20,6 +21,7 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
+import { withConfig } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -367,6 +369,55 @@ describe('chunks', () => {
       );
     });
 
+    it('publishes chunks and question settings atomically', async () => {
+      const { logger } = makeMockLogger();
+      const publicationDate = () =>
+        sqldb.queryScalar(sql.select_publication_date, { question_id: questionId }, z.string());
+      const chunkDate = (chunkId: string) =>
+        sqldb.queryScalar(sql.select_chunk_creation_date, { chunk_id: chunkId }, z.string());
+
+      await withConfig({ chunksGenerator: true }, async () => {
+        await syncDiskToSql(course, logger);
+        const initialChunks = await chunksLib.selectChunksForCourse(course.id);
+        const initialDate = await publicationDate();
+        const initialDependency = initialChunks.find(
+          (chunk) => chunk.type === 'serverFilesCourse',
+        )!;
+
+        await fs.appendFile(
+          path.join(tempTestCourseDir.path, 'questions/addNumbers/server.py'),
+          '\n# New revision\n',
+        );
+        await sqldb.execute(sql.reject_settings);
+        try {
+          await expect(syncDiskToSql(course, logger)).rejects.toThrow('reject_settings');
+        } finally {
+          await sqldb.execute(sql.allow_settings);
+        }
+        expect(await chunksLib.selectChunksForCourse(course.id)).toEqual(initialChunks);
+        expect(await publicationDate()).toBe(initialDate);
+
+        await syncDiskToSql(course, logger);
+        const retriedChunks = await chunksLib.selectChunksForCourse(course.id);
+        const retriedDate = await publicationDate();
+        expect(retriedDate).not.toBe(initialDate);
+        const questionChunk = retriedChunks.find((chunk) => chunk.question_id === questionId)!;
+        expect(retriedDate).toBe(await chunkDate(questionChunk.id));
+        expect(retriedChunks).toContainEqual(initialDependency);
+
+        await fs.writeFile(
+          path.join(tempTestCourseDir.path, 'serverFilesCourse/helper.py'),
+          '# Dependency edit\n',
+        );
+        await syncDiskToSql(course, logger);
+        const chunks = await chunksLib.selectChunksForCourse(course.id);
+        const dependency = chunks.find((chunk) => chunk.type === 'serverFilesCourse')!;
+        expect(chunks).toContainEqual(questionChunk);
+        expect(dependency.id).not.toBe(initialDependency.id);
+        expect(await publicationDate()).toBe(await chunkDate(dependency.id));
+      });
+    });
+
     it('handles question nesting after a rename', async () => {
       // Scenario: there's a question named `foo/bar` (that is,
       // `foo/bar/info.json` exists). We load the chunk for that
@@ -533,7 +584,7 @@ describe('chunks', () => {
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
         oldHash,
-        newHash,
+        commitHash: newHash,
       });
       await chunksLib.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
@@ -1086,49 +1137,18 @@ describe('chunks', () => {
     it('no-op update does not create duplicate chunks when IDs unchanged', async () => {
       const courseDir = tempTestCourseDir.path;
 
-      // Generate initial chunks for the test course.
-      await chunksLib.updateChunksForCourse({
+      const options = {
         coursePath: courseDir,
         courseId: course.id,
         courseData: await courseDB.loadFullCourse(course.id, courseDir),
-      });
-
-      // Capture baseline chunk set and counts
+      };
+      await chunksLib.updateChunksForCourse(options);
       const initialChunks = await chunksLib.selectChunksForCourse(course.id);
-      const initialCount = initialChunks.length;
-      const countBy = (pred: (c: any) => boolean) => initialChunks.filter(pred).length;
 
-      const initialCourseCount = countBy((c) => c.type === 'clientFilesCourse');
-      const initialCiCount = countBy(
-        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
+      await chunksLib.updateChunksForCourse(options);
+      expect(new Set(await chunksLib.selectChunksForCourse(course.id))).toEqual(
+        new Set(initialChunks),
       );
-      const initialAssessCount = countBy(
-        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
-      );
-
-      // Run update again with no changes
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId: course.id,
-        courseData: await courseDB.loadFullCourse(course.id, courseDir),
-      });
-
-      // Fetch again and ensure counts are unchanged
-      const afterChunks = await chunksLib.selectChunksForCourse(course.id);
-      const afterCount = afterChunks.length;
-      assert.equal(afterCount, initialCount);
-
-      const afterCourseCount = afterChunks.filter((c) => c.type === 'clientFilesCourse').length;
-      const afterCiCount = afterChunks.filter(
-        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
-      ).length;
-      const afterAssessCount = afterChunks.filter(
-        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
-      ).length;
-
-      assert.equal(afterCourseCount, initialCourseCount);
-      assert.equal(afterCiCount, initialCiCount);
-      assert.equal(afterAssessCount, initialAssessCount);
     });
   });
 });

@@ -150,6 +150,11 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
   }
 }
 
+/** Local courses can be outside Git or have no commits yet. */
+export async function getOptionalCourseCommitHash(coursePath: string): Promise<string | null> {
+  return await getCourseCommitHash(coursePath).catch(() => null);
+}
+
 /**
  * Gets the default branch from a git repository by querying origin/HEAD.
  * Returns 'master' as fallback if the query fails.
@@ -184,15 +189,12 @@ export async function getGitRemoteUrl(coursePath: string): Promise<string | null
   }
 }
 
-/**
- * Loads the current commit hash from disk and stores it in the database. This
- * will also add the `commit_hash` property to the given course object.
- */
-export async function updateCourseCommitHash(course: {
-  id: string;
-  path: string;
-}): Promise<string> {
-  const hash = await getCourseCommitHash(course.path);
+/** Stores the current commit hash after a successful sync. */
+export async function updateCourseCommitHash(
+  course: { id: string; path: string },
+  commitHash?: string,
+): Promise<string> {
+  const hash = commitHash ?? (await getCourseCommitHash(course.path));
   await execute(sql.update_course_commit_hash, {
     course_id: course.id,
     commit_hash: hash,
