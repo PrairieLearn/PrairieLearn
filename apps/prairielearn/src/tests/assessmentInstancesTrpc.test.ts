@@ -1,4 +1,4 @@
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
@@ -18,6 +18,7 @@ import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -64,6 +65,27 @@ describe('assessmentInstances tRPC router', { timeout: 60_000, concurrent: false
       courseInstanceId,
       assessmentId,
       urlBase: siteUrl,
+    });
+  });
+
+  test('uploads use the configured request size limit', async () => {
+    const input = new FormData();
+    input.append('padding', new Blob([Buffer.alloc(11 * 1024 * 1024)]));
+
+    await withConfig({ fileUploadMaxBytes: 12 * 1024 * 1024 }, async () => {
+      // Reaching input validation proves the request passed the upload size check.
+      await expect(
+        trpcClient.assessmentUploads.assessmentInstanceScores.mutate(input),
+      ).rejects.toMatchObject({
+        data: { code: 'BAD_REQUEST' },
+        message: 'No CSV file uploaded',
+      });
+    });
+
+    await withConfig({ fileUploadMaxBytes: 1024 }, async () => {
+      await expect(
+        trpcClient.assessmentUploads.assessmentInstanceScores.mutate(input),
+      ).rejects.toMatchObject({ data: { code: 'PAYLOAD_TOO_LARGE' } });
     });
   });
 

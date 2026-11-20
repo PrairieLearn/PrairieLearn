@@ -17,6 +17,7 @@ import { selectOrInsertUserByUid } from '../models/user.js';
 import { selectAssessmentQuestions } from './assessment-question.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { dangerousFullSystemAuthz } from './authz-data-lib.js';
+import { config } from './config.js';
 import { createCsvParser } from './csv.js';
 import {
   type Assessment,
@@ -167,7 +168,7 @@ export async function uploadSubmissions(
     );
     const csvParser = createCsvParser(csvFile.buffer, {
       lowercaseHeader: false,
-      maxRecordSize: 1 << 21, // 2MB (should be plenty for a single line)
+      maxRecordSize: config.fileUploadMaxBytes,
     });
 
     // Detect if this is a group work CSV by checking the first row
