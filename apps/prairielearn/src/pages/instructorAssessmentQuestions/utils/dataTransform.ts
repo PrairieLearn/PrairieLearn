@@ -27,14 +27,17 @@ function createTrackingId(): TrackingId {
 /**
  * Normalizes legacy `points`/`maxPoints` fields for the editor.
  * - For manually-graded questions: `maxPoints` or `points` → `manualPoints`
- * - For all other questions: `points` → `autoPoints`, `maxPoints` → `maxAutoPoints`
+ * - For known auto-graded questions: `points` → `autoPoints`, `maxPoints` → `maxAutoPoints`
  * Only converts when the modern field isn't already set.
  */
 function normalizeQuestionPoints<T extends QuestionPointsJson>(
   obj: T,
-  isManualGrading: boolean,
+  isManualGrading: boolean | undefined,
 ): T {
   const result = { ...obj };
+  // Missing shared questions may be manually graded. Preserve their authored
+  // point fields until the grading method is available.
+  if (isManualGrading === undefined) return result;
   // For Manual questions, the sync code (sync_assessments.sql) uses max_points as
   // computed_manual_points. For Homework, max_points comes from maxPoints ?? points;
   // for Exam, it comes from max(pointsList). We prefer maxPoints when present (Homework),
@@ -70,23 +73,20 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
 /**
  * Returns the effective grading method for an alt pool by examining its alternatives.
  *
- * Alternatives with missing metadata are treated as unknown. If the pool
- * contains both Manual and unknown alternatives, this returns 'mixed' to
- * avoid silently rewriting points when the unknown alternative may be
- * auto-graded.
+ * Pool defaults require every alternative's grading method to be known.
+ * Alternatives can normalize independently when the pool has no point defaults.
  */
 function getAltPoolGradingMethod(
   alternatives: QuestionAlternativeJson[],
   getGradingMethod: (id?: string) => string | null | undefined,
-): 'manual' | 'auto' | 'mixed' {
+): 'manual' | 'auto' | 'mixed' | 'unknown' {
   const methods = alternatives.map((alt) => getGradingMethod(alt.id));
-  const allKnown = methods.every((m) => m != null);
+  if (methods.some((method) => method == null)) return 'unknown';
   const hasManual = methods.includes('Manual');
   const hasNonManual = methods.some((m) => m != null && m !== 'Manual');
-  const hasUnknown = !allKnown;
 
-  if (hasManual && !hasNonManual && !hasUnknown) return 'manual';
-  if (!hasManual) return 'auto'; // all non-manual, all unknown, or non-manual + unknown
+  if (hasManual && !hasNonManual) return 'manual';
+  if (!hasManual) return 'auto';
   return 'mixed';
 }
 
@@ -186,6 +186,10 @@ export function prepareZonesForEditor(
 ): ZoneAssessmentForm[] {
   const getGradingMethod = (id?: string) =>
     id ? questionMetadata[id]?.question.grading_method : undefined;
+  const isManuallyGraded = (id?: string) => {
+    const gradingMethod = getGradingMethod(id);
+    return gradingMethod == null ? undefined : gradingMethod === 'Manual';
+  };
 
   // Cast needed for TypeScript spread inference with union types
   return zones.map((zone) => ({
@@ -210,9 +214,16 @@ export function prepareZonesForEditor(
       }
 
       const isManualGrading =
-        altPoolGradingMethod === 'manual' || altPoolGradingMethod === 'auto'
+        altPoolGradingMethod != null && altPoolGradingMethod !== 'unknown'
           ? altPoolGradingMethod === 'manual'
-          : getGradingMethod(question.id) === 'Manual';
+          : isManuallyGraded(question.id);
+      const preserveAlternativePoints =
+        altPoolGradingMethod === 'unknown' &&
+        (question.points != null ||
+          question.maxPoints != null ||
+          question.autoPoints != null ||
+          question.maxAutoPoints != null ||
+          question.manualPoints != null);
 
       return {
         ...normalizeQuestionPoints(question, isManualGrading),
@@ -220,7 +231,10 @@ export function prepareZonesForEditor(
         canSubmit: isEmptyArray(question.canSubmit) ? undefined : question.canSubmit,
         trackingId: createTrackingId(),
         alternatives: question.alternatives?.map((alt) => ({
-          ...normalizeQuestionPoints(alt, getGradingMethod(alt.id) === 'Manual'),
+          ...normalizeQuestionPoints(
+            alt,
+            preserveAlternativePoints ? undefined : isManuallyGraded(alt.id),
+          ),
           trackingId: createTrackingId(),
         })),
       };
@@ -337,6 +351,8 @@ export function alternativeToQuestionBlock(
 ): StandaloneQuestionBlockForm {
   const merged = { ...alt };
   if (parentPool) {
+    merged.points ??= parentPool.points;
+    merged.maxPoints ??= parentPool.maxPoints;
     merged.autoPoints ??= parentPool.autoPoints;
     merged.manualPoints ??= parentPool.manualPoints;
     merged.maxAutoPoints ??= parentPool.maxAutoPoints;

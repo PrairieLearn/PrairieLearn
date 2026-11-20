@@ -76,6 +76,12 @@ const EXTERNAL_ELEMENT_DEPS = [
 ];
 
 /**
+ * Packages used only through `@import` in `apps/prairielearn/assets/stylesheets`,
+ * which knip doesn't scan.
+ */
+const STYLESHEET_ONLY_DEPS = ['katex'];
+
+/**
  * Packages we install only for the CLI binary they ship (invoked from
  * Makefile / scripts / CI). They have no `import` site, so knip can't see the
  * usage.
@@ -185,7 +191,12 @@ const config: KnipConfig = {
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
       // Tell knip not to flag these as unused.
-      ignoreDependencies: [...autoDetectedDeps, ...EXTERNAL_ELEMENT_DEPS, ...DEPS_OF_DEAD_CODE],
+      ignoreDependencies: [
+        ...autoDetectedDeps,
+        ...EXTERNAL_ELEMENT_DEPS,
+        ...DEPS_OF_DEAD_CODE,
+        ...STYLESHEET_ONLY_DEPS,
+      ],
     },
     'apps/course-agent': {
       // Worker runtime imports and the pinned CLI invoked by protocol generation.
@@ -238,6 +249,9 @@ const config: KnipConfig = {
       entry: ['src/benchmark.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
+    // Plain JavaScript, so knip's default patterns apply rather than the
+    // TypeScript ones above.
+    'packages/rehype-raw-stub': {},
   },
 
   // TODO: enable these features

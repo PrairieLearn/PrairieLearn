@@ -25,7 +25,12 @@ import {
 import { type PrintSettings, PrintSettingsSchema } from '../../lib/printing/print-settings.js';
 import { selectOptionalPrintForm, updatePrintFormSettings } from '../../models/print-form.js';
 
-import { type createContext, requireCoursePermissionPreview, t } from './init.js';
+import {
+  type createContext,
+  requireCoursePermissionEdit,
+  requireCoursePermissionPreview,
+  t,
+} from './init.js';
 
 export interface PrintFormsError {
   archive: never;
@@ -54,6 +59,7 @@ export const requirePrintableAssessments = t.middleware(async (opts) => {
 const printFormProcedure = t.procedure
   .use(requireCoursePermissionPreview)
   .use(requirePrintableAssessments);
+const editorPrintFormProcedure = printFormProcedure.use(requireCoursePermissionEdit);
 
 const rejectGroupWork = t.middleware(async ({ ctx, next }) => {
   if (ctx.assessment.team_work) {
@@ -77,6 +83,7 @@ const assessmentFormProcedure = printFormProcedure
     }
     return next({ ctx: { printForm: form } });
   });
+const editorAssessmentFormProcedure = assessmentFormProcedure.use(requireCoursePermissionEdit);
 
 function rethrowPrintFormError(error: unknown): never {
   if (error instanceof HttpStatusError) {
@@ -136,7 +143,7 @@ export const printFormsRouter = t.router({
       await selectPrintPreparationForms(ctx.assessment.id),
     ),
   ),
-  create: printFormProcedure
+  create: editorPrintFormProcedure
     .use(rejectGroupWork)
     .input(
       z
@@ -151,15 +158,15 @@ export const printFormsRouter = t.router({
           sourcePrintFormId: input?.sourcePrintFormId,
         }),
     ),
-  ensureInitial: printFormProcedure
+  ensureInitial: editorPrintFormProcedure
     .use(rejectGroupWork)
     .mutation(async ({ ctx }) => await createForm({ ctx, ensureInitial: true })),
-  regenerate: assessmentFormProcedure
+  regenerate: editorAssessmentFormProcedure
     .use(rejectGroupWork)
     .mutation(
       async ({ ctx, input }) => await createForm({ ctx, replacesPrintFormId: input.printFormId }),
     ),
-  reviseSelection: assessmentFormProcedure
+  reviseSelection: editorAssessmentFormProcedure
     .use(rejectGroupWork)
     .input(z.object({ questionNumber: z.string().min(1), included: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
@@ -183,7 +190,7 @@ export const printFormsRouter = t.router({
         rethrowPrintFormError(error);
       }
     }),
-  setPaperSize: assessmentFormProcedure
+  setPaperSize: editorAssessmentFormProcedure
     .use(rejectGroupWork)
     .input(
       z.object({
@@ -214,7 +221,7 @@ export const printFormsRouter = t.router({
         rethrowPrintFormError(error);
       }
     }),
-  archive: assessmentFormProcedure.mutation(async ({ ctx, input }) => {
+  archive: editorAssessmentFormProcedure.mutation(async ({ ctx, input }) => {
     try {
       await archivePrintFormIfOtherActive({
         printFormId: input.printFormId,
@@ -224,7 +231,7 @@ export const printFormsRouter = t.router({
       rethrowPrintFormError(error);
     }
   }),
-  updateSettings: assessmentFormProcedure
+  updateSettings: editorAssessmentFormProcedure
     .input(z.object({ settings: PrintSettingsSchema, expectedSettings: PrintSettingsSchema }))
     .mutation(async ({ ctx, input }) => {
       try {

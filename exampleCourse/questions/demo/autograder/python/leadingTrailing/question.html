@@ -1,7 +1,7 @@
 <pl-question-panel>
     <p>
         <i>
-            This question defines the files <code>leading_code.py</code> and <code>trailing_code.py</code> to automatically prepend/append code to the student's answer before grading.  Adding these files allows one to automatically handle imports, function definitions, etc.  The contents of the leading and trailing code files are displayed in the code blocks below.
+            This question uses <code>server.py</code> to prepend and append code to the student's answer before submitting the complete function to the pytest grader. The supplied code is displayed in the code blocks below.
         </i>
     </p>
 
@@ -15,13 +15,13 @@
 
     <hr>
 
-    <pl-code source-file-name="tests/leading_code.py" language="python"></pl-code>
+    <pl-code language="python">{{params.leading_code}}</pl-code>
 </pl-question-panel>
   <div class="mb-3 ps-5">
       <pl-string-input answers-name="answer" display="block" placeholder="x_new = ..."></pl-string-input>
   </div>
 <pl-question-panel>
-    <pl-code source-file-name="tests/trailing_code.py" language="python"></pl-code>
+    <pl-code language="python">{{params.trailing_code}}</pl-code>
 </pl-question-panel>
 
 <pl-submission-panel>

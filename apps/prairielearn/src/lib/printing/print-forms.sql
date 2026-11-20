@@ -15,18 +15,19 @@ WITH
         )
       )::integer AS position
     FROM
-      assessment_questions_select ($assessment_id, ARRAY[]::bigint[]) AS selected
-      JOIN assessment_questions AS aq ON aq.id = selected.assessment_question_id
+      assessment_questions AS aq
       JOIN alternative_groups AS ag ON ag.id = aq.alternative_group_id
       JOIN zones AS z ON z.id = ag.zone_id
       JOIN assessments AS a ON a.id = aq.assessment_id
     WHERE
-      a.deleted_at IS NULL
+      aq.id = ANY ($assessment_question_ids::bigint[])
+      AND a.deleted_at IS NULL
   )
 SELECT
   to_jsonb(aq.*) AS assessment_question,
   to_jsonb(q.*) AS question,
   oq.position,
+  -- Keep in sync with the question_number formatting in sprocs/question_order.sql.
   CASE
     WHEN a.type = 'Homework' THEN CASE
       WHEN a.shuffle_questions THEN '#' || q.number::text
