@@ -16,8 +16,8 @@ const PrintAssetScopeSchema = z.strictObject({
   jobId: z.uuid(),
   courseInstanceId: IdSchema,
   assessmentId: IdSchema,
-  assessmentInstanceId: IdSchema,
-  instanceQuestionIds: z.array(IdSchema),
+  printFormId: IdSchema,
+  printFormQuestionIds: z.array(IdSchema),
   authnUserId: IdSchema,
   userId: IdSchema,
 });
@@ -51,7 +51,7 @@ export type PrintAssetRoute =
   | {
       type: 'question';
       kind: 'clientFilesCourse' | 'clientFilesQuestion' | 'generatedFilesQuestion';
-      instanceQuestionId: string;
+      printFormQuestionId: string;
     }
   | { type: 'elements' };
 
@@ -88,11 +88,10 @@ export function classifyPrintAssetPath(
       kind: courseMatch[1] as 'clientFilesCourse' | 'clientFilesCourseInstance',
     };
   }
-  const questionMatch =
-    /^instance_question\/(\d+)\/(clientFilesCourse|clientFilesQuestion|generatedFilesQuestion)\/(.+)$/.exec(
-      relativePath,
-    );
-  if (questionMatch && scope.instanceQuestionIds.includes(questionMatch[1])) {
+  const questionMatch = new RegExp(
+    `^assessment/${scope.assessmentId}/print_form/${scope.printFormId}/question/(\\d+)/(clientFilesCourse|clientFilesQuestion|generatedFilesQuestion)/(.+)$`,
+  ).exec(relativePath);
+  if (questionMatch && scope.printFormQuestionIds.includes(questionMatch[1])) {
     if (
       questionMatch[2] === 'generatedFilesQuestion' &&
       !/^variant\/\d+\/.+$/.test(questionMatch[3])
@@ -101,7 +100,7 @@ export function classifyPrintAssetPath(
     }
     return {
       type: 'question',
-      instanceQuestionId: questionMatch[1],
+      printFormQuestionId: questionMatch[1],
       kind: questionMatch[2] as
         | 'clientFilesCourse'
         | 'clientFilesQuestion'

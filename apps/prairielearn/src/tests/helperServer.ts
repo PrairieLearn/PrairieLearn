@@ -17,6 +17,7 @@ import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { closePrintRenderer } from '../lib/printing/index.js';
 import * as serverJobs from '../lib/server-jobs.js';
 import * as socketServer from '../lib/socket-server.js';
 import * as freeformServer from '../question-servers/freeform.js';
@@ -112,6 +113,7 @@ export async function after(): Promise<void> {
     debug('after(): close server jobs');
     await serverJobs.stop();
 
+    await closePrintRenderer();
     await assets.close();
 
     debug('after(): finish workers');

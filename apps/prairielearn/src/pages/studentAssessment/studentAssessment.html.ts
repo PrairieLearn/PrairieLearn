@@ -5,6 +5,7 @@ import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.
 import { PageLayout } from '../../components/PageLayout.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import type { GroupInfo } from '../../lib/groups.shared.js';
+import { getDefaultHonorCodePledge } from '../../lib/honor-code.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function StudentAssessment({
@@ -151,15 +152,9 @@ function HonorPledge({
         customHonorCode
           ? html`<div class="px-3 py-2 honor-code">${unsafeHtml(customHonorCode)}</div>`
           : html`<ul class="list-group list-group-flush">
-              <li class="list-group-item py-2">
-                I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed
-                to take this assessment.
-              </li>
-              <li class="list-group-item py-2">
-                ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
-                ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on
-                this assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
-              </li>
+              ${getDefaultHonorCodePledge({ name: user.name ?? '', groupWork }).map(
+                (item) => html`<li class="list-group-item py-2">${item}</li>`,
+              )}
             </ul>`
       }
       <div class="card-footer d-flex justify-content-center">

@@ -1,0 +1,1 @@
+export const MAX_PRINT_SNAPSHOT_BYTES = 8 * 1024 * 1024;
