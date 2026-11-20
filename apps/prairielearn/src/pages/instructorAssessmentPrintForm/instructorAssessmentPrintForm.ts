@@ -1,4 +1,3 @@
-import { load } from 'cheerio';
 import { type ErrorRequestHandler, type RequestHandler, Router, raw } from 'express';
 import mustache from 'mustache';
 import { z } from 'zod';
@@ -33,6 +32,7 @@ import {
   getPrintableFormQuestionIds,
   getPrintableQuestionListDigest,
   isBrowserRenderingAvailable,
+  loadPrintSnapshotRoot,
   renderPrintFormQuestions,
 } from '../../lib/printing/index.js';
 import { PAPER_SIZES, type PaperSize } from '../../lib/printing/paper-size.js';
@@ -390,9 +390,7 @@ router.post(
       config.secretKey,
     );
     if (!htmlDigest) throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
-    // Parse only the root element: the export worker checks the full page against the signed
-    // digest and its layout, which avoids parsing large pages on the request thread.
-    const root = load(`${/<html\b[^>]*>/i.exec(snapshot.html)?.[0] ?? '<html>'}</html>`)('html');
+    const root = loadPrintSnapshotRoot(snapshot.html);
     const questionCount = Number(root.attr('data-print-question-count'));
     assertPrintDocumentReady({
       questionCount,

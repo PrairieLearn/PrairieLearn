@@ -25,7 +25,8 @@ RETURNING
 -- BLOCK select_print_export
 SELECT
   *,
-  created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours' AS expired
+  created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours' AS expired,
+  created_at < CURRENT_TIMESTAMP - INTERVAL '30 minutes' AS overdue
 FROM
   print_exports
 WHERE
@@ -33,15 +34,25 @@ WHERE
   AND assessment_id = $assessment_id
   AND authn_user_id = $authn_user_id;
 
--- BLOCK claim_print_export
-UPDATE print_exports
-SET
-  attempts = attempts + 1
+-- BLOCK select_unfinished_print_export_count
+SELECT
+  count(*)::integer
+FROM
+  print_exports
+WHERE
+  assessment_id = $assessment_id
+  AND authn_user_id = $authn_user_id
+  AND status = 'pending'
+  AND created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes';
+
+-- BLOCK select_pending_print_export
+SELECT
+  *
+FROM
+  print_exports
 WHERE
   id = $id
-  AND status = 'pending'
-RETURNING
-  *;
+  AND status = 'pending';
 
 -- BLOCK finish_print_export
 UPDATE print_exports

@@ -10,9 +10,10 @@ import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
-  claimPrintExport,
   finishPrintExport,
   insertPrintExport,
+  selectOptionalPendingPrintExport,
+  selectUnfinishedPrintExportCount,
 } from '../../models/print-export.js';
 import { deleteFromS3, getFromS3, uploadToS3 } from '../aws.js';
 import { config } from '../config.js';
@@ -37,6 +38,12 @@ const COURSE_CONCURRENCY = 2;
 // A run interrupted by a graceful shutdown counts as an attempt, so allow for a rolling
 // deploy interrupting it more than once. Crashed runs are recovered separately as stalls.
 const MAX_ATTEMPTS = 3;
+// Spreads retries over a few seconds so a brief database or S3 outage doesn't use them all.
+const RETRY_BACKOFF = { type: 'exponential', delay: 2_000, jitter: 0.2 } as const;
+// Bounds the queue and stored input one user can create by replaying export requests.
+const MAX_UNFINISHED_EXPORTS_PER_USER = 5;
+const TOO_MANY_MESSAGE =
+  'You have too many downloads in progress. Wait for one to finish and try again.';
 const UNAVAILABLE_MESSAGE =
   'Downloads are unavailable right now. Try again later or contact support.';
 const EXHAUSTED_MESSAGE =
@@ -67,7 +74,12 @@ function getQueue() {
   if (!queue && config.nonVolatileRedisUrl) {
     queue = new Queue(QUEUE_NAME, {
       ...queueConnection(config.nonVolatileRedisUrl),
-      defaultJobOptions: { attempts: MAX_ATTEMPTS, removeOnComplete: true, removeOnFail: true },
+      defaultJobOptions: {
+        attempts: MAX_ATTEMPTS,
+        backoff: RETRY_BACKOFF,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
     });
     queue.on('error', reportQueueError);
   }
@@ -180,6 +192,9 @@ export async function queuePrintExport({
   if (shutdownController.signal.aborted || !currentQueue) {
     throw new HttpStatusError(503, UNAVAILABLE_MESSAGE);
   }
+  if ((await selectUnfinishedPrintExportCount(owner)) >= MAX_UNFINISHED_EXPORTS_PER_USER) {
+    throw new HttpStatusError(429, TOO_MANY_MESSAGE);
+  }
   const bucket = getFileStoreS3Bucket();
   const inputKey = `${KEY_PREFIX}input/${randomUUID()}.json`;
   await uploadToS3(bucket, inputKey, null, false, Buffer.from(JSON.stringify(work)));
@@ -218,7 +233,7 @@ export async function queuePrintExport({
 async function processPrintExport(printExportId: string) {
   const signal = shutdownController.signal;
   signal.throwIfAborted();
-  const printExport = await claimPrintExport(printExportId);
+  const printExport = await selectOptionalPendingPrintExport(printExportId);
   if (!printExport) return;
   const { format } = printExport;
   const bucket = getFileStoreS3Bucket();
@@ -266,17 +281,20 @@ async function processPrintExport(printExportId: string) {
 }
 
 /**
- * Downloads expire 24 hours after the export was queued. An export that is still pending
- * by then, e.g. because Redis lost its job, reads as failed.
+ * Downloads expire 24 hours after the export was queued. An export still pending after
+ * 30 minutes, e.g. because Redis lost its job, reads as failed: retries and stall
+ * recovery finish well within that.
  */
-export function printExportResult(printExport: PrintExport & { expired: boolean }) {
+export function printExportResult(
+  printExport: PrintExport & { expired: boolean; overdue: boolean },
+) {
   if (printExport.expired && printExport.status === 'succeeded') {
     return { status: 'expired' as const, failureMessage: null };
   }
-  if (printExport.expired && printExport.status === 'pending') {
+  if (printExport.overdue && printExport.status === 'pending') {
     return {
       status: 'failed' as const,
-      failureMessage: 'The export did not finish within 24 hours. Try again.',
+      failureMessage: 'The export took too long to finish. Try again.',
     };
   }
   return { status: printExport.status, failureMessage: printExport.failure_message };

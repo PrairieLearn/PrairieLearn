@@ -537,7 +537,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         )
       ).status,
     ).toBe(404);
-    await execute(sql.age_print_export, { print_export_id: printExportId });
+    await execute(sql.age_print_export, { print_export_id: printExportId, age: '25 hours' });
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
     ).toMatchObject({ status: 'expired', downloadUrl: null });
@@ -746,6 +746,29 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
   });
 
+  test('limits how many exports one user can have in progress', async () => {
+    const assessment = await printAssessment();
+    await execute(sql.fail_pending_print_exports);
+    try {
+      for (let index = 0; index < 5; index++) {
+        await insertPrintExport({
+          assessmentId: assessment.id,
+          userId: '1',
+          authnUserId: '1',
+          format: 'pdf',
+          filename: `in-progress-${index}.pdf`,
+          label: 'In-progress export',
+          inputKey: `print-exports/input/in-progress-${index}.json`,
+        });
+      }
+      await expect(queueTestPdf('over-limit.pdf')).rejects.toThrow(
+        'You have too many downloads in progress.',
+      );
+    } finally {
+      await execute(sql.fail_pending_print_exports);
+    }
+  });
+
   test('reruns an export interrupted by shutdown on another worker', async () => {
     const render = vi
       .spyOn(printExportRender, 'renderPrintExport')
@@ -778,7 +801,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test('reports exports that no worker finished within 24 hours as failed', async () => {
+  test('reports exports that no worker finished within 30 minutes as failed', async () => {
     const assessment = await printAssessment();
     // A row without a queued job, as if Redis had lost it.
     const printExportId = await insertPrintExport({
@@ -790,12 +813,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
       label: 'Stale export',
       inputKey: 'print-exports/input/stale-export.json',
     });
-    await execute(sql.age_print_export, { print_export_id: printExportId });
+    await execute(sql.age_print_export, { print_export_id: printExportId, age: '31 minutes' });
     expect(
       await client(assessment.id).printableAssessmentExport.status.query({ printExportId }),
     ).toMatchObject({
       status: 'failed',
-      failureMessage: 'The export did not finish within 24 hours. Try again.',
+      failureMessage: 'The export took too long to finish. Try again.',
     });
   });
 

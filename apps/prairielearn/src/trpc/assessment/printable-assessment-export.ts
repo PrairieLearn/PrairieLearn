@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { load } from 'cheerio';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -19,6 +18,7 @@ import {
   assertPrintDocumentReady,
   getPrintableFormQuestionIds,
   getPrintableQuestionListDigest,
+  loadPrintSnapshotRoot,
 } from '../../lib/printing/index.js';
 import type { PrintAssetScope } from '../../lib/printing/print-asset-access.js';
 import type { PrintExportWork } from '../../lib/printing/print-export-render.js';
@@ -32,6 +32,21 @@ import { selectPrintFormsForAssessment } from '../../models/print-form.js';
 
 import { requireCoursePermissionEdit, requireCoursePermissionPreview, t } from './init.js';
 import { requirePrintableAssessments } from './print-forms.js';
+
+/** Counts paged.js sheets without a regex, since backtracking over large pages blocks the server. */
+function countPrintedPages(html: string): number {
+  const attribute = 'class="';
+  let count = 0;
+  let start = html.indexOf(attribute);
+  while (start !== -1) {
+    const end = html.indexOf('"', start + attribute.length);
+    if (end === -1) break;
+    const classes = html.slice(start + attribute.length, end).split(/\s+/);
+    if (classes.includes('pagedjs_page')) count++;
+    start = html.indexOf(attribute, end + 1);
+  }
+  return count;
+}
 
 /** @knipignore Consumed by the preparation UI in the following PR. */
 export interface PrintableAssessmentExportError {
@@ -117,9 +132,7 @@ export const printableAssessmentExportRouter = t.router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: STALE_PRINT_SNAPSHOT_MESSAGE });
         }
         const pageHtmls = await Promise.all(pages.data.map((page) => page.text()));
-        const pageCounts = pageHtmls.map((html) =>
-          Math.max(1, [...html.matchAll(/class="[^"]*\bpagedjs_page\b[^"]*"/g)].length),
-        );
+        const pageCounts = pageHtmls.map((html) => Math.max(1, countPrintedPages(html)));
         const isAppendedAnswerKey = (index: number) =>
           metadata.document === 'booklet' && entries[index].printDocument === 'answer_key';
         const formPageCounts = pageCounts.filter((_, index) => !isAppendedAnswerKey(index));
@@ -201,9 +214,7 @@ export const printableAssessmentExportRouter = t.router({
         // The worker checks the full signed page. Check its root here to reject exports that
         // are already known to contain omitted questions.
         for (const [index, { form, printDocument }] of entries.entries()) {
-          const root = load(`${/<html\b[^>]*>/i.exec(pageHtmls[index])?.[0] ?? '<html>'}</html>`)(
-            'html',
-          );
+          const root = loadPrintSnapshotRoot(pageHtmls[index]);
           assertPrintDocumentReady({
             questionCount: Number(root.attr('data-print-question-count')),
             omittedCount: Number(root.attr('data-print-omitted-question-count')),
@@ -245,6 +256,9 @@ export const printableAssessmentExportRouter = t.router({
         };
         return { printExportId: await queuePrintExport({ owner, work }) };
       } catch (error) {
+        if (error instanceof HttpStatusError && error.status === 429) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message, cause: error });
+        }
         if (error instanceof HttpStatusError && error.status === 503) {
           throw new TRPCError({
             code: 'SERVICE_UNAVAILABLE',
