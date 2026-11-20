@@ -1,3 +1,4 @@
+import { getFiletypeFromFileName } from '@pierre/diffs';
 import { type ReactNode, useMemo } from 'react';
 
 import {
@@ -10,6 +11,7 @@ import {
   languageOf,
   parseFile,
   preloadHighlighting,
+  preloadLanguages,
   useLanguagesLoaded,
   viewerStyle,
 } from './diffFiles.js';
@@ -17,6 +19,11 @@ import {
 // This module loads in the background when the chat opens. Starting the highlighter then too
 // means the first code block of a reply rarely has to wait for either.
 preloadHighlighting();
+
+/** Starts loading the highlighting for a file's language, ahead of showing its changes. */
+export function preloadFileHighlighting(path: string) {
+  preloadLanguages([getFiletypeFromFileName(path)]).catch(() => undefined);
+}
 
 /** One file's changes from an agent's edit, shown without its name, which the row above gives. */
 export function ChatDiffView({

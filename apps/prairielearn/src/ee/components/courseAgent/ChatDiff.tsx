@@ -22,6 +22,11 @@ const LazyChatCodeView = lazy(async () => {
   };
 });
 
+/** Starts loading the highlighting for a file's changes, so they are colored as soon as they're shown. */
+export function preloadDiffHighlighting(path: string) {
+  void views.then((module) => module?.preloadFileHighlighting(path));
+}
+
 function PlainCode({ className, children }: { className?: string; children?: ReactNode }) {
   return (
     <pre>

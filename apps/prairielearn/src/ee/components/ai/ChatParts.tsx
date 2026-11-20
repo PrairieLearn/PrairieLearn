@@ -84,6 +84,10 @@ export function TextPart({
   part: TextUIPart;
   math?: boolean;
   urlTransform?: UrlTransform;
+  /**
+   * The AI question generation chat doesn't pass this. Once it's removed, always use the course
+   * agent's code block.
+   */
   codeBlock?: ComponentProps<typeof ChatMarkdown>['codeBlock'];
 }) {
   return (

@@ -134,6 +134,15 @@ export function preloadHighlighting() {
 
 const loadedLanguages = new Set<SupportedLanguages>(['text']);
 
+/** Loads highlighting for the languages that don't have it yet. */
+export function preloadLanguages(langs: SupportedLanguages[]) {
+  const missing = langs.filter((lang) => !loadedLanguages.has(lang));
+  if (missing.length === 0) return NOTHING_TO_HIGHLIGHT;
+  return preloadHighlighter({ themes: [THEME.light, THEME.dark], langs: missing }).then(() => {
+    for (const lang of missing) loadedLanguages.add(lang);
+  });
+}
+
 /**
  * For code shown as it streams. Suspends only until the highlighter itself is ready, then returns
  * whether the languages' own highlighting is too. Until it is, render the code as `text`: it
@@ -152,10 +161,8 @@ export function useLanguagesLoaded(langs: SupportedLanguages[]) {
   useEffect(() => {
     if (!available || key === '') return;
     let current = true;
-    const wanted = key.split(',');
-    void preloadHighlighter({ themes: [THEME.light, THEME.dark], langs: wanted }).then(
+    void preloadLanguages(key.split(',')).then(
       () => {
-        for (const lang of wanted) loadedLanguages.add(lang);
         if (current) rerender();
       },
       () => undefined,
