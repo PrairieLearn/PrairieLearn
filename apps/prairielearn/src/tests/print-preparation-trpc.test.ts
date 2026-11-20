@@ -81,7 +81,12 @@ function packetInput(
   return data;
 }
 
-async function appendPrintSnapshot(data: FormData, printFormId: string, html: string) {
+async function appendPrintSnapshot(
+  data: FormData,
+  printFormId: string,
+  html: string,
+  authnUserId = '1',
+) {
   const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
   search.set('document', 'assessment');
   data.append('pages', new File([html], `form-${printFormId}.html`));
@@ -90,7 +95,7 @@ async function appendPrintSnapshot(data: FormData, printFormId: string, html: st
     createPrintSnapshotId(
       {
         printFormId,
-        authnUserId: '1',
+        authnUserId,
         search,
         questionListDigest: await printing.getPrintableQuestionListDigest(printFormId, new Set()),
         html,
@@ -894,7 +899,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     },
   );
 
-  test('lets course viewers inspect forms without changing them', async () => {
+  test('lets course viewers inspect and export forms but not edit them', async () => {
     const assessment = await printAssessment();
     const form = await client(assessment.id).printForms.ensureInitial.mutate();
     const courseInstance = await selectCourseInstanceById('1');
@@ -929,9 +934,18 @@ describe('print preparation', { timeout: 60_000 }, () => {
       await expect(api.printForms.archive.mutate(form)).rejects.toMatchObject({
         data: { code: 'FORBIDDEN' },
       });
-      await expect(
-        api.printableAssessmentExport.pdf.mutate(packetInput(form.printFormId)),
-      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
+      const data = packetInput(form.printFormId);
+      await appendPrintSnapshot(
+        data,
+        form.printFormId,
+        '<!doctype html><html data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0"></html>',
+        viewer.id,
+      );
+      const { printExportId } = await api.printableAssessmentExport.pdf.mutate(data);
+      expect(await api.printableAssessmentExport.status.query({ printExportId })).toMatchObject({
+        status: 'pending',
+        format: 'pdf',
+      });
 
       const printUrl = getPrintFormUrl({
         courseInstanceId: '1',
@@ -949,8 +963,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         },
         body: '{}',
       });
-      expect(response.status).toBe(403);
-      expect(await response.text()).toContain('course editor');
+      expect(response.status).toBe(400);
     });
   });
 
