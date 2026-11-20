@@ -14,6 +14,8 @@ import { insertCourseAgentConversation } from '../ee/models/course-agent-convers
 import { config } from '../lib/config.js';
 import type { CourseAgentConversation, User } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import { insertCourse, selectCourseById } from '../models/course.js';
+import { selectSharingSetsForCourse } from '../models/sharing-set.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -96,7 +98,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       isEnterprise: true,
       courseAgentServiceUrl: `http://127.0.0.1:${address.port}`,
       courseAgentServiceToken: [SERVICE_TOKEN],
-      features: { ...config.features, 'course-agent': true },
+      features: { ...config.features, 'course-agent': true, 'question-sharing': true },
     });
     await helperServer.before()();
     [owner, otherOwner, editor] = await Promise.all(
@@ -243,7 +245,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     const closed = await insertIssue({ open: false });
     const systemCaused = await insertIssue({ course_caused: false });
     const cases = [
-      ['missing', { issue_ids: [open] }, 404, 'Actions: issues_close, issues_reopen'],
+      ['missing', { issue_ids: [open] }, 404, 'Actions: issues_close, issues_reopen,'],
       ['issues_close', {}, 400, 'issue_ids'],
       ['issues_close', { issue_ids: [] }, 400, 'issue_ids'],
       ['issues_close', { issue_ids: [open], extra: true }, 400, 'extra'],
@@ -409,6 +411,121 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     };
     await waitForDeliveries(2);
     expect(delivered.map(({ body }) => body)).toEqual([result, { ...result, viaMessage: true }]);
+  });
+
+  test('shares a sharing set with the course a sharing token names, once', async () => {
+    const conversation = await createConversation(owner);
+    const consumer = await insertCourse({
+      institution_id: '1',
+      short_name: 'SHARE 101',
+      title: 'A course that uses shared questions',
+      display_timezone: 'America/Chicago',
+      path: `/course-${crypto.randomUUID()}`,
+      repository: null,
+      branch: 'master',
+      authn_user_id: '1',
+    });
+    await queryScalar(sql.insert_sharing_set, { course_id: '1', name: 'intro-set' }, IdSchema);
+    const input = { sharing_set_name: 'intro-set', course_sharing_token: consumer.sharing_token };
+    const ownToken = (await selectCourseById('1')).sharing_token;
+    const cases = [
+      [
+        { ...input, sharing_set_name: 'missing' },
+        'no sharing set named "missing". Its sharing sets:',
+      ],
+      [{ ...input, course_sharing_token: crypto.randomUUID() }, 'No course has that sharing token'],
+      [{ ...input, course_sharing_token: ownToken }, "this course's own sharing token"],
+    ] as const;
+    for (const [refused, message] of cases) {
+      const response = await request(conversation, 'sharing_add_course_to_set', refused);
+      assert.equal(response.status, 400, message);
+      expect((await response.json()).message).toContain(message);
+    }
+
+    const id = crypto.randomUUID();
+    const response = await request(conversation, 'sharing_add_course_to_set', input, id);
+    const { card } = await response.json();
+    expect(card).toEqual({
+      title: 'Share the sharing set "intro-set" with SHARE 101',
+      context: 'PrairieLearn has no way to take this access back.',
+      rows: [
+        { label: 'SHARE 101: A course that uses shared questions', detail: 'Gets access' },
+        { label: 'Sharing set "intro-set"', detail: '0 questions' },
+      ],
+      moreRows: 0,
+      undo: null,
+    });
+    // The token identifies the other course to PrairieLearn; the instructor is not shown it.
+    expect(JSON.stringify(card)).not.toContain(consumer.sharing_token);
+    const sharedWith = async () =>
+      (await selectSharingSetsForCourse({ course_id: '1' })).find(
+        ({ name }) => name === 'intro-set',
+      )?.shared_with;
+    expect(await sharedWith()).toEqual([]);
+    await withUser(owner, async () => {
+      await createClient(owner).courseAgent.postReviewDecision.mutate({
+        conversationId: conversation.id,
+        reviewId: id,
+        decision: 'approved',
+      });
+    });
+    expect(await sharedWith()).toEqual(['SHARE 101']);
+    await waitForDeliveries(1);
+    expect(delivered[0].body).toMatchObject({
+      outcome: {
+        status: 'succeeded',
+        summary: 'Shared the sharing set "intro-set" with SHARE 101.',
+      },
+    });
+    const again = await request(conversation, 'sharing_add_course_to_set', input);
+    expect((await again.json()).message).toContain('already shared with SHARE 101');
+  });
+
+  test('sets the sharing name and replaces the sharing token', async () => {
+    const conversation = await createConversation(owner);
+    const approve = async (action: string, input: unknown) => {
+      const id = crypto.randomUUID();
+      const response = await request(conversation, action, input, id);
+      assert.equal(response.status, 200, await response.clone().text());
+      await withUser(owner, async () => {
+        await createClient(owner).courseAgent.postReviewDecision.mutate({
+          conversationId: conversation.id,
+          reviewId: id,
+          decision: 'approved',
+        });
+      });
+      return (await response.json()).card;
+    };
+    const named = await approve('sharing_choose_name', { sharing_name: 'test-course' });
+    expect(named).toMatchObject({
+      title: 'Set the course\'s sharing name to "test-course"',
+      rows: [{ label: 'Sharing name now', detail: 'None' }],
+    });
+    expect((await selectCourseById('1')).sharing_name).toBe('test-course');
+    const sameName = await request(conversation, 'sharing_choose_name', {
+      sharing_name: 'test-course',
+    });
+    expect((await sameName.json()).message).toContain('already "test-course"');
+    const badName = await request(conversation, 'sharing_choose_name', { sharing_name: 'a/b' });
+    expect(badName.status).toBe(400);
+
+    const before = (await selectCourseById('1')).sharing_token;
+    const replaced = await approve('sharing_regenerate_token', {});
+    expect(replaced).toMatchObject({ title: "Replace this course's sharing token", undo: null });
+    const after = (await selectCourseById('1')).sharing_token;
+    expect(after).not.toBe(before);
+    // The new token is the instructor's to hand out, so the agent is not sent it.
+    await waitForDeliveries(2);
+    expect(JSON.stringify(delivered.at(-1))).not.toContain(after);
+
+    await withConfig(
+      { features: { 'course-agent': true, 'question-sharing': false } },
+      async () => {
+        const unavailable = await request(conversation, 'sharing_regenerate_token', {});
+        expect(unavailable.status).toBe(400);
+        expect((await unavailable.json()).message).toContain('not available in this course');
+      },
+    );
   });
 
   test('an approval that finds nothing left to do says so', async () => {

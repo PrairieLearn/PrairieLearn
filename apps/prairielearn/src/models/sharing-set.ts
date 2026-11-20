@@ -31,6 +31,27 @@ export async function selectOptionalSharingSetByName({
   );
 }
 
+/**
+ * Gives the course that `course_sharing_token` identifies access to a sharing set of
+ * `sharing_course_id`. Returns that course's ID, also when it already had access, or null when
+ * the token is unknown, is the sharing course's own, or the set is not the sharing course's.
+ */
+export async function insertSharingSetCourse({
+  sharing_course_id,
+  sharing_set_id,
+  course_sharing_token,
+}: {
+  sharing_course_id: string;
+  sharing_set_id: string;
+  course_sharing_token: string;
+}): Promise<string | null> {
+  return await sqldb.queryOptionalScalar(
+    sql.insert_sharing_set_course,
+    { sharing_course_id, sharing_set_id, course_sharing_token },
+    IdSchema,
+  );
+}
+
 const QuestionSharingSetRowSchema = z.object({
   id: z.string(),
   name: z.string(),

@@ -6,6 +6,8 @@ import { IdSchema } from '@prairielearn/zod';
 
 import {
   EnumAssessmentTypeSchema,
+  EnumCourseRoleSchema,
+  EnumEnrollmentStatusSchema,
   EnumGradingMethodSchema,
   EnumInstanceQuestionStatusSchema,
   EnumModeSchema,
@@ -248,6 +250,10 @@ export const COURSE_DATA_DATASETS = {
         .nullable()
         .describe('Best submission score, from 0 to 1.'),
       requires_manual_grading: z.boolean().describe('Whether manual grading is pending.'),
+      assigned_grader_uid: z
+        .string()
+        .nullable()
+        .describe('UID of the staff member assigned to grade the question manually, if any.'),
       duration: z
         .number()
         .nullable()
@@ -401,6 +407,105 @@ export const COURSE_DATA_DATASETS = {
         .string()
         .nullable()
         .describe("Detail for staff, such as the error the question's code raised."),
+    }),
+  }),
+  sharing_sets: dataset({
+    description:
+      "The course's sharing sets, which group questions to share with other courses. They are defined in infoCourse.json, and a question joins one in its info.json.",
+    query: sql.select_sharing_sets_by_course_id,
+    schema: z.object({
+      id: IdSchema,
+      name: z.string().describe('Name of the sharing set, as in infoCourse.json.'),
+      description: z.string().nullable().describe('What the sharing set is for.'),
+    }),
+  }),
+  sharing_set_courses: dataset({
+    description:
+      "Other courses that can use the questions in one of this course's sharing sets. Add one with the sharing_add_course_to_set action.",
+    query: sql.select_sharing_set_courses_by_course_id,
+    schema: z.object({
+      sharing_set_id: IdSchema,
+      sharing_set_name: z.string().describe('Name of the sharing set.'),
+      course_short_name: z
+        .string()
+        .nullable()
+        .describe('Short name of the course that has access, such as CS 101.'),
+      course_title: z.string().nullable().describe('Title of the course that has access.'),
+    }),
+  }),
+  students: dataset({
+    description:
+      'People enrolled in or invited to each course instance. Course staff are not listed. Act on them with the students_ actions, by uid.',
+    query: sql.select_students_by_course_id,
+    schema: z.object({
+      enrollment_id: IdSchema,
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      user_id: IdSchema.nullable().describe(
+        'The user, as user_id in other datasets. Null for an invitation not yet accepted.',
+      ),
+      uid: z
+        .string()
+        .nullable()
+        .describe('UID the student signs in with, such as an email address.'),
+      name: z.string().nullable().describe("The student's name."),
+      status: EnumEnrollmentStatusSchema.describe(
+        'invited: invited but not yet joined. joined: enrolled. rejected: declined the invitation. left: left on their own. removed: removed by staff. blocked: blocked by staff.',
+      ),
+      first_joined_at: TimestampSchema.nullable().describe('When the student first joined.'),
+    }),
+  }),
+  student_label_members: dataset({
+    description:
+      'Which students are in which student labels. Labels are defined in "studentLabels" in infoCourseInstance.json.',
+    query: sql.select_student_label_members_by_course_id,
+    schema: z.object({
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      label_name: z.string().describe('Name of the label.'),
+      enrollment_id: IdSchema,
+      uid: z.string().nullable().describe('UID of the student in the label.'),
+    }),
+  }),
+  publishing_extension_students: dataset({
+    description:
+      'Students with extended access to a course instance after it closes for everyone else, one row per student per extension.',
+    query: sql.select_publishing_extension_students_by_course_id,
+    schema: z.object({
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      extension_name: z.string().nullable().describe('Name of the extension.'),
+      end_date: TimestampSchema.describe("When the extension's access ends."),
+      enrollment_id: IdSchema,
+      uid: z.string().nullable().describe('UID of the student with the extension.'),
+    }),
+  }),
+  group_members: dataset({
+    description:
+      'Which students are in which group, for assessments that use group work. One row per student per group. Change groups with the groups_ actions.',
+    query: sql.select_group_members_by_course_id,
+    schema: z.object({
+      course_instance_id: IdSchema,
+      course_instance_short_name: CourseInstanceShortNameSchema,
+      assessment_id: IdSchema,
+      assessment_tid: AssessmentTidSchema,
+      team_id: IdSchema.describe('The group, as team_id in assessment_instances.'),
+      group_name: z.string().describe('Name of the group, unique in the assessment.'),
+      user_id: IdSchema,
+      uid: z.string().describe('UID of the student in the group.'),
+    }),
+  }),
+  staff: dataset({
+    description:
+      "People on the course's staff and their course roles. Change them with the staff_ actions, by uid.",
+    query: sql.select_staff_by_course_id,
+    schema: z.object({
+      user_id: IdSchema,
+      uid: z.string().describe('UID the staff member signs in with.'),
+      name: z.string().nullable().describe("The staff member's name."),
+      course_role: EnumCourseRoleSchema.describe(
+        'Previewer, Viewer, Editor, or Owner, each with the access of the one before and more. None means the person only has access to student data in some course instances.',
+      ),
     }),
   }),
 };

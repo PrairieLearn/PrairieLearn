@@ -8,6 +8,7 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
   queryScalar,
@@ -492,6 +493,14 @@ export async function selectCanChooseSharingName(course: {
     course.sharing_name === null ||
     !(await queryScalar(sql.select_shared_question_exists, { course_id: course.id }, z.boolean()))
   );
+}
+
+/**
+ * Replaces the course's sharing token and returns the new one. The old token stops identifying
+ * the course; courses already given access to its sharing sets keep it.
+ */
+export async function updateCourseSharingToken(course_id: string): Promise<string | null> {
+  return await queryOptionalScalar(sql.update_course_sharing_token, { course_id }, z.string());
 }
 
 export async function selectOptionalCourseBySharingToken(

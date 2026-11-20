@@ -136,6 +136,7 @@ SELECT
   iq.score_perc,
   iq.highest_submission_score,
   iq.requires_manual_grading,
+  grader.uid AS assigned_grader_uid,
   EXTRACT(
     EPOCH
     FROM
@@ -148,8 +149,9 @@ FROM
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
   JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-  -- A left join on its primary key, so Postgres skips it unless qid is selected or filtered.
+  -- Left joins on primary keys, so Postgres skips each unless its column is selected or filtered.
   LEFT JOIN questions AS q ON (q.id = aq.question_id)
+  LEFT JOIN users AS grader ON (grader.id = iq.assigned_grader)
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL
@@ -255,3 +257,118 @@ WHERE
   i.course_id = $course_id
   -- Issues caused by PrairieLearn itself are not the course's to resolve.
   AND i.course_caused;
+
+-- BLOCK select_sharing_sets_by_course_id
+SELECT
+  ss.id,
+  ss.name,
+  ss.description
+FROM
+  sharing_sets AS ss
+WHERE
+  ss.course_id = $course_id;
+
+-- BLOCK select_sharing_set_courses_by_course_id
+SELECT
+  ss.id AS sharing_set_id,
+  ss.name AS sharing_set_name,
+  c.short_name AS course_short_name,
+  c.title AS course_title
+FROM
+  sharing_sets AS ss
+  JOIN sharing_set_courses AS ssc ON (ssc.sharing_set_id = ss.id)
+  JOIN courses AS c ON (c.id = ssc.course_id)
+WHERE
+  ss.course_id = $course_id
+  AND c.deleted_at IS NULL;
+
+-- BLOCK select_students_by_course_id
+SELECT
+  e.id AS enrollment_id,
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  e.user_id,
+  COALESCE(u.uid, e.pending_uid) AS uid,
+  COALESCE(u.name, e.pending_name) AS name,
+  e.status,
+  e.first_joined_at
+FROM
+  course_instances AS ci
+  JOIN enrollments AS e ON (e.course_instance_id = ci.id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_student_label_members_by_course_id
+SELECT
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  sl.name AS label_name,
+  e.id AS enrollment_id,
+  COALESCE(u.uid, e.pending_uid) AS uid
+FROM
+  course_instances AS ci
+  JOIN student_labels AS sl ON (sl.course_instance_id = ci.id)
+  JOIN student_label_enrollments AS sle ON (sle.student_label_id = sl.id)
+  JOIN enrollments AS e ON (e.id = sle.enrollment_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_publishing_extension_students_by_course_id
+SELECT
+  ci.id AS course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  pe.name AS extension_name,
+  pe.end_date,
+  e.id AS enrollment_id,
+  COALESCE(u.uid, e.pending_uid) AS uid
+FROM
+  course_instances AS ci
+  JOIN course_instance_publishing_extensions AS pe ON (pe.course_instance_id = ci.id)
+  JOIN course_instance_publishing_extension_enrollments AS pee ON (
+    pee.course_instance_publishing_extension_id = pe.id
+  )
+  JOIN enrollments AS e ON (e.id = pee.enrollment_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;
+
+-- BLOCK select_staff_by_course_id
+SELECT
+  u.id AS user_id,
+  u.uid,
+  u.name,
+  cp.course_role
+FROM
+  course_permissions AS cp
+  JOIN users AS u ON (u.id = cp.user_id)
+WHERE
+  cp.course_id = $course_id;
+
+-- BLOCK select_group_members_by_course_id
+SELECT
+  a.course_instance_id,
+  ci.short_name AS course_instance_short_name,
+  a.id AS assessment_id,
+  a.tid AS assessment_tid,
+  g.id AS team_id,
+  g.name AS group_name,
+  u.id AS user_id,
+  u.uid
+FROM
+  course_instances AS ci
+  JOIN assessments AS a ON (a.course_instance_id = ci.id)
+  JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  JOIN teams AS g ON (g.team_config_id = gc.id)
+  JOIN team_users AS gu ON (gu.team_id = g.id)
+  JOIN users AS u ON (u.id = gu.user_id)
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL
+  AND a.deleted_at IS NULL
+  AND gc.deleted_at IS NULL
+  AND g.deleted_at IS NULL;

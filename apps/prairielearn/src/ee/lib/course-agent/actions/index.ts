@@ -3,7 +3,13 @@ import type { CourseActionCatalog } from '@prairielearn/course-agent-types';
 import { toJsonSchema } from '../json-schema.js';
 
 import type { CourseAction } from './action.js';
+import { attemptActions } from './attempts.js';
+import { gradingActions } from './grading.js';
+import { groupActions } from './groups.js';
 import { issueActions } from './issues.js';
+import { sharingActions } from './sharing.js';
+import { staffActions } from './staff.js';
+import { studentActions } from './students.js';
 
 /**
  * The actions the course agent can request: the single source of truth for what it can change
@@ -13,6 +19,12 @@ import { issueActions } from './issues.js';
  */
 export const COURSE_AGENT_ACTIONS: Record<string, CourseAction> = {
   ...issueActions,
+  ...attemptActions,
+  ...sharingActions,
+  ...studentActions,
+  ...staffActions,
+  ...gradingActions,
+  ...groupActions,
 };
 
 const COURSE_ACTIONS_VERSION = 1;
