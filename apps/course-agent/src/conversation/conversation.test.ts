@@ -136,7 +136,7 @@ function fixture(saved = new Map<string, unknown>()) {
   };
   const sandbox = {
     isRunning: vi.fn(async () => true),
-    prepare: vi.fn(),
+    prepare: vi.fn(async () => ({ instance: 'standard-2', checkpointMissing: false })),
     addCourseFiles: vi.fn(),
     advanceLocalBaseline: vi.fn(),
     stopProcesses: vi.fn(),
@@ -636,4 +636,34 @@ it('retries the turn-end report with backoff when PrairieLearn is unreachable', 
   await state.conversation.flushUsage({ attempt: 1 });
   expect(reports()[2]).toEqual(reports()[1]);
   expect(metering(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
+});
+
+it('continues from the course source on a new thread once the checkpoint has expired', async () => {
+  stubFetch({ usage: async () => decision() });
+  const { saved } = fixture();
+  const checkpoint = { id: 'expired' };
+  saved.set('conversation', {
+    ...(saved.get('conversation') as object),
+    checkpoint,
+    nativeThreadId: 'checkpointed-thread',
+    submittedMessageId: 'first',
+  });
+  const { conversation, sandbox } = fixture(saved);
+  sandbox.prepare.mockResolvedValue({ instance: 'standard-2', checkpointMissing: true });
+  await conversation.onStart();
+  await conversation.persistMessages([
+    { id: 'first', role: 'user', parts: [{ type: 'text', text: 'Add a question' }] },
+    { id: 'reply', role: 'assistant', parts: [{ type: 'text', text: 'Added it.' }] },
+    { id: 'second', role: 'user', parts: [{ type: 'text', text: 'Now add units' }] },
+  ]);
+  await conversation.onChatMessage(undefined, { requestId: 'second' });
+  const options = vi.mocked(SandboxTurn).mock.calls[0][2];
+  await options.prepare();
+  expect(sandbox.prepare).toHaveBeenCalledWith(expect.anything(), checkpoint);
+  expect(sandbox.addCourseFiles).toHaveBeenCalledOnce();
+  expect(saved.get('conversation')).toMatchObject({ checkpoint: null, nativeThreadId: null });
+  expect(conversation.state.sandboxLost).toBe(true);
+  // The thread went with the checkpoint, so a new one is caught up on the whole conversation.
+  expect(options.thread().threadId).toBeNull();
+  expect(options.input.catchUp?.(undefined)).toContain('Staff: Add a question\n\nYou: Added it.');
 });

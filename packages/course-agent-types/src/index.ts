@@ -30,7 +30,10 @@ export type ConversationLifecycle =
  */
 export type ConversationState = ConversationLifecycle & {
   deadlineAt: string | null;
-  /** The container stopped unexpectedly; the sandbox was restored from its last checkpoint. */
+  /**
+   * Edits were lost: the container stopped unexpectedly and the sandbox was restored from its last
+   * checkpoint, or that checkpoint expired and the sandbox started again from the course source.
+   */
   sandboxLost: boolean;
   /** A review whose outcome the agent has not yet received. New messages wait for it. */
   reviewId: string | null;

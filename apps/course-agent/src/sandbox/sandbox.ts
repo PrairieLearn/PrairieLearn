@@ -4,6 +4,7 @@ import {
   DirectoryBackup,
   type DirectoryBackupRecord,
   Files,
+  SandboxBackupError,
   SandboxFileError,
 } from '@cloudflare/sandbox';
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
@@ -251,8 +252,24 @@ export class CourseSandbox extends DurableObject<Env> {
   }
 
   /**
-   * Start an isolated workspace and configure Codex. A checkpoint is restored here; otherwise the
-   * caller adds course files with `addCourseFiles()`, which can run while the Codex runner starts.
+   * Returns false if the checkpoint's object no longer exists, which leaves the workspace as the
+   * container started it. Any other failure may be transient, and treating it as a missing
+   * checkpoint would discard the edits it holds, so it is thrown.
+   */
+  private async restoreCheckpoint(checkpoint: DirectoryBackupRecord) {
+    try {
+      await this.backups.restore(checkpoint);
+      return true;
+    } catch (error) {
+      if (!SandboxBackupError.is(error) || error.code !== 'BACKUP_NOT_FOUND') throw error;
+      return false;
+    }
+  }
+
+  /**
+   * Start an isolated workspace and configure Codex. A checkpoint is restored here. Without one,
+   * or when the bucket's lifecycle rule has deleted it (`checkpointMissing`), the caller adds
+   * course files with `addCourseFiles()`, which can run while the Codex runner starts.
    */
   async prepare(
     config: CourseSource & { model: string },
@@ -274,8 +291,8 @@ export class CourseSandbox extends DurableObject<Env> {
         this.ctx.exports.CourseAgentGitHubOutbound({ props: { repository: config.repository } }),
       );
     }
-    if (checkpoint) {
-      await this.backups.restore(checkpoint);
+    const restored = checkpoint !== null && (await this.restoreCheckpoint(checkpoint));
+    if (restored) {
       // The agent owns its home and may have deleted .codex.
       await this.exec(['mkdir', '-p', `${SESSION}/home/.codex`], AGENT_USER);
       // The image's Codex config may be newer than the checkpoint's, so it is reinstalled.
@@ -305,7 +322,7 @@ export class CourseSandbox extends DurableObject<Env> {
     this.freshContainer = true;
     // Returned rather than only logged: this Durable Object's logs can arrive late or not at all
     // while its container keeps it busy, so the conversation logs startup instead.
-    return { instance };
+    return { instance, checkpointMissing: checkpoint !== null && !restored };
   }
 
   /** Keep the parent root-owned so the agent cannot rename or replace course/home directories. */
@@ -330,7 +347,11 @@ export class CourseSandbox extends DurableObject<Env> {
   async addCourseFiles(config: CourseSource) {
     if (config.type === 'local') {
       const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
-      if (!archive) throw new Error('The local course snapshot is missing');
+      // The snapshot is deleted once a checkpoint replaces it, so a local conversation whose
+      // checkpoint has expired has nothing left to start from.
+      if (!archive) {
+        throw new Error('The local course snapshot is missing; start a new conversation');
+      }
       const files = new Files(this.container);
       await files.writeFile('/tmp/course-source.tar.gz', archive.body);
       await this.exec(['mkdir', '-p', `${SESSION}/repository`], AGENT_USER);

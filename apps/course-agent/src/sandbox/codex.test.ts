@@ -98,7 +98,7 @@ function options(onAccepted: () => void, threadId: string | null = null) {
     input: { tag: 'message:prompt', text: 'Edit my question' },
     startup: false,
     prepare: async () => {},
-    thread: { ...thread, threadId },
+    thread: () => ({ ...thread, threadId }),
     onThread: () => {},
     onReady: () => {},
     onAccepted,
@@ -617,6 +617,25 @@ describe('course agent turns', () => {
     });
     expect(events).toEqual(['clone failed', 'runner connected', 'cleanup']);
     expect(commands.some((command) => command.method.startsWith('thread/'))).toBe(false);
+  });
+
+  it('starts a new thread when prepare drops the one its expired checkpoint held', async () => {
+    const { sandbox, native, commands } = runner();
+    let threadId: string | null = 'checkpointed';
+    const accepted = Promise.withResolvers<undefined>();
+    const turn = new SandboxTurn(sandbox, native, {
+      ...options(() => accepted.resolve(undefined)),
+      startup: true,
+      prepare: async () => {
+        threadId = null;
+      },
+      thread: () => ({ ...thread, threadId }),
+    });
+    await accepted.promise;
+    expect(
+      commands.map(({ method }) => method).filter((method) => method.startsWith('thread/')),
+    ).toEqual(['thread/start']);
+    await turn.stop();
   });
 
   it('settles a failed Stop instead of waiting forever for native output', async () => {

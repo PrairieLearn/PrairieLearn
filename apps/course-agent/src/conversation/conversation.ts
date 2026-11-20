@@ -1011,6 +1011,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
       (target) => resolveNavigation(this.prairieLearnContext(), target),
     ));
+    const addCourseFiles = async () => {
+      log('turn_course_files_started');
+      await this.sandbox.addCourseFiles(this.record.config);
+      log('turn_course_files_ready');
+    };
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
     const execution = new SandboxTurn(this.sandbox, native, {
@@ -1025,6 +1030,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           log('turn_sandbox_prepare_requested');
           const started = await this.sandbox.prepare(this.record.config, this.record.checkpoint);
           log('turn_sandbox_prepare_finished', started);
+          if (started.checkpointMissing) {
+            this.dropExpiredCheckpoint();
+            await addCourseFiles();
+          }
         }
         await this.sandbox.authorizeModel({
           model: this.record.config.model,
@@ -1035,20 +1044,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         if (toWrite.length > 0) await this.sandbox.writeAttachments(this.name, toWrite);
         if (delivered) await this.advanceLocalBaseline(delivered);
       },
-      addCourseFiles:
-        startup && !this.record.checkpoint
-          ? async () => {
-              log('turn_course_files_started');
-              await this.sandbox.addCourseFiles(this.record.config);
-              log('turn_course_files_ready');
-            }
-          : undefined,
-      thread: {
+      addCourseFiles: startup && !this.record.checkpoint ? addCourseFiles : undefined,
+      thread: () => ({
         model: this.record.config.model,
         instructions: buildInstructions(this.record.courseContext ?? undefined, source.type),
         threadId: this.record.nativeThreadId,
         pages: this.record.pages ?? [],
-      },
+      }),
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.
       onThread: (id) => {
@@ -1298,6 +1300,20 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       nativeThreadId: this.record.checkpoint ? this.record.nativeThreadId : null,
       sandboxLost: true,
       lifecycle: { status: 'offline' },
+    });
+  }
+
+  /**
+   * The bucket deletes a checkpoint about 90 days after it was written, and the workspace and
+   * native thread it held go with it. The turn continues from the course source on a new thread,
+   * like one that follows a sandbox lost before its first checkpoint.
+   */
+  private dropExpiredCheckpoint() {
+    this.setRecord({
+      ...this.record,
+      checkpoint: null,
+      nativeThreadId: null,
+      sandboxLost: true,
     });
   }
 
