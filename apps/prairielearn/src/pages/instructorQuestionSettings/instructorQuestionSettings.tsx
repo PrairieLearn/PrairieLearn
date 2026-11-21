@@ -798,6 +798,10 @@ router.get(
               hasCoursePermissionView={hasCoursePermissionView}
               courseTopics={parsedCourseTopics}
               courseTags={parsedCourseTags}
+              topicTagVariant={z
+                .enum(['inline', 'modal', 'popover'])
+                .catch('inline')
+                .parse(req.query.variant)}
             />
           </Hydrate>
         ),

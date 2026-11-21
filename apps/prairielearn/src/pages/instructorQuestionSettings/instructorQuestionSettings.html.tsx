@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { useController, useForm } from 'react-hook-form';
 
@@ -9,14 +9,12 @@ import {
   imageRegistryRestrictionsText,
   isSupportedImageRegistry,
 } from '@prairielearn/docker-utils/registry';
-import { ComboBox, type ComboBoxItem, StickySaveBar, TagPicker } from '@prairielearn/ui';
+import { StickySaveBar, TagPicker } from '@prairielearn/ui';
 
 import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { TagBadge } from '../../components/TagBadge.js';
-import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadge } from '../../components/TopicBadge.js';
-import { TopicDescription } from '../../components/TopicDescription.js';
 import type {
   StaffCourseInstance,
   StaffQuestion,
@@ -31,6 +29,7 @@ import { coerceToNumber } from '../instructorAssessmentQuestions/utils/formHelpe
 import { PreferencesTable } from './components/PreferencesTable.js';
 import { QuestionSettingsCardFooter } from './components/QuestionSettingsCardFooter.js';
 import { QuestionTestsForm } from './components/QuestionTestsForm.js';
+import { TopicTagField, type TopicTagVariant } from './components/TopicTagFields.js';
 import type {
   EditableCourse,
   PreferenceField,
@@ -257,6 +256,7 @@ export const InstructorQuestionSettingsForm = ({
   publicLink,
   sharing,
   questionTest,
+  topicTagVariant = 'inline',
 }: {
   authorStaff: { uid: string; name: string | null }[];
   initialAuthors: string[] | null;
@@ -282,6 +282,7 @@ export const InstructorQuestionSettingsForm = ({
     constraints: QuestionSharingConstraints;
   };
   questionTest: { path: string; csrfToken: string };
+  topicTagVariant?: TopicTagVariant;
 }) => {
   const canCopy = editableCourses.length > 0 && hasCoursePermissionView;
   const showTestsSection =
@@ -404,36 +405,6 @@ export const InstructorQuestionSettingsForm = ({
 
   const isExternalGrading = selectedGradingMethod === 'External';
 
-  const topicItems: ComboBoxItem<StaffTopic>[] = useMemo(
-    () =>
-      courseTopics.map((t) => ({
-        id: t.name,
-        data: t,
-        label: t.name,
-        searchableText: `${t.name} ${t.description}`,
-      })),
-    [courseTopics],
-  );
-
-  const tagItems: ComboBoxItem<StaffTag>[] = useMemo(
-    () =>
-      [...courseTags]
-        .sort((a, b) => {
-          // Sort explicit tags above implicit tags, then by name
-          if (a.implicit !== b.implicit) {
-            return a.implicit ? 1 : -1;
-          }
-          return a.name.localeCompare(b.name);
-        })
-        .map((t) => ({
-          id: t.name,
-          data: t,
-          label: t.name,
-          searchableText: `${t.name} ${t.description}`,
-        })),
-    [courseTags],
-  );
-
   const currentTopicData = courseTopics.find((t) => t.name === selectedTopic);
   const currentTagsData = courseTags.filter((t) => selectedTags.includes(t.name));
 
@@ -517,30 +488,15 @@ export const InstructorQuestionSettingsForm = ({
             </div>
 
             <div className="mb-3">
-              <label className="form-label" id="topic-label" htmlFor="topic">
-                Topic
-              </label>
+              {!canEdit && <div className="form-label">Topic</div>}
               {canEdit ? (
-                <ComboBox
-                  id="topic"
-                  name="topic"
-                  items={topicItems}
-                  value={selectedTopic}
-                  placeholder="Select a topic"
-                  aria-labelledby="topic-label"
-                  renderItem={(item) => (
-                    <div className="preferences-combobox-item">
-                      <TopicBadge topic={item.data!} />
-                      {item.data!.description && (
-                        <div>
-                          <small className="text-muted">
-                            <TopicDescription topic={item.data!} />
-                          </small>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  onChange={(value) => setValue('topic', value ?? '', { shouldDirty: true })}
+                <TopicTagField
+                  entityType="topic"
+                  variant={topicTagVariant}
+                  courseEntities={courseTopics}
+                  value={selectedTopic ? [selectedTopic] : []}
+                  manageUrl={`/pl/course/${question.course_id}/course_admin/topics`}
+                  onChange={(v) => setValue('topic', v[0] ?? '', { shouldDirty: true })}
                 />
               ) : currentTopicData ? (
                 <div>
@@ -550,32 +506,15 @@ export const InstructorQuestionSettingsForm = ({
             </div>
 
             <div className="mb-3">
-              <label className="form-label" id="tags-label" htmlFor="tags">
-                Tags
-              </label>
+              {!canEdit && <div className="form-label">Tags</div>}
               {canEdit ? (
-                <TagPicker
-                  id="tags"
-                  name="tags"
-                  items={tagItems}
+                <TopicTagField
+                  entityType="tag"
+                  variant={topicTagVariant}
+                  courseEntities={courseTags}
                   value={selectedTags}
-                  placeholder="Select tags"
-                  aria-labelledby="tags-label"
-                  renderItem={(item) => (
-                    <div className="preferences-combobox-item">
-                      <TagBadge tag={item.data!} />
-                      {!item.data!.implicit && item.data!.description && (
-                        <div>
-                          <small className="text-muted">
-                            <TagDescription tag={item.data!} />
-                          </small>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  renderTagContent={(data) => data.name}
-                  tagClassName={(data) => `badge color-${data.color}`}
-                  onChange={(value) => setValue('tags', value, { shouldDirty: true })}
+                  manageUrl={`/pl/course/${question.course_id}/course_admin/tags`}
+                  onChange={(v) => setValue('tags', v, { shouldDirty: true })}
                 />
               ) : (
                 <div>

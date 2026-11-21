@@ -5,6 +5,7 @@ import {
   ComboBox as AriaComboBox,
   type ComboBoxProps as AriaComboBoxProps,
   Button,
+  Collection,
   FieldError,
   Group,
   Input,
@@ -63,6 +64,13 @@ export interface ComboBoxProps<T = void> extends Omit<
   description?: string;
   errorMessage?: string;
   renderItem?: (item: ComboBoxItem<T>) => ReactNode;
+  /**
+   * Accept a trimmed custom value. When set, a "create" option is shown at the
+   * end of the list whenever the input doesn't exactly match an existing item.
+   */
+  onCreate?: (value: string) => void;
+  /** Renders the contents of the "create" option. */
+  renderCreateOption?: (value: string) => ReactNode;
 }
 
 export interface TagPickerProps<T = void> {
@@ -70,6 +78,11 @@ export interface TagPickerProps<T = void> {
   onCreate?: (value: string) => void;
   /** Label for the button that commits a custom value. */
   createButtonLabel?: string;
+  /**
+   * When provided along with `onCreate`, custom values are created from an
+   * option at the end of the list instead of from a button next to the input.
+   */
+  renderCreateOption?: (value: string) => ReactNode;
   /** Control the pending input text separately from the selected tags. */
   inputValue?: string;
   onInputChange?: (value: string) => void;
@@ -92,6 +105,43 @@ export interface TagPickerProps<T = void> {
   renderTagContent?: (data: T) => ReactNode;
   /** Returns the class name for the tag badge wrapper. Defaults to "badge bg-secondary". */
   tagClassName?: (data: T) => string;
+}
+
+/** Sentinel key for the "create" option; it can never collide with a real item ID. */
+const CREATE_OPTION_KEY = '__pl_create_option__';
+
+function defaultRenderCreateOption(value: string) {
+  return (
+    <>
+      Create <strong>{value}</strong>
+    </>
+  );
+}
+
+function shouldShowCreateOption<T>(items: ComboBoxItem<T>[], text: string, extra: string[] = []) {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  const lower = trimmed.toLocaleLowerCase();
+  return (
+    !items.some((item) => item.label.toLocaleLowerCase() === lower) &&
+    !extra.some((v) => v.toLocaleLowerCase() === lower)
+  );
+}
+
+function CreateOption({ value, children }: { value: string; children: ReactNode }) {
+  return (
+    <ListBoxItem
+      id={CREATE_OPTION_KEY}
+      className={({ isFocused }) =>
+        clsx('dropdown-item d-flex align-items-center gap-2 border-top', isFocused && 'active')
+      }
+      style={{ cursor: 'pointer' }}
+      textValue={`Create ${value}`}
+    >
+      <i className="bi bi-plus-lg" aria-hidden="true" />
+      <span className="flex-grow-1 text-truncate">{children}</span>
+    </ListBoxItem>
+  );
 }
 
 function defaultRenderItem<T>(item: ComboBoxItem<T>) {
@@ -121,15 +171,25 @@ export function ComboBox<T = void>({
   description,
   errorMessage,
   renderItem = defaultRenderItem,
+  onCreate,
+  renderCreateOption = defaultRenderCreateOption,
   ...props
 }: ComboBoxProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
-  const [filterText, setFilterText] = useState('');
+  const selectedLabel = items.find((item) => item.id === value)?.label;
+  const [filterText, setFilterText] = useState(selectedLabel ?? '');
+  // React Aria resets the input when the value changes to a key that isn't in
+  // its collection yet, which happens for one render after creating an item.
+  const justCreatedRef = useRef(false);
+  // When the input just shows the current selection, show the full list.
+  const isShowingSelection = selectedLabel !== undefined && filterText === selectedLabel;
 
   // Filter by searchableText while textValue (label) controls display
-  const filteredItems = items.filter((item) =>
-    contains(item.searchableText ?? item.label, filterText),
-  );
+  const filteredItems = isShowingSelection
+    ? items
+    : items.filter((item) => contains(item.searchableText ?? item.label, filterText));
+  const showCreate = !!onCreate && !isShowingSelection && shouldShowCreateOption(items, filterText);
+  const createValue = filterText.trim();
 
   return (
     <div className="position-relative">
@@ -137,17 +197,28 @@ export function ComboBox<T = void>({
 
       <AriaComboBox
         {...props}
-        items={filteredItems}
         value={value}
         isDisabled={disabled}
         isInvalid={!!errorMessage}
         menuTrigger="focus"
+        defaultFilter={() => true}
+        inputValue={filterText}
         allowsEmptyCollection
         onChange={(key) => {
-          setFilterText('');
+          if (key === CREATE_OPTION_KEY) {
+            justCreatedRef.current = true;
+            onCreate?.(createValue);
+            setFilterText(createValue);
+            return;
+          }
+          setFilterText(items.find((item) => item.id === key)?.label ?? '');
           onChange(key?.toString() ?? null);
         }}
         onInputChange={(inputValue) => {
+          if (justCreatedRef.current) {
+            justCreatedRef.current = false;
+            if (inputValue === '') return;
+          }
           setFilterText(inputValue);
           if (inputValue === '') {
             onChange(null);
@@ -202,21 +273,26 @@ export function ComboBox<T = void>({
                   <div className="dropdown-item text-muted">No options found</div>
                 )}
               >
-                {(item: ComboBoxItem<T>) => (
-                  <ListBoxItem
-                    id={item.id}
-                    className={({ isFocused, isSelected }) =>
-                      clsx(
-                        'dropdown-item d-flex align-items-center gap-2',
-                        isFocused && 'active',
-                        isSelected && 'fw-semibold',
-                      )
-                    }
-                    style={{ cursor: 'pointer' }}
-                    textValue={item.label}
-                  >
-                    <span className="flex-grow-1">{renderItem(item)}</span>
-                  </ListBoxItem>
+                <Collection items={filteredItems}>
+                  {(item: ComboBoxItem<T>) => (
+                    <ListBoxItem
+                      id={item.id}
+                      className={({ isFocused, isSelected }) =>
+                        clsx(
+                          'dropdown-item d-flex align-items-center gap-2',
+                          isFocused && 'active',
+                          isSelected && 'fw-semibold',
+                        )
+                      }
+                      style={{ cursor: 'pointer' }}
+                      textValue={item.label}
+                    >
+                      <span className="flex-grow-1">{renderItem(item)}</span>
+                    </ListBoxItem>
+                  )}
+                </Collection>
+                {showCreate && (
+                  <CreateOption value={createValue}>{renderCreateOption(createValue)}</CreateOption>
                 )}
               </ListBox>
             </Popover>
@@ -234,6 +310,7 @@ export function TagPicker<T = void>({
   items,
   onCreate,
   createButtonLabel = 'Add',
+  renderCreateOption,
   inputValue,
   onInputChange,
   value,
@@ -267,11 +344,15 @@ export function TagPicker<T = void>({
     inputRef.current?.focus();
   }
 
+  const createAsOption = !!onCreate && !!renderCreateOption;
+  const createAsButton = !!onCreate && !renderCreateOption;
   const filteredItems = items.filter(
     (item) =>
-      (!onCreate || !value.includes(item.id)) &&
+      (!createAsButton || !value.includes(item.id)) &&
       contains(item.searchableText ?? item.label, filterText),
   );
+  const showCreateOption = createAsOption && shouldShowCreateOption(items, filterText, value);
+  const pendingCreateValue = filterText.trim();
   const selectedItems = items.filter((item) => value.includes(item.id));
 
   return (
@@ -323,16 +404,20 @@ export function TagPicker<T = void>({
         aria-labelledby={ariaLabelledby}
         isDisabled={disabled}
         isInvalid={!!errorMessage}
-        items={filteredItems}
         inputValue={filterText}
         menuTrigger="focus"
         selectionMode="multiple"
         value={value}
-        allowsEmptyCollection={!onCreate}
+        allowsEmptyCollection={!createAsButton}
         allowsCustomValue={!!onCreate}
         onChange={(keys) => {
+          const nextKeys = keys as string[];
+          if (nextKeys.includes(CREATE_OPTION_KEY)) {
+            createValue();
+            return;
+          }
           setFilterText('');
-          onChange(keys as string[]);
+          onChange(nextKeys);
         }}
         onInputChange={setFilterText}
       >
@@ -356,7 +441,7 @@ export function TagPicker<T = void>({
                 placeholder={placeholder}
                 style={{ outline: 'none', minWidth: 0 }}
                 onKeyDown={(event) => {
-                  if (!onCreate || event.nativeEvent.isComposing) return;
+                  if (!createAsButton || event.nativeEvent.isComposing) return;
                   if (event.key !== 'Enter' && event.key !== ',') return;
                   if (event.key === 'Enter' && isComboBoxOpen) return;
                   event.preventDefault();
@@ -364,7 +449,7 @@ export function TagPicker<T = void>({
                   createValue();
                 }}
               />
-              {onCreate && (
+              {createAsButton && (
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary flex-shrink-0"
@@ -374,7 +459,7 @@ export function TagPicker<T = void>({
                   {createButtonLabel}
                 </button>
               )}
-              {(!onCreate || filteredItems.length > 0) && (
+              {(!createAsButton || filteredItems.length > 0) && (
                 <Button
                   aria-label="Show suggestions"
                   className="border-0 bg-transparent p-0 ms-auto"
@@ -412,29 +497,36 @@ export function TagPicker<T = void>({
                   <div className="dropdown-item text-muted">No options found</div>
                 )}
               >
-                {(item: ComboBoxItem<T>) => (
-                  <ListBoxItem
-                    id={item.id}
-                    className="dropdown-item d-flex align-items-center gap-2"
-                    style={({ isFocused }) => ({
-                      cursor: 'pointer',
-                      backgroundColor: isFocused ? 'var(--bs-primary-bg-subtle)' : undefined,
-                    })}
-                    textValue={item.searchableText ?? item.label}
-                  >
-                    {({ isSelected }) => (
-                      <>
-                        <input
-                          checked={isSelected}
-                          className="form-check-input m-0"
-                          tabIndex={-1}
-                          type="checkbox"
-                          readOnly
-                        />
-                        <div className="flex-grow-1">{renderItem(item)}</div>
-                      </>
-                    )}
-                  </ListBoxItem>
+                <Collection items={filteredItems}>
+                  {(item: ComboBoxItem<T>) => (
+                    <ListBoxItem
+                      id={item.id}
+                      className="dropdown-item d-flex align-items-center gap-2"
+                      style={({ isFocused }) => ({
+                        cursor: 'pointer',
+                        backgroundColor: isFocused ? 'var(--bs-primary-bg-subtle)' : undefined,
+                      })}
+                      textValue={item.searchableText ?? item.label}
+                    >
+                      {({ isSelected }) => (
+                        <>
+                          <input
+                            checked={isSelected}
+                            className="form-check-input m-0"
+                            tabIndex={-1}
+                            type="checkbox"
+                            readOnly
+                          />
+                          <div className="flex-grow-1">{renderItem(item)}</div>
+                        </>
+                      )}
+                    </ListBoxItem>
+                  )}
+                </Collection>
+                {showCreateOption && (
+                  <CreateOption value={pendingCreateValue}>
+                    {renderCreateOption(pendingCreateValue)}
+                  </CreateOption>
                 )}
               </ListBox>
             </Popover>
