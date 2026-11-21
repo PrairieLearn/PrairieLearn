@@ -669,9 +669,7 @@ function Chat({
             ? 'Explain what to change…'
             : inputRequestOpen
               ? 'Reply to the agent, or ask something else…'
-              : canSteer
-                ? 'Add a message while the agent works…'
-                : undefined
+              : undefined
         }
         sendLabel={replyDenies ? 'Deny and send' : undefined}
         pending={sending || deny.isPending || steer.isPending}
