@@ -57,6 +57,40 @@ describe('missedTurns', () => {
   });
 });
 
+describe('messages sent while the agent was working', () => {
+  const steered: UIMessage[] = [
+    { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Edit the title' }] },
+    {
+      id: 'a1',
+      role: 'assistant',
+      parts: [
+        { type: 'text', text: 'Changing the title.' },
+        {
+          type: 'data-steer',
+          id: 'steer:s1',
+          data: { id: 's1', text: 'Fix the tags too', location: { path: '/pl', page: 'home' } },
+        },
+        { type: 'text', text: 'Changed both.' },
+      ],
+    },
+  ];
+
+  it('replays them as staff lines and finds the thread position from their tag', () => {
+    expect(missedTurns(steered, 'message:u1')).toEqual([
+      'Staff (on page "home"): Fix the tags too',
+      'You: Changed both.',
+    ]);
+    // Codex saved the message, so a thread restored after it missed only what followed.
+    expect(missedTurns(steered, 'steer:s1')).toEqual([]);
+    expect(missedTurns(steered, undefined)).toEqual([
+      'Staff: Edit the title',
+      'You: Changing the title.',
+      'Staff (on page "home"): Fix the tags too',
+      'You: Changed both.',
+    ]);
+  });
+});
+
 describe('page hints in catch-up', () => {
   it('names the page and most specific item each staff line was sent from', () => {
     const page = { path: '/pl/course_instance/1/instructor/assessment/2', page: 'assessment' };

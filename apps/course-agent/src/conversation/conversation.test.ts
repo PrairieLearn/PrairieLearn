@@ -9,6 +9,7 @@ import {
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
+import { CodexAppServerClient } from '../sandbox/codex.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import { Conversation, CourseContextSchema, type MeteringState } from './conversation.js';
@@ -143,6 +144,14 @@ function fixture(saved = new Map<string, unknown>()) {
     checkpoint: vi.fn(async () => ({ id: 'checkpoint' })),
     destroy: vi.fn(),
     authorizeModel: vi.fn(async (_config: { executionId: string }) => {}),
+    captureReview: vi.fn(async () => ({
+      type: 'github',
+      repository: 'PrairieLearn/course',
+      branch: 'master',
+      baseCommit: 'a'.repeat(40),
+      additions: [],
+      deletions: [{ path: 'question.html' }],
+    })),
   };
   const env = {
     OPENAI_MODEL: 'test',
@@ -468,6 +477,102 @@ it('refuses messages while limited, and Resume after the reset sends them', asyn
   );
 });
 
+it('adds a message to the running turn, and nothing once the turn cannot take it', async () => {
+  stubFetch({ usage: async () => decision() });
+  const streaming = vi
+    .spyOn(CodexAppServerClient.prototype, 'streaming', 'get')
+    .mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const steer = vi.spyOn(CodexAppServerClient.prototype, 'steer').mockResolvedValue(null);
+  const state = await runningConversation();
+  const { conversation } = state;
+  const steerParts = () =>
+    emit.mock.calls.map(([chunk]) => chunk).filter((chunk) => chunk.type === 'data-steer');
+  const message = {
+    id: crypto.randomUUID(),
+    text: 'Use SI units',
+    location: { path: '/pl/course/1/question/2/preview', page: 'question.preview' },
+  };
+  expect(await conversation.steer(message)).toBe(true);
+  expect(steer).toHaveBeenCalledWith({
+    tag: `steer:${message.id}`,
+    text: 'Use SI units',
+    page: expect.stringContaining('"question.preview"'),
+  });
+  expect(steerParts()).toEqual([{ type: 'data-steer', id: `steer:${message.id}`, data: message }]);
+  // A repeated request, such as a retry after a lost reply, adds nothing.
+  expect(await conversation.steer(message)).toBe(true);
+  expect(steer).toHaveBeenCalledOnce();
+
+  // Codex refuses a message that arrives as the turn ends, and chat history shows none.
+  steer.mockResolvedValueOnce('no active turn to steer');
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'Too late' })).toBe(false);
+  expect(steerParts()).toHaveLength(1);
+
+  // Stop closes the response while Codex takes a message, so chat cannot show it.
+  steer.mockImplementationOnce(async () => {
+    streaming.mockReturnValue(false);
+    return null;
+  });
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'As it stops' })).toBe(false);
+  expect(steerParts()).toHaveLength(1);
+  streaming.mockReturnValue(true);
+
+  // A review awaiting its result holds new input here as it does between turns.
+  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+  await options.onReview!({
+    threadId: 'native-thread',
+    turnId: 'native-turn',
+    callId: 'call',
+    namespace: null,
+    tool: 'request_changes',
+    arguments: {},
+  });
+  expect(conversation.state.reviewId).not.toBeNull();
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'One more' })).toBe(false);
+
+  await state.finish();
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'After' })).toBe(false);
+  expect(steer).toHaveBeenCalledTimes(3);
+});
+
+it('holds a message sent before Codex accepts the turn, and refuses one after Stop', async () => {
+  stubFetch({ usage: async () => decision() });
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const steer = vi.spyOn(CodexAppServerClient.prototype, 'steer').mockResolvedValue(null);
+  const { conversation } = fixture();
+  await conversation.onStart();
+  await conversation.persistMessages([
+    { id: 'user', role: 'user', parts: [{ type: 'text', text: 'Edit this question' }] },
+  ]);
+  const stop = new AbortController();
+  await conversation.onChatMessage(undefined, { requestId: 'initial', abortSignal: stop.signal });
+  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+  expect(conversation.state.status).toBe('starting');
+  const first = { id: crypto.randomUUID(), text: 'Use SI units' };
+  const second = { id: crypto.randomUUID(), text: 'And add a figure' };
+  expect(await conversation.steer(first)).toBe(true);
+  expect(await conversation.steer(second)).toBe(true);
+  // Chat shows them at once, but Codex has no turn to add them to yet.
+  expect(emit.mock.calls.map(([chunk]) => chunk)).toMatchObject([
+    { type: 'data-steer', data: first },
+    { type: 'data-steer', data: second },
+  ]);
+  expect(steer).not.toHaveBeenCalled();
+  await options.prepare();
+  options.onThread('native-thread');
+  options.onReady();
+  options.onAccepted('native-turn');
+  await vi.waitFor(() => expect(steer).toHaveBeenCalledTimes(2));
+  expect(steer.mock.calls.map(([input]) => input.text)).toEqual([first.text, second.text]);
+
+  stop.abort();
+  expect(conversation.state.status).toBe('stopping');
+  expect(await conversation.steer({ id: crypto.randomUUID(), text: 'Never mind' })).toBe(false);
+  expect(steer).toHaveBeenCalledTimes(2);
+});
+
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {
   freezeTime();
   stubFetch({ usage: async () => decision() });
@@ -584,6 +689,85 @@ it('charges the estimate when final usage never arrives', async () => {
   const restored = fixture(state.saved).conversation;
   await restored.onStart();
   expect(restored.schedule).toHaveBeenCalledWith(0, 'flushUsage', undefined, { idempotent: true });
+});
+
+it('charges a reply the agent dropped what the provider reports, even after the turn ends', async () => {
+  const replies: ReadableStreamDefaultController<Uint8Array>[] = [];
+  stubFetch({
+    usage: async () => decision(),
+    model: async () =>
+      new Response(new ReadableStream<Uint8Array>({ start: (reply) => void replies.push(reply) }), {
+        headers: { 'Content-Type': 'text/event-stream' },
+      }),
+  });
+  const waited = Promise.withResolvers<undefined>();
+  vi.stubGlobal('scheduler', { wait: () => waited.promise });
+  const state = await runningConversation();
+  // Codex drops the reply it is reading to deliver a message staff sent. Two such replies are
+  // still running when the turn ends normally.
+  for (const response of [await state.startRequest(), await state.startRequest()]) {
+    // Not awaited: this settles only once the Worker's own copy of the reply is done.
+    void response.body!.cancel();
+  }
+  await state.finish();
+  expect(metering(state.saved).unreported).toEqual(emptyUsage());
+
+  const usage = {
+    input_tokens: 30_000,
+    input_tokens_details: { cached_tokens: 29_000 },
+    output_tokens: 800,
+  };
+  replies[0].enqueue(
+    new TextEncoder().encode(
+      `data: ${JSON.stringify({ type: 'response.completed', response: { usage } })}\n\n`,
+    ),
+  );
+  replies[0].close();
+  const reported = {
+    ...emptyUsage(),
+    inputTokens: 30_000,
+    cachedInputTokens: 29_000,
+    outputTokens: 800,
+  };
+  await vi.waitFor(() => expect(metering(state.saved).unreported).toEqual(reported));
+
+  // A reply that outlasts the wait is given up on and charged its estimate.
+  waited.resolve(undefined);
+  await vi.waitFor(() =>
+    expect(metering(state.saved).unreported).toEqual({
+      ...reported,
+      inputTokens: 30_001,
+      outputTokens: 16_800,
+    }),
+  );
+});
+
+it('gives up the oldest dropped reply to make room for a model request, but never a search', async () => {
+  const unanswered = Promise.withResolvers<Response>();
+  let reply = async () =>
+    new Response(new ReadableStream(), { headers: { 'Content-Type': 'text/event-stream' } });
+  const { fetch } = stubFetch({ usage: async () => decision(), model: () => reply() });
+  const providerCalls = () => fetch.mock.calls.filter(([url]) => !String(url).endsWith('/usage'));
+  const state = await runningConversation();
+  // Each message staff send makes Codex drop the reply it is reading and ask again. The fifth
+  // request would exceed the limit, so the first reply is charged its estimate instead.
+  for (let request = 0; request < 5; request++) {
+    expect((await state.startRequest()).status).toBe(200);
+  }
+  expect(metering(state.saved).unreported).toEqual({
+    ...emptyUsage(),
+    inputTokens: 1,
+    outputTokens: 16_000,
+  });
+
+  // Searches run side by side and Codex waits for each, so they are never given up.
+  const searching = await runningConversation();
+  reply = () => unanswered.promise;
+  const searches = [1, 2, 3, 4].map(() => searching.search(1));
+  await vi.waitFor(() => expect(providerCalls()).toHaveLength(9));
+  expect((await searching.startRequest()).status).toBe(429);
+  unanswered.resolve(Response.json({ output: 'Results' }));
+  await Promise.all(searches);
 });
 
 it('reports usage recorded while a flush is in flight, even once that flush limits the turn', async () => {

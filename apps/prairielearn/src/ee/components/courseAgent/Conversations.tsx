@@ -23,6 +23,8 @@ import {
   type ConversationState,
   type InputRequestPart,
   InputRequestPartSchema,
+  MAX_STEER_CHARS,
+  SteerPartSchema,
   type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
@@ -401,6 +403,13 @@ function Chat({
   });
   const denyError = getAppError<CourseAgentError['PostReviewDecision']>(deny.error);
   const canStop = lifecycle?.status === 'starting' || lifecycle?.status === 'waiting_for_agent';
+  // A message sent while the agent works joins the turn that is running, so it is not sent over
+  // the chat socket, which would start a turn of its own.
+  const steer = useMutation(trpc.courseAgent.steer.mutationOptions());
+  const steerError = getAppError<CourseAgentError['Steer']>(steer.error);
+  // One ID per message, kept across attempts, so sending it again after a lost reply or pressing
+  // Enter twice adds it to the turn once.
+  const steerAttemptRef = useRef<{ text: string; id: string } | null>(null);
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
 
@@ -521,21 +530,46 @@ function Chat({
   const turnRunning = canStop;
   const hiddenReviewId =
     turnRunning && review.data?.status !== 'decided' ? (lifecycle.reviewId ?? null) : null;
+  // A message staff sent while the agent worked answers what the agent asked before it.
+  const latestPartTypes = latest?.role === 'assistant' ? latest.parts.map(({ type }) => type) : [];
   const inputRequestOpen =
     !turnRunning &&
-    latest?.role === 'assistant' &&
-    latest.parts.some((part) => part.type === 'data-input-request');
+    latestPartTypes.lastIndexOf('data-input-request') > latestPartTypes.lastIndexOf('data-steer');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
   const canSend = connected && readyToSend && !responseActive && !sending;
+  // Files reach the agent when a turn starts, so a message with files waits for the next one.
+  const waitingToSendFiles = canStop && !pendingReview && drafts.attachments.length > 0;
+  const canSteer = connected && canStop && !pendingReview && drafts.attachments.length === 0;
+  const tooLongToSteer = canSteer && draft.trim().length > MAX_STEER_CHARS;
 
   const submit = (event?: SyntheticEvent) => {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || responseActive || !connected || sending || deny.isPending) return;
+    if (!text || !connected || sending || deny.isPending || steer.isPending) return;
+    if (canSteer) {
+      if (tooLongToSteer) return;
+      if (steerAttemptRef.current?.text !== text) {
+        steerAttemptRef.current = { text, id: crypto.randomUUID() };
+      }
+      steer.mutate(
+        { conversationId, id: steerAttemptRef.current.id, text, location: currentPageLocation() },
+        {
+          onSuccess: () => {
+            steerAttemptRef.current = null;
+            setDraft('');
+          },
+        },
+      );
+      return;
+    }
+    if (responseActive) return;
     if (!replyDenies && !canSend) return;
+    // An earlier message the agent finished too soon to take goes out this way instead.
+    steer.reset();
+    steerAttemptRef.current = null;
     void send(text, drafts.attachments, replyDenies ? lifecycle.reviewId! : undefined).then(
       (sent) => {
         if (sent) setDraft('');
@@ -621,6 +655,9 @@ function Chat({
           {deny.isError && (
             <AppErrorAlert error={denyError} render={{ UNKNOWN: ({ message }) => message }} />
           )}
+          {steer.isError && (
+            <AppErrorAlert error={steerError} render={{ UNKNOWN: ({ message }) => message }} />
+          )}
           {(connectionError || connectionFailed) && (
             <Alert variant="danger">
               Could not connect to the course agent.{!connectionError && ' Reconnecting…'}
@@ -635,7 +672,7 @@ function Chat({
       </div>
       <Composer
         draft={draft}
-        disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
+        disabled={!connected || !(readyToSend || replyDenies || canSteer) || deny.isPending}
         placeholder={
           replyDenies
             ? 'Explain what to change…'
@@ -644,7 +681,15 @@ function Chat({
               : undefined
         }
         sendLabel={replyDenies ? 'Deny and send' : undefined}
-        pending={sending || deny.isPending}
+        pending={sending || deny.isPending || steer.isPending}
+        notice={
+          waitingToSendFiles
+            ? 'You can send files once the agent finishes.'
+            : tooLongToSteer
+              ? 'This message is too long to send while the agent works. Shorten it, or send it once the agent finishes.'
+              : undefined
+        }
+        sendWhileRunning={canSteer && !tooLongToSteer}
         attachments={drafts.attachments}
         stopDisabled={!connected || !canStop}
         onAttach={drafts.add}
@@ -669,6 +714,8 @@ function Composer({
   placeholder = 'Ask the course agent…',
   sendLabel = 'Send',
   pending = false,
+  notice,
+  sendWhileRunning = false,
   attachments,
   onAttach,
   onRemoveAttachment,
@@ -684,6 +731,10 @@ function Composer({
   sendLabel?: string;
   /** Sending: the draft and its attachments stay visible but can't be edited. */
   pending?: boolean;
+  /** Why the message can't be sent yet. */
+  notice?: string;
+  /** Show Send beside Stop: the agent takes messages while it works. */
+  sendWhileRunning?: boolean;
   attachments: DraftAttachment[];
   onAttach: (files: File[]) => void;
   onRemoveAttachment: (key: string) => void;
@@ -718,7 +769,8 @@ function Composer({
           value={draft}
           placeholder={placeholder}
           aria-label="Message"
-          disabled={pending}
+          // Read-only rather than disabled, so the box keeps focus for the next message.
+          readOnly={pending}
           onChange={(event) => onDraftChange(event.target.value)}
           onKeyDown={onKeyDown}
           onPaste={(event) => {
@@ -734,6 +786,11 @@ function Composer({
             onAttach([...event.clipboardData.files]);
           }}
         />
+        {notice && (
+          <div className="small text-body-secondary px-2 pb-2" role="status">
+            {notice}
+          </div>
+        )}
         <div className="d-flex align-items-center gap-2 px-2 pb-2">
           <input
             ref={fileInputRef}
@@ -757,7 +814,7 @@ function Composer({
           </Button>
           <div className="d-flex align-items-center gap-2 ms-auto">
             {children}
-            {onStop ? (
+            {onStop && (
               <Button
                 variant="outline-secondary"
                 size="sm"
@@ -767,7 +824,8 @@ function Composer({
                 <i className="bi bi-stop-fill me-1" aria-hidden="true" />
                 Stop
               </Button>
-            ) : (
+            )}
+            {(!onStop || sendWhileRunning) && (
               <Button
                 type="submit"
                 size="sm"
@@ -860,7 +918,7 @@ function Message({
   // the end of the message.
   type Card =
     | { kind: 'review'; reviewId: string }
-    | { kind: 'input'; key: string; request: InputRequestPart };
+    | { kind: 'input'; key: string; request: InputRequestPart; answered?: boolean };
   const renderCard = (card: Card) =>
     card.kind === 'review' ? (
       // One key per review, so the card keeps its state when the marker arrives.
@@ -874,7 +932,7 @@ function Message({
       <InputRequestCard
         key={card.key}
         part={card.request}
-        answered={answered}
+        answered={answered || card.answered === true}
         canAnswer={canAnswer}
         onAnswer={onAnswer}
       />
@@ -917,6 +975,20 @@ function Message({
     } else if (part.type === 'data-input-request') {
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
+    } else if (part.type === 'data-steer') {
+      const steer = SteerPartSchema.safeParse(part.data).data;
+      if (!steer) continue;
+      // It answers what the agent asked before it, so those cards go above it as answered.
+      rendered.push(
+        ...cards.map((card) =>
+          renderCard(card.kind === 'input' ? { ...card, answered: true } : card),
+        ),
+        // Spaced like a message of its own, which is how staff sent it.
+        <div key={key} className="d-flex flex-column my-2">
+          <UserMessage text={steer.text} />
+        </div>,
+      );
+      cards = [];
     } else if (part.type === 'data-turn') {
       rendered.push(...cards.map(renderCard));
       cards = [];

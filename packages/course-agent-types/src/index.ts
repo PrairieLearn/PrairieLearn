@@ -332,6 +332,36 @@ export type PageLocation = z.infer<typeof PageLocationSchema>;
 /** Metadata the browser attaches to a user message. */
 export const UserMessageMetadataSchema = z.object({ location: PageLocationSchema.optional() });
 
+/** Tags a message sent while the agent was working, on its part and on Codex's copy of it. */
+export const steerTag = (steerId: string) => `steer:${steerId}`;
+
+export const MAX_STEER_CHARS = 20_000;
+
+/**
+ * A message staff send while the agent is working. The agent takes it into account in the turn
+ * that is running, so it has no reply of its own. The browser chooses the ID, which makes a
+ * repeated request harmless.
+ */
+export const SteerInputSchema = z.strictObject({
+  id: z.uuid(),
+  text: z.string().trim().min(1).max(MAX_STEER_CHARS),
+  location: PageLocationSchema.optional(),
+});
+
+export type SteerInput = z.infer<typeof SteerInputSchema>;
+
+/**
+ * A `data-steer` part: a message staff sent while the agent was working, placed in the agent's
+ * reply where it arrived. Unknown fields are stripped, so either side can add one before the other.
+ */
+export const SteerPartSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  location: PageLocationSchema.optional(),
+});
+
+export type SteerPart = z.infer<typeof SteerPartSchema>;
+
 /**
  * Input the agent requested from staff with Codex's `request_user_input_async`, in a
  * `data-input-request` part keyed by the Codex item ID. The tool returns at once; staff's next
