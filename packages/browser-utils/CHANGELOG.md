@@ -1,5 +1,15 @@
 # @prairielearn/browser-utils
 
+## 2.8.0
+
+### Minor Changes
+
+- 642310b: Add a `returnFocusTo` option to `trapFocus()` for choosing the element that receives focus when the trap is deactivated
+
+### Patch Changes
+
+- 333f741: Keep focus inside a `trapFocus()` container when Tab is pressed while focus is on an element outside the tab order, such as one with `tabindex="-1"`
+
 ## 2.7.8
 
 ### Patch Changes
