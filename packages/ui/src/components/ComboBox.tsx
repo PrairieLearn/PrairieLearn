@@ -71,6 +71,11 @@ export interface ComboBoxProps<T = void> extends Omit<
   onCreate?: (value: string) => void;
   /** Renders the contents of the "create" option. */
   renderCreateOption?: (value: string) => ReactNode;
+  /**
+   * An action pinned to the bottom of the list, such as a link to manage the
+   * available items. It is a list option so it can be reached with the keyboard.
+   */
+  footerAction?: ComboBoxFooterAction;
 }
 
 export interface TagPickerProps<T = void> {
@@ -105,6 +110,20 @@ export interface TagPickerProps<T = void> {
   renderTagContent?: (data: T) => ReactNode;
   /** Returns the class name for the tag badge wrapper. Defaults to "badge bg-secondary". */
   tagClassName?: (data: T) => string;
+  /**
+   * An action pinned to the bottom of the list, such as a link to manage the
+   * available items. It is a list option so it can be reached with the keyboard.
+   */
+  footerAction?: ComboBoxFooterAction;
+}
+
+export interface ComboBoxFooterAction {
+  label: ReactNode;
+  /** Plain-text label used for accessibility and typeahead. */
+  textValue: string;
+  /** Bootstrap icon name, e.g. `bi-pencil`. */
+  icon?: string;
+  onAction: () => void;
 }
 
 /** Sentinel key for the "create" option; it can never collide with a real item ID. */
@@ -144,6 +163,33 @@ function CreateOption({ value, children }: { value: string; children: ReactNode 
   );
 }
 
+const FOOTER_OPTION_KEY = '__pl_footer_option__';
+
+function FooterOption({ action }: { action: ComboBoxFooterAction }) {
+  return (
+    <ListBoxItem
+      id={FOOTER_OPTION_KEY}
+      className={({ isFocused }) =>
+        clsx(
+          'dropdown-item d-flex align-items-center gap-2 border-top small',
+          isFocused ? 'active' : 'text-body-secondary',
+        )
+      }
+      // Stick to the bottom of the scrolling popover so it's always visible.
+      style={({ isFocused }) => ({
+        cursor: 'pointer',
+        position: 'sticky',
+        bottom: 0,
+        backgroundColor: isFocused ? undefined : 'var(--bs-dropdown-bg)',
+      })}
+      textValue={action.textValue}
+    >
+      {action.icon && <i className={clsx('bi', action.icon)} aria-hidden="true" />}
+      <span className="flex-grow-1 text-truncate">{action.label}</span>
+    </ListBoxItem>
+  );
+}
+
 function defaultRenderItem<T>(item: ComboBoxItem<T>) {
   return <span>{item.label}</span>;
 }
@@ -173,6 +219,7 @@ export function ComboBox<T = void>({
   renderItem = defaultRenderItem,
   onCreate,
   renderCreateOption = defaultRenderCreateOption,
+  footerAction,
   ...props
 }: ComboBoxProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
@@ -205,6 +252,10 @@ export function ComboBox<T = void>({
         inputValue={filterText}
         allowsEmptyCollection
         onChange={(key) => {
+          if (key === FOOTER_OPTION_KEY) {
+            footerAction?.onAction();
+            return;
+          }
           if (key === CREATE_OPTION_KEY) {
             justCreatedRef.current = true;
             onCreate?.(createValue);
@@ -294,6 +345,7 @@ export function ComboBox<T = void>({
                 {showCreate && (
                   <CreateOption value={createValue}>{renderCreateOption(createValue)}</CreateOption>
                 )}
+                {footerAction && <FooterOption action={footerAction} />}
               </ListBox>
             </Popover>
           </>
@@ -326,6 +378,7 @@ export function TagPicker<T = void>({
   renderItem = defaultRenderItem,
   renderTagContent = defaultRenderTagContent,
   tagClassName = defaultTagClassName,
+  footerAction,
 }: TagPickerProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -408,10 +461,15 @@ export function TagPicker<T = void>({
         menuTrigger="focus"
         selectionMode="multiple"
         value={value}
+        defaultFilter={() => true}
         allowsEmptyCollection={!createAsButton}
         allowsCustomValue={!!onCreate}
         onChange={(keys) => {
           const nextKeys = keys as string[];
+          if (nextKeys.includes(FOOTER_OPTION_KEY)) {
+            footerAction?.onAction();
+            return;
+          }
           if (nextKeys.includes(CREATE_OPTION_KEY)) {
             createValue();
             return;
@@ -528,6 +586,7 @@ export function TagPicker<T = void>({
                     {renderCreateOption(pendingCreateValue)}
                   </CreateOption>
                 )}
+                {footerAction && <FooterOption action={footerAction} />}
               </ListBox>
             </Popover>
           </>

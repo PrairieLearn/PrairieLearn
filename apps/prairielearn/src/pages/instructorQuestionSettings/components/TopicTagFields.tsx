@@ -18,7 +18,7 @@ import {
 } from '../../../lib/client/safe-db-types.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 
-export type TopicTagVariant = 'inline' | 'modal' | 'popover';
+export type TopicTagVariant = 'inline' | 'modal' | 'popover' | 'manage';
 
 type Entity = StaffTopic | StaffTag;
 type EntityType = 'topic' | 'tag';
@@ -205,6 +205,23 @@ export function TopicTagField<E extends Entity>({
     </>
   );
 
+  const allowCreate = variant !== 'manage';
+  const manageNoun = isTopic ? 'topics' : 'tags';
+  // Opens in a new tab so unsaved changes on this form aren't lost.
+  const footerAction =
+    variant === 'manage'
+      ? {
+          icon: 'bi-pencil',
+          textValue: `Edit ${manageNoun} (opens in a new tab)`,
+          label: (
+            <>
+              Edit {manageNoun} <i className="bi bi-box-arrow-up-right ms-1" aria-hidden="true" />
+            </>
+          ),
+          onAction: () => window.open(manageUrl, '_blank', 'noopener'),
+        }
+      : undefined;
+
   const field =
     variant === 'popover' ? (
       <LabelPicker
@@ -252,12 +269,13 @@ export function TopicTagField<E extends Entity>({
             name={id}
             items={items}
             value={value[0] ?? null}
-            placeholder="Select or create a topic"
+            placeholder={allowCreate ? 'Select or create a topic' : 'Select a topic'}
             aria-labelledby={`${id}-label`}
             renderItem={(item) => <ItemContent entityType={entityType} entity={item.data!} />}
             renderCreateOption={renderCreateOption}
+            footerAction={footerAction}
             onChange={(v) => onChange(v ? [v] : [])}
-            onCreate={handleCreate}
+            onCreate={allowCreate ? handleCreate : undefined}
           />
         ) : (
           <TagPicker
@@ -265,14 +283,15 @@ export function TopicTagField<E extends Entity>({
             name={id}
             items={items}
             value={value}
-            placeholder="Select or create tags"
+            placeholder={allowCreate ? 'Select or create tags' : 'Select tags'}
             aria-labelledby={`${id}-label`}
             renderItem={(item) => <ItemContent entityType={entityType} entity={item.data!} />}
             renderTagContent={(data) => data.name}
             tagClassName={(data) => `badge color-${data.color}`}
             renderCreateOption={renderCreateOption}
+            footerAction={footerAction}
             onChange={onChange}
-            onCreate={handleCreate}
+            onCreate={allowCreate ? handleCreate : undefined}
           />
         )}
       </>

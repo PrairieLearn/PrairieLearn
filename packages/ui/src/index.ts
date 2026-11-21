@@ -65,6 +65,7 @@ export { useResizeHandle } from './hooks/use-resize-handle.js';
 export {
   ComboBox,
   TagPicker,
+  type ComboBoxFooterAction,
   type ComboBoxItem,
   type ComboBoxProps,
   type TagPickerProps,

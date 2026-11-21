@@ -799,7 +799,7 @@ router.get(
               courseTopics={parsedCourseTopics}
               courseTags={parsedCourseTags}
               topicTagVariant={z
-                .enum(['inline', 'modal', 'popover'])
+                .enum(['inline', 'modal', 'popover', 'manage'])
                 .catch('inline')
                 .parse(req.query.variant)}
             />
