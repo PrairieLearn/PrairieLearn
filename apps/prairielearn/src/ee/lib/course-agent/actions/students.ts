@@ -326,7 +326,9 @@ const UpdateExtensionInputSchema = z.strictObject({
   ...COURSE_INSTANCE_INPUT,
   name: z.string().min(1).describe('Name of the extension to change.'),
   new_name: ExtensionNameSchema.optional().describe('A new name for the extension.'),
-  end_date: ExtensionEndDateSchema.optional(),
+  end_date: ExtensionEndDateSchema.optional().describe(
+    "A new time for the students' access to end, as an ISO 8601 timestamp with an offset or Z. Work it out in the course instance's display_timezone.",
+  ),
   add_uids: UidsSchema.optional().describe('UIDs of students to add to the extension.'),
   remove_uids: UidsSchema.optional().describe('UIDs of students to take out of the extension.'),
 });
