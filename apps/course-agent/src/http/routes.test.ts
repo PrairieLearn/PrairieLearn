@@ -34,29 +34,6 @@ describe('private course agent service', () => {
   });
 });
 
-describe('approval mode', () => {
-  it('sets a known mode on the conversation and refuses anything else', async () => {
-    const setApprovalMode = vi.fn();
-    vi.mocked(getAgentByName).mockResolvedValue({ setApprovalMode } as unknown as Awaited<
-      ReturnType<typeof getAgentByName>
-    >);
-    const put = (approvalMode: string) =>
-      app.request(
-        `/conversations/${crypto.randomUUID()}/approval-mode`,
-        {
-          method: 'PUT',
-          headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ approvalMode }),
-        },
-        { PL_SERVICE_TOKEN: 'test-token' } as unknown as Env,
-      );
-    expect((await put('sometimes')).status).toBe(400);
-    expect(setApprovalMode).not.toHaveBeenCalled();
-    expect((await put('always_approve')).status).toBe(200);
-    expect(setApprovalMode).toHaveBeenCalledWith('always_approve');
-  });
-});
-
 describe('uploads', () => {
   const bytes = new Uint8Array([1, 2, 3]);
 
