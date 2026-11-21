@@ -10,7 +10,6 @@ import {
   type SyntheticEvent,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -50,6 +49,7 @@ import {
   useDraftAttachments,
 } from './Attachments.js';
 import { BlockedNotice } from './BlockedNotice.js';
+import { ChatCodeBlock } from './ChatDiff.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
@@ -551,7 +551,16 @@ function Chat({
 
   return (
     <FileDropArea enabled={!sending} onDrop={drafts.add}>
-      <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
+      <div
+        ref={stickToBottom.scrollRef}
+        className="flex-grow-1 overflow-y-auto"
+        // Scrollable regions must be reachable by keyboard. Safari only scrolls with Page Up, Page
+        // Down, or the arrow keys when the scrollable area itself has focus.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        role="region"
+        aria-label="Conversation"
+      >
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
@@ -696,26 +705,6 @@ function Composer({
   onStop?: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Fit the message box to its text, including when the draft is cleared after sending. CSS caps
-  // the height.
-  useLayoutEffect(() => {
-    if (textareaRef.current) fitToText(textareaRef.current);
-  }, [draft]);
-  // The text rewraps when the box's width changes, such as when the window or panel is resized.
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    let width = textarea.clientWidth;
-    const observer = new ResizeObserver(() => {
-      // Fitting changes the height, which this also observes.
-      if (textarea.clientWidth === width) return;
-      width = textarea.clientWidth;
-      fitToText(textarea);
-    });
-    observer.observe(textarea);
-    return () => observer.disconnect();
-  }, []);
   const invalidAttachment = hasInvalidAttachment(attachments);
   const submit = (event: SyntheticEvent) => {
     event.preventDefault();
@@ -736,7 +725,6 @@ function Composer({
           onRemove={onRemoveAttachment}
         />
         <Form.Control
-          ref={textareaRef}
           as="textarea"
           rows={2}
           className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
@@ -811,11 +799,6 @@ function Composer({
       </div>
     </Form>
   );
-}
-
-function fitToText(textarea: HTMLTextAreaElement) {
-  textarea.style.height = 'auto';
-  textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
 function reviewInHistory(messages: UIMessage[], reviewId: string) {
@@ -936,7 +919,15 @@ function Message({
     const { key, part } = segment;
     const navigation = navigationOf(part);
     if (part.type === 'text' && part.text.trim()) {
-      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} math />);
+      rendered.push(
+        <TextPart
+          key={key}
+          part={part}
+          urlTransform={linkTransform}
+          codeBlock={ChatCodeBlock}
+          math
+        />,
+      );
     } else if (part.type === 'reasoning' && part.text.trim()) {
       rendered.push(<ReasoningBlock key={key} part={part} math />);
     } else if (navigation) {

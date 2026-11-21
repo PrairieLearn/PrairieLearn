@@ -1,14 +1,16 @@
 export type QuestionBlockSize = 'auto' | 'third' | 'half' | 'full';
 
-const QUESTION_BLOCK_SIZE_LOOKUP = {
-  auto: true,
-  third: true,
-  half: true,
-  full: true,
-} satisfies Record<QuestionBlockSize, true>;
+export const QUESTION_BLOCK_SIZES = [
+  'auto',
+  'third',
+  'half',
+  'full',
+] as const satisfies readonly QuestionBlockSize[];
+
+const QUESTION_BLOCK_SIZE_SET: ReadonlySet<string> = new Set(QUESTION_BLOCK_SIZES);
 
 function isQuestionBlockSize(value: string): value is QuestionBlockSize {
-  return Object.hasOwn(QUESTION_BLOCK_SIZE_LOOKUP, value);
+  return QUESTION_BLOCK_SIZE_SET.has(value);
 }
 
 export function parseQuestionBlockSize(value: string | undefined): QuestionBlockSize {
