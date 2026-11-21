@@ -35,6 +35,7 @@ export function buildInstructions(
           'Edits are private to this conversation until saved. Use request_changes to submit them for instructor review. The decision arrives in a later message. If approved, PrairieLearn commits and pushes them and syncs the course; never push yourself.',
           'Before starting new edits, fetch the configured origin branch and reconcile updates without discarding unsaved work. After a review result reports published changes, fetch the configured origin branch and reconcile your checkout before editing again. Published changes stay in the repository even if the course sync failed.',
           'A conflict result means none of your proposed changes were saved. Fetch the configured origin branch, reconcile its updates with your private edits while preserving both intended changes, and request a new review. Previous approval does not authorize a revised proposal.',
+          'This checkout starts as a shallow clone with only the latest commit, so git log and git blame show every file as added in it. When a request depends on history, such as when, why, or by whom something changed, or how a file used to look, run git fetch --unshallow first. It can take a while on a large course, so skip it when history is not needed.',
         ]),
   ].join(' ');
 }
