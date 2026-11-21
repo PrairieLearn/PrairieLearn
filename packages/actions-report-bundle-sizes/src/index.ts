@@ -36,6 +36,18 @@ function formatChange(oldSize: number, newSize: number): string {
   return `${sign}${formatBytes(diff)} (${sign}${pct}%)`;
 }
 
+/**
+ * Lazily loaded chunks are keyed by their source path relative to the assets
+ * directory, such as `../src/...` or
+ * `../../../node_modules/.pnpm/<package>@<version>.../node_modules/<package>/...`.
+ * Shows them without the leading `../` and pnpm's store directory.
+ */
+function displayName(key: string) {
+  return key
+    .replace(/^(?:\.\.\/)+/, '')
+    .replace(/^node_modules\/\.pnpm\/[^/]+\/node_modules\//, '');
+}
+
 interface DiffEntry {
   name: string;
   kind: 'changed' | 'new' | 'removed';
@@ -129,7 +141,7 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
     );
 
     for (const entry of entries) {
-      const name = `\`${entry.name}\``;
+      const name = `\`${displayName(entry.name)}\``;
       if (entry.kind === 'new') {
         lines.push(`| ${name} | — | ${formatBytes(entry.newGzip!)} | new |`);
       } else if (entry.kind === 'removed') {

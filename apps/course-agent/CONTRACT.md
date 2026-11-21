@@ -85,6 +85,8 @@ PrairieLearn sends a page catalog (`PageCatalogSchema`) when it creates a conver
 
 `offer_page` is a native dynamic tool, registered when a thread starts, with the catalog's keys as its `page` enum and the catalog's params as its `params` object. The DO resolves a target with `POST /pl/api/v1/course/:course_id/agent_navigation`, authenticated with `PL_SERVICE_TOKEN` and the conversation's ID, so PrairieLearn looks the names up as the conversation's user. A page or name PrairieLearn does not know fails the tool call with PrairieLearn's message. Otherwise the DO emits a `data-navigation` part (`NavigationPartSchema`) carrying the resolved URL, label, and subtitle, which the chat shows as a link. The page changes only when the instructor follows it.
 
+`offer_reload` is registered the same way for every thread and takes no arguments. It emits a `data-reload` part with no data, which the chat shows as a button that reloads the page the instructor is viewing when they click it. The agent uses it once approved changes are saved and synced and the instructor is already on a page that shows them.
+
 ## Reviews
 
 A review is a snapshot of the agent's edits that an instructor approves or denies in PrairieLearn, with the outcome delivered back to the agent in a later turn. Each fact has one owner:
@@ -140,6 +142,8 @@ A message refers to each attachment with a `file` part whose URL is `upload:<id>
 - Before admitting a message, the conversation checks that its uploads exist and reads their first bytes to find images. A missing upload refuses the message, which counts as handled like any other refusal.
 - Each turn copies its message's attachments to `/uploads/<id>/<name>` as root-owned, read-only files; the image creates `/uploads` root-owned, so the agent can't swap it for a link that root writes through. A turn that starts a sandbox, including a checkpoint restore, also copies every earlier attachment, skipping uploads that have expired. The directory is outside `/workspace`, so checkpoints don't copy attachments, and outside the course checkout, so review capture never includes them.
 - Codex has no input for arbitrary files, so the prompt lists every attachment's path in the format the Codex desktop app sends (`# Files mentioned by the user:` … `## My request:`). Images also go to Codex as `localImage` input. Catch-up text lists earlier attachments.
+- Staff can download a sent attachment, and see a preview of an image, through PrairieLearn, which serves both from its own origin. PrairieLearn's proxy decides how they display, whatever the Worker sends: only a PNG, JPEG, GIF, or WebP displays, anything else downloads as `application/octet-stream`, and every response carries a sandboxing Content-Security-Policy, `nosniff`, and `Cache-Control: no-store`, so a browser never serves one without PrairieLearn's owner check. The Worker serves uploads as `application/octet-stream`.
+- The browser makes each image's preview (at most 256 pixels on its longer side, shown in its tile) and stores it at `uploads/<conversation>/thumbnails/<id>` after the upload succeeds; Workers can't resize images without Cloudflare Images. Only an existing upload can get a preview. The Worker stores a preview of at most 512 KB only if its bytes are one of those image types, recording that type, and previews don't count toward the conversation's cap.
 
 ## Local course sources
 

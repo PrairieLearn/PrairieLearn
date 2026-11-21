@@ -52,8 +52,11 @@ UPDATE lti13_course_instances
 SET
   context_label = $context_label,
   context_title = $context_title,
-  lineitems_url = $lineitems_url,
-  context_memberships_url = $context_memberships_url,
+  -- An LMS may omit the AGS and NRPS claims for launches that don't support
+  -- grade passback, such as Coursera practice items. Keep the URLs from an
+  -- earlier launch so those launches don't disable assessment linking.
+  lineitems_url = COALESCE($lineitems_url, lineitems_url),
+  context_memberships_url = COALESCE($context_memberships_url, context_memberships_url),
   resource_link_id = $resource_link_id
 WHERE
   lti13_instance_id = $lti13_instance_id
