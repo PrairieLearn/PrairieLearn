@@ -418,6 +418,8 @@ export class CourseSandbox extends DurableObject<Env> {
     const started = Date.now();
     // Reviews only need the branch tip, and later fetches still work from a shallow clone.
     // Full history made large course repositories take most of startup to clone.
+    // The agent's instructions say the clone is shallow and how to deepen it when a request
+    // needs history; keep them in step with this.
     await this.exec(
       [
         'git',

@@ -3,6 +3,7 @@ import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
 import { type UIMessage } from 'ai';
+import clsx from 'clsx';
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -41,13 +42,15 @@ import {
   FileDropArea,
   SentAttachments,
   hasInvalidAttachment,
+  revokePreviews,
   uploadDraftAttachments,
   useDraftAttachments,
 } from './Attachments.js';
 import { BlockedNotice } from './BlockedNotice.js';
+import { ChatCodeBlock } from './ChatDiff.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
-import { NavigationCard, navigationOf } from './Navigation.js';
+import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { ToolCalls } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -148,7 +151,7 @@ function ConversationPicker({
         ...(current ?? []),
       ]);
       setPickedId(conversation.id);
-      // The new conversation's chat now owns the attachments.
+      // The new conversation's chat now owns the attachments and their previews.
       drafts.setAttachments([]);
       void queryClient.invalidateQueries({ queryKey: trpc.courseAgent.list.queryKey() });
     },
@@ -204,7 +207,7 @@ function ConversationPicker({
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
               setDraft('');
-              drafts.setAttachments([]);
+              drafts.clear();
               create.reset();
             }}
           >
@@ -401,6 +404,7 @@ function Chat({
   // Wait for initial history before allowing messages to be sent.
   const connected = agent.readyState === 1 && historyReady;
 
+  const uploadsUrl = `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`;
   const { setStatus, setAttachments } = drafts;
   const { reset: resetDeny, mutateAsync: denyAsync } = deny;
   const offline = lifecycle?.status === 'offline';
@@ -412,7 +416,7 @@ function Chat({
     async (text: string, attachments: DraftAttachment[], deniedReviewId?: string) => {
       setSending(true);
       const files = await uploadDraftAttachments(attachments, {
-        url: `/pl/course/${courseId}/course_agent/conversations/${conversationId}/uploads`,
+        url: uploadsUrl,
         csrfToken: chatCsrfToken,
         setStatus,
       });
@@ -438,13 +442,16 @@ function Chat({
       resetDeny();
       void sendMessage({ text, files, metadata: { location: currentPageLocation() } });
       // An answer chosen on an input request leaves the composer's attachments alone.
-      if (attachments.length > 0) setAttachments([]);
+      if (attachments.length > 0) {
+        revokePreviews(attachments);
+        setAttachments([]);
+      }
       return true;
     },
     [
-      courseId,
-      conversationId,
+      uploadsUrl,
       chatCsrfToken,
+      conversationId,
       setStatus,
       setAttachments,
       resetDeny,
@@ -488,7 +495,7 @@ function Chat({
       if (part.type === 'text' || part.type === 'reasoning') {
         return part.text.trim().length > 0;
       }
-      return toolCallOf(part) !== null || navigationOf(part) !== null;
+      return toolCallOf(part) !== null || navigationOf(part) !== null || isReloadPart(part);
     });
   });
   // The server reports the turn's lifecycle before the SDK marks the response active.
@@ -538,7 +545,16 @@ function Chat({
 
   return (
     <FileDropArea enabled={!sending} onDrop={drafts.add}>
-      <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
+      <div
+        ref={stickToBottom.scrollRef}
+        className="flex-grow-1 overflow-y-auto"
+        // Scrollable regions must be reachable by keyboard. Safari only scrolls with Page Up, Page
+        // Down, or the arrow keys when the scrollable area itself has focus.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        role="region"
+        aria-label="Conversation"
+      >
         <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
@@ -554,6 +570,7 @@ function Chat({
               message={message}
               live={responseActive && index === messages.length - 1}
               conversationId={conversationId}
+              uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
               hiddenReviewId={hiddenReviewId}
               turnRunning={turnRunning && index === messages.length - 1}
@@ -688,75 +705,83 @@ function Composer({
 
   return (
     <Form className="border-top p-3" onSubmit={submit}>
-      <DraftAttachmentList
-        attachments={attachments}
-        sending={pending}
-        onRemove={onRemoveAttachment}
-      />
-      <Form.Control
-        as="textarea"
-        rows={3}
-        value={draft}
-        placeholder={placeholder}
-        aria-label="Message"
-        disabled={pending}
-        onChange={(event) => onDraftChange(event.target.value)}
-        onKeyDown={onKeyDown}
-        onPaste={(event) => {
-          if (pending || event.clipboardData.files.length === 0) return;
-          // Copied cells and rich text carry an image of themselves beside their text; paste the text.
-          if (
-            event.clipboardData.getData('text/plain') &&
-            event.clipboardData.getData('text/html')
-          ) {
-            return;
-          }
-          event.preventDefault();
-          onAttach([...event.clipboardData.files]);
-        }}
-      />
-      <div className="d-flex align-items-center gap-2 mt-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          hidden
-          onChange={(event) => {
-            onAttach([...(event.target.files ?? [])]);
-            event.target.value = '';
+      <div className={clsx('course-agent-composer rounded-3', pending && 'bg-body-tertiary')}>
+        <DraftAttachmentList
+          attachments={attachments}
+          sending={pending}
+          onRemove={onRemoveAttachment}
+        />
+        <Form.Control
+          as="textarea"
+          rows={2}
+          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
+          value={draft}
+          placeholder={placeholder}
+          aria-label="Message"
+          disabled={pending}
+          onChange={(event) => onDraftChange(event.target.value)}
+          onKeyDown={onKeyDown}
+          onPaste={(event) => {
+            if (pending || event.clipboardData.files.length === 0) return;
+            // Copied cells and rich text carry an image of themselves beside their text; paste the text.
+            if (
+              event.clipboardData.getData('text/plain') &&
+              event.clipboardData.getData('text/html')
+            ) {
+              return;
+            }
+            event.preventDefault();
+            onAttach([...event.clipboardData.files]);
           }}
         />
-        <Button
-          variant="link"
-          size="sm"
-          className="course-agent-icon-button"
-          aria-label="Attach files"
-          disabled={pending}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <i className="bi bi-plus-lg" aria-hidden="true" />
-        </Button>
-        <div className="d-flex align-items-center gap-2 ms-auto">
-          {children}
-          {onStop ? (
-            <Button variant="outline-secondary" size="sm" disabled={stopDisabled} onClick={onStop}>
-              <i className="bi bi-stop-fill me-1" aria-hidden="true" />
-              Stop
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              size="sm"
-              aria-label={sendLabel}
-              disabled={!draft.trim() || disabled || pending || invalidAttachment}
-            >
-              {pending ? (
-                <Spinner animation="border" size="sm" aria-hidden="true" />
-              ) : (
-                <i className="bi bi-send" aria-hidden="true" />
-              )}
-            </Button>
-          )}
+        <div className="d-flex align-items-center gap-2 px-2 pb-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={(event) => {
+              onAttach([...(event.target.files ?? [])]);
+              event.target.value = '';
+            }}
+          />
+          <Button
+            variant="link"
+            size="sm"
+            className="course-agent-icon-button"
+            aria-label="Attach files"
+            disabled={pending}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <i className="bi bi-plus-lg" aria-hidden="true" />
+          </Button>
+          <div className="d-flex align-items-center gap-2 ms-auto">
+            {children}
+            {onStop ? (
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                disabled={stopDisabled}
+                onClick={onStop}
+              >
+                <i className="bi bi-stop-fill me-1" aria-hidden="true" />
+                Stop
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="sm"
+                aria-label={sendLabel}
+                disabled={!draft.trim() || disabled || pending || invalidAttachment}
+              >
+                {pending ? (
+                  <Spinner animation="border" size="sm" aria-hidden="true" />
+                ) : (
+                  <i className="bi bi-send" aria-hidden="true" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </Form>
@@ -783,6 +808,7 @@ function Message({
   message,
   live,
   conversationId,
+  uploadsUrl,
   awaitingReviewId,
   hiddenReviewId,
   turnRunning,
@@ -800,6 +826,7 @@ function Message({
   /** Whether this message is still streaming. */
   live: boolean;
   conversationId: string;
+  uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
   /** A review requested by the running turn, whose card waits for the turn to end. */
@@ -814,7 +841,7 @@ function Message({
     const text = message.parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
     return (
       <div className="d-flex flex-column align-items-end gap-2">
-        <SentAttachments message={message} />
+        <SentAttachments message={message} uploadsUrl={uploadsUrl} />
         <UserMessage text={text} />
       </div>
     );
@@ -869,11 +896,21 @@ function Message({
     const { key, part } = segment;
     const navigation = navigationOf(part);
     if (part.type === 'text' && part.text.trim()) {
-      rendered.push(<TextPart key={key} part={part} urlTransform={linkTransform} />);
+      rendered.push(
+        <TextPart
+          key={key}
+          part={part}
+          urlTransform={linkTransform}
+          codeBlock={ChatCodeBlock}
+          math
+        />,
+      );
     } else if (part.type === 'reasoning' && part.text.trim()) {
-      rendered.push(<ReasoningBlock key={key} part={part} />);
+      rendered.push(<ReasoningBlock key={key} part={part} math />);
     } else if (navigation) {
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
+    } else if (isReloadPart(part)) {
+      rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
       const { reviewId } = ReviewPartSchema.parse(part.data);
       if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId });

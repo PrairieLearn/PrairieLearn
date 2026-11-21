@@ -42,7 +42,7 @@ import {
   attachmentsOf,
   attachmentsToWrite,
   formatRequest,
-  isImage,
+  imageType,
   keepUploadReferences,
   uploadKey,
   uploadPrefix,
@@ -290,7 +290,11 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   /** Shared by every shutdown caller; delivery waits for it to finish. */
   private sandboxShutdown: Promise<void> | null = null;
   private readonly uploadQuota = new UploadQuota(async () => {
-    const { objects } = await this.env.CHECKPOINTS.list({ prefix: uploadPrefix(this.name) });
+    // The delimiter leaves out thumbnails, which are one level down and don't count.
+    const { objects } = await this.env.CHECKPOINTS.list({
+      prefix: uploadPrefix(this.name),
+      delimiter: '/',
+    });
     return { count: objects.length, bytes: objects.reduce((sum, object) => sum + object.size, 0) };
   });
 
@@ -750,14 +754,18 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             if (usage) finish(usage);
           }
         }
+      } catch (error) {
+        // Turn completion aborts requests nothing reads anymore; that is not a failure. Handle it
+        // inside the callback: this runs from an RPC call with no Sentry scope, so Sentry's wrapper
+        // around the inherited keepAliveWhile() reports any rejection as unhandled. Once
+        // https://github.com/getsentry/sentry-javascript/issues/26673 is fixed, this can move back
+        // to a .catch() on keepAliveWhile().
+        if (!signal.aborted) this.reportError(error);
       } finally {
         // Charges the estimate unless the usage was recorded above.
         finish(null);
       }
-    }).catch((error: unknown) => {
-      // Turn completion aborts requests nothing reads anymore; that is not a failure.
-      if (!signal.aborted) this.reportError(error);
-    });
+    }).catch((error: unknown) => this.reportError(error));
     const headers = new Headers(response.headers);
     // fetch() decoded the body, so the provider's length and encoding no longer apply.
     headers.delete('Content-Length');
@@ -1127,7 +1135,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const images = new Set<string>();
     for (const [index, upload] of uploads.entries()) {
       if (!upload) return null;
-      if (isImage(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
+      if (imageType(new Uint8Array(await upload.arrayBuffer()))) images.add(attachments[index].id);
     }
     return images;
   }

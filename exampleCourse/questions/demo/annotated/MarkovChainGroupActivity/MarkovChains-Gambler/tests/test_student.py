@@ -3,7 +3,6 @@ import pytest
 from pytest_prairielearn_grader import ConfigObject
 from pytest_prairielearn_grader.assertions import assert_true
 from pytest_prairielearn_grader.fixture import StudentFixture
-from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 autograder_config = ConfigObject(
     student_code_pattern="Markov-Chains-2.ipynb",
@@ -17,7 +16,6 @@ G = np.array([[1, 0.5, 0, 0], [0, 0, 0.5, 0], [0, 0.5, 0, 0], [0, 0, 0.5, 1]])
 XSTAR2 = np.linalg.matrix_power(G, 100) @ np.array([0.0, 0.0, 1.0, 0.0])
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.parametrize(
     ("name", "expected"),
     [
