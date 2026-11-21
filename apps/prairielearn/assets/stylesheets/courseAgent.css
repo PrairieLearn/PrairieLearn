@@ -40,7 +40,16 @@
   border-color: var(--bs-primary);
 }
 
-.course-agent-composer-input {
+/* `textarea` is in the selector so that `min-height` below overrides Bootstrap's own. */
+textarea.course-agent-composer-input {
+  /*
+   * Sizing the box from JavaScript means collapsing it to measure the text on every keystroke,
+   * which makes the conversation jump in Safari. Browsers without `field-sizing` keep a two-line
+   * box that scrolls.
+   */
+  field-sizing: content;
+  /* `field-sizing: content` ignores `rows`. Two lines plus the vertical padding of .form-control. */
+  min-height: calc(2lh + 0.75rem);
   /* Ten lines plus the vertical padding of .form-control. */
   max-height: calc(10lh + 0.75rem);
   overflow-y: auto;
@@ -140,6 +149,17 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0.25em 0;
+}
+
+/* Highlighted code stands in for a plain code block, so it is spaced like one. */
+.course-agent-panel .markdown-body .course-agent-code {
+  margin-bottom: 1rem;
+}
+
+/* A long diff scrolls in place instead of pushing the rest of the reply out of view. */
+.course-agent-diff-file {
+  max-height: 24rem;
+  overflow: auto;
 }
 
 .course-agent-page-link {

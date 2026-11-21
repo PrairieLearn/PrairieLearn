@@ -31,6 +31,8 @@ export class SandboxTurn {
       /** Runs alongside the runner start; the thread starts only after both finish. */
       addCourseFiles?: () => Promise<void>;
       thread: Parameters<CodexAppServerClient['thread']>[0];
+      /** The course's timezone, for the sandbox's clock. */
+      timezone?: string;
       onThread: (id: string) => void;
       onReady: () => void;
       /** Receives the native turn ID, or null when an earlier attempt already submitted it. */
@@ -97,7 +99,7 @@ export class SandboxTurn {
       // Wait for both even if one fails, so failed startup cleanup never races a step still running.
       const [files, runner] = await Promise.allSettled([
         options.addCourseFiles?.(),
-        this.native.connect().then(() => options.log('turn_runner_connected')),
+        this.native.connect(options.timezone).then(() => options.log('turn_runner_connected')),
       ]);
       if (files.status === 'rejected') throw files.reason;
       if (runner.status === 'rejected') throw runner.reason;

@@ -1,6 +1,6 @@
-# Reference Documentation
+# Legacy API reference
 
-More high-level information about the Python grader can be found in the [Python Autograder](../python-grader/index.md) documentation.
+This is the API of the deprecated `prairielearn/grader-python` image. See the [legacy Python autograder](index.md) documentation for how to use it.
 
 <!-- prettier-ignore -->
 ::: code_feedback
