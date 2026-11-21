@@ -1,0 +1,37 @@
+# Decisions for the review
+
+**The schedule table.** One row per assessment, in date order: assessment, was
+(release to due), now (release to due), and a short note where something needs
+a look. Show each term's breaks, holidays and finals as italic rows. A note names any difference from last term's pattern, such as a
+different weekday or time, or a date moved by hand, with the reason.
+Assessments with no dates (PrairieTest-only exams) go on one line. With more
+than about 15 assessments, show only the rows that have notes, and say how many
+others moved by their set's pattern.
+
+Include in the review only the items below that apply, each with its default,
+and use the instructor's answers.
+
+| Item                                                                                   | Default                                                                                            | Tell the instructor                                                          |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Target term has already started (dates come out in the past)                           | Raise it first                                                                                     | They may mean the next term                                                  |
+| Deadline on a holiday or in a break                                                    | Move it to the next day of instruction                                                             | Releases there are usually fine                                              |
+| Date moved out of a break, or left out of order or in a shrunken window by the mapping | Place it by the set's pattern (a lecture due a week after release)                                 | Which dates you placed by hand                                               |
+| Date already outside the source term (a practice quiz still set to 2024)               | Tie it to the assessment it belongs with. If that assessment has no dates, use the week it covers. | Ask whether the old date was on purpose                                      |
+| Finals period shorter in the target term                                               | Move the dates to the last day of finals                                                           | Ask for the real exam slot                                                   |
+| PrairieTest exam UUIDs                                                                 | Leave them; they only grant access during the old exams' reservations                              | Which assessments need a new exam, by name. Keep the IDs out of the proposal |
+| Exam-mode rule without a PrairieTest exam                                              | Keep it                                                                                            | Confirm the testing room is still set up                                     |
+| Legacy UID rules and per-student overrides                                             | Drop them                                                                                          | What each group was (below), and which assessments would be left staff-only  |
+| Overrides for a student label (such as a "CA" label)                                   | Keep them, with mapped dates                                                                       | Students must be added to the label again                                    |
+| Question named for the old term (`...-fa26`)                                           | Leave it; a migration doesn't edit questions                                                       | List it to replace                                                           |
+| Dates in assessment `text` or client files                                             | Update them by hand                                                                                | Which files you changed                                                      |
+| Policy changes ("Anything different this term?")                                       | None                                                                                               | Apply any change as a rule across a set                                      |
+
+**Reading UID groups.** Group legacy UID rules by their set of UIDs, without
+showing them.
+
+- **A set repeated across most assessments** is usually course staff or CAs.
+  Course instance staff permissions replace it.
+- **One or two UIDs on a few assessments** are extensions or accommodations.
+- **A group that recurs every term** fits a
+  [student label](https://docs.prairielearn.com/courseInstance/#student-labels)
+  override. Labels need the modern access-control format.
