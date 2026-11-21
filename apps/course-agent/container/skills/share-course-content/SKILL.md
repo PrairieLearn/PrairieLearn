@@ -77,7 +77,7 @@ questions that use `clientFilesCourse` sync but break in other courses.
      after the term ends, or with named instructors through a sharing set.
 
    If anything is irreversible or assessed, ask one short yes-or-no question,
-   such as "Share these <N> questions?", in one sentence with no reasons, and
+   such as "Share these 16 questions?", in one sentence with no reasons, and
    wait for a yes; otherwise proceed.
    Don't ask for the other course's sharing token: only a course owner uses it.
    Name a new sharing set yourself after what it holds.
