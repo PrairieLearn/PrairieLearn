@@ -22,7 +22,7 @@ import {
   attachmentPath,
   uploadKey,
 } from '../conversation/attachments.js';
-import { logEvent } from '../monitoring.js';
+import { logEvent, reportError } from '../monitoring.js';
 
 import { codexRequestKind, modelRequestRefusal, prepareSearchRequest } from './model-requests.js';
 
@@ -375,6 +375,8 @@ export class CourseSandbox extends DurableObject<Env> {
     } else {
       // Reviews only need the branch tip, and later fetches still work from a shallow clone.
       // Full history made large course repositories take most of startup to clone.
+      // The agent's instructions say the clone is shallow and how to deepen it when a request
+      // needs history; keep them in step with this.
       await this.exec(
         [
           'git',
@@ -612,6 +614,21 @@ export class CourseSandbox extends DurableObject<Env> {
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
+    // Codex tells the model the date and zone of the system clock, and commands the agent runs
+    // print times in it. A missing zone, or one the image does not know, sets the clock to UTC,
+    // replacing an earlier runner's zone. The clock only affects how times read, so a failure to
+    // set it is reported rather than failing the turn.
+    try {
+      await this.exec([
+        'sh',
+        '-c',
+        'zone=$1; test -f "/usr/share/zoneinfo/$zone" || zone=Etc/UTC; ln -sfn "/usr/share/zoneinfo/$zone" /etc/localtime && echo "$zone" > /etc/timezone',
+        'sh',
+        request.headers.get('X-Course-Timezone') ?? 'Etc/UTC',
+      ]);
+    } catch (error) {
+      reportError(error, { step: 'set_timezone' });
+    }
     const started = Date.now();
     this.process = await this.container.exec(
       [

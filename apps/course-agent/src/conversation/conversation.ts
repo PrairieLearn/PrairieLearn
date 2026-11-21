@@ -11,13 +11,11 @@ import { z } from 'zod';
 
 import {
   type ActionPart,
-  type ApprovalMode,
   type BlockedReason,
   type ConversationLifecycle,
   type ConversationState,
   type PageCatalog,
   type Review,
-  type ReviewPart,
   type ReviewResult,
   ReviewResultSchema,
   type ReviewSnapshot,
@@ -172,11 +170,19 @@ function estimateUsage(body: string): Usage {
   };
 }
 
-const CourseContextSchema = z.object({
+export const CourseContextSchema = z.object({
   // Optional while a PrairieLearn deployment that does not send it may still connect.
   courseId: z.string().regex(/^\d+$/).optional(),
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
+  // Optional while a PrairieLearn deployment that does not send it may still connect. The sandbox
+  // uses it as a path under its zone files, so anything but a zone name counts as none.
+  timezone: z
+    .string()
+    .max(100)
+    .regex(/^[\w+-]+(\/[\w+-]+)*$/)
+    .optional()
+    .catch(undefined),
 });
 
 /**
@@ -228,8 +234,6 @@ interface RecordData {
   deniedByMessage?: string | null;
   /** The title of the course action that `deniedByMessage` denied, if it was one. */
   deniedAction?: string | null;
-  /** Set by the browser, directly or with a user message; absent means `approval_required`. */
-  approvalMode?: ApprovalMode;
   /** The last user message submitted to Codex; absent in records saved before it was added. */
   submittedMessageId?: string | null;
   /** User messages refused by the usage limit, sent to Codex with the next admitted message. */
@@ -282,7 +286,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     sandboxLost: false,
     reviewId: null,
     title: null,
-    approvalMode: 'approval_required',
   };
 
   private metering: MeteringState = {
@@ -359,7 +362,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxLost: this.record.sandboxLost,
       reviewId: this.record.review?.id ?? null,
       title: this.record.title ?? null,
-      approvalMode: this.record.approvalMode ?? 'approval_required',
     };
     // The usage limit is shown once the sandbox is at rest; in-flight states still show progress.
     const retryAt = this.metering.limitedUntil;
@@ -476,14 +478,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     );
     // Idempotent: every connection shares one interval schedule.
     await this.scheduleEvery(KEEPALIVE_SECONDS, 'sendKeepalive');
-  }
-
-  /**
-   * Lets the instructor change the mode without sending a message, so it also applies to a review
-   * the agent submits while receiving an earlier review's result.
-   */
-  setApprovalMode(approvalMode: ApprovalMode) {
-    this.setRecord({ ...this.record, approvalMode });
   }
 
   /** Clients ignore this message type; sending it only keeps proxied sockets from idling out. */
@@ -784,14 +778,18 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             if (usage) finish(usage);
           }
         }
+      } catch (error) {
+        // Turn completion aborts requests nothing reads anymore; that is not a failure. Handle it
+        // inside the callback: this runs from an RPC call with no Sentry scope, so Sentry's wrapper
+        // around the inherited keepAliveWhile() reports any rejection as unhandled. Once
+        // https://github.com/getsentry/sentry-javascript/issues/26673 is fixed, this can move back
+        // to a .catch() on keepAliveWhile().
+        if (!signal.aborted) this.reportError(error);
       } finally {
         // Charges the estimate unless the usage was recorded above.
         finish(null);
       }
-    }).catch((error: unknown) => {
-      // Turn completion aborts requests nothing reads anymore; that is not a failure.
-      if (!signal.aborted) this.reportError(error);
-    });
+    }).catch((error: unknown) => this.reportError(error));
     const headers = new Headers(response.headers);
     // fetch() decoded the body, so the provider's length and encoding no longer apply.
     headers.delete('Content-Length');
@@ -978,8 +976,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const startup = this.record.sandboxId === null;
     const source = this.record.config;
     const delivered = continuation && review?.result ? review : null;
-    const metadata = message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data;
-    const location = metadata?.location;
+    const location =
+      message && UserMessageMetadataSchema.safeParse(message.metadata ?? {}).data?.location;
     // File parts are left out rather than joined as blank lines.
     const messageText = sent
       .map((entry) =>
@@ -1025,7 +1023,6 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       sandboxId: startup ? crypto.randomUUID() : this.record.sandboxId,
       lifecycle: { status: startup ? 'starting' : 'waiting_for_agent' },
       threadMayBeBehind: startup || this.record.threadMayBeBehind,
-      approvalMode: metadata?.approvalMode ?? this.record.approvalMode,
       // Prompts are never resubmitted, even if this turn fails before Codex accepts it.
       submittedMessageId: message?.id ?? this.record.submittedMessageId ?? null,
       unsentMessageIds: [],
@@ -1082,6 +1079,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         threadId: this.record.nativeThreadId,
         pages: this.record.pages ?? [],
       },
+      timezone: this.record.courseContext?.timezone,
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.
       onThread: (id) => {
@@ -1390,19 +1388,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
     });
     // Chat history shows the review by ID; its contents and outcome stay out of history.
-    const autoApprove = this.record.approvalMode === 'always_approve';
-    this.native?.emit({
-      type: 'data-review',
-      id,
-      data: { reviewId: id, ...(autoApprove ? { autoApprove } : {}) } satisfies ReviewPart,
-    });
+    this.native?.emit({ type: 'data-review', id, data: { reviewId: id } });
     return {
       success: true,
-      text: `${
-        autoApprove
-          ? 'Submitted the changes; edits after this point are not part of them. The instructor chose to approve changes without reviewing them, so they are being saved now. The result arrives in a later message.'
-          : 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message.'
-      } End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.`,
+      text: 'Submitted the changes for instructor review; edits after this point are not part of it. The decision arrives in a later message. End your turn now with a brief summary of the submitted changes for staff, unless you already gave one, and make no further edits or tool calls.',
     };
   }
 
@@ -1441,13 +1430,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
     });
     // Chat history shows the request by ID; PrairieLearn holds what it asks and its outcome.
-    const autoApprove = this.record.approvalMode === 'always_approve';
     this.native?.emit({
       type: 'data-action',
       id,
-      data: { actionId: id, ...(autoApprove ? { autoApprove } : {}) } satisfies ActionPart,
+      data: { actionId: id } satisfies ActionPart,
     });
-    return { success: true, text: describeRequestedAction(reply.card, autoApprove) };
+    return { success: true, text: describeRequestedAction(reply.card) };
   }
 
   private reviewFiles(review: ReviewRecord) {

@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
 import { Button } from 'react-bootstrap';
 
 import type { CourseActionResult } from '@prairielearn/course-agent-types';
@@ -17,17 +16,11 @@ export function ActionCard({
   conversationId,
   actionId,
   canResume,
-  autoApprove,
-  onAlwaysApprove,
 }: {
   conversationId: string;
   actionId: string;
   /** The agent is idle but has not received this request's result, for example after Stop. */
   canResume: boolean;
-  /** Approve the request once it loads, without waiting for the instructor. */
-  autoApprove: boolean;
-  /** The instructor approved this request and asked not to be asked again. */
-  onAlwaysApprove: () => void;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -41,16 +34,10 @@ export function ActionCard({
       return current?.decision === 'approved' && !current.result ? 2000 : false;
     },
   });
-  // Set when the instructor clicks "Always approve", so the mode changes once the approval succeeds.
-  const alwaysApproveRef = useRef(false);
   const reviewKey = trpc.courseAgent.getReview.queryKey({ conversationId, reviewId: actionId });
   const decision = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
-    // Callbacks given to mutate() are dropped if the card unmounts first, and these are not.
-    onSuccess: () => {
-      if (alwaysApproveRef.current) onAlwaysApprove();
-    },
     // The chat reads the same request through getReview to decide what a new message does.
     onSettled: () =>
       Promise.all([
@@ -70,25 +57,14 @@ export function ActionCard({
     getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
     getAppError<CourseAgentError['Resume']>(resume.error);
   const pending = data?.decision === null;
-  const decide = (value: 'approved' | 'denied', always = false) => {
-    alwaysApproveRef.current = always;
+  const decide = (value: 'approved' | 'denied') =>
     decision.mutate({ conversationId, reviewId: actionId, decision: value });
-  };
-  // Approves a pending request on the instructor's behalf once it has loaded. It tries once: if
-  // the approval fails, the card's buttons are left for the instructor to decide.
-  const autoApprovedRef = useRef(false);
-  const { mutate: mutateDecision } = decision;
-  useEffect(() => {
-    if (!autoApprove || !pending || autoApprovedRef.current) return;
-    autoApprovedRef.current = true;
-    mutateDecision({ conversationId, reviewId: actionId, decision: 'approved' });
-  }, [autoApprove, pending, mutateDecision, conversationId, actionId]);
   const approving =
     (decision.isPending && decision.variables.decision === 'approved') ||
     (data?.decision === 'approved' && !data.result);
   const disabled = !pending || decision.isPending;
   return (
-    <div className="course-agent-review border rounded-3">
+    <div className="border rounded p-2">
       {data && (
         <>
           <div className="d-flex align-items-start gap-2">
@@ -136,27 +112,12 @@ export function ActionCard({
               </p>
               {!approving && (
                 <div className="d-flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    className="course-agent-composer-button course-agent-composer-send"
-                    disabled={disabled}
-                    onClick={() => decide('approved')}
-                  >
-                    Approve once
+                  <Button size="sm" disabled={disabled} onClick={() => decide('approved')}>
+                    Approve
                   </Button>
                   <Button
-                    variant="link"
+                    variant="outline-secondary"
                     size="sm"
-                    className="course-agent-composer-button course-agent-review-always"
-                    disabled={disabled}
-                    onClick={() => decide('approved', true)}
-                  >
-                    Always approve
-                  </Button>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="course-agent-composer-button"
                     disabled={disabled}
                     onClick={() => decide('denied')}
                   >
@@ -170,7 +131,7 @@ export function ActionCard({
       )}
       {approving && (
         <p className="small text-muted mt-2 mb-0" role="status">
-          {autoApprove ? 'Approved automatically. Working…' : 'Working…'}
+          Working…
         </p>
       )}
       {/* The composer delivers a denial by message again when the instructor resends it. */}
