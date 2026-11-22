@@ -9,10 +9,30 @@ import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
 import { UserSchema } from '../lib/db-types.js';
+import { isEnterprise } from '../lib/license.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
+  if (isEnterprise()) {
+    const { authenticateCourseAgentRequest } = await import('../ee/lib/course-agent/authn.js');
+    const agent = await authenticateCourseAgentRequest({
+      authorization: req.header('Authorization'),
+      conversationId: req.header('X-Course-Agent-Conversation'),
+      path: req.path,
+    });
+    if (agent && 'error' in agent) {
+      res.status(403).send({ message: agent.error });
+      return;
+    }
+    if (agent) {
+      res.locals.authn_user = agent.user;
+      res.locals.is_administrator = agent.is_administrator;
+      next();
+      return;
+    }
+  }
+
   const token = req.header('Private-Token');
 
   if (token === undefined) {

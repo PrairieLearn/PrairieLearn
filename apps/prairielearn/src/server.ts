@@ -76,6 +76,12 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { closePrintRenderer } from './lib/printing/index.js';
+import {
+  beginPrintExportShutdown,
+  initPrintExportWorker,
+  waitForPrintExportWorkers,
+} from './lib/printing/print-exports.js';
 import * as serverJobs from './lib/server-jobs.js';
 import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -122,9 +128,13 @@ if ('h' in argv || 'help' in argv) {
   process.exit(0);
 }
 
-function excludeRoutes(routes: string[], handler: RequestHandler) {
+function excludeRoutes(routes: (string | RegExp)[], handler: RequestHandler) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (routes.some((route) => req.path.startsWith(route))) {
+    if (
+      routes.some((route) =>
+        typeof route === 'string' ? req.path.startsWith(route) : route.test(req.path),
+      )
+    ) {
       next();
     } else {
       handler(req, res, next);
@@ -509,6 +519,10 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/authLogout/authLogout.js')).default,
   ]);
+  if (isEnterprise()) {
+    // Service authentication is handled by this router, independently of browser sessions.
+    app.use('/pl/api/course-agent', (await import('./ee/routers/courseAgentUsage.js')).default);
+  }
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
@@ -535,9 +549,14 @@ export async function initExpress(): Promise<Express> {
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
   );
 
-  // Set and check `res.locals.__csrf_token`. We exclude API routes as those
-  // don't require CSRF protection (and in fact can't have it at all).
-  app.use(excludeRoutes(['/pl/api/'], (await import('./middlewares/csrfToken.js')).default));
+  // Set and check `res.locals.__csrf_token`. We exclude API routes and the course agent
+  // service's course data requests, which use tokens rather than cookies.
+  app.use(
+    excludeRoutes(
+      ['/pl/api/', /^\/pl\/course\/\d+\/course_agent\/data(?:\/|$)/],
+      (await import('./middlewares/csrfToken.js')).default,
+    ),
+  );
 
   app.use((await import('./middlewares/logRequest.js')).default);
 
@@ -778,6 +797,11 @@ export async function initExpress(): Promise<Express> {
       '/pl/course/:course_id(\\d+)/course_agent/file',
       (await import('./ee/routers/courseAgentFile.js')).default,
     );
+    // The course agent service's course data requests; middlewares/authn.ts authenticates them.
+    app.use(
+      '/pl/course/:course_id(\\d+)/course_agent/data',
+      (await import('./ee/routers/courseAgentData/index.js')).default,
+    );
     app.use(
       '/pl/course/:course_id(\\d+)/course_agent',
       (await import('./ee/routers/courseAgentChat.js')).default,
@@ -1001,6 +1025,11 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print_preparation/exports',
+    (await import('./pages/instructorAssessmentPrintExport/instructorAssessmentPrintExport.js'))
+      .default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',
     [
       function (req: Request, res: Response, next: NextFunction) {
@@ -1124,6 +1153,12 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./pages/instructorAssessmentManualGrading/assessment/assessment.js')).default,
     ],
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/print_form/:print_form_id(\\d+)',
+    (await import('./pages/instructorAssessmentPrintForm/instructorAssessmentPrintForm.js'))
+      .default,
   );
 
   app.use(
@@ -2712,6 +2747,7 @@ if (esMain(import.meta)) {
     // requests, as they may actually end up executing course code.
     await externalGraderResults.init();
     await externalGraderDeadLetters.init();
+    initPrintExportWorker();
 
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
@@ -2787,6 +2823,8 @@ if (esMain(import.meta)) {
  * Stops background work before closing its dependencies and database pools.
  */
 async function close() {
+  beginPrintExportShutdown();
+
   // Disconnect clients before draining workspace startups, but keep Redis
   // adapters available for progress broadcasts from running jobs.
   socketServer.io?.engine.close();
@@ -2804,6 +2842,10 @@ async function close() {
   // Server jobs may render questions or publish progress after an await. Wait
   // for their final status writes and notifications before closing dependencies.
   await settleShutdownTasks([serverJobs.stop()]);
+
+  // Let print workers finish cleanup before closing the renderer they use.
+  await settleShutdownTasks([waitForPrintExportWorkers()]);
+  await settleShutdownTasks([closePrintRenderer()]);
 
   await settleShutdownTasks([
     serverJobProgressSocket.close(),
