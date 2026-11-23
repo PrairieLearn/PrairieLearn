@@ -424,8 +424,9 @@ async function getAllChunksForCourse(courseId: string) {
  * Selects live chunk revisions at a cutoff, or the current state when omitted.
  * Rows written before history was activated are undated and treated as current
  * until replaced, so cutoffs must not predate activation.
+ * Pass database timestamp strings directly to retain microseconds.
  */
-export async function selectChunksForCourse(courseId: string, atDate: Date | null = null) {
+export async function selectChunksForCourse(courseId: string, atDate: string | Date | null = null) {
   if (atDate == null) {
     return await sqldb.queryRows(
       sql.select_current_course_chunks,

@@ -422,7 +422,18 @@ describe('chunks', () => {
         const dependency = chunks.find((chunk) => chunk.type === 'serverFilesCourse')!;
         expect(chunks).toContainEqual(questionChunk);
         expect(dependency.id).not.toBe(initialDependency.id);
-        expect(await publicationDate()).toBe(await chunkDate(dependency.id));
+        const version = await selectOptionalQuestionVersionAtDate({
+          question_id: questionId,
+          at_date: 'infinity',
+        });
+        assert(version);
+        expect(version.version_date).toBe(await chunkDate(dependency.id));
+        const historicalChunks = await chunksLib.selectChunksForCourse(
+          course.id,
+          version.version_date,
+        );
+        expect(historicalChunks).toContainEqual(dependency);
+        expect(historicalChunks).not.toContainEqual(initialDependency);
       });
     });
 
