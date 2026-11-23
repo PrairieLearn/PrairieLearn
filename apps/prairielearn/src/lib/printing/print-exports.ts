@@ -35,6 +35,7 @@ import {
 } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
 import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE, sameExcludedQuestions } from './print-settings.js';
+import { RenderQueueFullError } from './render-queue.js';
 
 import { getPrintableQuestionListDigest, isBrowserRenderingAvailable } from './index.js';
 
@@ -336,8 +337,8 @@ async function processPrintExport(
   } catch (error) {
     // PrairieMQ retries a run interrupted by shutdown on another worker.
     if (signal.aborted) throw error;
-    // A busy renderer refuses work before starting it, so let PrairieMQ retry after a backoff.
-    if (!finalAttempt && error instanceof HttpStatusError && error.status === 503) {
+    // Let PrairieMQ retry after a backoff, since a busy renderer refuses work before starting it.
+    if (!finalAttempt && error instanceof RenderQueueFullError) {
       throw error;
     }
     getCounter(meter, 'print.export.failures', { valueType: ValueType.INT }).add(1, attributes);
