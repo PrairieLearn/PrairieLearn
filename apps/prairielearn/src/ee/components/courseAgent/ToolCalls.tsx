@@ -201,7 +201,7 @@ function Fold({
   meta?: string;
   /** The turn ended before this finished. */
   stopped?: boolean;
-  /** Shown under the closed line; the details replace it when the line opens. */
+  /** Shown under the closed line; the details take its place while the line is open. */
   tail?: ReactNode;
   className?: string;
   onExpand?: () => void;
@@ -234,7 +234,9 @@ function Fold({
           aria-hidden="true"
         />
       </button>
-      {expanded ? <div id={detailsId}>{children}</div> : tail}
+      {expanded && <div id={detailsId}>{children}</div>}
+      {/* Hidden, not removed, while the line is open: putting it back would fade it in again. */}
+      {tail && <div hidden={expanded}>{tail}</div>}
     </div>
   );
 }
