@@ -9,6 +9,7 @@ import { printLayoutSearch } from '../../lib/client/printing/print-preparation.j
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import type { PrintForm } from '../../lib/db-types.js';
 import {
   PRINT_DOCUMENTS,
   type PrintDocument,
@@ -24,7 +25,6 @@ import {
   printSnapshotLayout,
   selectOptionalPrintSnapshotSummary,
 } from '../../lib/printing/print-snapshots.js';
-import type { PrintForm } from '../../lib/db-types.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import {
   selectOptionalPrintExport,
@@ -147,11 +147,7 @@ async function findFormSnapshot(ctx: TRPCContext, form: PrintForm, document: Pri
 }
 
 /** Finds each form's stored preview and rejects exports that would omit questions. */
-async function findExportSnapshots(
-  ctx: TRPCContext,
-  forms: PrintForm[],
-  document: PrintDocument,
-) {
+async function findExportSnapshots(ctx: TRPCContext, forms: PrintForm[], document: PrintDocument) {
   const found = [];
   for (const form of forms) {
     const formSnapshot = await findFormSnapshot(ctx, form, document);
@@ -241,8 +237,7 @@ export const printExportsRouter = t.router({
         const excluded = new Set(form.settings.excludedQuestions);
         const included = questions.filter(
           (question) =>
-            question.print_form_id === form.id &&
-            !excluded.has(question.question_number),
+            question.print_form_id === form.id && !excluded.has(question.question_number),
         );
         const problem = included.find((question) => !question.supported || question.broken);
         if (included.length === 0 || problem) {
