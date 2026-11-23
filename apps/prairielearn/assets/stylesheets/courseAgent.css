@@ -387,8 +387,14 @@ textarea.course-agent-composer-input {
   height: 1.5em;
 }
 
-/* A highlight sweeps across the label of whatever the agent is doing now. */
+/*
+ * A highlight sweeps across the label of whatever the agent is doing now. Its size is fixed, not
+ * relative to the label, so it keeps one pace and does not jump as labels of different lengths
+ * replace each other.
+ */
 .course-agent-shimmer {
+  --course-agent-shimmer-width: 20rem;
+
   color: transparent;
   background: linear-gradient(
       90deg,
@@ -396,10 +402,10 @@ textarea.course-agent-composer-input {
       var(--bs-emphasis-color) 50%,
       var(--bs-secondary-color) 65%
     )
-    0 0 / 220% 100%;
+    0 0 / var(--course-agent-shimmer-width) 100% repeat-x;
   -webkit-background-clip: text;
   background-clip: text;
-  animation: course-agent-shimmer 1.5s linear infinite;
+  animation: course-agent-shimmer 2s linear infinite;
 }
 
 /* The gradient shows only through transparent text, and a chip's own background would cover it. */
@@ -423,13 +429,10 @@ textarea.course-agent-composer-input {
   border-left: 2px solid var(--bs-border-color);
 }
 
+/* One repeat of the gradient, so the loop has no seam. */
 @keyframes course-agent-shimmer {
-  from {
-    background-position: 110% 0;
-  }
-
   to {
-    background-position: -110% 0;
+    background-position-x: var(--course-agent-shimmer-width);
   }
 }
 
@@ -556,7 +559,7 @@ body:has(.course-agent-panel-animate) .app-main {
 @media (prefers-reduced-motion: reduce) {
   /* Slowed rather than stopped, as Bootstrap does for spinners, so work in progress stays visible. */
   .course-agent-shimmer {
-    animation-duration: 3s;
+    animation-duration: 4s;
   }
 
   .course-agent-composer-pulse,
