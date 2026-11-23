@@ -1145,41 +1145,28 @@ function Message({
   type Card =
     | ({ kind: 'review' } & ReviewPart)
     | { kind: 'input'; key: string; request: InputRequestPart };
-  const rendered: ReactNode[] = [];
-  // Each piece rises into the chat as it arrives, as a sent message does. A review card stays put.
-  const add = (key: string, node: ReactNode, rise = true) =>
-    rendered.push(
-      <div
-        key={key}
-        className={clsx('d-flex flex-column gap-2', entering && rise && 'course-agent-rise')}
-      >
-        {node}
-      </div>,
+  const renderCard = (card: Card) =>
+    card.kind === 'review' ? (
+      // One key per review, so the card keeps its state when the marker arrives.
+      <RequestChangesCard
+        key={`review-${card.reviewId}`}
+        conversationId={conversationId}
+        reviewId={card.reviewId}
+        canResume={awaitingReviewId === card.reviewId}
+        // Switching back to requiring approval also applies to a review already submitted.
+        autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
+        onAlwaysApprove={() => onAlwaysApprove('always_approve')}
+      />
+    ) : (
+      <InputRequestCard
+        key={card.key}
+        part={card.request}
+        answered={answered}
+        canAnswer={canAnswer}
+        onAnswer={onAnswer}
+      />
     );
-  const addCard = (card: Card) =>
-    card.kind === 'review'
-      ? add(
-          // One key per review, so the card keeps its state when the marker arrives.
-          `review-${card.reviewId}`,
-          <RequestChangesCard
-            conversationId={conversationId}
-            reviewId={card.reviewId}
-            canResume={awaitingReviewId === card.reviewId}
-            // Switching back to requiring approval also applies to a review already submitted.
-            autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
-            onAlwaysApprove={() => onAlwaysApprove('always_approve')}
-          />,
-          false,
-        )
-      : add(
-          card.key,
-          <InputRequestCard
-            part={card.request}
-            answered={answered}
-            canAnswer={canAnswer}
-            onAnswer={onAnswer}
-          />,
-        );
+  const rendered: ReactNode[] = [];
   let cards: Card[] = [];
   // What the agent does before a reply folds into one line. Text it writes is its reply unless
   // the agent carries on afterwards, which makes that text an update along the way.
@@ -1187,9 +1174,9 @@ function Message({
   let reply: { key: string; part: TextUIPart } | null = null;
   const flush = (settled: boolean) => {
     if (work) {
-      add(
-        work.key,
+      rendered.push(
         <Work
+          key={work.key}
           items={work.items}
           live={live}
           settled={settled}
@@ -1200,7 +1187,9 @@ function Message({
       );
     }
     if (reply) {
-      add(reply.key, <TextPart part={reply.part} urlTransform={linkTransform} math animated />);
+      rendered.push(
+        <TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} math animated />,
+      );
     }
     work = null;
     reply = null;
@@ -1234,10 +1223,10 @@ function Message({
     const navigation = navigationOf(part);
     if (navigation) {
       flush(true);
-      add(key, <NavigationCard navigation={navigation} />);
+      rendered.push(<NavigationCard key={key} navigation={navigation} />);
     } else if (isReloadPart(part)) {
       flush(true);
-      add(key, <ReloadCard />);
+      rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
       // Cards wait for the end of the turn, so they do not split the work before the reply.
       const { reviewId, autoApprove } = ReviewPartSchema.parse(part.data);
@@ -1247,14 +1236,18 @@ function Message({
       if (request) cards.push({ kind: 'input', key, request });
     } else if (part.type === 'data-turn') {
       flush(true);
-      cards.forEach(addCard);
+      rendered.push(...cards.map(renderCard));
       cards = [];
     }
   }
   // Until the turn ends, text that looks like the reply may be followed by more work.
   flush(!live);
-  cards.filter((card) => card.kind === 'review' || !turnRunning).forEach(addCard);
+  rendered.push(...cards.filter((card) => card.kind === 'review' || !turnRunning).map(renderCard));
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;
-  return <div className="d-flex flex-column gap-2">{rendered}</div>;
+  return (
+    <div className={clsx('d-flex flex-column gap-2', entering && 'course-agent-fade')}>
+      {rendered}
+    </div>
+  );
 }
