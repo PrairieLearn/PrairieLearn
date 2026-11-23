@@ -173,6 +173,8 @@ export class CodexAppServerClient {
   /** The latest output of running commands, by history part ID, and what has yet to be shown. */
   private liveOutput = new Map<string, { tail: string; total: number; shown: number }>();
   private liveOutputTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The plan this turn is showing, which the turn's end marks as over. */
+  private plan: { id: string; data: PlanPart } | null = null;
   /** Tool call characters in the open message, which continuation turns append to. */
   private toolChars = { messageId: '', used: 0 };
   private failure: Error | null = null;
@@ -193,6 +195,7 @@ export class CodexAppServerClient {
     this.updates.clear();
     this.runningTools.clear();
     this.clearLiveOutput();
+    this.plan = null;
     if (this.toolChars.messageId !== messageId) this.toolChars = { messageId, used: 0 };
     this.onReview = onReview;
     void this.terminal.promise.catch(() => {});
@@ -356,8 +359,7 @@ export class CodexAppServerClient {
         const request = ShowPlanArguments.safeParse(call.data.arguments);
         if (!request.success) return invalidArguments(request.error);
         // One part per turn, replaced each time the agent sends its plan again.
-        this.emit({
-          type: 'data-plan',
+        this.plan = {
           id: `plan:${call.data.turnId}`,
           data: {
             v: 1,
@@ -365,8 +367,9 @@ export class CodexAppServerClient {
               text: clip(step, PLAN_STEP_CHARS, PLAN_STEP_CHARS).text,
               status: status === 'in_progress' ? 'inProgress' : status,
             })),
-          } satisfies PlanPart,
-        });
+          },
+        };
+        this.emit({ type: 'data-plan', ...this.plan });
         return { success: true, text: 'Staff see the plan as a checklist while you work.' };
       }
       default:
@@ -661,6 +664,16 @@ export class CodexAppServerClient {
     }
     this.runningTools.clear();
     this.clearLiveOutput();
+    // The plan was this turn's. A later turn continues the same message, and the chat would
+    // otherwise take the plan for that turn's until it wrote something.
+    if (this.plan) {
+      this.controller.enqueue({
+        type: 'data-plan',
+        id: this.plan.id,
+        data: { ...this.plan.data, ended: true } satisfies PlanPart,
+      });
+    }
+    this.plan = null;
     if (error) {
       this.controller.enqueue({
         type: 'error',

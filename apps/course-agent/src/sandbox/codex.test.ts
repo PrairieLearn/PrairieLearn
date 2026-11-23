@@ -370,18 +370,17 @@ describe('course agent turns', () => {
     await turn.finished;
     const chunks: UIMessageChunk[] = [];
     for await (const chunk of turn.stream) chunks.push(chunk);
+    const plan = {
+      v: 1,
+      steps: [
+        { text: 'Read the question', status: 'completed' },
+        { text: 'Run the tests', status: 'inProgress' },
+      ],
+    };
+    // The turn's end marks its plan as over, so a later turn in the same message does not show it.
     expect(chunks.filter((chunk) => chunk.type === 'data-plan')).toEqual([
-      {
-        type: 'data-plan',
-        id: 'plan:turn',
-        data: {
-          v: 1,
-          steps: [
-            { text: 'Read the question', status: 'completed' },
-            { text: 'Run the tests', status: 'inProgress' },
-          ],
-        },
-      },
+      { type: 'data-plan', id: 'plan:turn', data: plan },
+      { type: 'data-plan', id: 'plan:turn', data: { ...plan, ended: true } },
     ]);
     expect(chunks.filter((chunk) => chunk.type === 'data-tool')).toMatchObject([
       { id: 'tool:tests', data: { status: 'running', output: null } },

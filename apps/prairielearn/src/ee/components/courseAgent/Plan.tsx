@@ -16,7 +16,10 @@ export function planOf(message: UIMessage | undefined): PlanPart | null {
     const part = message.parts[i];
     // A plan before this marker belongs to an earlier turn of the same message.
     if (part.type === 'data-turn') return null;
-    if (part.type === 'data-plan') return PlanPartSchema.safeParse(part.data).data ?? null;
+    if (part.type === 'data-plan') {
+      const plan = PlanPartSchema.safeParse(part.data).data;
+      return plan && !plan.ended ? plan : null;
+    }
   }
   return null;
 }

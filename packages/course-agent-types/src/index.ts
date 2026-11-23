@@ -384,6 +384,11 @@ export type InputRequestPart = z.infer<typeof InputRequestPartSchema>;
  */
 export const PlanPartSchema = z.object({
   v: z.literal(1),
+  /**
+   * Set when the plan's turn ends. A later turn can continue the same message, and until it
+   * writes anything, nothing else in the message says the plan is no longer being followed.
+   */
+  ended: z.literal(true).optional(),
   steps: z.array(
     z.object({
       text: z.string(),
