@@ -1,6 +1,11 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
+import type { SkillCatalog } from '@modelcontextprotocol/server/ext/skills';
+import { loadSkills } from '@modelcontextprotocol/server/ext/skills/node';
+
+import { logger } from '@prairielearn/logger';
+
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 
 /**
@@ -8,6 +13,21 @@ import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
  * connected agent always gets the skills that match this PrairieLearn version.
  */
 const SKILLS_ROOT = path.join(REPOSITORY_ROOT_PATH, 'apps/course-agent/container/skills');
+
+let skillCatalog: Promise<SkillCatalog> | undefined;
+
+/**
+ * The skills as the MCP skills extension serves them, at `skill://prairielearn/<name>/SKILL.md`.
+ * An agent checks each file against the digest computed here, and the files only change with a
+ * deploy, so they are read once.
+ */
+export async function getSkillCatalog() {
+  skillCatalog ??= loadSkills(SKILLS_ROOT, {
+    prefix: 'prairielearn',
+    onWarning: (warning) => logger.warn('MCP skill not served as published', warning),
+  });
+  return await skillCatalog;
+}
 
 interface SkillSummary {
   name: string;

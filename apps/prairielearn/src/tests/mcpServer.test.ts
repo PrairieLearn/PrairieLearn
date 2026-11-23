@@ -1,6 +1,7 @@
 import * as crypto from 'node:crypto';
 
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import { SkillsClient } from '@modelcontextprotocol/client/ext/skills';
 import * as cheerio from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
@@ -175,6 +176,17 @@ describe('MCP server', { timeout: 60_000, concurrent: false }, function () {
     const skill = await callTool(access, 'get_skill', { name: 'prairielearn-questions' });
     assert.isFalse(skill.isError);
     assert.include(skill.text, '# PrairieLearn questions');
+
+    // The skills extension serves the same skill; the client checks the file against its digest.
+    const published = await withMcpClient(access, async (client) => {
+      const skills = new SkillsClient(client);
+      const { skills: entries } = await skills.list();
+      const entry = entries.find((skill) => skill.frontmatter.name === 'prairielearn-questions')!;
+      return { entry, file: await skills.read(entry) };
+    });
+    assert.equal(published.entry.uri, 'skill://prairielearn/prairielearn-questions/SKILL.md');
+    assert.isTrue(published.file.verified);
+    assert.include(published.file.text, '# PrairieLearn questions');
 
     const rows = await callTool(access, 'get_course_data', QUESTIONS);
     assert.isFalse(rows.isError);

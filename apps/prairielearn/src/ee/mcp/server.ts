@@ -21,7 +21,7 @@ import { courseDataSchema } from '../routers/courseAgentData/datasets.js';
 import type { McpAuth } from './auth.js';
 import { McpAccessError, authorizeMcpCourse } from './course-access.js';
 import { createCourseDataDownloadUrl } from './downloads.js';
-import { listSkills, readSkillFile } from './skills.js';
+import { getSkillCatalog, listSkills, readSkillFile } from './skills.js';
 
 // Hosted clients cut replies off near 150,000 characters; this leaves room for the rest of a turn.
 const INLINE_ROWS_MAX_CHARS = 50_000;
@@ -83,7 +83,7 @@ async function buildInstructions() {
     "You work in the user's own copy of the course repository. To publish changes, commit and push them with the user's Git access, then call sync_course.",
     'Course tools take a course_id, the number after "/pl/course/" in the address of any of the course\'s PrairieLearn pages.',
     `For anything these tools do not cover, such as checking how a question looks, finding which questions have sync errors, or course settings, open the PrairieLearn pages at ${getOauthIssuer()} in the user's browser.`,
-    'Before starting a task that matches one of these skills, read it with get_skill:',
+    'Before starting a task that matches one of these skills, read it with get_skill, unless your environment has already loaded it from this server:',
     ...skills.map((skill) => `- ${skill.name}: ${skill.description}`),
   ].join('\n');
 }
@@ -94,6 +94,10 @@ export async function buildMcpServer(auth: McpAuth) {
     { name: 'prairielearn', title: 'PrairieLearn', version: '0.1.0' },
     { instructions: await buildInstructions() },
   );
+
+  // Agents that support the skills extension find and load the skills themselves. get_skill
+  // stays for the ones that do not.
+  (await getSkillCatalog()).attach(server);
 
   server.registerTool(
     'get_skill',
