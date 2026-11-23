@@ -1,6 +1,6 @@
 import type { ReasoningUIPart, TextUIPart } from 'ai';
 import clsx from 'clsx';
-import { type ReactNode, useId, useState } from 'react';
+import { type ComponentProps, type ReactNode, useId, useState } from 'react';
 import type { UrlTransform } from 'react-markdown';
 
 import { ChatMarkdown } from './ChatMarkdown.js';
@@ -79,10 +79,16 @@ export function TextPart({
   part,
   math = false,
   urlTransform,
+  codeBlock,
 }: {
   part: TextUIPart;
   math?: boolean;
   urlTransform?: UrlTransform;
+  /**
+   * The AI question generation chat doesn't pass this. Once it's removed, always use the course
+   * agent's code block.
+   */
+  codeBlock?: ComponentProps<typeof ChatMarkdown>['codeBlock'];
 }) {
   return (
     <ChatMarkdown
@@ -91,6 +97,7 @@ export function TextPart({
       math={math}
       streaming={part.state === 'streaming'}
       urlTransform={urlTransform}
+      codeBlock={codeBlock}
     />
   );
 }
