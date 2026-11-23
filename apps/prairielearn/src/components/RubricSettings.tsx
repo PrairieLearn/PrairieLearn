@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import clsx from 'clsx';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -13,23 +14,30 @@ import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
 import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
+import {
+  canIndent,
+  depthsFromParents,
+  hasSubgroup,
+  indent,
+  moveAmongSiblings,
+  moveToSibling,
+  outdent,
+  parentIndex,
+  removeSubtree,
+  rubricPointRange,
+  subtreeEnd,
+} from './RubricSettings.tree.js';
+
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
-  // Hierarchy fields (#6861) are omitted until the editor supports groups.
   rubric_item: Omit<
     RubricItem,
-    | 'rubric_id'
-    | 'id'
-    | 'number'
-    | 'points'
-    | 'show_to_students'
-    | 'is_group'
-    | 'parent_id'
-    | 'min_selections'
-    | 'max_selections'
+    'rubric_id' | 'id' | 'number' | 'points' | 'show_to_students' | 'parent_id'
   > & {
     id?: string;
     points: number | null;
   };
+  /** Nesting depth in the editor; the server derives `parent_id` from it on save. */
+  depth: number;
   unique_key: string;
   disagreement_count: number | null;
   num_submissions: number | null;
@@ -42,6 +50,11 @@ const ExportedRubricItemSchema = z.object({
   explanation: z.string(),
   grader_note: z.string(),
   always_show_to_students: z.boolean(),
+  // Optional so that rubrics exported before groups existed can still be imported.
+  depth: z.number().int().nonnegative().optional(),
+  is_group: z.boolean().optional(),
+  min_selections: z.number().int().nullable().optional(),
+  max_selections: z.number().int().nullable().optional(),
 });
 
 const ExportedRubricDataSchema = z.object({
@@ -65,8 +78,50 @@ function rubricItemEquals(a: RubricItemData['rubric_item'], b: RubricItemData['r
     a.description === b.description &&
     (a.explanation ?? '') === (b.explanation ?? '') &&
     (a.grader_note ?? '') === (b.grader_note ?? '') &&
-    a.always_show_to_students === b.always_show_to_students
+    a.always_show_to_students === b.always_show_to_students &&
+    a.is_group === b.is_group &&
+    a.min_selections === b.min_selections &&
+    a.max_selections === b.max_selections
   );
+}
+
+function toEditorRows(
+  rubricData: RubricData | null | undefined,
+  disagreementCounts: Record<string, number>,
+): RubricItemData[] {
+  const items = rubricData?.rubric_items ?? [];
+  const depths = depthsFromParents(items.map((item) => item.rubric_item));
+  return items.map((item, i) => ({
+    ...item,
+    depth: depths[i],
+    unique_key: `rubric-item-${item.rubric_item.id}`,
+    disagreement_count:
+      item.rubric_item.id in disagreementCounts ? disagreementCounts[item.rubric_item.id] : null,
+  }));
+}
+
+function newRubricRow(depth: number, isGroup: boolean): RubricItemData {
+  return {
+    rubric_item: {
+      always_show_to_students: true,
+      deleted_at: null,
+      description: '',
+      explanation: null,
+      grader_note: null,
+      key_binding: null,
+      points: isGroup ? 0 : 1,
+      is_group: isGroup,
+      min_selections: null,
+      max_selections: null,
+    },
+    depth,
+    // Use a stable ID for the new row so that it can be used as a key in
+    // the list. This is important for React to correctly identify and
+    // manage the list items, especially when reordering or deleting rows.
+    unique_key: `new-row-${crypto.randomUUID()}`,
+    num_submissions: null,
+    disagreement_count: null,
+  };
 }
 
 export function RubricSettings({
@@ -90,16 +145,7 @@ export function RubricSettings({
   }) => void;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
-  const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
-  const rubricItemDataMerged =
-    rubricData?.rubric_items.map((item) => ({
-      ...item,
-      unique_key: `rubric-item-${item.rubric_item.id}`,
-      disagreement_count:
-        item.rubric_item.id in rubricItemsWithDisagreementCount
-          ? rubricItemsWithDisagreementCount[item.rubric_item.id]
-          : null,
-    })) ?? [];
+  const rubricItemDataMerged = toEditorRows(rubricData, aiGradingStats?.rubric_stats ?? {});
   const { variant_params, variant_true_answer, submission_submitted_answer } = context;
   const groups = {
     params: variant_params,
@@ -156,16 +202,9 @@ export function RubricSettings({
   const defaultGraderGuidelinesRef = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
 
   // Derived totals
-  const { totalPositive, totalNegative } = useMemo(() => {
-    const [pos, neg] = rubricItems
-      .map((item) => item.rubric_item.points ?? 0)
-      // For null (empty or unfinished floats), calculate points as if it doesn't exist
-      .reduce<[number, number]>(
-        ([p, n], v) => (v > 0 ? [p + v, n] : [p, n + v]),
-        [startingPoints, startingPoints],
-      );
-    return { totalPositive: roundPoints(pos), totalNegative: roundPoints(neg) };
-  }, [rubricItems, startingPoints]);
+  const pointRange = rubricPointRange(rubricItems);
+  const totalPositive = roundPoints(startingPoints + pointRange.max);
+  const totalNegative = roundPoints(startingPoints + pointRange.min);
 
   const maxPoints = roundPoints(
     (replaceAutoPoints
@@ -186,37 +225,34 @@ export function RubricSettings({
     if (graderGuidelines !== defaultGraderGuidelinesRef.current) return true;
     if (rubricItems.length !== defaultRubricItems.length) return true;
     return rubricItems.some(
-      (it, i) => !rubricItemEquals(it.rubric_item, defaultRubricItems[i].rubric_item),
+      (it, i) =>
+        it.depth !== defaultRubricItems[i].depth ||
+        !rubricItemEquals(it.rubric_item, defaultRubricItems[i].rubric_item),
     );
   });
 
   // Handlers
   const addRubricItemRow = () => {
-    setRubricItems((prev) => [
-      ...prev,
-      // Only initialize these parameters to be consistent with current new row behavior
-      {
-        rubric_item: {
-          always_show_to_students: true,
-          deleted_at: null,
-          description: '',
-          explanation: null,
-          grader_note: null,
-          key_binding: null,
-          points: 1,
-        },
-        // Use a stable ID for the new row so that it can be used as a key in
-        // the list. This is important for React to correctly identify and
-        // manage the list items, especially when reordering or deleting rows.
-        unique_key: `new-row-${crypto.randomUUID()}`,
-        num_submissions: null,
-        disagreement_count: null,
-      },
-    ]);
+    setRubricItems((prev) => [...prev, newRubricRow(0, false)]);
+  };
+
+  const addGroupRow = () => {
+    setRubricItems((prev) => [...prev, newRubricRow(0, true), newRubricRow(1, false)]);
+  };
+
+  const addItemToGroup = (idx: number) => {
+    setRubricItems((prev) => {
+      const insertAt = subtreeEnd(prev, idx);
+      return [
+        ...prev.slice(0, insertAt),
+        newRubricRow(prev[idx].depth + 1, false),
+        ...prev.slice(insertAt),
+      ];
+    });
   };
 
   const deleteRow = (idx: number) => {
-    setRubricItems((prev) => prev.filter((_, i) => i !== idx));
+    setRubricItems((prev) => removeSubtree(prev, idx));
   };
 
   /**
@@ -227,32 +263,20 @@ export function RubricSettings({
     setDraggedIdx(idx);
   }
 
+  // Dragging reorders a row among its siblings. Use the indent buttons to move
+  // rows into or out of groups.
   function onDragOver(overIdx: number) {
-    if (draggedIdx === null || draggedIdx === overIdx) return;
-    setRubricItems((items) => {
-      const newItems = [...items];
-      [newItems[draggedIdx], newItems[overIdx]] = [newItems[overIdx], newItems[draggedIdx]];
-      return newItems;
-    });
-    setDraggedIdx(overIdx);
+    if (draggedIdx === null) return;
+    const moved = moveToSibling(rubricItems, draggedIdx, overIdx);
+    if (!moved) return;
+    setRubricItems(moved.rows);
+    setDraggedIdx(moved.index);
   }
 
-  const moveUp = (idx: number) => {
-    if (idx === 0) return;
-    setRubricItems((prev) => {
-      const next = prev.slice();
-      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-      return next;
-    });
-  };
-  const moveDown = (idx: number) => {
-    setRubricItems((prev) => {
-      if (idx >= prev.length - 1) return prev;
-      const next = prev.slice();
-      [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
-      return next;
-    });
-  };
+  const moveUp = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, -1));
+  const moveDown = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, 1));
+  const indentRow = (idx: number) => setRubricItems((prev) => indent(prev, idx));
+  const outdentRow = (idx: number) => setRubricItems((prev) => outdent(prev, idx));
 
   const updateRubricItem = (idx: number, patch: Partial<RubricItemData['rubric_item']>) => {
     setRubricItems((prev) => {
@@ -299,6 +323,10 @@ export function RubricSettings({
         explanation: it.rubric_item.explanation ?? '',
         grader_note: it.rubric_item.grader_note ?? '',
         always_show_to_students: it.rubric_item.always_show_to_students,
+        depth: it.depth,
+        is_group: it.rubric_item.is_group,
+        min_selections: it.rubric_item.min_selections,
+        max_selections: it.rubric_item.max_selections,
       })),
     };
 
@@ -387,7 +415,11 @@ export function RubricSettings({
           grader_note: rubricItem.grader_note,
           key_binding: null,
           points: roundPoints(rubricItem.points * scaleFactor),
+          is_group: rubricItem.is_group ?? false,
+          min_selections: rubricItem.min_selections ?? null,
+          max_selections: rubricItem.max_selections ?? null,
         },
+        depth: rubricItem.depth ?? 0,
         unique_key: `imported-row-${crypto.randomUUID()}`,
         num_submissions: null,
         disagreement_count: null,
@@ -451,6 +483,10 @@ export function RubricSettings({
           explanation: it.rubric_item.explanation,
           grader_note: it.rubric_item.grader_note,
           always_show_to_students: it.rubric_item.always_show_to_students,
+          depth: it.depth,
+          is_group: it.rubric_item.is_group,
+          min_selections: it.rubric_item.min_selections,
+          max_selections: it.rubric_item.max_selections,
         })),
         tag_for_manual_grading: tagForGrading,
       };
@@ -501,18 +537,10 @@ export function RubricSettings({
         // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
         const rubricData = data.rubric_data as RubricData | null;
         const rubric = rubricData?.rubric ?? null;
-        const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
-        const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
-        const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
-          ...item,
-          unique_key: `rubric-item-${item.rubric_item.id}`,
-          disagreement_count:
-            item.rubric_item.id in rubricItemsWithDisagreementCount
-              ? rubricItemsWithDisagreementCount[item.rubric_item.id]
-              : null,
-        }));
-
-        defaultRubricItemsRef.current = rubricItemDataMerged;
+        defaultRubricItemsRef.current = toEditorRows(
+          rubricData,
+          data.aiGradingStats?.rubric_stats ?? {},
+        );
         defaultReplaceAutoPointsRef.current =
           rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
         defaultStartingPointsRef.current = rubric?.starting_points ?? 0;
@@ -785,9 +813,15 @@ export function RubricSettings({
                       showAiGradingStats={showAiGradingStats}
                       submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                       hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+                      canIndent={canIndent(rubricItems, idx)}
+                      canOutdent={parentIndex(rubricItems, idx) != null}
+                      ruleDisabled={it.rubric_item.is_group && hasSubgroup(rubricItems, idx)}
                       deleteRow={() => deleteRow(idx)}
                       moveUp={() => moveUp(idx)}
                       moveDown={() => moveDown(idx)}
+                      indentRow={() => indentRow(idx)}
+                      outdentRow={() => outdentRow(idx)}
+                      addItemToGroup={() => addItemToGroup(idx)}
                       updateRubricItem={(patch) => updateRubricItem(idx, patch)}
                       onDragStart={() => onDragStart(idx)}
                       onDragOver={() => onDragOver(idx)}
@@ -869,9 +903,18 @@ export function RubricSettings({
           </Alert>
           <div className="mb-3 gap-1 d-flex">
             {hasCourseInstancePermissionEdit && rubricItems.length > 0 && (
-              <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
-                Add item
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={addRubricItemRow}
+                >
+                  Add item
+                </button>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={addGroupRow}>
+                  Add group
+                </button>
+              </>
             )}
             <button type="button" className="btn btn-sm btn-primary" onClick={exportRubric}>
               <i className="fas fa-download" aria-hidden="true" /> Export rubric
@@ -1080,9 +1123,15 @@ function RubricRow({
   item,
   showAiGradingStats,
   submissionCount,
+  canIndent,
+  canOutdent,
+  ruleDisabled,
   deleteRow,
   moveUp,
   moveDown,
+  indentRow,
+  outdentRow,
+  addItemToGroup,
   updateRubricItem,
   onDragStart,
   onDragOver,
@@ -1091,16 +1140,25 @@ function RubricRow({
   item: RubricItemData;
   showAiGradingStats: boolean;
   submissionCount: number;
+  canIndent: boolean;
+  canOutdent: boolean;
+  ruleDisabled: boolean;
   deleteRow: () => void;
   moveUp: () => void;
   moveDown: () => void;
+  indentRow: () => void;
+  outdentRow: () => void;
+  addItemToGroup: () => void;
   updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
   onDragStart: () => void;
   onDragOver: () => void;
   hasCourseInstancePermissionEdit: boolean;
 }) {
+  const isGroup = item.rubric_item.is_group;
   return (
     <tr
+      className={clsx(isGroup && 'table-light')}
+      data-testid={isGroup ? 'rubric-editor-group' : 'rubric-editor-item'}
       onDragOver={(e) => {
         if (!hasCourseInstancePermissionEdit) return;
         e.preventDefault();
@@ -1133,8 +1191,29 @@ function RubricRow({
             </button>
             <button
               type="button"
+              className="btn btn-sm btn-ghost"
+              aria-label="Move out of group"
+              title="Move out of group"
+              disabled={!canOutdent}
+              onClick={outdentRow}
+            >
+              <i className="bi bi-text-indent-right" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              aria-label="Move into group above"
+              title="Move into group above"
+              disabled={!canIndent}
+              onClick={indentRow}
+            >
+              <i className="bi bi-text-indent-left" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
               className="btn btn-sm btn-ghost text-danger"
-              aria-label="Delete"
+              aria-label={isGroup ? 'Delete group and its items' : 'Delete'}
+              title={isGroup ? 'Delete group and its items' : undefined}
               onClick={deleteRow}
             >
               <i className="fas fa-trash text-danger" aria-hidden="true" />
@@ -1178,37 +1257,69 @@ function RubricRow({
       </td>
 
       <td className="align-middle">
-        <input
-          type="number"
-          className="form-control"
-          style={{ width: '5rem' }}
-          step="any"
-          value={item.rubric_item.points ?? ''}
-          aria-label="Points"
-          disabled={!hasCourseInstancePermissionEdit}
-          required
-          onInput={({ currentTarget }) =>
-            updateRubricItem({
-              // currentTarget.value will be an empty string if the input is not valid yet
-              // so we can use this to check for partially done inputs such as just a "-" as well
-              points: currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
-            })
-          }
-        />
+        {isGroup ? (
+          <SelectionRuleInput
+            item={item}
+            disabled={!hasCourseInstancePermissionEdit || ruleDisabled}
+            disabledReason={
+              ruleDisabled ? 'Rules can only be set on groups that contain only items.' : null
+            }
+            updateRubricItem={updateRubricItem}
+          />
+        ) : (
+          <input
+            type="number"
+            className="form-control"
+            style={{ width: '5rem' }}
+            step="any"
+            value={item.rubric_item.points ?? ''}
+            aria-label="Points"
+            disabled={!hasCourseInstancePermissionEdit}
+            required
+            onInput={({ currentTarget }) =>
+              updateRubricItem({
+                // currentTarget.value will be an empty string if the input is not valid yet
+                // so we can use this to check for partially done inputs such as just a "-" as well
+                points: currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
+              })
+            }
+          />
+        )}
       </td>
 
       <td className="align-middle">
-        <input
-          type="text"
-          className="form-control"
-          maxLength={100}
-          style={{ minWidth: '15rem' }}
-          value={item.rubric_item.description}
-          aria-label="Description"
-          disabled={!hasCourseInstancePermissionEdit}
-          required
-          onInput={(e) => updateRubricItem({ description: e.currentTarget.value })}
-        />
+        <div
+          className="d-flex align-items-center gap-2"
+          style={{ paddingLeft: `${item.depth * 1.5}rem` }}
+        >
+          {item.depth > 0 && (
+            <i className="bi bi-arrow-return-right text-muted" aria-hidden="true" />
+          )}
+          {isGroup && <i className="bi bi-collection" aria-hidden="true" />}
+          <input
+            type="text"
+            className={clsx('form-control', isGroup && 'fw-semibold')}
+            maxLength={100}
+            style={{ minWidth: '15rem' }}
+            value={item.rubric_item.description}
+            placeholder={isGroup ? 'Group name' : undefined}
+            aria-label={isGroup ? 'Group name' : 'Description'}
+            disabled={!hasCourseInstancePermissionEdit}
+            required
+            onInput={(e) => updateRubricItem({ description: e.currentTarget.value })}
+          />
+          {isGroup && hasCourseInstancePermissionEdit && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost text-nowrap"
+              aria-label="Add item to group"
+              title="Add item to group"
+              onClick={addItemToGroup}
+            >
+              <i className="bi bi-plus-lg" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </td>
 
       <td className="align-middle">
@@ -1269,7 +1380,9 @@ function RubricRow({
         </div>
       </td>
 
-      {showAiGradingStats ? (
+      {isGroup ? (
+        <td className="align-middle text-muted">&mdash;</td>
+      ) : showAiGradingStats ? (
         <td className="align-middle">
           {submissionCount === 0 ? (
             <span>&mdash;</span>
@@ -1301,6 +1414,100 @@ function RubricRow({
         </td>
       )}
     </tr>
+  );
+}
+
+type SelectionRulePreset = 'none' | 'up-to-one' | 'exactly-one' | 'at-least-one' | 'custom';
+
+const SELECTION_RULE_PRESETS: Record<
+  Exclude<SelectionRulePreset, 'custom'>,
+  { label: string; min_selections: number | null; max_selections: number | null }
+> = {
+  none: { label: 'Any number', min_selections: null, max_selections: null },
+  'up-to-one': { label: 'Up to one', min_selections: null, max_selections: 1 },
+  'exactly-one': { label: 'Exactly one', min_selections: 1, max_selections: 1 },
+  'at-least-one': { label: 'At least one', min_selections: 1, max_selections: null },
+};
+
+function SelectionRuleInput({
+  item,
+  disabled,
+  disabledReason,
+  updateRubricItem,
+}: {
+  item: RubricItemData;
+  disabled: boolean;
+  disabledReason: string | null;
+  updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
+}) {
+  const { min_selections, max_selections } = item.rubric_item;
+  const matchingPreset = (
+    Object.entries(SELECTION_RULE_PRESETS) as [
+      Exclude<SelectionRulePreset, 'custom'>,
+      (typeof SELECTION_RULE_PRESETS)['none'],
+    ][]
+  ).find(
+    ([, preset]) =>
+      preset.min_selections === min_selections && preset.max_selections === max_selections,
+  )?.[0];
+  const [showCustom, setShowCustom] = useState(matchingPreset == null);
+  const value: SelectionRulePreset = showCustom ? 'custom' : (matchingPreset ?? 'custom');
+  const parseLimit = (input: string) => (input.length > 0 ? Number(input) : null);
+
+  return (
+    <div style={{ minWidth: '9rem' }} title={disabledReason ?? undefined}>
+      <select
+        className="form-select form-select-sm"
+        aria-label="Items that can be selected"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => {
+          const selected = e.currentTarget.value as SelectionRulePreset;
+          setShowCustom(selected === 'custom');
+          if (selected !== 'custom') {
+            const { min_selections, max_selections } = SELECTION_RULE_PRESETS[selected];
+            updateRubricItem({ min_selections, max_selections });
+          }
+        }}
+      >
+        {Object.entries(SELECTION_RULE_PRESETS).map(([key, preset]) => (
+          <option key={key} value={key}>
+            {preset.label}
+          </option>
+        ))}
+        <option value="custom">Custom</option>
+      </select>
+      {value === 'custom' && (
+        <div className="d-flex gap-1 mt-1">
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            min={0}
+            step={1}
+            placeholder="Min"
+            aria-label="Minimum selections"
+            value={min_selections ?? ''}
+            disabled={disabled}
+            onInput={({ currentTarget }) =>
+              updateRubricItem({ min_selections: parseLimit(currentTarget.value) })
+            }
+          />
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            min={1}
+            step={1}
+            placeholder="Max"
+            aria-label="Maximum selections"
+            value={max_selections ?? ''}
+            disabled={disabled}
+            onInput={({ currentTarget }) =>
+              updateRubricItem({ max_selections: parseLimit(currentTarget.value) })
+            }
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
