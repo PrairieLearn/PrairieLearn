@@ -3,6 +3,7 @@ import type { CourseActionCatalog } from '@prairielearn/course-agent-types';
 import { toJsonSchema } from '../json-schema.js';
 
 import type { CourseAction } from './action.js';
+import { aiGradingActions } from './ai-grading.js';
 import { attemptActions } from './attempts.js';
 import { gradingActions } from './grading.js';
 import { issueActions } from './issues.js';
@@ -21,6 +22,7 @@ export const COURSE_AGENT_ACTIONS: Record<string, CourseAction> = {
   ...sharingActions,
   ...studentActions,
   ...gradingActions,
+  ...aiGradingActions,
 };
 
 const COURSE_ACTIONS_VERSION = 1;

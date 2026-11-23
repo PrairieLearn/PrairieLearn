@@ -4,13 +4,15 @@ import { createServer } from 'node:http';
 import { afterAll, assert, beforeAll, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { DateFromISOString } from '@prairielearn/zod';
 
+import { aiGrade } from '../ee/lib/ai-grading/ai-grading.js';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { config } from '../lib/config.js';
 import type { CourseAgentConversation, User } from '../lib/db-types.js';
+import { createServerJob } from '../lib/server-jobs.js';
 import {
   deleteCourseInstancePermissions,
   insertCourseInstancePermissions,
@@ -23,6 +25,12 @@ import * as helperServer from './helperServer.js';
 import { withUser } from './utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+// AI grading calls a model provider, so the action's job is stood in for.
+vi.mock(import('../ee/lib/ai-grading/ai-grading.js'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  aiGrade: vi.fn(),
+}));
 
 const SERVICE_TOKEN = 'course-agent-service-token-for-tests-0123456789';
 const EXAM = { course_instance_short_name: 'Sp15', assessment_tid: 'exam1-automaticTestSuite' };
@@ -61,7 +69,7 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
       isEnterprise: true,
       courseAgentServiceUrl: `http://127.0.0.1:${address.port}`,
       courseAgentServiceToken: [SERVICE_TOKEN],
-      features: { ...config.features, 'course-agent': true },
+      features: { ...config.features, 'course-agent': true, 'ai-grading': true },
     });
     await helperServer.before()();
   });
@@ -71,6 +79,11 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     await once(service, 'close');
   });
   afterAll(() => Object.assign(config, originalConfig));
+  // Test files in a worker share modules, so a later file must get the real AI grading.
+  afterAll(() => {
+    vi.doUnmock('../ee/lib/ai-grading/ai-grading.js');
+    vi.resetModules();
+  });
 
   helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
@@ -313,6 +326,52 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     });
     expect(scored.result.outcome.summary).toContain(`is now 3 of ${first.max_points} points`);
     expect((await questions())[0].points).toBe(3);
+  });
+
+  test('AI grades answers waiting for manual grading, and refuses without credits', async () => {
+    const [first] = await queryRows(
+      sql.select_instance_questions,
+      { assessment_instance_id: attemptId },
+      z.object({ id: z.string(), qid: z.string() }),
+    );
+    const input = { qid: first.qid };
+    expect(await refusal('instance_questions_ai_grade', input)).toContain('has no manual points');
+
+    await execute(sql.give_manual_points, { instance_question_id: first.id });
+    expect(await refusal('instance_questions_ai_grade', input)).toContain('no AI grading credits');
+
+    await execute(sql.set_ai_grading_credits, { milli_dollars: 5000 });
+    expect(
+      await refusal('instance_questions_ai_grade', {
+        ...input,
+        which: 'all',
+        instance_question_ids: [first.id],
+      }),
+    ).toContain('not both');
+    vi.mocked(aiGrade).mockImplementation(async ({ authn_user_id }) => {
+      const serverJob = await createServerJob({
+        type: 'ai_grading',
+        description: 'Perform AI grading',
+        courseId: '1',
+        courseInstanceId: '1',
+        userId: authn_user_id,
+        authnUserId: authn_user_id,
+      });
+      await serverJob.execute(async (job) => job.info('Graded 1 submission.'));
+      return serverJob.jobSequenceId;
+    });
+    const graded = await approve('instance_questions_ai_grade', input);
+    expect(graded.card).toMatchObject({
+      title: `AI grade 1 answer to ${first.qid}`,
+      context: expect.stringContaining('Model: gpt-6-sol · Credits: $5.00'),
+      rows: [{ label: 'dev@example.com', detail: 'Waiting for grading' }],
+    });
+    expect(vi.mocked(aiGrade).mock.calls[0][0]).toMatchObject({
+      mode: 'selected',
+      instance_question_ids: [first.id],
+      model_id: 'gpt-6-sol',
+    });
+    expect(graded.result.outcome).toMatchObject({ status: 'succeeded' });
   });
 
   test('closes an open attempt with a grading job, then reopens it', async () => {

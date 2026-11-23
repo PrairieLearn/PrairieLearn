@@ -26,3 +26,30 @@ WHERE
   iq.assessment_instance_id = $assessment_instance_id
 ORDER BY
   iq.id;
+
+-- BLOCK give_manual_points
+WITH
+  updated_question AS (
+    UPDATE assessment_questions AS aq
+    SET
+      max_manual_points = 2
+    FROM
+      instance_questions AS iq
+    WHERE
+      iq.id = $instance_question_id
+      AND aq.id = iq.assessment_question_id
+  )
+  -- The attempt never answered it, and AI grading only grades answered questions.
+UPDATE instance_questions
+SET
+  requires_manual_grading = TRUE,
+  status = 'saved'
+WHERE
+  id = $instance_question_id;
+
+-- BLOCK set_ai_grading_credits
+UPDATE course_instances
+SET
+  credit_transferable_milli_dollars = $milli_dollars
+WHERE
+  id = 1;

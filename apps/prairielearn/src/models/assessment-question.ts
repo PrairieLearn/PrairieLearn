@@ -18,6 +18,21 @@ export async function selectAssessmentQuestionById(id: string): Promise<Assessme
   );
 }
 
+/** The assessment's question with this QID, or null when the assessment has none. */
+export async function selectOptionalAssessmentQuestionByQid({
+  assessment_id,
+  qid,
+}: {
+  assessment_id: string;
+  qid: string;
+}): Promise<AssessmentQuestion | null> {
+  return await sqldb.queryOptionalRow(
+    sql.select_assessment_question_by_qid,
+    { assessment_id, qid },
+    AssessmentQuestionSchema,
+  );
+}
+
 export async function selectAssessmentQuestionByQuestionId({
   assessment_id,
   question_id,
