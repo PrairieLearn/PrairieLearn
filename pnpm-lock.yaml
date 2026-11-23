@@ -185,8 +185,8 @@ overrides:
   notebookjs>jsdom: '*'
   s3rver>busboy: npm:@fastify/busboy@^3.2.4
   jsdom>undici: ^8.12.3
-  micromark-extension-math>katex: ^0.18.11
-  rehype-katex>katex: ^0.18.11
+  micromark-extension-math>katex: ^0.18.10
+  rehype-katex>katex: ^0.18.10
 
 packageExtensionsChecksum: sha256-LckhG+wN9aD0P/2uyuYtxEB0UnE8W92DruMPvPTkFtM=
 
@@ -1029,8 +1029,8 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       katex:
-        specifier: ^0.18.11
-        version: 0.18.11
+        specifier: ^0.18.10
+        version: 0.18.10
       klaw:
         specifier: ^4.1.0
         version: 4.1.0
@@ -9299,9 +9299,8 @@ packages:
   jws@4.0.1:
     resolution: {integrity: sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==}
 
-  katex@0.18.11:
-    resolution: {integrity: sha512-yvyz/2VMKqoho/35Hat5w37wIEdWJ5ElVMidTAlWrxr5uW4aBGsEpveTmKh18/zw08v/7lGswCPon4OhqmqrTA==}
-    deprecated: Accidentally published with breaking changes. Use 0.19.0 instead.
+  katex@0.18.10:
+    resolution: {integrity: sha512-/B6p9eY9DX7aHBfpkHdpirDTZ5QH9xTwL9y837PWuzuv41O5jFdqNQwVQEQsimY0/iVNkwBY4+4hMfhQ7d4Dbw==}
     hasBin: true
 
   kebab-case@1.0.2:
@@ -14332,7 +14331,7 @@ snapshots:
       deep-extend: 0.6.0
       fastclick: 1.0.6
       jsondiffpatch: 0.7.6
-      katex: 0.18.11
+      katex: 0.18.10
       normalize.css: 8.0.1
       pepjs: 0.5.3
       sass: 1.105.0
@@ -18238,7 +18237,7 @@ snapshots:
       jwa: 2.0.1
       safe-buffer: 5.2.1
 
-  katex@0.18.11:
+  katex@0.18.10:
     dependencies:
       commander: 15.0.0
 
@@ -18836,7 +18835,7 @@ snapshots:
     dependencies:
       '@types/katex': 0.16.8
       devlop: 1.1.0
-      katex: 0.18.11
+      katex: 0.18.10
       micromark-factory-space: 2.0.1
       micromark-util-character: 2.1.1
       micromark-util-symbol: 2.0.1
@@ -20005,7 +20004,7 @@ snapshots:
       '@types/katex': 0.16.8
       hast-util-from-html-isomorphic: 2.0.0
       hast-util-to-text: 4.0.3
-      katex: 0.18.11
+      katex: 0.18.10
       unist-util-visit-parents: 6.0.2
       vfile: 6.0.3
 
