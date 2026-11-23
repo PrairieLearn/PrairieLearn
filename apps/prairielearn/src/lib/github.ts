@@ -7,7 +7,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { insertCourse, updateCourseCommitHash } from '../models/course.js';
+import { insertCourse } from '../models/course.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
 import { config } from './config.js';
@@ -480,9 +480,6 @@ export async function createCourseRepoJob(
       // then we have a problem.
       throw new Error('Sync failed on brand new course repository');
     }
-
-    job.info('Update course commit hash');
-    await updateCourseCommitHash(inserted_course);
   };
 
   // Create a server job to wrap the course creation process.

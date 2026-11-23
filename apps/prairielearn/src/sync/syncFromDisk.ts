@@ -16,7 +16,9 @@ import {
   getGitRemoteUrl,
   getLockNameForCoursePath,
   getOptionalCourseCommitHash,
+  selectCourseById,
   selectOrInsertCourseByPath,
+  updateCourseCommitHash,
 } from '../models/course.js';
 import { publishQuestionVersionsFromDisk } from '../models/question-version.js';
 import { flushElementCache } from '../question-servers/freeform.js';
@@ -115,7 +117,7 @@ export async function syncDiskToSqlWithLock(
   logger: ServerJobLogger,
   {
     courseData,
-    oldHash = course.commit_hash,
+    oldHash,
     commitHash,
   }: { courseData?: courseDB.CourseData; oldHash?: string | null; commitHash?: string } = {},
 ): Promise<SyncResults> {
@@ -150,7 +152,7 @@ export async function syncDiskToSqlWithLock(
 
   logger.info('Syncing info to database');
 
-  await timed('Synced all course data', async () => {
+  const questionIds = await timed('Synced all course data', async () => {
     await timed('Synced course info', () =>
       syncCourseInfo.sync(course.path, courseData, course.id),
     );
@@ -255,18 +257,29 @@ export async function syncDiskToSqlWithLock(
         },
       );
     });
+    return questionIds;
   });
 
   await timed('Published question versions', async () => {
-    const source = { courseId: course.id, coursePath: course.path, courseData };
+    const currentHash = commitHash ?? (await getOptionalCourseCommitHash(course.path));
+    const source = {
+      courseId: course.id,
+      coursePath: course.path,
+      courseData,
+      questionIds,
+      commitHash: currentHash,
+    };
     if (config.chunksGenerator) {
-      const chunkChanges = await updateChunksForCourse({ ...source, oldHash, commitHash });
+      // Read the baseline under the directory lock when the caller has not supplied it.
+      const previousHash =
+        oldHash === undefined ? (await selectCourseById(course.id)).commit_hash : oldHash;
+      const chunkChanges = await updateChunksForCourse({ ...source, oldHash: previousHash });
       logChunkChangesToJob(chunkChanges, logger);
     } else {
-      await publishQuestionVersionsFromDisk({
-        ...source,
-        commitHash: commitHash ?? (await getOptionalCourseCommitHash(course.path)),
-      });
+      await publishQuestionVersionsFromDisk(source);
+    }
+    if (currentHash) {
+      await updateCourseCommitHash(course.id, currentHash);
     }
   });
 

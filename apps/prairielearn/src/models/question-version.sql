@@ -12,7 +12,11 @@ WHERE
 
 -- BLOCK select_current_versions
 SELECT
-  to_jsonb(qv.*) AS question_version,
+  qv.id,
+  qv.question_id,
+  qv.source_hash,
+  qv.dependency_hash,
+  qv.uses_chunks,
   s.question_version_id IS NOT NULL
   AND (
     NOT qv.uses_chunks

@@ -10,8 +10,7 @@ import { IdSchema } from '@prairielearn/zod';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
-  getOrUpdateCourseCommitHash,
-  updateCourseCommitHash,
+  selectCourseById,
 } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
@@ -75,7 +74,7 @@ export async function pullAndUpdateCourse({
   }
 
   const jobPromise = serverJob.execute(async (job) => {
-    const { path, branch, repository, commit_hash } = course;
+    const { path, branch, repository } = course;
 
     if (!path) {
       job.fail('Path is not set for this course. Exiting...');
@@ -107,6 +106,7 @@ export async function pullAndUpdateCourse({
       },
       async () => {
         let startGitHash: string | null = null;
+        let previousHash: string | null = null;
 
         // These should be set by the time we get here, but checking to allow typing to assume non-null.
         if (!path || !branch || !repository) {
@@ -127,11 +127,8 @@ export async function pullAndUpdateCourse({
         } else {
           // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
-          startGitHash = await getOrUpdateCourseCommitHash({
-            id: course.id,
-            path,
-            commit_hash,
-          });
+          previousHash = (await selectCourseById(course.id)).commit_hash;
+          startGitHash = previousHash ?? (await getCourseCommitHash(path));
 
           job.info('Updating to latest remote origin address');
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);
@@ -174,7 +171,7 @@ export async function pullAndUpdateCourse({
 
         job.info('Sync git repository to database');
         const syncResult = await syncDiskToSqlWithLock(course, job, {
-          oldHash: startGitHash,
+          oldHash: previousHash,
           commitHash: endGitHash,
         });
         if (syncResult.status === 'sharing_error') {
@@ -184,8 +181,6 @@ export async function pullAndUpdateCourse({
           job.fail('Sync completely failed due to invalid question sharing edit.');
           return;
         }
-
-        await updateCourseCommitHash({ id: course.id, path }, endGitHash);
 
         if (syncResult.hadJsonErrors) {
           job.fail('One or more JSON files contained errors and were unable to be synced.');

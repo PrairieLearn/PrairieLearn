@@ -70,6 +70,8 @@ describe('Question version sync without chunks', () => {
   it('detects uncommitted code changes at the same Git hash and writes identical settings again', async () => {
     const courseDir = await util.writeCourseToTempDirectory(util.getCourseData());
     await execa('git', ['init'], { cwd: courseDir });
+    await execa('git', ['config', 'user.email', 'test@example.com'], { cwd: courseDir });
+    await execa('git', ['config', 'user.name', 'Test User'], { cwd: courseDir });
     await execa('git', ['add', '.'], { cwd: courseDir });
     await execa('git', ['commit', '-m', 'Initial course'], { cwd: courseDir });
     const { stdout: commitHash } = await execa('git', ['rev-parse', 'HEAD'], { cwd: courseDir });
@@ -90,6 +92,43 @@ describe('Question version sync without chunks', () => {
       ...initial[0].settings,
       question_version_id: changed[1].question_version.id,
     });
+  });
+
+  it('publishes versions for questions synced with duplicate UUID warnings', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+    const original = await selectQuestion(syncResults.courseId);
+    const questionInfo = courseData.questions[util.QUESTION_ID];
+    await fs.writeJson(path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'), {
+      ...questionInfo,
+      title: 'Updated question',
+    });
+    await fs.outputJson(path.join(courseDir, 'questions', 'duplicate', 'info.json'), {
+      ...questionInfo,
+      title: 'New question with duplicate UUID',
+    });
+
+    const synced = await util.syncCourseData(courseDir);
+    assert(synced.status === 'complete');
+    expect(synced.hadJsonErrors).toBe(false);
+    expect(synced.courseData.questions[util.QUESTION_ID].warnings).not.toHaveLength(0);
+
+    const updated = await selectQuestion(syncResults.courseId);
+    expect(updated).toMatchObject({ id: original.id, uuid: null, title: 'Updated question' });
+    const versions = await selectVersions(updated.id);
+    expect(versions).toHaveLength(2);
+    expect(versions[0].superseded_at).toBe(versions[1].created_at);
+    expect(versions[1]).toMatchObject({
+      settings: { title: 'Updated question' },
+      superseded_at: null,
+    });
+
+    const duplicate = await selectQuestionByQid({
+      course_id: syncResults.courseId,
+      qid: 'duplicate',
+    });
+    expect(await selectVersions(duplicate.id)).toMatchObject([
+      { settings: { title: 'New question with duplicate UUID' }, superseded_at: null },
+    ]);
   });
 
   it('advances versions for course dependencies and template file changes', async () => {

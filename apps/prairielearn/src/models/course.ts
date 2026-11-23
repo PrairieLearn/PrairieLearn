@@ -189,34 +189,12 @@ export async function getGitRemoteUrl(coursePath: string): Promise<string | null
   }
 }
 
-/** Stores the current commit hash after a successful sync. */
-export async function updateCourseCommitHash(
-  course: { id: string; path: string },
-  commitHash?: string,
-): Promise<string> {
-  const hash = commitHash ?? (await getCourseCommitHash(course.path));
+/** Records the commit after successful publication under the course directory lock. */
+export async function updateCourseCommitHash(courseId: string, commitHash: string): Promise<void> {
   await execute(sql.update_course_commit_hash, {
-    course_id: course.id,
-    commit_hash: hash,
+    course_id: courseId,
+    commit_hash: commitHash,
   });
-  return hash;
-}
-
-/**
- * If the provided course object contains a commit hash, that will be used;
- * otherwise, the commit hash will be loaded from disk and stored in the
- * database.
- *
- * This should only ever really need to happen at max once per course - in the
- * future, the commit hash will already be in the course object and will be
- * updated during course sync.
- */
-export async function getOrUpdateCourseCommitHash(course: {
-  id: string;
-  path: string;
-  commit_hash?: string | null;
-}): Promise<string> {
-  return course.commit_hash ?? (await updateCourseCommitHash(course));
 }
 
 /**
