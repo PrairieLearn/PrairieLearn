@@ -102,6 +102,7 @@ export const courseAgentRouter = t.router({
           ctx: {
             course: ctx.locals.course,
             user: ctx.locals.authn_user,
+            is_administrator: ctx.locals.is_administrator,
             authz_data: ctx.locals.authz_data,
           },
           conversation,

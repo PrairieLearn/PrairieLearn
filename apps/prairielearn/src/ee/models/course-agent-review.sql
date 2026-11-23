@@ -28,6 +28,15 @@ WHERE
   course_agent_conversation_id = $course_agent_conversation_id
   AND agent_review_id = $agent_review_id;
 
+-- BLOCK update_course_agent_review_job_sequence
+UPDATE course_agent_reviews
+SET
+  job_sequence_id = $job_sequence_id
+WHERE
+  id = $id
+RETURNING
+  *;
+
 -- BLOCK update_course_agent_review_result
 UPDATE course_agent_reviews
 SET
