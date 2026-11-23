@@ -22,7 +22,11 @@ test('distinguishes paper review flags from broken questions omitted from the do
 }) => {
   await openPrintPreparation(page, courseInstance.id, 'exam23-printing');
   await waitForFormA1(page);
-  await page.getByRole('button', { name: /^(Create|Update) preview$/ }).click();
+  const applyPreview = page.getByRole('button', { name: /^(Create|Update) preview$/ });
+  await applyPreview.click();
+  // The button stays disabled until the new preview finishes, so the old one can't satisfy the checks below.
+  await expect(applyPreview).toBeDisabled();
+  await expect(applyPreview).toBeEnabled({ timeout: 120_000 });
   await expect(page.frameLocator(ACTIVE_PREVIEW_FRAME_SELECTOR).locator(':root')).toHaveAttribute(
     'data-print-status',
     'ready',
