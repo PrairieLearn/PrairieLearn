@@ -733,7 +733,8 @@ function Chat({
   return (
     <FileDropArea enabled={!sending} onDrop={drafts.add}>
       <div ref={stickToBottom.scrollRef} className="flex-grow-1 overflow-y-auto">
-        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
+        {/* Extra room under the last message keeps it from sitting against the message box. */}
+        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3 pb-5">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
           )}
