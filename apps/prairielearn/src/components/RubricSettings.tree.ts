@@ -162,6 +162,43 @@ export function treeGuides(rows: EditorTreeRow[]): TreeGuide[][] {
   });
 }
 
+/** The direct children of row `i`, as `[start, end)` ranges that include their descendants. */
+function childRanges(rows: EditorTreeRow[], i: number): [number, number][] {
+  const ranges: [number, number][] = [];
+  const end = subtreeEnd(rows, i);
+  for (let child = i + 1; child < end; child = subtreeEnd(rows, child)) {
+    ranges.push([child, subtreeEnd(rows, child)]);
+  }
+  return ranges;
+}
+
+/**
+ * Orders a group's children by points, highest first or lowest first. Ties
+ * keep their current order, and items without points yet go last.
+ */
+export function sortChildrenByPoints<T extends EditorTreeRow>(
+  rows: T[],
+  i: number,
+  order: 'highest-first' | 'lowest-first',
+): T[] {
+  const sign = order === 'highest-first' ? -1 : 1;
+  const children = childRanges(rows, i)
+    .map(([start, end]) => rows.slice(start, end))
+    .sort((a, b) => {
+      const [pointsA, pointsB] = [a[0].rubric_item.points, b[0].rubric_item.points];
+      if (pointsA == null || pointsB == null)
+        return (pointsA == null ? 1 : 0) - (pointsB == null ? 1 : 0);
+      return sign * (pointsA - pointsB);
+    });
+  return [...rows.slice(0, i + 1), ...children.flat(), ...rows.slice(subtreeEnd(rows, i))];
+}
+
+/** Whether a group's children are already ordered from highest to lowest points. */
+export function isSortedHighestFirst(rows: EditorTreeRow[], i: number): boolean {
+  const points = childRanges(rows, i).map(([start]) => rows[start].rubric_item.points ?? -Infinity);
+  return points.every((value, index) => index === 0 || points[index - 1] >= value);
+}
+
 export function removeSubtree<T extends EditorTreeRow>(rows: T[], i: number): T[] {
   return [...rows.slice(0, i), ...rows.slice(subtreeEnd(rows, i))];
 }

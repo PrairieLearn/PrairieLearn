@@ -41,12 +41,14 @@ import {
   depthsFromParents,
   hasSubgroup,
   indent,
+  isSortedHighestFirst,
   moveAmongSiblings,
   moveToSibling,
   outdent,
   parentIndex,
   removeSubtree,
   rubricPointRange,
+  sortChildrenByPoints,
   subtreeEnd,
   treeGuides,
 } from './RubricSettings.tree.js';
@@ -380,6 +382,15 @@ export function RubricSettings({
   const moveUp = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, -1));
   const moveDown = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, 1));
   const indentRow = (idx: number) => setRubricItems((prev) => indent(prev, idx));
+  // Sorting a group that is already highest-first flips it to lowest-first.
+  const sortGroupByPoints = (idx: number) =>
+    setRubricItems((prev) =>
+      sortChildrenByPoints(
+        prev,
+        idx,
+        isSortedHighestFirst(prev, idx) ? 'lowest-first' : 'highest-first',
+      ),
+    );
   const outdentRow = (idx: number) => setRubricItems((prev) => outdent(prev, idx));
 
   const updateRubricItem = (idx: number, patch: Partial<RubricItemData['rubric_item']>) => {
@@ -960,6 +971,17 @@ export function RubricSettings({
                             indentRow={() => indentRow(idx)}
                             outdentRow={() => outdentRow(idx)}
                             addItemToGroup={() => addItemToGroup(idx)}
+                            sortByPoints={
+                              // Only groups of two or more items, without subgroups, can be sorted.
+                              it.rubric_item.is_group &&
+                              !hasSubgroup(rubricItems, idx) &&
+                              subtreeEnd(rubricItems, idx) - idx > 2
+                                ? {
+                                    sortedHighestFirst: isSortedHighestFirst(rubricItems, idx),
+                                    sort: () => sortGroupByPoints(idx),
+                                  }
+                                : null
+                            }
                             updateRubricItem={(patch) => updateRubricItem(idx, patch)}
                           />
                         ),
@@ -1332,6 +1354,7 @@ function RubricRow({
   indentRow,
   outdentRow,
   addItemToGroup,
+  sortByPoints,
   updateRubricItem,
   hasCourseInstancePermissionEdit,
 }: {
@@ -1355,6 +1378,7 @@ function RubricRow({
   indentRow: () => void;
   outdentRow: () => void;
   addItemToGroup: () => void;
+  sortByPoints: { sortedHighestFirst: boolean; sort: () => void } | null;
   updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
   hasCourseInstancePermissionEdit: boolean;
 }) {
@@ -1365,6 +1389,9 @@ function RubricRow({
     disabled: !hasCourseInstancePermissionEdit,
   });
   const [isEditing, setIsEditing] = useState(false);
+  const sortLabel = sortByPoints?.sortedHighestFirst
+    ? 'Sort items by points, lowest first'
+    : 'Sort items by points, highest first';
   return (
     <tr
       ref={setNodeRef}
@@ -1446,6 +1473,25 @@ function RubricRow({
             >
               <i className="fas fa-trash text-danger" aria-hidden="true" />
             </button>
+            {sortByPoints && (
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                aria-label={sortLabel}
+                title={sortLabel}
+                onClick={sortByPoints.sort}
+              >
+                <i
+                  className={clsx(
+                    'bi',
+                    sortByPoints.sortedHighestFirst
+                      ? 'bi-sort-numeric-down'
+                      : 'bi-sort-numeric-down-alt',
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+            )}
           </div>
         )}
         {item.rubric_item.id && (

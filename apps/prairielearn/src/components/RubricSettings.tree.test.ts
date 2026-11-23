@@ -5,11 +5,13 @@ import {
   canIndent,
   depthsFromParents,
   indent,
+  isSortedHighestFirst,
   moveAmongSiblings,
   moveToSibling,
   outdent,
   removeSubtree,
   rubricPointRange,
+  sortChildrenByPoints,
   treeGuides,
 } from './RubricSettings.tree.js';
 
@@ -90,6 +92,23 @@ describe('moving rows', () => {
     assert.deepEqual(shape(result?.rows ?? []), ['g', '  b', '  c', 'd', 'a']);
     assert.equal(result?.index, 4);
     assert.isNull(moveToSibling(list, 0, 2));
+  });
+
+  it('sorts only the items inside a group by points', () => {
+    const group = rows('a:5', 'G g', '  b:1', '  c:3', '  d:-2', '  e:3', 'f:4');
+    const highest = sortChildrenByPoints(group, 1, 'highest-first');
+    assert.deepEqual(shape(highest), ['a', 'g', '  c', '  e', '  b', '  d', 'f']);
+    assert.isFalse(isSortedHighestFirst(group, 1));
+    assert.isTrue(isSortedHighestFirst(highest, 1));
+    assert.deepEqual(shape(sortChildrenByPoints(group, 1, 'lowest-first')), [
+      'a',
+      'g',
+      '  d',
+      '  b',
+      '  c',
+      '  e',
+      'f',
+    ]);
   });
 
   it('removes a group with its children', () => {
