@@ -352,6 +352,13 @@ const GETTING_READY_LABEL = 'Getting ready';
 const THINKING_AFTER_MS = 3000;
 
 /**
+ * How long the agent may go on working after a finished reply before the status line returns. A
+ * turn normally ends with its reply, but text from a model that does not label its updates looks
+ * like a reply while the agent carries on, and the chat would otherwise seem done.
+ */
+const WORKING_AFTER_REPLY_MS = 2000;
+
+/**
  * Holds each label on screen long enough to read. A step that takes a tenth of a second would
  * otherwise flash its label and make the line flicker.
  */
@@ -452,13 +459,26 @@ function ActivityStatus({
 }
 
 /**
- * Whether the latest thing the agent wrote is its reply. The reply shows the agent is still at
+ * The agent's reply, if that is the latest thing it wrote. The reply shows the agent is still at
  * work, and a status line under it would only drop below each new line and then vanish when the
  * turn ends a moment later.
  */
-function replying(message: UIMessage | undefined) {
+function latestReply(message: UIMessage | undefined) {
   const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
-  return part?.type === 'text' && !isUpdate(part) && part.text.trim() !== '';
+  return part?.type === 'text' && !isUpdate(part) && part.text.trim() !== '' ? part : null;
+}
+
+/** Whether a condition has held without a break for the given time. */
+function useHeldFor(condition: boolean, ms: number) {
+  const [held, setHeld] = useState(false);
+  if (!condition && held) setHeld(false);
+  // Counts the condition as held once it has lasted the whole time.
+  useEffect(() => {
+    if (!condition) return;
+    const timeout = setTimeout(() => setHeld(true), ms);
+    return () => clearTimeout(timeout);
+  }, [condition, ms]);
+  return held;
 }
 
 /** The call the agent made last, if nothing has followed it. */
@@ -726,6 +746,11 @@ function Chat({
     (lifecycle?.status === 'starting' ||
       ((lifecycle === null || lifecycle.status === 'offline') &&
         (awaitingStart || responseActive)));
+  const reply = startingSandbox ? null : latestReply(messages.at(-1));
+  const workingAfterReply = useHeldFor(
+    working && reply !== null && reply.state !== 'streaming',
+    WORKING_AFTER_REPLY_MS,
+  );
   const showInitialText =
     initialText !== undefined && !messages.some((message) => message.role === 'user');
   const awaitingReviewId =
@@ -841,7 +866,7 @@ function Chat({
               requestId={lastUserIndex === -1 ? undefined : messages[lastUserIndex].id}
               startingSandbox={startingSandbox}
               message={messages.at(-1)}
-              hidden={!startingSandbox && replying(messages.at(-1))}
+              hidden={reply !== null && !workingAfterReply}
             />
           )}
           {lifecycle?.status === 'blocked' && (
