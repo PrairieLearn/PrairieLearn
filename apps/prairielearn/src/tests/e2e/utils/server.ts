@@ -8,7 +8,7 @@ import * as tmp from 'tmp-promise';
 import type { Config } from '../../../lib/config.js';
 import { APP_ROOT_PATH } from '../../../lib/paths.js';
 
-const BASE_PORT = Number(process.env.PL_E2E_BASE_PORT ?? 3014);
+const BASE_PORT = 3014;
 
 interface WorkerServerOptions {
   /** Additional course directories to include beyond the defaults */
