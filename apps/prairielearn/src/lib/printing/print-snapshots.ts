@@ -55,7 +55,7 @@ export interface PrintSnapshotIdentity {
   questionListDigest: string;
 }
 
-export function printSnapshotKey(identity: PrintSnapshotIdentity): string {
+function printSnapshotKey(identity: PrintSnapshotIdentity): string {
   const hash = createHash('sha256')
     .update(
       JSON.stringify([
