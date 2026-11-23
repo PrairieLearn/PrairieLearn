@@ -55,7 +55,13 @@ import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
 import { PlanChecklist, planOf } from './Plan.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
-import { LiveOutput, Work, type WorkItem, reasoningHeading, runningLabel } from './ToolCalls.js';
+import {
+  LiveOutput,
+  ToolCalls,
+  type WorkItem,
+  reasoningHeading,
+  runningLabel,
+} from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 import { currentPageLocation } from './pageLocation.js';
@@ -240,7 +246,7 @@ function ConversationPicker({
             {create.isPending ? (
               <div className="d-flex flex-column gap-3">
                 <UserMessage text={create.variables.text} />
-                <PendingStatus label="Getting ready…" />
+                <PendingStatus label="Starting sandbox…" />
               </div>
             ) : (
               <EmptyConversation onStart={setDraft} />
@@ -344,7 +350,7 @@ const MIN_LABEL_MS = 1000;
 /** The label for the moments between steps, when the agent has said nothing more specific. */
 const THINKING_LABEL = 'Thinking';
 
-const GETTING_READY_LABEL = 'Getting ready';
+const STARTING_SANDBOX_LABEL = 'Starting sandbox';
 
 /**
  * How long the agent must go without a new step before the line says it is thinking. It pauses
@@ -370,7 +376,7 @@ function useSteadyLabel(label: string) {
   useEffect(() => {
     if (label === shown) return;
     const wait =
-      label === THINKING_LABEL && shown !== GETTING_READY_LABEL
+      label === THINKING_LABEL && shown !== STARTING_SANDBOX_LABEL
         ? THINKING_AFTER_MS
         : Math.max(0, MIN_LABEL_MS - (Date.now() - shownAtRef.current));
     const timeout = setTimeout(() => {
@@ -428,7 +434,7 @@ function ActivityStatus({
       ? stored.since
       : mountedAt;
   const [now, setNow] = useState(() => Date.now());
-  const label = useSteadyLabel(startingSandbox ? GETTING_READY_LABEL : activityLabel(message));
+  const label = useSteadyLabel(startingSandbox ? STARTING_SANDBOX_LABEL : activityLabel(message));
   // Advances the elapsed time once a second.
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -446,7 +452,7 @@ function ActivityStatus({
     <div className="small text-body-secondary" role="status">
       {/* The label changes with every step and the time every second, too often to announce. */}
       <span className="visually-hidden">
-        {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
+        {startingSandbox ? 'Starting sandbox…' : 'The course agent is working…'}
       </span>
       <span className="d-flex gap-2" aria-hidden="true">
         <span className="text-truncate course-agent-shimmer">{label}…</span>
@@ -1235,7 +1241,7 @@ function Message({
     // Thoughts alone show nothing, and an empty message would still take up a gap in the chat.
     if (work?.items.some((item) => 'kind' in item || item.type === 'text')) {
       rendered.push(
-        <Work
+        <ToolCalls
           key={work.key}
           items={work.items}
           live={live}
