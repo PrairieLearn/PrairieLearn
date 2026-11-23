@@ -53,6 +53,7 @@ import { ChatCodeBlock } from './ChatDiff.js';
 import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
+import { PlanChecklist, planOf } from './Plan.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
 import { LiveOutput, Work, type WorkItem, reasoningHeading, runningLabel } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
@@ -449,7 +450,7 @@ function latestCall(message: UIMessage | undefined) {
 
 /**
  * What the agent is doing now, in plain words: the call it is running or what it is thinking
- * about.
+ * about. The plan above the message box already shows its current step.
  */
 function activityLabel(message: UIMessage | undefined) {
   const call = latestCall(message);
@@ -693,6 +694,7 @@ function Chat({
     (responseActive || lifecycle?.status === 'waiting_for_agent') &&
     !connectionFailed &&
     !connectionError;
+  const plan = working ? planOf(messages.at(-1)) : null;
   // The server reports the turn's lifecycle before the SDK marks the response active.
   const startingSandbox =
     !connectionFailed &&
@@ -719,7 +721,7 @@ function Chat({
     latest?.role === 'assistant' &&
     latest.parts.some((part) => part.type === 'data-input-request');
   const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'instant' });
-  // Follows new content, and the message box taking more room, before the browser paints.
+  // Follows new content, and the plan or message box taking more room, before the browser paints.
   // The hook scrolls a frame later, so the status line at the bottom would drop with every chunk
   // of text and then jump back.
   useEffect(() => {
@@ -850,6 +852,7 @@ function Chat({
           )}
         </div>
       </div>
+      {plan && plan.steps.length > 0 && <PlanChecklist plan={plan} />}
       <Composer
         draft={draft}
         disabled={!connected || !(readyToSend || replyDenies) || deny.isPending}
@@ -1212,7 +1215,7 @@ function Message({
       continue;
     }
     if (part.type === 'text') {
-      // More text after it also makes it an update.
+      // More text after it also makes it an update; the plan tool, for one, leaves no step between.
       if (reply) {
         work ??= { key: reply.key, items: [] };
         work.items.push(reply.part);
