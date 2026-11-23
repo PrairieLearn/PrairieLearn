@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -1202,9 +1202,23 @@ function RubricRow({
   hasCourseInstancePermissionEdit: boolean;
 }) {
   const isGroup = item.rubric_item.is_group;
+  // Each nesting level gets a colored stripe at the start of the row, so rows
+  // in the same group line up visually. A group shows its own stripe too, and
+  // its row is tinted with its level's color.
+  const stripeCount = isGroup ? item.depth + 1 : item.depth;
+  const stripes = Array.from(
+    { length: stripeCount },
+    (_, level) => `inset ${(level + 1) * NESTING_STRIPE_WIDTH}px 0 0 ${nestingLevelColor(level)}`,
+  );
   return (
     <tr
-      className={clsx(isGroup && 'table-light')}
+      style={
+        isGroup
+          ? ({
+              '--bs-table-bg': `color-mix(in srgb, ${nestingLevelColor(item.depth)} 12%, var(--bs-body-bg))`,
+            } as CSSProperties)
+          : undefined
+      }
       data-testid={isGroup ? 'rubric-editor-group' : 'rubric-editor-item'}
       onDragOver={(e) => {
         if (!hasCourseInstancePermissionEdit) return;
@@ -1212,9 +1226,16 @@ function RubricRow({
         onDragOver();
       }}
     >
-      <td className="text-nowrap align-middle">
+      <td
+        className="text-nowrap align-middle"
+        style={stripes.length > 0 ? { boxShadow: stripes.join(', ') } : undefined}
+      >
         {hasCourseInstancePermissionEdit && (
-          <>
+          <div
+            style={{
+              paddingLeft: `calc(${item.depth}rem + ${stripeCount * NESTING_STRIPE_WIDTH}px)`,
+            }}
+          >
             <button
               type="button"
               className="btn btn-sm btn-ghost"
@@ -1265,7 +1286,7 @@ function RubricRow({
             >
               <i className="fas fa-trash text-danger" aria-hidden="true" />
             </button>
-          </>
+          </div>
         )}
         {item.rubric_item.id && (
           <>
@@ -1342,7 +1363,13 @@ function RubricRow({
           {item.depth > 0 && (
             <i className="bi bi-arrow-return-right text-muted" aria-hidden="true" />
           )}
-          {isGroup && <i className="bi bi-collection" aria-hidden="true" />}
+          {isGroup && (
+            <i
+              className="bi bi-collection"
+              style={{ color: nestingLevelColor(item.depth) }}
+              aria-hidden="true"
+            />
+          )}
           <input
             type="text"
             className={clsx('form-control', isGroup && 'fw-semibold')}
@@ -1462,6 +1489,13 @@ function RubricRow({
       )}
     </tr>
   );
+}
+
+const NESTING_STRIPE_WIDTH = 4;
+const NESTING_LEVEL_COLORS = ['var(--bs-primary)', 'var(--bs-purple)'];
+
+function nestingLevelColor(level: number) {
+  return NESTING_LEVEL_COLORS[level % NESTING_LEVEL_COLORS.length];
 }
 
 function DeleteGroupModal({
