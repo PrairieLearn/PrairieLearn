@@ -1,5 +1,24 @@
+import {
+  type CollisionDetection,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  KeyboardSensor,
+  MeasuringStrategy,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { type CSSProperties, useEffect, useRef, useState } from 'react';
+import { omit } from 'es-toolkit';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -12,6 +31,7 @@ import { dispatchInstanceQuestionGradingPanelUpdate } from '../lib/client/manual
 import { mathjaxTypeset } from '../lib/client/mathjax.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
 import { isSideNavExpanded, setSideNavExpandedTemporarily } from '../lib/client/side-nav.js';
+import { verticalBoundaryCollision } from '../lib/client/vertical-boundary-collision.js';
 import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
@@ -174,7 +194,7 @@ export function RubricSettings({
     rubricData?.rubric.grader_guidelines ?? '',
   );
 
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [activeDragKey, setActiveDragKey] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
@@ -292,23 +312,67 @@ export function RubricSettings({
     }
   };
 
-  /**
-   * Update current dragged row index
-   * @param idx The current index of the row that is being dragged
-   */
-  function onDragStart(idx: number) {
-    setDraggedIdx(idx);
-  }
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
-  // Dragging reorders a row among its siblings. Use the indent buttons to move
-  // rows into or out of groups.
-  function onDragOver(overIdx: number) {
-    if (draggedIdx === null) return;
-    const moved = moveToSibling(rubricItems, draggedIdx, overIdx);
-    if (!moved) return;
-    setRubricItems(moved.rows);
-    setDraggedIdx(moved.index);
-  }
+  // Dragging reorders a row among its siblings; the indent buttons move rows
+  // into or out of groups. The dragged row's own contents are hidden while it
+  // is dragged, and each sibling counts as one block (a group together with
+  // its contents) when deciding where the row lands.
+  const activeDragIdx = rubricItems.findIndex((it) => it.unique_key === activeDragKey);
+  const hiddenEnd = activeDragIdx === -1 ? -1 : subtreeEnd(rubricItems, activeDragIdx);
+  const isHiddenWhileDragging = (idx: number) => idx > activeDragIdx && idx < hiddenEnd;
+  const parentKeys = rubricItems.map((_, idx) => {
+    const parent = parentIndex(rubricItems, idx);
+    return parent == null ? null : rubricItems[parent].unique_key;
+  });
+  const lastKeys = rubricItems.map(
+    (_, idx) => rubricItems[subtreeEnd(rubricItems, idx) - 1].unique_key,
+  );
+
+  const siblingCollisionDetection: CollisionDetection = (args) => {
+    const { active, droppableContainers, droppableRects } = args;
+    const siblings = droppableContainers.filter(
+      (container) => container.data.current?.parentKey === active.data.current?.parentKey,
+    );
+    const blockRects = new Map(
+      siblings.flatMap((container) => {
+        const first = droppableRects.get(container.id);
+        if (!first) return [];
+        const last = droppableRects.get(container.data.current?.lastKey) ?? first;
+        const height = last.top + last.height - first.top;
+        return [[container.id, { ...first, height, bottom: first.top + height }] as const];
+      }),
+    );
+    const hits = verticalBoundaryCollision({
+      ...args,
+      droppableContainers: siblings,
+      droppableRects: blockRects,
+    });
+    if (hits.length === 0) return [];
+    const hit = hits[0];
+    // When moving down past a group, report its last row so that the whole
+    // group slides up to make room.
+    const hitIdx = rubricItems.findIndex((it) => it.unique_key === hit.id);
+    const activeIdx = rubricItems.findIndex((it) => it.unique_key === active.id);
+    return [{ id: hitIdx > activeIdx ? lastKeys[hitIdx] : hit.id }];
+  };
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveDragKey(null);
+    if (!over || active.id === over.id) return;
+    const from = rubricItems.findIndex((it) => it.unique_key === active.id);
+    // `over` may be the last row inside a sibling group; drop next to that group.
+    let to: number | null = rubricItems.findIndex((it) => it.unique_key === over.id);
+    while (to != null && parentKeys[to] !== parentKeys[from]) {
+      to = parentIndex(rubricItems, to);
+    }
+    if (to == null) return;
+    const moved = moveToSibling(rubricItems, from, to);
+    if (moved) setRubricItems(moved.rows);
+  };
 
   const moveUp = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, -1));
   const moveDown = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, 1));
@@ -829,103 +893,132 @@ export function RubricSettings({
 
           {/* Rubric table */}
           <div className="table-responsive">
-            <table className="table table-sm border-bottom mb-3" aria-label="Rubric items">
-              <thead>
-                <tr className="table-light fw-bold">
-                  <td style={{ width: '1px' }} />
-                  <td>Points</td>
-                  <td>Description</td>
-                  <td>Detailed explanation</td>
-                  <td>Grader note</td>
-                  <td>Show to students</td>
-                  {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
-                </tr>
-              </thead>
-              <tbody>
-                {rubricItems.length > 0 ? (
-                  rubricItems.map((it, idx) => (
-                    <RubricRow
-                      key={it.unique_key}
-                      item={it}
-                      showAiGradingStats={showAiGradingStats}
-                      submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
-                      hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-                      canIndent={canIndent(rubricItems, idx)}
-                      canOutdent={parentIndex(rubricItems, idx) != null}
-                      ruleDisabled={it.rubric_item.is_group && hasSubgroup(rubricItems, idx)}
-                      deleteRow={() => requestDeleteRow(idx)}
-                      moveUp={() => moveUp(idx)}
-                      moveDown={() => moveDown(idx)}
-                      indentRow={() => indentRow(idx)}
-                      outdentRow={() => outdentRow(idx)}
-                      addItemToGroup={() => addItemToGroup(idx)}
-                      updateRubricItem={(patch) => updateRubricItem(idx, patch)}
-                      onDragStart={() => onDragStart(idx)}
-                      onDragOver={() => onDragOver(idx)}
-                    />
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="text-muted py-3">
-                      This question does not have any rubric items.
-                      {hasCourseInstancePermissionEdit && (
-                        <>
-                          {' '}
-                          <button
-                            type="button"
-                            className="btn btn-link p-0 align-baseline text-decoration-none"
-                            onClick={addRubricItemRow}
-                          >
-                            Add item
-                          </button>
-                          {wasUsingRubric && (
-                            <>
-                              , or{' '}
-                              <button
-                                type="button"
-                                className="btn btn-link p-0 align-baseline text-decoration-none"
-                                onClick={() => submitSettings(false)}
-                              >
-                                Disable rubric
-                              </button>{' '}
-                              to switch back to manual grade input.
-                            </>
-                          )}
-                        </>
+            <DndContext
+              sensors={dragSensors}
+              collisionDetection={siblingCollisionDetection}
+              // Rows are hidden when a drag starts, so keep measuring the rows
+              // that are left instead of using their positions from before.
+              measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+              onDragStart={({ active }) => setActiveDragKey(String(active.id))}
+              onDragEnd={onDragEnd}
+              onDragCancel={() => setActiveDragKey(null)}
+            >
+              <table className="table table-sm border-bottom mb-3" aria-label="Rubric items">
+                <thead>
+                  <tr className="table-light fw-bold">
+                    <td style={{ width: '1px' }} />
+                    <td>Points</td>
+                    <td>Description</td>
+                    <td>Detailed explanation</td>
+                    <td>Grader note</td>
+                    <td>Show to students</td>
+                    {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rubricItems.length > 0 ? (
+                    <SortableContext
+                      items={rubricItems
+                        .filter((_, idx) => !isHiddenWhileDragging(idx))
+                        .map((it) => it.unique_key)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {rubricItems.map((it, idx) =>
+                        isHiddenWhileDragging(idx) ? null : (
+                          <RubricRow
+                            key={it.unique_key}
+                            item={it}
+                            parentKey={parentKeys[idx]}
+                            lastKey={lastKeys[idx]}
+                            hiddenChildCount={idx === activeDragIdx ? hiddenEnd - idx - 1 : 0}
+                            showAiGradingStats={showAiGradingStats}
+                            submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
+                            hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+                            canIndent={canIndent(rubricItems, idx)}
+                            canOutdent={parentIndex(rubricItems, idx) != null}
+                            ruleDisabled={it.rubric_item.is_group && hasSubgroup(rubricItems, idx)}
+                            deleteRow={() => requestDeleteRow(idx)}
+                            moveUp={() => moveUp(idx)}
+                            moveDown={() => moveDown(idx)}
+                            indentRow={() => indentRow(idx)}
+                            outdentRow={() => outdentRow(idx)}
+                            addItemToGroup={() => addItemToGroup(idx)}
+                            updateRubricItem={(patch) => updateRubricItem(idx, patch)}
+                          />
+                        ),
                       )}
+                    </SortableContext>
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="text-muted py-3">
+                        This question does not have any rubric items.
+                        {hasCourseInstancePermissionEdit && (
+                          <>
+                            {' '}
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 align-baseline text-decoration-none"
+                              onClick={addRubricItemRow}
+                            >
+                              Add item
+                            </button>
+                            {wasUsingRubric && (
+                              <>
+                                , or{' '}
+                                <button
+                                  type="button"
+                                  className="btn btn-link p-0 align-baseline text-decoration-none"
+                                  onClick={() => submitSettings(false)}
+                                >
+                                  Disable rubric
+                                </button>{' '}
+                                to switch back to manual grade input.
+                              </>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot className="table-light">
+                  <tr>
+                    <td colSpan={7}>
+                      <div className="d-flex flex-wrap column-gap-4 row-gap-1 small">
+                        <span>
+                          <span className="fw-semibold">Max score from items:</span> {totalPositive}{' '}
+                          / {maxPoints} points
+                          {maxPointsShortfall > 0 && rubricItems.length > 0 && (
+                            <span className="text-muted ms-2">
+                              <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
+                              {maxPointsShortfall} below maximum
+                            </span>
+                          )}
+                        </span>
+                        <span>
+                          <span className="fw-semibold">Min score from items:</span> {totalNegative}{' '}
+                          / {minRubricScore} points
+                          {minPointsShortfall > 0 && rubricItems.length > 0 && (
+                            <span className="text-muted ms-2">
+                              <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
+                              {minPointsShortfall} above minimum
+                            </span>
+                          )}
+                        </span>
+                      </div>
                     </td>
                   </tr>
+                </tfoot>
+              </table>
+              <DragOverlay dropAnimation={null}>
+                {activeDragIdx === -1 ? null : (
+                  <RubricDragPreview
+                    item={rubricItems[activeDragIdx]}
+                    childCount={subtreeEnd(rubricItems, activeDragIdx) - activeDragIdx - 1}
+                  />
                 )}
-              </tbody>
-              <tfoot className="table-light">
-                <tr>
-                  <td colSpan={7}>
-                    <div className="d-flex flex-wrap column-gap-4 row-gap-1 small">
-                      <span>
-                        <span className="fw-semibold">Max score from items:</span> {totalPositive} /{' '}
-                        {maxPoints} points
-                        {maxPointsShortfall > 0 && rubricItems.length > 0 && (
-                          <span className="text-muted ms-2">
-                            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
-                            {maxPointsShortfall} below maximum
-                          </span>
-                        )}
-                      </span>
-                      <span>
-                        <span className="fw-semibold">Min score from items:</span> {totalNegative} /{' '}
-                        {minRubricScore} points
-                        {minPointsShortfall > 0 && rubricItems.length > 0 && (
-                          <span className="text-muted ms-2">
-                            <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
-                            {minPointsShortfall} above minimum
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+              </DragOverlay>
+            </DndContext>
           </div>
 
           <DeleteGroupModal
@@ -1168,6 +1261,9 @@ export function RubricSettings({
 
 function RubricRow({
   item,
+  parentKey,
+  lastKey,
+  hiddenChildCount,
   showAiGradingStats,
   submissionCount,
   canIndent,
@@ -1180,11 +1276,15 @@ function RubricRow({
   outdentRow,
   addItemToGroup,
   updateRubricItem,
-  onDragStart,
-  onDragOver,
   hasCourseInstancePermissionEdit,
 }: {
   item: RubricItemData;
+  /** The parent group's `unique_key`, so that rows are only dropped among siblings. */
+  parentKey: string | null;
+  /** `unique_key` of the last row inside this row's group, or of this row itself. */
+  lastKey: string;
+  /** Number of rows inside this group that are hidden while it is dragged. */
+  hiddenChildCount: number;
   showAiGradingStats: boolean;
   submissionCount: number;
   canIndent: boolean;
@@ -1197,11 +1297,14 @@ function RubricRow({
   outdentRow: () => void;
   addItemToGroup: () => void;
   updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
-  onDragStart: () => void;
-  onDragOver: () => void;
   hasCourseInstancePermissionEdit: boolean;
 }) {
   const isGroup = item.rubric_item.is_group;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.unique_key,
+    data: { parentKey, lastKey },
+    disabled: !hasCourseInstancePermissionEdit,
+  });
   // Each nesting level gets a colored stripe at the start of the row, so rows
   // in the same group line up visually. A group shows its own stripe too, and
   // its row is tinted with its level's color.
@@ -1212,19 +1315,18 @@ function RubricRow({
   );
   return (
     <tr
-      style={
-        isGroup
-          ? ({
-              '--bs-table-bg': `color-mix(in srgb, ${nestingLevelColor(item.depth)} 12%, var(--bs-body-bg))`,
-            } as CSSProperties)
-          : undefined
-      }
-      data-testid={isGroup ? 'rubric-editor-group' : 'rubric-editor-item'}
-      onDragOver={(e) => {
-        if (!hasCourseInstancePermissionEdit) return;
-        e.preventDefault();
-        onDragOver();
+      ref={setNodeRef}
+      style={{
+        ...(isGroup && {
+          '--bs-table-bg': `color-mix(in srgb, ${nestingLevelColor(item.depth)} 12%, var(--bs-body-bg))`,
+        }),
+        opacity: isDragging ? 0.4 : undefined,
+        // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
+        // which visually warps variable-height rows.
+        transform: CSS.Translate.toString(transform),
+        transition,
       }}
+      data-testid={isGroup ? 'rubric-editor-group' : 'rubric-editor-item'}
     >
       <td
         className="text-nowrap align-middle"
@@ -1239,12 +1341,12 @@ function RubricRow({
             <button
               type="button"
               className="btn btn-sm btn-ghost"
-              style={{ cursor: 'grab' }}
+              style={{ cursor: 'grab', touchAction: 'none' }}
               aria-label="Drag to reorder"
-              draggable
-              onDragStart={onDragStart}
+              // Native buttons already have the role supplied by dnd-kit.
+              {...omit({ ...attributes, ...listeners }, ['role'])}
             >
-              <i className="fas fa-arrows-up-down" aria-hidden="true" />
+              <i className="fas fa-grip-vertical" aria-hidden="true" />
             </button>
             <button type="button" className="visually-hidden" aria-label="Move up" onClick={moveUp}>
               <i className="fas fa-arrow-up" aria-hidden="true" />
@@ -1382,6 +1484,9 @@ function RubricRow({
             required
             onInput={(e) => updateRubricItem({ description: e.currentTarget.value })}
           />
+          {hiddenChildCount > 0 && (
+            <span className="small text-muted text-nowrap">+{hiddenChildCount} inside</span>
+          )}
           {isGroup && hasCourseInstancePermissionEdit && (
             <button
               type="button"
@@ -1488,6 +1593,29 @@ function RubricRow({
         </td>
       )}
     </tr>
+  );
+}
+
+/** What follows the pointer while a row is dragged. */
+function RubricDragPreview({ item, childCount }: { item: RubricItemData; childCount: number }) {
+  const isGroup = item.rubric_item.is_group;
+  return (
+    <div className="d-inline-flex align-items-center gap-2 bg-body border rounded shadow px-2 py-1">
+      <i className="fas fa-grip-vertical text-muted" aria-hidden="true" />
+      {isGroup ? (
+        <i
+          className="bi bi-collection"
+          style={{ color: nestingLevelColor(item.depth) }}
+          aria-hidden="true"
+        />
+      ) : (
+        <span className="text-muted">{item.rubric_item.points ?? ''}</span>
+      )}
+      <span className={clsx(isGroup && 'fw-semibold')}>
+        {item.rubric_item.description || (isGroup ? 'Untitled group' : 'Untitled item')}
+      </span>
+      {childCount > 0 && <span className="small text-muted">+{childCount} inside</span>}
+    </div>
   );
 }
 
