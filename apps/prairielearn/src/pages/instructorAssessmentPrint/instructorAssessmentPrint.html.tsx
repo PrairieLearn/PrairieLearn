@@ -1636,8 +1636,8 @@ function PrintPreparation({
       <PaperSizeChangeModal
         show={paperSizeModal.show}
         change={pendingPaperSizeChange}
-        onExited={paperSizeModal.onExited}
         applying={paperSizeApplying}
+        onExited={paperSizeModal.onExited}
         onCancel={cancelPaperSizeChange}
         onApply={(change) => {
           void applyPaperSizeChange(change)
