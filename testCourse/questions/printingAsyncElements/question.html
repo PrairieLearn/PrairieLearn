@@ -1,0 +1,12 @@
+<pl-question-panel>
+  <p>Use the diagram and reference below.</p>
+  <pl-excalidraw
+    gradable="false"
+    source-file-name="diagram.excalidraw"
+    directory="clientFilesQuestion"
+    width="400px"
+    height="200px"
+  ></pl-excalidraw>
+  <pl-xss-safe language="markdown" contents="Markdown with **bold reference text**."></pl-xss-safe>
+</pl-question-panel>
+<pl-integer-input answers-name="count" correct-answer="2" label="Number of shapes"></pl-integer-input>

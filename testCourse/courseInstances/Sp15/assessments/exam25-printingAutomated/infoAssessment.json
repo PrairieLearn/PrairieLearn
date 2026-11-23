@@ -55,6 +55,14 @@
         {
           "id": "printingDetails",
           "autoPoints": 1
+        },
+        {
+          "id": "printingAsyncDrawing",
+          "autoPoints": 1
+        },
+        {
+          "id": "printingAsyncElements",
+          "autoPoints": 1
         }
       ]
     }

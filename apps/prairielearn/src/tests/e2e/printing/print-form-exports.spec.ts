@@ -193,6 +193,12 @@ test('prints representative controls, editable Word content, and an ordered answ
     })),
   ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
 
+  const diagramQuestion = questions.filter({ hasText: 'Use the diagram and reference below.' });
+  await expect(
+    diagramQuestion.locator('.printing-excalidraw img.printing-canvas-image'),
+  ).toHaveCount(1);
+  await expect(diagramQuestion.getByText('bold reference text')).toBeVisible();
+
   const response = await downloadPrintableWord(page, printUrl);
   expect(response.status()).toBe(200);
   const archive = await unzipper.Open.buffer(await response.body());
@@ -222,6 +228,29 @@ test('prints representative controls, editable Word content, and an ordered answ
   const correctBounds = await correct.boundingBox();
   const distractorBounds = await distractors.boundingBox();
   expect(distractorBounds!.y).toBeGreaterThanOrEqual(correctBounds!.y + correctBounds!.height);
+
+  // Excalidraw loads slowly enough to hide drawing races, so check the drawing without it.
+  const diagramQuestionNumber = await diagramQuestion.first().getAttribute('data-question-number');
+  await page.goto(`${printUrl}/preview?${search}&exclude_question=${diagramQuestionNumber}`);
+  await waitForPrintablePage(page);
+  // The drawing's only content is an asynchronously rendered LaTeX label.
+  const drawingPixels = await page
+    .locator('.pagedjs_page .printing-question')
+    .filter({ hasText: 'Use the labelled drawing below.' })
+    .locator('img.printing-canvas-image')
+    .evaluate(async (image: HTMLImageElement) => {
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d')!;
+      context.drawImage(image, 0, 0);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      let painted = 0;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 0) painted++;
+      return painted;
+    });
+  expect(drawingPixels).toBeGreaterThan(0);
 });
 
 test('rejects changed Word source before queuing an export', async ({ page, courseInstance }) => {

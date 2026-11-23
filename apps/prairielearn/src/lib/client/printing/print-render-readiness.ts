@@ -1,7 +1,8 @@
+/**
+ * Waits until no element under `source` has `data-pl-render-status="pending"`. Elements are
+ * re-queried on every change, so pending elements that are inserted later are also awaited.
+ */
 export function waitForPrintableElements(source: HTMLElement): Promise<void> {
-  const elements = [...source.querySelectorAll<HTMLElement>('[data-pl-render-status]')];
-  if (elements.length === 0) return Promise.resolve();
-
   return new Promise((resolve, reject) => {
     const observer = new MutationObserver(check);
     const timeout = window.setTimeout(
@@ -17,15 +18,16 @@ export function waitForPrintableElements(source: HTMLElement): Promise<void> {
     }
 
     function check() {
-      if (elements.some((element) => element.dataset.plRenderStatus === 'error')) {
+      if (source.querySelector('[data-pl-render-status="error"]')) {
         finish(new Error('A printable element could not be rendered'));
-      } else if (elements.every((element) => element.dataset.plRenderStatus === 'ready')) {
+      } else if (!source.querySelector('[data-pl-render-status="pending"]')) {
         finish();
       }
     }
 
     observer.observe(source, {
       attributes: true,
+      childList: true,
       subtree: true,
       attributeFilter: ['data-pl-render-status'],
     });

@@ -96,13 +96,6 @@ export function InstructorAssessmentPrintForm({
         <script>
           document.urlPrefix = '${resLocals.urlPrefix}';
           window.PagedConfig = { auto: false };
-          window.__PL_PRINT_READINESS_PROMISES__ = [];
-          window.PrairieLearnAssessmentPrinting = {
-            waitUntil(promise) {
-              void promise.catch(() => undefined);
-              window.__PL_PRINT_READINESS_PROMISES__.push(promise);
-            },
-          };
         </script>
         ${compiledScriptTag('assessment-printing-client.ts')}
         <script src="${nodeModulesAssetPath('pagedjs/dist/paged.polyfill.min.js')}"></script>

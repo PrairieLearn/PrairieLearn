@@ -1,8 +1,15 @@
 {{#show_widget}}
 <script>
     $(async () => {
-        const module = await import("pl-excalidraw-js");
-        await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
+        const container = document.getElementById("excalidraw-{{uuid}}").parentElement;
+        try {
+            const module = await import("pl-excalidraw-js");
+            await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
+            container.dataset.plRenderStatus = "ready";
+        } catch (error) {
+            container.dataset.plRenderStatus = "error";
+            throw error;
+        }
     });
 </script>
 {{/show_widget}}
@@ -15,7 +22,7 @@
     {{/errors}}
     {{#show_widget}}
     <input type="hidden"{{#name}} name="{{name}}"{{/name}} id="excalidraw-input-{{uuid}}" data-deferred-initial-value="true"/>
-    <div class="excalidraw-root">
+    <div class="excalidraw-root" data-pl-render-status="pending">
         <div id="excalidraw-{{uuid}}"></div>
     </div>
     {{/show_widget}}

@@ -147,8 +147,10 @@ window.PLDrawingApi = {
    * @param root_elem DIV that holds the canvas.
    * @param elem_options Any options to give to the element
    * @param existing_answer_submission Existing submission to place on the canvas.
+   * @returns A promise that resolves once the initial objects, including asynchronously
+   * rendered LaTeX labels, are drawn.
    */
-  setupCanvas(root_elem, elem_options, existing_answer_submission) {
+  async setupCanvas(root_elem, elem_options, existing_answer_submission) {
     const canvas_elem = $(root_elem).find('canvas')[0];
     const canvas_width = Number.parseFloat(elem_options.width);
     const canvas_height = Number.parseFloat(elem_options.height);
@@ -269,6 +271,9 @@ window.PLDrawingApi = {
       submittedAnswer._set(existing_answer_submission);
       window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
     }
+    await Promise.all(canvas.getObjects().map((obj) => obj.rendered));
+    // Labels drawn by a parent object, such as a distributed load, don't redraw the canvas.
+    canvas.renderAll();
   },
 };
 

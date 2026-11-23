@@ -4,33 +4,6 @@ import { getPrintBlockHeight } from './print-question-layout.js';
 
 const MIN_CHOICE_IMAGE_SCALE = 0.5;
 
-export async function waitForExcalidrawCanvases(source: HTMLElement): Promise<void> {
-  const drawings = source.querySelectorAll<HTMLElement>('.excalidraw-root');
-  await Promise.all(
-    [...drawings].map(async (drawing) => {
-      const hasRenderedCanvas = () =>
-        [...drawing.querySelectorAll('canvas')].some(
-          (canvas) => canvas.width > 0 && canvas.height > 0,
-        );
-      if (hasRenderedCanvas()) return;
-
-      await new Promise<void>((resolve, reject) => {
-        const observer = new MutationObserver(() => {
-          if (!hasRenderedCanvas()) return;
-          window.clearTimeout(timeout);
-          observer.disconnect();
-          resolve();
-        });
-        const timeout = window.setTimeout(() => {
-          observer.disconnect();
-          reject(new Error('Timed out waiting for Excalidraw to render'));
-        }, 60_000);
-        observer.observe(drawing, { childList: true, subtree: true, attributes: true });
-      });
-    }),
-  );
-}
-
 export async function waitForPrintImages(source: HTMLElement): Promise<void> {
   const images: HTMLImageElement[] = [];
   const collectImages = (root: ParentNode) => {

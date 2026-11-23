@@ -1,6 +1,5 @@
 import {
   fitPrintChoiceImages,
-  waitForExcalidrawCanvases,
   waitForPrintImages,
 } from '../../src/lib/client/printing/print-image-layout.js';
 import { planPrintQuestionPages } from '../../src/lib/client/printing/print-question-layout.js';
@@ -29,7 +28,6 @@ declare global {
         renderTo?: HTMLElement,
       ) => Promise<PagedFlow>;
     };
-    __PL_PRINT_READINESS_PROMISES__?: Promise<unknown>[];
     __PL_PRINT_READY__: Promise<{ totalPages: number }>;
     __PL_PRINT_DOCX_SOURCE__?: ReturnType<typeof captureDocxSource>;
   }
@@ -40,6 +38,15 @@ function waitForDocumentReady(): Promise<void> {
   return new Promise((resolve) => {
     document.addEventListener('DOMContentLoaded', () => resolve(), { once: true });
   });
+}
+
+/**
+ * Elements initialize in jQuery ready callbacks, which run asynchronously after
+ * `DOMContentLoaded` in the order they were registered. Registering one after the document
+ * has loaded waits for all of the elements' callbacks.
+ */
+function waitForJQueryReadyCallbacks(): Promise<void> {
+  return new Promise((resolve) => $(() => resolve()));
 }
 
 function waitForAnimationFrame(): Promise<void> {
@@ -500,20 +507,13 @@ function validatePagedLayout(output: HTMLElement, layout: PrintLayout): void {
  */
 async function paginateAssessment(): Promise<{ totalPages: number }> {
   await waitForDocumentReady();
-  const extraReadinessPromises = window.__PL_PRINT_READINESS_PROMISES__;
-  if (!extraReadinessPromises) throw new Error('Assessment printing bootstrap is missing');
   const source = document.querySelector<HTMLElement>('#assessment-print-source');
   const output = document.querySelector<HTMLElement>('#assessment-print-pages');
   if (!source || !output) throw new Error('Printable assessment containers are missing');
 
-  await Promise.all(extraReadinessPromises);
+  await waitForJQueryReadyCallbacks();
   await waitForPrintableElements(source);
-  await waitForExcalidrawCanvases(source);
   materializePrintableDetails(source);
-  // One animation frame may run before the app is painted, so wait for a second
-  // before copying styles from shadow roots.
-  await waitForAnimationFrame();
-  await waitForAnimationFrame();
   materializePrintableShadowRootStyles(source);
   const mathJax = window.MathJax as
     | {

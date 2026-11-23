@@ -19,7 +19,7 @@ The spacing you choose is a minimum. Longer questions can take more space and mo
 
 Review every question in the preview, including its instructions, figures, and answer choices. Questions that work well online may need changes for a paper assessment. Expandable sections print in full, even when they are closed in the online question.
 
-If your course uses custom elements in questions, check those questions in both the preview and downloaded files. Some elements designed for the screen may not print as expected.
+If your course uses custom elements in questions, check those questions in both the preview and downloaded files. Some elements designed for the screen may not print as expected. Custom elements and question scripts that render asynchronously, for example by loading a library or drawing to a canvas after the page loads, must [report when they finish rendering](../devElements.md#elements-that-render-asynchronously). Otherwise, they may print incomplete.
 
 The question list highlights two kinds of items to check:
 

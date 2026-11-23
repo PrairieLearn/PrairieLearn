@@ -266,3 +266,28 @@ For dynamic dependencies, the same recommendations apply. In that case, you are 
 !!! note
 
     Note that, by using the methods above, you become responsible for ensuring that the module is up-to-date with latest changes and security updates. If you choose to copy a node module into your element directory, you may choose to include the version number in the file name (e.g., `moment-2.30.1.min.js`) to make it easier to keep track of which version you are using and to update it when necessary.
+
+## Elements that render asynchronously
+
+Some features, such as [printing assessments](assessment/printing.md), capture a question after its page loads. They wait for images, fonts, MathJax, and jQuery ready callbacks, but they cannot know when an element's own asynchronous work is finished, such as a dynamic `import()`, a fetch, or drawing to a canvas. An element that renders asynchronously must report when it is done with the `data-pl-render-status` attribute:
+
+1. Add `data-pl-render-status="pending"` to an element in the HTML that `render()` returns. The attribute must be in the initial HTML, not added later by JavaScript.
+2. When the element has finished rendering, set the attribute to `ready`. If it cannot render, set it to `error`.
+
+```html title="pl-my-element.mustache"
+<div id="pl-my-element-{{uuid}}" data-pl-render-status="pending"></div>
+<script>
+  $(async () => {
+    const container = document.getElementById('pl-my-element-{{uuid}}');
+    try {
+      await drawMyElement(container);
+      container.dataset.plRenderStatus = 'ready';
+    } catch (error) {
+      container.dataset.plRenderStatus = 'error';
+      throw error;
+    }
+  });
+</script>
+```
+
+Elements without the attribute are treated as ready once the page has loaded. Set the attribute on every code path, including errors; an element that stays `pending` delays the page until the wait times out. Question scripts that render asynchronously can use the same attribute.

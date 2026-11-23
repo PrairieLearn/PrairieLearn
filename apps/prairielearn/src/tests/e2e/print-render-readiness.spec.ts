@@ -24,6 +24,12 @@ test('waits for rendered elements before printing', async ({ page }) => {
   expect(complete).toBe(false);
 
   await page.locator('#second').evaluate((host) => {
+    host.insertAdjacentHTML('afterend', '<div id="late" data-pl-render-status="pending"></div>');
+    host.setAttribute('data-pl-render-status', 'ready');
+  });
+  expect(complete).toBe(false);
+
+  await page.locator('#late').evaluate((host) => {
     host.setAttribute('data-pl-render-status', 'ready');
   });
   await waiting;

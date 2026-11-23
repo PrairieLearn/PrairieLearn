@@ -86,6 +86,24 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
   );
 };
 
+/** Excalidraw draws its scene after mounting, so wait until a canvas has a size. */
+function waitForCanvas(rootElement) {
+  const hasCanvas = () =>
+    [...rootElement.querySelectorAll('canvas')].some(
+      (canvas) => canvas.width > 0 && canvas.height > 0,
+    );
+  if (hasCanvas()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const observer = new MutationObserver(() => {
+      if (!hasCanvas()) return;
+      observer.disconnect();
+      resolve();
+    });
+    observer.observe(rootElement, { childList: true, subtree: true, attributes: true });
+  });
+}
+
+/** Resolves once the initial scene has been drawn. */
 export async function initializeExcalidraw(uuid, name, metadata) {
   const sketch = {};
 
@@ -113,6 +131,7 @@ export async function initializeExcalidraw(uuid, name, metadata) {
       }),
     ),
   );
+  await waitForCanvas(rootElement);
 
   return sketch;
 }
