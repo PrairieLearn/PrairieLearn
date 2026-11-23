@@ -10,12 +10,15 @@ import path from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
 
 import {
+  type CourseDataReadCard,
+  type CourseDataReadResult,
   type RequestChangesResult,
   RequestChangesResultSchema,
   type Review,
   type ReviewResult,
   ReviewResultSchema,
   type ReviewSnapshot,
+  isCourseDataReadResult,
 } from '@prairielearn/course-agent-types';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -118,13 +121,19 @@ export async function getReview(
     agent_review_id: reviewId,
   });
   if (decided) {
+    const result = ReviewResultSchema.nullable().parse(decided.result);
+    if (result && isCourseDataReadResult(result)) {
+      return describeDataRead(result.dataRead, result.decision, result.viaMessage === true);
+    }
+    // A course action's decision is read with getAction, so only a file review's arrives here.
     return {
       status: 'decided' as const,
-      result: decided.result === null ? null : RequestChangesResultSchema.parse(decided.result),
+      result: result === null ? null : RequestChangesResultSchema.parse(result),
     };
   }
   const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
   if (!review) return { status: 'unavailable' as const };
+  if (review.dataRead) return describeDataRead(review.dataRead, null, false);
   let diff: { files: ReviewDiffFile[] | null; error: string | null };
   try {
     verifyReviewBinding(course, review.snapshot);
@@ -141,6 +150,15 @@ export async function getReview(
     };
   }
   return { status: 'pending' as const, diff };
+}
+
+/** A request to read course data, as its card shows it before and after the decision. */
+function describeDataRead(
+  card: CourseDataReadCard,
+  decision: 'approved' | 'denied' | null,
+  viaMessage: boolean,
+) {
+  return { status: 'data_read' as const, card, decision, viaMessage };
 }
 
 /** Repeated decisions must agree with the first; the unique review row makes the first win. */
@@ -209,6 +227,31 @@ export async function postReviewDecision({
   }
   const review = await getCourseAgentReview(conversation.agent_conversation_id, reviewId);
   if (!review) throw new HttpStatusError(409, 'This review is no longer pending.');
+  if (review.dataRead) {
+    const result: CourseDataReadResult = {
+      decision,
+      dataRead: review.dataRead,
+      ...(viaMessage ? { viaMessage: true as const } : {}),
+    };
+    const row = await insertCourseAgentReview({ ...key, decision, job_sequence_id: null, result });
+    if (!row) {
+      const winner = (await selectOptionalCourseAgentReview(key))!;
+      matchDecision(winner, decision, viaMessage);
+      if (viaMessage) await deliverDenialByMessage(conversation, winner);
+      return { decision };
+    }
+    if (viaMessage) {
+      await deliverDenialByMessage(conversation, row);
+    } else if (decision === 'denied') {
+      await deliverResult(conversation, row, result);
+    } else {
+      // The agent continues once it has the approval, which can replace the card before this
+      // request answers. Answering first lets "Always approve" take effect. A failed send is
+      // retried by the result sweep, as for any result.
+      void deliverResult(conversation, row, result);
+    }
+    return { decision };
+  }
   if (decision === 'denied') {
     const result = viaMessage ? { ...DENIED, viaMessage: true as const } : DENIED;
     const row = await insertCourseAgentReview({

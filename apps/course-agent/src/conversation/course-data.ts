@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { COURSE_DATA_MAX_IN_VALUES } from '@prairielearn/course-agent-types';
+import {
+  COURSE_DATA_MAX_IN_VALUES,
+  type CourseDataReadCard,
+} from '@prairielearn/course-agent-types';
 
 import { logEvent } from '../monitoring.js';
 import type { CourseDataRequest, ToolReply } from '../sandbox/codex.js';
@@ -119,17 +122,116 @@ const UNAVAILABLE: ToolReply = {
   text: 'Course data is unavailable. Reload the PrairieLearn page.',
 };
 
-/** Serves `list_course_datasets` from `GET /pl/course/:course_id/course_agent/data`. */
-export async function listCourseDatasets(context: PrairieLearnContext): Promise<ToolReply> {
-  if (!context.courseId) return UNAVAILABLE;
+/** The dataset catalog from `GET /pl/course/:course_id/course_agent/data`, or why it is unavailable. */
+async function fetchSchema(
+  context: PrairieLearnContext,
+): Promise<{ schema: z.infer<typeof SchemaResponse> } | { failure: ToolReply }> {
+  if (!context.courseId) return { failure: UNAVAILABLE };
   const response = await fetch(
     new URL(`/pl/course/${context.courseId}/course_agent/data`, context.plUrl),
     { headers: authHeaders(context), signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
   );
   if (!response.ok) {
-    return { success: false, text: `${response.status}: ${await errorMessage(response)}` };
+    return {
+      failure: { success: false, text: `${response.status}: ${await errorMessage(response)}` },
+    };
   }
-  return { success: true, text: describeSchema(SchemaResponse.parse(await response.json())) };
+  return { schema: SchemaResponse.parse(await response.json()) };
+}
+
+/** Serves `list_course_datasets`. The catalog names columns but holds no course data. */
+export async function listCourseDatasets(context: PrairieLearnContext): Promise<ToolReply> {
+  const fetched = await fetchSchema(context);
+  return 'failure' in fetched
+    ? fetched.failure
+    : { success: true, text: describeSchema(fetched.schema) };
+}
+
+/**
+ * Identifies a read request, so an approval covers the request the instructor saw and no other.
+ * The order of the selected columns does not change what is read.
+ */
+export function courseDataRequestKey(request: CourseDataRequest) {
+  return JSON.stringify([
+    request.dataset,
+    request.select.toSorted(),
+    request.filters ?? [],
+    request.order ?? [],
+    request.limit ?? null,
+  ]);
+}
+
+const FILTER_WORDS = {
+  eq: 'is',
+  lt: 'is less than',
+  lte: 'is at most',
+  gt: 'is more than',
+  gte: 'is at least',
+  in: 'is one of',
+};
+
+/** A filter in the instructor's words, such as `status is one of joined, invited`. */
+function describeFilterForStaff(filter: NonNullable<CourseDataRequest['filters']>[number]) {
+  const values = filter.op === 'in' ? filter.value : [filter.value];
+  const shown = values.slice(0, 10).map(String).join(', ');
+  return `${filter.column} ${FILTER_WORDS[filter.op]} ${shown}${values.length > 10 ? `, and ${values.length - 10} more` : ''}`;
+}
+
+/**
+ * Checks a read request against the catalog and says, for the instructor, what approving it
+ * lets the agent read. PrairieLearn checks the request again when the read is made.
+ */
+export async function describeCourseDataRequest(
+  context: PrairieLearnContext,
+  request: CourseDataRequest,
+): Promise<{ card: CourseDataReadCard } | { failure: ToolReply }> {
+  const fetched = await fetchSchema(context);
+  if ('failure' in fetched) return fetched;
+  const dataset = fetched.schema.datasets[request.dataset];
+  if (!dataset) {
+    return {
+      failure: {
+        success: false,
+        text: `Unknown dataset "${request.dataset}". Use one from list_course_datasets.`,
+      },
+    };
+  }
+  const used = [
+    ...request.select,
+    ...(request.filters ?? []).map(({ column }) => column),
+    ...(request.order ?? []).map(({ column }) => column),
+  ];
+  const unknown = [...new Set(used.filter((column) => !(column in dataset.schema.properties)))];
+  if (unknown.length > 0) {
+    return {
+      failure: {
+        success: false,
+        text: `The ${request.dataset} dataset has no column named ${unknown.join(', ')}. Use columns from list_course_datasets.`,
+      },
+    };
+  }
+  const clip = (text: string, max: number) =>
+    text.length > max ? `${text.slice(0, max - 1)}…` : text;
+  const filters = (request.filters ?? []).map(describeFilterForStaff);
+  return {
+    card: {
+      title: clip(`Read the ${request.dataset} dataset`, 200),
+      rows: [
+        { label: 'What it holds', detail: clip(dataset.description, 2000) },
+        { label: 'Columns', detail: clip(request.select.join(', '), 2000) },
+        {
+          label: 'Rows',
+          detail: clip(
+            filters.length > 0 ? `Only those where ${filters.join(' and ')}` : 'Every row',
+            2000,
+          ),
+        },
+        ...(request.limit === undefined
+          ? []
+          : [{ label: 'At most', detail: `${request.limit} rows` }]),
+      ],
+    },
+  };
 }
 
 /**

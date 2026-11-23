@@ -241,6 +241,58 @@ it('denies an unreadable review without starting a save job', async () => {
   expect(prepareJob).not.toHaveBeenCalled();
 });
 
+const DATA_READ = {
+  title: 'Read the students dataset',
+  rows: [{ label: 'Columns', detail: 'uid, status' }],
+};
+
+function requestDataRead() {
+  review = {
+    id: crypto.randomUUID(),
+    snapshot: { type: 'local', additions: [], deletions: [] },
+    dataRead: DATA_READ,
+  };
+}
+
+it('records an approved request to read course data without saving anything', async () => {
+  requestDataRead();
+  const described = { status: 'data_read', card: DATA_READ, viaMessage: false };
+  expect(await getReview(course, conversation, review.id)).toEqual({
+    ...described,
+    decision: null,
+  });
+  await expect(decide('approved')).resolves.toEqual({ decision: 'approved' });
+  // The approval is sent after the request answers.
+  await vi.waitFor(async () => expect((await storedReview())?.result_delivered_at).toBeTruthy());
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledExactlyOnceWith(
+    conversation.agent_conversation_id,
+    review.id,
+    { decision: 'approved', dataRead: DATA_READ },
+  );
+  expect(prepareJob).not.toHaveBeenCalled();
+  expect(await getReview(course, conversation, review.id)).toEqual({
+    ...described,
+    decision: 'approved',
+  });
+  await expect(decide('denied')).rejects.toThrow();
+});
+
+it('denies a request to read course data by message', async () => {
+  requestDataRead();
+  await expect(decide('denied', review.id, true)).resolves.toEqual({ decision: 'denied' });
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledExactlyOnceWith(
+    conversation.agent_conversation_id,
+    review.id,
+    { decision: 'denied', dataRead: DATA_READ, viaMessage: true },
+  );
+  expect(await getReview(course, conversation, review.id)).toEqual({
+    status: 'data_read',
+    card: DATA_READ,
+    decision: 'denied',
+    viaMessage: true,
+  });
+});
+
 it('delivers a denial sent by message before the message is sent', async () => {
   await expect(decide('denied', review.id, true)).resolves.toEqual({ decision: 'denied' });
   const result = {
