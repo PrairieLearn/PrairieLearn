@@ -96,9 +96,9 @@ type CourseFilesSource =
   | { source: 'clone'; cloneMs: number; snapshotMs: number | null }
   | { source: 'snapshot'; restoreMs: number; fetchMs: number; checkoutMs: number };
 
-// Saving took about 3 seconds for a 370 MB repository in local testing. A save that stalls must
-// not hold up the conversation, which can start without a snapshot.
-const SNAPSHOT_SAVE_TIMEOUT_MS = 2 * 60 * 1000;
+// Saving and restoring each took about 4 seconds for a 370 MB repository in local testing. A
+// transfer that stalls must not hold up the conversation, which can start without a snapshot.
+const SNAPSHOT_TRANSFER_TIMEOUT_MS = 2 * 60 * 1000;
 
 /**
  * Where the record of a snapshot is stored. The archive library names each archive itself, so a
@@ -465,7 +465,7 @@ export class CourseSandbox extends DurableObject<Env> {
     try {
       const snapshot = await this.repositorySnapshots.backup({
         dir: `${SESSION}/course/.git`,
-        signal: AbortSignal.timeout(SNAPSHOT_SAVE_TIMEOUT_MS),
+        signal: AbortSignal.timeout(SNAPSHOT_TRANSFER_TIMEOUT_MS),
       });
       // The record is written only if it is still as it was just read. Otherwise two sandboxes
       // saving at once could each replace the record without deleting the other's archive.
@@ -507,6 +507,7 @@ export class CourseSandbox extends DurableObject<Env> {
       await this.exec(['mkdir', course], AGENT_USER);
       await this.repositorySnapshots.restore(await saved.json<DirectoryBackupRecord>(), {
         dir: `${course}/.git`,
+        signal: AbortSignal.timeout(SNAPSHOT_TRANSFER_TIMEOUT_MS),
       });
       const restored = Date.now();
       await this.exec(['git', '-C', course, 'fetch', '--depth', '1', 'origin', branch], AGENT_USER);
