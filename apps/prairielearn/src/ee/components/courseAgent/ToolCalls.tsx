@@ -1,6 +1,7 @@
 import type { ReasoningUIPart, TextUIPart } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useId, useState } from 'react';
+import type { UrlTransform } from 'react-markdown';
 
 import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
@@ -26,7 +27,7 @@ const isCourseData = (call: ToolCall) =>
 /** Reading its skills is how the agent checks how this kind of work is done. */
 const usesSkills = (call: ToolCall) => call.kind === 'command' && call.command.includes(SKILLS_DIR);
 
-import { ChatDiff, preloadDiffHighlighting } from './ChatDiff.js';
+import { ChatCodeBlock, ChatDiff, preloadDiffHighlighting } from './ChatDiff.js';
 
 type Verb =
   | 'read'
@@ -242,17 +243,13 @@ function Fold({
 }
 
 /** The end of a running command's output, so a long command shows that it is getting somewhere. */
-export function LiveOutput({ call, lines: count = 4 }: { call?: ToolCall | null; lines?: number }) {
-  if (call?.kind !== 'command' || !call.output?.text.trim()) return null;
-  const lines = call.output.text
-    .trimEnd()
-    .split('\n')
-    .slice(-count)
-    // A progress bar rewrites its line; only the last rewrite is on screen.
-    .map((line) => line.split('\r').at(-1));
+export function LiveOutput({ call }: { call: ToolCall }) {
+  if (call.kind !== 'command' || !call.output?.text.trim()) return null;
+  // A progress bar rewrites its line; only the last rewrite is on screen.
+  const line = call.output.text.trimEnd().split('\n').at(-1)?.split('\r').at(-1);
   return (
     <pre className="course-agent-live-output text-body-secondary mb-0 mt-1" aria-hidden="true">
-      {lines.join('\n')}
+      {line}
     </pre>
   );
 }
@@ -308,11 +305,26 @@ export function runningLabel(call: ToolCall): string {
   }
 }
 
+/**
+ * What went wrong with a step, for its details. The closed line stays quiet about failures, which
+ * are routine, so the details must say when a command or an edit did not go through.
+ */
+function failureNote(call: ToolCall) {
+  if (call.kind === 'command' && call.exitCode !== null && call.exitCode !== 0) {
+    return `This command ended with an error (exit code ${call.exitCode}).`;
+  }
+  if (call.status !== 'failed') return null;
+  if (call.kind === 'fileChange') return 'These changes were not made.';
+  // A failed tool call shows its own error.
+  return call.kind === 'tool' && call.error ? null : 'This step failed.';
+}
+
 /** One call in the list of steps, which opens to show its command, output, or changes. */
 function Step({ call, live, onExpand }: { call: ToolCall; live: boolean; onExpand?: () => void }) {
   const status = statusOf(call, live);
   const running = status === 'running';
   const { verb, subject, meta } = describe(call);
+  const failure = failureNote(call);
   const editedPaths =
     call.kind === 'fileChange' ? call.changes.map((change) => change.path).join('\n') : '';
   // An edit's changes stay hidden until the row is expanded. Loading their language's highlighting
@@ -339,6 +351,7 @@ function Step({ call, live, onExpand }: { call: ToolCall; live: boolean; onExpan
       onExpand={onExpand}
     >
       <div className="d-flex flex-column gap-1 my-1">
+        {failure && <div className="small text-danger">{failure}</div>}
         <ToolCallDetails call={call} />
       </div>
     </Fold>
@@ -360,6 +373,7 @@ export function Work({
   live,
   settled,
   showUpdate,
+  urlTransform,
   onExpand,
 }: {
   items: WorkItem[];
@@ -369,6 +383,8 @@ export function Work({
   settled: boolean;
   /** Whether to show the agent's latest update under the line while it works. */
   showUpdate: boolean;
+  /** Updates link to course files as replies do. */
+  urlTransform: UrlTransform;
   /** Called before a line opens, which makes the chat taller. */
   onExpand?: () => void;
 }) {
@@ -390,12 +406,14 @@ export function Work({
   for (const part of updates) {
     if (part.text.trim()) update = part;
   }
-  // With no steps to fold away, an update is all there is to show.
+  // With no steps to fold away, the updates stay in view; hiding them until the turn ended would
+  // have them pop back in above the reply.
   if (calls.length === 0) {
-    const shown = settled ? updates : showUpdate && update ? [update] : [];
-    // Updates only ever append to a streaming message, so their positions identify them.
-    // oxlint-disable-next-line react/no-array-index-key
-    return shown.map((part, i) => <Update key={i} part={part} fadeIn={live} />);
+    return updates.map((part, i) => (
+      // Updates only ever append to a streaming message, so their positions identify them.
+      // oxlint-disable-next-line react/no-array-index-key
+      <Update key={i} part={part} urlTransform={urlTransform} fadeIn={live} />
+    ));
   }
   return (
     <Fold
@@ -407,7 +425,11 @@ export function Work({
       // Failed steps are routine and stay in the details; a turn cut short is worth saying.
       stopped={calls.some((call) => statusOf(call, live) === 'interrupted')}
       // While it works, the agent's latest update says where it has got to.
-      tail={!settled && showUpdate && update && <Update part={update} fadeIn={live} />}
+      tail={
+        !settled &&
+        showUpdate &&
+        update && <Update part={update} urlTransform={urlTransform} fadeIn={live} />
+      }
       onExpand={onExpand}
     >
       <div className="d-flex flex-column gap-2 mt-2 mb-1">
@@ -424,7 +446,7 @@ export function Work({
           ) : (
             // These exist only while the line is open, so opening it must not fade them all in.
             // oxlint-disable-next-line react/no-array-index-key
-            <Update key={i} part={block} fadeIn={false} />
+            <Update key={i} part={block} urlTransform={urlTransform} fadeIn={false} />
           ),
         )}
       </div>
@@ -435,9 +457,11 @@ export function Work({
 /** Something the agent wrote along the way, which is not part of its reply. */
 function Update({
   part,
+  urlTransform,
   fadeIn,
 }: {
   part: TextUIPart;
+  urlTransform: UrlTransform;
   /** Whether the update is arriving in view, so its words fade in. */
   fadeIn: boolean;
 }) {
@@ -446,6 +470,8 @@ function Update({
       className="markdown-body small text-body-secondary mt-1"
       content={part.text}
       streaming={part.state === 'streaming'}
+      urlTransform={urlTransform}
+      codeBlock={ChatCodeBlock}
       animated={fadeIn}
       arriving={fadeIn}
       math

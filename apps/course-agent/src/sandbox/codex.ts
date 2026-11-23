@@ -31,7 +31,7 @@ import { MESSAGE_TOOL_CHARS, clip, toolCallFromItem } from './tool-calls.js';
 
 /** How much of a running command's latest output the chat shows, and how often it is refreshed. */
 const LIVE_OUTPUT_CHARS = 600;
-const LIVE_OUTPUT_INTERVAL_MS = 300;
+const LIVE_OUTPUT_INTERVAL_MS = 1000;
 /** Marks a text part as an update, which the chat folds in with the agent's work. */
 const UPDATE_METADATA = { courseAgent: { update: true } };
 const MAX_PLAN_STEPS = 30;
