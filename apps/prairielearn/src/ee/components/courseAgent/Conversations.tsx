@@ -698,7 +698,21 @@ function Chat({
     !turnRunning &&
     latest?.role === 'assistant' &&
     latest.parts.some((part) => part.type === 'data-input-request');
-  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'instant' });
+  // Follows new content, and the plan or message box taking more room, before the browser paints.
+  // The hook scrolls a frame later, so the status line at the bottom would drop with every chunk
+  // of text and then jump back.
+  useEffect(() => {
+    const scroller = stickToBottom.scrollRef.current;
+    const content = stickToBottom.contentRef.current;
+    if (!scroller || !content) return;
+    const observer = new ResizeObserver(() => {
+      if (stickToBottom.state.isAtBottom) scroller.scrollTop = scroller.scrollHeight;
+    });
+    observer.observe(content);
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  }, [stickToBottom.scrollRef, stickToBottom.contentRef, stickToBottom.state]);
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
@@ -1131,28 +1145,41 @@ function Message({
   type Card =
     | ({ kind: 'review' } & ReviewPart)
     | { kind: 'input'; key: string; request: InputRequestPart };
-  const renderCard = (card: Card) =>
-    card.kind === 'review' ? (
-      // One key per review, so the card keeps its state when the marker arrives.
-      <RequestChangesCard
-        key={`review-${card.reviewId}`}
-        conversationId={conversationId}
-        reviewId={card.reviewId}
-        canResume={awaitingReviewId === card.reviewId}
-        // Switching back to requiring approval also applies to a review already submitted.
-        autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
-        onAlwaysApprove={() => onAlwaysApprove('always_approve')}
-      />
-    ) : (
-      <InputRequestCard
-        key={card.key}
-        part={card.request}
-        answered={answered}
-        canAnswer={canAnswer}
-        onAnswer={onAnswer}
-      />
-    );
   const rendered: ReactNode[] = [];
+  // Each piece rises into the chat as it arrives, as a sent message does. A review card stays put.
+  const add = (key: string, node: ReactNode, rise = true) =>
+    rendered.push(
+      <div
+        key={key}
+        className={clsx('d-flex flex-column gap-2', entering && rise && 'course-agent-rise')}
+      >
+        {node}
+      </div>,
+    );
+  const addCard = (card: Card) =>
+    card.kind === 'review'
+      ? add(
+          // One key per review, so the card keeps its state when the marker arrives.
+          `review-${card.reviewId}`,
+          <RequestChangesCard
+            conversationId={conversationId}
+            reviewId={card.reviewId}
+            canResume={awaitingReviewId === card.reviewId}
+            // Switching back to requiring approval also applies to a review already submitted.
+            autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
+            onAlwaysApprove={() => onAlwaysApprove('always_approve')}
+          />,
+          false,
+        )
+      : add(
+          card.key,
+          <InputRequestCard
+            part={card.request}
+            answered={answered}
+            canAnswer={canAnswer}
+            onAnswer={onAnswer}
+          />,
+        );
   let cards: Card[] = [];
   // What the agent does before a reply folds into one line. Text it writes is its reply unless
   // the agent carries on afterwards, which makes that text an update along the way.
@@ -1160,9 +1187,9 @@ function Message({
   let reply: { key: string; part: TextUIPart } | null = null;
   const flush = (settled: boolean) => {
     if (work) {
-      rendered.push(
+      add(
+        work.key,
         <Work
-          key={work.key}
           items={work.items}
           live={live}
           settled={settled}
@@ -1173,9 +1200,7 @@ function Message({
       );
     }
     if (reply) {
-      rendered.push(
-        <TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} math animated />,
-      );
+      add(reply.key, <TextPart part={reply.part} urlTransform={linkTransform} math animated />);
     }
     work = null;
     reply = null;
@@ -1209,10 +1234,10 @@ function Message({
     const navigation = navigationOf(part);
     if (navigation) {
       flush(true);
-      rendered.push(<NavigationCard key={key} navigation={navigation} />);
+      add(key, <NavigationCard navigation={navigation} />);
     } else if (isReloadPart(part)) {
       flush(true);
-      rendered.push(<ReloadCard key={key} />);
+      add(key, <ReloadCard />);
     } else if (part.type === 'data-review') {
       // Cards wait for the end of the turn, so they do not split the work before the reply.
       const { reviewId, autoApprove } = ReviewPartSchema.parse(part.data);
@@ -1222,18 +1247,14 @@ function Message({
       if (request) cards.push({ kind: 'input', key, request });
     } else if (part.type === 'data-turn') {
       flush(true);
-      rendered.push(...cards.map(renderCard));
+      cards.forEach(addCard);
       cards = [];
     }
   }
   // Until the turn ends, text that looks like the reply may be followed by more work.
   flush(!live);
-  rendered.push(...cards.filter((card) => card.kind === 'review' || !turnRunning).map(renderCard));
+  cards.filter((card) => card.kind === 'review' || !turnRunning).forEach(addCard);
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;
-  return (
-    <div className={clsx('d-flex flex-column gap-2', entering && 'course-agent-fade')}>
-      {rendered}
-    </div>
-  );
+  return <div className="d-flex flex-column gap-2">{rendered}</div>;
 }
