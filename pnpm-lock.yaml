@@ -185,8 +185,8 @@ overrides:
   notebookjs>jsdom: '*'
   s3rver>busboy: npm:@fastify/busboy@^3.2.4
   jsdom>undici: ^8.12.3
-  micromark-extension-math>katex: ^0.18.10
-  rehype-katex>katex: ^0.18.10
+  micromark-extension-math>katex: 0.18.10
+  rehype-katex>katex: 0.18.10
 
 packageExtensionsChecksum: sha256-LckhG+wN9aD0P/2uyuYtxEB0UnE8W92DruMPvPTkFtM=
 
@@ -1029,7 +1029,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       katex:
-        specifier: ^0.18.10
+        specifier: 0.18.10
         version: 0.18.10
       klaw:
         specifier: ^4.1.0
