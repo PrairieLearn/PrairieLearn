@@ -2,7 +2,7 @@ import { useAgentChat } from '@cloudflare/ai-chat/react';
 import { MessageType, type OutgoingMessage } from '@cloudflare/ai-chat/types';
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAgent } from 'agents/react';
-import { type UIMessage } from 'ai';
+import { type TextUIPart, type UIMessage } from 'ai';
 import clsx from 'clsx';
 import {
   type KeyboardEvent,
@@ -26,10 +26,9 @@ import {
   InputRequestPartSchema,
   type ReviewPart,
   ReviewPartSchema,
-  type ToolCall,
   ToolCallSchema,
 } from '@prairielearn/course-agent-types';
-import { run } from '@prairielearn/run';
+import { formatInterval } from '@prairielearn/formatter';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -37,7 +36,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import type { StaffCourseAgentConversation } from '../../../lib/client/safe-db-types.js';
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
-import { ReasoningBlock, TextPart } from '../ai/ChatParts.js';
+import { TextPart } from '../ai/ChatParts.js';
 
 import {
   type DraftAttachment,
@@ -55,7 +54,7 @@ import { ConversationStats } from './ConversationStats.js';
 import { InputRequestCard } from './InputRequestCard.js';
 import { NavigationCard, ReloadCard, isReloadPart, navigationOf } from './Navigation.js';
 import { RequestChangesCard } from './RequestChangesCard.js';
-import { ToolCalls } from './ToolCalls.js';
+import { LiveOutput, Work, type WorkItem, reasoningHeading, runningLabel } from './ToolCalls.js';
 import { UserMessage } from './UserMessage.js';
 import { courseFileLinkTransform } from './courseFileLinks.js';
 import { currentPageLocation } from './pageLocation.js';
@@ -240,7 +239,7 @@ function ConversationPicker({
             {create.isPending ? (
               <div className="d-flex flex-column gap-3">
                 <UserMessage text={create.variables.text} />
-                <PendingStatus label="Starting sandbox…" />
+                <PendingStatus label="Getting ready…" />
               </div>
             ) : (
               <EmptyConversation onStart={setDraft} />
@@ -325,13 +324,138 @@ function Loading() {
   );
 }
 
+/** How long a status label stays up before the next one may replace it. */
+const MIN_LABEL_MS = 1000;
+
+/** The label for the moments between steps, when the agent has said nothing more specific. */
+const THINKING = 'Thinking';
+
+const GETTING_READY = 'Getting ready';
+
+/**
+ * How long the agent must go without a new step before the line says it is thinking. It pauses
+ * for a second between most steps, and the line would otherwise flip back and forth.
+ */
+const THINKING_AFTER_MS = 3000;
+
+/**
+ * Holds each label on screen long enough to read. A step that takes a tenth of a second would
+ * otherwise flash its label and make the line flicker.
+ */
+function useSteadyLabel(label: string) {
+  const [shown, setShown] = useState(label);
+  const shownAtRef = useRef(0);
+  // Switches to a new label once the current one has had its time on screen.
+  useEffect(() => {
+    if (label === shown) return;
+    const wait =
+      label === THINKING && shown !== GETTING_READY
+        ? THINKING_AFTER_MS
+        : Math.max(0, MIN_LABEL_MS - (Date.now() - shownAtRef.current));
+    const timeout = setTimeout(() => {
+      shownAtRef.current = Date.now();
+      setShown(label);
+    }, wait);
+    return () => clearTimeout(timeout);
+  }, [label, shown]);
+  return shown;
+}
+
+/** The agent service marks text the model wrote on its way to the reply, not as the reply. */
+function isUpdate(part: TextUIPart) {
+  const metadata: { update?: unknown } | undefined = part.providerMetadata?.courseAgent;
+  return metadata?.update === true;
+}
+
 function PendingStatus({ label }: { label: string }) {
   return (
-    <div className="text-muted small" role="status">
-      <Spinner animation="border" size="sm" className="me-2" aria-hidden="true" />
-      {label}
+    <div className="small text-body-secondary" role="status">
+      <span className="course-agent-shimmer">{label}</span>
     </div>
   );
+}
+
+/**
+ * What the agent is doing now and for how long, shown for as long as it works. It stays mounted
+ * from the sandbox starting to the turn ending, so the time covers both.
+ */
+function ActivityStatus({
+  conversationId,
+  startingSandbox,
+  message,
+  hidden,
+}: {
+  conversationId: string;
+  startingSandbox: boolean;
+  message: UIMessage | undefined;
+  /** Hides the line but keeps counting, for when the agent works again after it. */
+  hidden: boolean;
+}) {
+  const call = latestCall(message);
+  const storageKey = `course-agent-working-since:${conversationId}`;
+  const [startedAt] = useState(() => Number(sessionStorage.getItem(storageKey)) || Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const label = useSteadyLabel(startingSandbox ? GETTING_READY : activityLabel(message));
+  // Advances the elapsed time once a second.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  // Remembers when the agent started, so reloading the page mid-turn does not restart the time.
+  // Leaving the page skips the cleanup; the turn ending runs it.
+  useEffect(() => {
+    sessionStorage.setItem(storageKey, String(startedAt));
+    return () => sessionStorage.removeItem(storageKey);
+  }, [storageKey, startedAt]);
+  if (hidden) return null;
+  return (
+    <div className="small text-body-secondary" role="status">
+      {/* The label changes with every step and the time every second, too often to announce. */}
+      <span className="visually-hidden">
+        {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
+      </span>
+      <span className="d-flex gap-2" aria-hidden="true">
+        <span className="text-truncate course-agent-shimmer">{label}…</span>
+        <span className="course-agent-status-time flex-shrink-0">
+          {formatInterval(now - startedAt)}
+        </span>
+      </span>
+      {call?.status === 'running' && <LiveOutput call={call} lines={1} />}
+    </div>
+  );
+}
+
+/**
+ * Whether the latest thing the agent wrote is its reply. The reply shows the agent is still at
+ * work, and a status line under it would only drop below each new line and then vanish when the
+ * turn ends a moment later.
+ */
+function replying(message: UIMessage | undefined) {
+  const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
+  return part?.type === 'text' && !isUpdate(part) && part.text.trim() !== '';
+}
+
+/** The call the agent made last, if nothing has followed it. */
+function latestCall(message: UIMessage | undefined) {
+  if (message?.role !== 'assistant') return null;
+  for (let i = message.parts.length - 1; i >= 0; i--) {
+    const part = message.parts[i];
+    const call = toolCallOf(part);
+    if (call) return call;
+    if ((part.type === 'text' || part.type === 'reasoning') && part.text.trim()) return null;
+  }
+  return null;
+}
+
+/**
+ * What the agent is doing now, in plain words: the call it is running or what it is thinking
+ * about.
+ */
+function activityLabel(message: UIMessage | undefined) {
+  const call = latestCall(message);
+  if (call?.status === 'running') return runningLabel(call);
+  const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
+  return (part?.type === 'reasoning' && reasoningHeading(part.text)) || THINKING;
 }
 
 function Chat({
@@ -565,25 +689,10 @@ function Chat({
 
   const responseActive =
     status === 'submitted' || status === 'streaming' || isServerStreaming || isRecovering;
-  const showThinking = run(() => {
-    if (
-      !(responseActive || lifecycle?.status === 'waiting_for_agent') ||
-      connectionFailed ||
-      connectionError
-    ) {
-      return false;
-    }
-    const lastMessage = messages.at(-1);
-    if (lastMessage?.role !== 'assistant') {
-      return true;
-    }
-    return !lastMessage.parts.some((part) => {
-      if (part.type === 'text' || part.type === 'reasoning') {
-        return part.text.trim().length > 0;
-      }
-      return toolCallOf(part) !== null || navigationOf(part) !== null || isReloadPart(part);
-    });
-  });
+  const working =
+    (responseActive || lifecycle?.status === 'waiting_for_agent') &&
+    !connectionFailed &&
+    !connectionError;
   // The server reports the turn's lifecycle before the SDK marks the response active.
   const startingSandbox =
     !connectionFailed &&
@@ -591,7 +700,6 @@ function Chat({
     (lifecycle?.status === 'starting' ||
       ((lifecycle === null || lifecycle.status === 'offline') &&
         (awaitingStart || responseActive)));
-  const pendingLabel = startingSandbox ? 'Starting sandbox…' : showThinking ? 'Thinking…' : null;
   const showInitialText =
     initialText !== undefined && !messages.some((message) => message.role === 'user');
   const awaitingReviewId =
@@ -610,7 +718,21 @@ function Chat({
     !turnRunning &&
     latest?.role === 'assistant' &&
     latest.parts.some((part) => part.type === 'data-input-request');
-  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'smooth' });
+  const stickToBottom = useStickToBottom({ initial: 'instant', resize: 'instant' });
+  // Follows new content, and the message box taking more room, before the browser paints.
+  // The hook scrolls a frame later, so the status line at the bottom would drop with every chunk
+  // of text and then jump back.
+  useEffect(() => {
+    const scroller = stickToBottom.scrollRef.current;
+    const content = stickToBottom.contentRef.current;
+    if (!scroller || !content) return;
+    const observer = new ResizeObserver(() => {
+      if (stickToBottom.state.isAtBottom) scroller.scrollTop = scroller.scrollHeight;
+    });
+    observer.observe(content);
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  }, [stickToBottom.scrollRef, stickToBottom.contentRef, stickToBottom.state]);
   // A stable transform lets memoized Markdown blocks skip re-rendering.
   const linkTransform = useMemo(() => courseFileLinkTransform(courseId), [courseId]);
 
@@ -682,7 +804,14 @@ function Chat({
                 onAlwaysApprove={() => changeApprovalMode('always_approve')}
               />
             )}
-          {pendingLabel && <PendingStatus label={pendingLabel} />}
+          {(startingSandbox || working) && (
+            <ActivityStatus
+              conversationId={conversationId}
+              startingSandbox={startingSandbox}
+              message={messages.at(-1)}
+              hidden={!startingSandbox && replying(messages.at(-1))}
+            />
+          )}
           {lifecycle?.status === 'blocked' && (
             <BlockedNotice
               state={lifecycle}
@@ -697,7 +826,7 @@ function Chat({
             </Alert>
           )}
           {(lifecycle?.status === 'stopping' || lifecycle?.status === 'suspending') && (
-            <p className="text-muted" role="status">
+            <p className="small text-body-secondary mb-0" role="status">
               {lifecycle.status === 'stopping'
                 ? 'Stopping the course agent…'
                 : 'Pausing the course agent…'}
@@ -1009,15 +1138,6 @@ function Message({
       </div>
     );
   }
-  // Consecutive tool calls render together so runs of the same kind can be grouped.
-  type Segment = { key: string } & ({ calls: ToolCall[] } | { part: UIMessage['parts'][number] });
-  const segments: Segment[] = [];
-  message.parts.forEach((part, index) => {
-    const call = toolCallOf(part);
-    const last = segments.at(-1);
-    if (call && last && 'calls' in last) last.calls.push(call);
-    else segments.push({ key: `part-${index}`, ...(call ? { calls: [call] } : { part }) });
-  });
   // Reviews and input requests end the agent's turn, so their cards go at the end of that turn:
   // before the marker of the turn that continues this message (a review result's delivery), or at
   // the end of the message.
@@ -1047,47 +1167,87 @@ function Message({
     );
   const rendered: ReactNode[] = [];
   let cards: Card[] = [];
-  for (const segment of segments) {
-    if ('calls' in segment) {
+  // What the agent does before a reply folds into one line. Text it writes is its reply unless
+  // the agent carries on afterwards, which makes that text an update along the way.
+  let work: { key: string; items: WorkItem[] } | null = null;
+  let reply: { key: string; part: TextUIPart } | null = null;
+  const flush = (settled: boolean) => {
+    // Thoughts alone show nothing, and an empty message would still take up a gap in the chat.
+    if (work?.items.some((item) => 'kind' in item || item.type === 'text')) {
       rendered.push(
-        <ToolCalls
-          key={segment.key}
-          calls={segment.calls}
+        <Work
+          key={work.key}
+          items={work.items}
           live={live}
+          settled={settled}
+          // The reply under it, which may yet turn out to be an update, is the latest word.
+          showUpdate={!reply}
           onExpand={onToolCallExpand}
         />,
       );
-      continue;
     }
-    const { key, part } = segment;
-    const navigation = navigationOf(part);
-    if (part.type === 'text' && part.text.trim()) {
+    if (reply) {
       rendered.push(
         <TextPart
-          key={key}
-          part={part}
+          key={reply.key}
+          part={reply.part}
           urlTransform={linkTransform}
           codeBlock={ChatCodeBlock}
           math
         />,
       );
-    } else if (part.type === 'reasoning' && part.text.trim()) {
-      rendered.push(<ReasoningBlock key={key} part={part} math />);
-    } else if (navigation) {
+    }
+    work = null;
+    reply = null;
+  };
+  for (const [index, part] of message.parts.entries()) {
+    const key = `part-${index}`;
+    if ((part.type === 'text' || part.type === 'reasoning') && !part.text.trim()) continue;
+    const step = toolCallOf(part) ?? (part.type === 'reasoning' ? part : null);
+    if (step) {
+      work ??= { key: reply?.key ?? key, items: [] };
+      if (reply) work.items.push(reply.part);
+      reply = null;
+      work.items.push(step);
+      continue;
+    }
+    if (part.type === 'text') {
+      // More text after it also makes it an update.
+      if (reply) {
+        work ??= { key: reply.key, items: [] };
+        work.items.push(reply.part);
+      }
+      reply = { key, part };
+      // The agent service says so when the model labels its updates, which saves waiting to see.
+      if (isUpdate(part)) {
+        work ??= { key, items: [] };
+        work.items.push(part);
+        reply = null;
+      }
+      continue;
+    }
+    const navigation = navigationOf(part);
+    if (navigation) {
+      flush(true);
       rendered.push(<NavigationCard key={key} navigation={navigation} />);
     } else if (isReloadPart(part)) {
+      flush(true);
       rendered.push(<ReloadCard key={key} />);
     } else if (part.type === 'data-review') {
+      // Cards wait for the end of the turn, so they do not split the work before the reply.
       const { reviewId, autoApprove } = ReviewPartSchema.parse(part.data);
       if (reviewId !== hiddenReviewId) cards.push({ kind: 'review', reviewId, autoApprove });
     } else if (part.type === 'data-input-request') {
       const request = InputRequestPartSchema.safeParse(part.data).data;
       if (request) cards.push({ kind: 'input', key, request });
     } else if (part.type === 'data-turn') {
+      flush(true);
       rendered.push(...cards.map(renderCard));
       cards = [];
     }
   }
+  // Until the turn ends, text that looks like the reply may be followed by more work.
+  flush(!live);
   rendered.push(...cards.filter((card) => card.kind === 'review' || !turnRunning).map(renderCard));
   // A just-started reply has no visible parts yet and would otherwise add an empty gap.
   if (rendered.length === 0) return null;

@@ -311,6 +311,62 @@ textarea.course-agent-composer-input {
   }
 }
 
+/* A line that opens to show more is set smaller than the replies around it. */
+.course-agent-fold {
+  --bs-btn-font-size: 0.875rem;
+}
+
+/* The agent's steps sit in one bordered list, each divided from the next. */
+.course-agent-step + .course-agent-step {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+/* A highlight sweeps across the label of whatever the agent is doing now. */
+.course-agent-shimmer {
+  color: transparent;
+  background: linear-gradient(
+      90deg,
+      var(--bs-secondary-color) 35%,
+      var(--bs-emphasis-color) 50%,
+      var(--bs-secondary-color) 65%
+    )
+    0 0 / 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: course-agent-shimmer 1.5s linear infinite;
+}
+
+/* The gradient shows only through transparent text, and a chip's own background would cover it. */
+.course-agent-shimmer code {
+  color: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Digits of one width keep the elapsed time from shifting as it counts. */
+.course-agent-status-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Each line is cut off rather than wrapped, so the block keeps a steady height as output arrives. */
+.course-agent-live-output {
+  padding-left: 0.5rem;
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: pre;
+  border-left: 2px solid var(--bs-border-color);
+}
+
+@keyframes course-agent-shimmer {
+  from {
+    background-position: 110% 0;
+  }
+
+  to {
+    background-position: -110% 0;
+  }
+}
+
 /* Wide display math scrolls instead of widening the panel. */
 .course-agent-panel .katex-display {
   overflow-x: auto;
@@ -432,6 +488,11 @@ body:has(.course-agent-panel-animate) .app-main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Slowed rather than stopped, as Bootstrap does for spinners, so work in progress stays visible. */
+  .course-agent-shimmer {
+    animation-duration: 3s;
+  }
+
   .course-agent-composer-pulse {
     animation: none;
   }
