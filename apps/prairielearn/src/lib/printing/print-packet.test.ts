@@ -7,7 +7,6 @@ import {
   MAX_COVER_PAGES,
 } from '../client/printing/print-packet.js';
 
-import { PrintPacketMetadataSchema } from './print-packet-schema.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
 import { DEFAULT_PRINT_SETTINGS, PrintSettingsSchema } from './print-settings.js';
 
@@ -152,22 +151,6 @@ describe('print packets', () => {
         covers: [],
       }),
     ).rejects.toThrow('exceeds 10,000 pages');
-  });
-});
-
-describe('print packet metadata', () => {
-  const form = { printFormId: '1' };
-  const metadata = { forms: [form], document: 'assessment' };
-
-  test('rejects duplicate form IDs and client-supplied labels or settings', () => {
-    expect(PrintPacketMetadataSchema.safeParse(metadata).success).toBe(true);
-    for (const forms of [
-      [form, { ...form }],
-      [{ ...form, formLabel: 'B' }],
-      [{ ...form, settings: DEFAULT_PRINT_SETTINGS }],
-    ]) {
-      expect(PrintPacketMetadataSchema.safeParse({ ...metadata, forms }).success).toBe(false);
-    }
   });
 });
 

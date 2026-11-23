@@ -1,6 +1,7 @@
 import {
   QueryClient,
   skipToken,
+  useIsMutating,
   useMutation,
   useQuery,
   useQueryClient,
@@ -148,19 +149,25 @@ function PrintPreparation({
   const completedCoverIdsRef = useRef(new Set<string>());
   const exportCoverIdsRef = useRef(new Map<string, string[]>());
   const exportFormIdsRef = useRef(new Map<string, string[]>());
-  const coversAwaitingDownload = coverPages.some(({ id }) => !completedCoverIdsRef.current.has(id));
+  // Exports read the cover list when they start, so they wait for uploads to finish.
+  const uploadingCovers =
+    useIsMutating({ mutationKey: trpc.printExports.uploadCover.mutationKey() }) > 0;
+  const coversAwaitingDownload =
+    uploadingCovers || coverPages.some(({ id }) => !completedCoverIdsRef.current.has(id));
   useEffect(() => {
-    // Uploaded PDFs live only in this tab until a student-copy PDF includes them.
+    // Only this tab knows the uploaded PDFs' IDs until a student-copy PDF includes them.
     if (!coversAwaitingDownload) return;
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (coverPages.every(({ id }) => completedCoverIdsRef.current.has(id))) return;
+      if (!uploadingCovers && coverPages.every(({ id }) => completedCoverIdsRef.current.has(id))) {
+        return;
+      }
       event.preventDefault();
       // oxlint-disable-next-line typescript/no-deprecated -- Required for older browsers.
       event.returnValue = 'prompt';
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [coverPages, coversAwaitingDownload]);
+  }, [coverPages, coversAwaitingDownload, uploadingCovers]);
   const [combinedDownload, setCombinedDownload] = useState<{
     document: PrintDocument;
     formIds: string[];
@@ -343,12 +350,13 @@ function PrintPreparation({
       outputDocument: PrintDocument;
     }) => {
       await prepareExport(ids, outputDocument, 'pdf');
-      return await trpcClient.printExports.pdf.mutate(packetInput(ids, outputDocument));
+      return await trpcClient.printExports.pdf.mutate(exportInput(ids, outputDocument, 'pdf'));
     },
   });
   const printExports = usePrintExports({ onAutomaticExportFinished: finishAutomaticExport });
   const { exportId, setExportId, displayedExport } = printExports;
   const busy =
+    uploadingCovers ||
     ensureInitial.isPending ||
     create.isPending ||
     regenerate.isPending ||
@@ -419,30 +427,14 @@ function PrintPreparation({
     return form.settings;
   }
 
-  function packetInput(ids: string[], outputDocument: PrintDocument) {
-    const input = new FormData();
-    input.set(
-      'metadata',
-      JSON.stringify({
-        forms: ids.map((id) => ({ printFormId: id })),
-        document: outputDocument,
-      }),
-    );
-    if (outputDocument !== 'answer_key') {
-      for (const { file } of coverPages) input.append('coverPages', file);
-    }
-    return input;
-  }
-
-  function preflightInput(ids: string[], outputDocument: PrintDocument, format: 'pdf' | 'docx') {
-    const input = new FormData();
-    input.set('formIds', JSON.stringify(ids));
-    input.set('document', outputDocument);
-    // Only student-copy PDFs include uploaded covers.
-    if (format === 'pdf' && outputDocument === 'assessment') {
-      for (const { file } of coverPages) input.append('coverPages', file);
-    }
-    return input;
+  function exportInput(ids: string[], outputDocument: PrintDocument, format: 'pdf' | 'docx') {
+    return {
+      printFormIds: ids,
+      document: outputDocument,
+      // Only student-copy PDFs include uploaded covers.
+      coverIds:
+        format === 'pdf' && outputDocument === 'assessment' ? coverPages.map(({ id }) => id) : [],
+    };
   }
 
   /**
@@ -455,7 +447,7 @@ function PrintPreparation({
     format: 'pdf' | 'docx',
     onProgress: (progress: { completed: number; total: number }) => void,
   ) {
-    const input = preflightInput(ids, outputDocument, format);
+    const input = exportInput(ids, outputDocument, format);
     const result = await trpcClient.printExports.preflight.mutate(input);
     if (result.failure || result.unpreparedFormIds.length === 0) return result;
     const unprepared = result.unpreparedFormIds;

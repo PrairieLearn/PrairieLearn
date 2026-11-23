@@ -12,14 +12,17 @@ import * as PrairieMQ from '@prairielearn/prairiemq';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
+import { uploadToS3 } from '../lib/aws.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { printFormLabelBase } from '../lib/client/printing/print-form-label.js';
 import { printLayoutSearch } from '../lib/client/printing/print-preparation.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { getFileStoreS3Bucket } from '../lib/file-store.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as printing from '../lib/printing/index.js';
+import { checkPrintCovers, readPrintCovers } from '../lib/printing/print-covers.js';
 import * as printExportRender from '../lib/printing/print-export-render.js';
 import {
   beginPrintExportShutdown,
@@ -71,14 +74,18 @@ function client(assessmentId: string, authnUserId = '1') {
 }
 
 function packetInput(printFormId: string, document: 'assessment' | 'answer_key' = 'assessment') {
+  return { printFormIds: [printFormId], document, coverIds: [] as string[] };
+}
+
+async function coverPdf(pages = 1) {
+  const cover = await PDFDocument.create();
+  for (let page = 0; page < pages; page++) cover.addPage();
+  return new File([Buffer.from(await cover.save())], 'cover.pdf', { type: 'application/pdf' });
+}
+
+function coverUpload(file: File) {
   const data = new FormData();
-  data.set(
-    'metadata',
-    JSON.stringify({
-      forms: [{ printFormId }],
-      document,
-    }),
-  );
+  data.set('file', file);
   return data;
 }
 
@@ -771,31 +778,45 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).rejects.toThrow('Name and Date');
   });
 
-  test('validates export settings and cover PDFs before queueing', async () => {
+  test('validates export settings and uploaded cover PDFs', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
-    const invalid = packetInput('1');
-    invalid.set('metadata', JSON.stringify({ forms: [], document: 'assessment' }));
-    await expect(api.printExports.pdf.mutate(invalid)).rejects.toThrow(
-      'Invalid print export settings.',
-    );
+    await expect(
+      api.printExports.pdf.mutate({ ...packetInput('1'), printFormIds: [] }),
+    ).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
     const form = await api.printForms.create.mutate();
-    const invalidCover = packetInput(form.printFormId);
-    invalidCover.append(
-      'coverPages',
-      new File(['invalid PDF'], 'bad.pdf', { type: 'application/pdf' }),
+    await expect(
+      api.printExports.uploadCover.mutate(
+        coverUpload(new File(['invalid PDF'], 'bad.pdf', { type: 'application/pdf' })),
+      ),
+    ).rejects.toThrow('valid PDF without password protection');
+    const cover = await api.printExports.uploadCover.mutate(coverUpload(await coverPdf(2)));
+    expect(cover).toMatchObject({ name: 'cover.pdf', pageCount: 2 });
+    const [stored] = await readPrintCovers(
+      checkPrintCovers([cover.id], { assessmentId: assessment.id, authnUserId: '1' }),
     );
-    await expect(api.printExports.pdf.mutate(invalidCover)).rejects.toThrow(
-      'valid PDF without password protection',
-    );
-    const answerKeyCover = packetInput(form.printFormId, 'answer_key');
-    answerKeyCover.append(
-      'coverPages',
-      new File(['unused'], 'cover.pdf', { type: 'application/pdf' }),
-    );
-    await expect(api.printExports.pdf.mutate(answerKeyCover)).rejects.toThrow(
-      'Answer key exports do not use uploaded cover pages.',
-    );
+    expect(stored.getPageCount()).toBe(2);
+    await expect(
+      api.printExports.pdf.mutate({ ...packetInput(form.printFormId), coverIds: ['not-a-cover'] }),
+    ).rejects.toThrow('The uploaded cover PDFs have expired.');
+    await expect(
+      api.printExports.pdf.mutate({
+        ...packetInput(form.printFormId, 'answer_key'),
+        coverIds: [cover.id],
+      }),
+    ).rejects.toThrow('Answer key exports do not use uploaded cover pages.');
+    // Cover IDs are signed for the uploading user and assessment.
+    const otherAssessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam23-printing',
+    });
+    const otherForm = await client(otherAssessment.id).printForms.create.mutate();
+    await expect(
+      client(otherAssessment.id).printExports.pdf.mutate({
+        ...packetInput(otherForm.printFormId),
+        coverIds: [cover.id],
+      }),
+    ).rejects.toThrow('The uploaded cover PDFs have expired.');
   });
 
   test('preflights every selected form and identifies a form that needs attention', async () => {
@@ -803,12 +824,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const api = client(assessment.id);
     const first = await api.printForms.create.mutate();
     const second = await api.printForms.create.mutate();
-    const cover = await PDFDocument.create();
-    cover.addPage();
-    const data = new FormData();
-    data.set('formIds', JSON.stringify([first.printFormId, second.printFormId]));
-    data.set('document', 'assessment');
-    data.append('coverPages', new File([Buffer.from(await cover.save())], 'cover.pdf'));
+    const cover = await api.printExports.uploadCover.mutate(coverUpload(await coverPdf()));
+    const data = {
+      printFormIds: [first.printFormId, second.printFormId],
+      document: 'assessment' as const,
+      coverIds: [cover.id],
+    };
     expect(await api.printExports.preflight.mutate(data)).toEqual({
       pageCount: 1,
       unpreparedFormIds: [first.printFormId, second.printFormId],
@@ -869,14 +890,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const forms = [await api.printForms.create.mutate(), await api.printForms.create.mutate()];
-    const data = new FormData();
-    data.set(
-      'metadata',
-      JSON.stringify({
-        forms: forms.map(({ printFormId }) => ({ printFormId })),
-        document: 'assessment',
-      }),
-    );
+    const data = {
+      printFormIds: forms.map(({ printFormId }) => printFormId),
+      document: 'assessment' as const,
+      coverIds: [],
+    };
     for (const { printFormId } of forms) {
       await storeTestSnapshot({
         assessmentId: assessment.id,
@@ -1000,14 +1018,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const api = client(assessment.id);
     const first = await api.printForms.create.mutate();
     const second = await api.printForms.create.mutate();
-    const data = new FormData();
-    data.set(
-      'metadata',
-      JSON.stringify({
-        forms: [first, second].map(({ printFormId }) => ({ printFormId })),
-        document: 'answer_key',
-      }),
-    );
+    const data = {
+      printFormIds: [first, second].map(({ printFormId }) => printFormId),
+      document: 'answer_key' as const,
+      coverIds: [],
+    };
     for (const form of [first, second]) {
       await storeTestSnapshot({
         assessmentId: assessment.id,
@@ -1095,14 +1110,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const api = client(assessment.id);
     const first = await api.printForms.create.mutate();
     const second = await api.printForms.create.mutate();
-    const data = new FormData();
-    data.set(
-      'metadata',
-      JSON.stringify({
-        forms: [first, second].map(({ printFormId }) => ({ printFormId })),
-        document: 'assessment',
-      }),
-    );
+    const data = {
+      printFormIds: [first, second].map(({ printFormId }) => printFormId),
+      document: 'assessment' as const,
+      coverIds: [],
+    };
     await storeTestSnapshot({ assessmentId: assessment.id, printFormId: first.printFormId });
     await storeTestSnapshot({
       assessmentId: assessment.id,
@@ -1203,6 +1215,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
   test('shows a safe reason when a background PDF fails', async () => {
     const assessment = await printAssessment();
     const courseInstance = await selectCourseInstanceById('1');
+    const coverKey = `print-exports/covers/${randomUUID()}.pdf`;
+    await uploadToS3(getFileStoreS3Bucket(), coverKey, null, false, Buffer.from('not a pdf'));
     const printExportId = await queuePrintExport({
       formSelections: [],
       owner: {
@@ -1216,9 +1230,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
         document: 'assessment',
         filename: 'failed-export.pdf',
         snapshots: [],
-        covers: [
-          { name: 'invalid-cover.pdf', base64: Buffer.from('not a pdf').toString('base64') },
-        ],
+        covers: [{ name: 'invalid-cover.pdf', key: coverKey }],
       },
     });
     await completePrintExport(assessment.id, printExportId, 'failed');
@@ -1499,7 +1511,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
           expectedSettings: form.settings,
         }),
       ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
-      await expect(api.printExports.preflight.mutate(new FormData())).rejects.toMatchObject({
+      await expect(
+        api.printExports.preflight.mutate(packetInput(form.printFormId)),
+      ).rejects.toMatchObject({
         data: { code: 'FORBIDDEN' },
       });
       await expect(
@@ -1535,9 +1549,10 @@ describe('print preparation', { timeout: 60_000 }, () => {
           { url: trpcUrl, authn_user_id: student.id },
           config.secretKey,
         ),
+        'Content-Type': 'application/json',
         cookie: 'pl_test_user=test_student',
       },
-      body: packetInput('1'),
+      body: JSON.stringify({ json: packetInput('1') }),
     });
     expect(exportResponse.status).toBe(403);
   });

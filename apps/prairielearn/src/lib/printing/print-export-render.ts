@@ -5,7 +5,8 @@ import { config } from '../config.js';
 import { createDocxOutput } from './docx-output.js';
 import { createPdfOutput } from './pdf-output.js';
 import { PrintAssetScopeDataSchema } from './print-asset-access.js';
-import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
+import { readPrintCovers } from './print-covers.js';
+import { assemblePrintPacket } from './print-packet.js';
 import { readPrintSnapshot } from './print-snapshots.js';
 
 import { getPrintRenderer, validatePrintDocument } from './index.js';
@@ -24,7 +25,7 @@ export const PrintExportWorkSchema = z.discriminatedUnion('format', [
     document: z.enum(['assessment', 'answer_key']),
     filename: z.string(),
     snapshots: z.array(PrintExportSnapshotSchema),
-    covers: z.array(z.object({ name: z.string(), base64: z.string() })),
+    covers: z.array(z.object({ name: z.string(), key: z.string() })),
   }),
   z.object({
     format: z.literal('docx'),
@@ -39,16 +40,7 @@ export async function renderPrintExport(
   work: PrintExportWork,
   shutdownSignal?: AbortSignal,
 ): Promise<Buffer> {
-  const covers =
-    work.format === 'pdf'
-      ? await readPrintCoverPages(
-          work.covers.map(
-            ({ name, base64 }) =>
-              new File([Buffer.from(base64, 'base64')], name, { type: 'application/pdf' }),
-          ),
-          shutdownSignal,
-        )
-      : [];
+  const covers = work.format === 'pdf' ? await readPrintCovers(work.covers, shutdownSignal) : [];
   if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
   const renderer = getPrintRenderer();
   if (work.format === 'docx') {

@@ -4,7 +4,11 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
-import { MAX_PACKET_PAGES, MAX_PRINT_FORMS } from '../../lib/client/printing/print-packet.js';
+import {
+  MAX_COVER_FILES,
+  MAX_PACKET_PAGES,
+  MAX_PRINT_FORMS,
+} from '../../lib/client/printing/print-packet.js';
 import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
@@ -16,10 +20,10 @@ import {
   assertPrintDocumentReady,
   getPrintableFormQuestions,
 } from '../../lib/printing/index.js';
+import { checkPrintCovers, uploadPrintCover } from '../../lib/printing/print-covers.js';
 import type { PrintExportWork } from '../../lib/printing/print-export-render.js';
 import { printExportResult, queuePrintExport } from '../../lib/printing/print-exports.js';
-import { PrintPacketMetadataSchema } from '../../lib/printing/print-packet-schema.js';
-import { PrintPacketError, readPrintCoverPages } from '../../lib/printing/print-packet.js';
+import { PrintPacketError } from '../../lib/printing/print-packet.js';
 import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE } from '../../lib/printing/print-settings.js';
 import {
   printSnapshotLayout,
@@ -47,13 +51,18 @@ export interface PrintExportsError {
   pdf: never;
   preflight: never;
   status: never;
+  uploadCover: never;
 }
 
-const PreflightFormIdsSchema = z
-  .array(IdSchema)
-  .min(1)
-  .max(MAX_PRINT_FORMS)
-  .refine((ids) => new Set(ids).size === ids.length, 'Select each print form only once.');
+const PdfExportSchema = z.object({
+  printFormIds: z
+    .array(IdSchema)
+    .min(1)
+    .max(MAX_PRINT_FORMS)
+    .refine((ids) => new Set(ids).size === ids.length, 'Select each print form only once.'),
+  document: z.enum(PRINT_DOCUMENTS),
+  coverIds: z.array(z.string()).max(MAX_COVER_FILES),
+});
 
 interface PreflightResult {
   /** Pages in the longest stored form plus uploaded covers. */
@@ -63,12 +72,21 @@ interface PreflightResult {
   failure: { printFormId: string; formLabel: string; message: string } | null;
 }
 
-function uploadedCoverFiles(input: FormData): File[] {
-  const files = z.array(z.instanceof(File)).safeParse(input.getAll('coverPages'));
-  if (!files.success) {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
+/** Answer keys never include uploaded covers; student copies include all of them. */
+function checkExportCovers(
+  ctx: TRPCContext,
+  { document, coverIds }: z.infer<typeof PdfExportSchema>,
+) {
+  if (document === 'answer_key' && coverIds.length > 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Answer key exports do not use uploaded cover pages.',
+    });
   }
-  return files.data;
+  return checkPrintCovers(coverIds, {
+    assessmentId: ctx.assessment.id,
+    authnUserId: ctx.authn_user.id,
+  });
 }
 
 function assertSharedPaperSize(forms: { settings: { paperSize: string } }[]) {
@@ -209,27 +227,9 @@ export const printExportsRouter = t.router({
     .use(requireCoursePermissionPreview)
     .use(requirePrintingAvailable)
     .use(requireCoursePermissionEdit)
-    .input(z.instanceof(FormData))
+    .input(PdfExportSchema)
     .mutation(async ({ ctx, input }): Promise<PreflightResult> => {
-      let formIds: string[];
-      let document: PrintDocument;
-      try {
-        formIds = PreflightFormIdsSchema.parse(JSON.parse(z.string().parse(input.get('formIds'))));
-        document = z.enum(PRINT_DOCUMENTS).parse(input.get('document'));
-      } catch (error) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Invalid print export settings.',
-          cause: error,
-        });
-      }
-      const files = uploadedCoverFiles(input);
-      if (document === 'answer_key' && files.length > 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Answer key exports do not use uploaded cover pages.',
-        });
-      }
+      const { printFormIds: formIds, document } = input;
       const forms = await selectExportForms(ctx, formIds);
       assertSharedPaperSize(forms);
       const questions = await selectPrintFormQuestionViability(formIds);
@@ -255,8 +255,8 @@ export const printExportsRouter = t.router({
         }
       }
       try {
-        const coverPageCount = (await readPrintCoverPages(files)).reduce(
-          (count, cover) => count + cover.getPageCount(),
+        const coverPageCount = checkExportCovers(ctx, input).reduce(
+          (count, cover) => count + cover.pageCount,
           0,
         );
         const unpreparedFormIds: string[] = [];
@@ -292,36 +292,14 @@ export const printExportsRouter = t.router({
     .use(requireCoursePermissionPreview)
     .use(requirePrintingAvailable)
     .use(requireCoursePermissionEdit)
-    .input(z.instanceof(FormData))
+    .input(PdfExportSchema)
     .mutation(async ({ ctx, input }) => {
-      let metadata: z.infer<typeof PrintPacketMetadataSchema>;
-      try {
-        metadata = PrintPacketMetadataSchema.parse(
-          JSON.parse(z.string().parse(input.get('metadata'))),
-        );
-      } catch (error) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Invalid print export settings.',
-          cause: error,
-        });
-      }
-      const forms = await selectExportForms(
-        ctx,
-        metadata.forms.map(({ printFormId }) => printFormId),
-      );
+      const forms = await selectExportForms(ctx, input.printFormIds);
       assertSharedPaperSize(forms);
-      const files = uploadedCoverFiles(input);
-      if (metadata.document === 'answer_key' && files.length > 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Answer key exports do not use uploaded cover pages.',
-        });
-      }
       try {
-        const covers = await readPrintCoverPages(files);
-        const found = await findExportSnapshots(ctx, forms, metadata.document);
-        const coverPageCount = covers.reduce((count, cover) => count + cover.getPageCount(), 0);
+        const covers = checkExportCovers(ctx, input);
+        const found = await findExportSnapshots(ctx, forms, input.document);
+        const coverPageCount = covers.reduce((count, cover) => count + cover.pageCount, 0);
         const pageCount = Math.max(...found.map(({ summary }) => summary.pageCount));
         if ((pageCount + coverPageCount) * forms.length > MAX_PACKET_PAGES) {
           throw new TRPCError({
@@ -336,7 +314,7 @@ export const printExportsRouter = t.router({
           ctx.course,
         );
         const documentName =
-          metadata.document === 'assessment'
+          input.document === 'assessment'
             ? forms.length === 1
               ? 'assessment'
               : 'all_forms'
@@ -346,15 +324,10 @@ export const printExportsRouter = t.router({
         const formName = forms.length === 1 ? `form_${forms[0].label}_` : '';
         const work: PrintExportWork = {
           format: 'pdf',
-          document: metadata.document,
+          document: input.document,
           filename: `${prefix}${formName}${documentName}.pdf`,
           snapshots: found.map(({ snapshot }) => snapshot),
-          covers: await Promise.all(
-            files.map(async (file) => ({
-              name: file.name,
-              base64: Buffer.from(await file.arrayBuffer()).toString('base64'),
-            })),
-          ),
+          covers: covers.map(({ name, key }) => ({ name, key })),
         };
         return {
           printExportId: await queuePrintExport({
@@ -405,6 +378,26 @@ export const printExportsRouter = t.router({
           error,
           'The Word document could not be prepared. Try again or contact support if this continues.',
         );
+      }
+    }),
+  /** Stores one cover PDF for later exports, so each export doesn't upload and parse it again. */
+  uploadCover: t.procedure
+    .use(requireCoursePermissionPreview)
+    .use(requirePrintingAvailable)
+    .use(requireCoursePermissionEdit)
+    .input(z.instanceof(FormData))
+    .mutation(async ({ ctx, input }) => {
+      const file = input.get('file');
+      if (!(file instanceof File)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload cover pages as PDF files.' });
+      }
+      try {
+        return await uploadPrintCover(file, {
+          assessmentId: ctx.assessment.id,
+          authnUserId: ctx.authn_user.id,
+        });
+      } catch (error) {
+        throw exportError(error, 'The cover PDF could not be uploaded. Try again.');
       }
     }),
   list: t.procedure
