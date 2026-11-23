@@ -479,23 +479,43 @@ describe('chunks', () => {
       });
     });
 
-    it('keeps unchanged dependency chunks for a course without local questions', async () => {
+    it('refreshes course assets once when establishing a Git baseline without local questions', async () => {
       const courseDir = path.join(tempTestCourseDir.path, 'courseWithoutQuestions');
       const { logger } = makeMockLogger();
+      const asset = path.join('clientFilesCourse', 'data.txt');
+      const assetPath = path.join(courseDir, asset);
       await fs.outputJson(path.join(courseDir, 'infoCourse.json'), {
         name: 'No questions',
         title: 'Course without local questions',
         topics: [],
       });
-      await fs.outputFile(path.join(courseDir, 'clientFilesCourse', 'data.txt'), 'Unchanged asset');
+      await fs.outputFile(assetPath, 'Original asset');
 
       await withConfig({ chunksGenerator: true }, async () => {
-        const result = await syncOrCreateDiskToSql(courseDir, logger);
-        const baseline = await chunksLib.selectChunksForCourse(result.courseId);
+        const { courseId } = await syncOrCreateDiskToSql(courseDir, logger);
+        const legacyCourse = await selectCourseById(courseId);
+        expect(legacyCourse.commit_hash).toBeNull();
+        const baseline = await chunksLib.selectChunksForCourse(courseId);
         expect(baseline).toMatchObject([{ type: 'clientFilesCourse' }]);
 
         await syncOrCreateDiskToSql(courseDir, logger);
-        expect(await chunksLib.selectChunksForCourse(result.courseId)).toEqual(baseline);
+        expect(await chunksLib.selectChunksForCourse(courseId)).toEqual(baseline);
+
+        await initializeCourseRepository(courseDir);
+        await execa('git', ['add', '-A'], { cwd: courseDir });
+        await execa('git', ['commit', '-m', 'Initial course'], { cwd: courseDir });
+        await fs.writeFile(assetPath, 'Updated asset');
+        await execa('git', ['add', '--', asset], { cwd: courseDir });
+        await execa('git', ['commit', '-m', 'Update asset'], { cwd: courseDir });
+
+        await syncOrCreateDiskToSql(courseDir, logger);
+        const refreshed = await chunksLib.selectChunksForCourse(courseId);
+        await chunksLib.ensureChunksForCourseAsync(courseId, { type: 'clientFilesCourse' });
+        const runtimeDir = chunksLib.getRuntimeDirectoryForCourse(legacyCourse);
+        expect(await fs.readFile(path.join(runtimeDir, asset), 'utf8')).toBe('Updated asset');
+
+        await syncOrCreateDiskToSql(courseDir, logger);
+        expect(await chunksLib.selectChunksForCourse(courseId)).toEqual(refreshed);
       });
     });
 
