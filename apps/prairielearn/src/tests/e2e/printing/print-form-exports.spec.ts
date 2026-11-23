@@ -212,9 +212,13 @@ test('prints representative controls, editable Word content, and an ordered answ
   ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
 
   const diagramQuestion = questions.filter({ hasText: 'Use the diagram and reference below.' });
-  expect(
-    await countInkPixels(diagramQuestion.locator('.printing-excalidraw img.printing-canvas-image')),
-  ).toBeGreaterThan(0);
+  // The second drawing is a blank answer area, which must still be reported as rendered.
+  const excalidrawImages = diagramQuestion.locator(
+    '.printing-excalidraw img.printing-canvas-image',
+  );
+  await expect(excalidrawImages).toHaveCount(2);
+  expect(await countInkPixels(excalidrawImages.first())).toBeGreaterThan(0);
+  expect(await readWarnings(page)).toEqual([]);
   await expect(diagramQuestion.getByText('bold reference text')).toBeVisible();
 
   const response = await downloadPrintableWord(page, printUrl);
@@ -435,8 +439,7 @@ test('omits questions whose content does not finish loading', async ({
       expect.objectContaining({
         code: 'incomplete_render',
         question_number: '3',
-        message:
-          'Question 3 uses an image from another website, which printing cannot include.',
+        message: 'Question 3 uses an image from another website, which printing cannot include.',
       }),
     ]);
     await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');

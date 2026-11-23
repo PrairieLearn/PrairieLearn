@@ -17,15 +17,6 @@ import {
 import type { PrintablePageOutput } from './printable-page-output.js';
 import { RenderQueue } from './render-queue.js';
 
-const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
-
-export class QuestionBlockSizeOverflowError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'QuestionBlockSizeOverflowError';
-  }
-}
-
 /** The printable page set `data-print-status="error"`, e.g. because pagination failed. */
 export class PrintablePageError extends Error {
   constructor(readonly pageMessage: string) {
@@ -458,13 +449,8 @@ export class PrintRenderer {
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
-        errorCode: document.documentElement.dataset.printErrorCode ?? null,
       }));
       if (printState.status === 'error') {
-        const message = `The printable page failed: ${printState.error ?? 'No pagination error was provided'}`;
-        if (printState.errorCode === QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE) {
-          throw new QuestionBlockSizeOverflowError(message);
-        }
         throw new PrintablePageError(printState.error ?? 'No pagination error was provided');
       }
       if (printState.status !== 'ready') {
