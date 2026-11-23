@@ -269,10 +269,10 @@ function ConversationPicker({
 
 /** Requests staff can send as they are, for those who are not sure what to ask. */
 const STARTERS = [
-  { icon: 'bi-bar-chart', text: 'Find questions where some variants are harder than others' },
-  { icon: 'bi-share', text: 'Share a set of questions with another course' },
-  { icon: 'bi-calendar-plus', text: 'Set up this course for next semester' },
   { icon: 'bi-pencil-square', text: 'Help me write a new question' },
+  { icon: 'bi-bar-chart', text: 'Find question variants that are unfairly hard, and fix them' },
+  { icon: 'bi-share', text: 'Share a set of questions with another course' },
+  { icon: 'bi-calendar-plus', text: 'Set up next semester from this course instance' },
 ];
 
 function EmptyConversation({ onStart }: { onStart: (text: string) => void }) {
