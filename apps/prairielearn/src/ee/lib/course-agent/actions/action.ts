@@ -8,9 +8,7 @@ import {
   makePageAuthzData,
 } from '../../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../../lib/authz-data.js';
-import type { Assessment, Course, CourseInstance, User } from '../../../../lib/db-types.js';
-import { type FeatureName, features } from '../../../../lib/features/index.js';
-import { selectOptionalAssessmentByTid } from '../../../../models/assessment.js';
+import type { Course, CourseInstance, User } from '../../../../lib/db-types.js';
 import { selectOptionalCourseInstanceByShortName } from '../../../../models/course-instances.js';
 
 /**
@@ -21,8 +19,6 @@ export class CourseActionError extends Error {}
 
 interface CourseActionAuthz {
   has_course_permission_edit: boolean;
-  has_course_permission_own: boolean;
-  has_course_instance_permission_view?: boolean;
   has_course_instance_permission_edit?: boolean;
 }
 
@@ -30,14 +26,6 @@ const PERMISSIONS = {
   course_editor: {
     label: 'Editor access to the course',
     allows: (authz: CourseActionAuthz) => authz.has_course_permission_edit,
-  },
-  course_owner: {
-    label: 'Owner access to the course',
-    allows: (authz: CourseActionAuthz) => authz.has_course_permission_own,
-  },
-  student_data_viewer: {
-    label: 'Student Data Viewer access to the course instance',
-    allows: (authz: CourseActionAuthz) => authz.has_course_instance_permission_view === true,
   },
   student_data_editor: {
     label: 'Student Data Editor access to the course instance',
@@ -62,10 +50,6 @@ export interface CourseInstanceActionContext extends CourseActionContext {
   authz_data: CourseInstancePageAuthzData;
 }
 
-export interface AssessmentActionContext extends CourseInstanceActionContext {
-  assessment: Assessment;
-}
-
 interface CourseActionDescription {
   /** What will happen, in the instructor's words, such as `Close 3 issues`. */
   title: string;
@@ -75,8 +59,9 @@ interface CourseActionDescription {
   rows?: { label: string; detail?: string | null }[];
 }
 
-/** A job's ID when the action runs in the background, whose finished job gives the result. */
-type CourseActionOutcome = { summary: string } | { jobSequenceId: string };
+interface CourseActionOutcome {
+  summary: string;
+}
 
 interface CourseActionDefinition<Schema extends z.ZodObject, Context extends CourseActionContext> {
   /** The course data dataset whose rows the action changes. */
@@ -92,8 +77,6 @@ interface CourseActionDefinition<Schema extends z.ZodObject, Context extends Cou
   undo: string | null;
   /** Every permission listed is required. */
   permission: CourseActionPermission | CourseActionPermission[];
-  /** A feature the course must have turned on. */
-  feature?: FeatureName;
   input: Schema;
   /**
    * Checks the request against the database and says what approving it will do. The instructor
@@ -102,11 +85,6 @@ interface CourseActionDefinition<Schema extends z.ZodObject, Context extends Cou
   describe: (args: { ctx: Context; input: z.infer<Schema> }) => Promise<CourseActionDescription>;
   /** Carries the action out and says, in one sentence, what happened. */
   run: (args: { ctx: Context; input: z.infer<Schema> }) => Promise<CourseActionOutcome>;
-  /**
-   * For an action that runs as a job: says, in one sentence, what the finished job did. Staff see
-   * this instead of the job's log, which the agent receives too.
-   */
-  summarizeJob?: (args: { jobSequenceId: string }) => Promise<string>;
 }
 
 export interface CourseAction {
@@ -117,7 +95,6 @@ export interface CourseAction {
   input: z.ZodObject;
   describe: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionCard>;
   run: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionOutcome>;
-  summarizeJob?: (args: { jobSequenceId: string }) => Promise<string>;
 }
 
 const MAX_CARD_ROWS = 20;
@@ -140,17 +117,6 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
     const parsed = definition.input.safeParse(raw);
     // Zod's message says what is allowed, so the course agent can correct its request.
     if (!parsed.success) throw new CourseActionError(z.prettifyError(parsed.error));
-    if (
-      definition.feature &&
-      !(await features.enabled(definition.feature, {
-        institution_id: ctx.course.institution_id,
-        course_id: ctx.course.id,
-      }))
-    ) {
-      throw new CourseActionError(
-        'This is not available in this course. Tell the instructor, and do not retry.',
-      );
-    }
     const located = await locate(ctx, parsed.data);
     for (const key of [definition.permission].flat()) {
       if (!PERMISSIONS[key].allows(located.authz_data)) {
@@ -182,7 +148,6 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
       });
     },
     run: async (ctx, raw) => await definition.run(await check(ctx, raw)),
-    summarizeJob: definition.summarizeJob,
   };
 }
 
@@ -202,19 +167,9 @@ export const COURSE_INSTANCE_INPUT = {
       "The course instance's directory name under courseInstances/ in the course files, which is course_instance_short_name in course data.",
     ),
 };
-export const ASSESSMENT_INPUT = {
-  ...COURSE_INSTANCE_INPUT,
-  assessment_tid: z
-    .string()
-    .min(1)
-    .describe(
-      "The assessment's directory within its course instance's assessments/ directory, which is assessment_tid in course data.",
-    ),
-};
 
 // The input was validated against the action's own schema, which includes these.
 const CourseInstanceInputSchema = z.object(COURSE_INSTANCE_INPUT);
-const AssessmentInputSchema = z.object(ASSESSMENT_INPUT);
 
 async function locateCourseInstance(
   ctx: CourseActionContext,
@@ -261,24 +216,4 @@ export function courseInstanceAction<
   return build(definition, (ctx, input) =>
     locateCourseInstance(ctx, CourseInstanceInputSchema.parse(input).course_instance_short_name),
   );
-}
-
-/** An action on one assessment. Its input includes `ASSESSMENT_INPUT`. */
-export function assessmentAction<
-  Schema extends z.ZodObject<typeof ASSESSMENT_INPUT & z.ZodRawShape>,
->(definition: CourseActionDefinition<Schema, AssessmentActionContext>): CourseAction {
-  return build(definition, async (ctx, input) => {
-    const { course_instance_short_name, assessment_tid } = AssessmentInputSchema.parse(input);
-    const located = await locateCourseInstance(ctx, course_instance_short_name);
-    const assessment = await selectOptionalAssessmentByTid({
-      course_instance_id: located.course_instance.id,
-      tid: assessment_tid,
-    });
-    if (!assessment) {
-      throw new CourseActionError(
-        `The course instance "${course_instance_short_name}" has no assessment named "${assessment_tid}". Use a directory name from its assessments/ directory.`,
-      );
-    }
-    return { ...located, assessment };
-  });
 }

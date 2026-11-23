@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
+import * as sqldb from '@prairielearn/postgres';
 import { throwAppError } from '@prairielearn/trpc/server';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -17,15 +18,12 @@ import {
   findCoursesBySharingNames,
   selectOptionalCourseBySharingToken,
   updateCourseSharingNameIfAllowed,
-  updateCourseSharingToken,
 } from '../../models/course.js';
-import {
-  insertSharingSetCourse,
-  selectSharingSetUsage,
-  selectSharingSetsForCourse,
-} from '../../models/sharing-set.js';
+import { selectSharingSetUsage, selectSharingSetsForCourse } from '../../models/sharing-set.js';
 
 import { requireCoursePermissionOwn, requireNotExampleCourse, t } from './init.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export interface SharingError {
   ListSharingSets: never;
@@ -131,7 +129,11 @@ const regenerateSharingToken = t.procedure
   .use(requireQuestionSharingEnabled)
   .use(requireNotExampleCourse)
   .mutation(async ({ ctx }) => {
-    const sharingToken = await updateCourseSharingToken(ctx.course.id);
+    const sharingToken = await sqldb.queryOptionalScalar(
+      sql.update_sharing_token,
+      { course_id: ctx.course.id },
+      z.string(),
+    );
     if (sharingToken === null) {
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
@@ -167,11 +169,15 @@ const addCourseToSharingSet = t.procedure
           'Unknown sharing token. Verify that you copied the token correctly from the other course.',
       });
     }
-    const consuming_course_id = await insertSharingSetCourse({
-      sharing_course_id: ctx.course.id,
-      sharing_set_id: input.sharingSetId,
-      course_sharing_token: input.courseSharingToken,
-    });
+    const consuming_course_id = await sqldb.queryOptionalScalar(
+      sql.course_sharing_set_add,
+      {
+        sharing_course_id: ctx.course.id,
+        sharing_set_id: input.sharingSetId,
+        course_sharing_token: input.courseSharingToken,
+      },
+      z.string().nullable(),
+    );
     if (consuming_course_id === null) {
       throw new TRPCError({
         code: 'BAD_REQUEST',

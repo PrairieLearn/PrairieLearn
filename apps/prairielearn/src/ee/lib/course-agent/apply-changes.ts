@@ -47,7 +47,7 @@ import {
   updateCourseAgentReviewStuckReported,
 } from '../../models/course-agent-review.js';
 
-import { selectCourseActionJobResult, unknownCourseActionResult } from './actions/results.js';
+import { unknownCourseActionResult } from './actions/results.js';
 import {
   deliverCourseAgentReviewResult,
   getCourseAgentReview,
@@ -461,25 +461,16 @@ async function deliverUndeliveredReviewResult(
     }
     // Only approvals wait for a result. Each creates a job, so a missing one was deleted before
     // its result was recorded.
-    const action = await selectOptionalCourseAgentAction({
-      course_agent_conversation_id: row.course_agent_conversation_id,
-      agent_action_id: row.agent_review_id,
-    });
-    if (action) {
-      // An action that runs in the request records its result there, so a missing one was lost.
-      // One that started a job is read from the job once it has finished.
-      if (row.job_sequence_id === null) {
-        return await recordAndDeliverResult(conversation, row, unknownCourseActionResult(action));
-      }
-      const result = await selectCourseActionJobResult({
-        action,
-        course_id: conversation.course_id,
-        job_sequence_id: row.job_sequence_id,
-      });
-      return result ? await recordAndDeliverResult(conversation, row, result) : true;
-    }
     if (row.job_sequence_id === null) {
-      return await recordAndDeliverResult(conversation, row, UNKNOWN);
+      const action = await selectOptionalCourseAgentAction({
+        course_agent_conversation_id: row.course_agent_conversation_id,
+        agent_action_id: row.agent_review_id,
+      });
+      return await recordAndDeliverResult(
+        conversation,
+        row,
+        action ? unknownCourseActionResult(action) : UNKNOWN,
+      );
     }
     const sequence = await getJobSequence(row.job_sequence_id, conversation.course_id);
     if (sequence.jobs[0].status === 'Running' || sequence.jobs[0].status === 'Stopping') {

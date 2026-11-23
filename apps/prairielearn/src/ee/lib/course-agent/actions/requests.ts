@@ -4,7 +4,6 @@
  * row with the same ID, so they are recorded and delivered exactly as a file review's are. The
  * action itself runs here, in the request that carries the instructor's approval.
  */
-import { setTimeout as sleep } from 'node:timers/promises';
 import { isDeepStrictEqual } from 'node:util';
 
 import {
@@ -17,11 +16,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
-import type {
-  CourseAgentAction,
-  CourseAgentConversation,
-  CourseAgentReview,
-} from '../../../../lib/db-types.js';
+import type { CourseAgentAction, CourseAgentConversation } from '../../../../lib/db-types.js';
 import {
   insertCourseAgentAction,
   selectOptionalCourseAgentAction,
@@ -29,7 +24,6 @@ import {
 import {
   insertCourseAgentReview,
   selectOptionalCourseAgentReview,
-  updateCourseAgentReviewJobSequence,
 } from '../../../models/course-agent-review.js';
 import {
   deliverDenialByMessage,
@@ -39,11 +33,7 @@ import {
 } from '../apply-changes.js';
 
 import { type CourseActionContext, CourseActionError } from './action.js';
-import {
-  deniedCourseActionResult,
-  finishedCourseActionResult,
-  selectCourseActionJobResult,
-} from './results.js';
+import { deniedCourseActionResult, finishedCourseActionResult } from './results.js';
 
 import { COURSE_AGENT_ACTIONS } from './index.js';
 
@@ -104,15 +94,13 @@ export async function getCourseAction(conversation: CourseAgentConversation, act
   };
 }
 
-/** The action's result, or the job it started, whose finished state will give the result. */
 async function runCourseAction(
   ctx: CourseActionContext,
   action: CourseAgentAction,
-): Promise<CourseActionResult | { jobSequenceId: string }> {
+): Promise<CourseActionResult> {
   try {
-    const outcome = await COURSE_AGENT_ACTIONS[action.action].run(ctx, action.input);
-    if ('jobSequenceId' in outcome) return outcome;
-    return finishedCourseActionResult(action, { status: 'succeeded', summary: outcome.summary });
+    const { summary } = await COURSE_AGENT_ACTIONS[action.action].run(ctx, action.input);
+    return finishedCourseActionResult(action, { status: 'succeeded', summary });
   } catch (error) {
     if (error instanceof CourseActionError) {
       return finishedCourseActionResult(action, { status: 'failed', error: error.message });
@@ -182,54 +170,12 @@ export async function postCourseActionDecision({
     result: null,
   });
   if (!row) return await settleRepeat();
-  const outcome = await runCourseAction(ctx, action);
-  if ('jobSequenceId' in outcome) {
-    const started = await updateCourseAgentReviewJobSequence({
-      id: row.id,
-      job_sequence_id: outcome.jobSequenceId,
-    });
-    void recordJobResult(conversation, started, action, outcome.jobSequenceId);
-    return { decision };
-  }
+  const result = await runCourseAction(ctx, action);
   // As for a file review, the agent's next turn starts once it has the result, so the result is
   // sent after this request answers. A failed send is retried by the result sweep.
-  void recordAndDeliverResult(conversation, row, outcome).catch((error: unknown) => {
+  void recordAndDeliverResult(conversation, row, result).catch((error: unknown) => {
     logger.error('Course agent action result was not recorded; it will be retried.', error);
     Sentry.captureException(error);
   });
   return { decision };
-}
-
-// Long enough for grading a large exam; a job still running after this is left to the sweep.
-const JOB_WAIT_MS = 30 * 60 * 1000;
-const JOB_POLL_MS = 1000;
-
-/**
- * Wait for an action's job to finish, then record and deliver its result. If PrairieLearn
- * restarts first, the result sweep reads the finished job instead.
- */
-async function recordJobResult(
-  conversation: CourseAgentConversation,
-  row: CourseAgentReview,
-  action: CourseAgentAction,
-  job_sequence_id: string,
-) {
-  try {
-    const deadline = Date.now() + JOB_WAIT_MS;
-    while (Date.now() < deadline) {
-      const result = await selectCourseActionJobResult({
-        action,
-        course_id: conversation.course_id,
-        job_sequence_id,
-      });
-      if (result) {
-        await recordAndDeliverResult(conversation, row, result);
-        return;
-      }
-      await sleep(JOB_POLL_MS);
-    }
-  } catch (error) {
-    logger.error('Course agent action result was not recorded; it will be retried.', error);
-    Sentry.captureException(error);
-  }
 }

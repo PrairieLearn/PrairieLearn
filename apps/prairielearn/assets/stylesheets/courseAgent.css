@@ -411,9 +411,3 @@ body:has(.course-agent-panel-animate) .app-main {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-
-/* A job's log can be long; it scrolls instead of stretching the card. */
-.course-agent-action-details {
-  max-height: 16rem;
-  overflow-y: auto;
-}

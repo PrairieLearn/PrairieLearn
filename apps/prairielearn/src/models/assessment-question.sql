@@ -23,15 +23,3 @@ FROM
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
 WHERE
   iq.id = $instance_question_id;
-
--- BLOCK select_assessment_question_by_qid
-SELECT
-  aq.*
-FROM
-  assessment_questions AS aq
-  JOIN questions AS q ON (q.id = aq.question_id)
-WHERE
-  aq.assessment_id = $assessment_id
-  AND aq.deleted_at IS NULL
-  AND q.deleted_at IS NULL
-  AND q.qid = $qid;

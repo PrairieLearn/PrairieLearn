@@ -335,11 +335,3 @@ SELECT
       AND gj.grading_method = 'Manual'
       AND gj.deleted_at IS NULL
   );
-
--- BLOCK count_ai_grading_jobs_for_job_sequence
-SELECT
-  COUNT(*)::integer
-FROM
-  ai_grading_jobs
-WHERE
-  job_sequence_id = $job_sequence_id;

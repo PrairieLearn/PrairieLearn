@@ -164,12 +164,10 @@ export function describeReviewResult(
       );
     } else if (result.outcome.status === 'succeeded') {
       parts.push(output('Result', result.outcome.summary));
-      if (result.outcome.details) parts.push(output('Log', result.outcome.details));
     } else if (result.outcome.status === 'failed') {
       parts.push(
         'Tell the instructor what went wrong. Request it again only after fixing the cause.',
         output('Error', result.outcome.error),
-        ...(result.outcome.details ? [output('Log', result.outcome.details)] : []),
       );
     } else if (result.outcome.status === 'unknown') {
       parts.push(

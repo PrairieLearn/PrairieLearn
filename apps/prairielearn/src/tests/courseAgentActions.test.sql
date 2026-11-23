@@ -50,11 +50,3 @@ FROM
   course_agent_actions
 WHERE
   course_agent_conversation_id = $course_agent_conversation_id;
-
--- BLOCK insert_sharing_set
-INSERT INTO
-  sharing_sets (course_id, name, description)
-VALUES
-  ($course_id, $name, 'Questions for tests')
-RETURNING
-  id;

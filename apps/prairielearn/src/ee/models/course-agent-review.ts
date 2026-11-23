@@ -5,7 +5,6 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalRow,
-  queryRow,
   queryRows,
   queryScalars,
 } from '@prairielearn/postgres';
@@ -65,21 +64,6 @@ export async function updateCourseAgentReviewResult({
   return await queryOptionalRow(
     sql.update_course_agent_review_result,
     { id, result },
-    CourseAgentReviewSchema,
-  );
-}
-
-/** Records the job a requested course action started, whose finished state gives its result. */
-export async function updateCourseAgentReviewJobSequence({
-  id,
-  job_sequence_id,
-}: {
-  id: string;
-  job_sequence_id: string;
-}) {
-  return await queryRow(
-    sql.update_course_agent_review_job_sequence,
-    { id, job_sequence_id },
     CourseAgentReviewSchema,
   );
 }
