@@ -399,8 +399,7 @@ function ActivityStatus({
       </span>
       <span className="d-flex gap-2" aria-hidden="true">
         <span className="text-truncate course-agent-shimmer">{label}…</span>
-        {/* At the edge of the line, the time stays put while the label beside it changes. */}
-        <span className="course-agent-status-time flex-shrink-0 ms-auto">
+        <span className="course-agent-status-time flex-shrink-0">
           {formatInterval(now - startedAt)}
         </span>
       </span>
