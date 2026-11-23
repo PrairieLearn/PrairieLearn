@@ -76,6 +76,7 @@ async function startConversation(bucket: ReturnType<typeof createBucket>, course
 describe('a new conversation on a GitHub course', () => {
   afterEach(() => {
     vi.resetAllMocks();
+    vi.useRealTimers();
   });
 
   it('clones the first time and restores the saved copy the next time', async () => {
@@ -84,7 +85,14 @@ describe('a new conversation on a GitHub course', () => {
 
     expect(await startConversation(bucket)).toContain(clone);
 
-    expect(await startConversation(bucket)).not.toContain(clone);
+    const restore = await startConversation(bucket);
+    expect(restore).not.toContain(clone);
+    expect(restore).toEqual(
+      expect.arrayContaining([
+        'git -C /workspace/session/course fetch --depth 1 origin +refs/heads/main:refs/remotes/origin/main',
+        'git -C /workspace/session/course reset --hard refs/remotes/origin/main',
+      ]),
+    );
     expect(archives.restore).toHaveBeenCalledWith({ id: 'saved copy' }, expect.anything());
   });
 
@@ -120,7 +128,6 @@ describe('a new conversation on a GitHub course', () => {
     expect(await startConversation(bucket)).toContain(clone);
     expect(archives.restore).not.toHaveBeenCalled();
     expect(archives.delete).toHaveBeenCalledWith({ id: 'old copy' });
-    vi.useRealTimers();
   });
 
   it('keeps the first replacement when two conversations replace a damaged copy at once', async () => {
