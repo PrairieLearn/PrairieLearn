@@ -71,7 +71,7 @@ Each Codex tool call (a command, a file change, or any other tool: MCP and dynam
 
 Text the agent writes along the way is an update, not its reply, and the chat folds it in with the tool calls before the reply. Codex labels such text as commentary when the model reports it, and the Worker marks those text parts with `providerMetadata.courseAgent.update`. Unmarked text counts as an update when the agent carries on after it.
 
-While a command runs, the Worker rewrites its `data-tool` part a few times a second with the end of the output so far, so the chat can show that a long command is getting somewhere. Completion replaces that with the clipped full output.
+While a command runs, the Worker rewrites its `data-tool` part about once a second with the end of the output so far, so the chat can show that a long command is getting somewhere. Completion replaces that with the clipped full output.
 
 The agent keeps a plan for longer work with the `show_plan` dynamic tool, which takes the whole plan each time. The Worker shows it as a `data-plan` part matching `PlanPartSchema`, with ID `plan:<Codex turn ID>`, replaced on every call. When the turn ends, the Worker replaces it once more with `ended` set, because a later turn can continue the same message. The chat pins a plan above the message box while the agent works and the plan has not ended.
 
