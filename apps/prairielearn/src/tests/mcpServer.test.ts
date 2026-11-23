@@ -1,6 +1,12 @@
 import * as crypto from 'node:crypto';
 
-import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import {
+  CLIENT_CAPABILITIES_META_KEY,
+  CLIENT_INFO_META_KEY,
+  Client,
+  PROTOCOL_VERSION_META_KEY,
+  StreamableHTTPClientTransport,
+} from '@modelcontextprotocol/client';
 import { SkillsClient } from '@modelcontextprotocol/client/ext/skills';
 import * as cheerio from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -282,6 +288,42 @@ describe('MCP server', { timeout: 60_000, concurrent: false }, function () {
       headers: { Authorization: `Bearer ${refreshed.body.access_token}` },
     });
     assert.equal(res.status, 401);
+  });
+
+  // A request to listen for changes would stay open for as long as the agent runs.
+  test('an agent is not offered change notifications, and asking for them is refused', async function () {
+    const { tokens } = await connect();
+    const access = tokens.body.access_token;
+    const capabilities = await withMcpClient(access, async (client) =>
+      client.getServerCapabilities()!,
+    );
+    assert.isFalse(capabilities.tools?.listChanged);
+    assert.isFalse(capabilities.resources?.listChanged);
+
+    const res = await fetch(`${siteUrl}/pl/mcp`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${access}`,
+        Accept: 'application/json, text/event-stream',
+        'Content-Type': 'application/json',
+        'Mcp-Protocol-Version': '2026-07-28',
+        'Mcp-Method': 'subscriptions/listen',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'subscriptions/listen',
+        params: {
+          notifications: { toolsListChanged: true },
+          _meta: {
+            [PROTOCOL_VERSION_META_KEY]: '2026-07-28',
+            [CLIENT_INFO_META_KEY]: { name: 'test', version: '1.0.0' },
+            [CLIENT_CAPABILITIES_META_KEY]: {},
+          },
+        },
+      }),
+    });
+    assert.property(await res.json(), 'error');
   });
 
   test('the settings page lists a connected agent and can disconnect it', async function () {

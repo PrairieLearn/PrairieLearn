@@ -60,6 +60,10 @@ function reportError(err: Error) {
 const mcpHandler = toNodeHandler(
   createMcpHandler((ctx) => buildMcpServer(mcpAuthFromAuthInfo(ctx.authInfo)), {
     onerror: reportError,
+    // A request to be told about changes stays open for as long as the agent runs, and
+    // PrairieLearn counts open requests as load. Nothing here changes between deploys, so the
+    // server does not offer change notifications and refuses a request for them.
+    maxSubscriptions: 0,
   }),
   { onerror: reportError },
 );

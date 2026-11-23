@@ -92,7 +92,12 @@ async function buildInstructions() {
 export async function buildMcpServer(auth: McpAuth) {
   const server = new McpServer(
     { name: 'prairielearn', title: 'PrairieLearn', version: '0.1.0' },
-    { instructions: await buildInstructions() },
+    {
+      instructions: await buildInstructions(),
+      // The tools and skills only change with a deploy. Saying so keeps agents from holding a
+      // request open to wait for changes.
+      capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
+    },
   );
 
   // Agents that support the skills extension find and load the skills themselves. get_skill
