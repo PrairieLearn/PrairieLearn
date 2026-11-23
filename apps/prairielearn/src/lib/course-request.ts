@@ -46,6 +46,7 @@ const CourseRequestRowSchema = z.object({
   user_institution_id: IdSchema,
   user_name: z.string().nullable(),
   user_uid: z.string(),
+  user_email: z.string().nullable(),
   work_email: z.string().nullable(),
   contact_email: z.string().nullable(),
 });

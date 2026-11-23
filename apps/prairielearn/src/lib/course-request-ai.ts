@@ -76,6 +76,7 @@ export async function checkInstructorLegitimacy({
   institution,
   userDisplayName,
   userUid,
+  userEmail,
 }: {
   instructorFirstName: string | null;
   instructorLastName: string | null;
@@ -83,6 +84,7 @@ export async function checkInstructorLegitimacy({
   institution: string | null;
   userDisplayName: string | null;
   userUid: string;
+  userEmail: string | null;
 }): Promise<LegitimacyResult> {
   const openai = createCourseRequestAiClient();
 
@@ -91,7 +93,10 @@ export async function checkInstructorLegitimacy({
     'Search the web to determine whether the person described by the user is a legitimate academic instructor or researcher at their stated institution.',
     'Use sources like faculty pages, staff directories, university websites, or professional profiles (e.g. LinkedIn, Google Scholar).',
     'Cite the web sources supporting your findings in the summary.',
-    'The user provides both the requester name and contact email and the name and UID on their PrairieLearn account. If these identities differ significantly, lower your confidence accordingly and treat it as a reason to doubt the request.',
+    'The request comes from a logged-in PrairieLearn user. You receive the requester name and contact email from the request, plus the name, UID, and stored email on that PrairieLearn account. The requester contact email may be self-reported; the stored account email is separate account information.',
+    'A PrairieLearn UID is a login identifier, not necessarily a routable email address. Institutional login identifiers often differ from institutional email addresses; for example, UBC uses CWL-based UIDs such as cwlusername@ubc.ca alongside faculty email addresses such as firstname.lastname@ubc.ca. Do not lower confidence solely because these values differ.',
+    'Compare the account name and stored email with authoritative sources for the instructor and institution. If the institutional account identity is consistent with those sources, a different UID does not require additional email confirmation. Being logged in establishes account control, but does not by itself establish an instructor role.',
+    'Flag substantive identity or affiliation conflicts, including a personal-email account whose connection to the claimed instructor is supported only by a separately supplied institutional contact address. A public faculty profile does not prove ownership of a personal account. A missing stored email is missing evidence, not proof of a mismatch.',
   ]);
   const input: ModelMessage[] = [
     {
@@ -101,7 +106,8 @@ export async function checkInstructorLegitimacy({
         `Requester / contact email: ${instructorEmail ?? 'Unknown'}`,
         `Institution (from form): ${institution ?? 'Unknown'}`,
         `PrairieLearn account name: ${userDisplayName ?? 'Unknown'}`,
-        `PrairieLearn account (UID): ${userUid}`,
+        `PrairieLearn account UID: ${userUid}`,
+        `PrairieLearn account email: ${userEmail || 'Not available'}`,
       ]),
     },
   ];

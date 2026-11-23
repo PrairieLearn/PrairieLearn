@@ -79,7 +79,7 @@ export function CourseRequestsTable({
               <th>Short Name / Title</th>
               <th>Institution</th>
               <th>Requester / contact email</th>
-              <th>PrairieLearn account (UID)</th>
+              <th>PrairieLearn UID / email</th>
               <th>GitHub Username</th>
               <th>Referral Source</th>
               <th>Status</th>
@@ -145,7 +145,15 @@ function AccountIdentity({ request }: { request: CourseRequestRow }) {
   return (
     <>
       {request.user_name && request.user_name !== requesterName && <div>{request.user_name}</div>}
-      <span>{request.user_uid}</span>
+      <div>UID: {request.user_uid}</div>
+      <div>
+        Email:{' '}
+        {request.user_email ? (
+          <span>{request.user_email}</span>
+        ) : (
+          <span className="text-muted fst-italic">Not available</span>
+        )}
+      </div>
     </>
   );
 }
@@ -493,7 +501,7 @@ function CourseRequestApproveModalContent({
                   <strong>Requester / contact email:</strong> <RequesterContact request={request} />
                 </div>
                 <div className="col-12">
-                  <strong>PrairieLearn account (UID):</strong> <AccountIdentity request={request} />
+                  <strong>PrairieLearn UID / email:</strong> <AccountIdentity request={request} />
                 </div>
                 <div className="col-12">
                   <strong>Institution:</strong>{' '}
