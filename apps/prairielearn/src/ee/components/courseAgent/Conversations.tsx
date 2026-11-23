@@ -385,12 +385,15 @@ function ActivityStatus({
   startingSandbox,
   message,
   hidden,
+  fadeIn,
 }: {
   conversationId: string;
   startingSandbox: boolean;
   message: UIMessage | undefined;
   /** Hides the line but keeps counting, for when the agent works again after it. */
   hidden: boolean;
+  /** False when the line takes over from the one shown while the conversation was created. */
+  fadeIn: boolean;
 }) {
   const call = latestCall(message);
   const storageKey = `course-agent-working-since:${conversationId}`;
@@ -410,7 +413,7 @@ function ActivityStatus({
   }, [storageKey, startedAt]);
   if (hidden) return null;
   return (
-    <div className="course-agent-fade small text-body-secondary" role="status">
+    <div className={clsx('small text-body-secondary', fadeIn && 'course-agent-fade')} role="status">
       {/* The label changes with every step and the time every second, too often to announce. */}
       <span className="visually-hidden">
         {startingSandbox ? 'Getting ready…' : 'The course agent is working…'}
@@ -580,6 +583,8 @@ function Chat({
   const readyToSend = !pendingReview && agentIdle;
   const [draft, setDraft] = useState('');
   const lastUserIndex = messages.map((message) => message.role).lastIndexOf('user');
+  // A new conversation's first status line replaces the one shown while it was created.
+  const [continuesPending] = useState(initialMessage !== undefined);
   // A new conversation's first attachments start in the composer, where their uploads show progress.
   const drafts = useDraftAttachments(initialMessage?.attachments);
   const [sending, setSending] = useState(false);
@@ -808,6 +813,7 @@ function Chat({
               startingSandbox={startingSandbox}
               message={messages.at(-1)}
               hidden={!startingSandbox && replying(messages.at(-1))}
+              fadeIn={!continuesPending || lastUserIndex > 0}
             />
           )}
           {lifecycle?.status === 'blocked' && (
