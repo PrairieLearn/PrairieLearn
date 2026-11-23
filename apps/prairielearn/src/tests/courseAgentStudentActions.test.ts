@@ -15,6 +15,7 @@ import {
   type User,
 } from '../lib/db-types.js';
 import {
+  deleteCourseInstancePermissions,
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
@@ -94,50 +95,104 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
   });
   afterAll(() => Object.assign(config, originalConfig));
 
-  async function request(action: string, input: Record<string, unknown>) {
+  /** Who makes the requests and decisions; the owner with student data access unless a test says otherwise. */
+  interface Actor {
+    user: User;
+    conversation: CourseAgentConversation;
+  }
+
+  const client = ({ user }: Actor) =>
+    createCourseTrpcClient({
+      courseId: '1',
+      urlBase: siteUrl,
+      csrfToken: generatePrefixCsrfToken(
+        { url: '/pl/course/1/trpc', authn_user_id: user.id },
+        config.secretKey,
+      ),
+    });
+
+  async function request(
+    action: string,
+    input: Record<string, unknown>,
+    actor: Actor = { user: owner, conversation },
+  ) {
     const id = crypto.randomUUID();
     const response = await fetch(`${siteUrl}/pl/course/1/course_agent/actions/${action}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${SERVICE_TOKEN}`,
-        'X-Course-Agent-Conversation': conversation.agent_conversation_id,
+        'X-Course-Agent-Conversation': actor.conversation.agent_conversation_id,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        id,
-        input: { ...WHERE, ...input },
-      }),
+      body: JSON.stringify({ id, input: { ...WHERE, ...input } }),
     });
     return { id, status: response.status, body: (await response.json()) as Record<string, any> };
   }
 
-  async function approve(action: string, input: Record<string, unknown>) {
-    const requested = await request(action, input);
+  /** Requests an action, approves it as the instructor, and returns their card and the agent's result. */
+  async function approve(
+    action: string,
+    input: Record<string, unknown>,
+    actor: Actor = { user: owner, conversation },
+    beforeDeciding: () => Promise<void> = async () => {},
+  ) {
+    const requested = await request(action, input, actor);
     assert.equal(requested.status, 200, JSON.stringify(requested.body));
-    await withUser(owner, async () => {
-      await createCourseTrpcClient({
-        courseId: '1',
-        urlBase: siteUrl,
-        csrfToken: generatePrefixCsrfToken(
-          { url: '/pl/course/1/trpc', authn_user_id: owner.id },
-          config.secretKey,
-        ),
-      }).courseAgent.postReviewDecision.mutate({
-        conversationId: conversation.id,
+    await beforeDeciding();
+    const card = await withUser(actor.user, async () => {
+      const ids = { conversationId: actor.conversation.id, actionId: requested.id };
+      const shown = await client(actor).courseAgent.getAction.query(ids);
+      await client(actor).courseAgent.postReviewDecision.mutate({
+        conversationId: actor.conversation.id,
         reviewId: requested.id,
         decision: 'approved',
       });
+      return shown.card;
     });
     // The result is sent to the service after the approval request answers.
     await vi.waitFor(() => expect(delivered.has(requested.id)).toBe(true));
-    return { card: requested.body.card, result: delivered.get(requested.id)! };
+    return { card, result: delivered.get(requested.id)! };
   }
 
-  async function refusal(action: string, input: Record<string, unknown>) {
-    const refused = await request(action, input);
+  async function refusal(action: string, input: Record<string, unknown>, actor?: Actor) {
+    const refused = await request(action, input, actor);
     assert.equal(refused.status, 400, JSON.stringify(refused.body));
     return z.string().parse(refused.body.message);
   }
+
+  test('needs student data access in the course instance, which being an owner does not give', async () => {
+    const user = await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: 'other-owner@example.com',
+      course_role: 'Owner',
+      authn_user_id: '1',
+    });
+    const actor = {
+      user,
+      conversation: await insertCourseAgentConversation({
+        course_id: '1',
+        user_id: user.id,
+        agent_conversation_id: crypto.randomUUID(),
+        title: 'Test conversation',
+      }),
+    };
+    const input = { uids: [students[2].uid] };
+    expect(await refusal('students_block', input, actor)).toContain(
+      'Student Data Editor access to the course instance',
+    );
+
+    // Access is checked again at approval, so losing it after the request stops the action.
+    const role = { course_id: '1', course_instance_id: '1', user_id: user.id, authn_user_id: '1' };
+    await insertCourseInstancePermissions({ ...role, course_instance_role: 'Student Data Editor' });
+    const { result } = await approve('students_block', input, actor, () =>
+      deleteCourseInstancePermissions(role),
+    );
+    expect(result.outcome).toMatchObject({
+      status: 'failed',
+      error: expect.stringContaining('Student Data Editor access to the course instance'),
+    });
+    expect(await status(students[2].uid)).toBe('joined');
+  });
 
   test('invites only people who can be invited, and cancels an invitation', async () => {
     const newcomer = 'newcomer@example.com';
@@ -151,7 +206,10 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
     });
     expect(invited.result.outcome).toEqual({ status: 'succeeded', summary: 'Invited 1 student.' });
     expect(await status(newcomer)).toBe('invited');
-    expect(await refusal('students_invite', { uids: [newcomer] })).toContain('already invited');
+    // A refusal says what was wrong with the request, not what state each person is in.
+    const refused = await refusal('students_invite', { uids: [newcomer] });
+    expect(refused).toContain('None of these can be invited');
+    expect(refused).not.toContain(newcomer);
 
     const cancelled = await approve('students_cancel_invitation', { uids: [newcomer] });
     expect(cancelled.card.rows).toEqual([{ label: newcomer, detail: 'Now: invited' }]);
@@ -161,9 +219,11 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
 
   test('blocks, removes, and re-enrolls students, refusing changes that do not apply', async () => {
     const [a, b] = students;
-    expect(await refusal('students_reenroll', { uids: [a.uid] })).toContain(`${a.uid} is joined`);
-    expect(await refusal('students_block', { uids: ['nobody@example.com'] })).toContain(
-      'no student with UID nobody@example.com',
+    expect(await refusal('students_reenroll', { uids: [a.uid] })).toContain(
+      'none of these students has it',
+    );
+    expect(await refusal('students_block', { uids: [a.uid, 'nobody@example.com'] })).toContain(
+      '1 of these 2 UIDs is not in the course instance "Sp15"',
     );
 
     const blocked = await approve('students_block', { uids: [a.uid] });
@@ -175,7 +235,7 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
     await approve('students_remove', { uids: [b.uid] });
     expect(await status(b.uid)).toBe('removed');
 
-    // A student already in the requested state is left as is and named in the card.
+    // A student already in the requested state is left as is, and the card counts them.
     const reenrolled = await approve('students_reenroll', {
       uids: [a.uid, b.uid, students[2].uid],
     });

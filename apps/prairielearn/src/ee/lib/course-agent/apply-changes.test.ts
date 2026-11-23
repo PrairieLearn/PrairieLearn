@@ -16,6 +16,7 @@ import * as helperCourse from '../../../tests/helperCourse.js';
 import * as helperDb from '../../../tests/helperDb.js';
 import { getOrCreateUser } from '../../../tests/utils/auth.js';
 import { withConfig } from '../../../tests/utils/config.js';
+import { insertCourseAgentAction } from '../../models/course-agent-action.js';
 import { insertCourseAgentConversation } from '../../models/course-agent-conversation.js';
 import {
   insertCourseAgentReview,
@@ -435,6 +436,41 @@ it('rebuilds a result from a finished job when the saving process stopped', asyn
     PUBLISHED,
   );
   expect(await storedReview()).toMatchObject({ result: PUBLISHED });
+});
+
+it('leaves an approved action alone while it may still be running, then reports it lost', async () => {
+  await insertCourseAgentAction({
+    course_agent_conversation_id: conversation.id,
+    agent_action_id: review.id,
+    action: 'issues_close',
+    input: { issue_ids: ['1'] },
+    card: { title: 'Close 1 issue', context: null, rows: [], undo: 'Reopen the same issues.' },
+  });
+  // An approval claims its row before the action runs, so the row has no result meanwhile.
+  await insertCourseAgentReview({
+    course_agent_conversation_id: conversation.id,
+    agent_review_id: review.id,
+    decision: 'approved',
+    job_sequence_id: null,
+    result: null,
+  });
+  await withService(deliverUndeliveredReviewResults);
+  expect(deliverCourseAgentReviewResult).not.toHaveBeenCalled();
+
+  await execute(
+    "UPDATE course_agent_reviews SET created_at = now() - interval '1 hour' WHERE agent_review_id = $agent_review_id",
+    { agent_review_id: review.id },
+  );
+  await withService(deliverUndeliveredReviewResults);
+  expect(deliverCourseAgentReviewResult).toHaveBeenCalledExactlyOnceWith(
+    conversation.agent_conversation_id,
+    review.id,
+    {
+      decision: 'approved',
+      action: { name: 'issues_close', title: 'Close 1 issue' },
+      outcome: { status: 'unknown' },
+    },
+  );
 });
 
 it('sends unacknowledged results before resuming the agent', async () => {

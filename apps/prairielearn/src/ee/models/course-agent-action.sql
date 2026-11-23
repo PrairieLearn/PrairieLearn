@@ -14,10 +14,7 @@ VALUES
     $action,
     $input,
     $card
-  )
-ON CONFLICT (course_agent_conversation_id, agent_action_id) DO NOTHING
-RETURNING
-  *;
+  );
 
 -- BLOCK select_course_agent_action
 SELECT

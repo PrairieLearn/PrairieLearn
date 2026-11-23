@@ -1,11 +1,11 @@
 import type { CourseActionCard } from '@prairielearn/course-agent-types';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { CourseAgentActionSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/** Returns null if the conversation already has a request with this ID. */
+/** A request ID is used once in a conversation; the table's unique constraint rejects a repeat. */
 export async function insertCourseAgentAction({
   course_agent_conversation_id,
   agent_action_id,
@@ -19,17 +19,13 @@ export async function insertCourseAgentAction({
   input: unknown;
   card: CourseActionCard;
 }) {
-  return await queryOptionalRow(
-    sql.insert_course_agent_action,
-    {
-      course_agent_conversation_id,
-      agent_action_id,
-      action,
-      input: JSON.stringify(input),
-      card: JSON.stringify(card),
-    },
-    CourseAgentActionSchema,
-  );
+  await execute(sql.insert_course_agent_action, {
+    course_agent_conversation_id,
+    agent_action_id,
+    action,
+    input: JSON.stringify(input),
+    card: JSON.stringify(card),
+  });
 }
 
 export async function selectOptionalCourseAgentAction({

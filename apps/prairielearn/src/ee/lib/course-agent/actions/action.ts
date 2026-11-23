@@ -34,6 +34,8 @@ const PERMISSIONS = {
 };
 
 type CourseActionPermission = keyof typeof PERMISSIONS;
+/** Permissions an action on the course itself can require; the rest need a course instance. */
+type CoursePermission = Exclude<CourseActionPermission, `student_data_${string}`>;
 
 /** Whom an action runs for, and where. */
 export interface CourseActionContext {
@@ -63,7 +65,11 @@ interface CourseActionOutcome {
   summary: string;
 }
 
-interface CourseActionDefinition<Schema extends z.ZodObject, Context extends CourseActionContext> {
+interface CourseActionDefinition<
+  Schema extends z.ZodObject,
+  Context extends CourseActionContext,
+  Permission extends CourseActionPermission = CourseActionPermission,
+> {
   /** The course data dataset whose rows the action changes. */
   group: string;
   /** What the action does and when to use it instead of the nearest alternative. */
@@ -76,11 +82,13 @@ interface CourseActionDefinition<Schema extends z.ZodObject, Context extends Cou
    */
   undo: string | null;
   /** Every permission listed is required. */
-  permission: CourseActionPermission | CourseActionPermission[];
+  permission: Permission | Permission[];
   input: Schema;
   /**
    * Checks the request against the database and says what approving it will do. The instructor
-   * decides on this, never on the agent's own description.
+   * decides on this, never on the agent's own description. It is computed again at approval, and
+   * the action runs only if it still says the same, so name every row the action will change and
+   * leave out anything that changes on its own, such as time remaining.
    */
   describe: (args: { ctx: Context; input: z.infer<Schema> }) => Promise<CourseActionDescription>;
   /** Carries the action out and says, in one sentence, what happened. */
@@ -96,8 +104,6 @@ export interface CourseAction {
   describe: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionCard>;
   run: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionOutcome>;
 }
-
-const MAX_CARD_ROWS = 20;
 
 const clip = (text: string, max: number) =>
   text.length > max ? `${text.slice(0, max - 1)}…` : text;
@@ -139,11 +145,10 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
       return CourseActionCardSchema.parse({
         title: clip(description.title, 200),
         context: description.context ? clip(description.context, 300) : null,
-        rows: rows.slice(0, MAX_CARD_ROWS).map((row) => ({
+        rows: rows.map((row) => ({
           label: clip(row.label, 300),
           detail: row.detail ? clip(row.detail, 300) : null,
         })),
-        moreRows: Math.max(0, rows.length - MAX_CARD_ROWS),
         undo: definition.undo,
       });
     },
@@ -153,7 +158,7 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
 
 /** An action on the course itself. */
 export function action<Schema extends z.ZodObject>(
-  definition: CourseActionDefinition<Schema, CourseActionContext>,
+  definition: CourseActionDefinition<Schema, CourseActionContext, CoursePermission>,
 ): CourseAction {
   return build(definition, async (ctx) => ctx);
 }

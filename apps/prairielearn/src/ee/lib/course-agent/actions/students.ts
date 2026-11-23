@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { callScalar } from '@prairielearn/postgres';
+import { callScalar, runInTransactionAsync } from '@prairielearn/postgres';
 
 import type { Enrollment, EnumEnrollmentStatus } from '../../../../lib/db-types.js';
 import {
@@ -29,8 +29,6 @@ const UidsSchema = z
 
 const StudentsInputSchema = z.strictObject({ ...COURSE_INSTANCE_INPUT, uids: UidsSchema });
 
-const some = (uids: string[]) => `${uids.slice(0, 20).join(', ')}${uids.length > 20 ? ', …' : ''}`;
-
 /** Each UID with its enrollment in the course instance, or null when it has none. */
 async function selectEnrollments(ctx: CourseInstanceActionContext, uids: string[]) {
   const unique = [...new Set(uids)];
@@ -44,13 +42,17 @@ async function selectEnrollments(ctx: CourseInstanceActionContext, uids: string[
   return unique.map((uid) => ({ uid, enrollment: byUid.get(uid) ?? null }));
 }
 
-/** The students' enrollments, or an error naming the UIDs that have none. */
+/**
+ * The students' enrollments, or an error when some have none. Errors go to the agent, which reads
+ * who is enrolled only with the instructor's approval, so they say how many inputs were wrong and
+ * not which students are in what state.
+ */
 async function selectEnrolled(ctx: CourseInstanceActionContext, uids: string[]) {
   const found = await selectEnrollments(ctx, uids);
-  const missing = found.filter(({ enrollment }) => enrollment === null).map(({ uid }) => uid);
-  if (missing.length > 0) {
+  const missing = found.filter(({ enrollment }) => enrollment === null).length;
+  if (missing > 0) {
     throw new CourseActionError(
-      `The course instance "${ctx.course_instance.short_name}" has no student with UID ${some(missing)}. Find students in the students dataset.`,
+      `${missing} of these ${count(found.length, 'UID')} ${missing === 1 ? 'is' : 'are'} not in the course instance "${ctx.course_instance.short_name}". Find its students in the students dataset.`,
     );
   }
   return found.map(({ uid, enrollment }) => ({ uid, enrollment: enrollment! }));
@@ -66,9 +68,7 @@ async function selectWithStatus(
   const changing = students.filter(({ enrollment }) => from.includes(enrollment.status));
   if (changing.length === 0) {
     throw new CourseActionError(
-      `This applies to students who are ${from.join(' or ')}, and none of these is: ${some(
-        students.map(({ uid, enrollment }) => `${uid} is ${enrollment.status}`),
-      )}.`,
+      `This applies to students whose status is ${from.join(' or ')}, and none of these students has it. Check the status column of the students dataset.`,
     );
   }
   return { students, changing };
@@ -117,7 +117,10 @@ function statusAction({
     },
     run: async ({ ctx, input }) => {
       const { changing } = await selectWithStatus(ctx, input.uids, from);
-      for (const { enrollment } of changing) await apply(ctx, enrollment);
+      // All or nothing, so a failure partway never leaves some students changed.
+      await runInTransactionAsync(async () => {
+        for (const { enrollment } of changing) await apply(ctx, enrollment);
+      });
       return { summary: done(count(changing.length, 'student')) };
     },
   });
@@ -154,7 +157,7 @@ async function planInvitations(ctx: CourseInstanceActionContext, uids: string[])
   const inviting = plan.filter(({ invite }) => invite);
   if (inviting.length === 0) {
     throw new CourseActionError(
-      `None of these can be invited: ${some(plan.map(({ uid, detail }) => `${uid} is ${detail}`))}. Re-enroll blocked or removed students with students_reenroll.`,
+      'None of these can be invited: each is already enrolled or invited, or is course staff. Check the students and staff datasets. Blocked or removed students are brought back with students_reenroll.',
     );
   }
   return { plan, inviting };
@@ -186,14 +189,17 @@ export const studentActions = {
     },
     run: async ({ ctx, input }) => {
       const { inviting } = await planInvitations(ctx, input.uids);
-      for (const { uid } of inviting) {
-        await inviteStudentByUid({
-          uid,
-          requiredRole: ['Student Data Editor'],
-          authzData: ctx.authz_data,
-          courseInstance: ctx.course_instance,
-        });
-      }
+      // All or nothing, so a failure partway never leaves some people invited.
+      await runInTransactionAsync(async () => {
+        for (const { uid } of inviting) {
+          await inviteStudentByUid({
+            uid,
+            requiredRole: ['Student Data Editor'],
+            authzData: ctx.authz_data,
+            courseInstance: ctx.course_instance,
+          });
+        }
+      });
       return { summary: `Invited ${count(inviting.length, 'student')}.` };
     },
   }),

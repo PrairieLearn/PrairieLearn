@@ -80,6 +80,8 @@ const UNKNOWN: RequestChangesResult = {
 const STUCK_DELIVERY_MS = 60 * 60 * 1000;
 // A result still undelivered after this long will not succeed by retrying; Resume can still send it.
 const DELIVERY_CUTOFF = '7 days';
+// Far longer than an action runs within its request.
+const ACTION_RESULT_LOST_MS = 10 * 60 * 1000;
 
 function verifyReviewBinding(
   course: Pick<Course, 'repository' | 'branch'>,
@@ -173,8 +175,8 @@ export function matchDecision(
     throw new HttpStatusError(
       409,
       review.decision === 'approved'
-        ? 'These changes were already approved, so your message was not sent. Send it again once the course agent continues.'
-        : 'These changes were already denied, so your message was not sent. Send it again once the course agent continues.',
+        ? 'This was already approved, so your message was not sent. Send it again once the course agent continues.'
+        : 'This was already denied, so your message was not sent. Send it again once the course agent continues.',
     );
   }
   if (review.decision !== decision) {
@@ -350,7 +352,7 @@ async function reportStuckDelivery(row: CourseAgentReview, error: unknown) {
 }
 
 /** Record a result once; whichever caller records it first decides what the agent receives. */
-export async function recordAndDeliverResult(
+async function recordAndDeliverResult(
   conversation: CourseAgentConversation,
   row: CourseAgentReview,
   result: ReviewResult,
@@ -466,6 +468,9 @@ async function deliverUndeliveredReviewResult(
         course_agent_conversation_id: row.course_agent_conversation_id,
         agent_action_id: row.agent_review_id,
       });
+      // An approved action's row has no result while the action runs, so only an old one was
+      // lost, by PrairieLearn stopping before it recorded how the action ended.
+      if (action && Date.now() - row.created_at.getTime() < ACTION_RESULT_LOST_MS) return true;
       return await recordAndDeliverResult(
         conversation,
         row,

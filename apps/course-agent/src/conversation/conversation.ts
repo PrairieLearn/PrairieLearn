@@ -1485,7 +1485,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       id,
       data: { actionId: id, ...(autoApprove ? { autoApprove } : {}) } satisfies ActionPart,
     });
-    return { success: true, text: describeRequestedAction(reply.card, autoApprove) };
+    return { success: true, text: describeRequestedAction(reply.title, autoApprove) };
   }
 
   /**
