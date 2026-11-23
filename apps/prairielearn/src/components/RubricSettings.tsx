@@ -178,6 +178,7 @@ export function RubricSettings({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState<boolean>(false);
+  const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFileRef = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
@@ -253,6 +254,16 @@ export function RubricSettings({
 
   const deleteRow = (idx: number) => {
     setRubricItems((prev) => removeSubtree(prev, idx));
+  };
+
+  // Deleting a group also deletes everything inside it, so confirm first
+  // unless the group is empty.
+  const requestDeleteRow = (idx: number) => {
+    if (rubricItems[idx].rubric_item.is_group && subtreeEnd(rubricItems, idx) > idx + 1) {
+      setGroupToDelete(idx);
+    } else {
+      deleteRow(idx);
+    }
   };
 
   /**
@@ -816,7 +827,7 @@ export function RubricSettings({
                       canIndent={canIndent(rubricItems, idx)}
                       canOutdent={parentIndex(rubricItems, idx) != null}
                       ruleDisabled={it.rubric_item.is_group && hasSubgroup(rubricItems, idx)}
-                      deleteRow={() => deleteRow(idx)}
+                      deleteRow={() => requestDeleteRow(idx)}
                       moveUp={() => moveUp(idx)}
                       moveDown={() => moveDown(idx)}
                       indentRow={() => indentRow(idx)}
@@ -890,6 +901,16 @@ export function RubricSettings({
               </tfoot>
             </table>
           </div>
+
+          <DeleteGroupModal
+            rows={rubricItems}
+            groupIndex={groupToDelete}
+            onCancel={() => setGroupToDelete(null)}
+            onConfirm={() => {
+              if (groupToDelete != null) deleteRow(groupToDelete);
+              setGroupToDelete(null);
+            }}
+          />
 
           <Alert
             show={showSavedNotification}
@@ -1414,6 +1435,58 @@ function RubricRow({
         </td>
       )}
     </tr>
+  );
+}
+
+function DeleteGroupModal({
+  rows,
+  groupIndex,
+  onCancel,
+  onConfirm,
+}: {
+  rows: RubricItemData[];
+  groupIndex: number | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const group = groupIndex == null ? null : rows[groupIndex];
+  const contents =
+    groupIndex == null ? [] : rows.slice(groupIndex + 1, subtreeEnd(rows, groupIndex));
+  const itemCount = contents.filter((row) => !row.rubric_item.is_group).length;
+  const groupCount = contents.length - itemCount;
+  const describeCount = (count: number, noun: string) =>
+    `${count} ${noun}${count === 1 ? '' : 's'}`;
+  const contentsText = [
+    itemCount > 0 && describeCount(itemCount, 'item'),
+    groupCount > 0 && describeCount(groupCount, 'group'),
+  ]
+    .filter(Boolean)
+    .join(' and ');
+
+  return (
+    <Modal show={group != null} onHide={onCancel}>
+      <Modal.Header closeButton>
+        <Modal.Title>Delete group?</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        Deleting{' '}
+        {group?.rubric_item.description ? (
+          <strong>{group.rubric_item.description}</strong>
+        ) : (
+          'this group'
+        )}{' '}
+        will also delete the {contentsText} inside it. To keep them, move them out of the group
+        first. You can undo this with "Discard changes" until you save.
+      </Modal.Body>
+      <Modal.Footer>
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+        <button type="button" className="btn btn-danger" onClick={onConfirm}>
+          Delete group
+        </button>
+      </Modal.Footer>
+    </Modal>
   );
 }
 
