@@ -7,6 +7,7 @@ import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as PrairieMQ from '@prairielearn/prairiemq';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
@@ -1326,6 +1327,22 @@ describe('print preparation', { timeout: 60_000 }, () => {
       ).toMatchObject({ status: 'pending' });
 
       startPrintExportWorker();
+      await completePrintExport(assessment.id, printExportId);
+      expect(render).toHaveBeenCalledTimes(2);
+    } finally {
+      render.mockRestore();
+    }
+  });
+
+  test('retries an export when the renderer is busy', async () => {
+    const render = vi
+      .spyOn(printExportRender, 'renderPrintExport')
+      .mockRejectedValueOnce(
+        new HttpStatusError(503, 'Print rendering is busy. Try again shortly.'),
+      )
+      .mockResolvedValue(Buffer.from('%PDF-1.4 retried export'));
+    try {
+      const { assessment, printExportId } = await queueTestPdf('retried-export.pdf');
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledTimes(2);
     } finally {

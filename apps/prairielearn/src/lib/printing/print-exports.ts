@@ -44,8 +44,8 @@ const QUEUE_NAME = 'print-exports';
 // throughput scales with the number of workers. PrairieMQ persists this value in Redis
 // and stops workers that disagree, so changing it also requires a new queue prefix.
 const COURSE_CONCURRENCY = 2;
-// A run interrupted by a graceful shutdown counts as an attempt, so allow for a rolling
-// deploy interrupting it more than once. Crashed runs are recovered separately as stalls.
+// Runs interrupted by a graceful shutdown or refused by a busy renderer count as attempts,
+// so allow for more than one. Crashed runs are recovered separately as stalls.
 const MAX_ATTEMPTS = 3;
 // Spreads retries over a few seconds so a brief database or S3 outage doesn't use them all.
 const RETRY_BACKOFF = { type: 'exponential', delay: 2_000, jitter: 0.2 } as const;
@@ -57,6 +57,10 @@ const UNAVAILABLE_MESSAGE =
   'Downloads are unavailable right now. Try again later or contact support.';
 const EXHAUSTED_MESSAGE =
   'The file could not be prepared after repeated attempts. Try again or contact support.';
+// While Redis is unreachable, PrairieMQ repeats the same error every second or so, and
+// Sentry's deduplication misses repeats once other events come in between.
+const REPEATED_ERROR_REPORT_INTERVAL_MS = 60_000;
+let lastReportedError: { message: string; reportedAt: number } | null = null;
 let queue: Queue<{ printExportId: string }, void> | null = null;
 let worker: Worker<{ printExportId: string }, void> | null = null;
 let workerClosing: Promise<void> | null = null;
@@ -65,6 +69,18 @@ let shutdownController = new AbortController();
 function reportQueueError(error: unknown) {
   logger.error('Print export queue error', error);
   Sentry.captureException(error);
+}
+
+function reportRepeatableQueueError(error: Error) {
+  if (
+    lastReportedError?.message === error.message &&
+    Date.now() - lastReportedError.reportedAt < REPEATED_ERROR_REPORT_INTERVAL_MS
+  ) {
+    logger.error('Print export queue error', error);
+    return;
+  }
+  lastReportedError = { message: error.message, reportedAt: Date.now() };
+  reportQueueError(error);
 }
 
 function queueConnection(redisUrl: string) {
@@ -90,7 +106,7 @@ function getQueue() {
         removeOnFail: true,
       },
     });
-    queue.on('error', reportQueueError);
+    queue.on('error', reportRepeatableQueueError);
   }
   return queue;
 }
@@ -107,7 +123,10 @@ export function initPrintExportWorker() {
   }
   worker = new Worker<{ printExportId: string }, void>(
     QUEUE_NAME,
-    async (job) => await processPrintExport(IdSchema.parse(job.data.printExportId)),
+    async (job) =>
+      await processPrintExport(IdSchema.parse(job.data.printExportId), {
+        finalAttempt: job.failedAttempts + 1 >= job.attempts,
+      }),
     {
       ...queueConnection(config.nonVolatileRedisUrl),
       concurrency: 2,
@@ -116,7 +135,7 @@ export function initPrintExportWorker() {
       lockDuration: 300_000,
     },
   );
-  worker.on('error', reportQueueError);
+  worker.on('error', reportRepeatableQueueError);
   // Runs that finish normally record their own result, so these only see exports that
   // ran out of attempts or stalled too often.
   worker.on('failed', (job, error) => {
@@ -283,7 +302,10 @@ export async function queuePrintExport({
   return printExportId;
 }
 
-async function processPrintExport(printExportId: string) {
+async function processPrintExport(
+  printExportId: string,
+  { finalAttempt }: { finalAttempt: boolean },
+) {
   const signal = shutdownController.signal;
   signal.throwIfAborted();
   const printExport = await selectOptionalPendingPrintExport(printExportId);
@@ -314,6 +336,10 @@ async function processPrintExport(printExportId: string) {
   } catch (error) {
     // PrairieMQ retries a run interrupted by shutdown on another worker.
     if (signal.aborted) throw error;
+    // A busy renderer refuses work before starting it, so let PrairieMQ retry after a backoff.
+    if (!finalAttempt && error instanceof HttpStatusError && error.status === 503) {
+      throw error;
+    }
     getCounter(meter, 'print.export.failures', { valueType: ValueType.INT }).add(1, attributes);
     const failureMessage = printableFailureMessage(error, format);
     if (failureMessage === null) {
