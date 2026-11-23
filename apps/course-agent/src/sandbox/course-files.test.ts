@@ -32,16 +32,17 @@ function createBucket() {
   return {
     get: async (key: string) => {
       const value = objects.get(key);
-      return value === undefined ? null : { json: async () => JSON.parse(value) };
+      return value === undefined ? null : { etag: 'etag', json: async () => JSON.parse(value) };
     },
     put: async (key: string, value: string) => {
       objects.set(key, value);
+      return {};
     },
   };
 }
 
 /** Start a conversation's sandbox and report which commands it ran to get the course files. */
-async function startConversation(bucket: ReturnType<typeof createBucket>) {
+async function startConversation(bucket: ReturnType<typeof createBucket>, courseId = '1') {
   const commands: string[] = [];
   const container = {
     exec: async (args: string[]) => {
@@ -57,7 +58,7 @@ async function startConversation(bucket: ReturnType<typeof createBucket>) {
     } as unknown as DurableObjectState,
     { CHECKPOINTS: bucket } as unknown as Env,
   );
-  await sandbox.addCourseFiles(course);
+  await sandbox.addCourseFiles(course, courseId);
   return commands;
 }
 
@@ -88,5 +89,13 @@ describe('a new conversation on a GitHub course', () => {
 
     await startConversation(bucket);
     expect(archives.restore).toHaveBeenLastCalledWith({ id: 'new copy' }, expect.anything());
+  });
+
+  it('does not share a copy with another course that uses the same repository', async () => {
+    const bucket = createBucket();
+    archives.backup.mockResolvedValue({ id: 'saved copy' });
+    await startConversation(bucket, '1');
+
+    expect(await startConversation(bucket, '2')).toContain(clone);
   });
 });

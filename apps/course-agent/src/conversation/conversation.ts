@@ -1039,7 +1039,13 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         startup && !this.record.checkpoint
           ? async () => {
               log('turn_course_files_started');
-              log('turn_course_files_ready', await this.sandbox.addCourseFiles(this.record.config));
+              log(
+                'turn_course_files_ready',
+                await this.sandbox.addCourseFiles(
+                  this.record.config,
+                  this.record.courseContext?.courseId,
+                ),
+              );
             }
           : undefined,
       thread: {
