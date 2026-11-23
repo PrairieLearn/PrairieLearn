@@ -102,6 +102,8 @@ async function storeTestSnapshot({
   await storePrintSnapshot(
     {
       printForm: printForm!,
+      courseCommitHash: (await selectCourseById((await selectCourseInstanceById('1')).course_id))
+        .commit_hash,
       document,
       authnUserId,
       userId: authnUserId,
@@ -1134,7 +1136,11 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const queueDocx = () =>
       api.printExports.docx.mutate({ printFormId: form.printFormId, document: 'assessment' });
     // A preview of settings that weren't saved doesn't match the form.
-    await storeTestSnapshot({ assessmentId: assessment.id, printFormId: form.printFormId, settings });
+    await storeTestSnapshot({
+      assessmentId: assessment.id,
+      printFormId: form.printFormId,
+      settings,
+    });
     await expect(queueDocx()).rejects.toThrow('This print preview has expired or changed.');
     await api.printForms.updateSettings.mutate({
       printFormId: form.printFormId,

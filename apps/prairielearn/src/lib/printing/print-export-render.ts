@@ -14,7 +14,6 @@ const PrintExportSnapshotSchema = z.object({
   formLabel: z.string(),
   printDocument: z.enum(['assessment', 'answer_key']),
   localPreviewUrl: z.url(),
-  /** The stored preview, from `print-snapshots.ts`. */
   key: z.string(),
   assetScope: PrintAssetScopeDataSchema,
 });

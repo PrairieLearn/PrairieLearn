@@ -113,6 +113,7 @@ async function findFormSnapshot(ctx: TRPCContext, form: PrintForm, document: Pri
   const search = new URLSearchParams(printLayoutSearch(form.settings));
   const stored = await selectOptionalPrintSnapshotSummary({
     printForm: form,
+    courseCommitHash: ctx.course.commit_hash,
     document,
     authnUserId: ctx.authn_user.id,
     userId: ctx.locals.user.id,

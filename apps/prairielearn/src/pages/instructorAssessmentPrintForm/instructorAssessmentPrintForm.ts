@@ -256,6 +256,7 @@ router.get(
       await storePrintSnapshot(
         {
           printForm: res.locals.print_form,
+          courseCommitHash: res.locals.course.commit_hash,
           document,
           authnUserId: res.locals.authn_user.id,
           userId: res.locals.user.id,

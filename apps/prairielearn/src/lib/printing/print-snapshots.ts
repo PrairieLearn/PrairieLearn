@@ -44,6 +44,8 @@ export type PrintSnapshotSummary = z.infer<typeof PrintSnapshotSummarySchema>;
 export interface PrintSnapshotIdentity {
   /** The creation time keeps keys unique if form IDs repeat, e.g. after a database reset. */
   printForm: Pick<PrintForm, 'id' | 'created_at'>;
+  /** Course changes since the preview, e.g. a fixed question, make it stale. */
+  courseCommitHash: string | null;
   document: PrintDocument;
   authnUserId: string;
   userId: string;
@@ -65,6 +67,7 @@ export function printSnapshotKey(identity: PrintSnapshotIdentity): string {
       JSON.stringify([
         identity.printForm.id,
         identity.printForm.created_at.toISOString(),
+        identity.courseCommitHash,
         identity.document,
         identity.authnUserId,
         identity.userId,
