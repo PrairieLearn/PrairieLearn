@@ -273,7 +273,7 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     expect((await attempt()).points).toBe(7);
   });
 
-  test('sets the score on one question, and sends questions to a grader', async () => {
+  test('sets the score on one question', async () => {
     const questions = () =>
       queryRows(
         sql.select_instance_questions,
@@ -287,7 +287,7 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
           assigned_grader_uid: z.string().nullable(),
         }),
       );
-    const [first, second] = await questions();
+    const [first] = await questions();
 
     expect(
       await refusal('instance_questions_set_score', {
@@ -313,53 +313,6 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     });
     expect(scored.result.outcome.summary).toContain(`is now 3 of ${first.max_points} points`);
     expect((await questions())[0].points).toBe(3);
-
-    const ids = { instance_question_ids: [first.id, second.id] };
-    expect(await refusal('instance_questions_set_manual_grading', ids)).toContain(
-      'Give requires_manual_grading, assigned_grader_uid, or both.',
-    );
-    expect(
-      await refusal('instance_questions_set_manual_grading', {
-        ...ids,
-        assigned_grader_uid: 'nobody@example.com',
-      }),
-    ).toContain('Those who can: owner@example.com');
-
-    const queued = await approve('instance_questions_set_manual_grading', {
-      ...ids,
-      requires_manual_grading: true,
-      assigned_grader_uid: 'owner@example.com',
-    });
-    expect(queued.card).toMatchObject({
-      title: 'Send 2 questions to manual grading and assign owner@example.com to grade',
-      rows: [
-        {
-          label: `${first.qid} · dev@example.com`,
-          detail: 'Now: not in the queue, no assigned grader',
-        },
-        { label: `${second.qid} · dev@example.com` },
-      ],
-    });
-    expect(queued.result.outcome.summary).toBe(
-      'Sent 2 questions to manual grading and assigned owner@example.com to grade.',
-    );
-    expect((await questions()).slice(0, 2)).toMatchObject([
-      { requires_manual_grading: true, assigned_grader_uid: 'owner@example.com' },
-      { requires_manual_grading: true, assigned_grader_uid: 'owner@example.com' },
-    ]);
-
-    const unassigned = await approve('instance_questions_set_manual_grading', {
-      instance_question_ids: [first.id],
-      requires_manual_grading: false,
-      assigned_grader_uid: null,
-    });
-    expect(unassigned.result.outcome.summary).toBe(
-      'Marked 1 question as graded and removed the assigned grader.',
-    );
-    expect((await questions()).slice(0, 2)).toMatchObject([
-      { requires_manual_grading: false, assigned_grader_uid: null },
-      { requires_manual_grading: true, assigned_grader_uid: 'owner@example.com' },
-    ]);
   });
 
   test('closes an open attempt with a grading job, then reopens it', async () => {

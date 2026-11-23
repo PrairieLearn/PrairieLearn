@@ -177,7 +177,7 @@ export async function getUserRoles(group_id: string, user_id: string) {
   return await sqldb.queryRows(sql.select_user_roles, { group_id, user_id }, GroupRoleSchema);
 }
 
-export async function selectUserInCourseInstance({
+async function selectUserInCourseInstance({
   uid,
   courseInstance,
   authzData,

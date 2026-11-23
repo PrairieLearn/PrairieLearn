@@ -456,7 +456,7 @@ export const COURSE_DATA_DATASETS = {
   }),
   students: dataset({
     description:
-      'People enrolled in or invited to each course instance. Course staff are not listed.',
+      'People enrolled in or invited to each course instance. Course staff are not listed. Act on them with the students_ actions, by uid.',
     query: sql.select_students_by_course_id,
     schema: z.object({
       enrollment_id: IdSchema,

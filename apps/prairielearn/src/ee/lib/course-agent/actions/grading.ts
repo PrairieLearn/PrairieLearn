@@ -1,15 +1,12 @@
-import { groupBy } from 'es-toolkit';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
 import { updateInstanceQuestionScore } from '../../../../lib/manualGrading.js';
-import { selectCourseInstanceGraderStaff } from '../../../../models/course-instances.js';
 import {
   type InstanceQuestionSummary,
   selectInstanceQuestionSummariesByIds,
 } from '../../../../models/instance-question.js';
-import { updateInstanceQuestions } from '../../../../pages/instructorAssessmentManualGrading/assessmentQuestion/queries.js';
 
 import {
   ASSESSMENT_INPUT,
@@ -100,69 +97,6 @@ function newScore(input: SetQuestionScoreInput) {
     .join(', ');
 }
 
-const ManualGradingInputSchema = z.strictObject({
-  ...ASSESSMENT_INPUT,
-  instance_question_ids: z
-    .array(IdSchema)
-    .min(1)
-    .max(1000)
-    .describe(`IDs of the questions in attempts, ${INSTANCE_QUESTION_ID}`),
-  requires_manual_grading: z
-    .boolean()
-    .optional()
-    .describe(
-      'true puts the questions in the manual grading queue. false marks them as graded, taking them out of the queue without changing their scores.',
-    ),
-  assigned_grader_uid: z
-    .email()
-    .max(256)
-    .nullable()
-    .optional()
-    .describe(
-      'UID of the staff member who should grade these questions, who needs Student Data Editor access to the course instance. null removes the assigned grader. Leave it out to keep the grader as is.',
-    ),
-});
-
-type ManualGradingInput = z.infer<typeof ManualGradingInputSchema>;
-
-async function planManualGrading(ctx: AssessmentActionContext, input: ManualGradingInput) {
-  if (input.requires_manual_grading === undefined && input.assigned_grader_uid === undefined) {
-    throw new CourseActionError('Give requires_manual_grading, assigned_grader_uid, or both.');
-  }
-  const questions = await selectQuestions(ctx, input.instance_question_ids);
-  let grader: { id: string; uid: string } | null = null;
-  if (input.assigned_grader_uid != null) {
-    const graders = await selectCourseInstanceGraderStaff({ courseInstance: ctx.course_instance });
-    grader = graders.find(({ uid }) => uid === input.assigned_grader_uid) ?? null;
-    if (!grader) {
-      throw new CourseActionError(
-        `${input.assigned_grader_uid} cannot be assigned, because only staff with Student Data Editor access to the course instance "${ctx.course_instance.short_name}" can grade. Those who can: ${graders.map(({ uid }) => uid).join(', ') || 'no one yet'}.`,
-      );
-    }
-  }
-  return { questions, grader };
-}
-
-/** What the request does, as the card's title or, once `done`, as the result. */
-function manualGradingChange(input: ManualGradingInput, questions: number, done = false) {
-  const target = count(questions, 'question');
-  const queue =
-    input.requires_manual_grading === undefined
-      ? null
-      : input.requires_manual_grading
-        ? `${done ? 'Sent' : 'Send'} ${target} to manual grading`
-        : `${done ? 'Marked' : 'Mark'} ${target} as graded`;
-  if (input.assigned_grader_uid === undefined) return queue!;
-  if (queue) {
-    return input.assigned_grader_uid === null
-      ? `${queue} and ${done ? 'removed' : 'remove'} the assigned grader`
-      : `${queue} and ${done ? 'assigned' : 'assign'} ${input.assigned_grader_uid} to grade`;
-  }
-  return input.assigned_grader_uid === null
-    ? `${done ? 'Removed' : 'Remove'} the assigned grader from ${target}`
-    : `${done ? 'Assigned' : 'Assign'} ${input.assigned_grader_uid} to grade ${target}`;
-}
-
 export const gradingActions = {
   instance_questions_set_score: assessmentAction({
     group: 'instance_questions',
@@ -205,45 +139,6 @@ export const gradingActions = {
       return {
         summary: `Set the score on ${updated.qid} for ${who(updated)}, which was ${currentScore(question)} and is now ${currentScore(updated)}.`,
       };
-    },
-  }),
-  instance_questions_set_manual_grading: assessmentAction({
-    group: 'instance_questions',
-    description:
-      'Put questions from attempts in the manual grading queue or take them out, and choose which staff member grades them. This does not grade anything or change scores.',
-    effects:
-      'Staff see the change in the manual grading queue for the assessment. Students notice nothing.',
-    undo: 'Change the questions back the same way. The request shows how each one is now.',
-    permission: 'student_data_editor',
-    input: ManualGradingInputSchema,
-    describe: async ({ ctx, input }) => {
-      const { questions } = await planManualGrading(ctx, input);
-      return {
-        title: manualGradingChange(input, questions.length),
-        context: where(ctx),
-        rows: questions.map((question) => ({
-          label: `${question.qid} · ${who(question)}`,
-          detail: `Now: ${question.instance_question.requires_manual_grading ? 'waiting for manual grading' : 'not in the queue'}, ${question.assigned_grader_uid ? `assigned to ${question.assigned_grader_uid}` : 'no assigned grader'}`,
-        })),
-      };
-    },
-    run: async ({ ctx, input }) => {
-      const { questions, grader } = await planManualGrading(ctx, input);
-      const byAssessmentQuestion = groupBy(
-        questions,
-        ({ assessment_question }) => assessment_question.id,
-      );
-      for (const group of Object.values(byAssessmentQuestion)) {
-        await updateInstanceQuestions({
-          assessment_question: group[0].assessment_question,
-          instance_question_ids: group.map(({ instance_question }) => instance_question.id),
-          update_requires_manual_grading: input.requires_manual_grading !== undefined,
-          requires_manual_grading: input.requires_manual_grading ?? null,
-          update_assigned_grader: input.assigned_grader_uid !== undefined,
-          assigned_grader: grader?.id ?? null,
-        });
-      }
-      return { summary: `${manualGradingChange(input, questions.length, true)}.` };
     },
   }),
 };

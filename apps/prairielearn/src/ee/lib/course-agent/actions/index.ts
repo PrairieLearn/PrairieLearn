@@ -5,10 +5,8 @@ import { toJsonSchema } from '../json-schema.js';
 import type { CourseAction } from './action.js';
 import { attemptActions } from './attempts.js';
 import { gradingActions } from './grading.js';
-import { groupActions } from './groups.js';
 import { issueActions } from './issues.js';
 import { sharingActions } from './sharing.js';
-import { staffActions } from './staff.js';
 import { studentActions } from './students.js';
 
 /**
@@ -22,9 +20,7 @@ export const COURSE_AGENT_ACTIONS: Record<string, CourseAction> = {
   ...attemptActions,
   ...sharingActions,
   ...studentActions,
-  ...staffActions,
   ...gradingActions,
-  ...groupActions,
 };
 
 const COURSE_ACTIONS_VERSION = 1;
