@@ -9,7 +9,6 @@ import {
   MAX_PACKET_PAGES,
   MAX_PRINT_FORMS,
 } from '../../lib/client/printing/print-packet.js';
-import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import { getAssessmentUrl, getPrintFormUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
@@ -24,11 +23,11 @@ import { checkPrintCovers, uploadPrintCover } from '../../lib/printing/print-cov
 import type { PrintExportWork } from '../../lib/printing/print-export-render.js';
 import { printExportResult, queuePrintExport } from '../../lib/printing/print-exports.js';
 import { PrintPacketError } from '../../lib/printing/print-packet.js';
-import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE } from '../../lib/printing/print-settings.js';
 import {
-  printSnapshotLayout,
-  selectOptionalPrintSnapshotSummary,
-} from '../../lib/printing/print-snapshots.js';
+  PRINT_PAPER_SIZES_MISMATCH_MESSAGE,
+  printQuestionSizeOverrides,
+} from '../../lib/printing/print-settings.js';
+import { selectOptionalPrintSnapshotSummary } from '../../lib/printing/print-snapshots.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import {
   selectOptionalPrintExport,
@@ -121,27 +120,20 @@ async function selectExportForms(ctx: TRPCContext, printFormIds: string[]): Prom
 async function findFormSnapshot(ctx: TRPCContext, form: PrintForm, document: PrintDocument) {
   const { printFormQuestionIds, questionListDigest } = await getPrintableFormQuestions(
     form.id,
-    new Map(
-      Object.entries(form.settings.questionSizes).flatMap(([number, size]) =>
-        size ? [[number, size] as const] : [],
-      ),
-    ),
+    printQuestionSizeOverrides(form.settings),
     new Set(form.settings.excludedQuestions),
   );
-  const search = new URLSearchParams(printLayoutSearch(form.settings));
   const stored = await selectOptionalPrintSnapshotSummary({
     printForm: form,
     courseCommitHash: ctx.course.commit_hash,
     document,
     authnUserId: ctx.authn_user.id,
     userId: ctx.locals.user.id,
-    layout: printSnapshotLayout(search),
     questionListDigest,
   });
   if (!stored) return null;
-  search.set('document', document);
   const localPreviewUrl = new URL(
-    `${getPrintFormUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id, printFormId: form.id })}/preview?${search}`,
+    `${getPrintFormUrl({ courseInstanceId: ctx.course_instance.id, assessmentId: ctx.assessment.id, printFormId: form.id })}/preview?document=${document}`,
     `${config.serverType}://localhost:${config.serverPort}`,
   );
   return {

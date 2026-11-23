@@ -1,8 +1,9 @@
-/* oxlint-disable react/iframe-missing-sandbox -- The print preview needs scripts and same-origin DOM access. */
+/* oxlint-disable react/iframe-missing-sandbox -- The print preview needs same-origin DOM access. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Spinner } from 'react-bootstrap';
 
 import type { PrintDocument } from '../../../lib/printing/index.js';
+import type { PaperSize } from '../../../lib/printing/paper-size.js';
 
 export type PreviewState =
   | { status: 'loading' }
@@ -14,6 +15,42 @@ export type PreviewState =
       warnings: { code: string; question_number: string; message: string }[];
     }
   | { status: 'error'; message: string };
+
+/** One form and document as previewed with particular saved settings. */
+export interface PreviewTarget {
+  /** Changes whenever the form, document, or saved settings do. */
+  id: string;
+  formId: string | null;
+  url: string;
+  document: PrintDocument;
+  paperSize: PaperSize;
+}
+
+/** A preview target plus a version, so applying the same settings again renders it again. */
+export interface PreviewEntry extends PreviewTarget {
+  key: string;
+}
+
+/** Reads a finished preview. The server only responds once the page is laid out. */
+function readPreviewState(doc: Document): PreviewState {
+  const data = doc.documentElement.dataset;
+  if (data.printStatus === 'ready') {
+    return {
+      status: 'ready',
+      pages: Number(data.printPageCount),
+      questions: Number(data.printQuestionCount),
+      points: Number(data.printMaxPoints),
+      warnings: JSON.parse(data.printWarnings ?? '[]'),
+    };
+  }
+  return {
+    status: 'error',
+    message:
+      data.printStatus === 'error'
+        ? (data.printError ?? 'Unable to lay out this assessment.')
+        : 'The preview could not be loaded. Try again or contact support if this issue persists.',
+  };
+}
 
 function PrintPreview({
   url,
@@ -32,8 +69,6 @@ function PrintPreview({
 }) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const watchedDocumentRef = useRef<Document | null>(null);
-  const cleanupRef = useRef<() => void>(() => {});
   const [scale, setScale] = useState(1);
   const [state, setState] = useState<PreviewState>({ status: 'loading' });
 
@@ -48,9 +83,6 @@ function PrintPreview({
     observer.observe(element);
     return () => observer.disconnect();
   }, [paperWidth]);
-
-  // Disconnect the frame’s readiness observer when a preview is replaced.
-  useEffect(() => () => cleanupRef.current(), []);
 
   // A failed iframe navigation may be blocked by response headers and never fire a load event.
   useEffect(() => {
@@ -74,78 +106,22 @@ function PrintPreview({
       ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }, [active, selectedQuestion, state.status]);
 
-  const watchPreview = useCallback(() => {
+  const readPreview = useCallback(() => {
     const doc = frameRef.current?.contentDocument;
-    if (
-      doc?.URL !== new URL(url, window.location.href).href ||
-      doc.readyState !== 'complete' ||
-      watchedDocumentRef.current === doc
-    ) {
+    if (doc?.URL !== new URL(url, window.location.href).href || doc.readyState !== 'complete') {
       return;
     }
-    watchedDocumentRef.current = doc;
-    cleanupRef.current();
-    const watchedDoc = doc;
-    const root = watchedDoc.documentElement;
-
-    function update(next: PreviewState) {
-      setState(next);
-      onStateChange(next);
-    }
-    if (!root.dataset.printStatus) {
-      update({
-        status: 'error',
-        message:
-          'The preview could not be loaded. Try again or contact support if this issue persists.',
-      });
-      return;
-    }
-    const observer = new MutationObserver(readState);
-    const timeout = window.setTimeout(() => {
-      cleanupRef.current();
-      update({
-        status: 'error',
-        message: 'The preview is taking longer than expected. Try again.',
-      });
-    }, 120_000);
-    cleanupRef.current = () => {
-      observer.disconnect();
-      window.clearTimeout(timeout);
-    };
-
-    function readState() {
-      if (root.dataset.printStatus === 'ready') {
-        cleanupRef.current();
-        update({
-          status: 'ready',
-          pages: Number(root.dataset.printPageCount),
-          questions: Number(root.dataset.printQuestionCount),
-          points: Number(root.dataset.printMaxPoints),
-          warnings: JSON.parse(root.dataset.printWarnings ?? '[]'),
-        });
-      } else if (root.dataset.printStatus === 'error') {
-        cleanupRef.current();
-        update({
-          status: 'error',
-          message: root.dataset.printError ?? 'Unable to lay out this assessment.',
-        });
-      }
-    }
-    observer.observe(root, { attributes: true, attributeFilter: ['data-print-status'] });
-    readState();
+    const next = readPreviewState(doc);
+    setState(next);
+    onStateChange(next);
   }, [onStateChange, url]);
 
-  // The frame can finish loading while the preparation page hydrates; observe its document even
-  // if React missed the load event.
+  // The frame can finish loading before the page hydrates and attaches its load handler.
   useEffect(() => {
-    if (state.status !== 'loading') return;
-    const interval = window.setInterval(watchPreview, 250);
-    const initialCheck = window.setTimeout(watchPreview, 0);
-    return () => {
-      window.clearTimeout(initialCheck);
-      window.clearInterval(interval);
-    };
-  }, [watchPreview, state.status]);
+    readPreview();
+    // Only the initial render can miss the load event.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
@@ -181,38 +157,34 @@ function PrintPreview({
           transform: `scale(${scale})`,
           visibility: state.status === 'error' ? 'hidden' : undefined,
         }}
-        onLoad={watchPreview}
+        onLoad={readPreview}
       />
     </div>
   );
 }
 
-/** Binds a cached preview to its cache key so the page can track each preview's state. */
+/** Binds a cached preview to its entry so the page can track each preview's state. */
 export function PreviewFrame({
-  cacheKey,
-  url,
-  document,
+  entry,
   active,
   selectedQuestion,
   onStateChange,
 }: {
-  cacheKey: string;
-  url: string;
-  document: PrintDocument;
+  entry: PreviewEntry;
   active: boolean;
   selectedQuestion: { number: string } | null;
-  onStateChange: (key: string, url: string, document: PrintDocument, state: PreviewState) => void;
+  onStateChange: (key: string, state: PreviewState) => void;
 }) {
   const handleStateChange = useCallback(
-    (state: PreviewState) => onStateChange(cacheKey, url, document, state),
-    [cacheKey, url, document, onStateChange],
+    (state: PreviewState) => onStateChange(entry.key, state),
+    [entry.key, onStateChange],
   );
 
   return (
     <PrintPreview
-      url={url}
-      document={document}
-      paperWidth={new URLSearchParams(url.split('?')[1]).get('paper_size') === 'Letter' ? 816 : 794}
+      url={entry.url}
+      document={entry.document}
+      paperWidth={entry.paperSize === 'Letter' ? 816 : 794}
       active={active}
       selectedQuestion={selectedQuestion}
       onStateChange={handleStateChange}

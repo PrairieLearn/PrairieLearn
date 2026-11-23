@@ -24,7 +24,6 @@ import {
 } from '../../lib/client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
 import { MAX_PACKET_PAGES } from '../../lib/client/printing/print-packet.js';
-import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
 import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import type { StaffPrintPreparationForm } from '../../lib/client/safe-db-types.js';
 import { getPrintFormUrl } from '../../lib/client/url.js';
@@ -55,15 +54,17 @@ import {
   usePrintExports,
 } from './components/PrintExports.js';
 import { PrintFormsCard } from './components/PrintFormsCard.js';
-import { PreviewFrame, type PreviewState } from './components/PrintPreview.js';
+import {
+  type PreviewEntry,
+  PreviewFrame,
+  type PreviewState,
+  type PreviewTarget,
+} from './components/PrintPreview.js';
 import { QuestionsCard } from './components/QuestionsCard.js';
 
 const MAX_CACHED_PREVIEWS = 3;
 
-interface CachedPreview {
-  key: string;
-  url: string;
-  document: PrintDocument;
+interface CachedPreview extends PreviewEntry {
   state: Extract<PreviewState, { status: 'ready' }>;
   lastUsed: number;
 }
@@ -236,12 +237,24 @@ function PrintPreparation({
   const questionSizes = watch('questionSizes');
   const excludedQuestions = watch('excludedQuestions');
   const excludedQuestionNumbers = new Set(excludedQuestions);
-  const layout = printLayoutSearch(settings);
-  const printBase = formId
-    ? getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: formId })
-    : '';
-  const savedPreviewUrl = `${printBase}/preview?${layout}&document=${document}`;
-  const [previewUrl, setPreviewUrl] = useState(savedPreviewUrl);
+  /** Previews render saved settings, so a preview changes whenever they do. */
+  function previewFor(
+    id: string | null,
+    previewSettings: PrintSettings,
+    previewDocument: PrintDocument,
+  ): PreviewTarget {
+    return {
+      id: JSON.stringify([id, previewDocument, previewSettings]),
+      formId: id,
+      url: id
+        ? `${getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id })}/preview?document=${previewDocument}`
+        : '',
+      document: previewDocument,
+      paperSize: previewSettings.paperSize,
+    };
+  }
+  const savedPreview = previewFor(formId, settings, document);
+  const [activePreview, setActivePreview] = useState(savedPreview);
   const previewSelectionRef = useRef({ formId, document });
   useEffect(() => {
     // Switching forms or documents loads that selection; saving settings waits for Update preview.
@@ -252,14 +265,18 @@ function PrintPreparation({
       return;
     }
     previewSelectionRef.current = { formId, document };
-    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
-    setPreviewUrl(savedPreviewUrl);
-  }, [formId, document, savedPreviewUrl]);
-  const previewIsCurrent = previewUrl === savedPreviewUrl;
-  const activePreviewKey = `${previewUrl}:${previewVersions[previewUrl] ?? 0}`;
-  const previewsToRender = cachedPreviews.some((entry) => entry.key === activePreviewKey)
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates
+    setActivePreview(savedPreview);
+    // savedPreview is rebuilt on every render; its ID says when it changed.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [formId, document, savedPreview.id]);
+  const previewIsCurrent = activePreview.id === savedPreview.id;
+  const activePreviewKey = `${activePreview.id}:${previewVersions[activePreview.id] ?? 0}`;
+  const previewsToRender: PreviewEntry[] = cachedPreviews.some(
+    (entry) => entry.key === activePreviewKey,
+  )
     ? cachedPreviews
-    : [...cachedPreviews, { key: activePreviewKey, url: previewUrl, document }];
+    : [...cachedPreviews, { ...activePreview, key: activePreviewKey }];
   const questions = useQuery(
     trpc.printForms.questions.queryOptions(
       validForm && formId ? { printFormId: formId } : skipToken,
@@ -454,10 +471,7 @@ function PrintPreparation({
     // Forms render one at a time so one export doesn't hold several shared render slots.
     for (const [index, id] of unprepared.entries()) {
       onProgress({ completed: index, total: unprepared.length });
-      const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
-      const response = await fetch(
-        `${base}/preview?${printLayoutSearch(settingsForForm(id))}&document=${outputDocument}`,
-      );
+      const response = await fetch(previewFor(id, settingsForForm(id), outputDocument).url);
       const root = new DOMParser().parseFromString(
         await response.text(),
         'text/html',
@@ -631,8 +645,8 @@ function PrintPreparation({
     }
   }
 
-  function reuseCachedPreview(url: string) {
-    const key = `${url}:${previewVersions[url] ?? 0}`;
+  function reuseCachedPreview(target: PreviewTarget) {
+    const key = `${target.id}:${previewVersions[target.id] ?? 0}`;
     const lastUsed = ++previewUseCountRef.current;
     setCachedPreviews((entries) => {
       if (!entries.some((entry) => entry.key === key)) return entries;
@@ -641,29 +655,26 @@ function PrintPreparation({
   }
 
   function discardFormCachedPreviews(id: string) {
-    const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
-    const prefix = `${base}/preview?`;
-    setCachedPreviews((entries) => entries.filter((entry) => !entry.url.startsWith(prefix)));
+    setCachedPreviews((entries) => entries.filter((entry) => entry.formId !== id));
   }
 
   function invalidateFormPreview(id: string, nextSettings: PrintSettings) {
-    const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
-    const nextUrl = `${base}/preview?${printLayoutSearch(nextSettings)}&document=${document}`;
-    const nextVersion = (previewVersions[nextUrl] ?? 0) + 1;
+    const target = previewFor(id, nextSettings, document);
+    const nextVersion = (previewVersions[target.id] ?? 0) + 1;
     discardFormCachedPreviews(id);
     setPreviewVersions((versions) => ({
       ...versions,
-      [nextUrl]: nextVersion,
+      [target.id]: nextVersion,
     }));
-    return { url: nextUrl, key: `${nextUrl}:${nextVersion}` };
+    return { target, key: `${target.id}:${nextVersion}` };
   }
 
   function switchDocument(next: PrintDocument) {
     if (next === document) return;
-    const nextUrl = `${printBase}/preview?${layout}&document=${next}`;
-    reuseCachedPreview(nextUrl);
+    const target = previewFor(formId, settings, next);
+    reuseCachedPreview(target);
     previewSelectionRef.current = { formId, document: next };
-    setPreviewUrl(nextUrl);
+    setActivePreview(target);
     setDocument(next);
     setPreview(null);
   }
@@ -674,11 +685,10 @@ function PrintPreparation({
     void setSelectedForm(id);
     const next =
       nextSettings ?? forms.data.find((form) => form.id === id)?.settings ?? defaultSettings;
-    const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
-    const nextUrl = `${base}/preview?${printLayoutSearch(next)}&document=${document}`;
-    reuseCachedPreview(nextUrl);
+    const target = previewFor(id, next, document);
+    reuseCachedPreview(target);
     previewSelectionRef.current = { formId: id, document };
-    setPreviewUrl(nextUrl);
+    setActivePreview(target);
     reset(next, { keepDirtyValues: false });
     setSelectedQuestion(null);
     setDismissedReviewWarning(null);
@@ -760,7 +770,7 @@ function PrintPreparation({
   }, [formId, controlsBusy, isDirty, forms.data, formFocusRequest]);
   const preparingExport = download.isPending || packet.isPending;
   const onPreviewState = useCallback(
-    (key: string, url: string, previewDocument: PrintDocument, state: PreviewState) => {
+    (key: string, state: PreviewState) => {
       if (key !== activePreviewKey) return;
       setPreview({ key, state });
       const refreshingStalePreview =
@@ -771,7 +781,7 @@ function PrintPreparation({
       ) {
         const lastUsed = ++previewUseCountRef.current;
         setCachedPreviews((entries) => {
-          const next = { key, url, document: previewDocument, state, lastUsed };
+          const next = { ...activePreview, key, state, lastUsed };
           if (entries.some((entry) => entry.key === key)) {
             return entries.map((entry) => (entry.key === key ? next : entry));
           }
@@ -792,7 +802,7 @@ function PrintPreparation({
       }
       if (state.status !== 'loading') setPreviewPending(false);
     },
-    [activePreviewKey, formId],
+    [activePreview, activePreviewKey, formId],
   );
   const loadedPreview =
     cachedPreviews.find((entry) => entry.key === activePreviewKey)?.state ??
@@ -1036,7 +1046,7 @@ function PrintPreparation({
           expectedSettings: settings,
         });
         values = updated.settings;
-        if (printLayoutSearch(values) === printLayoutSearch(settings)) {
+        if (JSON.stringify(values) === JSON.stringify(settings)) {
           await questions.refetch();
         }
       }
@@ -1044,7 +1054,7 @@ function PrintPreparation({
       if (nextFormId) {
         const nextPreview = invalidateFormPreview(nextFormId, values);
         if (snapshotStale) stalePreviewRefreshesRef.current.set(nextFormId, nextPreview.key);
-        setPreviewUrl(nextPreview.url);
+        setActivePreview(nextPreview.target);
       }
     } catch (error) {
       setPreviewPending(false);
@@ -1469,9 +1479,7 @@ function PrintPreparation({
                     {previewsToRender.map((entry) => (
                       <PreviewFrame
                         key={entry.key}
-                        cacheKey={entry.key}
-                        url={entry.url}
-                        document={entry.document}
+                        entry={entry}
                         active={entry.key === activePreviewKey}
                         selectedQuestion={entry.key === activePreviewKey ? selectedQuestion : null}
                         onStateChange={onPreviewState}

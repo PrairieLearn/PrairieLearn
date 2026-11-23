@@ -33,6 +33,15 @@ export const PRINT_PAPER_SIZES_MISMATCH_MESSAGE =
 export const PRINT_QUESTION_SELECTION_LOCKED_MESSAGE =
   'This form’s question selection is fixed after you start a download. Reload the page, then select a question to create a new numbered version.';
 
+/** Question spacing chosen for individual questions, by question number. */
+export function printQuestionSizeOverrides(settings: PrintSettings) {
+  return new Map(
+    Object.entries(settings.questionSizes).flatMap(([number, size]) =>
+      size ? [[number, size] as const] : [],
+    ),
+  );
+}
+
 export function sameExcludedQuestions(left: readonly string[], right: readonly string[]): boolean {
   const selected = new Set(right);
   return left.length === right.length && left.every((number) => selected.has(number));

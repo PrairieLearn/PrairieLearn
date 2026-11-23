@@ -28,7 +28,7 @@ const pdf = await renderer.renderPdf({
 await renderer.close(); // during shutdown
 ```
 
-When a course editor loads a preview, the server stores the finished pages, the editable Word source, and the Word cover and footer in S3 under `print-exports/snapshots/`, keyed by the print form, document, user, layout, course commit, and selected question identities and order. Exports never receive pages from the browser: they recompute the key from the saved form, the requesting user, and the current questions, and reference the stored preview. A missing key means the preview changed, belongs to someone else, or is older than 24 hours, and must be refreshed before downloading. A short summary stored beside each preview (question, omitted-question, and page counts) lets export requests check readiness and page limits without downloading pages.
+When a course editor loads a preview, the server stores the finished pages, the editable Word source, and the Word cover and footer in S3 under `print-exports/snapshots/`, keyed by the print form and its saved settings, document, user, course commit, and selected question identities and order. Exports never receive pages from the browser: they recompute the key from the saved form, the requesting user, and the current questions, and reference the stored preview. A missing key means the preview changed, belongs to someone else, or is older than 24 hours, and must be refreshed before downloading. A short summary stored beside each preview (question, omitted-question, and page counts) lets export requests check readiness and page limits without downloading pages.
 
 Build `assetScope` from the already authorized course instance, assessment, saved print form, selected print-form question IDs, and user IDs. The renderer uses it to mint a credential for that render.
 
@@ -70,35 +70,23 @@ Form A1 is created automatically when a course editor first opens the print prep
 
 The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML. PDF and Word exports are queued through the assessment tRPC router's `printExports` procedures, which use the form's saved print settings and the user's stored preview. Course staff with preview permission can inspect any form for the assessment, including archived forms. Creating or changing forms and starting PDF or Word exports require Course Editor permission.
 
-`document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
+`document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers. `document` is the only query parameter: previews, PDFs, and Word downloads all use the form's saved settings (`PrintSettings` in `print-settings.ts`).
 
-The preview endpoint accepts layout choices as query parameters. PDF and Word exports always use the form's saved settings, so their snapshots must come from a preview rendered with those settings. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
+The form's saved label appears on covers and footers. New forms use the first available letter from `A` through `Z` and start at version `1`; up to 26 forms can be active. Archiving a slot makes its letter available to the next added form, which receives the next numbered version (for example, `C2`). Any active form can be archived while another active form remains.
 
-The form's saved label appears on covers and footers. New forms use the first available letter from `A` through `Z` and start at version `1`; up to 26 forms can be active. Archiving a slot makes its letter available to the next added form, which receives the next numbered version (for example, `C2`). Any active form can be archived while another active form remains. Query parameters cannot change labels.
+`blockSize` sets the default space for every question to `auto`, `third`, `half`, or `full`, and `questionSizes` overrides it for individual questions. `identityFields` adds up to six fill-in lines to the cover alongside its built-in Name field; labels are trimmed and may contain up to 40 characters.
 
-`include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
+`includeCoverPage: false` omits the default cover in previews, PDFs, and Word downloads, including answer keys.
 
-`include_honor_code=true` or `false` controls the student cover pledge independently of the online assessment requirement. Omitting it uses the assessment’s `requireHonorCode` setting. The printed pledge uses the configured `honorCode` when present, with a blank name line for `{{user_name}}`; otherwise it uses the default honor code.
+`includeHonorCode` controls the student cover pledge independently of the online assessment requirement; new forms default to the assessment’s `requireHonorCode` setting. The printed pledge uses the configured `honorCode` when present, with a blank name line for `{{user_name}}`; otherwise it uses the default honor code.
 
-`grading_table=true` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
+`includeGradingTable` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
 
 The print preparation page can combine all current student forms into one PDF, or all current answer keys into another. Each student form contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled and are included in individual form downloads. Answer key downloads exclude uploaded covers. Shorter forms or answer keys receive blank pages at the end so each form in a combined PDF occupies the same number of pages. Generated page numbers remain within the original form; uploaded pages retain their own appearance.
 
 PDF and Word exports are queued. Each export is a row in `print_exports`, which records its status and result; its input is stored in S3, and its ID is published to PrairieMQ for dispatch. If the publication fails, the export is marked failed and the request returns an error. Each user can have at most five exports in progress per assessment. Exports are grouped by course so courses take turns, and total throughput scales with the number of workers. Workers run on hosts with `printExportWorkerActive` and a browser renderer (local Chromium or Cloudflare). PrairieMQ retries a run interrupted by a graceful shutdown on another worker and recovers crashed runs as stalls; an export that runs out of retries is marked failed. An export still pending after 30 minutes, e.g. because Redis lost its job, reads as failed. Downloads are available to the requesting user for up to 24 hours after the export is queued. The app doesn't delete export files: configure an S3 lifecycle rule on the `print-exports/` prefix that also expires noncurrent versions. PrairieMQ requires a non-clustered Redis without eviction through `nonVolatileRedisUrl`. The queue namespace defaults to a hash of the PostgreSQL host and database, so deployments sharing a Redis stay separate; set `printExportQueuePrefix` when hosts use different aliases for the same database.
 
 Automatic blocks are measured at the final printable width after asynchronous question content, MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an exact fraction of the printable content height, including the question's internal spacing, when the content fits. Taller content uses its measured height and moves to the next page or flows across pages when needed.
-
-For example, this gives every question automatic sizing except Questions 2 and 5:
-
-```text
-?paper_size=Letter&question_block_size=2:half&question_block_size=5:full
-```
-
-This sets a half-page default and allows Question 3 to size itself automatically:
-
-```text
-?paper_size=A4&block_size=half&question_block_size=3:auto
-```
 
 ## Combining question fragments
 

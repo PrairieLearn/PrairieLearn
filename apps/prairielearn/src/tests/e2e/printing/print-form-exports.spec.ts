@@ -41,9 +41,9 @@ test('reports omitted questions and exports the selected Word content', async ({
     courseInstance,
     'exam24-printingOmittedQuestion',
   );
-  const query = await savePrintSettings(printForm, { identityFields: 'Section\nStudent ID' });
+  await savePrintSettings(printForm, { identityFields: 'Section\nStudent ID' });
 
-  await page.goto(`${printUrl}/preview?${query}`);
+  await page.goto(`${printUrl}/preview`);
   await waitForPrintablePage(page);
   const warnings = await readWarnings(page);
   expect(warnings.map((warning) => warning.code)).toEqual([
@@ -71,11 +71,10 @@ test('reports omitted questions and exports the selected Word content', async ({
     'has missing or unprintable questions',
   );
 
-  const brokenOnlyQuery = new URLSearchParams(query);
-  for (const number of new Set(printedQuestionNumbers)) {
-    brokenOnlyQuery.append('exclude_question', number!);
-  }
-  const emptyPreview = await page.request.get(`${printUrl}/preview?${brokenOnlyQuery}`);
+  await savePrintSettings(printForm, {
+    excludedQuestions: [...new Set(printedQuestionNumbers)].map((number) => number!),
+  });
+  const emptyPreview = await page.request.get(`${printUrl}/preview`);
   expect(emptyPreview.status()).toBe(200);
   expect(await emptyPreview.text()).toContain('data-print-question-count="0"');
 
@@ -87,13 +86,13 @@ test('reports omitted questions and exports the selected Word content', async ({
   const excludedQuestionNumber = printedQuestionNumbers.find(
     (number) => number !== retainedQuestionNumber,
   )!;
-  const selectedQuery = await savePrintSettings(printForm, {
+  await savePrintSettings(printForm, {
     excludedQuestions: [
       excludedQuestionNumber,
       ...warnings.map((warning) => warning.question_number),
     ],
   });
-  await page.goto(`${printUrl}/preview?${selectedQuery}`);
+  await page.goto(`${printUrl}/preview`);
   await waitForPrintablePage(page);
   expect(await readWarnings(page)).toEqual([]);
   const documentResponse = await downloadPrintableWord(page, printUrl);
@@ -121,10 +120,12 @@ test('reports omitted questions and exports the selected Word content', async ({
 });
 
 test('shows the omitted questions when none can be printed', async ({ page, courseInstance }) => {
-  const { printUrl } = await createPrintableForm(courseInstance, 'exam24-printingOmittedQuestion');
-  await page.goto(
-    `${printUrl}/preview?paper_size=Letter&include_cover=false&exclude_question=1&exclude_question=2`,
+  const { printUrl, printForm } = await createPrintableForm(
+    courseInstance,
+    'exam24-printingOmittedQuestion',
   );
+  await savePrintSettings(printForm, { includeCoverPage: false, excludedQuestions: ['1', '2'] });
+  await page.goto(`${printUrl}/preview`);
   await waitForPrintablePage(page);
   expect((await readWarnings(page)).map((warning) => warning.code)).toEqual([
     'broken_variant',
@@ -132,9 +133,7 @@ test('shows the omitted questions when none can be printed', async ({ page, cour
   ]);
   await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '0');
 
-  await page.goto(
-    `${printUrl}/preview?paper_size=Letter&include_cover=false&exclude_question=1&exclude_question=2&document=answer_key`,
-  );
+  await page.goto(`${printUrl}/preview?document=answer_key`);
   await waitForPrintablePage(page);
   await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '0');
 });
@@ -143,12 +142,8 @@ test('prints representative controls, editable Word content, and an ordered answ
   page,
   courseInstance,
 }) => {
-  const { printUrl, printForm } = await createPrintableForm(
-    courseInstance,
-    'exam25-printingAutomated',
-  );
-  const search = await savePrintSettings(printForm, {});
-  await page.goto(`${printUrl}/preview?${search}`);
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam25-printingAutomated');
+  await page.goto(`${printUrl}/preview`);
   await waitForPrintablePage(page);
   const questions = page.locator('.pagedjs_page .printing-question');
   await expect(
@@ -212,7 +207,7 @@ test('prints representative controls, editable Word content, and an ordered answ
   }
   expect(documentXml.match(/<w:shd\b[^>]*\bw:fill="F7F7F7"[^>]*\/>/g)).toHaveLength(2);
 
-  await page.goto(`${printUrl}/preview?${search}&document=answer_key`);
+  await page.goto(`${printUrl}/preview?document=answer_key`);
   await waitForPrintablePage(page);
   const answerGroup = page.locator('.pagedjs_page .printing-order-answer-group').first();
   const correct = answerGroup.locator('.pl-order-blocks-correct-answer');
@@ -235,12 +230,8 @@ test('preserves literal dollar patterns in Word exports', async ({
   try {
     await fs.writeFile(questionPath, `${original}\n<pre>${text}</pre>\n`);
     await syncCourse(testCoursePath);
-    const { printUrl, printForm } = await createPrintableForm(
-      courseInstance,
-      'exam20-assessmentTools',
-    );
-    const query = await savePrintSettings(printForm, {});
-    await page.goto(`${printUrl}/preview?${query}`);
+    const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+    await page.goto(`${printUrl}/preview`);
     await waitForPrintablePage(page);
     await expect(page.locator('.pagedjs_page').getByText(text, { exact: true })).toBeVisible();
 
@@ -262,25 +253,24 @@ test('omits failed question and answer-key renders and recovers after a correcti
     courseInstance,
     'exam20-assessmentTools',
   );
-  const search = await savePrintSettings(printForm, {});
   const serverPath = path.join(testCoursePath, 'questions/addNumbers/server.py');
   const original = await fs.readFile(serverPath, 'utf8');
   try {
     for (const panel of ['question', 'answer']) {
+      await savePrintSettings(printForm, { excludedQuestions: [] });
       await fs.writeFile(
         serverPath,
         `${original}\n\ndef render(data, html):\n    if data["panel"] == "${panel}":\n        raise Exception("Deliberately broken printable render")\n    return html\n`,
       );
       await syncCourse(testCoursePath);
-      const assessment = await page.goto(`${printUrl}/preview?paper_size=Letter`);
+      const assessment = await page.goto(`${printUrl}/preview`);
       expect(assessment!.status()).toBe(200);
       await waitForPrintablePage(page);
       expect((await readWarnings(page)).map((warning) => warning.code)).toEqual(
         panel === 'question' ? ['render_error'] : [],
       );
 
-      const query = `${search}&document=answer_key`;
-      const answerKey = await page.goto(`${printUrl}/preview?${query}`);
+      const answerKey = await page.goto(`${printUrl}/preview?document=answer_key`);
       expect(answerKey!.status()).toBe(200);
       await waitForPrintablePage(page);
       const warnings = await readWarnings(page);
@@ -293,8 +283,8 @@ test('omits failed question and answer-key renders and recovers after a correcti
         'has missing or unprintable questions',
       );
 
-      const selectedQuery = `${query}&exclude_question=${warnings[0].question_number}`;
-      await page.goto(`${printUrl}/preview?${selectedQuery}`);
+      await savePrintSettings(printForm, { excludedQuestions: [warnings[0].question_number] });
+      await page.goto(`${printUrl}/preview?document=answer_key`);
       await waitForPrintablePage(page);
       expect(await readWarnings(page)).toEqual([]);
     }
@@ -302,7 +292,8 @@ test('omits failed question and answer-key renders and recovers after a correcti
     await fs.writeFile(serverPath, original);
     await syncCourse(testCoursePath);
   }
-  await page.goto(`${printUrl}/preview?${search}&document=answer_key`);
+  await savePrintSettings(printForm, { excludedQuestions: [] });
+  await page.goto(`${printUrl}/preview?document=answer_key`);
   await waitForPrintablePage(page);
   expect(await readWarnings(page)).toEqual([]);
   await expect(page.getByText('Consider two numbers')).toBeVisible();

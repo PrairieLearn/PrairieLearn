@@ -20,7 +20,7 @@ test('uses the shared footer on cover and question pages', async ({ page, course
   test.setTimeout(120_000);
   const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
   for (const document of ['assessment', 'answer_key']) {
-    await page.goto(`${printUrl}/preview?paper_size=Letter&document=${document}`);
+    await page.goto(`${printUrl}/preview?document=${document}`);
     await waitForPrintablePage(page);
     const pages = page.locator('.pagedjs_page');
     const footerContent = await pages.evaluateAll((sheets) =>
@@ -59,8 +59,12 @@ test('fills the cover grading table down columns using only included questions',
   courseInstance,
 }) => {
   test.setTimeout(180_000);
-  const { printUrl: base } = await createPrintableForm(courseInstance, 'exam25-printingAutomated');
-  await page.goto(`${base}/preview?paper_size=Letter&grading_table=true&exclude_question=2`);
+  const { printUrl: base, printForm } = await createPrintableForm(
+    courseInstance,
+    'exam25-printingAutomated',
+  );
+  await savePrintSettings(printForm, { includeGradingTable: true, excludedQuestions: ['2'] });
+  await page.goto(`${base}/preview`);
   await waitForPrintablePage(page);
   const cover = page.getByRole('article', { name: 'Exam cover page' });
   const table = cover.getByRole('region', { name: 'Grading table' });
@@ -127,8 +131,8 @@ test('uses the configured honor code for printed pledges when requireHonorCode i
     );
     await syncCourse(testCoursePath);
     const { printUrl: base, printForm } = await createPrintableForm(courseInstance, tid);
-    const search = await savePrintSettings(printForm, { includeHonorCode: true });
-    await page.goto(`${base}/preview?${search}`);
+    await savePrintSettings(printForm, { includeHonorCode: true });
+    await page.goto(`${base}/preview`);
     await waitForPrintablePage(page);
     const pledge = page.getByRole('region', { name: 'Honor code' });
     await expect(pledge.getByRole('heading', { name: 'Honor code' })).toHaveCount(1);

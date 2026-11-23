@@ -7,7 +7,7 @@ import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgr
 import { VariantSchema } from '../../../lib/db-types.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { createPrintableForm, waitForPrintablePage } from './utils.js';
+import { createPrintableForm, savePrintSettings, waitForPrintablePage } from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
 const sql = loadSqlEquiv(import.meta.url);
@@ -89,7 +89,7 @@ test('reuses saved closed variants for student copies and answer keys', async ({
     courseInstance,
     'hw20-afterCompleteVisibility',
   );
-  const url = `${printUrl}/preview?paper_size=Letter`;
+  const url = `${printUrl}/preview`;
   const variants = await queryRows(
     sql.select_form_variants,
     { print_form_id: printForm.id },
@@ -99,7 +99,7 @@ test('reuses saved closed variants for student copies and answer keys', async ({
   await execute(sql.close_variants, { print_form_id: printForm.id });
 
   for (const document of ['assessment', 'answer_key']) {
-    await page.goto(`${url}&document=${document}`);
+    await page.goto(`${url}?document=${document}`);
     const layout = await readPaginatedQuestionLayout(page);
     expect(Object.keys(layout.questionPages)).toHaveLength(1);
     await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
@@ -124,8 +124,9 @@ test('renders accessible previews and readable answer keys for every student que
     'exam20-assessmentTools',
   );
   const initialRecords = await queryRow(sql.select_record_counts, {}, RecordCountsSchema);
-  const endpoint = `${printUrl}/preview?paper_size=Letter&identity_field=Section&identity_field=Student%20ID`;
-  expect((await page.request.get(`${endpoint}&form_label=Z`)).status()).toBe(400);
+  await savePrintSettings(printForm, { identityFields: 'Section\nStudent ID' });
+  const endpoint = `${printUrl}/preview`;
+  expect((await page.request.get(`${endpoint}?paper_size=A4`)).status()).toBe(400);
 
   const assessmentResponse = await page.goto(endpoint);
   await expect(page.locator(':root')).toHaveAttribute('data-print-form-label', printForm.label);
@@ -139,7 +140,7 @@ test('renders accessible previews and readable answer keys for every student que
   await expect(coverPage.getByText('Student ID', { exact: true })).toBeVisible();
   await expect(coverPage.getByText('Date', { exact: true })).toBeVisible();
 
-  const answerKeyResponse = await page.goto(`${endpoint}&document=answer_key`);
+  const answerKeyResponse = await page.goto(`${endpoint}?document=answer_key`);
   const answerKeyLayout = await readPaginatedQuestionLayout(page);
   await expectAccessiblePreview(page);
   expect(answerKeyResponse?.headers()['content-security-policy']).toContain("script-src 'none'");

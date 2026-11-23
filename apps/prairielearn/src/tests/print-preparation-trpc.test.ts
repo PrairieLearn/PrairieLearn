@@ -15,7 +15,6 @@ import { IdSchema } from '@prairielearn/zod';
 import { uploadToS3 } from '../lib/aws.js';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { printFormLabelBase } from '../lib/client/printing/print-form-label.js';
-import { printLayoutSearch } from '../lib/client/printing/print-preparation.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
@@ -36,11 +35,7 @@ import {
   selectPrintPreparationForms,
 } from '../lib/printing/print-preparation.js';
 import { DEFAULT_PRINT_SETTINGS, type PrintSettings } from '../lib/printing/print-settings.js';
-import {
-  type PrintSnapshotSummary,
-  printSnapshotLayout,
-  storePrintSnapshot,
-} from '../lib/printing/print-snapshots.js';
+import { type PrintSnapshotSummary, storePrintSnapshot } from '../lib/printing/print-snapshots.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
@@ -94,7 +89,7 @@ async function storeTestSnapshot({
   assessmentId,
   printFormId,
   document = 'assessment',
-  settings = DEFAULT_PRINT_SETTINGS,
+  settings,
   authnUserId = '1',
   summary,
 }: {
@@ -105,16 +100,16 @@ async function storeTestSnapshot({
   authnUserId?: string;
   summary?: Partial<Omit<PrintSnapshotSummary, 'createdAt'>>;
 }) {
-  const printForm = await selectOptionalPrintForm({ printFormId, assessmentId });
+  const printForm = (await selectOptionalPrintForm({ printFormId, assessmentId }))!;
+  settings ??= printForm.settings;
   await storePrintSnapshot(
     {
-      printForm: printForm!,
+      printForm: { ...printForm, settings },
       courseCommitHash: (await selectCourseById((await selectCourseInstanceById('1')).course_id))
         .commit_hash,
       document,
       authnUserId,
       userId: authnUserId,
-      layout: printSnapshotLayout(new URLSearchParams(printLayoutSearch(settings))),
       questionListDigest: await printing.getPrintableQuestionListDigest(
         printFormId,
         new Set(settings.excludedQuestions),

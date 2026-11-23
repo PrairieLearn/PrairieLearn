@@ -16,7 +16,7 @@ test('loads course assets in the rendering browser', async ({ page, courseInstan
     courseInstance,
     'exam20-assessmentTools',
   );
-  await page.goto(`${printUrl}/preview?paper_size=Letter`);
+  await page.goto(`${printUrl}/preview`);
   await waitForPrintablePage(page);
 
   const renderer = new PrintRenderer({

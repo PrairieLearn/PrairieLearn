@@ -21,7 +21,7 @@ test('hides Print and blocks printable pages when the feature is disabled', asyn
       'exam17-mixedRealTimeGrading',
     );
     const assessmentBase = `/pl/course_instance/${courseInstance.id}/instructor/assessment/${printForm.assessment_id}`;
-    const previewUrl = `${printUrl}/preview?paper_size=Letter`;
+    const previewUrl = `${printUrl}/preview`;
     const preview = await page.request.get(previewUrl);
     expect(preview.status()).toBe(200);
     const user = await getConfiguredUser();
