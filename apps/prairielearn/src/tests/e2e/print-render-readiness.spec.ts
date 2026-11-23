@@ -47,8 +47,6 @@ test('reports failed and stuck elements when the time runs out', async ({ page }
     '<div id="source"><div data-pl-render-status="error"></div><div data-pl-render-status="pending"></div><div data-pl-render-status="ready"></div></div>',
   );
 
-  const failedElements = await page
-    .locator('#source')
-    .evaluate(waitForPrintableElements, 100);
+  const failedElements = await page.locator('#source').evaluate(waitForPrintableElements, 100);
   expect(failedElements).toHaveLength(2);
 });

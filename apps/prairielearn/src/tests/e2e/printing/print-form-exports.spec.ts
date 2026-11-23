@@ -418,9 +418,13 @@ test('omits questions whose content does not finish loading', async ({
     );
     await syncCourse(testCoursePath);
 
-    const { printUrl } = await createPrintableForm(courseInstance, 'exam99-printingIncomplete');
+    const { printUrl, printForm } = await createPrintableForm(
+      courseInstance,
+      'exam99-printingIncomplete',
+    );
+    const search = await savePrintSettings(printForm, { includeCoverPage: false });
     const start = Date.now();
-    const response = await page.goto(`${printUrl}/preview?paper_size=Letter&include_cover=false`);
+    const response = await page.goto(`${printUrl}/preview?${search}`);
     expect(response!.status()).toBe(200);
     expect(Date.now() - start).toBeLessThan(30_000);
     await waitForPrintablePage(page);
