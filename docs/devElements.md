@@ -271,7 +271,7 @@ For dynamic dependencies, the same recommendations apply. In that case, you are 
 
 Some features, such as [printing assessments](assessment/printing.md), capture a question after its page loads. They wait for images, fonts, MathJax, and jQuery ready callbacks, but they cannot know when an element's own asynchronous work is finished, such as a dynamic `import()`, a fetch, or drawing to a canvas. An element that renders asynchronously must report when it is done with the `data-pl-render-status` attribute:
 
-1. Add `data-pl-render-status="pending"` to an element in the HTML that `render()` returns. The attribute must be in the initial HTML, not added later by JavaScript.
+1. Add `data-pl-render-status="pending"` to an element in the HTML that `render()` returns, so that it is present as soon as the page loads.
 2. When the element has finished rendering, set the attribute to `ready`. If it cannot render, set it to `error`.
 
 ```html title="pl-my-element.mustache"
@@ -290,4 +290,4 @@ Some features, such as [printing assessments](assessment/printing.md), capture a
 </script>
 ```
 
-Elements without the attribute are treated as ready once the page has loaded. Set the attribute on every code path, including errors; an element that stays `pending` delays the page until the wait times out. Question scripts that render asynchronously can use the same attribute.
+Elements without the attribute are treated as ready once the page has loaded. Set the attribute on every code path, including errors; an element that stays `pending` holds up printing until the wait times out. Question scripts that render asynchronously can use the same attribute.

@@ -272,7 +272,8 @@ window.PLDrawingApi = {
       window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
     }
     await Promise.all(canvas.getObjects().map((obj) => obj.rendered));
-    // Labels drawn by a parent object, such as a distributed load, don't redraw the canvas.
+    // Fabric otherwise redraws on the next animation frame, and labels drawn by a parent object,
+    // such as a distributed load, don't redraw the canvas at all.
     canvas.renderAll();
   },
 };
