@@ -17,6 +17,9 @@ export const UPLOADS_DIR = '/uploads';
 export const uploadPrefix = (conversationId: string) => `uploads/${conversationId}/`;
 export const uploadKey = (conversationId: string, uploadId: string) =>
   `${uploadPrefix(conversationId)}${uploadId}`;
+/** One level below the uploads, so a delimited listing of the uploads leaves thumbnails out. */
+export const thumbnailKey = (conversationId: string, uploadId: string) =>
+  `${uploadPrefix(conversationId)}thumbnails/${uploadId}`;
 
 interface UploadTotals {
   count: number;
@@ -155,19 +158,20 @@ export function formatRequest(text: string, attachments: Attachment[], images: S
   ].join('');
 }
 
-/** Enough leading bytes to recognize every image type `isImage()` accepts. */
+/** Enough leading bytes to recognize every image type `imageType()` accepts. */
 export const IMAGE_SIGNATURE_BYTES = 12;
 
-/** The image types the model can view, recognized by their contents rather than their name. */
-export function isImage(bytes: Uint8Array) {
+/**
+ * The media type of an image the model can view, recognized by its contents rather than its
+ * name, or null for anything else.
+ */
+export function imageType(bytes: Uint8Array) {
   const startsWith = (signature: number[], offset = 0) =>
     signature.every((byte, index) => bytes[offset + index] === byte);
   const ascii = (text: string) => [...text].map((character) => character.charCodeAt(0));
-  return (
-    startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) ||
-    startsWith([0xff, 0xd8, 0xff]) ||
-    startsWith(ascii('GIF87a')) ||
-    startsWith(ascii('GIF89a')) ||
-    (startsWith(ascii('RIFF')) && startsWith(ascii('WEBP'), 8))
-  );
+  if (startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'image/png';
+  if (startsWith([0xff, 0xd8, 0xff])) return 'image/jpeg';
+  if (startsWith(ascii('GIF87a')) || startsWith(ascii('GIF89a'))) return 'image/gif';
+  if (startsWith(ascii('RIFF')) && startsWith(ascii('WEBP'), 8)) return 'image/webp';
+  return null;
 }

@@ -3,7 +3,6 @@ import pytest
 from pytest_prairielearn_grader import ConfigObject
 from pytest_prairielearn_grader.assertions import assert_true
 from pytest_prairielearn_grader.fixture import StudentFixture
-from pytest_prairielearn_grader.utils import GradingOutputLevel
 
 autograder_config = ConfigObject(
     student_code_pattern="Markov-Chains-1.ipynb",
@@ -20,7 +19,6 @@ def _power_iteration(M: np.ndarray, x: np.ndarray) -> np.ndarray:
     return xc
 
 
-@pytest.mark.output(level=GradingOutputLevel.Friendly)
 @pytest.mark.parametrize(
     ("M", "x"),
     [

@@ -51,7 +51,7 @@ interface CreateColumnsParams {
   assessment: StaffAssessment;
   courseInstanceId: string;
   studentLabels: StaffStudentLabel[];
-  onEditPointsSuccess: () => void;
+  onEditPointsSuccess: (instanceQuestionId: string) => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
   scrollRef: React.RefObject<HTMLDivElement | null> | null;
   displayedStatuses: Record<string, JobItemStatus | undefined>;
@@ -84,7 +84,7 @@ export function createColumns({
       urlPrefix={urlPrefix}
       csrfToken={csrfToken}
       scrollRef={scrollRef}
-      onSuccess={onEditPointsSuccess}
+      onSuccess={() => onEditPointsSuccess(row.instance_question.id)}
       onConflict={onEditPointsConflict}
     />
   );
@@ -298,7 +298,7 @@ export function createColumns({
           urlPrefix={urlPrefix}
           csrfToken={csrfToken}
           scrollRef={scrollRef}
-          onSuccess={onEditPointsSuccess}
+          onSuccess={() => onEditPointsSuccess(info.row.original.instance_question.id)}
           onConflict={onEditPointsConflict}
         />
       ),
