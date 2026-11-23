@@ -136,6 +136,32 @@ export function moveToSibling<T extends EditorTreeRow>(
   };
 }
 
+/**
+ * How a row draws the tree's guide lines. `levels[L]` describes the line of
+ * the group at depth `L` as it passes this row: `branch` connects this row to
+ * that group, `end` does too but stops here because the row is the group's
+ * last child, `pass` continues past the row to later children, and `none`
+ * means the group has no more children.
+ */
+export type TreeGuide = 'branch' | 'end' | 'pass' | 'none';
+
+export function treeGuides(rows: EditorTreeRow[]): TreeGuide[][] {
+  const isLastChild = (i: number) => nextSibling(rows, i) == null;
+  return rows.map((row, i) => {
+    const levels: TreeGuide[] = [];
+    let ancestor = i;
+    for (let level = row.depth - 1; level >= 0; level--) {
+      if (level === row.depth - 1) {
+        levels[level] = isLastChild(i) ? 'end' : 'branch';
+      } else {
+        levels[level] = isLastChild(ancestor) ? 'none' : 'pass';
+      }
+      ancestor = parentIndex(rows, ancestor) ?? ancestor;
+    }
+    return levels;
+  });
+}
+
 export function removeSubtree<T extends EditorTreeRow>(rows: T[], i: number): T[] {
   return [...rows.slice(0, i), ...rows.slice(subtreeEnd(rows, i))];
 }

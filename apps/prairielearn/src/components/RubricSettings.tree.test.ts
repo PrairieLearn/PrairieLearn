@@ -10,6 +10,7 @@ import {
   outdent,
   removeSubtree,
   rubricPointRange,
+  treeGuides,
 } from './RubricSettings.tree.js';
 
 type Row = EditorTreeRow & { name: string };
@@ -110,5 +111,19 @@ describe('rubricPointRange', () => {
       max: 0,
       min: -3,
     });
+  });
+});
+
+describe('treeGuides', () => {
+  it('continues a group line past rows until its last child', () => {
+    assert.deepEqual(treeGuides(rows('G g', '  G h', '    a', '    b', '  c', 'd')), [
+      [],
+      ['branch'],
+      ['pass', 'branch'],
+      ['pass', 'end'],
+      ['end'],
+      [],
+    ]);
+    assert.deepEqual(treeGuides(rows('G g', '  G h', '    a')), [[], ['end'], ['none', 'end']]);
   });
 });

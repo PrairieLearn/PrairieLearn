@@ -18,7 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
 import { omit } from 'es-toolkit';
-import { useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { Alert, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -36,6 +36,7 @@ import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
 import {
+  type TreeGuide,
   canIndent,
   depthsFromParents,
   hasSubgroup,
@@ -47,6 +48,7 @@ import {
   removeSubtree,
   rubricPointRange,
   subtreeEnd,
+  treeGuides,
 } from './RubricSettings.tree.js';
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
@@ -331,6 +333,7 @@ export function RubricSettings({
   const lastKeys = rubricItems.map(
     (_, idx) => rubricItems[subtreeEnd(rubricItems, idx) - 1].unique_key,
   );
+  const guides = treeGuides(rubricItems);
 
   const siblingCollisionDetection: CollisionDetection = (args) => {
     const { active, droppableContainers, droppableRects } = args;
@@ -911,7 +914,19 @@ export function RubricSettings({
                     <td>Description</td>
                     <td>Detailed explanation</td>
                     <td>Grader note</td>
-                    <td>Show to students</td>
+                    <td className="text-nowrap">
+                      Always show
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost py-0 px-1"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        data-bs-title="Students always see checked items. They see unchecked items only when the item is selected for their submission."
+                        aria-label="More information about showing items to students"
+                      >
+                        <i className="fas fa-circle-info" aria-hidden="true" />
+                      </button>
+                    </td>
                     {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
                   </tr>
                 </thead>
@@ -930,6 +945,8 @@ export function RubricSettings({
                             item={it}
                             parentKey={parentKeys[idx]}
                             lastKey={lastKeys[idx]}
+                            guides={guides[idx]}
+                            hasChildren={subtreeEnd(rubricItems, idx) > idx + 1}
                             hiddenChildCount={idx === activeDragIdx ? hiddenEnd - idx - 1 : 0}
                             showAiGradingStats={showAiGradingStats}
                             submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
@@ -1259,10 +1276,50 @@ export function RubricSettings({
   );
 }
 
+/**
+ * A one-line text box that opens up while it is being edited, so that rubric
+ * rows stay short but longer text is still comfortable to write.
+ */
+function RubricRowTextarea({
+  value,
+  label,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  label: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  const [isFocused, setIsFocused] = useState(false);
+  return (
+    <textarea
+      className="form-control"
+      rows={isFocused ? 4 : 1}
+      /**
+       * In one of the previous versions, explanation wasn't displayed correctly
+       * when used this way. We fixed it by making the textarea uncontrolled and
+       * putting the explanation text in the body of the textarea element.
+       * However, this method will not work well with "Discard changes".
+       */
+      value={value}
+      maxLength={10000}
+      style={{ minWidth: '15rem' }}
+      aria-label={label}
+      disabled={disabled}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+      onInput={(e) => onChange(e.currentTarget.value)}
+    />
+  );
+}
+
 function RubricRow({
   item,
   parentKey,
   lastKey,
+  guides,
+  hasChildren,
   hiddenChildCount,
   showAiGradingStats,
   submissionCount,
@@ -1283,6 +1340,8 @@ function RubricRow({
   parentKey: string | null;
   /** `unique_key` of the last row inside this row's group, or of this row itself. */
   lastKey: string;
+  guides: TreeGuide[];
+  hasChildren: boolean;
   /** Number of rows inside this group that are hidden while it is dragged. */
   hiddenChildCount: number;
   showAiGradingStats: boolean;
@@ -1305,21 +1364,16 @@ function RubricRow({
     data: { parentKey, lastKey },
     disabled: !hasCourseInstancePermissionEdit,
   });
-  // Each nesting level gets a colored stripe at the start of the row, so rows
-  // in the same group line up visually. A group shows its own stripe too, and
-  // its row is tinted with its level's color.
-  const stripeCount = isGroup ? item.depth + 1 : item.depth;
-  const stripes = Array.from(
-    { length: stripeCount },
-    (_, level) => `inset ${(level + 1) * NESTING_STRIPE_WIDTH}px 0 0 ${nestingLevelColor(level)}`,
-  );
+  const [isEditing, setIsEditing] = useState(false);
   return (
     <tr
       ref={setNodeRef}
       style={{
+        // Group rows are tinted with their level's color.
         ...(isGroup && {
           '--bs-table-bg': `color-mix(in srgb, ${nestingLevelColor(item.depth)} 12%, var(--bs-body-bg))`,
         }),
+        ...(isEditing && { '--bs-table-bg-state': 'var(--bs-warning-bg-subtle)' }),
         opacity: isDragging ? 0.4 : undefined,
         // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
         // which visually warps variable-height rows.
@@ -1327,21 +1381,25 @@ function RubricRow({
         transition,
       }}
       data-testid={isGroup ? 'rubric-editor-group' : 'rubric-editor-item'}
+      // Highlight the whole row while one of its fields has focus.
+      onFocus={() => setIsEditing(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setIsEditing(false);
+      }}
     >
-      <td
-        className="text-nowrap align-middle"
-        style={stripes.length > 0 ? { boxShadow: stripes.join(', ') } : undefined}
-      >
+      <td className="text-nowrap align-middle position-relative">
+        <TreeGuideLines
+          guides={guides}
+          groupDepth={isGroup && hasChildren && hiddenChildCount === 0 ? item.depth : null}
+        />
         {hasCourseInstancePermissionEdit && (
-          <div
-            style={{
-              paddingLeft: `calc(${item.depth}rem + ${stripeCount * NESTING_STRIPE_WIDTH}px)`,
-            }}
-          >
+          <div style={{ paddingLeft: `${item.depth * TREE_INDENT}px` }}>
             <button
               type="button"
-              className="btn btn-sm btn-ghost"
-              style={{ cursor: 'grab', touchAction: 'none' }}
+              className="btn btn-sm btn-ghost px-0"
+              // The handle is as wide as one indent level, so that the guide
+              // lines run down from the middle of a group's handle.
+              style={{ cursor: 'grab', touchAction: 'none', width: `${TREE_INDENT}px` }}
               aria-label="Drag to reorder"
               // Native buttons already have the role supplied by dnd-kit.
               {...omit({ ...attributes, ...listeners }, ['role'])}
@@ -1460,11 +1518,8 @@ function RubricRow({
       <td className="align-middle">
         <div
           className="d-flex align-items-center gap-2"
-          style={{ paddingLeft: `${item.depth * 1.5}rem` }}
+          style={{ paddingLeft: `${item.depth}rem` }}
         >
-          {item.depth > 0 && (
-            <i className="bi bi-arrow-return-right text-muted" aria-hidden="true" />
-          )}
           {isGroup && (
             <i
               className="bi bi-collection"
@@ -1502,61 +1557,32 @@ function RubricRow({
       </td>
 
       <td className="align-middle">
-        <textarea
-          className="form-control"
-          /**
-           * In one of the previous versions, explanation wasn't displayed correctly
-           * when used this way. We fixed it by making the textarea uncontrolled and
-           * putting the explanation text in the body of the textarea element.
-           * However, this method will not work well with "Discard changes".
-           * Ditto for grader note below.
-           */
+        <RubricRowTextarea
           value={item.rubric_item.explanation ?? ''}
-          maxLength={10000}
-          style={{ minWidth: '15rem' }}
-          aria-label="Explanation"
+          label="Explanation"
           disabled={!hasCourseInstancePermissionEdit}
-          onInput={(e) => updateRubricItem({ explanation: e.currentTarget.value })}
+          onChange={(explanation) => updateRubricItem({ explanation })}
         />
       </td>
 
       <td className="align-middle">
-        <textarea
-          className="form-control"
+        <RubricRowTextarea
           value={item.rubric_item.grader_note ?? ''}
-          maxLength={10000}
-          style={{ minWidth: '15rem' }}
-          aria-label="Grader note"
+          label="Grader note"
           disabled={!hasCourseInstancePermissionEdit}
-          onInput={(e) => updateRubricItem({ grader_note: e.currentTarget.value })}
+          onChange={(grader_note) => updateRubricItem({ grader_note })}
         />
       </td>
 
-      <td className="align-middle">
-        <div className="form-check form-check-inline">
-          <label className="form-check-label text-nowrap">
-            <input
-              type="radio"
-              className="form-check-input"
-              checked={item.rubric_item.always_show_to_students}
-              disabled={!hasCourseInstancePermissionEdit}
-              onChange={() => updateRubricItem({ always_show_to_students: true })}
-            />
-            Always
-          </label>
-        </div>
-        <div className="form-check form-check-inline">
-          <label className="form-check-label text-nowrap">
-            <input
-              type="radio"
-              className="form-check-input"
-              checked={!item.rubric_item.always_show_to_students}
-              disabled={!hasCourseInstancePermissionEdit}
-              onChange={() => updateRubricItem({ always_show_to_students: false })}
-            />
-            If selected
-          </label>
-        </div>
+      <td className="align-middle text-center">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          checked={item.rubric_item.always_show_to_students}
+          aria-label="Always show to students"
+          disabled={!hasCourseInstancePermissionEdit}
+          onChange={(e) => updateRubricItem({ always_show_to_students: e.currentTarget.checked })}
+        />
       </td>
 
       {isGroup ? (
@@ -1619,7 +1645,57 @@ function RubricDragPreview({ item, childCount }: { item: RubricItemData; childCo
   );
 }
 
-const NESTING_STRIPE_WIDTH = 4;
+/**
+ * Draws a row's part of the tree in the first column: a line for each
+ * enclosing group, colored like that group's level, with a branch into this
+ * row's drag handle from its parent. A group with children also starts its own
+ * line below its handle. The lines meet across rows, since each one spans the
+ * full cell.
+ */
+function TreeGuideLines({
+  guides,
+  groupDepth,
+}: {
+  guides: TreeGuide[];
+  groupDepth: number | null;
+}) {
+  const lineX = (level: number) => `calc(0.25rem + ${level * TREE_INDENT + TREE_INDENT / 2 - 1}px)`;
+  const lineColor = (level: number) =>
+    `color-mix(in srgb, ${nestingLevelColor(level)} 60%, transparent)`;
+  const line = (key: string, level: number, style: CSSProperties) => (
+    <div
+      key={key}
+      className="position-absolute pe-none"
+      style={{ left: lineX(level), background: lineColor(level), ...style }}
+      aria-hidden="true"
+    />
+  );
+  return (
+    <>
+      {guides.flatMap((guide, level) => {
+        if (guide === 'none') return [];
+        const vertical = line(`v${level}`, level, {
+          top: 0,
+          bottom: guide === 'end' ? '50%' : '-1px',
+          width: '2px',
+        });
+        if (guide === 'pass') return [vertical];
+        return [
+          vertical,
+          line(`h${level}`, level, {
+            top: 'calc(50% - 1px)',
+            height: '2px',
+            width: `${TREE_INDENT / 2}px`,
+          }),
+        ];
+      })}
+      {groupDepth != null &&
+        line('group', groupDepth, { top: 'calc(50% + 0.6rem)', bottom: '-1px', width: '2px' })}
+    </>
+  );
+}
+
+const TREE_INDENT = 24;
 const NESTING_LEVEL_COLORS = ['var(--bs-primary)', 'var(--bs-purple)'];
 
 function nestingLevelColor(level: number) {
