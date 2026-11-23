@@ -270,7 +270,7 @@ function ConversationPicker({
 /** Requests staff can send as they are, for those who are not sure what to ask. */
 const STARTERS = [
   { icon: 'bi-pencil-square', text: 'Help me write a new question' },
-  { icon: 'bi-bar-chart', text: 'Close the score gaps between question variants' },
+  { icon: 'bi-bar-chart', text: 'Find and fix variants with wide score disparities' },
   { icon: 'bi-share', text: 'Share a set of questions with another course' },
   { icon: 'bi-calendar-plus', text: 'Set up next semester from this course instance' },
 ];
