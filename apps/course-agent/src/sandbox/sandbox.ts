@@ -99,6 +99,17 @@ type CourseFilesSource =
 // Saving and restoring each took about 4 seconds for a 370 MB repository in local testing. A
 // transfer that stalls must not hold up the conversation, which can start without a snapshot.
 const SNAPSHOT_TRANSFER_TIMEOUT_MS = 2 * 60 * 1000;
+// A snapshot older than this is replaced by a fresh clone. Otherwise each conversation would fetch
+// everything the branch gained since the first save, and the snapshot would keep files the course
+// has since deleted indefinitely. The `repository-snapshots/` lifecycle rule must be longer.
+const SNAPSHOT_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+
+/** A course's snapshot record, as a new sandbox found it before restoring or cloning. */
+interface RepositorySnapshotLookup {
+  key: string;
+  /** Null when no snapshot has been saved. */
+  saved: { etag: string; uploaded: Date; backup: DirectoryBackupRecord } | null;
+}
 
 /**
  * Where the record of a snapshot is stored. The archive library names each archive itself, so a
@@ -417,9 +428,15 @@ export class CourseSandbox extends DurableObject<Env> {
       );
       loaded = { source: 'local' };
     } else {
-      const key = courseId ? repositorySnapshotKey(courseId, config) : null;
-      const restored = key ? await this.restoreRepository(config, key) : null;
-      loaded = restored ?? (await this.cloneRepository(config, key));
+      const lookup = courseId
+        ? await this.findRepositorySnapshot(repositorySnapshotKey(courseId, config))
+        : null;
+      const saved = lookup?.saved;
+      const restored =
+        saved && Date.now() - saved.uploaded.getTime() < SNAPSHOT_MAX_AGE_MS
+          ? await this.restoreRepository(config, saved.backup)
+          : null;
+      loaded = restored ?? (await this.cloneRepository(config, lookup));
     }
     await this.lockSession();
     return loaded;
@@ -427,7 +444,7 @@ export class CourseSandbox extends DurableObject<Env> {
 
   private async cloneRepository(
     source: { repository: string; branch: string },
-    snapshotKey: string | null,
+    snapshotLookup: RepositorySnapshotLookup | null,
   ): Promise<CourseFilesSource> {
     const started = Date.now();
     // Reviews only need the branch tip, and later fetches still work from a shallow clone.
@@ -450,7 +467,7 @@ export class CourseSandbox extends DurableObject<Env> {
       AGENT_USER,
     );
     const cloneMs = Date.now() - started;
-    const snapshotMs = snapshotKey ? await this.saveRepositorySnapshot(snapshotKey) : null;
+    const snapshotMs = snapshotLookup ? await this.saveRepositorySnapshot(snapshotLookup) : null;
     return { source: 'clone', cloneMs, snapshotMs };
   }
 
@@ -460,25 +477,26 @@ export class CourseSandbox extends DurableObject<Env> {
    * what GitHub served. The working tree is left out because it is several times larger and a
    * sandbox checks it out locally in seconds. Returns how long saving took, or null if it failed.
    */
-  private async saveRepositorySnapshot(key: string) {
+  private async saveRepositorySnapshot({ key, saved }: RepositorySnapshotLookup) {
     const started = Date.now();
     try {
       const snapshot = await this.repositorySnapshots.backup({
         dir: `${SESSION}/course/.git`,
+        name: key,
         signal: AbortSignal.timeout(SNAPSHOT_TRANSFER_TIMEOUT_MS),
       });
-      // The record is written only if it is still as it was just read. Otherwise two sandboxes
-      // saving at once could each replace the record without deleting the other's archive.
-      const previous = await this.env.CHECKPOINTS.get(key);
+      // The record is written only if it is still the one this sandbox found before cloning.
+      // When several sandboxes clone to replace the same record, the first one's snapshot stays:
+      // replacing it too would fail the restores already reading it.
       const published = await this.env.CHECKPOINTS.put(key, JSON.stringify(snapshot), {
-        onlyIf: previous ? { etagMatches: previous.etag } : new Headers({ 'If-None-Match': '*' }),
+        onlyIf: saved ? { etagMatches: saved.etag } : new Headers({ 'If-None-Match': '*' }),
       });
       if (!published) {
-        // Another sandbox saved a snapshot in the meantime. Theirs stays.
         await this.repositorySnapshots.delete(snapshot);
-      } else if (previous) {
-        // A sandbox restoring the replaced archive fails that restore and clones instead.
-        await this.repositorySnapshots.delete(await previous.json<DirectoryBackupRecord>());
+      } else if (saved) {
+        // A sandbox restoring the replaced archive fails that restore, clones, and then finds
+        // this record already replaced, so it keeps this snapshot.
+        await this.repositorySnapshots.delete(saved.backup);
       }
       return Date.now() - started;
     } catch (error) {
@@ -489,28 +507,60 @@ export class CourseSandbox extends DurableObject<Env> {
   }
 
   /**
-   * Restore the snapshot that the key names, if there is one, then fetch and check out the branch
-   * tip, which downloads only what changed since the snapshot was saved. The result matches a
-   * fresh clone except that objects the branch no longer uses stay in the object store. Returns
-   * null when the caller should clone instead.
+   * Read the snapshot record that the key names. Returns null if it cannot be read, so the
+   * sandbox clones without replacing a record it could not see.
+   */
+  private async findRepositorySnapshot(key: string): Promise<RepositorySnapshotLookup | null> {
+    try {
+      const record = await this.env.CHECKPOINTS.get(key);
+      return {
+        key,
+        saved: record && {
+          etag: record.etag,
+          uploaded: record.uploaded,
+          backup: await record.json<DirectoryBackupRecord>(),
+        },
+      };
+    } catch (error) {
+      reportError(error);
+      return null;
+    }
+  }
+
+  /**
+   * Restore a snapshot, then fetch and check out the branch tip, which downloads only what changed
+   * since the snapshot was saved. The result matches a fresh clone except that objects the branch
+   * no longer uses stay in the object store, and the reflog still names the snapshot's commit.
+   * Returns null when the caller should clone instead.
    */
   private async restoreRepository(
     source: { repository: string; branch: string },
-    snapshotKey: string,
+    snapshot: DirectoryBackupRecord,
   ): Promise<CourseFilesSource | null> {
     const course = `${SESSION}/course`;
     const { branch } = source;
     try {
-      const saved = await this.env.CHECKPOINTS.get(snapshotKey);
-      if (!saved) return null;
       const started = Date.now();
       await this.exec(['mkdir', course], AGENT_USER);
-      await this.repositorySnapshots.restore(await saved.json<DirectoryBackupRecord>(), {
+      await this.repositorySnapshots.restore(snapshot, {
         dir: `${course}/.git`,
         signal: AbortSignal.timeout(SNAPSHOT_TRANSFER_TIMEOUT_MS),
       });
       const restored = Date.now();
-      await this.exec(['git', '-C', course, 'fetch', '--depth', '1', 'origin', branch], AGENT_USER);
+      // An explicit refspec keeps a branch name that starts with `-` from being read as an option.
+      await this.exec(
+        [
+          'git',
+          '-C',
+          course,
+          'fetch',
+          '--depth',
+          '1',
+          'origin',
+          `+refs/heads/${branch}:refs/remotes/origin/${branch}`,
+        ],
+        AGENT_USER,
+      );
       const fetched = Date.now();
       await this.exec(
         ['git', '-C', course, 'reset', '--hard', `refs/remotes/origin/${branch}`],
@@ -523,8 +573,8 @@ export class CourseSandbox extends DurableObject<Env> {
         checkoutMs: Date.now() - fetched,
       };
     } catch (error) {
-      // A snapshot only saves time, so one that cannot be looked up, restored, or fetched must
-      // not fail startup. Cloning still works without it, and a slow clone replaces it.
+      // A snapshot only saves time, so one that cannot be restored or fetched must not fail
+      // startup. Cloning still works without it, and a slow clone replaces it.
       reportError(error);
       await this.exec(['rm', '-rf', course]);
       return null;
