@@ -268,7 +268,9 @@ function omitIncompleteQuestions(failures: Element[], message: string): void {
 
   const data = document.documentElement.dataset;
   const warnings = JSON.parse(data.printWarnings ?? '[]');
+  let omittedPoints = 0;
   for (const question of omitted) {
+    omittedPoints += Number(question.dataset.maxPoints);
     const number = question.dataset.questionNumber;
     warnings.push({
       code: 'incomplete_render',
@@ -281,6 +283,11 @@ function omitIncompleteQuestions(failures: Element[], message: string): void {
   data.printWarnings = JSON.stringify(warnings);
   data.printOmittedQuestionCount = String(Number(data.printOmittedQuestionCount) + omitted.size);
   data.printQuestionCount = String(Number(data.printQuestionCount) - omitted.size);
+  data.printMaxPoints = String(Number(data.printMaxPoints) - omittedPoints);
+  const coverQuestionCount = document.querySelector('[data-print-cover-question-count]');
+  if (coverQuestionCount) coverQuestionCount.textContent = data.printQuestionCount;
+  const coverMaxPoints = document.querySelector('[data-print-cover-max-points]');
+  if (coverMaxPoints) coverMaxPoints.textContent = data.printMaxPoints;
 }
 
 /** Convert details to regular blocks so closed content prints and long content can span pages. */

@@ -443,6 +443,7 @@ test('omits questions whose content does not finish loading', async ({
       }),
     ]);
     await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
+    await expect(page.locator(':root')).toHaveAttribute('data-print-max-points', '1');
     await expect(page.getByText('Use the labelled drawing below.')).toBeVisible();
     await expect(page.getByText('Stuck element.')).toHaveCount(0);
 

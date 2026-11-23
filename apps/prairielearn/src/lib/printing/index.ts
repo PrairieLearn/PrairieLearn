@@ -390,6 +390,7 @@ async function renderPrintFormQuestionsUnbounded(
             class="printing-question printing-question-freeform"
             data-print-block-size="${questionBlockSizeOverrides.get(printableQuestion.print_form_question.question_number) ?? defaultQuestionBlockSize}"
             data-question-number="${printableQuestion.print_form_question.question_number}"
+            data-max-points="${printableQuestion.print_form_question.max_points}"
             aria-label="Question ${printableQuestion.print_form_question.question_number}"
           >
             ${unsafeHtml(questionHtml)}

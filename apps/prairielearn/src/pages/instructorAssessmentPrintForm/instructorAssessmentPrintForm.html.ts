@@ -204,11 +204,11 @@ export function InstructorAssessmentPrintForm({
                     <dl class="assessment-cover-summary">
                       <div>
                         <dt>Questions</dt>
-                        <dd>${questionHtmls.length}</dd>
+                        <dd data-print-cover-question-count>${questionHtmls.length}</dd>
                       </div>
                       <div>
                         <dt>Points</dt>
-                        <dd>${maxPoints}</dd>
+                        <dd data-print-cover-max-points>${maxPoints}</dd>
                       </div>
                       <div>
                         <dt>Form</dt>
