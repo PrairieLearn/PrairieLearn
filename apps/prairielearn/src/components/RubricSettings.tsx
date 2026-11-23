@@ -11,6 +11,7 @@ import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { dispatchInstanceQuestionGradingPanelUpdate } from '../lib/client/manual-grading-events.js';
 import { mathjaxTypeset } from '../lib/client/mathjax.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
+import { isSideNavExpanded, setSideNavExpandedTemporarily } from '../lib/client/side-nav.js';
 import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
@@ -185,6 +186,31 @@ export function RubricSettings({
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
   const [showSavedNotification, setShowSavedNotification] = useState(false);
+
+  useEffect(() => {
+    // Collapse the course side nav while the rubric editor is open to give the
+    // editor more width, and restore it when the editor closes. The editor is a
+    // Bootstrap collapse outside of React's control, so listen for its events.
+    const settings = document.getElementById('rubric-setting');
+    if (!settings) return;
+    let collapsedSideNav = false;
+    const onShow = (event: Event) => {
+      if (event.target !== settings || !isSideNavExpanded()) return;
+      collapsedSideNav = true;
+      setSideNavExpandedTemporarily(false);
+    };
+    const onHide = (event: Event) => {
+      if (event.target !== settings || !collapsedSideNav) return;
+      collapsedSideNav = false;
+      setSideNavExpandedTemporarily(true);
+    };
+    settings.addEventListener('show.bs.collapse', onShow);
+    settings.addEventListener('hide.bs.collapse', onHide);
+    return () => {
+      settings.removeEventListener('show.bs.collapse', onShow);
+      settings.removeEventListener('hide.bs.collapse', onHide);
+    };
+  }, []);
 
   useEffect(() => {
     if (!showSavedNotification) return;

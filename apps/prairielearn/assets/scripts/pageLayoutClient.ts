@@ -1,5 +1,7 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { onSideNavSetExpanded } from '../../src/lib/client/side-nav.js';
+
 // Handle when the user expands or collapses the side nav
 onDocumentReady(() => {
   // Visible on wider viewports (768px and up)
@@ -34,8 +36,9 @@ onDocumentReady(() => {
   const persistToggleState =
     sideNavTogglerButton.getAttribute('data-persist-toggle-state') !== 'false';
 
-  sideNavTogglerButton.addEventListener('click', async () => {
+  const setSideNavExpanded = async (expand: boolean, persist: boolean) => {
     const sideNavExpanded = !appContainerDiv.classList.contains('collapsed');
+    if (sideNavExpanded === expand) return;
 
     const sideNavButtons = document.querySelectorAll<HTMLButtonElement>('.side-nav-link');
 
@@ -87,7 +90,7 @@ onDocumentReady(() => {
       { once: true },
     );
 
-    if (persistToggleState) {
+    if (persist) {
       // Update the side nav expanded state
       await fetch('/pl/side_nav/settings', {
         method: 'PUT',
@@ -99,7 +102,13 @@ onDocumentReady(() => {
         }),
       });
     }
-  });
+  };
+
+  sideNavTogglerButton.addEventListener('click', () =>
+    setSideNavExpanded(appContainerDiv.classList.contains('collapsed'), persistToggleState),
+  );
+
+  onSideNavSetExpanded((expanded) => void setSideNavExpanded(expanded, false));
 
   sideNavMobileButton.addEventListener('click', () => {
     // Animate the side nav
