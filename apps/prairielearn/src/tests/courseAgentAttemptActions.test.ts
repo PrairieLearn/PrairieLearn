@@ -26,6 +26,10 @@ import { withUser } from './utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+// Test files in a worker share modules, so a server an earlier file loaded would keep the real AI
+// grading. Clearing them makes this file load the server with the stand-in below.
+vi.hoisted(() => vi.resetModules());
+
 // AI grading calls a model provider, so the action's job is stood in for.
 vi.mock(import('../ee/lib/ai-grading/ai-grading.js'), async (importOriginal) => ({
   ...(await importOriginal()),
