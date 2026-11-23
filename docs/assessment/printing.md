@@ -24,7 +24,7 @@ If your course uses custom elements in questions, check those questions in both 
 The question list highlights two kinds of items to check:
 
 - **Review printability** suggests that a question may need adjustments for paper. These suggestions do not prevent you from downloading the assessment.
-- **Omitted** means a question could not be included. Use **Edit question** to fix it, or uncheck it to leave it out of a current form, then select **Update preview**. Downloads are unavailable while included questions have these errors. If a download has started for the form, changing a checkbox asks you to create a new numbered version. Previous forms cannot be edited, so reload the page after fixing one of their questions.
+- **Omitted** means a question could not be included, for example because it has an error or because an image or element in it did not finish loading. Use **Edit question** to fix it, or uncheck it to leave it out of a current form, then select **Update preview**. Downloads are unavailable while included questions have these errors. If a download has started for the form, changing a checkbox asks you to create a new numbered version. Previous forms cannot be edited, so reload the page after fixing one of their questions.
 
 Use **Show only items to review** to find flagged questions. After addressing them, check the complete student copy and answer key before printing. An answer key can only show answers that the questions provide, so check it before using it for grading.
 

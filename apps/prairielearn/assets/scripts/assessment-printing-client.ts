@@ -14,6 +14,10 @@ import { parseQuestionBlockSize } from '../../src/lib/printing/question-block-si
 
 import { layoutPrintGradingTable } from './lib/print-cover-layout.js';
 
+// Each readiness wait gets this long, so that a stuck element doesn't leave images no time. Both
+// waits together stay well inside the preview request's 45-second deadline.
+const READINESS_TIMEOUT_MS = 10_000;
+
 interface PagedFlow {
   total: number;
 }
@@ -242,6 +246,42 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
 }
 
 /** Convert details to regular blocks so closed content prints and long content can span pages. */
+/**
+ * Omits questions whose elements or images did not finish rendering, and reports them the same
+ * way as questions that the server could not render, so downloads stay blocked until they are
+ * fixed or excluded. Failures outside a question, such as on the cover, fail the whole page.
+ */
+function omitIncompleteQuestions(failures: Element[], message: string): void {
+  const omitted = new Set<HTMLElement>();
+  for (const element of failures) {
+    let question = element.closest<HTMLElement>('.printing-question');
+    let root = element.getRootNode();
+    while (!question && root instanceof ShadowRoot) {
+      question = root.host.closest<HTMLElement>('.printing-question');
+      root = root.host.getRootNode();
+    }
+    if (!question) throw new Error(`The cover page ${message}`);
+    omitted.add(question);
+  }
+  if (omitted.size === 0) return;
+
+  const data = document.documentElement.dataset;
+  const warnings = JSON.parse(data.printWarnings ?? '[]');
+  for (const question of omitted) {
+    const number = question.dataset.questionNumber;
+    warnings.push({
+      code: 'incomplete_render',
+      question_number: number,
+      qid: null,
+      message: `Question ${number} ${message}.`,
+    });
+    question.remove();
+  }
+  data.printWarnings = JSON.stringify(warnings);
+  data.printOmittedQuestionCount = String(Number(data.printOmittedQuestionCount) + omitted.size);
+  data.printQuestionCount = String(Number(data.printQuestionCount) - omitted.size);
+}
+
 function materializePrintableDetails(source: HTMLElement): void {
   const detailsBlocks = [
     ...source.querySelectorAll<HTMLDetailsElement>('.printing-question details'),
@@ -512,7 +552,10 @@ async function paginateAssessment(): Promise<{ totalPages: number }> {
   if (!source || !output) throw new Error('Printable assessment containers are missing');
 
   await waitForJQueryReadyCallbacks();
-  await waitForPrintableElements(source);
+  omitIncompleteQuestions(
+    await waitForPrintableElements(source, READINESS_TIMEOUT_MS),
+    'has content that did not finish rendering',
+  );
   materializePrintableDetails(source);
   materializePrintableShadowRootStyles(source);
   const mathJax = window.MathJax as
@@ -529,7 +572,10 @@ async function paginateAssessment(): Promise<{ totalPages: number }> {
   annotateDocxMath(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
-  await waitForPrintImages(source);
+  omitIncompleteQuestions(
+    await waitForPrintImages(source, READINESS_TIMEOUT_MS),
+    'has an image that could not be loaded',
+  );
   const { height: pageHeight } = measurePrintablePage(source);
   layoutPrintGradingTable(source, pageHeight);
   if (document.documentElement.dataset.printDocument === 'answer_key') {

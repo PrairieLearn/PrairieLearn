@@ -37,9 +37,10 @@ test('waits for regular, lazy, and shadow-root images', async ({ page }) => {
     let complete = false;
     const waiting = page
       .locator('#source')
-      .evaluate(waitForPrintImages)
-      .then(() => {
+      .evaluate(waitForPrintImages, 30_000)
+      .then((failedImages) => {
         complete = true;
+        return failedImages;
       });
     await expect.poll(() => responses.has('/lazy.svg')).toBe(true);
     sendImage(responses.get('/light.svg')!);
@@ -59,7 +60,7 @@ test('waits for regular, lazy, and shadow-root images', async ({ page }) => {
     expect(complete).toBe(false);
 
     sendImage(responses.get('/lazy.svg')!);
-    await waiting;
+    expect(await waiting).toHaveLength(0);
     expect(complete).toBe(true);
   } finally {
     server.closeAllConnections();

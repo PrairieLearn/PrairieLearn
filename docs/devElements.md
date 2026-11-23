@@ -290,4 +290,4 @@ Some features, such as [printing assessments](assessment/printing.md), capture a
 </script>
 ```
 
-Elements without the attribute are treated as ready once the page has loaded. Set the attribute on every code path, including errors; an element that stays `pending` delays the page until the wait times out. Question scripts that render asynchronously can use the same attribute.
+Elements without the attribute are treated as ready once the page has loaded. Set the attribute on every code path, including errors. If an element reports `error` or is still `pending` after about 10 seconds, printing leaves its question out of the preview and asks the instructor to fix or exclude it. Question scripts that render asynchronously can use the same attribute.

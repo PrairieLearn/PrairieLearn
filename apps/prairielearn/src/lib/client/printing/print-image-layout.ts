@@ -4,7 +4,14 @@ import { getPrintBlockHeight } from './print-question-layout.js';
 
 const MIN_CHOICE_IMAGE_SCALE = 0.5;
 
-export async function waitForPrintImages(source: HTMLElement): Promise<void> {
+/**
+ * Waits for every image under `source`, including in shadow roots, to load and decode, or until
+ * `timeoutMs` passes. Resolves with the images that failed or did not finish in time.
+ */
+export async function waitForPrintImages(
+  source: HTMLElement,
+  timeoutMs: number,
+): Promise<HTMLImageElement[]> {
   const images: HTMLImageElement[] = [];
   const collectImages = (root: ParentNode) => {
     images.push(...root.querySelectorAll<HTMLImageElement>('img'));
@@ -14,28 +21,32 @@ export async function waitForPrintImages(source: HTMLElement): Promise<void> {
   };
   collectImages(source);
 
-  await Promise.all(
+  const timedOut = new Promise<false>((resolve) => setTimeout(() => resolve(false), timeoutMs));
+  const loaded = await Promise.all(
     images.map(async (image) => {
       // Image capture placeholders have no source until a student acts. Images selected through
       // srcset or a picture source still need to finish loading before pagination.
-      if (!image.currentSrc && !image.getAttribute('src') && !image.getAttribute('srcset')) return;
+      if (!image.currentSrc && !image.getAttribute('src') && !image.getAttribute('srcset')) {
+        return true;
+      }
       if (image.loading === 'lazy') image.loading = 'eager';
-      if (!image.complete) {
-        await new Promise<void>((resolve, reject) => {
-          image.addEventListener('load', () => resolve(), { once: true });
-          image.addEventListener(
-            'error',
-            () => reject(new Error('An image in this form could not be loaded')),
-            { once: true },
-          );
-        });
-      }
-      if (image.naturalWidth === 0) {
-        throw new Error('An image in this form could not be loaded');
-      }
-      await image.decode();
+      const load = async () => {
+        if (!image.complete) {
+          await new Promise((resolve) => {
+            image.addEventListener('load', resolve, { once: true });
+            image.addEventListener('error', resolve, { once: true });
+          });
+        }
+        if (image.naturalWidth === 0) return false;
+        return await image.decode().then(
+          () => true,
+          () => false,
+        );
+      };
+      return await Promise.race([load(), timedOut]);
     }),
   );
+  return images.filter((_, index) => !loaded[index]);
 }
 
 /** Fit image choices together without changing the size of question text or answer markers. */

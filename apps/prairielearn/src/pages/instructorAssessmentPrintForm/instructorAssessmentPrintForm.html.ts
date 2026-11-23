@@ -289,3 +289,17 @@ export function InstructorAssessmentPrintForm({
       </body>
     </html>`;
 }
+
+/** A preview that failed as a whole, in the form the preparation page reads from its iframe. */
+export function InstructorAssessmentPrintFormError({ message }: { message: string }) {
+  return html`<!doctype html>
+    <html lang="en" data-print-status="error" data-print-error="${message}">
+      <head>
+        <meta charset="utf-8" />
+        <title>Print preview error</title>
+      </head>
+      <body>
+        <p>${message}</p>
+      </body>
+    </html>`;
+}
