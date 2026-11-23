@@ -1,7 +1,8 @@
+import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { type ChangeEvent, type Dispatch, type SetStateAction } from 'react';
-import { Button, Card, Form } from 'react-bootstrap';
+import { Button, Card, Form, Spinner } from 'react-bootstrap';
 import { useFormContext } from 'react-hook-form';
 
 import { PrintIdentityFieldsTextSchema } from '../../../lib/client/printing/print-cover.js';
@@ -11,15 +12,18 @@ import {
   MAX_COVER_PAGES,
 } from '../../../lib/client/printing/print-packet.js';
 import type { PrintSettings, SavePrintSetting } from '../../../lib/printing/print-settings.js';
+import { useTRPC } from '../../../trpc/assessment/context.js';
 
 const COVER_SIZE_LIMIT = filesize(MAX_COVER_BYTES, { base: 10 });
 
+/** An uploaded cover PDF; its signed ID is all that exports need. */
 export interface CoverPageFile {
   id: string;
-  file: File;
+  name: string;
+  sizeBytes: number;
 }
 
-/** Default cover options and the PDFs uploaded for student copies, which stay in this tab. */
+/** Default cover options and the PDFs uploaded for student copies, which only this tab knows. */
 export function CoverPageCard({
   settings,
   settingsLocked,
@@ -46,6 +50,41 @@ export function CoverPageCard({
     handleSubmit,
     formState: { dirtyFields, errors },
   } = useFormContext<PrintSettings>();
+  const trpc = useTRPC();
+  const uploadCover = useMutation(trpc.printExports.uploadCover.mutationOptions());
+
+  async function addCovers(files: File[]) {
+    if (files.some((file) => !file.name.toLowerCase().endsWith('.pdf'))) {
+      setUploadError('Files were not added. Choose PDF files for your custom cover pages.');
+      return;
+    }
+    if (
+      coverPages.length + files.length > MAX_COVER_FILES ||
+      [...coverPages, ...files].reduce(
+        (sum, cover) => sum + ('size' in cover ? cover.size : cover.sizeBytes),
+        0,
+      ) > MAX_COVER_BYTES
+    ) {
+      setUploadError(
+        `Files were not added. Use up to ${MAX_COVER_FILES} PDFs, totaling no more than ${COVER_SIZE_LIMIT}.`,
+      );
+      return;
+    }
+    setUploadError(null);
+    for (const file of files) {
+      const data = new FormData();
+      data.set('file', file);
+      try {
+        const { id, name } = await uploadCover.mutateAsync(data);
+        setCoverPages((covers) => [...covers, { id, name, sizeBytes: file.size }]);
+      } catch (error) {
+        setUploadError(
+          error instanceof Error ? error.message : `“${file.name}” could not be uploaded.`,
+        );
+        return;
+      }
+    }
+  }
   return (
     <Card className="mb-3">
       <Card.Body>
@@ -149,38 +188,23 @@ export function CoverPageCard({
           <Form.Control
             type="file"
             accept="application/pdf,.pdf"
-            disabled={controlsBusy || !canEditPrintForms}
+            disabled={controlsBusy || uploadCover.isPending || !canEditPrintForms}
             aria-describedby="print-cover-pages-help"
             aria-invalid={!!uploadError}
             aria-errormessage={uploadError ? 'print-cover-pages-error' : undefined}
             isInvalid={!!uploadError}
             multiple
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              const next = [
-                ...coverPages,
-                ...Array.from(event.target.files ?? [], (file) => ({
-                  id: crypto.randomUUID(),
-                  file,
-                })),
-              ];
+              const files = Array.from(event.target.files ?? []);
               event.target.value = '';
-              if (next.some(({ file }) => !file.name.toLowerCase().endsWith('.pdf'))) {
-                setUploadError(
-                  'Files were not added. Choose PDF files for your custom cover pages.',
-                );
-              } else if (
-                next.length > MAX_COVER_FILES ||
-                next.reduce((sum, { file }) => sum + file.size, 0) > MAX_COVER_BYTES
-              ) {
-                setUploadError(
-                  `Files were not added. Use up to ${MAX_COVER_FILES} PDFs, totaling no more than ${COVER_SIZE_LIMIT}.`,
-                );
-              } else {
-                setCoverPages(next);
-                setUploadError(null);
-              }
+              void addCovers(files);
             }}
           />
+          {uploadCover.isPending && (
+            <div className="small text-muted mt-1" role="status">
+              <Spinner size="sm" className="me-1" aria-hidden="true" /> Uploading…
+            </div>
+          )}
           <Form.Control.Feedback type="invalid" id="print-cover-pages-error">
             {uploadError}
           </Form.Control.Feedback>
@@ -194,15 +218,15 @@ export function CoverPageCard({
         {canEditPrintForms && coverPages.length > 0 && (
           <>
             <ol className="small ps-3 mt-2 mb-1">
-              {coverPages.map(({ id, file }) => (
+              {coverPages.map(({ id, name }) => (
                 <li key={id}>
                   <div className="d-flex align-items-center gap-2">
-                    <span className="text-break flex-grow-1">{file.name}</span>
+                    <span className="text-break flex-grow-1">{name}</span>
                     <Button
                       type="button"
                       size="sm"
                       variant="link"
-                      aria-label={`Remove cover ${file.name}`}
+                      aria-label={`Remove cover ${name}`}
                       disabled={controlsBusy}
                       onClick={() =>
                         setCoverPages((files) => files.filter((cover) => cover.id !== id))

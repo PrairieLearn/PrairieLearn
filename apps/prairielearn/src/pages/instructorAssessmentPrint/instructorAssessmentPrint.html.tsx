@@ -405,18 +405,11 @@ function PrintPreparation({
   }
 
   function packetInput(ids: string[], outputDocument: PrintDocument) {
-    const input = new FormData();
-    input.set(
-      'metadata',
-      JSON.stringify({
-        forms: ids.map((id) => ({ printFormId: id })),
-        document: outputDocument,
-      }),
-    );
-    if (outputDocument !== 'answer_key') {
-      for (const { file } of coverPages) input.append('coverPages', file);
-    }
-    return input;
+    return {
+      printFormIds: ids,
+      document: outputDocument,
+      coverIds: outputDocument === 'assessment' ? coverPages.map(({ id }) => id) : [],
+    };
   }
 
   function receiveExport(
@@ -491,12 +484,7 @@ function PrintPreparation({
       progress: null,
       failure: null,
     });
-    const input = new FormData();
-    input.set('formIds', JSON.stringify(ids));
-    input.set('document', outputDocument);
-    if (outputDocument === 'assessment') {
-      for (const { file } of coverPages) input.append('coverPages', file);
-    }
+    const input = packetInput(ids, outputDocument);
     function fail(failure: NonNullable<typeof combinedDownload>['failure']) {
       setCombinedDownload(
         (current) => current && { ...current, preparing: false, progress: null, failure },

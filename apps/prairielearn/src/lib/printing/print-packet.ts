@@ -48,19 +48,37 @@ function needsFormAppearances(document: PDFDocument): boolean {
   return false;
 }
 
-/** Parse uploads once, before starting any browser renders. */
+/** Bounds the uploaded covers included in one export. */
+export function assertPrintCoverTotals({
+  files,
+  bytes,
+  pages,
+}: {
+  files: number;
+  bytes: number;
+  pages: number;
+}): void {
+  if (files > MAX_COVER_FILES) {
+    throw new PrintPacketError(`Upload at most ${MAX_COVER_FILES} cover PDFs.`);
+  }
+  if (bytes > MAX_COVER_BYTES) {
+    throw new PrintPacketError('Cover PDFs must total at most 10 MB.');
+  }
+  if (pages > MAX_COVER_PAGES) {
+    throw new PrintPacketError(
+      `Cover PDFs must contain at most ${MAX_COVER_PAGES} pages in total.`,
+    );
+  }
+}
+
+/** Parses and checks cover uploads, before starting any browser renders. */
 export async function readPrintCoverPages(
   files: File[],
   signal?: AbortSignal,
 ): Promise<PDFDocument[]> {
-  if (files.length > MAX_COVER_FILES) {
-    throw new PrintPacketError(`Upload at most ${MAX_COVER_FILES} cover PDFs.`);
-  }
-  if (files.reduce((total, file) => total + file.size, 0) > MAX_COVER_BYTES) {
-    throw new PrintPacketError('Cover PDFs must total at most 10 MB.');
-  }
+  const bytes = files.reduce((total, file) => total + file.size, 0);
+  assertPrintCoverTotals({ files: files.length, bytes, pages: 0 });
   const covers: PDFDocument[] = [];
-  let pageCount = 0;
   for (const file of files) {
     signal?.throwIfAborted();
     let cover: PDFDocument;
@@ -85,13 +103,12 @@ export async function readPrintCoverPages(
         `“${file.name}” has form fields that may print blank. Print it to a new PDF, then upload that copy.`,
       );
     }
-    pageCount += cover.getPageCount();
-    if (pageCount > MAX_COVER_PAGES) {
-      throw new PrintPacketError(
-        `Cover PDFs must contain at most ${MAX_COVER_PAGES} pages in total.`,
-      );
-    }
     covers.push(cover);
+    assertPrintCoverTotals({
+      files: files.length,
+      bytes,
+      pages: covers.reduce((total, current) => total + current.getPageCount(), 0),
+    });
   }
   return covers;
 }
