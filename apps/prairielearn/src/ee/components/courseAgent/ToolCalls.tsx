@@ -368,7 +368,7 @@ export function reasoningHeading(text: string) {
  * Opening it shows the agent's updates and, between them, its steps as a list. Reasoning is left
  * out: the status line shows what the agent is thinking about while that matters.
  */
-export function Work({
+export function ToolCalls({
   items,
   live,
   settled,
