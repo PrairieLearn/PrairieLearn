@@ -602,7 +602,7 @@ const courseDataTool = {
   type: 'function',
   name: 'get_course_data',
   description:
-    "Download the selected columns of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. To narrow results to a course instance, assessment, or question, filter by course_instance_short_name, assessment_tid, or qid, the directory names in the course files; there is no need to look up IDs first. The reply gives the file's path and row count, and says if the file does not hold every matching row.",
+    "Download the selected columns of one dataset of this course's PrairieLearn data as a JSONL file in the sandbox, optionally filtered, sorted, and limited. To narrow results to a course instance, assessment, or question, filter by course_instance_short_name, assessment_tid, or qid, the directory names in the course files; there is no need to look up IDs first. The reply gives the file's path and row count, and says if the file does not hold every matching row. Unless the instructor chose to approve without being asked, a read first needs their approval: the call then downloads nothing and shows them the request, and you call again with the same input once they approve. Only one request can wait at a time, so ask for everything one question needs in as few reads as you can.",
   inputSchema: toolInputSchema(CourseDataArguments),
 } satisfies DynamicToolSpec;
 

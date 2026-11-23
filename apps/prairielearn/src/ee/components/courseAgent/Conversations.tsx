@@ -422,7 +422,9 @@ function Chat({
     pendingReview &&
     agentIdle &&
     (review.data?.status === 'pending' ||
-      (review.data?.status === 'decided' && review.data.result?.viaMessage === true));
+      (review.data?.status === 'decided' && review.data.result?.viaMessage === true) ||
+      (review.data?.status === 'data_read' &&
+        (review.data.decision === null || review.data.viaMessage)));
   const deny = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
@@ -844,12 +846,12 @@ function Composer({
 const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
   approval_required: {
     label: 'Ask first',
-    description: 'You review course changes before they are saved.',
+    description: 'You approve course changes and reads of course data first.',
     icon: 'bi-hand-index-thumb',
   },
   always_approve: {
     label: 'Always approve',
-    description: 'The agent saves course changes without your review.',
+    description: 'The agent saves course changes and reads course data without asking.',
     icon: 'bi-shield-exclamation',
   },
 };
@@ -875,7 +877,7 @@ function ApprovalModePicker({
         <i className="bi bi-chevron-down" aria-hidden="true" />
       </Dropdown.Toggle>
       <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
-        <Dropdown.Header>Saving course changes</Dropdown.Header>
+        <Dropdown.Header>Course changes and course data</Dropdown.Header>
         {ApprovalModeSchema.options.map((option) => {
           const { label, description, icon } = APPROVAL_MODES[option];
           return (

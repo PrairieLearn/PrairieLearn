@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
-import type { RequestChangesResult } from '@prairielearn/course-agent-types';
+import type { CourseDataReadCard, RequestChangesResult } from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
@@ -58,10 +58,16 @@ export function RequestChangesCard({
   });
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: trpc.courseAgent.getReview.queryKey(reviewInput) });
+  const alwaysApproveRef = useRef(false);
   const decision = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
-    onSuccess: invalidate,
+    // Callbacks given to mutate() are dropped if the card unmounts first, which it can once the
+    // agent continues. These are not.
+    onSuccess: () => {
+      if (alwaysApproveRef.current) onAlwaysApprove();
+      return invalidate();
+    },
   });
   const resume = useMutation({
     ...trpc.courseAgent.resume.mutationOptions(),
@@ -79,13 +85,11 @@ export function RequestChangesCard({
   const [lastFiles, setLastFiles] = useState<ReviewDiffFile[] | null>(null);
   if (pending?.diff.files && pending.diff.files !== lastFiles) setLastFiles(pending.diff.files);
   const files = pending?.diff.files ?? lastFiles;
-  const decide = (value: 'approved' | 'denied') =>
+  const decide = (value: 'approved' | 'denied', always = false) => {
+    alwaysApproveRef.current = always;
     decision.mutate({ conversationId, reviewId, decision: value });
-  const approveAlways = () =>
-    decision.mutate(
-      { conversationId, reviewId, decision: 'approved' },
-      { onSuccess: onAlwaysApprove },
-    );
+  };
+  const approveAlways = () => decide('approved', true);
   const actionsDisabled = !pending || decision.isPending;
   const canApprove = !!pending?.diff.files;
   // Approves a pending review on the instructor's behalf once its changes have loaded. It tries
@@ -99,6 +103,34 @@ export function RequestChangesCard({
   }, [autoApprove, canApprove, mutateDecision, conversationId, reviewId]);
   const approvingAutomatically =
     autoApprove && decision.isPending && decision.variables.decision === 'approved';
+  const failureAlert = failure && (
+    <AppErrorAlert
+      className="mt-2"
+      error={failure}
+      render={{ UNKNOWN: ({ message }) => message }}
+    />
+  );
+  if (data?.status === 'data_read') {
+    return (
+      <div className="course-agent-review border rounded-3">
+        <DataReadRequest
+          card={data.card}
+          decision={data.decision}
+          disabled={decision.isPending}
+          onDecision={decide}
+          onApproveAlways={approveAlways}
+        />
+        {/* The composer delivers a denial by message again when the instructor resends it. */}
+        {canResume && data.decision !== null && !data.viaMessage && (
+          <ResumeNotice
+            disabled={resume.isPending}
+            onResume={() => resume.mutate({ conversationId })}
+          />
+        )}
+        {failureAlert}
+      </div>
+    );
+  }
   return (
     <div className="course-agent-review border rounded-3">
       {data?.status === 'decided' && data.result ? (
@@ -128,17 +160,10 @@ export function RequestChangesCard({
       )}
       {/* The composer delivers a denial by message again when the instructor resends it. */}
       {canResume && data?.status === 'decided' && data.result && !data.result.viaMessage && (
-        <div className="d-flex align-items-center gap-2 mt-2">
-          <span className="small text-muted">The course agent has not received this result.</span>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            disabled={resume.isPending}
-            onClick={() => resume.mutate({ conversationId })}
-          >
-            Resume
-          </Button>
-        </div>
+        <ResumeNotice
+          disabled={resume.isPending}
+          onResume={() => resume.mutate({ conversationId })}
+        />
       )}
       {/* A diff can fail transiently, for example while the course is locked by another save. */}
       {(review.isError || pending?.diff.error) && (
@@ -174,14 +199,120 @@ export function RequestChangesCard({
           setShowChanges(false);
         }}
       />
-      {failure && (
-        <AppErrorAlert
-          className="mt-2"
-          error={failure}
-          render={{ UNKNOWN: ({ message }) => message }}
-        />
-      )}
+      {failureAlert}
     </div>
+  );
+}
+
+function ResumeNotice({ disabled, onResume }: { disabled: boolean; onResume: () => void }) {
+  return (
+    <div className="d-flex align-items-center gap-2 mt-2">
+      <span className="small text-muted">The course agent has not received this result.</span>
+      <Button variant="outline-secondary" size="sm" disabled={disabled} onClick={onResume}>
+        Resume
+      </Button>
+    </div>
+  );
+}
+
+/** The three choices every request offers, in the order the file review shows them. */
+function DecisionButtons({
+  disabled,
+  canApprove,
+  onDecision,
+  onApproveAlways,
+}: {
+  disabled: boolean;
+  canApprove: boolean;
+  onDecision: (decision: 'approved' | 'denied') => void;
+  onApproveAlways: () => void;
+}) {
+  return (
+    <div className="d-flex flex-wrap gap-2">
+      <Button
+        size="sm"
+        className="course-agent-composer-button course-agent-composer-send"
+        disabled={disabled || !canApprove}
+        onClick={() => onDecision('approved')}
+      >
+        Approve once
+      </Button>
+      <Button
+        variant="link"
+        size="sm"
+        className="course-agent-composer-button course-agent-review-always"
+        disabled={disabled || !canApprove}
+        onClick={onApproveAlways}
+      >
+        Always approve
+      </Button>
+      <Button
+        variant="link"
+        size="sm"
+        className="course-agent-composer-button"
+        disabled={disabled}
+        onClick={() => onDecision('denied')}
+      >
+        Deny
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * A request to read course data: what it would read, then the choices or the decision made. The
+ * rows themselves are never shown here; an approval only lets the agent download them.
+ */
+function DataReadRequest({
+  card,
+  decision,
+  disabled,
+  onDecision,
+  onApproveAlways,
+}: {
+  card: CourseDataReadCard;
+  decision: 'approved' | 'denied' | null;
+  disabled: boolean;
+  onDecision: (decision: 'approved' | 'denied') => void;
+  onApproveAlways: () => void;
+}) {
+  return (
+    <>
+      <div className="d-flex align-items-center gap-2">
+        <i
+          className={clsx(
+            'bi',
+            decision === null
+              ? 'bi-exclamation-triangle text-warning'
+              : 'bi-database text-body-secondary',
+          )}
+          aria-hidden="true"
+        />
+        <span>{card.title}</span>
+      </div>
+      <dl className="small border-top border-bottom my-2 py-2">
+        {card.rows.map((row) => (
+          <div key={row.label} className="py-1">
+            <dt className="fw-normal text-body-secondary">{row.label}</dt>
+            <dd className="mb-0 text-break">{row.detail}</dd>
+          </div>
+        ))}
+      </dl>
+      {decision === null ? (
+        <DecisionButtons
+          disabled={disabled}
+          canApprove
+          onDecision={onDecision}
+          onApproveAlways={onApproveAlways}
+        />
+      ) : (
+        <p className="mb-0" role="status">
+          {decision === 'approved'
+            ? 'Approved. The agent can read this once.'
+            : 'Denied. Nothing was read.'}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -233,34 +364,12 @@ function ReviewActions({
           <i className="bi bi-chevron-right" aria-hidden="true" />
         </span>
       </Button>
-      <div className="d-flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          className="course-agent-composer-button course-agent-composer-send"
-          disabled={disabled || !canApprove}
-          onClick={() => onDecision('approved')}
-        >
-          Approve once
-        </Button>
-        <Button
-          variant="link"
-          size="sm"
-          className="course-agent-composer-button course-agent-review-always"
-          disabled={disabled || !canApprove}
-          onClick={onApproveAlways}
-        >
-          Always approve
-        </Button>
-        <Button
-          variant="link"
-          size="sm"
-          className="course-agent-composer-button"
-          disabled={disabled}
-          onClick={() => onDecision('denied')}
-        >
-          Deny
-        </Button>
-      </div>
+      <DecisionButtons
+        disabled={disabled}
+        canApprove={canApprove}
+        onDecision={onDecision}
+        onApproveAlways={onApproveAlways}
+      />
     </>
   );
 }

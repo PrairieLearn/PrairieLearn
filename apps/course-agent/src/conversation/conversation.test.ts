@@ -3,13 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import {
   type ConversationState,
+  type CourseDataReadResult,
   type RequestChangesResult,
   type UsageDecision,
   type UsageReport,
   emptyUsage,
 } from '@prairielearn/course-agent-types';
 
-import { CodexAppServerClient } from '../sandbox/codex.js';
+import { CodexAppServerClient, type CourseDataTools } from '../sandbox/codex.js';
 import { SandboxTurn } from '../sandbox/turn.js';
 
 import { Conversation, CourseContextSchema, type MeteringState } from './conversation.js';
@@ -141,6 +142,11 @@ function fixture(saved = new Map<string, unknown>()) {
     prepare: vi.fn(),
     addCourseFiles: vi.fn(),
     advanceLocalBaseline: vi.fn(),
+    writeCourseData: vi.fn(async (_dataset: string, contents: ReadableStream<Uint8Array>) => {
+      // Rows are counted as the sandbox reads them.
+      await new Response(contents).arrayBuffer();
+      return '/workspace/session/course-data/students-1.jsonl';
+    }),
     stopProcesses: vi.fn(),
     checkpoint: vi.fn(async () => ({ id: 'checkpoint' })),
     destroy: vi.fn(),
@@ -715,4 +721,140 @@ it('keeps the course context when its timezone is not a zone name', () => {
     timezone: 'America/Chicago',
   });
   expect(CourseContextSchema.parse({ ...course, timezone: '../../etc/passwd' })).toEqual(course);
+});
+
+it('asks the instructor before reading course data, then reads once it is approved', async () => {
+  const schema = {
+    version: 1,
+    datasets: {
+      students: {
+        description: 'Students in each course instance.',
+        schema: { properties: { uid: { type: 'string' }, status: { type: 'string' } } },
+      },
+    },
+  };
+  const fetch = vi.fn(async (url: string | URL, options?: RequestInit) => {
+    if (String(url).endsWith('/usage')) return decision();
+    if (String(url).endsWith('/course_agent/data')) return Response.json(schema);
+    if (String(url).endsWith('/course_agent/data/students') && options?.method === 'POST') {
+      return new Response('{"uid":"a@example.com","status":"joined"}\n');
+    }
+    return modelResponse();
+  });
+  vi.stubGlobal('fetch', fetch);
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const { saved } = fixture();
+  saved.set('conversation', {
+    ...(saved.get('conversation') as object),
+    courseContext: { courseId: '7', courseTitle: 'Test course', courseShortName: 'TEST 101' },
+  });
+  const { conversation } = fixture(saved);
+  await conversation.onStart();
+  await conversation.persistMessages([
+    { id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: 'Who is enrolled?' }] },
+  ]);
+  const requestId = crypto.randomUUID();
+  await conversation.onChatMessage(undefined, { requestId });
+  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+  await options.prepare();
+  options.onReady();
+  const downloads = () =>
+    fetch.mock.calls.filter(([url]) => String(url).endsWith('/course_agent/data/students')).length;
+
+  // The Codex client is given the handlers when the turn starts.
+  const { courseData } = (conversation as unknown as { native: { courseData: CourseDataTools } })
+    .native;
+  const request = {
+    dataset: 'students',
+    select: ['uid', 'status'],
+    filters: [{ column: 'status', op: 'eq' as const, value: 'joined' }],
+  };
+  expect(await courseData.getCourseData({ ...request, select: ['nope'] })).toMatchObject({
+    success: false,
+    text: expect.stringContaining('no column named nope'),
+  });
+  const asked = await courseData.getCourseData(request);
+  expect(asked).toMatchObject({ success: true });
+  expect(asked.text).toContain('nothing was downloaded yet');
+  expect(downloads()).toBe(0);
+  const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-review');
+  const reviewId = conversation.state.reviewId!;
+  expect(part).toMatchObject({ data: { reviewId } });
+  const card = {
+    title: 'Read the students dataset',
+    rows: [
+      { label: 'What it holds', detail: 'Students in each course instance.' },
+      { label: 'Columns', detail: 'uid, status' },
+      { label: 'Rows', detail: 'Only those where status is joined' },
+    ],
+  };
+  expect(conversation.getReview(reviewId)).toEqual({
+    id: reviewId,
+    snapshot: { type: 'local', additions: [], deletions: [] },
+    dataRead: card,
+  });
+  // Only one request waits at a time.
+  expect(await courseData.getCourseData(request)).toMatchObject({ success: false });
+
+  sdk.finishTurn();
+  await sdk.completeResponse(requestId);
+  await vi.waitFor(() => expect(conversation.state.status).toBe('waiting_for_user'));
+  // A file review's result cannot answer a data read.
+  expect(
+    conversation.recordReviewResult(reviewId, {
+      decision: 'denied',
+      publication: { status: 'not_attempted' },
+      sync: { status: 'not_attempted' },
+    }),
+  ).toBe(false);
+  const result = { decision: 'approved', dataRead: card } satisfies CourseDataReadResult;
+  expect(conversation.recordReviewResult(reviewId, result)).toBe(true);
+  await conversation.deliverWaitingResult();
+  await vi.waitFor(() => expect(SandboxTurn).toHaveBeenCalledTimes(2));
+  const delivery = vi.mocked(SandboxTurn).mock.calls[1][2];
+  expect(delivery.input.text).toContain('approved the request "Read the students dataset"');
+  expect(delivery.input.text).toContain(JSON.stringify(request));
+  await delivery.prepare();
+  delivery.onReady();
+  // Codex accepting the delivery is what frees the review slot.
+  delivery.onAccepted('native-turn');
+
+  // The approval covers that read once, whatever order the columns are named in.
+  const read = await courseData.getCourseData({ ...request, select: ['status', 'uid'] });
+  expect(read).toMatchObject({ success: true, text: expect.stringContaining('Wrote 1 rows') });
+  expect(downloads()).toBe(1);
+  expect((await courseData.getCourseData(request)).text).toContain('nothing was downloaded yet');
+  expect(downloads()).toBe(1);
+});
+
+it('reads course data without asking when the instructor chose to always approve', async () => {
+  const fetch = vi.fn(async (url: string | URL) => {
+    if (String(url).endsWith('/usage')) return decision();
+    if (String(url).endsWith('/course_agent/data/students')) return new Response('{"uid":"a"}\n');
+    return modelResponse();
+  });
+  vi.stubGlobal('fetch', fetch);
+  const { saved } = fixture();
+  saved.set('conversation', {
+    ...(saved.get('conversation') as object),
+    approvalMode: 'always_approve',
+    courseContext: { courseId: '7', courseTitle: 'Test course', courseShortName: 'TEST 101' },
+  });
+  const { conversation } = fixture(saved);
+  await conversation.onStart();
+  await conversation.persistMessages([
+    { id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: 'Who is enrolled?' }] },
+  ]);
+  await conversation.onChatMessage(undefined, { requestId: crypto.randomUUID() });
+  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+  await options.prepare();
+  options.onReady();
+  const { courseData } = (conversation as unknown as { native: { courseData: CourseDataTools } })
+    .native;
+  expect(await courseData.getCourseData({ dataset: 'students', select: ['uid'] })).toMatchObject({
+    success: true,
+    text: expect.stringContaining('Wrote 1 rows'),
+  });
+  expect(conversation.state.reviewId).toBeNull();
 });

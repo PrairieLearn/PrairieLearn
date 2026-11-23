@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildCatchUp,
+  describeDenialMessage,
   describeReviewResult,
   historyBefore,
   missedTurns,
@@ -206,6 +207,20 @@ describe('describeReviewResult', () => {
   it('tells the agent to ask what to change after a denial without a message', () => {
     expect(describeReviewResult(denied, 'github')).toContain(
       'Do not revise or resubmit on your own.',
+    );
+  });
+
+  it('tells the agent to make an approved read itself, and not to repeat a denied one', () => {
+    const dataRead = { title: 'Read the students dataset', rows: [] };
+    const request = { dataset: 'students', select: ['uid'] };
+    const approved = describeReviewResult({ decision: 'approved', dataRead }, 'github', request);
+    expect(approved).toContain('The instructor approved the request "Read the students dataset".');
+    expect(approved).toContain(JSON.stringify(request));
+    const refused = describeReviewResult({ decision: 'denied', dataRead }, 'github', request);
+    expect(refused).toContain('Nothing was read.');
+    expect(refused).not.toContain(JSON.stringify(request));
+    expect(describeDenialMessage('Use the gradebook page', dataRead.title)).toContain(
+      'denied the request "Read the students dataset" by sending this message',
     );
   });
 });

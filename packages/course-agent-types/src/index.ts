@@ -163,6 +163,43 @@ export const RequestChangesResultSchema = z
 
 export type RequestChangesResult = z.infer<typeof RequestChangesResultSchema>;
 
+/**
+ * What a request to read course data asks for, as the instructor sees it. The course agent
+ * service builds it from the request itself, so it says exactly what an approval lets the agent read.
+ */
+export const CourseDataReadCardSchema = z.strictObject({
+  title: z.string().max(200),
+  rows: z
+    .array(z.strictObject({ label: z.string().max(100), detail: z.string().max(2000) }))
+    .max(20),
+});
+
+export type CourseDataReadCard = z.infer<typeof CourseDataReadCardSchema>;
+
+/**
+ * The instructor's decision on a request to read course data. An approval lets the agent make
+ * that one read; the rows themselves never pass through this result.
+ */
+export const CourseDataReadResultSchema = z
+  .strictObject({
+    decision: z.enum(['approved', 'denied']),
+    dataRead: CourseDataReadCardSchema,
+    /** As for a file review: the instructor denied by sending a chat message. */
+    viaMessage: z.literal(true).optional(),
+  })
+  .refine((result) => result.decision === 'denied' || !result.viaMessage);
+
+export type CourseDataReadResult = z.infer<typeof CourseDataReadResultSchema>;
+
+/** What the review slot delivers to the agent: the result of a file review or of a data read request. */
+export const ReviewResultSchema = z.union([RequestChangesResultSchema, CourseDataReadResultSchema]);
+
+export type ReviewResult = z.infer<typeof ReviewResultSchema>;
+
+export function isCourseDataReadResult(result: ReviewResult): result is CourseDataReadResult {
+  return 'dataRead' in result;
+}
+
 const ReviewFilesShape = {
   additions: z
     .array(z.strictObject({ path: ReviewPathSchema, contents: ReviewContentsSchema }))
@@ -200,6 +237,8 @@ export type ReviewSnapshot = z.infer<typeof ReviewSnapshotSchema>;
 export const ReviewSchema = z.strictObject({
   id: z.uuid(),
   snapshot: ReviewSnapshotSchema,
+  /** Set when the review slot holds a request to read course data; `snapshot` is then empty. */
+  dataRead: CourseDataReadCardSchema.optional(),
 });
 
 export type Review = z.infer<typeof ReviewSchema>;

@@ -3,10 +3,13 @@ import type { UIMessage, UIMessageChunk } from 'ai';
 import {
   InputRequestPartSchema,
   NavigationPartSchema,
-  type RequestChangesResult,
+  type ReviewResult,
   ToolCallSchema,
   UserMessageMetadataSchema,
+  isCourseDataReadResult,
 } from '@prairielearn/course-agent-types';
+
+import type { CourseDataRequest } from '../sandbox/codex.js';
 
 import { attachmentOf, attachmentPath } from './attachments.js';
 
@@ -37,8 +40,14 @@ export function historyBefore(history: UIMessage[], message: UIMessage | null) {
   return history.filter((entry, i) => i < index || (i > index && entry.role !== 'user'));
 }
 
-/** An account of a review result, used in chat history markers and catch-up text. */
-export function summarizeReview(result: RequestChangesResult) {
+/**
+ * An account of a review result, used in chat history markers and catch-up text. A request to
+ * read course data waits in the review slot, so its result is one too.
+ */
+export function summarizeReview(result: ReviewResult) {
+  if (isCourseDataReadResult(result)) {
+    return `The instructor ${result.decision} the request "${result.dataRead.title}".`;
+  }
   if (result.decision === 'denied') return 'The instructor denied the submitted changes.';
   const approved = 'The instructor approved the submitted changes';
   // The agent offers the page that shows the changes only once they are synced, so say so.
@@ -66,12 +75,21 @@ export function summarizeReview(result: RequestChangesResult) {
 
 const DENIAL_NOT_SAVED = 'Nothing was saved; your edits remain private to this conversation.';
 const DENIED_BY_MESSAGE = 'The instructor denied the submitted changes by sending this message.';
+const NOTHING_READ = 'Nothing was read.';
 
 /**
  * The input of a turn whose message denied a pending review: the denial and what the agent
  * should do next, then the message as written.
  */
-export function describeDenialMessage(text: string) {
+export function describeDenialMessage(text: string, deniedRequest: string | null = null) {
+  if (deniedRequest !== null) {
+    return [
+      `The instructor denied the request "${deniedRequest}" by sending this message.`,
+      NOTHING_READ,
+      'Respond to their message. Make the request again only if their message asks for it.',
+      `Their message:\n\n${text}`,
+    ].join('\n\n');
+  }
   return [
     DENIED_BY_MESSAGE,
     DENIAL_NOT_SAVED,
@@ -84,9 +102,28 @@ export function describeDenialMessage(text: string) {
  * The delivery turn's input: the summary, what the agent should do next, and any save or sync
  * output. The agent never sees the result's structure, only this text.
  */
-export function describeReviewResult(result: RequestChangesResult, source: 'github' | 'local') {
+export function describeReviewResult(
+  result: ReviewResult,
+  source: 'github' | 'local',
+  /** The read the result decides, when it is the result of a data read request. */
+  dataRequest: CourseDataRequest | null = null,
+) {
   const output = (title: string, text: string) => `${title}:\n${text.trim() || '(no output)'}`;
   const parts = [summarizeReview(result)];
+  if (isCourseDataReadResult(result)) {
+    if (result.decision === 'denied') {
+      parts.push(
+        NOTHING_READ,
+        'Do not request it again on your own. Continue without that data if you can, or ask the instructor what they would like instead.',
+      );
+    } else {
+      parts.push(
+        'The approval covers this one read. Call get_course_data again with exactly this input to download the rows:',
+        JSON.stringify(dataRequest),
+      );
+    }
+    return parts.join('\n\n');
+  }
   if (result.decision === 'denied') {
     parts.push(
       DENIAL_NOT_SAVED,
