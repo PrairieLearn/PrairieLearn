@@ -19,7 +19,7 @@ export type PreviewState =
     }
   | { status: 'error'; message: string };
 
-export function PrintPreview({
+function PrintPreview({
   url,
   document,
   active,
