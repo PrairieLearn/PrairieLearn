@@ -1202,7 +1202,14 @@ function Message({
     }
     if (reply) {
       rendered.push(
-        <TextPart key={reply.key} part={reply.part} urlTransform={linkTransform} math animated />,
+        <TextPart
+          key={reply.key}
+          part={reply.part}
+          urlTransform={linkTransform}
+          arriving={live}
+          math
+          animated
+        />,
       );
     }
     work = null;

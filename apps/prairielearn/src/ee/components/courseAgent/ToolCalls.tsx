@@ -381,7 +381,7 @@ export function Work({
     const shown = settled ? updates : showUpdate && update ? [update] : [];
     // Updates only ever append to a streaming message, so their positions identify them.
     // oxlint-disable-next-line react/no-array-index-key
-    return shown.map((part, i) => <Update key={i} part={part} />);
+    return shown.map((part, i) => <Update key={i} part={part} arriving={live} />);
   }
   return (
     <Fold
@@ -393,7 +393,7 @@ export function Work({
       // Failed steps are routine and stay in the details; a turn cut short is worth saying.
       stopped={calls.some((call) => statusOf(call, live) === 'interrupted')}
       // While it works, the agent's latest update says where it has got to.
-      tail={!settled && showUpdate && update && <Update part={update} />}
+      tail={!settled && showUpdate && update && <Update part={update} arriving={live} />}
       onExpand={onExpand}
     >
       <div className="d-flex flex-column gap-2 mt-2 mb-1">
@@ -409,7 +409,7 @@ export function Work({
             </div>
           ) : (
             // oxlint-disable-next-line react/no-array-index-key
-            <Update key={i} part={block} />
+            <Update key={i} part={block} arriving={live} />
           ),
         )}
       </div>
@@ -418,12 +418,13 @@ export function Work({
 }
 
 /** Something the agent wrote along the way, which is not part of its reply. */
-function Update({ part }: { part: TextUIPart }) {
+function Update({ part, arriving }: { part: TextUIPart; arriving: boolean }) {
   return (
     <ChatMarkdown
       className="markdown-body small text-body-secondary mt-1"
       content={part.text}
       streaming={part.state === 'streaming'}
+      arriving={arriving}
       math
       animated
     />

@@ -120,9 +120,10 @@ const FADE_TAIL_MS = 320 + STREAM_ANIMATION.duration;
 /**
  * Keeps words fading for a moment after the text stops streaming. Streamdown drops the fade as
  * soon as it is told the text is done, which would show a short reply's half-faded words at once.
+ * Text that first shows while its reply is arriving fades in too, even if it came in one piece.
  */
-function useFading(streaming: boolean) {
-  const [fading, setFading] = useState(streaming);
+function useFading(streaming: boolean, arriving: boolean) {
+  const [fading, setFading] = useState(streaming || arriving);
   if (streaming && !fading) setFading(true);
   // Ends the fade once the last words have had time to finish.
   useEffect(() => {
@@ -142,6 +143,7 @@ function useFading(streaming: boolean) {
 export function ChatMarkdown({
   content,
   streaming,
+  arriving = false,
   math = false,
   animated = false,
   className,
@@ -149,12 +151,14 @@ export function ChatMarkdown({
 }: {
   content: string;
   streaming: boolean;
+  /** The reply is coming in now, so with `animated`, its text fades in even if it is complete. */
+  arriving?: boolean;
   math?: boolean;
   animated?: boolean;
   className?: string;
   urlTransform?: UrlTransform;
 }) {
-  const fading = useFading(streaming);
+  const fading = useFading(streaming, arriving);
   return (
     <Streamdown
       animated={animated && STREAM_ANIMATION}

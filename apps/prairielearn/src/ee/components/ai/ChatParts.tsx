@@ -79,11 +79,13 @@ export function TextPart({
   part,
   math = false,
   animated = false,
+  arriving = false,
   urlTransform,
 }: {
   part: TextUIPart;
   math?: boolean;
   animated?: boolean;
+  arriving?: boolean;
   urlTransform?: UrlTransform;
 }) {
   return (
@@ -92,6 +94,7 @@ export function TextPart({
       content={part.text}
       math={math}
       animated={animated}
+      arriving={arriving}
       streaming={part.state === 'streaming'}
       urlTransform={urlTransform}
     />
