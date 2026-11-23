@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
 import { syncCourse } from '../../helperCourse.js';
@@ -31,6 +31,24 @@ async function readWarnings(page: Page) {
         qid?: string | null;
       }[],
   );
+}
+
+/** Counts the pixels of a printed canvas image that are neither transparent nor white. */
+async function countInkPixels(image: Locator) {
+  return await image.evaluate(async (image: HTMLImageElement) => {
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext('2d')!;
+    context.drawImage(image, 0, 0);
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    let count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] > 0 && Math.min(data[i], data[i + 1], data[i + 2]) < 200) count++;
+    }
+    return count;
+  });
 }
 
 test('reports omitted questions and exports the selected Word content', async ({
@@ -194,9 +212,9 @@ test('prints representative controls, editable Word content, and an ordered answ
   ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
 
   const diagramQuestion = questions.filter({ hasText: 'Use the diagram and reference below.' });
-  await expect(
-    diagramQuestion.locator('.printing-excalidraw img.printing-canvas-image'),
-  ).toHaveCount(1);
+  expect(
+    await countInkPixels(diagramQuestion.locator('.printing-excalidraw img.printing-canvas-image')),
+  ).toBeGreaterThan(0);
   await expect(diagramQuestion.getByText('bold reference text')).toBeVisible();
 
   const response = await downloadPrintableWord(page, printUrl);
@@ -234,22 +252,12 @@ test('prints representative controls, editable Word content, and an ordered answ
   await page.goto(`${printUrl}/preview?${search}&exclude_question=${diagramQuestionNumber}`);
   await waitForPrintablePage(page);
   // The drawing's only content is an asynchronously rendered LaTeX label.
-  const drawingPixels = await page
-    .locator('.pagedjs_page .printing-question')
-    .filter({ hasText: 'Use the labelled drawing below.' })
-    .locator('img.printing-canvas-image')
-    .evaluate(async (image: HTMLImageElement) => {
-      await image.decode();
-      const canvas = document.createElement('canvas');
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      const context = canvas.getContext('2d')!;
-      context.drawImage(image, 0, 0);
-      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-      let painted = 0;
-      for (let i = 3; i < data.length; i += 4) if (data[i] > 0) painted++;
-      return painted;
-    });
+  const drawingPixels = await countInkPixels(
+    page
+      .locator('.pagedjs_page .printing-question')
+      .filter({ hasText: 'Use the labelled drawing below.' })
+      .locator('img.printing-canvas-image'),
+  );
   expect(drawingPixels).toBeGreaterThan(0);
 });
 

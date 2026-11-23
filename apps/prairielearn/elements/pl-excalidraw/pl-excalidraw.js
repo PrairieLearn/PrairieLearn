@@ -25,7 +25,7 @@ const Footer = ({ unsaved, readOnly }) => {
   );
 };
 
-const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
+const DrawWidget = ({ sketchName, metadata, setHiddenInput, onSceneRendered }) => {
   const [unsaved, setUnsaved] = React.useState(false);
   const [lib, setLib] = React.useState(null);
   const [sceneVer, setSceneVer] = React.useState(0);
@@ -57,6 +57,8 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
     excalidrawAPI: (it) => setLib(it),
     viewModeEnabled: metadata.read_only,
     onChange: (elts) => {
+      // Excalidraw reports the change as it draws the loaded scene.
+      onSceneRendered();
       const thisVersion = ExcalidrawLib.getSceneVersion(elts);
       if (sceneVer >= thisVersion) return;
       setUnsaved(true);
@@ -86,23 +88,6 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
   );
 };
 
-/** Excalidraw draws its scene after mounting, so wait until a canvas has a size. */
-function waitForCanvas(rootElement) {
-  const hasCanvas = () =>
-    [...rootElement.querySelectorAll('canvas')].some(
-      (canvas) => canvas.width > 0 && canvas.height > 0,
-    );
-  if (hasCanvas()) return Promise.resolve();
-  return new Promise((resolve) => {
-    const observer = new MutationObserver(() => {
-      if (!hasCanvas()) return;
-      observer.disconnect();
-      resolve();
-    });
-    observer.observe(rootElement, { childList: true, subtree: true, attributes: true });
-  });
-}
-
 /** Resolves once the initial scene has been drawn. */
 export async function initializeExcalidraw(uuid, name, metadata) {
   const sketch = {};
@@ -120,6 +105,8 @@ export async function initializeExcalidraw(uuid, name, metadata) {
   sketch.state = null;
   sketch.node = rootElement;
   sketch.root = ReactDOM.createRoot(rootElement);
+  let onSceneRendered;
+  const sceneRendered = new Promise((resolve) => (onSceneRendered = resolve));
   sketch.root.render(
     elt(
       React.StrictMode,
@@ -128,10 +115,13 @@ export async function initializeExcalidraw(uuid, name, metadata) {
         sketchName: name,
         metadata,
         setHiddenInput,
+        onSceneRendered,
       }),
     ),
   );
-  await waitForCanvas(rootElement);
+  await sceneRendered;
+  // The static canvas is painted right after the change is reported.
+  await new Promise((resolve) => setTimeout(resolve));
 
   return sketch;
 }
