@@ -2,7 +2,6 @@
 SELECT
   i.id,
   i.open,
-  i.date,
   i.student_message,
   q.qid AS question_qid
 FROM

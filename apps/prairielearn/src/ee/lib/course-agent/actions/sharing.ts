@@ -80,7 +80,7 @@ export const sharingActions = {
       const current = sets.find((set) => set.id === sharingSet.id);
       if (current?.shared_with.includes(consumingCourse.short_name ?? '')) {
         throw new CourseActionError(
-          `The sharing set "${sharingSet.name}" is already shared with ${consumingCourse.short_name}.`,
+          `The sharing set "${sharingSet.name}" is already shared with the course that token names.`,
         );
       }
       return {

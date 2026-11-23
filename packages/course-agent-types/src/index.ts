@@ -491,12 +491,10 @@ export const CourseActionCardSchema = z.strictObject({
   title: z.string().min(1).max(200),
   /** Where it happens, such as `Exam 1 · Fa26`, when the title does not say. */
   context: z.string().max(300).nullable(),
-  /** What is affected, one line each. */
+  /** Everything affected, one line each. No action takes more inputs than this. */
   rows: z
     .array(z.strictObject({ label: z.string().max(300), detail: z.string().max(300).nullable() }))
-    .max(20),
-  /** Affected things beyond `rows`. */
-  moreRows: z.number().int().nonnegative(),
+    .max(1000),
   /** How to reverse the action, or null when it cannot be reversed. */
   undo: z.string().max(500).nullable(),
 });
@@ -527,8 +525,12 @@ export const CourseActionRequestSchema = z.strictObject({
   input: z.unknown(),
 });
 
-/** PrairieLearn's reply to a course action request it recorded. */
-export const CourseActionRequestReplySchema = z.object({ card: CourseActionCardSchema });
+/**
+ * PrairieLearn's reply to a course action request it recorded. The card itself stays in
+ * PrairieLearn: its rows hold course data, which the agent reads only with the instructor's
+ * approval.
+ */
+export const CourseActionRequestReplySchema = z.object({ title: z.string().max(200) });
 
 /**
  * The outcome of a course action request. An action occupies the conversation's review slot, so

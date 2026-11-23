@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import {
-  type CourseActionCard,
   type CourseActionCatalog,
   CourseActionCatalogSchema,
   CourseActionRequestReplySchema,
@@ -96,7 +95,7 @@ export async function listCourseActions(context: PrairieLearnContext): Promise<T
 export async function requestCourseAction(
   context: PrairieLearnContext,
   { id, action, input }: CourseActionRequest & { id: string },
-): Promise<{ card: CourseActionCard } | { error: string }> {
+): Promise<{ title: string } | { error: string }> {
   if (!context.courseId) return { error: UNAVAILABLE.text };
   const response = await fetch(
     new URL(
@@ -120,13 +119,13 @@ export async function requestCourseAction(
   return CourseActionRequestReplySchema.parse(await response.json());
 }
 
-/** The tool reply for a recorded request: what the instructor is being asked, in plain text. */
-export function describeRequestedAction(card: CourseActionCard, autoApprove: boolean) {
-  const rows = card.rows.map((row) => `- ${row.label}${row.detail ? `: ${row.detail}` : ''}`);
-  if (card.moreRows > 0) rows.push(`- and ${card.moreRows} more`);
+/**
+ * The tool reply for a recorded request. The instructor's card lists what would change, which is
+ * course data the agent reads only with their approval, so the agent is told only the title.
+ */
+export function describeRequestedAction(title: string, autoApprove: boolean) {
   return [
-    `Requested: ${card.title}${card.context ? ` (${card.context})` : ''}.`,
-    ...rows,
+    `Requested: ${title}.`,
     autoApprove
       ? 'The instructor chose to approve requests without reviewing them, so PrairieLearn is carrying this out now. The result arrives in a later message.'
       : 'The instructor sees this request and decides whether to approve it. The decision arrives in a later message.',

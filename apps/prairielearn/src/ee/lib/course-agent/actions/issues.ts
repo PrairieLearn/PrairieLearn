@@ -37,7 +37,8 @@ async function describeIssues(ctx: CourseActionContext, issueIds: string[], open
     context:
       unchanged > 0 ? `${count(unchanged, 'issue')} already ${open ? 'open' : 'closed'}` : null,
     rows: changing.map((issue) => ({
-      label: issue.question_qid ?? 'No question',
+      // The Issues page shows the same number, which tells apart two reports on one question.
+      label: `#${issue.id} · ${issue.question_qid ?? 'No question'}`,
       detail: issue.student_message?.trim() || null,
     })),
   };
@@ -61,12 +62,7 @@ export const issueActions = {
         open: false,
         authn_user_id: ctx.user.id,
       });
-      return {
-        summary:
-          updated === 0
-            ? 'Nothing changed: the issues were already closed.'
-            : `Closed ${count(updated, 'issue')}.`,
-      };
+      return { summary: `Closed ${count(updated, 'issue')}.` };
     },
   }),
   issues_reopen: action({
@@ -85,12 +81,7 @@ export const issueActions = {
         open: true,
         authn_user_id: ctx.user.id,
       });
-      return {
-        summary:
-          updated === 0
-            ? 'Nothing changed: the issues were already open.'
-            : `Reopened ${count(updated, 'issue')}.`,
-      };
+      return { summary: `Reopened ${count(updated, 'issue')}.` };
     },
   }),
 };

@@ -6,9 +6,9 @@ CREATE TABLE IF NOT EXISTS course_agent_actions (
   agent_action_id uuid NOT NULL,
   -- The action's name in the course agent action registry.
   action text NOT NULL,
-  -- The validated input the action runs with once approved.
+  -- The input as the agent sent it. It is validated when requested and again when approved.
   input jsonb NOT NULL,
-  -- What the instructor is shown when deciding.
+  -- What the instructor is shown when deciding. The action runs only if it still says the same.
   card jsonb NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT course_agent_actions_conversation_action_key UNIQUE (course_agent_conversation_id, agent_action_id)

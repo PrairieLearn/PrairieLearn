@@ -104,11 +104,11 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     return { id, status: response.status, body: (await response.json()) as Record<string, any> };
   }
 
-  /** Requests an action, approves it as the instructor, and returns the result the agent receives. */
+  /** Requests an action, approves it as the instructor, and returns their card and the agent's result. */
   async function approve(action: string, input: Record<string, unknown>) {
     const requested = await request(action, input);
     assert.equal(requested.status, 200, JSON.stringify(requested.body));
-    await withUser(owner, async () => {
+    const card = await withUser(owner, async () => {
       const client = createCourseTrpcClient({
         courseId: '1',
         urlBase: locals.siteUrl,
@@ -117,15 +117,20 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
           config.secretKey,
         ),
       });
+      const shown = await client.courseAgent.getAction.query({
+        conversationId: conversation.id,
+        actionId: requested.id,
+      });
       await client.courseAgent.postReviewDecision.mutate({
         conversationId: conversation.id,
         reviewId: requested.id,
         decision: 'approved',
       });
+      return shown.card;
     });
     // An action that runs as a job delivers its result once the job finishes.
     await vi.waitFor(() => expect(delivered.has(requested.id)).toBe(true), { timeout: 30_000 });
-    return { card: requested.body.card, result: delivered.get(requested.id)! };
+    return { card, result: delivered.get(requested.id)! };
   }
 
   async function refusal(action: string, input: Record<string, unknown>) {
@@ -236,7 +241,7 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     expect(set.card).toMatchObject({
       title: 'Set the time left to 30 minutes on 1 attempt',
       context: expect.stringContaining('Sp15'),
-      rows: [{ label: 'dev@example.com', detail: 'Now: Open (no time limit)' }],
+      rows: [{ label: 'dev@example.com', detail: 'Now: no time limit' }],
       undo: expect.any(String),
     });
     expect(set.result).toMatchObject({
@@ -251,7 +256,7 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
       minutes: 10,
     });
     expect(added.card.title).toBe('Add 10 minutes to 1 attempt');
-    expect(added.card.rows[0].detail).toMatch(/^Now: (29|30) min$/);
+    expect(added.card.rows[0].detail).toMatch(/^Now: time ends \d{4}-/);
     expect(await minutesLeft()).toBeCloseTo(40, 0);
 
     await approve('assessment_instances_set_time_limit', {
@@ -387,7 +392,7 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
     const closed = await approve('assessment_instances_close', ids);
     expect(closed.card).toMatchObject({
       title: 'Grade and close 1 attempt',
-      rows: [{ label: 'dev@example.com', detail: 'Now: Open (no time limit)' }],
+      rows: [{ label: 'dev@example.com', detail: 'Now: open, no time limit' }],
     });
     // Staff see what the job did; the agent also gets the grading job's log.
     expect(closed.result).toMatchObject({

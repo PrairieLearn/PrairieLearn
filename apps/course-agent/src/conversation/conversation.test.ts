@@ -550,16 +550,11 @@ it('marks reviews for automatic approval from the latest message that chose a mo
 });
 
 it('holds a requested course action in the review slot and delivers its result', async () => {
-  const card = {
-    title: 'Close 2 issues',
-    context: null,
-    rows: [{ label: 'addNumbers', detail: 'The answer box rejects negative numbers.' }],
-    moreRows: 1,
-    undo: 'Reopen the same issues.',
-  };
   const fetch = vi.fn(async (url: string | URL, _options?: RequestInit) => {
     if (String(url).endsWith('/usage')) return decision();
-    if (String(url).includes('/course_agent/actions/')) return Response.json({ card });
+    if (String(url).includes('/course_agent/actions/')) {
+      return Response.json({ title: 'Close 2 issues' });
+    }
     return modelResponse();
   });
   vi.stubGlobal('fetch', fetch);
@@ -589,7 +584,6 @@ it('holds a requested course action in the review slot and delivers its result',
   const reply = await courseActions.requestCourseAction(request);
   expect(reply).toMatchObject({ success: true });
   expect(reply.text).toContain('Requested: Close 2 issues.');
-  expect(reply.text).toContain('- and 1 more');
   const [url, init] = fetch.mock.calls.find(([called]) => String(called).includes('/actions/'))!;
   expect(String(url)).toBe('https://pl.test/pl/course/7/course_agent/actions/issues_close');
   const body = JSON.parse(init!.body as string) as { id: string; input: unknown };

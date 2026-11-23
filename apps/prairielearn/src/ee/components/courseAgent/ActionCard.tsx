@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { Button } from 'react-bootstrap';
 
-import type { CourseActionResult } from '@prairielearn/course-agent-types';
+import type { CourseActionCard, CourseActionResult } from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
@@ -35,10 +35,10 @@ export function ActionCard({
   const action = useQuery({
     ...trpc.courseAgent.getAction.queryOptions(actionInput),
     retry: false,
-    // An approved action can keep running in the background; poll until it records a result.
+    // An approval made in another tab, or still running, has a decision before it has a result.
     refetchInterval: (query) => {
-      const current = query.state.data;
-      return current?.decision === 'approved' && !current.result ? 2000 : false;
+      const data = query.state.data;
+      return data?.decision === 'approved' && !data.result ? 2000 : false;
     },
   });
   // Set when the instructor clicks "Always approve", so the mode changes once the approval succeeds.
@@ -83,6 +83,7 @@ export function ActionCard({
     autoApprovedRef.current = true;
     mutateDecision({ conversationId, reviewId: actionId, decision: 'approved' });
   }, [autoApprove, pending, mutateDecision, conversationId, actionId]);
+  // Also true in a tab that did not make the approval, while the action is still running.
   const approving =
     (decision.isPending && decision.variables.decision === 'approved') ||
     (data?.decision === 'approved' && !data.result);
@@ -108,24 +109,18 @@ export function ActionCard({
             </div>
           </div>
           {data.card.rows.length > 0 && (
-            <ul className="list-unstyled small border-top border-bottom my-2 py-2 mb-2">
-              {data.card.rows.map((row, index) => (
-                // Rows are fixed once requested, so their positions identify them. The instructor
-                // decides on these, so a long detail wraps instead of being cut off.
-                // oxlint-disable-next-line react/no-array-index-key
-                <li key={index} className="d-flex gap-3 py-1">
-                  <span className="flex-shrink-0 course-agent-action-row-label">{row.label}</span>
-                  {row.detail && (
-                    <span className="text-body-secondary ms-auto text-end course-agent-action-row-detail">
-                      {row.detail}
-                    </span>
-                  )}
-                </li>
-              ))}
-              {data.card.moreRows > 0 && (
-                <li className="text-body-secondary py-1">and {data.card.moreRows} more</li>
+            <div className="small border-top border-bottom my-2 py-2">
+              <ActionRows rows={data.card.rows.slice(0, ROWS_SHOWN)} />
+              {data.card.rows.length > ROWS_SHOWN && (
+                // The instructor decides on every row, so the rest are one click away.
+                <details>
+                  <summary className="text-body-secondary py-1">
+                    Show all {data.card.rows.length}
+                  </summary>
+                  <ActionRows rows={data.card.rows.slice(ROWS_SHOWN)} />
+                </details>
               )}
-            </ul>
+            </div>
           )}
           {data.result ? (
             <ActionResult result={data.result} />
@@ -218,6 +213,28 @@ function JobDetails({ details }: { details: string }) {
   );
 }
 
+const ROWS_SHOWN = 20;
+
+function ActionRows({ rows }: { rows: CourseActionCard['rows'] }) {
+  return (
+    <ul className="list-unstyled mb-0">
+      {rows.map((row, index) => (
+        // Rows are fixed once requested, so their positions identify them. The instructor
+        // decides on these, so a long detail wraps instead of being cut off.
+        // oxlint-disable-next-line react/no-array-index-key
+        <li key={index} className="d-flex gap-3 py-1">
+          <span className="flex-shrink-0 course-agent-action-row-label">{row.label}</span>
+          {row.detail && (
+            <span className="text-body-secondary ms-auto text-end course-agent-action-row-detail">
+              {row.detail}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function ActionResult({ result }: { result: CourseActionResult }) {
   if (result.decision === 'denied') {
     return (
@@ -239,9 +256,9 @@ function ActionResult({ result }: { result: CourseActionResult }) {
       );
     case 'failed':
       return (
+        // The reason is written for the course agent, which explains it in its reply.
         <div role="status">
-          <p className="mb-0">This could not be done.</p>
-          <pre className="small text-wrap mt-2 mb-0">{result.outcome.error}</pre>
+          <p className="mb-0">This could not be done. The course agent will explain why.</p>
           {result.outcome.details && <JobDetails details={result.outcome.details} />}
         </div>
       );

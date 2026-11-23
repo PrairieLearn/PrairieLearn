@@ -8,7 +8,6 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { isDeepStrictEqual } from 'node:util';
 
 import {
-  type CourseActionCard,
   CourseActionCardSchema,
   type CourseActionResult,
   CourseActionResultSchema,
@@ -30,6 +29,7 @@ import {
   insertCourseAgentReview,
   selectOptionalCourseAgentReview,
   updateCourseAgentReviewJobSequence,
+  updateCourseAgentReviewResult,
 } from '../../../models/course-agent-review.js';
 import {
   deliverDenialByMessage,
@@ -63,29 +63,29 @@ export async function requestCourseAction({
   id: string;
   name: string;
   input: unknown;
-}): Promise<{ card: CourseActionCard }> {
+}): Promise<{ title: string }> {
   if (!Object.hasOwn(COURSE_AGENT_ACTIONS, name)) {
     throw new HttpStatusError(
       404,
       `Unknown action "${name}". Actions: ${Object.keys(COURSE_AGENT_ACTIONS).join(', ')}.`,
     );
   }
-  let card: CourseActionCard;
   try {
-    card = await COURSE_AGENT_ACTIONS[name].describe(ctx, input);
+    const card = await COURSE_AGENT_ACTIONS[name].describe(ctx, input);
+    await insertCourseAgentAction({
+      course_agent_conversation_id: conversation.id,
+      agent_action_id: id,
+      action: name,
+      input,
+      card,
+    });
+    // The card's rows are course data, which the agent reads only with approval, so it is told
+    // only what it asked for.
+    return { title: card.title };
   } catch (error) {
     if (error instanceof CourseActionError) throw new HttpStatusError(400, error.message);
     throw error;
   }
-  const key = { course_agent_conversation_id: conversation.id, agent_action_id: id };
-  const row = await insertCourseAgentAction({ ...key, action: name, input, card });
-  if (row) return { card };
-  // The agent service may repeat a request whose reply it lost.
-  const existing = (await selectOptionalCourseAgentAction(key))!;
-  if (existing.action !== name || !isDeepStrictEqual(existing.input, input)) {
-    throw new HttpStatusError(409, 'This request ID was already used for a different request.');
-  }
-  return { card: CourseActionCardSchema.parse(existing.card) };
 }
 
 /** What the action card shows: the request, and its decision and result once it has them. */
@@ -110,7 +110,16 @@ async function runCourseAction(
   action: CourseAgentAction,
 ): Promise<CourseActionResult | { jobSequenceId: string }> {
   try {
-    const outcome = await COURSE_AGENT_ACTIONS[action.action].run(ctx, action.input);
+    const definition = COURSE_AGENT_ACTIONS[action.action];
+    // The instructor approved what the card said. If the course has changed since, so that the
+    // action would now do something else, it is not run.
+    const card = await definition.describe(ctx, action.input);
+    if (!isDeepStrictEqual(card, CourseActionCardSchema.parse(action.card))) {
+      throw new CourseActionError(
+        'Nothing was changed: what this request would do is no longer what the instructor approved, because the course changed in the meantime. Request it again so they can decide on the current change.',
+      );
+    }
+    const outcome = await definition.run(ctx, action.input);
     if ('jobSequenceId' in outcome) return outcome;
     return finishedCourseActionResult(action, { status: 'succeeded', summary: outcome.summary });
   } catch (error) {
@@ -191,12 +200,11 @@ export async function postCourseActionDecision({
     void recordJobResult(conversation, started, action, outcome.jobSequenceId);
     return { decision };
   }
+  // The result is recorded before this request answers, so the card that refetches finds it.
+  const recorded = await updateCourseAgentReviewResult({ id: row.id, result: outcome });
   // As for a file review, the agent's next turn starts once it has the result, so the result is
   // sent after this request answers. A failed send is retried by the result sweep.
-  void recordAndDeliverResult(conversation, row, outcome).catch((error: unknown) => {
-    logger.error('Course agent action result was not recorded; it will be retried.', error);
-    Sentry.captureException(error);
-  });
+  if (recorded) void deliverResult(conversation, recorded, outcome);
   return { decision };
 }
 

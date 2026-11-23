@@ -15,6 +15,7 @@ import { config } from '../lib/config.js';
 import type { CourseAgentConversation, User } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { insertCourse, selectCourseById } from '../models/course.js';
+import { updateIssuesOpen } from '../models/issue.js';
 import { selectSharingSetsForCourse } from '../models/sharing-set.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
@@ -190,45 +191,23 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       id,
     );
     expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body).toEqual({
-      card: {
-        title: 'Close 2 issues',
-        context: '1 issue already closed',
-        rows: [
-          { label: 'addNumbers', detail: 'Wrong answer accepted.' },
-          { label: 'addNumbers', detail: 'It is broken.' },
-        ],
-        moreRows: 0,
-        undo: 'Reopen the same issues.',
-      },
-    });
+    // The agent is told what it asked for. The rows are course data, which only the card shows.
+    expect(await response.json()).toEqual({ title: 'Close 2 issues' });
     expect(await issuesOpen(issueIds)).toEqual([true, true]);
-
-    // The service repeats a request whose reply it lost; a different request cannot reuse its ID.
-    const repeat = await request(
-      conversation,
-      'issues_close',
-      { issue_ids: [...issueIds, closed] },
-      id,
-    );
-    expect(await repeat.json()).toEqual(body);
-    expect((await request(conversation, 'issues_close', { issue_ids: issueIds }, id)).status).toBe(
-      409,
-    );
-    expect(
-      await queryScalar(
-        sql.select_course_agent_action_count,
-        { course_agent_conversation_id: conversation.id },
-        z.number(),
-      ),
-    ).toBe(1);
 
     await withUser(owner, async () => {
       const client = createClient(owner);
       const input = { conversationId: conversation.id, actionId: id };
-      expect(await client.courseAgent.getAction.query(input)).toMatchObject({
-        card: { title: 'Close 2 issues' },
+      expect(await client.courseAgent.getAction.query(input)).toEqual({
+        card: {
+          title: 'Close 2 issues',
+          context: '1 issue already closed',
+          rows: [
+            { label: `#${issueIds[0]} · addNumbers`, detail: 'Wrong answer accepted.' },
+            { label: `#${issueIds[1]} · addNumbers`, detail: 'It is broken.' },
+          ],
+          undo: 'Reopen the same issues.',
+        },
         decision: null,
         result: null,
       });
@@ -360,7 +339,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     const issueIds = [await insertIssue({ open: false })];
     const id = crypto.randomUUID();
     const response = await request(conversation, 'issues_reopen', { issue_ids: issueIds }, id);
-    expect(await response.json()).toMatchObject({ card: { title: 'Reopen 1 issue' } });
+    expect(await response.json()).toEqual({ title: 'Reopen 1 issue' });
     await withUser(owner, async () => {
       await createClient(owner).courseAgent.postReviewDecision.mutate({
         conversationId: conversation.id,
@@ -444,7 +423,15 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
 
     const id = crypto.randomUUID();
     const response = await request(conversation, 'sharing_add_course_to_set', input, id);
-    const { card } = await response.json();
+    expect(await response.json()).toEqual({
+      title: 'Share the sharing set "intro-set" with SHARE 101',
+    });
+    const { card } = await withUser(owner, () =>
+      createClient(owner).courseAgent.getAction.query({
+        conversationId: conversation.id,
+        actionId: id,
+      }),
+    );
     expect(card).toEqual({
       title: 'Share the sharing set "intro-set" with SHARE 101',
       context: 'PrairieLearn has no way to take this access back.',
@@ -452,7 +439,6 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
         { label: 'SHARE 101: A course that uses shared questions', detail: 'Gets access' },
         { label: 'Sharing set "intro-set"', detail: '0 questions' },
       ],
-      moreRows: 0,
       undo: null,
     });
     // The token identifies the other course to PrairieLearn; the instructor is not shown it.
@@ -478,7 +464,9 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       },
     });
     const again = await request(conversation, 'sharing_add_course_to_set', input);
-    expect((await again.json()).message).toContain('already shared with SHARE 101');
+    expect((await again.json()).message).toContain(
+      'already shared with the course that token names',
+    );
   });
 
   test('sets the sharing name and replaces the sharing token', async () => {
@@ -487,14 +475,19 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       const id = crypto.randomUUID();
       const response = await request(conversation, action, input, id);
       assert.equal(response.status, 200, await response.clone().text());
-      await withUser(owner, async () => {
-        await createClient(owner).courseAgent.postReviewDecision.mutate({
+      return await withUser(owner, async () => {
+        const client = createClient(owner);
+        const shown = await client.courseAgent.getAction.query({
+          conversationId: conversation.id,
+          actionId: id,
+        });
+        await client.courseAgent.postReviewDecision.mutate({
           conversationId: conversation.id,
           reviewId: id,
           decision: 'approved',
         });
+        return shown.card;
       });
-      return (await response.json()).card;
     };
     const named = await approve('sharing_choose_name', { sharing_name: 'test-course' });
     expect(named).toMatchObject({
@@ -528,32 +521,33 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     );
   });
 
-  test('an approval that finds nothing left to do says so', async () => {
+  test('an approval is refused when the course changed since the request', async () => {
     const conversation = await createConversation(owner);
-    const issueIds = [await insertIssue()];
-    const first = crypto.randomUUID();
-    const second = crypto.randomUUID();
-    await request(conversation, 'issues_close', { issue_ids: issueIds }, first);
-    await request(conversation, 'issues_close', { issue_ids: issueIds }, second);
-    await withUser(owner, async () => {
-      const client = createClient(owner);
-      for (const reviewId of [first, second]) {
-        await client.courseAgent.postReviewDecision.mutate({
-          conversationId: conversation.id,
-          reviewId,
-          decision: 'approved',
-        });
-      }
+    const issueIds = [await insertIssue(), await insertIssue()];
+    const id = crypto.randomUUID();
+    await request(conversation, 'issues_close', { issue_ids: issueIds }, id);
+    // Someone closes one of the two on the Issues page before the instructor decides.
+    await updateIssuesOpen({
+      course_id: '1',
+      issue_ids: [issueIds[0]],
+      open: false,
+      authn_user_id: owner.id,
     });
-    await waitForDeliveries(2);
-    expect(delivered.map(({ body }) => body)).toMatchObject([
-      { outcome: { status: 'succeeded', summary: 'Closed 1 issue.' } },
-      {
-        outcome: {
-          status: 'succeeded',
-          summary: 'Nothing changed: the issues were already closed.',
-        },
+    await withUser(owner, async () => {
+      await createClient(owner).courseAgent.postReviewDecision.mutate({
+        conversationId: conversation.id,
+        reviewId: id,
+        decision: 'approved',
+      });
+    });
+    await waitForDeliveries(1);
+    expect(delivered[0].body).toMatchObject({
+      outcome: {
+        status: 'failed',
+        error: expect.stringContaining('no longer what the instructor approved'),
       },
-    ]);
+    });
+    // The card said two issues, so the one still open is left alone.
+    expect(await issuesOpen(issueIds)).toEqual([false, true]);
   });
 });

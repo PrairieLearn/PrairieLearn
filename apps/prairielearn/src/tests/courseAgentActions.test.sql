@@ -43,14 +43,6 @@ WHERE
   AND al.row_id = ANY ($issue_ids::bigint[])
   AND al.authn_user_id = $authn_user_id;
 
--- BLOCK select_course_agent_action_count
-SELECT
-  COUNT(*)::integer
-FROM
-  course_agent_actions
-WHERE
-  course_agent_conversation_id = $course_agent_conversation_id;
-
 -- BLOCK insert_sharing_set
 INSERT INTO
   sharing_sets (course_id, name, description)

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -50,6 +51,15 @@ type Attempt = Awaited<ReturnType<typeof selectAttempts>>[number];
 /** Whose attempt it is, as staff name students. */
 const owner = (attempt: Attempt) =>
   attempt.group ? `Group ${attempt.group.name}` : (attempt.user?.uid ?? 'Unknown user');
+
+/**
+ * An attempt's time limit as the moment it ends. The card is compared again at approval, so it
+ * cannot show time remaining, which changes by the minute.
+ */
+const timeLimit = (ctx: AssessmentActionContext, attempt: Attempt) =>
+  attempt.assessment_instance.date_limit
+    ? `time ends ${formatDate(attempt.assessment_instance.date_limit, ctx.course_instance.display_timezone)}`
+    : 'no time limit';
 
 const where = (ctx: AssessmentActionContext) =>
   `${ctx.assessment.title ?? ctx.assessment.tid} · ${ctx.course_instance.short_name}`;
@@ -178,7 +188,7 @@ export const attemptActions = {
           label: owner(attempt),
           detail:
             attempt.assessment_instance.open === true
-              ? `Now: ${attempt.time_remaining}`
+              ? `Now: ${timeLimit(ctx, attempt)}`
               : 'Closed, will reopen',
         })),
       };
@@ -262,7 +272,7 @@ export const attemptActions = {
           .join(' · '),
         rows: changing.map((attempt) => ({
           label: owner(attempt),
-          detail: `Now: ${attempt.time_remaining}`,
+          detail: `Now: open, ${timeLimit(ctx, attempt)}`,
         })),
       };
     },

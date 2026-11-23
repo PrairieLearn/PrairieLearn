@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -9,11 +9,10 @@ const sql = loadSqlEquiv(import.meta.url);
 const IssueSummarySchema = z.object({
   id: IdSchema,
   open: z.boolean().nullable(),
-  date: DateFromISOString.nullable(),
   student_message: z.string().nullable(),
   question_qid: z.string().nullable(),
 });
-export type IssueSummary = z.infer<typeof IssueSummarySchema>;
+type IssueSummary = z.infer<typeof IssueSummarySchema>;
 
 /** The course's own issues among `issue_ids`, oldest first. Issues caused by the system are left out. */
 export async function selectIssueSummariesByIds({
