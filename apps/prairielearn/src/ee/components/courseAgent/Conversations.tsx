@@ -173,7 +173,7 @@ function ConversationPicker({
   const createError = getAppError<CourseAgentError['Create']>(create.error);
   return (
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
-      <div className="d-flex gap-2 align-items-center border-bottom px-3 py-2">
+      <div className="d-flex gap-2 align-items-center border-bottom p-3">
         <Dropdown className="flex-grow-1" style={{ minWidth: 0 }}>
           <Dropdown.Toggle
             variant="light"
