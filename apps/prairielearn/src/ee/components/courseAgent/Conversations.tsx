@@ -838,7 +838,7 @@ function Chat({
           {(startingSandbox || working) && (
             <ActivityStatus
               conversationId={conversationId}
-              requestId={messages.findLast((message) => message.role === 'user')?.id}
+              requestId={lastUserIndex === -1 ? undefined : messages[lastUserIndex].id}
               startingSandbox={startingSandbox}
               message={messages.at(-1)}
               hidden={!startingSandbox && replying(messages.at(-1))}
