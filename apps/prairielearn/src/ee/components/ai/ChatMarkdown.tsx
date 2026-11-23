@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { createElement } from 'react';
+import { type CSSProperties, type ReactElement, createElement, isValidElement } from 'react';
 import type { UrlTransform } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import {
@@ -43,7 +43,19 @@ const PLAIN_TAGS = [
 
 const components: Components = {
   ...Object.fromEntries(PLAIN_TAGS.map((tag) => [tag, tag])),
-  inlineCode: ({ node: _node, className: _className, ...props }) => <code {...props} />,
+  // Streamdown fades in the words inside a code span but not the span's own background, which
+  // would show as an empty chip before its words. The chip fades in with its first word.
+  inlineCode: ({ node: _node, className: _className, ...props }) => {
+    const word = [props.children]
+      .flat()
+      .find(
+        (child): child is ReactElement<{ style?: CSSProperties; 'data-sd-animate'?: boolean }> =>
+          isValidElement<{ 'data-sd-animate'?: boolean }>(child) &&
+          !!child.props['data-sd-animate'],
+      );
+    if (!word) return <code {...props} />;
+    return <code {...props} style={word.props.style} data-sd-animate />;
+  },
   // `pre` is left to Streamdown: it only marks its child as a block, and
   // `code` then renders the whole code block.
   code: ({ className, children }) => (

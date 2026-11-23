@@ -60,7 +60,7 @@ export function PlanChecklist({ plan }: { plan: PlanPart }) {
     <div className="course-agent-plan small border-top">
       <button
         type="button"
-        className="course-agent-plan-toggle btn border-0 rounded-0 w-100 d-flex align-items-center gap-2 text-start"
+        className="course-agent-plan-toggle btn border-0 rounded-0 w-100 d-flex align-items-start gap-2 text-start"
         aria-expanded={expanded}
         aria-controls={listId}
         onClick={() => setExpanded(!expanded)}
@@ -70,20 +70,26 @@ export function PlanChecklist({ plan }: { plan: PlanPart }) {
         ) : (
           <>
             <StepIcon status={current.status} />
-            <span className="flex-grow-1 text-truncate fw-semibold">{current.text}</span>
+            <span className="course-agent-plan-current flex-grow-1 fw-semibold">
+              {current.text}
+            </span>
             <span className="flex-shrink-0 text-body-secondary">
               <span className="visually-hidden">Step </span>
               {position}
             </span>
           </>
         )}
-        <i
-          className={clsx(
-            'bi small flex-shrink-0 text-body-secondary',
-            expanded ? 'bi-chevron-down' : 'bi-chevron-right',
-          )}
+        <span
+          className="course-agent-plan-icon d-flex align-items-center justify-content-center flex-shrink-0"
           aria-hidden="true"
-        />
+        >
+          <i
+            className={clsx(
+              'bi small text-body-secondary',
+              expanded ? 'bi-chevron-down' : 'bi-chevron-right',
+            )}
+          />
+        </span>
       </button>
       {expanded && (
         <ol

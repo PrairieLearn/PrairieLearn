@@ -348,6 +348,14 @@
   --bs-btn-font-size: 0.875rem;
 }
 
+/* A long step wraps to a second line before it is cut off, so most steps show in full. */
+.course-agent-plan-current {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 .course-agent-plan-steps {
   max-height: 11rem;
   padding: 0 1rem 0.75rem;
