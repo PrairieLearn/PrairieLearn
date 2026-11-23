@@ -285,7 +285,7 @@ function RubricGroup({
   const childrenId = `rubric-group-${context}-${item.id}`;
 
   return (
-    <div className="mb-1" data-testid="rubric-group">
+    <div className="pb-1" data-testid="rubric-group">
       <button
         type="button"
         className="btn btn-sm w-100 d-flex align-items-start gap-2 text-start px-1 border-0"
@@ -344,7 +344,7 @@ function RubricGroup({
         </div>
       )}
       {/* Collapsed groups stay mounted so their selected checkboxes are still submitted. */}
-      <div id={childrenId} className="ms-3 ps-2 border-start" hidden={collapsed}>
+      <div id={childrenId} className="rubric-tree-children" hidden={collapsed}>
         {node.children.map((child) => renderNode(child, item, childIds))}
       </div>
     </div>
@@ -374,8 +374,8 @@ function RubricItemRow({
       <label
         htmlFor={inputId}
         className={clsx(
-          'js-selectable-rubric-item-label w-100 border rounded px-1 d-flex align-items-start',
-          selected && 'bg-light',
+          'js-selectable-rubric-item-label rubric-tree-item w-100 border rounded px-1 d-flex align-items-start',
+          selected && 'bg-primary-subtle border-primary-subtle',
           selectionBlocked && 'opacity-50',
         )}
         style={{ borderColor: selected ? undefined : 'transparent' }}
