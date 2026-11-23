@@ -14,9 +14,6 @@ const LegacyAssessmentAccessRuleResultSchema = z.object({
   start_date: z.union([z.string(), z.literal('—')]),
   time_limit_min: z.union([z.string(), z.literal('—')]),
 });
-export type LegacyAssessmentAccessRuleResult = z.infer<
-  typeof LegacyAssessmentAccessRuleResultSchema
->;
 
 // Application-level result consumed after either legacy or modern access control has been resolved.
 const AssessmentAuthzResultSchema = z.object({

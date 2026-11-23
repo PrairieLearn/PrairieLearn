@@ -70,9 +70,14 @@ export interface FocusTrap {
   deactivate(): void;
 }
 
-export function trapFocus(element: Element): FocusTrap {
-  // Store the previous active element so we can restore it later.
-  const previousActiveElement = document.activeElement ?? document.body;
+export function trapFocus(
+  element: Element,
+  { returnFocusTo }: { returnFocusTo?: HTMLElement } = {},
+): FocusTrap {
+  // Store the element that focus should return to. The active element isn't
+  // always the right one: WebKit focuses an `autofocus` element as soon as it
+  // is inserted, so focus can already be inside the container by now.
+  const previousActiveElement = returnFocusTo ?? document.activeElement ?? document.body;
 
   function keyDown(e: KeyboardEvent) {
     if (e.key !== 'Tab') return;
