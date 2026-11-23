@@ -343,10 +343,12 @@ describe('course agent turns', () => {
         method: 'item/commandExecution/outputDelta',
         params: { ...ids, itemId: 'tests', delta },
       });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     output('x'.repeat(1000));
     output('\n3 passed');
     // Output is shown at a fixed pace, so both deltas arrive as one update.
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await vi.advanceTimersByTimeAsync(1000);
+    vi.useRealTimers();
     emit({
       method: 'turn/completed',
       params: { threadId: 'thread', turn: { id: 'turn', status: 'completed', error: null } },

@@ -71,7 +71,7 @@ Each Codex tool call (a command, a file change, or any other tool: MCP and dynam
 
 Text the agent writes along the way is an update, not its reply, and the chat folds it in with the tool calls before the reply. Codex labels such text as commentary when the model reports it, and the Worker marks those text parts with `providerMetadata.courseAgent.update`. Unmarked text counts as an update when the agent carries on after it.
 
-While a command runs, the Worker rewrites its `data-tool` part a few times a second with the end of the output so far, so the chat can show that a long command is getting somewhere. Completion replaces that with the clipped full output.
+While a command runs, the Worker rewrites its `data-tool` part about once a second with the end of the output so far, so the chat can show that a long command is getting somewhere. Completion replaces that with the clipped full output.
 
 History keeps a bounded copy: command text up to 2,000 characters, output up to 4,000 (its start and end), arguments up to 1,000, each diff up to 4,000, and 50 files per change. Paths in the course checkout are stored relative to the course root. Once a message's tool calls exceed 300,000 characters, later calls in it keep their labels but no output, diffs, or arguments, so the message stays well within a Durable Object row; Codex's own thread keeps the full record. A successful `request_changes` call has no part, because its review card shows it; a failed one does, so the instructor sees why. Catch-up omits tool calls except a one-line list of the files each completed change touched.
 

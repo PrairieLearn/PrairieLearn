@@ -341,9 +341,9 @@ function Loading() {
 const MIN_LABEL_MS = 1000;
 
 /** The label for the moments between steps, when the agent has said nothing more specific. */
-const THINKING = 'Thinking';
+const THINKING_LABEL = 'Thinking';
 
-const GETTING_READY = 'Getting ready';
+const GETTING_READY_LABEL = 'Getting ready';
 
 /**
  * How long the agent must go without a new step before the line says it is thinking. It pauses
@@ -362,7 +362,7 @@ function useSteadyLabel(label: string) {
   useEffect(() => {
     if (label === shown) return;
     const wait =
-      label === THINKING && shown !== GETTING_READY
+      label === THINKING_LABEL && shown !== GETTING_READY_LABEL
         ? THINKING_AFTER_MS
         : Math.max(0, MIN_LABEL_MS - (Date.now() - shownAtRef.current));
     const timeout = setTimeout(() => {
@@ -394,11 +394,14 @@ function PendingStatus({ label }: { label: string }) {
  */
 function ActivityStatus({
   conversationId,
+  requestId,
   startingSandbox,
   message,
   hidden,
 }: {
   conversationId: string;
+  /** The message the agent is answering, once history has loaded. */
+  requestId: string | undefined;
   startingSandbox: boolean;
   message: UIMessage | undefined;
   /** Hides the line but keeps counting, for when the agent works again after it. */
@@ -406,9 +409,18 @@ function ActivityStatus({
 }) {
   const call = latestCall(message);
   const storageKey = `course-agent-working-since:${conversationId}`;
-  const [startedAt] = useState(() => Number(sessionStorage.getItem(storageKey)) || Date.now());
+  const [mountedAt] = useState(() => Date.now());
+  const [stored] = useState(() => {
+    const [request, since] = (sessionStorage.getItem(storageKey) ?? '').split(' ');
+    return { request, since: Number(since) };
+  });
+  // A time left by an earlier request, whose cleanup leaving the page skipped, is not this one's.
+  const startedAt =
+    stored.since && (requestId === undefined || stored.request === requestId)
+      ? stored.since
+      : mountedAt;
   const [now, setNow] = useState(() => Date.now());
-  const label = useSteadyLabel(startingSandbox ? GETTING_READY : activityLabel(message));
+  const label = useSteadyLabel(startingSandbox ? GETTING_READY_LABEL : activityLabel(message));
   // Advances the elapsed time once a second.
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -417,9 +429,10 @@ function ActivityStatus({
   // Remembers when the agent started, so reloading the page mid-turn does not restart the time.
   // Leaving the page skips the cleanup; the turn ending runs it.
   useEffect(() => {
-    sessionStorage.setItem(storageKey, String(startedAt));
+    if (requestId === undefined) return;
+    sessionStorage.setItem(storageKey, `${requestId} ${startedAt}`);
     return () => sessionStorage.removeItem(storageKey);
-  }, [storageKey, startedAt]);
+  }, [storageKey, requestId, startedAt]);
   if (hidden) return null;
   return (
     <div className="small text-body-secondary" role="status">
@@ -433,7 +446,7 @@ function ActivityStatus({
           {formatInterval(now - startedAt)}
         </span>
       </span>
-      {call?.status === 'running' && <LiveOutput call={call} lines={1} />}
+      {call?.status === 'running' && <LiveOutput call={call} />}
     </div>
   );
 }
@@ -468,7 +481,7 @@ function activityLabel(message: UIMessage | undefined) {
   const call = latestCall(message);
   if (call?.status === 'running') return runningLabel(call);
   const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
-  return (part?.type === 'reasoning' && reasoningHeading(part.text)) || THINKING;
+  return (part?.type === 'reasoning' && reasoningHeading(part.text)) || THINKING_LABEL;
 }
 
 function Chat({
@@ -740,7 +753,12 @@ function Chat({
     const content = stickToBottom.contentRef.current;
     if (!scroller || !content) return;
     const observer = new ResizeObserver(() => {
-      if (stickToBottom.state.isAtBottom) scroller.scrollTop = scroller.scrollHeight;
+      // Scrolling under a selection being made would drag it along, so that waits for the hook,
+      // which holds off until the selection is done.
+      const selection = document.getSelection();
+      const selecting =
+        selection !== null && !selection.isCollapsed && scroller.contains(selection.anchorNode);
+      if (stickToBottom.state.isAtBottom && !selecting) scroller.scrollTop = scroller.scrollHeight;
     });
     observer.observe(content);
     observer.observe(scroller);
@@ -820,6 +838,7 @@ function Chat({
           {(startingSandbox || working) && (
             <ActivityStatus
               conversationId={conversationId}
+              requestId={messages.findLast((message) => message.role === 'user')?.id}
               startingSandbox={startingSandbox}
               message={messages.at(-1)}
               hidden={!startingSandbox && replying(messages.at(-1))}
@@ -1195,6 +1214,7 @@ function Message({
           settled={settled}
           // The reply under it, which may yet turn out to be an update, is the latest word.
           showUpdate={!reply}
+          urlTransform={linkTransform}
           onExpand={onToolCallExpand}
         />,
       );
