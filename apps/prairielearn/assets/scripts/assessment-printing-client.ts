@@ -577,8 +577,8 @@ async function paginateAssessment(): Promise<{ totalPages: number }> {
   const failedImages = await waitForPrintImages(source, READINESS_TIMEOUT_MS);
   // The renderer blocks requests to other sites, so those images can never load.
   const isFromOtherSite = (image: HTMLImageElement) => {
-    const url = new URL(image.currentSrc || image.src, location.href);
-    return url.protocol.startsWith('http') && url.origin !== location.origin;
+    const url = URL.parse(image.currentSrc || image.src, location.href);
+    return url?.protocol.startsWith('http') === true && url.origin !== location.origin;
   };
   omitIncompleteQuestions(
     failedImages.filter(isFromOtherSite),

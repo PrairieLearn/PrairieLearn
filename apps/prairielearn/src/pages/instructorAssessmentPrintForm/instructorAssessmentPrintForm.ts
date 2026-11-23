@@ -482,10 +482,7 @@ router.use(((err, req, res, next) => {
         : 'The preview could not be created. Try again or contact support if this issue persists.';
   res.status(status);
   res.setHeader('Cache-Control', 'private, no-store');
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'none'; frame-ancestors 'self';",
-  );
+  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'self';");
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.send(InstructorAssessmentPrintFormError({ message }).toString());
 }) satisfies ErrorRequestHandler);
