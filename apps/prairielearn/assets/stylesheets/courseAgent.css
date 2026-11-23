@@ -370,15 +370,21 @@ textarea.course-agent-composer-input {
   padding: 0 1rem 0.75rem;
 }
 
-.course-agent-plan-done {
-  animation: course-agent-plan-done 250ms ease-out;
+/* A tick pops in when a plan step finishes or approved changes are saved. */
+.course-agent-pop {
+  animation: course-agent-pop 250ms ease-out;
 }
 
-@keyframes course-agent-plan-done {
+@keyframes course-agent-pop {
   from {
     opacity: 0;
     transform: scale(0.4);
   }
+}
+
+/* As tall as the choices it replaces, so the card keeps its size while the changes are saved. */
+.course-agent-review-progress {
+  min-height: 2rem;
 }
 
 /* One column for the plan's icons, each centred on its step's first line. */
@@ -566,7 +572,7 @@ body:has(.course-agent-panel-animate) .app-main {
   .course-agent-rise,
   .course-agent-fade,
   .course-agent-plan,
-  .course-agent-plan-done {
+  .course-agent-pop {
     animation: none;
   }
 

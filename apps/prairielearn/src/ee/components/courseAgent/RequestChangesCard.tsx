@@ -97,31 +97,33 @@ export function RequestChangesCard({
     autoApprovedRef.current = true;
     mutateDecision({ conversationId, reviewId, decision: 'approved' });
   }, [autoApprove, canApprove, mutateDecision, conversationId, reviewId]);
-  const approvingAutomatically =
-    autoApprove && decision.isPending && decision.variables.decision === 'approved';
+  const approving = decision.isPending && decision.variables.decision === 'approved';
+  // What the card is waiting on once the changes are approved, shown in place of the choices.
+  const progress =
+    data?.status === 'decided' && !data.result
+      ? 'Saving and syncing'
+      : approving
+        ? autoApprove
+          ? 'Approving automatically'
+          : 'Saving and syncing'
+        : null;
+  // A result that arrives while the card is open eases in; one loaded with history is just shown.
+  const [sawUndecided, setSawUndecided] = useState(false);
+  if ((pending || progress) && !sawUndecided) setSawUndecided(true);
   return (
     <div className="course-agent-review border rounded-3">
       {data?.status === 'decided' && data.result ? (
-        <ReviewResult result={data.result} />
+        <ReviewResult result={data.result} entering={sawUndecided} />
       ) : (
         <ReviewActions
           disabled={actionsDisabled}
           canApprove={canApprove}
           files={files}
+          progress={progress}
           onViewChanges={() => setShowChanges(true)}
           onDecision={decide}
           onApproveAlways={approveAlways}
         />
-      )}
-      {approvingAutomatically && (
-        <p className="small text-muted mt-2 mb-0" role="status">
-          Approving automatically…
-        </p>
-      )}
-      {data?.status === 'decided' && !data.result && (
-        <p className="small text-muted mt-2 mb-0" role="status">
-          Saving and syncing…
-        </p>
       )}
       {data?.status === 'unavailable' && (
         <p className="small text-muted mt-2 mb-0">This review is no longer available.</p>
@@ -189,6 +191,7 @@ function ReviewActions({
   disabled,
   canApprove,
   files,
+  progress,
   onViewChanges,
   onDecision,
   onApproveAlways,
@@ -196,6 +199,8 @@ function ReviewActions({
   disabled: boolean;
   canApprove: boolean;
   files: ReviewDiffFile[] | null;
+  /** What is happening to approved changes, which replaces the choices while it does. */
+  progress: string | null;
   onViewChanges: () => void;
   onDecision: (decision: 'approved' | 'denied') => void;
   onApproveAlways: () => void;
@@ -233,34 +238,49 @@ function ReviewActions({
           <i className="bi bi-chevron-right" aria-hidden="true" />
         </span>
       </Button>
-      <div className="d-flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          className="course-agent-composer-button course-agent-composer-send"
-          disabled={disabled || !canApprove}
-          onClick={() => onDecision('approved')}
+      {progress ? (
+        <div
+          className="course-agent-review-progress course-agent-fade d-flex align-items-center gap-2 small"
+          role="status"
         >
-          Approve once
-        </Button>
-        <Button
-          variant="link"
-          size="sm"
-          className="course-agent-composer-button course-agent-review-always"
-          disabled={disabled || !canApprove}
-          onClick={onApproveAlways}
-        >
-          Always approve
-        </Button>
-        <Button
-          variant="link"
-          size="sm"
-          className="course-agent-composer-button"
-          disabled={disabled}
-          onClick={() => onDecision('denied')}
-        >
-          Deny
-        </Button>
-      </div>
+          <Spinner
+            animation="border"
+            variant="primary"
+            style={{ width: '0.875rem', height: '0.875rem', borderWidth: '0.125em' }}
+            aria-hidden="true"
+          />
+          <span className="course-agent-shimmer">{progress}…</span>
+        </div>
+      ) : (
+        <div className="d-flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            className="course-agent-composer-button course-agent-composer-send"
+            disabled={disabled || !canApprove}
+            onClick={() => onDecision('approved')}
+          >
+            Approve once
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="course-agent-composer-button course-agent-review-always"
+            disabled={disabled || !canApprove}
+            onClick={onApproveAlways}
+          >
+            Always approve
+          </Button>
+          <Button
+            variant="link"
+            size="sm"
+            className="course-agent-composer-button"
+            disabled={disabled}
+            onClick={() => onDecision('denied')}
+          >
+            Deny
+          </Button>
+        </div>
+      )}
     </>
   );
 }
@@ -343,7 +363,17 @@ function ReviewChangesModal({
   );
 }
 
-function ReviewResult({ result }: { result: RequestChangesResult }) {
+function ReviewResult({
+  result,
+  entering,
+}: {
+  result: RequestChangesResult;
+  /** Whether the result arrived while the card was open, so it eases in. */
+  entering: boolean;
+}) {
+  const saved =
+    result.decision === 'approved' &&
+    (result.publication.status === 'saved_locally' || result.publication.status === 'published');
   let message = 'Changes could not be saved.';
   if (result.decision === 'denied') {
     message = 'Changes denied.';
@@ -364,8 +394,16 @@ function ReviewResult({ result }: { result: RequestChangesResult }) {
         : 'Changes saved, but the course sync failed.';
   }
   return (
-    <div role="status">
-      <p className="mb-0">{message}</p>
+    <div className={clsx(entering && 'course-agent-fade')} role="status">
+      <p className="d-flex align-items-baseline gap-2 mb-0">
+        {saved && result.sync.status === 'succeeded' && (
+          <i
+            className={clsx('bi bi-check-circle-fill text-success', entering && 'course-agent-pop')}
+            aria-hidden="true"
+          />
+        )}
+        <span>{message}</span>
+      </p>
       {result.publication.status === 'conflict' && (
         <ul className="mt-2 mb-0">
           {result.publication.paths.map((path) => (
