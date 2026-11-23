@@ -5,6 +5,7 @@ import { SkillsClient } from '@modelcontextprotocol/client/ext/skills';
 import * as cheerio from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
+import { selectActiveOauthGrantsForUser } from '../ee/models/oauth-grant.js';
 import { config } from '../lib/config.js';
 import {
   deleteCoursePermissions,
@@ -279,6 +280,30 @@ describe('MCP server', { timeout: 60_000, concurrent: false }, function () {
     const res = await fetch(`${siteUrl}/pl/mcp`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${refreshed.body.access_token}` },
+    });
+    assert.equal(res.status, 401);
+  });
+
+  test('the settings page lists a connected agent and can disconnect it', async function () {
+    const { tokens } = await connect();
+    const settings = await fetch(`${siteUrl}/pl/settings`);
+    const $ = cheerio.load(await settings.text());
+    assert.equal($('#agent-server-address').val(), `${siteUrl}/pl/mcp`);
+    assert.include($('.list-group-item').text(), 'Test agent');
+
+    const [{ oauth_grant }] = await selectActiveOauthGrantsForUser(userId);
+    const disconnect = await fetch(`${siteUrl}/pl/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'agent_disconnect',
+        __csrf_token: $('span[id=test_csrf_token]').text(),
+        oauth_grant_id: oauth_grant.id,
+      }),
+    });
+    assert.equal(disconnect.status, 200);
+    const res = await fetch(`${siteUrl}/pl/mcp`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokens.body.access_token}` },
     });
     assert.equal(res.status, 401);
   });

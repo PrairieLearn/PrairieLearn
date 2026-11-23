@@ -3,9 +3,7 @@ import { z } from 'zod';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import type { OauthClient, User } from '../../../lib/db-types.js';
-import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { selectCoursesWithStaffAccess } from '../../../models/course.js';
 import {
   OAUTH_SCOPES,
   OAUTH_SCOPE_NAMES,
@@ -14,6 +12,7 @@ import {
   getOauthIssuer,
   isOauthScope,
 } from '../../lib/oauth/config.js';
+import { selectConnectableCourses } from '../../lib/oauth/connectable-courses.js';
 import { createAuthorizationCode } from '../../lib/oauth/flow.js';
 import { describeRedirectUri, isRegisteredRedirectUri } from '../../lib/oauth/redirect-uri.js';
 import { selectOptionalOauthClientByClientId } from '../../models/oauth-client.js';
@@ -99,37 +98,6 @@ async function checkAuthorizeRequest(params: AuthorizeParams): Promise<CheckedAu
     // A client that names no scope we know is offered them all; the user picks.
     scopes: requested.length > 0 ? requested : OAUTH_SCOPE_NAMES,
   };
-}
-
-/**
- * The courses the user can connect an agent to, with what the agent could do in each. Based on
- * the user's own roles: an administrator's access to every course does not count.
- */
-async function selectConnectableCourses(user: User) {
-  const courses = await selectCoursesWithStaffAccess({
-    user_id: user.id,
-    is_administrator: false,
-  });
-  const connectable = await Promise.all(
-    courses.map(async (course) => {
-      const { has_course_permission_own, has_course_permission_edit, course_role } =
-        course.permissions_course;
-      if (course.example_course || !has_course_permission_edit) return null;
-      const enabled = await features.enabled('mcp-server', {
-        institution_id: course.institution_id,
-        course_id: course.id,
-        user_id: user.id,
-      });
-      if (!enabled) return null;
-      return {
-        id: course.id,
-        name: [course.short_name, course.title].filter(Boolean).join(': '),
-        role: course_role,
-        can_read_data: has_course_permission_own,
-      };
-    }),
-  );
-  return connectable.filter((course) => course !== null);
 }
 
 function toArray(value: string | string[] | undefined) {

@@ -6,11 +6,20 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
+import { OAUTH_SCOPES, getMcpResource, isOauthScope } from '../../ee/lib/oauth/config.js';
+import { selectConnectableCourses } from '../../ee/lib/oauth/connectable-courses.js';
+import {
+  revokeOauthGrant,
+  selectActiveOauthGrantsForUser,
+  selectOptionalOauthGrantById,
+} from '../../ee/models/oauth-grant.js';
 import { getClientIpAddress } from '../../lib/client-ip.js';
 import { UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
 import { getUserTrpcUrl } from '../../lib/client/url.js';
@@ -60,6 +69,31 @@ router.get(
     });
 
     const isExamMode = mode !== 'Public';
+
+    const agentConnections = await run(async () => {
+      if (!isEnterprise() || isExamMode) return null;
+      const [courses, grants] = await Promise.all([
+        selectConnectableCourses(authn_user),
+        selectActiveOauthGrantsForUser(authn_user.id),
+      ]);
+      // Shown to anyone who could connect an agent, or who has one to disconnect.
+      if (courses.length === 0 && grants.length === 0) return null;
+      return {
+        serverUrl: getMcpResource(),
+        timezone: authn_institution.display_timezone,
+        agents: grants.map(({ oauth_grant, oauth_client, courses }) => ({
+          id: oauth_grant.id,
+          name: oauth_client.client_name,
+          permissions: oauth_grant.scopes.filter(isOauthScope).map((scope) => OAUTH_SCOPES[scope]),
+          courses: courses.map((course) =>
+            [course.short_name, course.title].filter(Boolean).join(': '),
+          ),
+          created_at: oauth_grant.created_at,
+          last_used_at: oauth_grant.last_used_at,
+          expires_at: oauth_grant.expires_at,
+        })),
+      };
+    });
     const trpcCsrfToken = generatePrefixCsrfToken(
       { url: getUserTrpcUrl(), authn_user_id: authn_user.id },
       config.secretKey,
@@ -91,6 +125,7 @@ router.get(
                 ipAddress={getClientIpAddress(req)}
                 accessTokens={isExamMode ? [] : UserAccessTokenSchema.array().parse(accessTokens)}
                 newAccessTokens={isExamMode ? [] : newAccessTokens}
+                agentConnections={agentConnections}
                 isExamMode={isExamMode}
                 csrfToken={res.locals.__csrf_token}
                 trpcCsrfToken={trpcCsrfToken}
@@ -140,6 +175,13 @@ router.post(
         token_id: req.body.token_id,
         user_id: res.locals.authn_user.id,
       });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'agent_disconnect') {
+      const grant = await selectOptionalOauthGrantById(IdSchema.parse(req.body.oauth_grant_id));
+      if (grant === null || grant.user_id !== res.locals.authn_user.id) {
+        throw new HttpStatusError(404, 'Connected agent not found.');
+      }
+      await revokeOauthGrant(grant);
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

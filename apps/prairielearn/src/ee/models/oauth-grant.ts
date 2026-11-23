@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
   execute,
   loadSqlEquiv,
@@ -9,6 +11,7 @@ import {
 import {
   type Course,
   CourseSchema,
+  OauthClientSchema,
   type OauthGrant,
   OauthGrantSchema,
 } from '../../lib/db-types.js';
@@ -44,6 +47,24 @@ export async function selectOptionalOauthGrantById(id: string): Promise<OauthGra
 /** The courses the user picked for this grant that still exist. */
 export async function selectOauthGrantCourses(oauth_grant_id: string): Promise<Course[]> {
   return await queryRows(sql.select_oauth_grant_courses, { oauth_grant_id }, CourseSchema);
+}
+
+const OauthGrantWithClientSchema = z.object({
+  oauth_grant: OauthGrantSchema,
+  oauth_client: OauthClientSchema,
+  courses: z.array(CourseSchema),
+});
+type OauthGrantWithClient = z.infer<typeof OauthGrantWithClientSchema>;
+
+/** The user's agent connections that still work, newest first, with the courses each can use. */
+export async function selectActiveOauthGrantsForUser(
+  user_id: string,
+): Promise<OauthGrantWithClient[]> {
+  return await queryRows(
+    sql.select_active_oauth_grants_for_user,
+    { user_id },
+    OauthGrantWithClientSchema,
+  );
 }
 
 export async function revokeOauthGrant(grant: OauthGrant) {

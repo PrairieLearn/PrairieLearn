@@ -70,3 +70,36 @@ FROM
   oauth_grants
 WHERE
   id = $id;
+
+-- BLOCK select_active_oauth_grants_for_user
+SELECT
+  to_jsonb(g.*) AS oauth_grant,
+  to_jsonb(cl.*) AS oauth_client,
+  coalesce(
+    (
+      SELECT
+        jsonb_agg(
+          to_jsonb(c.*)
+          ORDER BY
+            c.short_name,
+            c.id
+        )
+      FROM
+        oauth_grant_courses AS gc
+        JOIN courses AS c ON (c.id = gc.course_id)
+      WHERE
+        gc.oauth_grant_id = g.id
+        AND c.deleted_at IS NULL
+    ),
+    '[]'::jsonb
+  ) AS courses
+FROM
+  oauth_grants AS g
+  JOIN oauth_clients AS cl ON (cl.id = g.oauth_client_id)
+WHERE
+  g.user_id = $user_id
+  AND g.revoked_at IS NULL
+  AND g.expires_at > now()
+ORDER BY
+  g.created_at DESC,
+  g.id DESC;
