@@ -5,6 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { ValueType, getCounter, getHistogram, metrics } from '@prairielearn/opentelemetry';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { Queue, Worker } from '@prairielearn/prairiemq';
 import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
@@ -15,19 +16,27 @@ import {
   selectOptionalPendingPrintExport,
   selectUnfinishedPrintExportCount,
 } from '../../models/print-export.js';
+import {
+  lockAssessmentForPrintForms,
+  lockPrintFormQuestionSelections,
+  selectPrintFormsForAssessment,
+} from '../../models/print-form.js';
 import { deleteFromS3, getFromS3, uploadToS3 } from '../aws.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../client/printing/print-snapshot.js';
 import { config } from '../config.js';
 import type { PrintExport } from '../db-types.js';
 import { getFileStoreS3Bucket } from '../file-store.js';
 
+import type { PaperSize } from './paper-size.js';
 import {
   type PrintExportWork,
   PrintExportWorkSchema,
   renderPrintExport,
 } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
+import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE, sameExcludedQuestions } from './print-settings.js';
 
-import { isBrowserRenderingAvailable } from './index.js';
+import { getPrintableQuestionListDigest, isBrowserRenderingAvailable } from './index.js';
 
 const KEY_PREFIX = 'print-exports/';
 const QUEUE_NAME = 'print-exports';
@@ -151,10 +160,7 @@ function getPrintExportLabel(work: PrintExportWork): string {
       ? `${form} answer key Word document`
       : `${form} Word document`;
   }
-  const { document, copies, snapshots } = work;
-  if (document === 'booklet') {
-    return `Booklet PDF for ${copies} ${copies === 1 ? 'student' : 'students'}`;
-  }
+  const { document, snapshots } = work;
   const formLabels = new Set(snapshots.map((snapshot) => snapshot.formLabel));
   if (formLabels.size === 1) {
     const form = `Form ${[...formLabels][0]}`;
@@ -184,9 +190,16 @@ function printableFailureMessage(error: unknown, format: PrintExportWork['format
 export async function queuePrintExport({
   owner,
   work,
+  formSelections,
 }: {
   owner: { assessmentId: string; authnUserId: string; courseId: string; userId: string };
   work: PrintExportWork;
+  formSelections: {
+    printFormId: string;
+    excludedQuestions: string[];
+    paperSize: PaperSize;
+    questionListDigest: string;
+  }[];
 }): Promise<string> {
   const currentQueue = getQueue();
   if (shutdownController.signal.aborted || !currentQueue) {
@@ -200,14 +213,54 @@ export async function queuePrintExport({
   await uploadToS3(bucket, inputKey, null, false, Buffer.from(JSON.stringify(work)));
   let printExportId: string;
   try {
-    printExportId = await insertPrintExport({
-      assessmentId: owner.assessmentId,
-      userId: owner.userId,
-      authnUserId: owner.authnUserId,
-      format: work.format,
-      filename: work.filename,
-      label: getPrintExportLabel(work),
-      inputKey,
+    printExportId = await runInTransactionAsync(async () => {
+      await lockAssessmentForPrintForms(owner.assessmentId);
+      const savedForms = new Map(
+        (await selectPrintFormsForAssessment({ assessmentId: owner.assessmentId })).map((form) => [
+          form.id,
+          form,
+        ]),
+      );
+      const paperSizes = new Set<PaperSize>();
+      for (const {
+        printFormId,
+        excludedQuestions,
+        paperSize,
+        questionListDigest,
+      } of formSelections) {
+        const saved = savedForms.get(printFormId);
+        if (
+          !saved ||
+          (formSelections.length > 1 && saved.archived_at !== null) ||
+          saved.settings.paperSize !== paperSize ||
+          !sameExcludedQuestions(saved.settings.excludedQuestions, excludedQuestions)
+        ) {
+          throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+        }
+        if (
+          (await getPrintableQuestionListDigest(printFormId, new Set(excludedQuestions))) !==
+          questionListDigest
+        ) {
+          throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
+        }
+        paperSizes.add(paperSize);
+      }
+      if (paperSizes.size > 1) {
+        throw new HttpStatusError(400, PRINT_PAPER_SIZES_MISMATCH_MESSAGE);
+      }
+      await lockPrintFormQuestionSelections({
+        assessmentId: owner.assessmentId,
+        printFormIds: formSelections.map(({ printFormId }) => printFormId),
+      });
+      return await insertPrintExport({
+        assessmentId: owner.assessmentId,
+        userId: owner.userId,
+        authnUserId: owner.authnUserId,
+        format: work.format,
+        filename: work.filename,
+        label: getPrintExportLabel(work),
+        inputKey,
+      });
     });
   } catch (error) {
     await deleteFromS3(bucket, inputKey);
@@ -286,7 +339,10 @@ async function processPrintExport(printExportId: string) {
  * recovery finish well within that.
  */
 export function printExportResult(
-  printExport: PrintExport & { expired: boolean; overdue: boolean },
+  printExport: Pick<PrintExport, 'status' | 'failure_message'> & {
+    expired: boolean;
+    overdue: boolean;
+  },
 ) {
   if (printExport.expired && printExport.status === 'succeeded') {
     return { status: 'expired' as const, failureMessage: null };

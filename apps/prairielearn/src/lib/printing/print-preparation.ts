@@ -8,6 +8,10 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 
+import {
+  selectPrintFormsForAssessment,
+  selectRandomizablePrintFormIds,
+} from '../../models/print-form.js';
 import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from '../chunks.js';
 import type { PrintPreparationQuestion } from '../client/printing/print-preparation.js';
 import { CourseSchema, PrintFormQuestionSchema, QuestionSchema } from '../db-types.js';
@@ -21,6 +25,18 @@ export async function assessmentHasPrintRandomization(assessmentId: string): Pro
     { assessment_id: assessmentId },
     z.boolean(),
   );
+}
+
+export async function selectPrintPreparationForms(assessmentId: string) {
+  const [forms, randomizableIds] = await Promise.all([
+    selectPrintFormsForAssessment({ assessmentId }),
+    selectRandomizablePrintFormIds(assessmentId),
+  ]);
+  const randomizable = new Set(randomizableIds);
+  return forms.map((form) => ({
+    ...form,
+    has_randomizable_questions: randomizable.has(form.id),
+  }));
 }
 
 /** These are review suggestions, not a guarantee that a question will work on paper. */
@@ -111,12 +127,12 @@ export async function inspectPrintPreparationQuestions(
             throw error;
           }
           concerns.push(
-            'This question could not be checked for print issues. Review its preview before printing.',
+            'Could not check this question for printing issues. Review it in the preview before printing.',
           );
         }
       } else {
         concerns.push(
-          'This question could not be checked for print issues. Review its preview before printing.',
+          'Could not check this question for printing issues. Review it in the preview before printing.',
         );
       }
       return [question.id, [...new Set(concerns)]];
