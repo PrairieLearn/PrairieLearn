@@ -1,10 +1,7 @@
 import type { Page } from '@playwright/test';
-import { z } from 'zod';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
-import { IdSchema } from '@prairielearn/zod';
 
-import { serializePrintDocument } from '../../../lib/client/printing/print-document.js';
 import { printLayoutSearch } from '../../../lib/client/printing/print-preparation.js';
 import { getAssessmentTrpcUrl, getPrintFormUrl } from '../../../lib/client/url.js';
 import * as codeCaller from '../../../lib/code-caller/index.js';
@@ -12,7 +9,6 @@ import { config } from '../../../lib/config.js';
 import type { CourseInstance, PrintForm } from '../../../lib/db-types.js';
 import { createPrintForm } from '../../../lib/printing/print-forms.js';
 import type { PrintSettings } from '../../../lib/printing/print-settings.js';
-import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseById } from '../../../models/course.js';
 import { selectOptionalPrintForm, updatePrintFormSettings } from '../../../models/print-form.js';
@@ -75,32 +71,16 @@ export async function savePrintSettings(printForm: PrintForm, settings: Partial<
   return printLayoutSearch(updated);
 }
 
+/** Queues a Word export of the user's latest preview and returns its download. */
 export async function downloadPrintableWord(
   page: Page,
   printUrl: string,
   printDocument: 'assessment' | 'answer_key' = 'assessment',
 ) {
-  const source = await page.evaluate(() =>
-    JSON.parse(document.getElementById('pl-print-docx-source')!.textContent),
-  );
-  const id = await page.locator(':root').getAttribute('data-print-snapshot-id');
-  const html = await page.locator(':root').evaluate(serializePrintDocument);
   const { id: authnUserId } = await getConfiguredUser();
-  const queued = await page.request.post(`${printUrl}/docx?document=${printDocument}`, {
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/octet-stream',
-      'X-CSRF-Token': generateCsrfToken({ url: `${printUrl}/docx`, authnUserId }),
-    },
-    data: JSON.stringify({ id, html, source }),
-    timeout: 30_000,
-  });
-  if (!queued.ok()) return queued;
-  expect(queued.headers()['content-type']).toContain('application/json');
-  const { printExportId } = z.object({ printExportId: IdSchema }).parse(await queued.json());
   const previewUrl = new URL(printUrl, page.url());
-  const [, courseInstanceId, assessmentId] = previewUrl.pathname.match(
-    /^\/pl\/course_instance\/(\d+)\/instructor\/assessment\/(\d+)\/print_form\/\d+$/,
+  const [, courseInstanceId, assessmentId, printFormId] = previewUrl.pathname.match(
+    /^\/pl\/course_instance\/(\d+)\/instructor\/assessment\/(\d+)\/print_form\/(\d+)$/,
   )!;
   const api = createAssessmentTrpcClient({
     courseInstanceId,
@@ -110,6 +90,10 @@ export async function downloadPrintableWord(
       { url: getAssessmentTrpcUrl({ courseInstanceId, assessmentId }), authn_user_id: authnUserId },
       config.secretKey,
     ),
+  });
+  const { printExportId } = await api.printExports.docx.mutate({
+    printFormId,
+    document: printDocument,
   });
   await expect
     .poll(

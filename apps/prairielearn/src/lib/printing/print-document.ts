@@ -1,10 +1,9 @@
 /**
  * Save clonable shadow-root content and scoped styles along with the printable page.
- * Keep this self-contained so it can also run through Playwright's evaluate().
+ * Runs in the renderer's browser through Playwright's evaluate(), so keep it self-contained.
  */
 export function serializePrintDocument(root: HTMLElement): string {
   const copy = root.cloneNode(true) as HTMLElement;
-  copy.removeAttribute('data-print-snapshot-id');
   const roots: ParentNode[] = [copy];
   const shadowRoots: ShadowRoot[] = [];
   while (roots.length > 0) {

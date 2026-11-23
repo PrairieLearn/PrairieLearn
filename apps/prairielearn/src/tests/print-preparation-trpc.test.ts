@@ -15,12 +15,11 @@ import { IdSchema } from '@prairielearn/zod';
 import { getRuntimeDirectoryForCourse } from '../lib/chunks.js';
 import { printFormLabelBase } from '../lib/client/printing/print-form-label.js';
 import { printLayoutSearch } from '../lib/client/printing/print-preparation.js';
-import { getAssessmentTrpcUrl, getPrintFormUrl } from '../lib/client/url.js';
+import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as printing from '../lib/printing/index.js';
-import { digestPrintCoverHtml, getPrintCoverHtml } from '../lib/printing/print-cover.js';
 import * as printExportRender from '../lib/printing/print-export-render.js';
 import {
   beginPrintExportShutdown,
@@ -33,9 +32,12 @@ import {
   assessmentHasPrintRandomization,
   selectPrintPreparationForms,
 } from '../lib/printing/print-preparation.js';
-import { DEFAULT_PRINT_SETTINGS } from '../lib/printing/print-settings.js';
-import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
-import { generateCsrfToken } from '../middlewares/csrfToken.js';
+import { DEFAULT_PRINT_SETTINGS, type PrintSettings } from '../lib/printing/print-settings.js';
+import {
+  type PrintSnapshotSummary,
+  printSnapshotLayout,
+  storePrintSnapshot,
+} from '../lib/printing/print-snapshots.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
@@ -80,29 +82,43 @@ function packetInput(printFormId: string, document: 'assessment' | 'answer_key' 
   return data;
 }
 
-async function appendPrintSnapshot(
-  data: FormData,
-  printFormId: string,
-  html: string,
-  document: 'assessment' | 'answer_key' = 'assessment',
-) {
-  const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
-  search.set('document', document);
-  data.append('pages', new File([html], `form-${printFormId}.html`));
-  data.append(
-    'snapshotIds',
-    createPrintSnapshotId(
-      {
+/** Stores a preview the way `/preview` does, without rendering it. */
+async function storeTestSnapshot({
+  assessmentId,
+  printFormId,
+  document = 'assessment',
+  settings = DEFAULT_PRINT_SETTINGS,
+  authnUserId = '1',
+  summary,
+}: {
+  assessmentId: string;
+  printFormId: string;
+  document?: 'assessment' | 'answer_key';
+  settings?: PrintSettings;
+  authnUserId?: string;
+  summary?: Partial<Omit<PrintSnapshotSummary, 'createdAt'>>;
+}) {
+  const printForm = await selectOptionalPrintForm({ printFormId, assessmentId });
+  await storePrintSnapshot(
+    {
+      printForm: printForm!,
+      document,
+      authnUserId,
+      userId: authnUserId,
+      layout: printSnapshotLayout(new URLSearchParams(printLayoutSearch(settings))),
+      questionListDigest: await printing.getPrintableQuestionListDigest(
         printFormId,
-        authnUserId: '1',
-        search,
-        questionListDigest: await printing.getPrintableQuestionListDigest(printFormId, new Set()),
-        html,
-        coverDigest: 'unused-by-pdf-exports',
-        source: { html: '', figures: [] },
+        new Set(settings.excludedQuestions),
+      ),
+    },
+    {
+      html: '<!doctype html><html data-print-status="ready"></html>',
+      docx: {
+        source: { html: '<p>Editable question</p>', figures: [] },
+        footer: { left: 'Course', center: 'Assessment', right: 'Form A1' },
       },
-      config.secretKey,
-    ),
+    },
+    { questionCount: 1, omittedQuestionCount: 0, pageCount: 1, ...summary },
   );
 }
 
@@ -604,8 +620,14 @@ describe('print preparation', { timeout: 60_000 }, () => {
     await expect(
       api.printForms.regenerate.mutate({ printFormId: otherUserForm.id }),
     ).rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
+    // Another editor's preview of the same form isn't used for this user's export.
+    await storeTestSnapshot({
+      assessmentId: assessment.id,
+      printFormId: otherUserForm.id,
+      authnUserId: otherUser.id,
+    });
     await expect(api.printExports.pdf.mutate(packetInput(otherUserForm.id))).rejects.toThrow(
-      'The preview pages are incomplete. Update the preview and try again.',
+      'This print preview has expired or changed.',
     );
     const otherAssessmentApi = client(otherAssessment.id);
     const otherForm = await otherAssessmentApi.printForms.create.mutate();
@@ -786,8 +808,38 @@ describe('print preparation', { timeout: 60_000 }, () => {
     data.set('document', 'assessment');
     data.append('coverPages', new File([Buffer.from(await cover.save())], 'cover.pdf'));
     expect(await api.printExports.preflight.mutate(data)).toEqual({
-      coverPageCount: 1,
+      pageCount: 1,
+      unpreparedFormIds: [first.printFormId, second.printFormId],
       failure: null,
+    });
+    for (const [form, pageCount] of [
+      [first, 3],
+      [second, 2],
+    ] as const) {
+      await storeTestSnapshot({
+        assessmentId: assessment.id,
+        printFormId: form.printFormId,
+        summary: { pageCount },
+      });
+    }
+    expect(await api.printExports.preflight.mutate(data)).toEqual({
+      pageCount: 4,
+      unpreparedFormIds: [],
+      failure: null,
+    });
+    await storeTestSnapshot({
+      assessmentId: assessment.id,
+      printFormId: second.printFormId,
+      summary: { omittedQuestionCount: 1 },
+    });
+    expect(await api.printExports.preflight.mutate(data)).toEqual({
+      pageCount: 0,
+      unpreparedFormIds: [],
+      failure: {
+        printFormId: second.printFormId,
+        formLabel: second.label,
+        message: expect.stringContaining('missing or unprintable questions'),
+      },
     });
     await execute(sql.set_print_form_question_broken, {
       print_form_id: second.printFormId,
@@ -795,7 +847,8 @@ describe('print preparation', { timeout: 60_000 }, () => {
     });
     try {
       expect(await api.printExports.preflight.mutate(data)).toEqual({
-        coverPageCount: 0,
+        pageCount: 0,
+        unpreparedFormIds: [],
         failure: {
           printFormId: second.printFormId,
           formLabel: second.label,
@@ -822,12 +875,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
         document: 'assessment',
       }),
     );
-    for (let index = 0; index < forms.length; index++) {
-      data.append(
-        'pages',
-        new File(['<div class="pagedjs_page"></div>'.repeat(5_001)], 'large.html'),
-      );
-      data.append('snapshotIds', 'placeholder');
+    for (const { printFormId } of forms) {
+      await storeTestSnapshot({
+        assessmentId: assessment.id,
+        printFormId,
+        summary: { pageCount: 5_001 },
+      });
     }
     await expect(api.printExports.pdf.mutate(data)).rejects.toThrow(
       'The export would exceed 10,000 pages.',
@@ -843,11 +896,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
       assessmentId: assessment.id,
     }))!;
     const data = packetInput(form.printFormId);
-    await appendPrintSnapshot(
-      data,
-      form.printFormId,
-      '<!doctype html><html data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0"></html>',
-    );
+    await storeTestSnapshot({ assessmentId: assessment.id, printFormId: form.printFormId });
     const pdf = Buffer.from('%PDF-1.4\nbackground export\n');
     const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(pdf);
     let printExportId: string;
@@ -957,10 +1006,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
         document: 'answer_key',
       }),
     );
-    const html =
-      '<html data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0"></html>';
     for (const form of [first, second]) {
-      await appendPrintSnapshot(data, form.printFormId, html, 'answer_key');
+      await storeTestSnapshot({
+        assessmentId: assessment.id,
+        printFormId: form.printFormId,
+        document: 'answer_key',
+      });
     }
     const render = vi
       .spyOn(printExportRender, 'renderPrintExport')
@@ -991,31 +1042,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const form = await api.printForms.create.mutate();
-    const settings = { ...DEFAULT_PRINT_SETTINGS, excludedQuestions: ['1'] };
+    await storeTestSnapshot({
+      assessmentId: assessment.id,
+      printFormId: form.printFormId,
+      settings: { ...DEFAULT_PRINT_SETTINGS, excludedQuestions: ['1'] },
+    });
     const data = packetInput(form.printFormId);
-    const html =
-      '<!doctype html><html data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0"></html>';
-    const search = new URLSearchParams(printLayoutSearch(settings));
-    search.set('document', 'assessment');
-    data.append('pages', new File([html], 'changed-questions.html'));
-    data.append(
-      'snapshotIds',
-      createPrintSnapshotId(
-        {
-          printFormId: form.printFormId,
-          authnUserId: '1',
-          search,
-          questionListDigest: await printing.getPrintableQuestionListDigest(
-            form.printFormId,
-            new Set(['1']),
-          ),
-          html,
-          coverDigest: 'unused-by-pdf-exports',
-          source: { html: '', figures: [] },
-        },
-        config.secretKey,
-      ),
-    );
     await expect(api.printExports.pdf.mutate(data)).rejects.toThrow(
       'This print preview has expired or changed.',
     );
@@ -1069,16 +1101,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
         document: 'assessment',
       }),
     );
-    await appendPrintSnapshot(
-      data,
-      first.printFormId,
-      '<html data-print-question-count="1" data-print-omitted-question-count="0"></html>',
-    );
-    await appendPrintSnapshot(
-      data,
-      second.printFormId,
-      '<html data-print-question-count="1" data-print-omitted-question-count="1"></html>',
-    );
+    await storeTestSnapshot({ assessmentId: assessment.id, printFormId: first.printFormId });
+    await storeTestSnapshot({
+      assessmentId: assessment.id,
+      printFormId: second.printFormId,
+      summary: { omittedQuestionCount: 1 },
+    });
 
     await expect(api.printExports.pdf.mutate(data)).rejects.toMatchObject({
       data: { code: 'BAD_REQUEST' },
@@ -1094,7 +1122,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test('queues a Word export with its signed source and streams it only to its owner', async () => {
+  test('queues a Word export of the stored preview and streams it only to its owner', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const form = await api.printForms.create.mutate();
@@ -1102,53 +1130,12 @@ describe('print preparation', { timeout: 60_000 }, () => {
       printFormId: form.printFormId,
       assessmentId: assessment.id,
     }))!;
-    const printUrl = getPrintFormUrl({
-      courseInstanceId: '1',
-      assessmentId: assessment.id,
-      printFormId: form.printFormId,
-    });
     const settings = { ...form.settings, includeGradingTable: true };
-    const search = new URLSearchParams(printLayoutSearch(settings));
-    search.set('document', 'assessment');
-    const source = {
-      html: '<p><strong>Queued editable question</strong></p><img data-docx-figure="1">',
-      figures: [{ id: '1', width: 120, height: 60, alt: 'Queued diagram' }],
-    };
-    const html = `<!doctype html><html data-print-form-id="${form.printFormId}" data-print-document="assessment" data-print-form-label="${label}" data-print-paper-size="Letter" data-print-status="ready" data-print-question-count="1" data-print-omitted-question-count="0" data-print-max-points="6" data-print-grading-table='{"questionNumbers":["1"],"rowsPerColumn":1}'><head></head><body><div class="pagedjs_page"></div><div class="pagedjs_page"><section class="printing-question">Queued editable question</section></div></body></html>`;
-    const snapshot = {
-      html,
-      source,
-      id: createPrintSnapshotId(
-        {
-          printFormId: form.printFormId,
-          authnUserId: '1',
-          search,
-          questionListDigest: await printing.getPrintableQuestionListDigest(
-            form.printFormId,
-            new Set(),
-          ),
-          coverDigest: digestPrintCoverHtml(
-            getPrintCoverHtml(assessment, '/pl/course_instance/1/instructor'),
-          ),
-          html,
-          source,
-        },
-        config.secretKey,
-      ),
-    };
-    const postDocx = () =>
-      fetch(`${siteUrl}${printUrl}/docx?document=assessment`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/octet-stream',
-          'X-CSRF-Token': generateCsrfToken({ url: `${printUrl}/docx`, authnUserId: '1' }),
-        },
-        body: JSON.stringify(snapshot),
-      });
-    const unsaved = await postDocx();
-    expect(unsaved.status).toBe(400);
-    expect((await unsaved.json()).error).toContain('This print preview has expired or changed.');
+    const queueDocx = () =>
+      api.printExports.docx.mutate({ printFormId: form.printFormId, document: 'assessment' });
+    // A preview of settings that weren't saved doesn't match the form.
+    await storeTestSnapshot({ assessmentId: assessment.id, printFormId: form.printFormId, settings });
+    await expect(queueDocx()).rejects.toThrow('This print preview has expired or changed.');
     await api.printForms.updateSettings.mutate({
       printFormId: form.printFormId,
       settings,
@@ -1158,9 +1145,7 @@ describe('print preparation', { timeout: 60_000 }, () => {
     const render = vi.spyOn(printExportRender, 'renderPrintExport').mockResolvedValueOnce(docx);
     let printExportId: string;
     try {
-      const response = await postDocx();
-      expect(response.status).toBe(200);
-      ({ printExportId } = z.object({ printExportId: IdSchema }).parse(await response.json()));
+      ({ printExportId } = await queueDocx());
       expect(render).not.toHaveBeenCalled();
       expect(await api.printExports.status.query({ printExportId })).toMatchObject({
         status: 'pending',
@@ -1174,23 +1159,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
         }))!.question_selection_locked_at,
       ).not.toBeNull();
       await completePrintExport(assessment.id, printExportId);
-      // The cover reads its counts and grading table from the page's root attributes.
       expect(render.mock.calls[0][0]).toMatchObject({
         format: 'docx',
-        source,
-        footer: {
-          left: expect.stringContaining('Spring 2015'),
-          center: 'Exam with assessment tools',
-          right: `Form ${label}`,
-        },
-        cover: {
-          summary: [
-            { term: 'Questions', value: '1' },
-            { term: 'Points', value: '6' },
-            { term: 'Form', value: label },
-          ],
-          gradingTable: { questionNumbers: ['1'], rowsPerColumn: 1 },
-        },
+        snapshot: { formLabel: label, printDocument: 'assessment', key: expect.any(String) },
       });
     } finally {
       render.mockRestore();
@@ -1380,31 +1351,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
     }
   });
 
-  test('rejects a PDF snapshot from an outdated question list', async () => {
+  test('rejects a PDF previewed before the form was regenerated', async () => {
     const assessment = await printAssessment();
     const api = client(assessment.id);
     const form = await api.printForms.create.mutate();
-    const data = packetInput(form.printFormId);
-    const html = '<!doctype html><html data-print-status="ready"></html>';
-    const search = new URLSearchParams(printLayoutSearch(DEFAULT_PRINT_SETTINGS));
-    search.set('document', 'assessment');
-    data.append(
-      'snapshotIds',
-      createPrintSnapshotId(
-        {
-          printFormId: form.printFormId,
-          authnUserId: '1',
-          search,
-          questionListDigest: 'outdated-question-list',
-          html,
-          coverDigest: 'unused-by-pdf-exports',
-          source: { html: '', figures: [] },
-        },
-        config.secretKey,
-      ),
-    );
-    data.append('pages', new File([html], 'stale.html'));
-    await expect(api.printExports.pdf.mutate(data)).rejects.toThrow(
+    await storeTestSnapshot({ assessmentId: assessment.id, printFormId: form.printFormId });
+    await api.printForms.regenerate.mutate(form);
+    await expect(api.printExports.pdf.mutate(packetInput(form.printFormId))).rejects.toThrow(
       'This print preview has expired or changed.',
     );
   });
@@ -1547,24 +1500,9 @@ describe('print preparation', { timeout: 60_000 }, () => {
         api.printExports.pdf.mutate(packetInput(form.printFormId)),
       ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
 
-      const printUrl = getPrintFormUrl({
-        courseInstanceId: '1',
-        assessmentId: assessment.id,
-        printFormId: form.printFormId,
-      });
-      const response = await fetch(`${siteUrl}${printUrl}/docx`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'X-CSRF-Token': generateCsrfToken({
-            url: `${printUrl}/docx`,
-            authnUserId: viewer.id,
-          }),
-        },
-        body: '{}',
-      });
-      expect(response.status).toBe(403);
-      expect(await response.text()).toContain('course editor');
+      await expect(
+        api.printExports.docx.mutate({ printFormId: form.printFormId, document: 'assessment' }),
+      ).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     });
   });
 

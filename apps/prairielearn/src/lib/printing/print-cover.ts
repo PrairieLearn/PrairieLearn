@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import mustache from 'mustache';
 
 import { markdownToHtml } from '@prairielearn/markdown';
@@ -42,14 +40,6 @@ export function getPrintCoverHtml(assessment: Assessment, urlPrefix: string) {
         ).replace(new RegExp(`^<h([1-6])>${escapeRegExp(HONOR_CODE_HEADING)}</h\\1>\\s*`, 'i'), '')
       : null,
   };
-}
-
-/**
- * Word exports rebuild the cover from current assessment text, so previews sign this digest
- * to reject Word exports after the text changes.
- */
-export function digestPrintCoverHtml(cover: ReturnType<typeof getPrintCoverHtml>): string {
-  return createHash('sha256').update(JSON.stringify(cover)).digest('hex');
 }
 
 export const DEFAULT_ASSESSMENT_INSTRUCTIONS: readonly string[] = [

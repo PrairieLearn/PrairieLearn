@@ -50,16 +50,14 @@ export async function downloadPreparedFile(
     const path = new URL(response.url()).pathname;
     return (
       response.request().method() === 'POST' &&
-      (format === 'pdf'
-        ? path.endsWith('/printExports.pdf')
-        : /\/print_form\/\d+\/docx$/.test(path))
+      path.endsWith(format === 'pdf' ? '/printExports.pdf' : '/printExports.docx')
     );
   });
   await submit();
   const response = await submitted;
   expect(response.status()).toBe(200);
   const body = await response.json();
-  const { printExportId } = format === 'pdf' ? body.result.data.json : body;
+  const { printExportId } = body.result.data.json;
   const link = page
     .getByRole('region', { name: 'Recent exports' })
     .locator(`a[href$="/exports/${printExportId}"]`);

@@ -2,10 +2,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Spinner } from 'react-bootstrap';
 
-import {
-  type PrintSnapshot,
-  capturePrintSnapshot,
-} from '../../../lib/client/printing/print-snapshot.js';
 import type { PrintDocument } from '../../../lib/printing/index.js';
 
 export type PreviewState =
@@ -26,7 +22,6 @@ function PrintPreview({
   paperWidth,
   selectedQuestion,
   onStateChange,
-  onSnapshotReady,
 }: {
   url: string;
   document: PrintDocument;
@@ -34,7 +29,6 @@ function PrintPreview({
   paperWidth: number;
   selectedQuestion: { number: string } | null;
   onStateChange: (state: PreviewState) => void;
-  onSnapshotReady: (snapshot: PrintSnapshot, doc: Document) => void;
 }) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -122,12 +116,6 @@ function PrintPreview({
     function readState() {
       if (root.dataset.printStatus === 'ready') {
         cleanupRef.current();
-        try {
-          onSnapshotReady(capturePrintSnapshot(watchedDoc), watchedDoc);
-        } catch (error) {
-          update({ status: 'error', message: String(error) });
-          return;
-        }
         update({
           status: 'ready',
           pages: Number(root.dataset.printPageCount),
@@ -145,7 +133,7 @@ function PrintPreview({
     }
     observer.observe(root, { attributes: true, attributeFilter: ['data-print-status'] });
     readState();
-  }, [onSnapshotReady, onStateChange, url]);
+  }, [onStateChange, url]);
 
   // The frame can finish loading while the preparation page hydrates; observe its document even
   // if React missed the load event.
@@ -207,7 +195,6 @@ export function PreviewFrame({
   active,
   selectedQuestion,
   onStateChange,
-  onSnapshotReady,
 }: {
   cacheKey: string;
   url: string;
@@ -215,15 +202,10 @@ export function PreviewFrame({
   active: boolean;
   selectedQuestion: { number: string } | null;
   onStateChange: (key: string, url: string, document: PrintDocument, state: PreviewState) => void;
-  onSnapshotReady: (key: string, url: string, snapshot: PrintSnapshot, doc: Document) => void;
 }) {
   const handleStateChange = useCallback(
     (state: PreviewState) => onStateChange(cacheKey, url, document, state),
     [cacheKey, url, document, onStateChange],
-  );
-  const handleSnapshotReady = useCallback(
-    (snapshot: PrintSnapshot, doc: Document) => onSnapshotReady(cacheKey, url, snapshot, doc),
-    [cacheKey, url, onSnapshotReady],
   );
 
   return (
@@ -234,7 +216,6 @@ export function PreviewFrame({
       active={active}
       selectedQuestion={selectedQuestion}
       onStateChange={handleStateChange}
-      onSnapshotReady={handleSnapshotReady}
     />
   );
 }

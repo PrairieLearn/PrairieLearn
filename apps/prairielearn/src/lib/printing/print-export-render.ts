@@ -1,19 +1,12 @@
-import type { Page } from 'playwright';
 import { z } from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
-
-import { serializePrintDocument } from '../client/printing/print-document.js';
-import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../client/printing/print-snapshot.js';
 import { config } from '../config.js';
 
 import { createDocxOutput } from './docx-output.js';
-import { DocxSourceSchema } from './docx-source-schema.js';
 import { createPdfOutput } from './pdf-output.js';
 import { PrintAssetScopeDataSchema } from './print-asset-access.js';
 import { assemblePrintPacket, readPrintCoverPages } from './print-packet.js';
-import { digestPrintHtml } from './print-snapshot-id.js';
-import { PrintableCoverSchema } from './printable-cover.js';
+import { readPrintSnapshot } from './print-snapshots.js';
 
 import { getPrintRenderer, validatePrintDocument } from './index.js';
 
@@ -21,12 +14,10 @@ const PrintExportSnapshotSchema = z.object({
   formLabel: z.string(),
   printDocument: z.enum(['assessment', 'answer_key']),
   localPreviewUrl: z.url(),
-  html: z.string(),
-  /** Signed digest of the preview HTML, checked once the page is loaded. */
-  htmlDigest: z.string(),
+  /** The stored preview, from `print-snapshots.ts`. */
+  key: z.string(),
   assetScope: PrintAssetScopeDataSchema,
 });
-type PrintExportSnapshot = z.infer<typeof PrintExportSnapshotSchema>;
 
 export const PrintExportWorkSchema = z.discriminatedUnion('format', [
   z.object({
@@ -41,31 +32,9 @@ export const PrintExportWorkSchema = z.discriminatedUnion('format', [
     document: z.enum(['assessment', 'answer_key']),
     filename: z.string(),
     snapshot: PrintExportSnapshotSchema,
-    source: DocxSourceSchema,
-    cover: PrintableCoverSchema.optional(),
-    footer: z.object({ left: z.string(), center: z.string(), right: z.string() }),
   }),
 ]);
 export type PrintExportWork = z.infer<typeof PrintExportWorkSchema>;
-
-/**
- * Rejects pages that differ from the signed preview. The browser normalizes the
- * submitted HTML, so the comparison doesn't block the Node event loop.
- */
-async function validateSnapshot(
-  page: Page,
-  snapshot: PrintExportSnapshot,
-  shutdownSignal?: AbortSignal,
-) {
-  const html = await page.locator(':root').evaluate(serializePrintDocument);
-  shutdownSignal?.throwIfAborted();
-  if (digestPrintHtml(html) !== snapshot.htmlDigest) {
-    throw new HttpStatusError(400, STALE_PRINT_SNAPSHOT_MESSAGE);
-  }
-  const state = await validatePrintDocument(page);
-  shutdownSignal?.throwIfAborted();
-  return state;
-}
 
 export async function renderPrintExport(
   work: PrintExportWork,
@@ -84,23 +53,21 @@ export async function renderPrintExport(
   if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
   const renderer = getPrintRenderer();
   if (work.format === 'docx') {
-    const output = createDocxOutput({
-      source: work.source,
-      cover: work.cover,
-      footer: work.footer,
-    });
+    const { html, docx } = await readPrintSnapshot(work.snapshot.key);
+    const output = createDocxOutput(docx);
     return await renderer.render(
       {
         url: work.snapshot.localPreviewUrl,
         browserOrigin: config.serverCanonicalHost ?? undefined,
-        html: work.snapshot.html,
+        html,
         assetScope: work.snapshot.assetScope,
         signal: shutdownSignal,
       },
       {
         ...output,
         produce: async (page) => {
-          await validateSnapshot(page, work.snapshot, shutdownSignal);
+          await validatePrintDocument(page);
+          shutdownSignal?.throwIfAborted();
           const contents = await output.produce(page);
           shutdownSignal?.throwIfAborted();
           return contents;
@@ -112,18 +79,20 @@ export async function renderPrintExport(
   const pdfOutput = createPdfOutput();
   for (const snapshot of work.snapshots) {
     if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
+    const { html } = await readPrintSnapshot(snapshot.key);
     const rendered = await renderer.render<{ pdf: Buffer; coverPageCount: number }>(
       {
         url: snapshot.localPreviewUrl,
         browserOrigin: config.serverCanonicalHost ?? undefined,
-        html: snapshot.html,
+        html,
         assetScope: snapshot.assetScope,
         signal: shutdownSignal,
       },
       {
         label: 'PDF',
         produce: async (page) => {
-          const state = await validateSnapshot(page, snapshot, shutdownSignal);
+          const state = await validatePrintDocument(page);
+          shutdownSignal?.throwIfAborted();
           return {
             pdf: await pdfOutput.produce(page),
             coverPageCount: state.coverPageCount,
