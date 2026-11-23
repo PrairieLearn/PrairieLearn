@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 
-import { load } from 'cheerio';
 import { chromium } from 'playwright';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -82,19 +81,7 @@ export function assertPrintDocumentReady(state: {
   }
 }
 
-/**
- * Parses only a snapshot's root element. Snapshots are large client-submitted pages that
- * the export worker checks in full, so request handlers avoid parsing or backtracking
- * regexes over the whole page.
- */
-export function loadPrintSnapshotRoot(snapshotHtml: string) {
-  const start = snapshotHtml.search(/<html\b/i);
-  const end = start === -1 ? -1 : snapshotHtml.indexOf('>', start);
-  return load(`${end === -1 ? '<html>' : snapshotHtml.slice(start, end + 1)}</html>`)('html');
-}
-
-// Snapshot metadata is client-editable. These checks detect incomplete exports;
-// authorization and asset access are enforced separately by the print routes.
+/** Rejects exports whose pages omit questions or start questions on the cover. */
 export const validatePrintDocument: PrintablePageOutput<{
   coverPageCount: number;
 }>['produce'] = async (page) => {

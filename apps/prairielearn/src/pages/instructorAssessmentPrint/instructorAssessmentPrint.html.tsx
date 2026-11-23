@@ -11,12 +11,10 @@ import { parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, ButtonGroup, Card, Form, Spinner } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import { getAppError, renderAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert, QueryClientProviderDebug } from '@prairielearn/trpc/react';
 import { NuqsAdapter, useModalState } from '@prairielearn/ui';
-import { IdSchema } from '@prairielearn/zod';
 
 import { PrintIdentityFieldsTextSchema } from '../../lib/client/printing/print-cover.js';
 import {
@@ -24,17 +22,9 @@ import {
   printFormLabelBase,
 } from '../../lib/client/printing/print-form-label.js';
 import { MAX_ACTIVE_PRINT_FORMS } from '../../lib/client/printing/print-form-limits.js';
-import {
-  MAX_PACKET_PAGES,
-  countPrintSnapshotPages,
-} from '../../lib/client/printing/print-packet.js';
+import { MAX_PACKET_PAGES } from '../../lib/client/printing/print-packet.js';
 import { printLayoutSearch } from '../../lib/client/printing/print-preparation.js';
-import {
-  type PrintSnapshot,
-  STALE_PRINT_SNAPSHOT_MESSAGE,
-  capturePrintSnapshot,
-  renderPrintSnapshot,
-} from '../../lib/client/printing/print-snapshot.js';
+import { STALE_PRINT_SNAPSHOT_MESSAGE } from '../../lib/client/printing/print-snapshot.js';
 import type { StaffPrintPreparationForm } from '../../lib/client/safe-db-types.js';
 import { getPrintFormUrl } from '../../lib/client/url.js';
 import type { PrintDocument } from '../../lib/printing/index.js';
@@ -44,7 +34,7 @@ import {
   type PrintSettings,
 } from '../../lib/printing/print-settings.js';
 import { createAssessmentTrpcClient } from '../../trpc/assessment/client.js';
-import { TRPCProvider, useTRPC } from '../../trpc/assessment/context.js';
+import { TRPCProvider, useTRPC, useTRPCClient } from '../../trpc/assessment/context.js';
 import type { PrintExportsError } from '../../trpc/assessment/print-exports.js';
 import type { PrintFormsError } from '../../trpc/assessment/print-forms.js';
 
@@ -88,7 +78,6 @@ interface PrintPreparationProps {
   forms: StaffPrintPreparationForm[];
   enrolledStudents: number;
   trpcCsrfToken: string;
-  docxCsrfToken: string;
   search: string;
 }
 
@@ -123,9 +112,9 @@ function PrintPreparation({
   requireHonorCode,
   forms: initialForms,
   enrolledStudents,
-  docxCsrfToken,
 }: PrintPreparationProps) {
   const trpc = useTRPC();
+  const trpcClient = useTRPCClient();
   const queryClient = useQueryClient();
   const forms = useQuery(
     trpc.printForms.list.queryOptions(undefined, {
@@ -210,15 +199,6 @@ function PrintPreparation({
   const previewUseCountRef = useRef(0);
   const [previewVersions, setPreviewVersions] = useState<Record<string, number>>({});
   const [previewPending, setPreviewPending] = useState(false);
-  const [preparingPdf, setPreparingPdf] = useState(false);
-  const [pdfPreparationProgress, setPdfPreparationProgress] = useState<{
-    completed: number;
-    total: number;
-  } | null>(null);
-  const [pdfPreparationError, setPdfPreparationError] = useState<Error | null>(null);
-  const snapshotsRef = useRef(new Map<string, PrintSnapshot>());
-  const previewGenerationRef = useRef(new Map<string, number>());
-  const previewDocumentRef = useRef<{ url: string; doc: Document } | null>(null);
   const [staleFormIds, setStaleFormIds] = useState<ReadonlySet<string>>(() => new Set());
   const staleFormIdsRef = useRef(new Set<string>());
   const stalePreviewRefreshesRef = useRef(new Map<string, string>());
@@ -350,8 +330,22 @@ function PrintPreparation({
       }
     });
   }, [updateSettings.isPending, paperSizeApplying]);
-  const packet = useMutation(trpc.printExports.pdf.mutationOptions());
-  const preflight = useMutation(trpc.printExports.preflight.mutationOptions());
+  const [exportProgress, setExportProgress] = useState<{
+    completed: number;
+    total: number;
+  } | null>(null);
+  const packet = useMutation({
+    mutationFn: async ({
+      ids,
+      outputDocument,
+    }: {
+      ids: string[];
+      outputDocument: PrintDocument;
+    }) => {
+      await prepareExport(ids, outputDocument, 'pdf');
+      return await trpcClient.printExports.pdf.mutate(packetInput(ids, outputDocument));
+    },
+  });
   const printExports = usePrintExports({ onAutomaticExportFinished: finishAutomaticExport });
   const { exportId, setExportId, displayedExport } = printExports;
   const busy =
@@ -364,7 +358,6 @@ function PrintPreparation({
     paperSizeApplying ||
     paperSizeRefreshFailed ||
     packet.isPending ||
-    preparingPdf ||
     previewPending;
   const formActionPending = regenerate.isPending || reviseSelection.isPending || archive.isPending;
 
@@ -426,81 +419,83 @@ function PrintPreparation({
     return form.settings;
   }
 
-  function packetMetadata(ids: string[], outputDocument: PrintDocument) {
-    return {
-      forms: ids.map((id) => ({ printFormId: id })),
-      document: outputDocument,
-    };
-  }
-
-  async function snapshotFor(
-    id: string,
-    label: string,
-    appliedSettings: PrintSettings,
-    printDocument: PrintDocument,
-  ) {
-    const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
-    const url = `${base}/preview?${printLayoutSearch(appliedSettings)}&document=${printDocument}`;
-    const generation = previewGenerationRef.current.get(id) ?? 0;
-    const cached = snapshotsRef.current.get(url);
-    if (cached) return cached;
-    let snapshot: PrintSnapshot;
-    try {
-      snapshot = await renderPrintSnapshot(url);
-    } catch (error) {
-      throw new Error(
-        `Form ${label}: ${error instanceof Error ? error.message : 'The preview could not be prepared.'}`,
-        {
-          cause: error,
-        },
-      );
-    }
-    if ((previewGenerationRef.current.get(id) ?? 0) === generation) {
-      snapshotsRef.current.set(url, snapshot);
-    }
-    return snapshot;
-  }
-
-  async function packetInput(metadata: ReturnType<typeof packetMetadata>) {
+  function packetInput(ids: string[], outputDocument: PrintDocument) {
     const input = new FormData();
-    input.set('metadata', JSON.stringify(metadata));
-    if (metadata.document !== 'answer_key') {
+    input.set(
+      'metadata',
+      JSON.stringify({
+        forms: ids.map((id) => ({ printFormId: id })),
+        document: outputDocument,
+      }),
+    );
+    if (outputDocument !== 'answer_key') {
       for (const { file } of coverPages) input.append('coverPages', file);
-    }
-    const snapshotRequests = metadata.forms;
-    setPdfPreparationProgress({ completed: 0, total: snapshotRequests.length });
-    // Forms render one at a time so one export doesn't hold several shared render slots.
-    for (const [index, form] of snapshotRequests.entries()) {
-      const snapshot = await snapshotFor(
-        form.printFormId,
-        formLabel(form.printFormId),
-        settingsForForm(form.printFormId),
-        metadata.document,
-      );
-      input.append(
-        'pages',
-        new File([snapshot.html], `form-${formLabel(form.printFormId)}-${metadata.document}.html`),
-      );
-      input.append('snapshotIds', snapshot.id);
-      setPdfPreparationProgress({ completed: index + 1, total: snapshotRequests.length });
     }
     return input;
   }
 
-  async function preparePdfInput(metadata: ReturnType<typeof packetMetadata>) {
-    setPdfPreparationError(null);
-    setPdfPreparationProgress(null);
-    setPreparingPdf(true);
-    try {
-      return await packetInput(metadata);
-    } catch (error) {
-      setPdfPreparationError(
-        error instanceof Error ? error : new Error('The printable pages could not be prepared.'),
+  function preflightInput(ids: string[], outputDocument: PrintDocument, format: 'pdf' | 'docx') {
+    const input = new FormData();
+    input.set('formIds', JSON.stringify(ids));
+    input.set('document', outputDocument);
+    // Only student-copy PDFs include uploaded covers.
+    if (format === 'pdf' && outputDocument === 'assessment') {
+      for (const { file } of coverPages) input.append('coverPages', file);
+    }
+    return input;
+  }
+
+  /**
+   * Exports use the previews the server stored for this user. Render the ones it doesn't have,
+   * e.g. the answer key while the student copy is shown, then check the forms again.
+   */
+  async function preflightExport(
+    ids: string[],
+    outputDocument: PrintDocument,
+    format: 'pdf' | 'docx',
+    onProgress: (progress: { completed: number; total: number }) => void,
+  ) {
+    const input = preflightInput(ids, outputDocument, format);
+    const result = await trpcClient.printExports.preflight.mutate(input);
+    if (result.failure || result.unpreparedFormIds.length === 0) return result;
+    const unprepared = result.unpreparedFormIds;
+    // Forms render one at a time so one export doesn't hold several shared render slots.
+    for (const [index, id] of unprepared.entries()) {
+      onProgress({ completed: index, total: unprepared.length });
+      const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
+      const response = await fetch(
+        `${base}/preview?${printLayoutSearch(settingsForForm(id))}&document=${outputDocument}`,
       );
-      throw error;
+      const root = new DOMParser().parseFromString(
+        await response.text(),
+        'text/html',
+      ).documentElement;
+      if (!response.ok || root.dataset.printStatus !== 'ready') {
+        const label = formLabel(id);
+        return {
+          ...result,
+          failure: {
+            printFormId: id,
+            formLabel: label,
+            message: `Form ${label}: ${root.dataset.printError ?? 'The preview could not be prepared.'}`,
+          },
+        };
+      }
+    }
+    onProgress({ completed: unprepared.length, total: unprepared.length });
+    return await trpcClient.printExports.preflight.mutate(input);
+  }
+
+  async function prepareExport(
+    ids: string[],
+    outputDocument: PrintDocument,
+    format: 'pdf' | 'docx',
+  ) {
+    try {
+      const { failure } = await preflightExport(ids, outputDocument, format, setExportProgress);
+      if (failure) throw new Error(failure.message);
     } finally {
-      setPreparingPdf(false);
-      setPdfPreparationProgress(null);
+      setExportProgress(null);
     }
   }
 
@@ -535,9 +530,7 @@ function PrintPreparation({
     packet.reset();
     const includedCoverIds = outputDocument === 'assessment' ? coverPages.map(({ id }) => id) : [];
     try {
-      const result = await packet.mutateAsync(
-        await preparePdfInput(packetMetadata(ids, outputDocument)),
-      );
+      const result = await packet.mutateAsync({ ids, outputDocument });
       await receiveExport(result, ids, includedCoverIds);
     } catch (error) {
       markStaleSnapshot(error, ids);
@@ -549,13 +542,11 @@ function PrintPreparation({
     returnFocus: 'menu' | 'recent' | { formId: string } = 'menu',
     afterSuccess = false,
   ) {
-    if (!afterSuccess && (packet.isPending || preparingPdf || combinedSubmitting)) return;
+    if (!afterSuccess && (packet.isPending || combinedSubmitting)) return;
     combinedRequestRef.current += 1;
     combinedReturnFocusRef.current = returnFocus;
     setCombinedDownload(null);
-    preflight.reset();
     packet.reset();
-    setPdfPreparationError(null);
   }
 
   async function openCombinedDownload(outputDocument: PrintDocument) {
@@ -567,9 +558,7 @@ function PrintPreparation({
     }));
     const settingsKey = JSON.stringify(selectedForms.map((form) => form.settings));
     const request = ++combinedRequestRef.current;
-    preflight.reset();
     packet.reset();
-    setPdfPreparationError(null);
     setCombinedDownload({
       document: outputDocument,
       formIds: ids,
@@ -580,57 +569,32 @@ function PrintPreparation({
       progress: null,
       failure: null,
     });
-    const input = new FormData();
-    input.set('formIds', JSON.stringify(ids));
-    input.set('document', outputDocument);
-    if (outputDocument === 'assessment') {
-      for (const { file } of coverPages) input.append('coverPages', file);
+    function fail(failure: NonNullable<typeof combinedDownload>['failure']) {
+      setCombinedDownload(
+        (current) => current && { ...current, preparing: false, progress: null, failure },
+      );
     }
     try {
-      const result = await preflight.mutateAsync(input);
+      const result = await preflightExport(ids, outputDocument, 'pdf', (progress) => {
+        if (request !== combinedRequestRef.current) return;
+        setCombinedDownload((current) => current && { ...current, progress });
+      });
       if (request !== combinedRequestRef.current) return;
       if (result.failure) {
-        setCombinedDownload(
-          (current) => current && { ...current, preparing: false, failure: result.failure },
-        );
+        fail(result.failure);
         return;
       }
-      const pageCounts: number[] = [];
-      setCombinedDownload(
-        (current) => current && { ...current, progress: { completed: 0, total: ids.length } },
-      );
-      for (const [index, form] of selectedForms.entries()) {
-        let snapshot: PrintSnapshot;
-        try {
-          snapshot = await snapshotFor(form.id, form.label, form.settings, outputDocument);
-        } catch (error) {
-          if (request !== combinedRequestRef.current) return;
-          setCombinedDownload(
-            (current) =>
-              current && {
-                ...current,
-                preparing: false,
-                progress: null,
-                failure: {
-                  printFormId: form.id,
-                  formLabel: form.label,
-                  message:
-                    error instanceof Error
-                      ? error.message
-                      : `Form ${form.label} could not be prepared.`,
-                },
-              },
-          );
-          return;
-        }
-        if (request !== combinedRequestRef.current) return;
-        pageCounts.push(countPrintSnapshotPages(snapshot.html));
-        setCombinedDownload(
-          (current) =>
-            current && { ...current, progress: { completed: index + 1, total: ids.length } },
-        );
+      const unprepared = result.unpreparedFormIds.at(0);
+      if (unprepared) {
+        const label = formLabel(unprepared);
+        fail({
+          printFormId: unprepared,
+          formLabel: label,
+          message: `Form ${label} could not be prepared. Review its preview before downloading.`,
+        });
+        return;
       }
-      const pageCount = Math.max(...pageCounts) + result.coverPageCount;
+      const pageCount = result.pageCount;
       setCombinedDownload(
         (current) =>
           current && {
@@ -648,21 +612,7 @@ function PrintPreparation({
       );
     } catch (error) {
       if (request !== combinedRequestRef.current) return;
-      setCombinedDownload(
-        (current) =>
-          current && {
-            ...current,
-            preparing: false,
-            progress: null,
-            failure:
-              error instanceof TRPCClientError
-                ? null
-                : {
-                    message:
-                      error instanceof Error ? error.message : 'The forms could not be checked.',
-                  },
-          },
-      );
+      fail({ message: error instanceof Error ? error.message : 'The forms could not be checked.' });
     }
   }
 
@@ -701,11 +651,6 @@ function PrintPreparation({
   function discardFormCachedPreviews(id: string) {
     const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
     const prefix = `${base}/preview?`;
-    previewGenerationRef.current.set(id, (previewGenerationRef.current.get(id) ?? 0) + 1);
-    for (const url of snapshotsRef.current.keys()) {
-      if (url.startsWith(prefix)) snapshotsRef.current.delete(url);
-    }
-    if (previewDocumentRef.current?.url.startsWith(prefix)) previewDocumentRef.current = null;
     setCachedPreviews((entries) => entries.filter((entry) => !entry.url.startsWith(prefix)));
   }
 
@@ -789,42 +734,18 @@ function PrintPreparation({
   }
   const download = useMutation({
     mutationFn: async ({ id, printDocument }: { id: string; printDocument: PrintDocument }) => {
-      const base = getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id });
-      const appliedSettings = settingsForForm(id);
-      const search = printLayoutSearch(appliedSettings);
-      const url = `${base}/preview?${search}&document=${printDocument}`;
-      const livePreview = previewDocumentRef.current;
-      const snapshot =
-        snapshotsRef.current.get(url) ??
-        (livePreview?.url === url && livePreview.doc.documentElement.dataset.printStatus === 'ready'
-          ? capturePrintSnapshot(livePreview.doc)
-          : await renderPrintSnapshot(url));
-      snapshotsRef.current.set(url, snapshot);
-      const headers = new Headers({
-        Accept: 'application/json',
-        'X-CSRF-Token': docxCsrfToken,
-        'Content-Type': 'application/octet-stream',
+      await prepareExport([id], printDocument, 'docx');
+      return await trpcClient.printExports.docx.mutate({
+        printFormId: id,
+        document: printDocument,
       });
-      const response = await fetch(`${base}/docx?document=${printDocument}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(snapshot),
-      });
-      if (!response.ok) {
-        if (response.status === 400) {
-          const { error } = z.object({ error: z.string() }).parse(await response.json());
-          throw new Error(error);
-        }
-        throw new Error('The download could not be generated. Review the preview and try again.');
-      }
-      void receiveExport(z.object({ printExportId: IdSchema }).parse(await response.json()), [id]);
     },
-    onError: (error: Error, { id }) => markStaleSnapshot(error, [id]),
+    onSuccess: (result, { id }) => void receiveExport(result, [id]),
+    onError: (error, { id }) => markStaleSnapshot(error, [id]),
   });
 
   function startWordExport(id: string, printDocument: PrintDocument) {
     packet.reset();
-    setPdfPreparationError(null);
     focusPrepareStatus();
     download.mutate({ id, printDocument });
   }
@@ -845,7 +766,7 @@ function PrintPreparation({
     button.focus();
     formToFocusRef.current = null;
   }, [formId, controlsBusy, isDirty, forms.data, formFocusRequest]);
-  const preparingExport = download.isPending || packet.isPending || preparingPdf;
+  const preparingExport = download.isPending || packet.isPending;
   const onPreviewState = useCallback(
     (key: string, url: string, previewDocument: PrintDocument, state: PreviewState) => {
       if (key !== activePreviewKey) return;
@@ -878,21 +799,6 @@ function PrintPreparation({
         }
       }
       if (state.status !== 'loading') setPreviewPending(false);
-    },
-    [activePreviewKey, formId],
-  );
-  const onSnapshotReady = useCallback(
-    (key: string, url: string, snapshot: PrintSnapshot, doc: Document) => {
-      if (key !== activePreviewKey) return;
-      if (
-        formId !== null &&
-        staleFormIdsRef.current.has(formId) &&
-        stalePreviewRefreshesRef.current.get(formId) !== key
-      ) {
-        return;
-      }
-      snapshotsRef.current.set(url, snapshot);
-      previewDocumentRef.current = { url, doc };
     },
     [activePreviewKey, formId],
   );
@@ -1118,7 +1024,6 @@ function PrintPreparation({
     if (snapshotStale) void setExportId(null);
     packet.reset();
     download.reset();
-    setPdfPreparationError(null);
     try {
       let nextFormId = formId;
       if (!formId) {
@@ -1262,15 +1167,10 @@ function PrintPreparation({
         }}
       />
       <AppErrorAlert
-        error={
-          combinedDownload
-            ? null
-            : getAppError<PrintExportsError['pdf']>(pdfPreparationError ?? packet.error)
-        }
+        error={combinedDownload ? null : getAppError<PrintExportsError['pdf']>(packet.error)}
         render={{ UNKNOWN: ({ message }) => message }}
         onDismiss={() => {
           packet.reset();
-          setPdfPreparationError(null);
           focusAfterDismiss();
         }}
       />
@@ -1520,15 +1420,13 @@ function PrintPreparation({
                         <span className="d-flex align-items-center gap-2">
                           <Spinner size="sm" aria-hidden="true" />
                           <span>
-                            {preparingPdf && pdfPreparationProgress
-                              ? `Preparing documents ${pdfPreparationProgress.completed} of ${pdfPreparationProgress.total}…`
+                            {exportProgress
+                              ? `Preparing documents ${exportProgress.completed} of ${exportProgress.total}…`
                               : 'Generating…'}
                           </span>
                         </span>
                       ) : download.isError ? (
                         <span className="text-danger">{download.error.message}</span>
-                      ) : !combinedDownload && pdfPreparationError ? (
-                        <span className="text-danger">{pdfPreparationError.message}</span>
                       ) : packet.isError ? (
                         <span className="text-danger">{packet.error.message}</span>
                       ) : exportId && displayedExport?.status === 'succeeded' ? (
@@ -1585,7 +1483,6 @@ function PrintPreparation({
                         active={entry.key === activePreviewKey}
                         selectedQuestion={entry.key === activePreviewKey ? selectedQuestion : null}
                         onStateChange={onPreviewState}
-                        onSnapshotReady={onSnapshotReady}
                       />
                     ))}
                   </div>
@@ -1616,10 +1513,10 @@ function PrintPreparation({
         enrolledStudents={enrolledStudents}
         pageCount={combinedDownload?.pageCount ?? null}
         preparing={combinedDownload?.preparing ?? false}
-        downloading={packet.isPending || preparingPdf || combinedSubmitting}
+        downloading={packet.isPending || combinedSubmitting}
         progress={combinedDownload?.progress ?? null}
         failure={combinedDownload?.failure ?? null}
-        error={preflight.error ?? pdfPreparationError ?? packet.error}
+        error={packet.error}
         onHide={() => closeCombinedDownload()}
         onExited={() => {
           const target = combinedReturnFocusRef.current;

@@ -50,13 +50,6 @@ router.get(
       },
       config.secretKey,
     );
-    const docxCsrfToken = generatePrefixCsrfToken(
-      {
-        url: `/pl/course_instance/${course_instance.id}/instructor/assessment/${assessment.id}/print_form/`,
-        authn_user_id: authn_user.id,
-      },
-      config.secretKey,
-    );
 
     res.send(
       PageLayout({
@@ -78,7 +71,6 @@ router.get(
               forms={forms}
               enrolledStudents={studentCount}
               trpcCsrfToken={trpcCsrfToken}
-              docxCsrfToken={docxCsrfToken}
               search={getUrl(req).search}
             />
           </Hydrate>

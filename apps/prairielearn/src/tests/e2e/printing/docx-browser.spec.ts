@@ -8,15 +8,10 @@ import * as unzipper from 'unzipper';
 
 import type { AssetsManifest } from '@prairielearn/compiled-assets';
 
-import { serializePrintDocument } from '../../../lib/client/printing/print-document.js';
 import type { DocxSource } from '../../../lib/printing/docx-browser.js';
 import { createDocxDocument } from '../../../lib/printing/docx-document.js';
 import { DocxSourceSchema } from '../../../lib/printing/docx-source-schema.js';
-import {
-  checkPrintSnapshotId,
-  createPrintSnapshotId,
-  digestPrintHtml,
-} from '../../../lib/printing/print-snapshot-id.js';
+import { serializePrintDocument } from '../../../lib/printing/print-document.js';
 import { expect, test } from '../fixtures.js';
 
 // These browser-only tests do not need the application server.
@@ -119,33 +114,12 @@ test('exports shadow-root figures and visible slotted text from a paginated page
   const source = DocxSourceSchema.parse(
     await page.evaluate(() => Reflect.get(window, '__PL_PRINT_DOCX_SOURCE__')),
   );
+  // Exports reload the stored snapshot, so its shadow content must survive serialization.
   const html = await page.locator(':root').evaluate(serializePrintDocument);
-  const snapshot = {
-    printFormId: '123',
-    authnUserId: '45',
-    search: new URLSearchParams('paper_size=Letter&document=assessment'),
-    questionListDigest: 'question-list-1',
-    coverDigest: 'cover-1',
-    html,
-    source,
-  };
-  const secretKey = 'print-snapshot-browser-test-key';
-  const id = createPrintSnapshotId(snapshot, secretKey);
   await page.route('http://print.test/snapshot', (route) =>
-    route.fulfill({
-      contentType: 'text/html',
-      body: html.replace('<html', `<html data-print-snapshot-id="${id}"`),
-    }),
+    route.fulfill({ contentType: 'text/html', body: html }),
   );
   await page.goto('http://print.test/snapshot');
-  const reloadedHtml = await page.locator(':root').evaluate(serializePrintDocument);
-  expect(reloadedHtml).toBe(html);
-  expect(
-    checkPrintSnapshotId(
-      { ...snapshot, id: (await page.locator(':root').getAttribute('data-print-snapshot-id'))! },
-      secretKey,
-    ),
-  ).toBe(digestPrintHtml(reloadedHtml));
   await expect(
     page.locator('.pagedjs_page').getByText('Nested question text', { exact: true }),
   ).toBeVisible();

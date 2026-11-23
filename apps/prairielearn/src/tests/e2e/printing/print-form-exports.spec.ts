@@ -67,9 +67,9 @@ test('reports omitted questions and exports the selected Word content', async ({
     expect(printedQuestionNumbers).not.toContain(warning.question_number);
   }
 
-  const incomplete = await downloadPrintableWord(page, printUrl);
-  expect(incomplete.status()).toBe(400);
-  expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
+  await expect(downloadPrintableWord(page, printUrl)).rejects.toThrow(
+    'has missing or unprintable questions',
+  );
 
   const brokenOnlyQuery = new URLSearchParams(query);
   for (const number of new Set(printedQuestionNumbers)) {
@@ -224,26 +224,6 @@ test('prints representative controls, editable Word content, and an ordered answ
   expect(distractorBounds!.y).toBeGreaterThanOrEqual(correctBounds!.y + correctBounds!.height);
 });
 
-test('rejects changed Word source before queuing an export', async ({ page, courseInstance }) => {
-  const { printUrl, printForm } = await createPrintableForm(
-    courseInstance,
-    'exam20-assessmentTools',
-  );
-  const query = await savePrintSettings(printForm, {});
-  await page.goto(`${printUrl}/preview?${query}`);
-  await waitForPrintablePage(page);
-  await page.evaluate(() => {
-    const element = document.getElementById('pl-print-docx-source')!;
-    const source = JSON.parse(element.textContent);
-    source.html += '<p>Changed after the preview was signed</p>';
-    element.textContent = JSON.stringify(source);
-  });
-
-  const response = await downloadPrintableWord(page, printUrl);
-  expect(response.status()).toBe(400);
-  expect((await response.json()).error).toContain('This print preview has expired or changed');
-});
-
 test('preserves literal dollar patterns in Word exports', async ({
   page,
   courseInstance,
@@ -309,9 +289,9 @@ test('omits failed question and answer-key renders and recovers after a correcti
       ]);
       await expect(page.getByText('Consider two numbers')).toHaveCount(0);
 
-      const incomplete = await downloadPrintableWord(page, printUrl, 'answer_key');
-      expect(incomplete.status()).toBe(400);
-      expect((await incomplete.json()).error).toContain('has missing or unprintable questions');
+      await expect(downloadPrintableWord(page, printUrl, 'answer_key')).rejects.toThrow(
+        'has missing or unprintable questions',
+      );
 
       const selectedQuery = `${query}&exclude_question=${warnings[0].question_number}`;
       await page.goto(`${printUrl}/preview?${selectedQuery}`);

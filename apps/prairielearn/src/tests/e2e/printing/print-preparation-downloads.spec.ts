@@ -96,7 +96,7 @@ test('keeps multiple export links after another file is queued and the page relo
   await expect(keyLink).toBeVisible({ timeout: 120_000 });
 });
 
-test('rejects a changed Word snapshot and offers a fresh preview', async ({
+test('rejects an expired Word preview and offers a fresh preview', async ({
   page,
   courseInstance,
 }) => {
@@ -107,16 +107,13 @@ test('rejects a changed Word snapshot and offers a fresh preview', async ({
   await page.getByRole('button', { name: 'Form A1', exact: true }).click();
   await expect(downloadMenu(page)).toBeEnabled({ timeout: 120_000 });
 
+  // The answer key hasn't been previewed, so it stands in for an expired preview.
   await page.route(
-    '**/print_form/*/docx?*',
+    '**/printExports.docx*',
     async (route) => {
-      const snapshot = JSON.parse(route.request().postData()!) as {
-        id: string;
-        html: string;
-        source: unknown;
-      };
-      snapshot.html += 'changed';
-      await route.continue({ postData: JSON.stringify(snapshot) });
+      await route.continue({
+        postData: route.request().postData()!.replace('"assessment"', '"answer_key"'),
+      });
     },
     { times: 1 },
   );
