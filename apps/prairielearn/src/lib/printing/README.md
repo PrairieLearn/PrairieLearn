@@ -48,7 +48,7 @@ The caller owns the paginated HTML page. It must set `document.documentElement.d
 
 For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
-`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy each selected form once and add blank pages after shorter forms so every form has the same number of pages. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
+`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy each selected form once and add blank pages after shorter forms so every form has the same number of pages. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading. The page uploads each cover once through `printExports.uploadCover`, which checks it and stores it under `print-exports/covers/`. It returns an ID signed for the uploading user and assessment that carries the cover's size and page count, so exports reference covers by ID and only the export worker reads them again. IDs expire after 24 hours.
 
 ### Word output
 
