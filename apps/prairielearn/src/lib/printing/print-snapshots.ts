@@ -61,7 +61,7 @@ export function printSnapshotLayout(search: URLSearchParams): string {
   return params.toString();
 }
 
-export function printSnapshotKey(identity: PrintSnapshotIdentity): string {
+function printSnapshotKey(identity: PrintSnapshotIdentity): string {
   const hash = createHash('sha256')
     .update(
       JSON.stringify([
