@@ -370,10 +370,13 @@ function ActivityStatus({
   conversationId,
   startingSandbox,
   message,
+  hidden,
 }: {
   conversationId: string;
   startingSandbox: boolean;
   message: UIMessage | undefined;
+  /** Hides the line but keeps counting, for when the agent works again after it. */
+  hidden: boolean;
 }) {
   const call = latestCall(message);
   const storageKey = `course-agent-working-since:${conversationId}`;
@@ -391,6 +394,7 @@ function ActivityStatus({
     sessionStorage.setItem(storageKey, String(startedAt));
     return () => sessionStorage.removeItem(storageKey);
   }, [storageKey, startedAt]);
+  if (hidden) return null;
   return (
     <div className="course-agent-fade small text-body-secondary" role="status">
       {/* The label changes with every step and the time every second, too often to announce. */}
@@ -408,6 +412,16 @@ function ActivityStatus({
   );
 }
 
+/**
+ * Whether the latest thing the agent wrote is its reply. The reply shows the agent is still at
+ * work, and a status line under it would only drop below each new line and then vanish when the
+ * turn ends a moment later.
+ */
+function replying(message: UIMessage | undefined) {
+  const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
+  return part?.type === 'text' && !isUpdate(part) && part.text.trim() !== '';
+}
+
 /** The call the agent made last, if nothing has followed it. */
 function latestCall(message: UIMessage | undefined) {
   if (message?.role !== 'assistant') return null;
@@ -421,15 +435,13 @@ function latestCall(message: UIMessage | undefined) {
 }
 
 /**
- * What the agent is doing now, in plain words: the call it is running, the reply it is writing,
- * or what it is thinking about. The plan above the message box already shows its current step.
+ * What the agent is doing now, in plain words: the call it is running or what it is thinking
+ * about. The plan above the message box already shows its current step.
  */
 function activityLabel(message: UIMessage | undefined) {
   const call = latestCall(message);
   if (call?.status === 'running') return runningLabel(call);
   const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
-  // An update is over in a moment, so only the reply is worth calling writing.
-  if (part?.type === 'text' && part.state === 'streaming' && !isUpdate(part)) return 'Writing';
   return (part?.type === 'reasoning' && reasoningHeading(part.text)) || 'Thinking';
 }
 
@@ -781,6 +793,7 @@ function Chat({
               conversationId={conversationId}
               startingSandbox={startingSandbox}
               message={messages.at(-1)}
+              hidden={!startingSandbox && replying(messages.at(-1))}
             />
           )}
           {lifecycle?.status === 'blocked' && (
@@ -1173,7 +1186,8 @@ function Message({
   let work: { key: string; items: WorkItem[] } | null = null;
   let reply: { key: string; part: TextUIPart } | null = null;
   const flush = (settled: boolean) => {
-    if (work) {
+    // Thoughts alone show nothing, and an empty message would still take up a gap in the chat.
+    if (work?.items.some((item) => 'kind' in item || item.type === 'text')) {
       rendered.push(
         <Work
           key={work.key}

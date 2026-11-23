@@ -1,5 +1,12 @@
 import clsx from 'clsx';
-import { type CSSProperties, type ReactElement, createElement, isValidElement } from 'react';
+import {
+  type CSSProperties,
+  type ReactElement,
+  createElement,
+  isValidElement,
+  useEffect,
+  useState,
+} from 'react';
 import type { UrlTransform } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import {
@@ -107,6 +114,25 @@ const STREAM_ANIMATION = {
   sep: 'word',
 } satisfies AnimateOptions;
 
+/** The longest Streamdown makes a word wait to start fading in, plus the fade itself. */
+const FADE_TAIL_MS = 320 + STREAM_ANIMATION.duration;
+
+/**
+ * Keeps words fading for a moment after the text stops streaming. Streamdown drops the fade as
+ * soon as it is told the text is done, which would show a short reply's half-faded words at once.
+ */
+function useFading(streaming: boolean) {
+  const [fading, setFading] = useState(streaming);
+  if (streaming && !fading) setFading(true);
+  // Ends the fade once the last words have had time to finish.
+  useEffect(() => {
+    if (streaming || !fading) return;
+    const timeout = setTimeout(() => setFading(false), FADE_TAIL_MS);
+    return () => clearTimeout(timeout);
+  }, [streaming, fading]);
+  return fading;
+}
+
 /**
  * Renders a chat reply's markdown. With `math`, TeX is typeset with KaTeX; the
  * page must then include KaTeX's stylesheet (see `courseAgent.css`). With
@@ -128,10 +154,11 @@ export function ChatMarkdown({
   className?: string;
   urlTransform?: UrlTransform;
 }) {
+  const fading = useFading(streaming);
   return (
     <Streamdown
       animated={animated && STREAM_ANIMATION}
-      isAnimating={animated && streaming}
+      isAnimating={animated && fading}
       // Question pages typeset the whole page with MathJax, which would read
       // prices like `$5 and $10` in a message as math.
       className={clsx(math && 'mathjax_ignore', className)}
