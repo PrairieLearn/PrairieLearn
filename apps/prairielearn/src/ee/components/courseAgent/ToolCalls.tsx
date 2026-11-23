@@ -1,6 +1,6 @@
 import type { ReasoningUIPart, TextUIPart } from 'ai';
 import clsx from 'clsx';
-import { type ReactNode, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useState } from 'react';
 
 import type { Clip, ToolCall } from '@prairielearn/course-agent-types';
 
@@ -25,6 +25,8 @@ const isCourseData = (call: ToolCall) =>
 
 /** Reading its skills is how the agent checks how this kind of work is done. */
 const usesSkills = (call: ToolCall) => call.kind === 'command' && call.command.includes(SKILLS_DIR);
+
+import { ChatDiff, preloadDiffHighlighting } from './ChatDiff.js';
 
 type Verb =
   | 'read'
@@ -309,6 +311,16 @@ function Step({ call, live, onExpand }: { call: ToolCall; live: boolean; onExpan
   const status = statusOf(call, live);
   const running = status === 'running';
   const { verb, subject, meta } = describe(call);
+  const editedPaths =
+    call.kind === 'fileChange' ? call.changes.map((change) => change.path).join('\n') : '';
+  // An edit's changes stay hidden until the row is expanded. Loading their language's highlighting
+  // now means they are colored as soon as they're shown.
+  useEffect(() => {
+    if (editedPaths === '') return;
+    // This starts a download; no data goes to a parent.
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    for (const path of editedPaths.split('\n')) preloadDiffHighlighting(path);
+  }, [editedPaths]);
   return (
     <Fold
       className="course-agent-step px-2 py-1"
@@ -459,9 +471,12 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
                   +{change.added} −{change.removed}
                 </span>
               </div>
-              <Output label={`Changes to ${change.path}`} clip={change.diff}>
-                <DiffLines diff={change.diff.text} />
-              </Output>
+              <ChatDiff
+                text={change.diff.text}
+                path={change.path}
+                change={FILE_CHANGES[change.change]}
+              />
+              <ClipNote clip={change.diff} />
             </div>
           ))}
           {call.omittedChanges > 0 && (
@@ -495,25 +510,7 @@ function ToolCallDetails({ call }: { call: ToolCall }) {
   }
 }
 
-function DiffLines({ diff }: { diff: string }) {
-  return diff
-    .replace(/\n$/, '')
-    .split('\n')
-    .map((line, i) => (
-      <div
-        // Diff lines have no identity beyond their position.
-        // oxlint-disable-next-line react/no-array-index-key
-        key={i}
-        className={clsx({
-          'bg-success-subtle': line.startsWith('+'),
-          'bg-danger-subtle': line.startsWith('-'),
-          'text-body-secondary': line.startsWith('@@'),
-        })}
-      >
-        {line || ' '}
-      </div>
-    ));
-}
+const FILE_CHANGES = { add: 'added', delete: 'deleted', update: 'modified' } as const;
 
 /** A scrollable, keyboard-focusable block of text, noting what history did not keep. */
 function Output({
@@ -538,13 +535,18 @@ function Output({
       >
         {children}
       </pre>
-      {clip && clip.omitted > 0 && (
-        <div className="small text-body-secondary">
-          {clip.text
-            ? `${clip.omitted.toLocaleString()} characters not shown`
-            : `Not kept in this conversation (${clip.omitted.toLocaleString()} characters)`}
-        </div>
-      )}
+      <ClipNote clip={clip} />
+    </div>
+  );
+}
+
+function ClipNote({ clip }: { clip: Clip | null }) {
+  if (!clip || clip.omitted === 0) return null;
+  return (
+    <div className="small text-body-secondary">
+      {clip.text
+        ? `${clip.omitted.toLocaleString()} characters not shown`
+        : `Not kept in this conversation (${clip.omitted.toLocaleString()} characters)`}
     </div>
   );
 }

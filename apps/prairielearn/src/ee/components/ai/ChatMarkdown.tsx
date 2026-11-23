@@ -5,6 +5,7 @@ import {
   createElement,
   isValidElement,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import type { UrlTransform } from 'react-markdown';
@@ -148,6 +149,7 @@ export function ChatMarkdown({
   animated = false,
   className,
   urlTransform,
+  codeBlock,
 }: {
   content: string;
   streaming: boolean;
@@ -157,16 +159,25 @@ export function ChatMarkdown({
   animated?: boolean;
   className?: string;
   urlTransform?: UrlTransform;
+  /** Renders fenced code blocks, in place of a plain `<pre>`. */
+  codeBlock?: Components['code'];
 }) {
   const fading = useFading(streaming, arriving);
+  // Streamdown renders every block again when it is given a new `components` object.
+  const allComponents = useMemo(
+    () => (codeBlock ? { ...components, code: codeBlock } : components),
+    [codeBlock],
+  );
   return (
     <Streamdown
       animated={animated && STREAM_ANIMATION}
-      isAnimating={animated && fading}
       // Question pages typeset the whole page with MathJax, which would read
       // prices like `$5 and $10` in a message as math.
       className={clsx(math && 'mathjax_ignore', className)}
-      components={components}
+      components={allComponents}
+      // Streamdown's own streaming behavior, such as `useIsCodeFenceIncomplete`, keys off this.
+      // With `animated`, it also keeps the fade going until the last words have finished.
+      isAnimating={animated ? fading : streaming}
       // Closing unfinished syntax would also rewrite finished messages, e.g.
       // dropping the `[` from a half-open interval like `[0, 1)`.
       parseIncompleteMarkdown={streaming}
