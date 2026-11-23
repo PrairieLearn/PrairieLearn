@@ -45,3 +45,54 @@
     overflow-y: visible;
   }
 }
+
+/*
+ * Rubric tree guide lines in the grading panel: a vertical line runs down from
+ * each group's chevron, with a short branch to each child. The last child's
+ * line stops at its branch so the end of the group is easy to see.
+ */
+.rubric-tree-children {
+  --rubric-tree-indent: 0.9rem;
+  --rubric-tree-branch-top: 0.85rem;
+  --rubric-tree-line: 2px solid color-mix(in srgb, var(--bs-secondary-color) 40%, transparent);
+
+  margin-left: 0.7rem;
+  padding-left: var(--rubric-tree-indent);
+}
+
+.rubric-tree-children > * {
+  position: relative;
+}
+
+.rubric-tree-children > *::before,
+.rubric-tree-children > *::after {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--rubric-tree-indent));
+  pointer-events: none;
+}
+
+.rubric-tree-children > *::before {
+  top: 0;
+  bottom: 0;
+  border-left: var(--rubric-tree-line);
+}
+
+.rubric-tree-children > *:last-child::before {
+  bottom: auto;
+  height: var(--rubric-tree-branch-top);
+}
+
+.rubric-tree-children > *::after {
+  top: var(--rubric-tree-branch-top);
+  width: calc(var(--rubric-tree-indent) - 0.2rem);
+  border-top: var(--rubric-tree-line);
+}
+
+.rubric-tree-item {
+  cursor: pointer;
+}
+
+.rubric-tree-item:not(.bg-primary-subtle):hover:has(input:enabled) {
+  background-color: var(--bs-tertiary-bg);
+}
