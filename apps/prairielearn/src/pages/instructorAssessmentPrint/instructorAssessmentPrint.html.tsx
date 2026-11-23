@@ -342,7 +342,7 @@ function PrintPreparation({
       ids: string[];
       outputDocument: PrintDocument;
     }) => {
-      await prepareExport(ids, outputDocument);
+      await prepareExport(ids, outputDocument, 'pdf');
       return await trpcClient.printExports.pdf.mutate(packetInput(ids, outputDocument));
     },
   });
@@ -434,11 +434,12 @@ function PrintPreparation({
     return input;
   }
 
-  function preflightInput(ids: string[], outputDocument: PrintDocument) {
+  function preflightInput(ids: string[], outputDocument: PrintDocument, format: 'pdf' | 'docx') {
     const input = new FormData();
     input.set('formIds', JSON.stringify(ids));
     input.set('document', outputDocument);
-    if (outputDocument === 'assessment') {
+    // Only student-copy PDFs include uploaded covers.
+    if (format === 'pdf' && outputDocument === 'assessment') {
       for (const { file } of coverPages) input.append('coverPages', file);
     }
     return input;
@@ -451,9 +452,10 @@ function PrintPreparation({
   async function preflightExport(
     ids: string[],
     outputDocument: PrintDocument,
+    format: 'pdf' | 'docx',
     onProgress: (progress: { completed: number; total: number }) => void,
   ) {
-    const input = preflightInput(ids, outputDocument);
+    const input = preflightInput(ids, outputDocument, format);
     const result = await trpcClient.printExports.preflight.mutate(input);
     if (result.failure || result.unpreparedFormIds.length === 0) return result;
     const unprepared = result.unpreparedFormIds;
@@ -484,9 +486,13 @@ function PrintPreparation({
     return await trpcClient.printExports.preflight.mutate(input);
   }
 
-  async function prepareExport(ids: string[], outputDocument: PrintDocument) {
+  async function prepareExport(
+    ids: string[],
+    outputDocument: PrintDocument,
+    format: 'pdf' | 'docx',
+  ) {
     try {
-      const { failure } = await preflightExport(ids, outputDocument, setExportProgress);
+      const { failure } = await preflightExport(ids, outputDocument, format, setExportProgress);
       if (failure) throw new Error(failure.message);
     } finally {
       setExportProgress(null);
@@ -569,7 +575,7 @@ function PrintPreparation({
       );
     }
     try {
-      const result = await preflightExport(ids, outputDocument, (progress) => {
+      const result = await preflightExport(ids, outputDocument, 'pdf', (progress) => {
         if (request !== combinedRequestRef.current) return;
         setCombinedDownload((current) => current && { ...current, progress });
       });
@@ -728,7 +734,7 @@ function PrintPreparation({
   }
   const download = useMutation({
     mutationFn: async ({ id, printDocument }: { id: string; printDocument: PrintDocument }) => {
-      await prepareExport([id], printDocument);
+      await prepareExport([id], printDocument, 'docx');
       return await trpcClient.printExports.docx.mutate({
         printFormId: id,
         document: printDocument,
