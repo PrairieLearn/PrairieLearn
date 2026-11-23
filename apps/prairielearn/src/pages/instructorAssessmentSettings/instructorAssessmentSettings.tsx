@@ -20,6 +20,7 @@ import {
 import { config } from '../../lib/config.js';
 import { computeScopedJsonHash, getAssessmentInfoJsonPath } from '../../lib/editorUtil.js';
 import { type AssessmentToolsConfig } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectNonPublicQuestionsInAssessment } from '../../lib/sharing-validation.js';
@@ -80,11 +81,13 @@ router.get(
       (await computeScopedJsonHash<AssessmentJsonInput>(fullInfoAssessmentPath, settingsScope)) ??
       '';
 
-    const [toolDefaultRows, zonePointsRange, hasInstances] = await Promise.all([
-      selectAssessmentToolDefaults({ assessment_id: assessment.id }),
-      selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
-      selectAssessmentHasInstances(assessment.id),
-    ]);
+    const [toolDefaultRows, zonePointsRange, hasInstances, assessmentTextMarkdownEnabled] =
+      await Promise.all([
+        selectAssessmentToolDefaults({ assessment_id: assessment.id }),
+        selectAssessmentZonePointsRange({ assessment_id: assessment.id }),
+        selectAssessmentHasInstances(assessment.id),
+        features.enabledFromLocals('assessment-text-markdown', res.locals),
+      ]);
     const toolDefaults = new Map(toolDefaultRows.map((row) => [row.tool, row]));
     const assessmentTools: AssessmentToolsConfig = EnumAssessmentToolSchema.options.map((tool) => ({
       name: tool,
@@ -157,6 +160,7 @@ router.get(
               nonPublicQuestionsInAssessment={nonPublicQuestionsInAssessment}
               questionSharingEnabled={questionSharingEnabled}
               hasInstances={hasInstances}
+              assessmentTextMarkdownEnabled={assessmentTextMarkdownEnabled}
             />
           </Hydrate>
         ),
