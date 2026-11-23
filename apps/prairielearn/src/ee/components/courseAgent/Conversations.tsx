@@ -269,10 +269,13 @@ function ConversationPicker({
 
 /** Requests staff can send as they are, for those who are not sure what to ask. */
 const STARTERS = [
-  { icon: 'bi-pencil-square', text: 'Suggest three new practice questions for this course' },
-  { icon: 'bi-clipboard-check', text: 'Review my questions and tell me which need the most work' },
-  { icon: 'bi-bar-chart', text: 'Which questions are students finding hardest?' },
-  { icon: 'bi-question-circle', text: 'How do I give one student extra time on an exam?' },
+  {
+    icon: 'bi-bar-chart',
+    text: 'Diagnose disparities between variants in the current course instance',
+  },
+  { icon: 'bi-share', text: 'Share a question set' },
+  { icon: 'bi-calendar-plus', text: "Set up next semester's course instance" },
+  { icon: 'bi-pencil-square', text: 'Help me create a new question' },
 ];
 
 function EmptyConversation({ onStart }: { onStart: (text: string) => void }) {
