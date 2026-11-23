@@ -8,6 +8,7 @@ The browser lays out questions and splits them into pages. PDFs use the finished
 
 ```ts
 import { config } from './config.js';
+import { createPdfOutput } from './printing/pdf-output.js';
 import { PrintRenderer } from './printing/print-renderer.js';
 
 const renderer = new PrintRenderer({
@@ -19,12 +20,15 @@ const renderer = new PrintRenderer({
         }
       : undefined,
 });
-const pdf = await renderer.renderPdf({
-  url: previewUrl,
-  browserOrigin: config.serverCanonicalHost ?? undefined,
-  html: paginatedHtml,
-  assetScope,
-});
+const pdf = await renderer.render(
+  {
+    url: previewUrl,
+    browserOrigin: config.serverCanonicalHost ?? undefined,
+    html: paginatedHtml,
+    assetScope,
+  },
+  createPdfOutput(),
+);
 await renderer.close(); // during shutdown
 ```
 
@@ -46,7 +50,7 @@ For each render with `assetScope`, the renderer issues a five-minute, job-specif
 
 The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative for the physical paper size.
 
-For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
+For outputs that also need metadata from the paginated page, pass a custom `PrintablePageOutput` instead. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
 `assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy each selected form once and add blank pages after shorter forms so every form has the same number of pages. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
 
