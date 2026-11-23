@@ -12,9 +12,9 @@ so first.
 Before choosing a mechanism, read PrairieLearn's [content sharing
 docs](https://docs.prairielearn.com/contentSharing/). They cover sharing sets,
 public and source sharing, sharing assessments and course instances, sharing
-names, sharing tokens, licenses, and what can't be undone. Two limits they don't
-spell out: sync rejects draft questions and questions in older formats, and
-questions that use `clientFilesCourse` sync but break in other courses.
+names, sharing tokens, licenses, supported files, and what can't be undone. One
+limit they don't state: sync rejects sharing settings on draft questions and on
+questions in formats older than v3.
 
 ## Exercise judgment
 
@@ -29,13 +29,14 @@ questions that use `clientFilesCourse` sync but break in other courses.
   publishing assessed content. Source sharing also exposes answers, graders,
   and any secrets in the files, such as API keys; flag secrets so they can be
   removed and rotated.
-- **Ask before unsharing.** Once another course uses a question shared by
-  reference or in a set, PrairieLearn won't let you unshare it, and the whole
-  course fails to sync until the change is undone. You can't see other courses,
-  so you can't tell whether one uses it. Before editing, give the options: keep
-  sharing it, ask the other courses to copy it ("Make a copy" on its Settings
-  page) first, share a new copy from now on, or try the change and undo it in a
-  new review if the sync reports the question is in use. The course keeps an
+- **Ask before unsharing.** The docs list what can't be undone once another
+  course uses a question. A change that tries anyway makes the whole course fail
+  to sync until it's undone, and you can't see other courses, so you can't tell
+  whether one uses it. Before editing, give the options: keep sharing it, ask
+  the other courses to [copy
+  it](https://docs.prairielearn.com/contentSharing/#copying-a-shared-question)
+  first, share a new copy from now on, or try the change and undo it in a new
+  review if the sync reports the question is in use. The course keeps an
   approved change until a new review undoes it, even if your checkout already
   shows the old value. Turning off source sharing alone is always allowed.
 
@@ -69,9 +70,11 @@ questions that use `clientFilesCourse` sync but break in other courses.
      and offer the full list.
    - Mark only the rows you'd leave out, with ⚠️. Their **Used on** cell gives
      the reason, such as "older question format".
-   - End the message with the **Before you say yes** line. Mention the license
+   - The **Before you say yes** line is the message's last line. Don't close
+     with a request to confirm, a summary, or what you'll do next; the
+     question asks for the answer. Mention the license
      only when sharing publicly. Leave out links, file names, how you found
-     things, and what these instructions require. Don't ask or warn about
+     things, and any mention of the docs or these instructions. Don't ask or warn about
      other PrairieLearn servers unless the instructor mentions one.
    - When the request is to publish an exam or quiz, offer the safer ways too:
      after the term ends, or with named instructors through a sharing set.
@@ -91,17 +94,19 @@ questions that use `clientFilesCourse` sync but break in other courses.
 
 ## Use another course's question
 
-Add it to the assessment as `@<sharing-name>/<qid>`, using the exact reference
-the instructor gives; its files aren't in this checkout, so you can't check it,
-and a wrong reference fails the sync. If they give only a title, ask for the
-reference. Say in a sentence whether it will be used by reference (the other
-course maintains it, and nobody here can edit it) or copied with **Make a
-copy** on its Settings page.
+Add it [by
+reference](https://docs.prairielearn.com/contentSharing/#using-a-question-by-reference),
+using the exact reference the instructor gives. Its files aren't in this
+checkout, so you can't check it, and a wrong reference fails the sync. If they
+give only a title, ask for the reference. Say in a sentence whether it will be
+used by reference (the other course maintains it, and nobody here can edit it)
+or [copied](https://docs.prairielearn.com/contentSharing/#copying-a-shared-question).
 
 ## Hand off
 
 After the change syncs, reply once, in two or three sentences: what is now
 shared, with the link or `@sharing-name/qid` references to send; the
-owner-only step still needed, such as adding the other course on the
-**Sharing** page with its sharing token; and the page to check. Don't restate
+owner-only step still needed, such as [adding the other
+course](https://docs.prairielearn.com/contentSharing/#sharing-a-sharing-set-with-another-course)
+on the **Sharing** page with its sharing token; and the page to check. Don't restate
 what can't be undone.

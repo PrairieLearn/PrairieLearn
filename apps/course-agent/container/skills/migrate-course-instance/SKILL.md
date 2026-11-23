@@ -45,9 +45,9 @@ silently or ask about one at a time:
   pattern, such as "due a week after release", and flagged: a deadline that
   lands on a holiday or in a break, a date outside the source term, dates out of
   order, a window that shrinks, or a finals period shorter in the new term.
-- **Questions named or dated for the old term,** such as a QID or title with
-  the old term in it: leave them, since every offering shares them, and list
-  them to replace.
+- **Questions named or dated for a past term,** such as a QID or title with a
+  term in any form (`fa26`, `sp25`, "Fall 2026"): leave them, since every
+  offering shares them, and list them to replace.
 - **Dates written into text,** such as an assessment's `text` or its client
   files: update them in the new course instance by hand and say where.
 - If the target term has already started, say so first; they may mean the next
@@ -67,27 +67,29 @@ and the QIDs it uses. Apply and verify the plan with one script each.
    ask.
 2. **Calendars.** From each term's official academic calendar, on the web, get
    the first and last day of instruction, holidays, breaks, finals, and the add
-   deadline (which replaces `selfEnrollment.beforeDate`). Record each URL, and
+   deadline, for the [self-enrollment
+   cutoff](https://docs.prairielearn.com/courseInstance/#disabling-self-enrollment-after-a-certain-date).
+   Record each URL, and
    say when a calendar is tentative. One term can span two calendars, and some
    are PDFs or images; if you can't read one, ask the instructor to attach it.
    If none turns up, infer from the same term last year, keep working, and say
    which dates are inferred. If the terms differ by more than a week of
    instruction, such as semester to summer, propose a compressed schedule as a
    decision.
-3. **Copy.** If the instructor already used **Make a copy of this course
-   instance** in PrairieLearn, work on that copy; it already has a new UUID,
-   publishing and enrollment settings, and no per-student rules, but its
-   assessment dates haven't moved. Otherwise copy the folder, including
-   `clientFilesCourseInstance`, to one named for the new term, give it a new
-   `uuid` and `longName` (assessment UUIDs can stay), and remove
-   `shareSourcePublicly`. Keep the
-   access-control format the copy has; for legacy `allowAccess` in
-   `infoCourseInstance.json`, use `publishing` instead (except in LTI 1.1
-   courses), and carry an `institution` restriction into `selfEnrollment` so
-   students from other campuses can still enroll. See the [course
-   instance](https://docs.prairielearn.com/courseInstance/) and [access
-   control](https://docs.prairielearn.com/assessment/accessControl/) docs.
-   Folders PrairieLearn doesn't sync come along unchanged; mention them.
+3. **Copy.** If the instructor already [copied the course
+   instance](https://docs.prairielearn.com/courseInstance/#creating-or-copying-a-course-instance)
+   in PrairieLearn, work on that copy; its assessment dates haven't moved.
+   Otherwise copy the folder, including `clientFilesCourseInstance`, to one
+   named for the new term, give it a new `uuid` and `longName` (assessment
+   UUIDs can stay), and remove `shareSourcePublicly`. Convert legacy
+   `allowAccess` in `infoCourseInstance.json` as [Migrating from
+   `allowAccess`](https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess)
+   describes, including its LTI 1.1 exception and the [institution
+   restriction](https://docs.prairielearn.com/courseInstance/#institution-restrictions).
+   Keep the [access
+   control](https://docs.prairielearn.com/assessment/accessControl/) format
+   each assessment has. Folders PrairieLearn doesn't sync come along unchanged;
+   mention them.
 4. **Plan.** Give every date in the copy the same week of instruction, weekday
    and time in the target term, counting weeks of instruction so breaks don't
    shift what follows. Then check every unusual date, and spot-check each set
@@ -103,10 +105,12 @@ and the QIDs it uses. Apply and verify the plan with one script each.
      each term's breaks, holidays and finals as italic rows, and assessments
      with no dates on one line. Past about 15 assessments, show only the rows
      with notes, and say how many others moved by their set's pattern.
-   - the decisions that apply, as a short list, each with your default
+   - the decisions that apply, as a short list, each with your default,
+     including the questions named or dated for a past term, by title
 
-   End the message with the decisions; don't add lines saying the plan is ready
-   or that you need an answer. Then ask one short question, "Anything different
+   The decisions are the message's last lines. Don't close with a request to
+   confirm, a summary, or what you'll do next; the question asks for the
+   answer. Then ask one short question, "Anything different
    this term?", with your plan as the recommended answer. Keep the proposal out
    of the question, and don't repeat it afterwards. Apply policy changes as
    rules ("homework due Fridays"), not row by row.

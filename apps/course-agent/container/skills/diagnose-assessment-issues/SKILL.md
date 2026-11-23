@@ -6,7 +6,8 @@ description: Diagnose problems in a PrairieLearn assessment from past student re
 # Diagnose assessment issues
 
 When you're done, the instructor should know **which questions to change, how,
-and why**, after about two minutes of reading. Every claim must hold up.
+and why**, after about two minutes of reading. Every claim must be supported by
+the data or the question source.
 
 Statistics tell you where to look. The question source tells you why. A gap
 between two numbers isn't a finding until you can point to what in the question,
@@ -128,7 +129,7 @@ changes to the instructor.
 ## Report
 
 Give the report as your reply, once, and don't follow it with a summary of
-itself. The reader is an instructor with a few minutes, in a narrow chat panel.
+itself. The reader is an instructor reading it in a narrow chat panel.
 Keep it to about 300 words plus the table. The two opening lines are all that
 comes before the table.
 
