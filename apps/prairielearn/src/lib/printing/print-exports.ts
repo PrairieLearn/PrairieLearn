@@ -58,10 +58,6 @@ const UNAVAILABLE_MESSAGE =
   'Downloads are unavailable right now. Try again later or contact support.';
 const EXHAUSTED_MESSAGE =
   'The file could not be prepared after repeated attempts. Try again or contact support.';
-// While Redis is unreachable, PrairieMQ repeats the same error every second or so, and
-// Sentry's deduplication misses repeats once other events come in between.
-const REPEATED_ERROR_REPORT_INTERVAL_MS = 60_000;
-let lastReportedError: { message: string; reportedAt: number } | null = null;
 let queue: Queue<{ printExportId: string }, void> | null = null;
 let worker: Worker<{ printExportId: string }, void> | null = null;
 let workerClosing: Promise<void> | null = null;
@@ -70,18 +66,6 @@ let shutdownController = new AbortController();
 function reportQueueError(error: unknown) {
   logger.error('Print export queue error', error);
   Sentry.captureException(error);
-}
-
-function reportRepeatableQueueError(error: Error) {
-  if (
-    lastReportedError?.message === error.message &&
-    Date.now() - lastReportedError.reportedAt < REPEATED_ERROR_REPORT_INTERVAL_MS
-  ) {
-    logger.error('Print export queue error', error);
-    return;
-  }
-  lastReportedError = { message: error.message, reportedAt: Date.now() };
-  reportQueueError(error);
 }
 
 function queueConnection(redisUrl: string) {
@@ -107,7 +91,7 @@ function getQueue() {
         removeOnFail: true,
       },
     });
-    queue.on('error', reportRepeatableQueueError);
+    queue.on('error', reportQueueError);
   }
   return queue;
 }
@@ -136,7 +120,7 @@ export function initPrintExportWorker() {
       lockDuration: 300_000,
     },
   );
-  worker.on('error', reportRepeatableQueueError);
+  worker.on('error', reportQueueError);
   // Runs that finish normally record their own result, so these only see exports that
   // ran out of attempts or stalled too often.
   worker.on('failed', (job, error) => {
