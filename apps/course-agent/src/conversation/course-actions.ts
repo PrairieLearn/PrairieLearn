@@ -121,13 +121,15 @@ export async function requestCourseAction(
 }
 
 /** The tool reply for a recorded request: what the instructor is being asked, in plain text. */
-export function describeRequestedAction(card: CourseActionCard) {
+export function describeRequestedAction(card: CourseActionCard, autoApprove: boolean) {
   const rows = card.rows.map((row) => `- ${row.label}${row.detail ? `: ${row.detail}` : ''}`);
   if (card.moreRows > 0) rows.push(`- and ${card.moreRows} more`);
   return [
     `Requested: ${card.title}${card.context ? ` (${card.context})` : ''}.`,
     ...rows,
-    'The instructor sees this request and decides whether to approve it. The decision arrives in a later message.',
+    autoApprove
+      ? 'The instructor chose to approve requests without reviewing them, so PrairieLearn is carrying this out now. The result arrives in a later message.'
+      : 'The instructor sees this request and decides whether to approve it. The decision arrives in a later message.',
     'End your turn now, saying in one short sentence what you requested, and make no further tool calls.',
   ].join('\n');
 }

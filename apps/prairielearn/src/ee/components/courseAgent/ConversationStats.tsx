@@ -32,8 +32,15 @@ export function ConversationStats({
   const missing = usageQuery.isError ? 'Unavailable' : 'Loading';
   return (
     <Dropdown drop="up" show={show} autoClose="outside" onToggle={setShow}>
-      <Dropdown.Toggle variant="outline-secondary" size="sm">
-        Stats
+      <Dropdown.Toggle
+        variant="link"
+        size="sm"
+        className="course-agent-composer-button"
+        aria-label="Stats"
+      >
+        <i className="bi bi-bar-chart" aria-hidden="true" />
+        <span className="course-agent-composer-wide-only">Stats</span>
+        <i className="bi bi-chevron-down" aria-hidden="true" />
       </Dropdown.Toggle>
       {show && (
         <Dropdown.Menu align="end" className="p-3 text-nowrap">
