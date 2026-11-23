@@ -10,7 +10,11 @@ import { createPrintForm } from '../../../lib/printing/print-forms.js';
 import type { PrintSettings } from '../../../lib/printing/print-settings.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseById } from '../../../models/course.js';
-import { selectOptionalPrintForm, updatePrintFormSettings } from '../../../models/print-form.js';
+import {
+  selectOptionalPrintForm,
+  updatePrintFormPaperSize,
+  updatePrintFormSettings,
+} from '../../../models/print-form.js';
 import * as freeformServer from '../../../question-servers/freeform.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { getConfiguredUser } from '../../utils/auth.js';
@@ -56,10 +60,12 @@ export async function waitForPrintablePage(page: Page): Promise<void> {
 
 /** Saves layout settings for a form; previews and exports use its saved settings. */
 export async function savePrintSettings(printForm: PrintForm, settings: Partial<PrintSettings>) {
-  const current = (await selectOptionalPrintForm({
-    printFormId: printForm.id,
-    assessmentId: printForm.assessment_id,
-  }))!.settings;
+  const ids = { printFormId: printForm.id, assessmentId: printForm.assessment_id };
+  // Paper size is shared by all current forms, so it has its own update.
+  if (settings.paperSize) {
+    await updatePrintFormPaperSize({ ...ids, paperSize: settings.paperSize });
+  }
+  const current = (await selectOptionalPrintForm(ids))!.settings;
   const updated = { ...current, ...settings };
   await updatePrintFormSettings({
     printFormId: printForm.id,

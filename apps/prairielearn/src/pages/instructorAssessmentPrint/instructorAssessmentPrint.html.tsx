@@ -237,6 +237,9 @@ function PrintPreparation({
   const questionSizes = watch('questionSizes');
   const excludedQuestions = watch('excludedQuestions');
   const excludedQuestionNumbers = new Set(excludedQuestions);
+  function previewUrl(id: string, previewDocument: PrintDocument) {
+    return `${getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id })}/preview?document=${previewDocument}`;
+  }
   /** Previews render saved settings, so a preview changes whenever they do. */
   function previewFor(
     id: string | null,
@@ -246,9 +249,7 @@ function PrintPreparation({
     return {
       id: JSON.stringify([id, previewDocument, previewSettings]),
       formId: id,
-      url: id
-        ? `${getPrintFormUrl({ courseInstanceId, assessmentId, printFormId: id })}/preview?document=${previewDocument}`
-        : '',
+      url: id ? previewUrl(id, previewDocument) : '',
       document: previewDocument,
       paperSize: previewSettings.paperSize,
     };
@@ -267,9 +268,9 @@ function PrintPreparation({
     previewSelectionRef.current = { formId, document };
     // oxlint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates
     setActivePreview(savedPreview);
-    // savedPreview is rebuilt on every render; its ID says when it changed.
+    // Only a new form or document replaces the active preview here.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [formId, document, savedPreview.id]);
+  }, [formId, document]);
   const previewIsCurrent = activePreview.id === savedPreview.id;
   const activePreviewKey = `${activePreview.id}:${previewVersions[activePreview.id] ?? 0}`;
   const previewsToRender: PreviewEntry[] = cachedPreviews.some(
@@ -471,7 +472,7 @@ function PrintPreparation({
     // Forms render one at a time so one export doesn't hold several shared render slots.
     for (const [index, id] of unprepared.entries()) {
       onProgress({ completed: index, total: unprepared.length });
-      const response = await fetch(previewFor(id, settingsForForm(id), outputDocument).url);
+      const response = await fetch(previewUrl(id, outputDocument));
       const root = new DOMParser().parseFromString(
         await response.text(),
         'text/html',
