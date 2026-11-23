@@ -328,6 +328,17 @@ function Loading() {
 /** How long a status label stays up before the next one may replace it. */
 const MIN_LABEL_MS = 1000;
 
+/** The label for the moments between steps, when the agent has said nothing more specific. */
+const THINKING = 'Thinking';
+
+const GETTING_READY = 'Getting ready';
+
+/**
+ * How long the agent must go without a new step before the line says it is thinking. It pauses
+ * for a second between most steps, and the line would otherwise flip back and forth.
+ */
+const THINKING_AFTER_MS = 3000;
+
 /**
  * Holds each label on screen long enough to read. A step that takes a tenth of a second would
  * otherwise flash its label and make the line flicker.
@@ -338,7 +349,10 @@ function useSteadyLabel(label: string) {
   // Switches to a new label once the current one has had its time on screen.
   useEffect(() => {
     if (label === shown) return;
-    const wait = Math.max(0, MIN_LABEL_MS - (Date.now() - shownAtRef.current));
+    const wait =
+      label === THINKING && shown !== GETTING_READY
+        ? THINKING_AFTER_MS
+        : Math.max(0, MIN_LABEL_MS - (Date.now() - shownAtRef.current));
     const timeout = setTimeout(() => {
       shownAtRef.current = Date.now();
       setShown(label);
@@ -382,7 +396,7 @@ function ActivityStatus({
   const storageKey = `course-agent-working-since:${conversationId}`;
   const [startedAt] = useState(() => Number(sessionStorage.getItem(storageKey)) || Date.now());
   const [now, setNow] = useState(() => Date.now());
-  const label = useSteadyLabel(startingSandbox ? 'Getting ready' : activityLabel(message));
+  const label = useSteadyLabel(startingSandbox ? GETTING_READY : activityLabel(message));
   // Advances the elapsed time once a second.
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -442,7 +456,7 @@ function activityLabel(message: UIMessage | undefined) {
   const call = latestCall(message);
   if (call?.status === 'running') return runningLabel(call);
   const part = message?.role === 'assistant' ? message.parts.at(-1) : undefined;
-  return (part?.type === 'reasoning' && reasoningHeading(part.text)) || 'Thinking';
+  return (part?.type === 'reasoning' && reasoningHeading(part.text)) || THINKING;
 }
 
 function Chat({
