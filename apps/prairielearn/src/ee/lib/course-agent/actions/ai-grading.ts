@@ -37,7 +37,7 @@ const AiGradeInputSchema = z.strictObject({
     .enum(['waiting', 'all'])
     .optional()
     .describe(
-      'waiting, the default: only answers still waiting for manual grading. all: every answered question, including ones staff already graded; AI grading changes the score only of those still waiting.',
+      'waiting, the default: only answers still waiting for manual grading. all: every answered question, which regrades answers AI grading already graded. Answers staff graded by hand keep their scores either way.',
     ),
   instance_question_ids: z
     .array(IdSchema)
@@ -130,7 +130,7 @@ export const aiGradingActions = {
     description:
       "Grade students' answers to one manually graded question with AI grading, which gives each a score and feedback, using the question's rubric when it has one. Grading runs in the background; when it finishes, read grading_jobs and ai_grading_jobs to see what it gave.",
     effects:
-      'Each answer still waiting for manual grading gets a score and feedback, which students see as they would after manual grading. It spends AI grading credits unless the course instance uses its own API keys.',
+      'Each answer gets a score and feedback from AI grading, which students see as they would after manual grading. An answer staff graded by hand keeps its score, and AI grading only records its own grade beside it. It spends AI grading credits unless the course instance uses its own API keys.',
     undo: "Change any score on the question's manual grading page. The AI gradings stay in the grading history.",
     permission: 'student_data_editor',
     feature: 'ai-grading',
