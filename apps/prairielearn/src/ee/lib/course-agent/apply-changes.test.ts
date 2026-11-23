@@ -444,7 +444,13 @@ it('leaves an approved action alone while it may still be running, then reports 
     agent_action_id: review.id,
     action: 'issues_close',
     input: { issue_ids: ['1'] },
-    card: { title: 'Close 1 issue', context: null, rows: [], undo: 'Reopen the same issues.' },
+    card: {
+      title: 'Close 1 issue',
+      context: null,
+      rows: [],
+      undo: 'Reopen the same issues.',
+      alwaysAsk: false,
+    },
   });
   // An approval claims its row before the action runs, so the row has no result meanwhile.
   await insertCourseAgentReview({

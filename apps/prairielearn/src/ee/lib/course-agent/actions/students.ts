@@ -78,6 +78,7 @@ function statusAction({
   description,
   effects,
   undo,
+  alwaysAsk,
   from,
   title,
   done,
@@ -86,6 +87,7 @@ function statusAction({
   description: string;
   effects: string;
   undo: string | null;
+  alwaysAsk?: boolean;
   from: EnumEnrollmentStatus[];
   title: (students: string) => string;
   done: (students: string) => string;
@@ -96,6 +98,7 @@ function statusAction({
     description,
     effects,
     undo,
+    alwaysAsk,
     permission: 'student_data_editor',
     input: StudentsInputSchema,
     describe: async ({ ctx, input }) => {
@@ -225,6 +228,7 @@ export const studentActions = {
       'Block enrolled students from the course instance. Their work and scores are kept, and they cannot rejoin on their own.',
     effects: 'The students can no longer open the course instance or its assessments.',
     undo: 'Let them back in by re-enrolling them.',
+    alwaysAsk: true,
     from: ['joined'],
     title: (students) => `Block ${students}`,
     done: (students) => `Blocked ${students}.`,
@@ -242,6 +246,7 @@ export const studentActions = {
     effects:
       'The students no longer see the course instance and are left out of the gradebook and statistics.',
     undo: 'Bring them back by re-enrolling them.',
+    alwaysAsk: true,
     from: ['joined'],
     title: (students) => `Remove ${students}`,
     done: (students) => `Removed ${students}.`,

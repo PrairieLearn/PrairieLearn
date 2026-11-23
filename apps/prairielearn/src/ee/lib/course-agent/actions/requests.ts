@@ -48,7 +48,7 @@ export async function requestCourseAction({
   id: string;
   name: string;
   input: unknown;
-}): Promise<{ title: string }> {
+}): Promise<{ title: string; alwaysAsk: boolean }> {
   if (!Object.hasOwn(COURSE_AGENT_ACTIONS, name)) {
     throw new HttpStatusError(
       404,
@@ -66,7 +66,7 @@ export async function requestCourseAction({
     });
     // The card's rows are course data, which the agent reads only with approval, so it is told
     // only what it asked for.
-    return { title: card.title };
+    return { title: card.title, alwaysAsk: card.alwaysAsk };
   } catch (error) {
     if (error instanceof CourseActionError) throw new HttpStatusError(400, error.message);
     throw error;

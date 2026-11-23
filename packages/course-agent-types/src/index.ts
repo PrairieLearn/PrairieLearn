@@ -497,6 +497,8 @@ export const CourseActionCardSchema = z.strictObject({
     .max(1000),
   /** How to reverse the action, or null when it cannot be reversed. */
   undo: z.string().max(500).nullable(),
+  /** The instructor decides this one even when they chose to approve without being asked. */
+  alwaysAsk: z.boolean(),
 });
 
 export type CourseActionCard = z.infer<typeof CourseActionCardSchema>;
@@ -511,6 +513,7 @@ export const CourseActionCatalogSchema = z.object({
       description: z.string(),
       effects: z.string(),
       undo: z.string().nullable(),
+      alwaysAsk: z.boolean(),
       /** JSON Schema of the action's input. */
       input: z.looseObject({}),
     }),
@@ -530,7 +533,10 @@ export const CourseActionRequestSchema = z.strictObject({
  * PrairieLearn: its rows hold course data, which the agent reads only with the instructor's
  * approval.
  */
-export const CourseActionRequestReplySchema = z.object({ title: z.string().max(200) });
+export const CourseActionRequestReplySchema = z.object({
+  title: z.string().max(200),
+  alwaysAsk: z.boolean(),
+});
 
 /**
  * The outcome of a course action request. An action occupies the conversation's review slot, so

@@ -868,7 +868,7 @@ const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string;
   always_approve: {
     label: 'Always approve',
     description:
-      'The agent saves course files, reads course data, and changes things like students and issues without asking.',
+      'The agent saves course files, reads course data, and changes things like issues without asking. It still asks before a change that is hard to take back, like removing a student.',
     icon: 'bi-shield-exclamation',
   },
 };

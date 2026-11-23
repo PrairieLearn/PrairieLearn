@@ -232,7 +232,9 @@ describe('Course agent student actions', { timeout: 60_000, concurrent: false },
       rows: [{ label: a.uid, detail: 'Now: joined' }],
     });
     expect(await status(a.uid)).toBe('blocked');
-    await approve('students_remove', { uids: [b.uid] });
+    // Taking away a student's access asks the instructor whatever approval mode they chose.
+    const removed = await approve('students_remove', { uids: [b.uid] });
+    expect(removed.card.alwaysAsk).toBe(true);
     expect(await status(b.uid)).toBe('removed');
 
     // A student already in the requested state is left as is, and the card counts them.

@@ -62,6 +62,11 @@ function describeCatalog(catalog: CourseActionCatalog) {
         `${name} (${action.group}): ${action.description}`,
         `  Effect: ${action.effects}`,
         `  Undo: ${action.undo ?? 'Cannot be undone.'}`,
+        ...(action.alwaysAsk
+          ? [
+              '  Approval: the instructor always decides this one, whatever approval mode they chose.',
+            ]
+          : []),
         '  Input:',
         ...Object.entries(input.properties).map(([key, property]) =>
           describeInput(key, property, input.required.includes(key)),
@@ -95,7 +100,7 @@ export async function listCourseActions(context: PrairieLearnContext): Promise<T
 export async function requestCourseAction(
   context: PrairieLearnContext,
   { id, action, input }: CourseActionRequest & { id: string },
-): Promise<{ title: string } | { error: string }> {
+): Promise<{ title: string; alwaysAsk: boolean } | { error: string }> {
   if (!context.courseId) return { error: UNAVAILABLE.text };
   const response = await fetch(
     new URL(

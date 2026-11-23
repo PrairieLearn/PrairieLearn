@@ -190,7 +190,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     );
     expect(response.status).toBe(200);
     // The agent is told what it asked for. The rows are course data, which only the card shows.
-    expect(await response.json()).toEqual({ title: 'Close 2 issues' });
+    expect(await response.json()).toEqual({ title: 'Close 2 issues', alwaysAsk: false });
     expect(await issuesOpen(issueIds)).toEqual([true, true]);
 
     await withUser(owner, async () => {
@@ -205,6 +205,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
             { label: `#${issueIds[1]} · addNumbers`, detail: 'It is broken.' },
           ],
           undo: 'Reopen the same issues.',
+          alwaysAsk: false,
         },
         decision: null,
         result: null,
@@ -337,7 +338,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     const issueIds = [await insertIssue({ open: false })];
     const id = crypto.randomUUID();
     const response = await request(conversation, 'issues_reopen', { issue_ids: issueIds }, id);
-    expect(await response.json()).toEqual({ title: 'Reopen 1 issue' });
+    expect(await response.json()).toEqual({ title: 'Reopen 1 issue', alwaysAsk: false });
     await withUser(owner, async () => {
       await createClient(owner).courseAgent.postReviewDecision.mutate({
         conversationId: conversation.id,
