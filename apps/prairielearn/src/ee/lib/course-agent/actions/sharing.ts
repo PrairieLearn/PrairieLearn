@@ -71,6 +71,7 @@ export const sharingActions = {
     effects:
       'Staff of the other course can add the questions in the sharing set to their assessments. Students see nothing change.',
     undo: null,
+    alwaysAsk: true,
     permission: 'course_owner',
     feature: 'question-sharing',
     input: AddCourseInputSchema,
@@ -163,6 +164,7 @@ export const sharingActions = {
     effects:
       'The old token stops working for new sharing. Sets already shared with this course stay shared.',
     undo: null,
+    alwaysAsk: true,
     permission: 'course_owner',
     feature: 'question-sharing',
     input: z.strictObject({}),

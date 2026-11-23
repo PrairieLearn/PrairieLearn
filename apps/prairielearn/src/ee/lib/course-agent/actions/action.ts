@@ -96,6 +96,11 @@ interface CourseActionDefinition<
    * request, so it names no actions.
    */
   undo: string | null;
+  /**
+   * Ask the instructor even when they chose to approve without being asked. For changes that are
+   * hard to take back, such as taking away a student's access.
+   */
+  alwaysAsk?: boolean;
   /** Every permission listed is required. */
   permission: Permission | Permission[];
   /** A feature the course must have turned on. */
@@ -122,6 +127,7 @@ export interface CourseAction {
   description: string;
   effects: string;
   undo: string | null;
+  alwaysAsk: boolean;
   input: z.ZodObject;
   describe: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionCard>;
   run: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionOutcome>;
@@ -172,6 +178,7 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
     description: definition.description,
     effects: definition.effects,
     undo: definition.undo,
+    alwaysAsk: definition.alwaysAsk ?? false,
     input: definition.input,
     async describe(ctx, raw) {
       const description = await definition.describe(await check(ctx, raw));
@@ -184,6 +191,7 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
           detail: row.detail ? clip(row.detail, 300) : null,
         })),
         undo: definition.undo,
+        alwaysAsk: definition.alwaysAsk ?? false,
       });
     },
     run: async (ctx, raw) => await definition.run(await check(ctx, raw)),

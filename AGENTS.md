@@ -186,6 +186,7 @@ When writing tests:
 - Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
 - To enable a feature flag for a test you can use `withConfig({ features: { 'feature-name': true } }, async () => { ... })`.
+- Vitest runs with `isolate: false`, so test files in a worker share loaded modules. A test file that uses `vi.mock` must start with `vi.hoisted(() => vi.resetModules())` and, in `afterAll`, call `vi.doUnmock(...)` for each mock and then `vi.resetModules()`. Otherwise the mock is skipped when an earlier file already loaded the module, and it leaks into later files. See `apps/prairielearn/src/ee/lib/course-agent/apply-changes.test.ts`.
 - For Playwright end-to-end test authoring conventions, follow the [`playwright-testing` skill](./.agents/skills/playwright-testing/SKILL.md).
 
 ### Rendering HTML

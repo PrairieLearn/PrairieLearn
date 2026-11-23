@@ -1479,7 +1479,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
     });
     // Chat history shows the request by ID; PrairieLearn holds what it asks and its outcome.
-    const autoApprove = this.record.approvalMode === 'always_approve';
+    const autoApprove = this.record.approvalMode === 'always_approve' && !reply.alwaysAsk;
     this.native?.emit({
       type: 'data-action',
       id,

@@ -39,6 +39,7 @@ export function courseActionCatalog(): CourseActionCatalog {
           description: action.description,
           effects: action.effects,
           undo: action.undo,
+          alwaysAsk: action.alwaysAsk,
           input: toJsonSchema(action.input),
         },
       ]),

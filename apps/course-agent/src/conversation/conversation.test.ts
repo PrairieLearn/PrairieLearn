@@ -553,7 +553,7 @@ it('holds a requested course action in the review slot and delivers its result',
   const fetch = vi.fn(async (url: string | URL, _options?: RequestInit) => {
     if (String(url).endsWith('/usage')) return decision();
     if (String(url).includes('/course_agent/actions/')) {
-      return Response.json({ title: 'Close 2 issues' });
+      return Response.json({ title: 'Close 2 issues', alwaysAsk: false });
     }
     return modelResponse();
   });
@@ -620,6 +620,56 @@ it('holds a requested course action in the review slot and delivers its result',
   expect(delivery.tag).toBe(`review:${body.id}`);
   expect(delivery.text).toContain('approved the requested action "Close 2 issues"');
   expect(delivery.text).toContain('Closed 2 issues.');
+});
+
+it('approves a course action without asking only when the action allows it', async () => {
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const request = async (alwaysAsk: boolean) => {
+    emit.mockClear();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL) => {
+        if (String(url).endsWith('/usage')) return decision();
+        if (String(url).includes('/course_agent/actions/')) {
+          return Response.json({ title: 'Remove 1 student', alwaysAsk });
+        }
+        return modelResponse();
+      }),
+    );
+    const { saved } = fixture();
+    saved.set('conversation', {
+      ...(saved.get('conversation') as object),
+      courseContext: { courseId: '7', courseTitle: 'Test course', courseShortName: 'TEST 101' },
+      approvalMode: 'always_approve',
+    });
+    const { conversation } = fixture(saved);
+    await conversation.onStart();
+    await conversation.persistMessages([
+      { id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: 'Remove them' }] },
+    ]);
+    await conversation.onChatMessage(undefined, { requestId: crypto.randomUUID() });
+    const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+    await options.prepare();
+    options.onReady();
+    const { courseActions } = (
+      conversation as unknown as { native: { courseActions: CourseActionTools } }
+    ).native;
+    const reply = await courseActions.requestCourseAction({
+      action: 'students_remove',
+      input: { course_instance_short_name: 'Fa26', uids: ['a@example.com'] },
+    });
+    const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-action');
+    return { reply, part };
+  };
+
+  const approved = await request(false);
+  expect(approved.part).toHaveProperty('data.autoApprove', true);
+  expect(approved.reply.text).toContain('carrying this out now');
+
+  const asked = await request(true);
+  expect(asked.part).not.toHaveProperty('data.autoApprove');
+  expect(asked.reply.text).toContain('decides whether to approve it');
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {

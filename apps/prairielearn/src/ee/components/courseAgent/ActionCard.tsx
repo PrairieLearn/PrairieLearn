@@ -128,6 +128,7 @@ export function ActionCard({
             <>
               <p className="small text-body-secondary mb-2">
                 {data.card.undo ? `To undo: ${data.card.undo}` : 'This cannot be undone.'}
+                {data.card.alwaysAsk && ' PrairieLearn always asks before doing this.'}
               </p>
               {!approving && (
                 <div className="d-flex flex-wrap gap-2">
@@ -139,15 +140,17 @@ export function ActionCard({
                   >
                     Approve once
                   </Button>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="course-agent-composer-button course-agent-review-always"
-                    disabled={disabled}
-                    onClick={() => decide('approved', true)}
-                  >
-                    Always approve
-                  </Button>
+                  {!data.card.alwaysAsk && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="course-agent-composer-button course-agent-review-always"
+                      disabled={disabled}
+                      onClick={() => decide('approved', true)}
+                    >
+                      Always approve
+                    </Button>
+                  )}
                   <Button
                     variant="link"
                     size="sm"

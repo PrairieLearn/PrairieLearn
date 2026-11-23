@@ -132,6 +132,8 @@ export const aiGradingActions = {
     effects:
       'Each answer gets a score and feedback from AI grading, which students see as they would after manual grading. An answer staff graded by hand keeps its score, and AI grading only records its own grade beside it. It spends AI grading credits unless the course instance uses its own API keys.',
     undo: "Change any score on the question's manual grading page. The AI gradings stay in the grading history.",
+    // It spends AI grading credits.
+    alwaysAsk: true,
     permission: 'student_data_editor',
     feature: 'ai-grading',
     input: AiGradeInputSchema,

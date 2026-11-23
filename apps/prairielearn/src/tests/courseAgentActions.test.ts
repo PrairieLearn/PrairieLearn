@@ -192,7 +192,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     );
     expect(response.status).toBe(200);
     // The agent is told what it asked for. The rows are course data, which only the card shows.
-    expect(await response.json()).toEqual({ title: 'Close 2 issues' });
+    expect(await response.json()).toEqual({ title: 'Close 2 issues', alwaysAsk: false });
     expect(await issuesOpen(issueIds)).toEqual([true, true]);
 
     await withUser(owner, async () => {
@@ -207,6 +207,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
             { label: `#${issueIds[1]} · addNumbers`, detail: 'It is broken.' },
           ],
           undo: 'Reopen the same issues.',
+          alwaysAsk: false,
         },
         decision: null,
         result: null,
@@ -339,7 +340,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     const issueIds = [await insertIssue({ open: false })];
     const id = crypto.randomUUID();
     const response = await request(conversation, 'issues_reopen', { issue_ids: issueIds }, id);
-    expect(await response.json()).toEqual({ title: 'Reopen 1 issue' });
+    expect(await response.json()).toEqual({ title: 'Reopen 1 issue', alwaysAsk: false });
     await withUser(owner, async () => {
       await createClient(owner).courseAgent.postReviewDecision.mutate({
         conversationId: conversation.id,
@@ -423,8 +424,10 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
 
     const id = crypto.randomUUID();
     const response = await request(conversation, 'sharing_add_course_to_set', input, id);
+    // Sharing cannot be undone, so it asks whatever approval mode the instructor chose.
     expect(await response.json()).toEqual({
       title: 'Share the sharing set "intro-set" with SHARE 101',
+      alwaysAsk: true,
     });
     const { card } = await withUser(owner, () =>
       createClient(owner).courseAgent.getAction.query({
@@ -440,6 +443,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
         { label: 'Sharing set "intro-set"', detail: '0 questions' },
       ],
       undo: null,
+      alwaysAsk: true,
     });
     // The token identifies the other course to PrairieLearn; the instructor is not shown it.
     expect(JSON.stringify(card)).not.toContain(consumer.sharing_token);
