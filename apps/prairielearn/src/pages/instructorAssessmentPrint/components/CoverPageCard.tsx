@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { TRPCClientError } from '@trpc/client';
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { type ChangeEvent, type Dispatch, type SetStateAction } from 'react';
@@ -21,6 +22,7 @@ export interface CoverPageFile {
   id: string;
   name: string;
   sizeBytes: number;
+  pageCount: number;
 }
 
 /** Default cover options and the PDFs uploaded for student copies, which only this tab knows. */
@@ -71,18 +73,29 @@ export function CoverPageCard({
       return;
     }
     setUploadError(null);
+    let pageCount = coverPages.reduce((total, cover) => total + cover.pageCount, 0);
     for (const file of files) {
       const data = new FormData();
       data.set('file', file);
+      let cover: CoverPageFile;
       try {
-        const { id, name } = await uploadCover.mutateAsync(data);
-        setCoverPages((covers) => [...covers, { id, name, sizeBytes: file.size }]);
+        cover = { ...(await uploadCover.mutateAsync(data)), sizeBytes: file.size };
       } catch (error) {
         setUploadError(
-          error instanceof Error ? error.message : `“${file.name}” could not be uploaded.`,
+          error instanceof TRPCClientError && error.data?.code === 'PAYLOAD_TOO_LARGE'
+            ? `“${file.name}” was not added. Cover PDFs must total no more than ${COVER_SIZE_LIMIT}.`
+            : `“${file.name}” was not added. ${error instanceof Error ? error.message : ''}`,
         );
         return;
       }
+      pageCount += cover.pageCount;
+      if (pageCount > MAX_COVER_PAGES) {
+        setUploadError(
+          `“${file.name}” was not added. Cover PDFs must contain at most ${MAX_COVER_PAGES} pages in total.`,
+        );
+        return;
+      }
+      setCoverPages((covers) => [...covers, cover]);
     }
   }
   return (

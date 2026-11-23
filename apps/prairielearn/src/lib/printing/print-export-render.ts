@@ -40,10 +40,7 @@ export async function renderPrintExport(
   work: PrintExportWork,
   shutdownSignal?: AbortSignal,
 ): Promise<Buffer> {
-  const covers =
-    work.format === 'pdf'
-      ? await readPrintCovers(work.covers, shutdownSignal)
-      : [];
+  const covers = work.format === 'pdf' ? await readPrintCovers(work.covers, shutdownSignal) : [];
   if (shutdownSignal?.aborted) throw new Error('Print export was interrupted');
   const renderer = getPrintRenderer();
   if (work.format === 'docx') {

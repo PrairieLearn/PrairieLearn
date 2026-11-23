@@ -1,6 +1,7 @@
 import {
   QueryClient,
   skipToken,
+  useIsMutating,
   useMutation,
   useQuery,
   useQueryClient,
@@ -148,19 +149,25 @@ function PrintPreparation({
   const completedCoverIdsRef = useRef(new Set<string>());
   const exportCoverIdsRef = useRef(new Map<string, string[]>());
   const exportFormIdsRef = useRef(new Map<string, string[]>());
-  const coversAwaitingDownload = coverPages.some(({ id }) => !completedCoverIdsRef.current.has(id));
+  // Exports read the cover list when they start, so they wait for uploads to finish.
+  const uploadingCovers =
+    useIsMutating({ mutationKey: trpc.printExports.uploadCover.mutationKey() }) > 0;
+  const coversAwaitingDownload =
+    uploadingCovers || coverPages.some(({ id }) => !completedCoverIdsRef.current.has(id));
   useEffect(() => {
-    // Uploaded PDFs live only in this tab until a student-copy PDF includes them.
+    // Only this tab knows the uploaded PDFs' IDs until a student-copy PDF includes them.
     if (!coversAwaitingDownload) return;
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (coverPages.every(({ id }) => completedCoverIdsRef.current.has(id))) return;
+      if (!uploadingCovers && coverPages.every(({ id }) => completedCoverIdsRef.current.has(id))) {
+        return;
+      }
       event.preventDefault();
       // oxlint-disable-next-line typescript/no-deprecated -- Required for older browsers.
       event.returnValue = 'prompt';
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [coverPages, coversAwaitingDownload]);
+  }, [coverPages, coversAwaitingDownload, uploadingCovers]);
   const [combinedDownload, setCombinedDownload] = useState<{
     document: PrintDocument;
     formIds: string[];
@@ -349,6 +356,7 @@ function PrintPreparation({
   const printExports = usePrintExports({ onAutomaticExportFinished: finishAutomaticExport });
   const { exportId, setExportId, displayedExport } = printExports;
   const busy =
+    uploadingCovers ||
     ensureInitial.isPending ||
     create.isPending ||
     regenerate.isPending ||

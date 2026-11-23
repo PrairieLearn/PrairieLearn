@@ -16,8 +16,8 @@ const EXPIRED_COVER_MESSAGE =
   'The uploaded cover PDFs have expired. Remove them, upload them again, and try again.';
 
 const PrintCoverTokenSchema = z.strictObject({
-  key: z.string(),
-  name: z.string(),
+  key: z.string().startsWith(KEY_PREFIX),
+  name: z.string().max(255),
   pageCount: z.number(),
   sizeBytes: z.number(),
   assessmentId: z.string(),
@@ -37,13 +37,7 @@ interface PrintCoverOwner {
 export async function uploadPrintCover(file: File, owner: PrintCoverOwner) {
   const [cover] = await readPrintCoverPages([file]);
   const key = `${KEY_PREFIX}${randomUUID()}.pdf`;
-  await uploadToS3(
-    getFileStoreS3Bucket(),
-    key,
-    null,
-    false,
-    Buffer.from(await file.arrayBuffer()),
-  );
+  await uploadToS3(getFileStoreS3Bucket(), key, null, false, Buffer.from(await file.arrayBuffer()));
   const pageCount = cover.getPageCount();
   return {
     id: generateSignedToken(

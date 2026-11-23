@@ -22,6 +22,7 @@ import { features } from '../lib/features/index.js';
 import { getFileStoreS3Bucket } from '../lib/file-store.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as printing from '../lib/printing/index.js';
+import { checkPrintCovers, readPrintCovers } from '../lib/printing/print-covers.js';
 import * as printExportRender from '../lib/printing/print-export-render.js';
 import {
   beginPrintExportShutdown,
@@ -791,6 +792,13 @@ describe('print preparation', { timeout: 60_000 }, () => {
     ).rejects.toThrow('valid PDF without password protection');
     const cover = await api.printExports.uploadCover.mutate(coverUpload(await coverPdf(2)));
     expect(cover).toMatchObject({ name: 'cover.pdf', pageCount: 2 });
+    const [stored] = await readPrintCovers(
+      checkPrintCovers([cover.id], { assessmentId: assessment.id, authnUserId: '1' }),
+    );
+    expect(stored.getPageCount()).toBe(2);
+    await expect(
+      api.printExports.pdf.mutate({ ...packetInput(form.printFormId), coverIds: ['not-a-cover'] }),
+    ).rejects.toThrow('The uploaded cover PDFs have expired.');
     await expect(
       api.printExports.pdf.mutate({
         ...packetInput(form.printFormId, 'answer_key'),

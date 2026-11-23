@@ -8,7 +8,6 @@ import {
   PrintGradingTableSchema,
   PrintIdentityFieldsSchema,
 } from '../../lib/client/printing/print-cover.js';
-import { serializePrintDocument } from '../../lib/printing/print-document.js';
 import { config } from '../../lib/config.js';
 import { DocxSourceSchema } from '../../lib/printing/docx-source-schema.js';
 import {
@@ -26,6 +25,7 @@ import {
   getPrintCoverHtml,
   getPrintFooter,
 } from '../../lib/printing/print-cover.js';
+import { serializePrintDocument } from '../../lib/printing/print-document.js';
 import { startPrintRequest } from '../../lib/printing/print-request.js';
 import { printSnapshotLayout, storePrintSnapshot } from '../../lib/printing/print-snapshots.js';
 import {
