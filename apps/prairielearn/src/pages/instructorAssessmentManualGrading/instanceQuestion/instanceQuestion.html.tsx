@@ -162,7 +162,11 @@ export function buildInstanceQuestionGradingPanelProps({
             explanationRendered: item.explanation_rendered ?? '',
             graderNoteRendered: item.grader_note_rendered ?? '',
             id: item.rubric_item.id,
+            isGroup: item.rubric_item.is_group,
             keyBinding: item.rubric_item.key_binding,
+            maxSelections: item.rubric_item.max_selections,
+            minSelections: item.rubric_item.min_selections,
+            parentId: item.rubric_item.parent_id,
             points: item.rubric_item.points,
           })),
         }
