@@ -447,6 +447,7 @@ interface DiffChunksOptions {
   changedFiles: string[];
   questionsToArchive: Set<string>;
   dependenciesChanged: boolean;
+  refreshInstanceAndAssessmentChunks: boolean;
 }
 
 interface ChunksDiff {
@@ -467,6 +468,7 @@ async function diffChunks({
   changedFiles,
   questionsToArchive,
   dependenciesChanged,
+  refreshInstanceAndAssessmentChunks,
 }: DiffChunksOptions): Promise<ChunksDiff> {
   const rawCourseChunks = await getAllChunksForCourse(courseId);
   // Build a data structure from the result of getAllChunksForCourse so that
@@ -640,7 +642,10 @@ async function diffChunks({
         changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCourseInstanceChunk || changedCourseInstanceChunk || courseInstanceIdMismatch)
+        (refreshInstanceAndAssessmentChunks ||
+          !existingCourseInstanceChunk ||
+          changedCourseInstanceChunk ||
+          courseInstanceIdMismatch)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -670,7 +675,10 @@ async function diffChunks({
           changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          (!hasExistingAssessment || hasChangedAssessment || assessmentIdMismatch)
+          (refreshInstanceAndAssessmentChunks ||
+            !hasExistingAssessment ||
+            hasChangedAssessment ||
+            assessmentIdMismatch)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -857,9 +865,11 @@ interface UpdateChunksForCourseOptions {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
+  questionIds?: Record<string, string>;
+  /** An explicit null denotes a sync with no previous publication commit. */
   oldHash?: string | null;
   /** The resolved commit at HEAD, if the caller already has it. */
-  commitHash?: string;
+  commitHash?: string | null;
   changedFiles?: string[];
 }
 
@@ -867,12 +877,17 @@ export async function updateChunksForCourse({
   coursePath,
   courseId,
   courseData,
+  questionIds,
   oldHash,
   commitHash: knownCommitHash,
   changedFiles,
 }: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
   if (changedFiles && oldHash) throw new Error('cannot specify both changedFiles and oldHash');
-  const commitHash = knownCommitHash ?? (await getOptionalCourseCommitHash(coursePath));
+  const commitHash =
+    knownCommitHash === undefined ? await getOptionalCourseCommitHash(coursePath) : knownCommitHash;
+  // A course can already have these archives when it first starts tracking the commit.
+  const refreshInstanceAndAssessmentChunks =
+    !changedFiles && oldHash === null && commitHash !== null;
   if (!changedFiles && oldHash && commitHash) {
     changedFiles = await identifyChangedFiles(coursePath, oldHash, commitHash);
   }
@@ -881,6 +896,7 @@ export async function updateChunksForCourse({
     courseId,
     coursePath,
     courseData,
+    questionIds,
     usesChunks: true,
   });
   const diff = await diffChunks({
@@ -890,6 +906,7 @@ export async function updateChunksForCourse({
     changedFiles: changedFiles ?? [],
     questionsToArchive: publication.questionsToArchive,
     dependenciesChanged: publication.dependenciesChanged,
+    refreshInstanceAndAssessmentChunks,
   });
 
   if (

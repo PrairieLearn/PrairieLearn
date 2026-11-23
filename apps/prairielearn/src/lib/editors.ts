@@ -16,12 +16,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { selectAssessments, selectAssessmentsReferencingQuestions } from '../models/assessment.js';
-import {
-  getCourseCommitHash,
-  getLockNameForCoursePath,
-  getOrUpdateCourseCommitHash,
-  updateCourseCommitHash,
-} from '../models/course.js';
+import { getCourseCommitHash, getLockNameForCoursePath } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import { type AssessmentJsonInput, type CalculatorType } from '../schemas/infoAssessment.js';
 import * as courseDB from '../sync/course-db.js';
@@ -82,23 +77,14 @@ function removeStudentSpecificAccessControlRulesForCopy(infoJson: AssessmentJson
 
 async function syncCourseFromDisk(
   course: Course,
-  startGitHash: string,
   job: ServerJob,
   courseData?: courseDB.CourseData,
 ) {
-  const endGitHash = await getCourseCommitHash(course.path);
-
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, {
-    courseData,
-    oldHash: startGitHash,
-    commitHash: endGitHash,
-  });
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course, job, { courseData });
 
   if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
-
-  await updateCourseCommitHash(course, endGitHash);
 
   // JSON errors mean individual entities failed to sync (e.g., a question has
   // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
@@ -232,8 +218,6 @@ export abstract class Editor {
 
       const lockName = getLockNameForCoursePath(this.course.path);
       await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-        const startGitHash = await getOrUpdateCourseCommitHash(this.course);
-
         if (!config.fileEditorUseGit) {
           // If we are not using git (e.g., if we are running locally), then we:
           //
@@ -250,7 +234,7 @@ export abstract class Editor {
 
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
+          await syncCourseFromDisk(this.course, job);
           job.data.syncSucceeded = true;
 
           return;
@@ -265,6 +249,9 @@ export abstract class Editor {
           );
           return;
         }
+
+        const startGitHash =
+          this.course.commit_hash ?? (await getCourseCommitHash(this.course.path));
 
         // If we are using git (e.g., if we are running in production), then we:
         //
@@ -434,7 +421,7 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
+          await syncCourseFromDisk(this.course, job, courseData);
           job.data.syncSucceeded = true;
         }
       });

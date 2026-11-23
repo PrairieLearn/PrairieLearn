@@ -59,35 +59,56 @@ async function hashDirectory(directory: string): Promise<string> {
   return hash.digest('hex');
 }
 
-/** Must run under the course directory lock, before uploading any new archives. */
-export async function prepareQuestionVersions({
-  courseId,
-  coursePath,
-  courseData,
-  usesChunks,
-}: {
-  courseId: string;
-  coursePath: string;
-  courseData: CourseData;
-  usesChunks: boolean;
-}) {
+// Administrative chunk regeneration does not sync identities before loading archives.
+async function selectQuestionIdsForChunkRegeneration(courseId: string, courseData: CourseData) {
   const questions = await queryRows(
     sql.select_questions,
     { course_id: courseId },
     z.object({ id: IdSchema, qid: z.string(), uuid: z.string().nullable() }),
   );
-  const questionsByQid = new Map(questions.map((question) => [question.qid, question]));
+  const ids = new Map<string, string>();
+  for (const { id, qid, uuid } of questions) {
+    if (
+      Object.hasOwn(courseData.questions, qid) &&
+      uuid === (courseData.questions[qid].uuid?.toLowerCase() ?? null)
+    ) {
+      ids.set(qid, id);
+    }
+  }
+  return ids;
+}
+
+/** Must run under the course directory lock, before uploading any new archives. */
+export async function prepareQuestionVersions({
+  courseId,
+  coursePath,
+  courseData,
+  questionIds,
+  usesChunks,
+}: {
+  courseId: string;
+  coursePath: string;
+  courseData: CourseData;
+  questionIds?: Record<string, string>;
+  usesChunks: boolean;
+}) {
+  const idsByQid = questionIds
+    ? new Map(Object.entries(questionIds))
+    : await selectQuestionIdsForChunkRegeneration(courseId, courseData);
   const current = await queryRows(
     sql.select_current_versions,
     { course_id: courseId },
-    z.object({
-      question_version: QuestionVersionSchema,
-      complete: z.boolean(),
-    }),
+    QuestionVersionSchema.pick({
+      id: true,
+      question_id: true,
+      source_hash: true,
+      dependency_hash: true,
+      uses_chunks: true,
+    }).extend({ complete: z.boolean() }),
   );
   // Changed, invalid, and deleted questions all close their current version.
   // Remove versions from this map as we confirm they can stay open.
-  const versionsToClose = new Map(current.map((row) => [row.question_version.question_id, row]));
+  const versionsToClose = new Map(current.map((version) => [version.question_id, version]));
 
   // A dependency-only publication must advance the pin date even if the question archive is unchanged.
   const dependencyHashes = await Promise.all(
@@ -96,10 +117,6 @@ export async function prepareQuestionVersions({
     ),
   );
   const dependencyHash = computeStableHash(dependencyHashes);
-  const archived = current.filter(({ question_version }) => question_version.uses_chunks);
-  const dependenciesChanged =
-    archived.length === 0 ||
-    archived.some(({ question_version }) => question_version.dependency_hash !== dependencyHash);
   const fileHashes = new Map(
     await async.mapLimit(
       Object.keys(courseData.questions),
@@ -111,16 +128,8 @@ export async function prepareQuestionVersions({
   const versions: PendingQuestionVersion[] = [];
   const questionsToArchive = new Set<string>();
   for (const [qid, question] of Object.entries(courseData.questions)) {
-    const identity = questionsByQid.get(qid);
-    // Chunk regeneration can load disk without syncing identities first. Do not attach a new UUID's files to an old ID.
-    if (
-      !identity ||
-      identity.uuid !== question.uuid?.toLowerCase() ||
-      !question.data ||
-      infofile.hasErrors(question)
-    ) {
-      continue;
-    }
+    const questionId = idsByQid.get(qid);
+    if (!questionId || !question.data || infofile.hasErrors(question)) continue;
     const settings = getQuestionVersionSettings(qid, question.data);
     const templateHashes = new Map<string, string | undefined>();
     let template = question.data.template;
@@ -129,27 +138,32 @@ export async function prepareQuestionVersions({
       template = courseData.questions[template]?.data?.template;
     }
     const sourceHash = computeStableHash([qid, settings, fileHashes.get(qid), [...templateHashes]]);
-    const previous = versionsToClose.get(identity.id);
+    const previous = versionsToClose.get(questionId);
     const sourceIsCurrent =
-      previous?.question_version.source_hash === sourceHash &&
-      previous.question_version.uses_chunks === usesChunks &&
+      previous?.source_hash === sourceHash &&
+      previous.uses_chunks === usesChunks &&
       previous.complete;
-    if (sourceIsCurrent && previous.question_version.dependency_hash === dependencyHash) {
-      versionsToClose.delete(identity.id);
+    if (sourceIsCurrent && previous.dependency_hash === dependencyHash) {
+      versionsToClose.delete(questionId);
       continue;
     }
     // A new version can keep using its question archive when only course dependencies changed.
     if (usesChunks && !sourceIsCurrent) questionsToArchive.add(qid);
     versions.push({
-      question_id: identity.id,
+      question_id: questionId,
       source_hash: sourceHash,
       settings,
     });
   }
-  const supersededIds = Array.from(
-    versionsToClose.values(),
-    ({ question_version }) => question_version.id,
-  );
+  const supersededIds = Array.from(versionsToClose.values(), ({ id }) => id);
+  const archived = current.filter((version) => version.uses_chunks);
+  // Refresh dependencies for a new archived baseline. Without a version to publish,
+  // chunk generation can use its usual Git and missing-archive checks.
+  const dependenciesChanged =
+    usesChunks &&
+    versions.length > 0 &&
+    (archived.length === 0 ||
+      archived.some((version) => version.dependency_hash !== dependencyHash));
   return {
     versions,
     supersededIds,
@@ -193,6 +207,7 @@ export async function publishQuestionVersionsFromDisk(options: {
   courseId: string;
   coursePath: string;
   courseData: CourseData;
+  questionIds: Record<string, string>;
   commitHash: string | null;
 }) {
   const publication = await prepareQuestionVersions({ ...options, usesChunks: false });
