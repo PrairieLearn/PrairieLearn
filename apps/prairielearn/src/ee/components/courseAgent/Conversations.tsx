@@ -267,7 +267,7 @@ function ConversationPicker({
 }
 
 /** Requests staff can send as they are, for those who are not sure what to ask. */
-const STARTERS = [
+const STARTER_PROMPTS = [
   { icon: 'bi-pencil-square', text: 'Help me write a new question' },
   { icon: 'bi-bar-chart', text: 'Find and fix variants with wide score disparities' },
   { icon: 'bi-share', text: 'Share a set of questions with another course' },
@@ -279,38 +279,51 @@ function EmptyConversation({ onStart }: { onStart: (text: string) => void }) {
     <div className="my-3">
       <h3 className="h5 mb-3">What can I help with?</h3>
       <div className="course-agent-starters">
-        {STARTERS.map(({ icon, text }) => (
-          <button
-            key={text}
-            type="button"
-            className="course-agent-starter btn border rounded-3 p-2 d-flex flex-column gap-2 small text-start"
-            onClick={(event) => {
-              onStart(text);
-              // The request goes to the message box, not straight to the agent, so staff can
-              // change it first. The pulse shows where it went.
-              const composer = event.currentTarget
-                .closest('.course-agent-panel')
-                ?.querySelector<HTMLElement>('.course-agent-composer');
-              composer?.querySelector('textarea')?.focus();
-              composer?.classList.add('course-agent-composer-pulse');
-              composer?.addEventListener(
-                'animationend',
-                () => composer.classList.remove('course-agent-composer-pulse'),
-                { once: true },
-              );
-            }}
-          >
-            <span
-              className="course-agent-starter-icon rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
-              aria-hidden="true"
-            >
-              <i className={clsx('bi', icon)} />
-            </span>
-            {text}
-          </button>
+        {STARTER_PROMPTS.map(({ icon, text }) => (
+          <StarterPromptButton key={text} icon={icon} text={text} onStart={onStart} />
         ))}
       </div>
     </div>
+  );
+}
+
+function StarterPromptButton({
+  icon,
+  text,
+  onStart,
+}: {
+  icon: string;
+  text: string;
+  onStart: (text: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="course-agent-starter btn border rounded-3 p-2 d-flex flex-column gap-2 small text-start"
+      onClick={(event) => {
+        onStart(text);
+        // The request goes to the message box, not straight to the agent, so staff can change it
+        // first. The pulse shows where it went.
+        const composer = event.currentTarget
+          .closest('.course-agent-panel')
+          ?.querySelector<HTMLElement>('.course-agent-composer');
+        composer?.querySelector('textarea')?.focus();
+        composer?.classList.add('course-agent-composer-pulse');
+        composer?.addEventListener(
+          'animationend',
+          () => composer.classList.remove('course-agent-composer-pulse'),
+          { once: true },
+        );
+      }}
+    >
+      <span
+        className="course-agent-starter-icon rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+        aria-hidden="true"
+      >
+        <i className={clsx('bi', icon)} />
+      </span>
+      {text}
+    </button>
   );
 }
 
