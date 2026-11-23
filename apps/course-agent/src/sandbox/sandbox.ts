@@ -92,18 +92,29 @@ export type CourseSource =
 /** How a new sandbox got its course files, and how long each step took. */
 type CourseFilesSource =
   | { source: 'local' }
-  // `snapshotMs` is null when saving the snapshot failed.
+  // `snapshotMs` is null when no snapshot was saved from this clone.
   | { source: 'clone'; cloneMs: number; snapshotMs: number | null }
   | { source: 'snapshot'; restoreMs: number; fetchMs: number; checkoutMs: number };
 
+// Saving took about 3 seconds for a 370 MB repository in local testing. A save that stalls must
+// not hold up the conversation, which can start without a snapshot.
+const SNAPSHOT_SAVE_TIMEOUT_MS = 2 * 60 * 1000;
+
 /**
- * Where the record of a branch's snapshot is stored. The archive library names each archive
- * itself, so a new sandbox finds its branch's archive through this record. The repository name
- * is used exactly as configured: a snapshot's remote URL carries the spelling it was cloned with,
- * and the GitHub proxy accepts only the spelling of the conversation it serves.
+ * Where the record of a snapshot is stored. The archive library names each archive itself, so a
+ * new sandbox finds its archive through this record.
+ *
+ * A snapshot belongs to one course. Repository names can change hands: if another course's
+ * repository later took this name, a record found by name alone would hand that course this
+ * one's files. The repository name is used exactly as configured, because a snapshot's remote URL
+ * carries the spelling it was cloned with and the GitHub proxy accepts only the spelling of the
+ * conversation it serves.
  */
-function repositorySnapshotKey({ repository, branch }: { repository: string; branch: string }) {
-  return `repository-snapshots/${repository}@${branch}.json`;
+function repositorySnapshotKey(
+  courseId: string,
+  { repository, branch }: { repository: string; branch: string },
+) {
+  return `repository-snapshots/${courseId}/${repository}@${branch}.json`;
 }
 
 // The named types ctx.container.start() accepts; it rejects `basic`.
@@ -352,9 +363,10 @@ export class CourseSandbox extends DurableObject<Env> {
 
   /**
    * Unpack the local snapshot, or restore or clone the repository, into a freshly prepared
-   * workspace.
+   * workspace. Without a course ID, which an older PrairieLearn does not send, the repository is
+   * cloned and no snapshot is read or saved.
    */
-  async addCourseFiles(config: CourseSource): Promise<CourseFilesSource> {
+  async addCourseFiles(config: CourseSource, courseId?: string): Promise<CourseFilesSource> {
     let loaded: CourseFilesSource;
     if (config.type === 'local') {
       const archive = await this.env.CHECKPOINTS.get(config.archiveKey);
@@ -402,22 +414,28 @@ export class CourseSandbox extends DurableObject<Env> {
       );
       loaded = { source: 'local' };
     } else {
-      loaded = (await this.restoreRepository(config)) ?? (await this.cloneRepository(config));
+      const key = courseId ? repositorySnapshotKey(courseId, config) : null;
+      const restored = key ? await this.restoreRepository(config, key) : null;
+      loaded = restored ?? (await this.cloneRepository(config, key));
     }
     await this.lockSession();
     return loaded;
   }
 
   /**
-   * Clone a branch in a sandbox of its own, which saves a fresh snapshot, then remove the
-   * sandbox. This caches a course before its first conversation, or replaces a stale snapshot.
+   * Clone a course's branch in a sandbox of its own, which saves a fresh snapshot for that
+   * course, then remove the sandbox. This caches a course before its first conversation, or
+   * replaces a stale snapshot.
    */
-  async cacheRepository(source: { repository: string; branch: string }) {
+  async cacheRepository(courseId: string, source: { repository: string; branch: string }) {
     // An earlier attempt that never finished may have left its container behind.
     if (this.container.running) await this.container.destroy();
     try {
       await this.prepare({ type: 'github', ...source }, null);
-      const { cloneMs, snapshotMs } = await this.cloneRepository(source);
+      const { cloneMs, snapshotMs } = await this.cloneRepository(
+        source,
+        repositorySnapshotKey(courseId, source),
+      );
       if (snapshotMs === null) throw new Error('The clone could not be saved');
       return { cloneMs, snapshotMs };
     } finally {
@@ -425,10 +443,10 @@ export class CourseSandbox extends DurableObject<Env> {
     }
   }
 
-  private async cloneRepository(source: {
-    repository: string;
-    branch: string;
-  }): Promise<Extract<CourseFilesSource, { source: 'clone' }>> {
+  private async cloneRepository(
+    source: { repository: string; branch: string },
+    snapshotKey: string | null,
+  ): Promise<Extract<CourseFilesSource, { source: 'clone' }>> {
     const started = Date.now();
     // Reviews only need the branch tip, and later fetches still work from a shallow clone.
     // Full history made large course repositories take most of startup to clone.
@@ -450,25 +468,34 @@ export class CourseSandbox extends DurableObject<Env> {
       AGENT_USER,
     );
     const cloneMs = Date.now() - started;
-    return { source: 'clone', cloneMs, snapshotMs: await this.saveRepositorySnapshot(source) };
+    const snapshotMs = snapshotKey ? await this.saveRepositorySnapshot(snapshotKey) : null;
+    return { source: 'clone', cloneMs, snapshotMs };
   }
 
   /**
-   * Archive the Git directory of the clone just made, for later sandboxes on this branch to
-   * restore. This must run before the agent does: only then does the directory hold nothing but
+   * Archive the Git directory of the clone just made, for the course's later sandboxes on this
+   * branch to restore. This must run before the agent does: only then does the directory hold nothing but
    * what GitHub served. The working tree is left out because it is several times larger and a
    * sandbox checks it out locally in seconds. Returns how long saving took, or null if it failed.
    */
-  private async saveRepositorySnapshot(source: { repository: string; branch: string }) {
+  private async saveRepositorySnapshot(key: string) {
     const started = Date.now();
     try {
-      const key = repositorySnapshotKey(source);
-      const snapshot = await this.repositorySnapshots.backup({ dir: `${SESSION}/course/.git` });
-      // The newest clone becomes the branch's snapshot. A sandbox restoring the one it replaces
-      // fails that restore and clones instead.
+      const snapshot = await this.repositorySnapshots.backup({
+        dir: `${SESSION}/course/.git`,
+        signal: AbortSignal.timeout(SNAPSHOT_SAVE_TIMEOUT_MS),
+      });
+      // The record is written only if it is still as it was just read. Otherwise two sandboxes
+      // saving at once could each replace the record without deleting the other's archive.
       const previous = await this.env.CHECKPOINTS.get(key);
-      await this.env.CHECKPOINTS.put(key, JSON.stringify(snapshot));
-      if (previous) {
+      const published = await this.env.CHECKPOINTS.put(key, JSON.stringify(snapshot), {
+        onlyIf: previous ? { etagMatches: previous.etag } : new Headers({ 'If-None-Match': '*' }),
+      });
+      if (!published) {
+        // Another sandbox saved a snapshot in the meantime. Theirs stays.
+        await this.repositorySnapshots.delete(snapshot);
+      } else if (previous) {
+        // A sandbox restoring the replaced archive fails that restore and clones instead.
         await this.repositorySnapshots.delete(await previous.json<DirectoryBackupRecord>());
       }
       return Date.now() - started;
@@ -480,19 +507,19 @@ export class CourseSandbox extends DurableObject<Env> {
   }
 
   /**
-   * Restore the branch's snapshot, if it has one, then fetch and check out the branch tip, which
-   * downloads only what changed since the snapshot was saved. The result matches a fresh clone
-   * except that objects the branch no longer uses stay in the object store. Returns null when the
-   * caller should clone instead.
+   * Restore the snapshot that the key names, if there is one, then fetch and check out the branch
+   * tip, which downloads only what changed since the snapshot was saved. The result matches a
+   * fresh clone except that objects the branch no longer uses stay in the object store. Returns
+   * null when the caller should clone instead.
    */
-  private async restoreRepository(source: {
-    repository: string;
-    branch: string;
-  }): Promise<CourseFilesSource | null> {
+  private async restoreRepository(
+    source: { repository: string; branch: string },
+    snapshotKey: string,
+  ): Promise<CourseFilesSource | null> {
     const course = `${SESSION}/course`;
     const { branch } = source;
     try {
-      const saved = await this.env.CHECKPOINTS.get(repositorySnapshotKey(source));
+      const saved = await this.env.CHECKPOINTS.get(snapshotKey);
       if (!saved) return null;
       const started = Date.now();
       await this.exec(['mkdir', course], AGENT_USER);

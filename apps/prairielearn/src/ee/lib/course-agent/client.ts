@@ -178,15 +178,18 @@ export async function deliverCourseAgentReviewResult(
 }
 
 /**
- * Have the service clone a repository branch and save it as the copy that the branch's new
- * sandboxes restore. This waits for the clone, which can take minutes for a large repository.
+ * Have the service clone a course's repository branch and save it as the copy that the course's
+ * new sandboxes restore. This waits for the clone, which can take minutes for a large repository.
  */
-export async function cacheCourseAgentRepository(binding: { repository: string; branch: string }) {
+export async function cacheCourseAgentRepository(
+  courseId: string,
+  binding: { repository: string; branch: string },
+) {
   const { url, headers } = buildCourseAgentServiceRequest('repository-snapshots');
   const response = await fetch(url, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify(binding),
+    body: JSON.stringify({ courseId, ...binding }),
     // Node gives up on a response that has not started within five minutes anyway. The service
     // may still finish a clone that takes longer.
     signal: AbortSignal.timeout(5 * 60 * 1000),

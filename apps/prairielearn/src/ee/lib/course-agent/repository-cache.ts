@@ -45,7 +45,7 @@ async function cacheCourseRepository(courseId: string, job: ServerJob) {
   const binding = { repository: `${repository.owner}/${repository.repo}`, branch: course.branch };
   const name = `${binding.repository} (${binding.branch})`;
   try {
-    const { cloneMs, snapshotMs } = await cacheCourseAgentRepository(binding);
+    const { cloneMs, snapshotMs } = await cacheCourseAgentRepository(course.id, binding);
     job.info(
       `Cached ${name}: cloned in ${formatInterval(cloneMs)}, saved in ${formatInterval(snapshotMs)}`,
     );

@@ -32,10 +32,11 @@ function createBucket() {
   return {
     get: async (key: string) => {
       const value = objects.get(key);
-      return value === undefined ? null : { json: async () => JSON.parse(value) };
+      return value === undefined ? null : { etag: 'etag', json: async () => JSON.parse(value) };
     },
     put: async (key: string, value: string) => {
       objects.set(key, value);
+      return {};
     },
   };
 }
@@ -71,9 +72,9 @@ function createSandbox(bucket: ReturnType<typeof createBucket>) {
 }
 
 /** Start a conversation's sandbox and report which commands it ran to get the course files. */
-async function startConversation(bucket: ReturnType<typeof createBucket>) {
+async function startConversation(bucket: ReturnType<typeof createBucket>, courseId = '1') {
   const { sandbox, commands } = createSandbox(bucket);
-  await sandbox.addCourseFiles(course);
+  await sandbox.addCourseFiles(course, courseId);
   return commands;
 }
 
@@ -109,9 +110,17 @@ describe('a new conversation on a GitHub course', () => {
   it('restores a copy that an administrator cached ahead of time', async () => {
     const bucket = createBucket();
     archives.backup.mockResolvedValue({ id: 'cached ahead' });
-    await createSandbox(bucket).sandbox.cacheRepository(course);
+    await createSandbox(bucket).sandbox.cacheRepository('1', course);
 
     expect(await startConversation(bucket)).not.toContain(clone);
     expect(archives.restore).toHaveBeenCalledWith({ id: 'cached ahead' }, expect.anything());
+  });
+
+  it('does not share a copy with another course that uses the same repository', async () => {
+    const bucket = createBucket();
+    archives.backup.mockResolvedValue({ id: 'saved copy' });
+    await startConversation(bucket, '1');
+
+    expect(await startConversation(bucket, '2')).toContain(clone);
   });
 });

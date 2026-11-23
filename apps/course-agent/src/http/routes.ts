@@ -1,5 +1,6 @@
 import { getAgentByName } from 'agents';
 import { Hono } from 'hono';
+import { z } from 'zod';
 
 import {
   CreateConversationInput,
@@ -80,14 +81,16 @@ app.post('/conversations', async (c) => {
 // An administrator caches a course before its first conversation, or replaces a stale copy. The
 // clone runs in a sandbox of its own, and the response waits for it.
 app.post('/repository-snapshots', async (c) => {
-  const input = RepositoryBranchSchema.safeParse(await c.req.json().catch(() => null));
+  const input = RepositoryBranchSchema.extend({ courseId: z.string().regex(/^\d+$/) }).safeParse(
+    await c.req.json().catch(() => null),
+  );
   if (!input.success) return c.text('Invalid request', 400);
-  const { repository, branch } = input.data;
+  const { courseId, ...source } = input.data;
   const sandbox = c.env.CourseSandbox.getByName(
-    `repository-snapshot:${repository.toLowerCase()}@${branch}`,
+    `repository-snapshot:${courseId}:${source.repository}@${source.branch}`,
   );
   try {
-    return c.json(await sandbox.cacheRepository(input.data));
+    return c.json(await sandbox.cacheRepository(courseId, source));
   } catch (error) {
     // Git's own message tells the administrator what to fix, such as a branch that does not exist.
     reportError(error);
