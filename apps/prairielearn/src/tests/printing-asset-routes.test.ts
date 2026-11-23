@@ -77,7 +77,7 @@ describe('Print asset routes', () => {
     const assessmentAsset = await fetch(`${assessmentUrl}/clientFilesCourse/data.txt`, { headers });
     assert.equal(assessmentAsset.status, 200);
     assert.equal((await fetch(`${assessmentUrl}/questions`, { headers })).status, 403);
-    assert.equal((await fetch(`${formUrl}/preview?paper_size=Letter`, { headers })).status, 403);
+    assert.equal((await fetch(`${formUrl}/preview`, { headers })).status, 403);
     assert.equal(
       (
         await fetch(

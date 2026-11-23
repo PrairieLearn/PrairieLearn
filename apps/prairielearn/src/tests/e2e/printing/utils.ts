@@ -2,7 +2,6 @@ import type { Page } from '@playwright/test';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import { printLayoutSearch } from '../../../lib/client/printing/print-preparation.js';
 import { getAssessmentTrpcUrl, getPrintFormUrl } from '../../../lib/client/url.js';
 import * as codeCaller from '../../../lib/code-caller/index.js';
 import { config } from '../../../lib/config.js';
@@ -11,7 +10,11 @@ import { createPrintForm } from '../../../lib/printing/print-forms.js';
 import type { PrintSettings } from '../../../lib/printing/print-settings.js';
 import { selectAssessmentByTid } from '../../../models/assessment.js';
 import { selectCourseById } from '../../../models/course.js';
-import { selectOptionalPrintForm, updatePrintFormSettings } from '../../../models/print-form.js';
+import {
+  selectOptionalPrintForm,
+  updatePrintFormPaperSize,
+  updatePrintFormSettings,
+} from '../../../models/print-form.js';
 import * as freeformServer from '../../../question-servers/freeform.js';
 import { createAssessmentTrpcClient } from '../../../trpc/assessment/client.js';
 import { getConfiguredUser } from '../../utils/auth.js';
@@ -55,12 +58,14 @@ export async function waitForPrintablePage(page: Page): Promise<void> {
   expect(state).toEqual({ status: 'ready', error: undefined });
 }
 
-/** Saves layout settings for a form and returns the preview search that its exports match. */
+/** Saves layout settings for a form; previews and exports use its saved settings. */
 export async function savePrintSettings(printForm: PrintForm, settings: Partial<PrintSettings>) {
-  const current = (await selectOptionalPrintForm({
-    printFormId: printForm.id,
-    assessmentId: printForm.assessment_id,
-  }))!.settings;
+  const ids = { printFormId: printForm.id, assessmentId: printForm.assessment_id };
+  // Paper size is shared by all current forms, so it has its own update.
+  if (settings.paperSize) {
+    await updatePrintFormPaperSize({ ...ids, paperSize: settings.paperSize });
+  }
+  const current = (await selectOptionalPrintForm(ids))!.settings;
   const updated = { ...current, ...settings };
   await updatePrintFormSettings({
     printFormId: printForm.id,
@@ -68,7 +73,6 @@ export async function savePrintSettings(printForm: PrintForm, settings: Partial<
     settings: updated,
     expectedSettings: current,
   });
-  return printLayoutSearch(updated);
 }
 
 /** Queues a Word export of the user's latest preview and returns its download. */

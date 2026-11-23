@@ -1,13 +1,20 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import type { PrintSettings } from '../../../lib/printing/print-settings.js';
 import { syncCourse } from '../../helperCourse.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { createPrintableForm, waitForPrintablePage } from './utils.js';
+import { createPrintableForm, savePrintSettings, waitForPrintablePage } from './utils.js';
+
+/** Saves preview settings for the form and returns its preview URL. */
+type PreviewWith = (
+  settings: Partial<PrintSettings>,
+  document?: 'assessment' | 'answer_key',
+) => Promise<string>;
 
 const test = createTest({ features: { 'printable-assessments': true } }).extend<{
-  imageQuestion: (html: string) => Promise<string>;
+  imageQuestion: (html: string) => Promise<PreviewWith>;
 }>({
   imageQuestion: async ({ testCoursePath, courseInstance }, provide) => {
     const questionPath = path.join(testCoursePath, 'questions/addNumbers/question.html');
@@ -16,8 +23,14 @@ const test = createTest({ features: { 'printable-assessments': true } }).extend<
       await provide(async (html) => {
         await fs.writeFile(questionPath, html);
         await syncCourse(testCoursePath);
-        const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
-        return `${printUrl}/preview`;
+        const { printUrl, printForm } = await createPrintableForm(
+          courseInstance,
+          'exam20-assessmentTools',
+        );
+        return async (settings, document = 'assessment') => {
+          await savePrintSettings(printForm, settings);
+          return `${printUrl}/preview?document=${document}`;
+        };
       });
     } finally {
       await fs.writeFile(questionPath, original);
@@ -58,9 +71,9 @@ test('fits image choices uniformly within the paper and requested question block
     ['Letter', 'auto'],
     ['A4', 'auto'],
     ['Letter', 'half'],
-  ]) {
+  ] as const) {
     const response = await page.goto(
-      `${preview}?exclude_question=2&paper_size=${paperSize}&block_size=${blockSize}`,
+      await preview({ excludedQuestions: ['2'], paperSize, blockSize }),
     );
     expect(response!.ok()).toBe(true);
     await waitForPrintablePage(page);
@@ -101,7 +114,10 @@ test('fits image choices uniformly within the paper and requested question block
     }
   }
   const response = await page.goto(
-    `${preview}?exclude_question=2&paper_size=Letter&document=answer_key&block_size=auto`,
+    await preview(
+      { excludedQuestions: ['2'], paperSize: 'Letter', blockSize: 'auto' },
+      'answer_key',
+    ),
   );
   expect(response!.ok()).toBe(true);
   await waitForPrintablePage(page);
@@ -124,8 +140,8 @@ test('lets image choices flow across pages before shrinking them below legible s
       dimensions: Array.from({ length: 10 }, () => ({ width: 250, height: 250 })),
     }),
   );
-  for (const paperSize of ['Letter', 'A4']) {
-    await page.goto(`${preview}?exclude_question=2&paper_size=${paperSize}`);
+  for (const paperSize of ['Letter', 'A4'] as const) {
+    await page.goto(await preview({ excludedQuestions: ['2'], paperSize }));
     await waitForPrintablePage(page);
     const images = page.getByRole('img', { name: /^Image choice / });
     await expect(images).toHaveCount(10);
@@ -167,7 +183,7 @@ test('moves a question that outgrows its requested block to the next page', asyn
     </style><pl-question-panel><p>Keep this question on the first page.</p></pl-question-panel><pl-integer-input answers-name="value" correct-answer="1"></pl-integer-input>`,
   );
 
-  await page.goto(`${preview}?paper_size=Letter&block_size=half`);
+  await page.goto(await preview({ paperSize: 'Letter', blockSize: 'half' }));
   await waitForPrintablePage(page);
   const questions = page.getByRole('region', { name: /^Question [12]$/ });
   await expect(questions).toHaveCount(2);
@@ -205,7 +221,7 @@ test('flows content that outgrows a page without removing text or images', async
     })}`,
   );
   const response = await page.goto(
-    `${preview}?exclude_question=2&paper_size=Letter&block_size=half`,
+    await preview({ excludedQuestions: ['2'], paperSize: 'Letter', blockSize: 'half' }),
   );
   expect(response!.ok()).toBe(true);
   await waitForPrintablePage(page);

@@ -256,7 +256,7 @@ describe('student data access', { timeout: 60_000, concurrent: false }, function
     });
     await features.enable('printable-assessments');
     const formUrl = `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/print_form/1`;
-    const url = `${formUrl}/preview?paper_size=Letter&document=answer_key`;
+    const url = `${formUrl}/preview?document=answer_key`;
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student%20Data%20Viewer',

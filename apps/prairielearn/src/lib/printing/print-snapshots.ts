@@ -42,23 +42,17 @@ export type PrintSnapshotSummary = z.infer<typeof PrintSnapshotSummarySchema>;
  * for the same user and an unchanged form.
  */
 export interface PrintSnapshotIdentity {
-  /** The creation time keeps keys unique if form IDs repeat, e.g. after a database reset. */
-  printForm: Pick<PrintForm, 'id' | 'created_at'>;
+  /**
+   * Previews use the form's saved settings. The creation time keeps keys unique if form IDs
+   * repeat, e.g. after a database reset.
+   */
+  printForm: Pick<PrintForm, 'id' | 'created_at' | 'settings'>;
   /** Course changes since the preview, e.g. a fixed question, make it stale. */
   courseCommitHash: string | null;
   document: PrintDocument;
   authnUserId: string;
   userId: string;
-  layout: string;
   questionListDigest: string;
-}
-
-/** Normalizes a preview's layout query so the preview and exports derive the same key. */
-export function printSnapshotLayout(search: URLSearchParams): string {
-  const params = new URLSearchParams(search);
-  params.delete('document');
-  params.sort();
-  return params.toString();
 }
 
 function printSnapshotKey(identity: PrintSnapshotIdentity): string {
@@ -71,7 +65,7 @@ function printSnapshotKey(identity: PrintSnapshotIdentity): string {
         identity.document,
         identity.authnUserId,
         identity.userId,
-        identity.layout,
+        identity.printForm.settings,
         identity.questionListDigest,
       ]),
     )

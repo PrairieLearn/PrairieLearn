@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const PrintIdentityFieldsSchema = z
+const PrintIdentityFieldsSchema = z
   .array(
     z
       .string()
