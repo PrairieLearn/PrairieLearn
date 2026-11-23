@@ -1003,7 +1003,7 @@ function Composer({
         <Form.Control
           as="textarea"
           rows={2}
-          className="course-agent-composer-input border-0 shadow-none bg-transparent mb-1"
+          className="course-agent-composer-input border-0 shadow-none bg-transparent p-0"
           value={draft}
           placeholder={placeholder}
           aria-label="Message"
