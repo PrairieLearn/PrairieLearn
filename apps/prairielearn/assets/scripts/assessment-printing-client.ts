@@ -245,7 +245,6 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
   }
 }
 
-/** Convert details to regular blocks so closed content prints and long content can span pages. */
 /**
  * Omits questions whose elements or images did not finish rendering, and reports them the same
  * way as questions that the server could not render, so downloads stay blocked until they are
@@ -254,6 +253,8 @@ function replaceCanvasesWithImages(source: HTMLElement): void {
 function omitIncompleteQuestions(failures: Element[], message: string): void {
   const omitted = new Set<HTMLElement>();
   for (const element of failures) {
+    // A widget may have replaced the element, or an earlier failure already omitted its question.
+    if (!element.isConnected) continue;
     let question = element.closest<HTMLElement>('.printing-question');
     let root = element.getRootNode();
     while (!question && root instanceof ShadowRoot) {
@@ -282,6 +283,7 @@ function omitIncompleteQuestions(failures: Element[], message: string): void {
   data.printQuestionCount = String(Number(data.printQuestionCount) - omitted.size);
 }
 
+/** Convert details to regular blocks so closed content prints and long content can span pages. */
 function materializePrintableDetails(source: HTMLElement): void {
   const detailsBlocks = [
     ...source.querySelectorAll<HTMLDetailsElement>('.printing-question details'),
@@ -572,10 +574,17 @@ async function paginateAssessment(): Promise<{ totalPages: number }> {
   annotateDocxMath(source);
   await document.fonts.ready;
   replaceCanvasesWithImages(source);
+  const failedImages = await waitForPrintImages(source, READINESS_TIMEOUT_MS);
+  // The renderer blocks requests to other sites, so those images can never load.
+  const isFromOtherSite = (image: HTMLImageElement) => {
+    const url = new URL(image.currentSrc || image.src, location.href);
+    return url.protocol.startsWith('http') && url.origin !== location.origin;
+  };
   omitIncompleteQuestions(
-    await waitForPrintImages(source, READINESS_TIMEOUT_MS),
-    'has an image that could not be loaded',
+    failedImages.filter(isFromOtherSite),
+    'uses an image from another website, which printing cannot include',
   );
+  omitIncompleteQuestions(failedImages, 'has an image that could not be loaded');
   const { height: pageHeight } = measurePrintablePage(source);
   layoutPrintGradingTable(source, pageHeight);
   if (document.documentElement.dataset.printDocument === 'answer_key') {

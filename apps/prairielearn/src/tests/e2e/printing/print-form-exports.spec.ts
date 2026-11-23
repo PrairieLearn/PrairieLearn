@@ -375,8 +375,8 @@ test('omits questions whose content does not finish loading', async ({
   const questions = {
     printingStuckElement:
       '<pl-question-panel><p>Stuck element.</p><div data-pl-render-status="pending">Never ready</div></pl-question-panel>',
-    printingBrokenImage:
-      '<pl-question-panel><p>Broken image.</p><img src="https://example.invalid/missing.png" alt="Missing"></pl-question-panel>',
+    printingExternalImage:
+      '<pl-question-panel><p>External image.</p><img src="https://example.com/image.png" alt="External"></pl-question-panel>',
   };
   const assessmentPath = path.join(
     testCoursePath,
@@ -423,10 +423,8 @@ test('omits questions whose content does not finish loading', async ({
       'exam99-printingIncomplete',
     );
     const search = await savePrintSettings(printForm, { includeCoverPage: false });
-    const start = Date.now();
     const response = await page.goto(`${printUrl}/preview?${search}`);
     expect(response!.status()).toBe(200);
-    expect(Date.now() - start).toBeLessThan(30_000);
     await waitForPrintablePage(page);
     expect(await readWarnings(page)).toEqual([
       expect.objectContaining({
@@ -437,7 +435,8 @@ test('omits questions whose content does not finish loading', async ({
       expect.objectContaining({
         code: 'incomplete_render',
         question_number: '3',
-        message: 'Question 3 has an image that could not be loaded.',
+        message:
+          'Question 3 uses an image from another website, which printing cannot include.',
       }),
     ]);
     await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');

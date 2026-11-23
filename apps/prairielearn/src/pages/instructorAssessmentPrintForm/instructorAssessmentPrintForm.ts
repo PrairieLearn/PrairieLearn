@@ -2,6 +2,7 @@ import { type ErrorRequestHandler, type RequestHandler, Router, raw } from 'expr
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 import {
   IdSchema,
@@ -467,6 +468,11 @@ router.use(((err, req, res, next) => {
 
   // The preparation page shows previews in an iframe and reads errors from the framed page.
   const status = err.status ?? 500;
+  logger[status >= 500 ? 'error' : 'verbose']('Print preview error', {
+    err,
+    url: req.originalUrl,
+    response_id: res.locals.response_id,
+  });
   if (status >= 500) Sentry.captureException(err);
   const message =
     err instanceof PrintablePageError
@@ -478,7 +484,7 @@ router.use(((err, req, res, next) => {
   res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'self';",
+    "default-src 'none'; frame-ancestors 'self';",
   );
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.send(InstructorAssessmentPrintFormError({ message }).toString());
