@@ -5,6 +5,8 @@ import { CourseActionCardSchema, type CourseActionResult } from '@prairielearn/c
 import type { CourseAgentAction } from '../../../../lib/db-types.js';
 import { getJobSequence } from '../../../../lib/server-jobs.js';
 
+import { COURSE_AGENT_ACTIONS } from './index.js';
+
 // The agent receives a job's output as its result; the end of a long log says how it finished.
 const MAX_JOB_OUTPUT_LENGTH = 4000;
 
@@ -27,7 +29,9 @@ export function deniedCourseActionResult(
 
 export function finishedCourseActionResult(
   action: CourseAgentAction,
-  outcome: { status: 'succeeded'; summary: string } | { status: 'failed'; error: string },
+  outcome:
+    | { status: 'succeeded'; summary: string; details?: string }
+    | { status: 'failed'; error: string; details?: string },
 ): CourseActionResult {
   return { decision: 'approved', action: named(action), outcome };
 }
@@ -55,10 +59,21 @@ export async function selectCourseActionJobResult({
   const output = stripVTControlCharacters(sequence.jobs.map((job) => job.output ?? '').join('\n'))
     .trim()
     .slice(-MAX_JOB_OUTPUT_LENGTH);
-  return finishedCourseActionResult(
-    action,
-    sequence.status === 'Success'
-      ? { status: 'succeeded', summary: output || 'Finished.' }
-      : { status: 'failed', error: output || 'The job did not finish.' },
-  );
+  const details = output ? { details: output } : {};
+  if (sequence.status !== 'Success') {
+    return finishedCourseActionResult(action, {
+      status: 'failed',
+      error: 'The job stopped before it finished.',
+      ...details,
+    });
+  }
+  // An action removed since it was requested has no summary of its own.
+  const summarizeJob = Object.hasOwn(COURSE_AGENT_ACTIONS, action.action)
+    ? COURSE_AGENT_ACTIONS[action.action].summarizeJob
+    : undefined;
+  return finishedCourseActionResult(action, {
+    status: 'succeeded',
+    summary: (await summarizeJob?.({ jobSequenceId: job_sequence_id })) ?? 'Done.',
+    ...details,
+  });
 }

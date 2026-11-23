@@ -540,8 +540,17 @@ export const CourseActionResultSchema = z
     action: z.strictObject({ name: z.string().max(100), title: z.string().max(200) }),
     outcome: z.discriminatedUnion('status', [
       z.strictObject({ status: z.literal('not_attempted') }),
-      z.strictObject({ status: z.literal('succeeded'), summary: z.string() }),
-      z.strictObject({ status: z.literal('failed'), error: z.string() }),
+      // `details` holds a background job's log, for the agent; staff see `summary` or `error`.
+      z.strictObject({
+        status: z.literal('succeeded'),
+        summary: z.string(),
+        details: z.string().optional(),
+      }),
+      z.strictObject({
+        status: z.literal('failed'),
+        error: z.string(),
+        details: z.string().optional(),
+      }),
       // PrairieLearn lost track of the action before recording how it ended.
       z.strictObject({ status: z.literal('unknown') }),
     ]),

@@ -280,6 +280,7 @@ export const attemptActions = {
         }),
       };
     },
+    summarizeJob: async () => 'Graded and closed the attempts.',
   }),
   assessment_instances_set_score: assessmentAction({
     group: 'assessment_instances',

@@ -11,7 +11,10 @@ import {
   AI_GRADING_MODEL_IDS,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../ai-grading/ai-grading-models.shared.js';
-import { selectInstanceQuestionsForAssessmentQuestion } from '../../ai-grading/ai-grading-util.js';
+import {
+  countAiGradingJobsForJobSequence,
+  selectInstanceQuestionsForAssessmentQuestion,
+} from '../../ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../ai-grading/ai-grading.js';
 
 import {
@@ -180,6 +183,12 @@ export const aiGradingActions = {
         }
         throw error;
       }
+    },
+    summarizeJob: async ({ jobSequenceId }) => {
+      const graded = await countAiGradingJobsForJobSequence(jobSequenceId);
+      return graded === 0
+        ? 'AI grading finished without grading any answers.'
+        : `AI graded ${count(graded, 'answer')}.`;
     },
   }),
 };

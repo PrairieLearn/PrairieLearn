@@ -102,6 +102,11 @@ interface CourseActionDefinition<Schema extends z.ZodObject, Context extends Cou
   describe: (args: { ctx: Context; input: z.infer<Schema> }) => Promise<CourseActionDescription>;
   /** Carries the action out and says, in one sentence, what happened. */
   run: (args: { ctx: Context; input: z.infer<Schema> }) => Promise<CourseActionOutcome>;
+  /**
+   * For an action that runs as a job: says, in one sentence, what the finished job did. Staff see
+   * this instead of the job's log, which the agent receives too.
+   */
+  summarizeJob?: (args: { jobSequenceId: string }) => Promise<string>;
 }
 
 export interface CourseAction {
@@ -112,6 +117,7 @@ export interface CourseAction {
   input: z.ZodObject;
   describe: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionCard>;
   run: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionOutcome>;
+  summarizeJob?: (args: { jobSequenceId: string }) => Promise<string>;
 }
 
 const MAX_CARD_ROWS = 20;
@@ -176,6 +182,7 @@ function build<Schema extends z.ZodObject, Context extends CourseActionContext>(
       });
     },
     run: async (ctx, raw) => await definition.run(await check(ctx, raw)),
+    summarizeJob: definition.summarizeJob,
   };
 }
 

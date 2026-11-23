@@ -208,6 +208,16 @@ export function ActionCard({
   );
 }
 
+/** A background job's log, which staff open only when they want it. */
+function JobDetails({ details }: { details: string }) {
+  return (
+    <details className="small mt-2">
+      <summary className="text-body-secondary">Show details</summary>
+      <pre className="text-wrap mt-2 mb-0 course-agent-action-details">{details}</pre>
+    </details>
+  );
+}
+
 function ActionResult({ result }: { result: CourseActionResult }) {
   if (result.decision === 'denied') {
     return (
@@ -219,16 +229,20 @@ function ActionResult({ result }: { result: CourseActionResult }) {
   switch (result.outcome.status) {
     case 'succeeded':
       return (
-        <p className="mb-0 text-success" role="status">
-          <i className="bi bi-check-lg me-1" aria-hidden="true" />
-          {result.outcome.summary}
-        </p>
+        <div role="status">
+          <p className="mb-0 text-success">
+            <i className="bi bi-check-lg me-1" aria-hidden="true" />
+            {result.outcome.summary}
+          </p>
+          {result.outcome.details && <JobDetails details={result.outcome.details} />}
+        </div>
       );
     case 'failed':
       return (
         <div role="status">
           <p className="mb-0">This could not be done.</p>
           <pre className="small text-wrap mt-2 mb-0">{result.outcome.error}</pre>
+          {result.outcome.details && <JobDetails details={result.outcome.details} />}
         </div>
       );
     default:

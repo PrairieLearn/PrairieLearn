@@ -595,6 +595,15 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription, unrecognizedKeys };
 }
 
+/** How many answers a run of AI grading graded. */
+export async function countAiGradingJobsForJobSequence(job_sequence_id: string): Promise<number> {
+  return await queryScalar(
+    sql.count_ai_grading_jobs_for_job_sequence,
+    { job_sequence_id },
+    z.number(),
+  );
+}
+
 export async function selectInstanceQuestionsForAssessmentQuestion({
   assessment_question_id,
   closed_instance_questions_only = false,

@@ -371,7 +371,12 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
       instance_question_ids: [first.id],
       model_id: 'gpt-6-sol',
     });
-    expect(graded.result.outcome).toMatchObject({ status: 'succeeded' });
+    // Staff see what the job did; the agent also gets its log.
+    expect(graded.result.outcome).toEqual({
+      status: 'succeeded',
+      summary: 'AI grading finished without grading any answers.',
+      details: 'Graded 1 submission.',
+    });
   });
 
   test('closes an open attempt with a grading job, then reopens it', async () => {
@@ -384,8 +389,11 @@ describe('Course agent attempt actions', { timeout: 60_000, concurrent: false },
       title: 'Grade and close 1 attempt',
       rows: [{ label: 'dev@example.com', detail: 'Now: Open (no time limit)' }],
     });
-    // The result is the grading job's own log.
-    expect(closed.result).toMatchObject({ decision: 'approved', outcome: { status: 'succeeded' } });
+    // Staff see what the job did; the agent also gets the grading job's log.
+    expect(closed.result).toMatchObject({
+      decision: 'approved',
+      outcome: { status: 'succeeded', summary: 'Graded and closed the attempts.' },
+    });
     expect((await attempt()).open).toBe(false);
 
     // A closed attempt keeps its time limit unless asked to reopen.
