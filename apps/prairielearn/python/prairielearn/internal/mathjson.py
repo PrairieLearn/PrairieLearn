@@ -6,6 +6,9 @@ import json
 from typing import TypedDict
 
 import sympy
+from sympy.assumptions.assume import AppliedPredicate
+
+from prairielearn.set_builder import SetBuilderSet, set_builder_from_standard
 
 
 class MathJsonAttributes(TypedDict, total=False):
@@ -117,6 +120,65 @@ def sympy_to_mathjson(expr: sympy.Basic) -> MathJsonExpression:
             return {"num": str(expr)}
         case sympy.Symbol():
             return expr.name
+        case SetBuilderSet():
+            domain_conditions: list[MathJsonExpression] = [
+                ["Element", sympy_to_mathjson(variable), sympy_to_mathjson(domain)]
+                for variable, domain in zip(
+                    expr.bound_variables, expr.domains, strict=True
+                )
+            ]
+            if expr.condition is not sympy.true:
+                domain_conditions.append(sympy_to_mathjson(expr.condition))
+            condition: MathJsonExpression
+            if len(domain_conditions) == 1:
+                condition = domain_conditions[0]
+            else:
+                condition = ["And", *domain_conditions]
+            return [
+                "Set",
+                sympy_to_mathjson(expr.body),
+                ["Condition", condition],
+            ]
+        case sympy.ConditionSet() | sympy.ImageSet():
+            builder = set_builder_from_standard(expr)
+            if builder is None:
+                raise TypeError(f"unsupported SymPy object: {expr}")
+            return sympy_to_mathjson(builder)
+        case AppliedPredicate():
+            return [
+                str(expr.function).removeprefix("Q."),
+                *(sympy_to_mathjson(argument) for argument in expr.arguments),
+            ]
+        case sympy.Contains():
+            return [
+                "Element",
+                sympy_to_mathjson(expr.args[0]),
+                sympy_to_mathjson(expr.args[1]),
+            ]
+        case sympy.Equality():
+            return ["Equal", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.Unequality():
+            return ["NotEqual", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.StrictLessThan():
+            return ["Less", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.LessThan():
+            return ["LessEqual", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.StrictGreaterThan():
+            return ["Greater", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.GreaterThan():
+            return ["GreaterEqual", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.And():
+            return ["And", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.Or():
+            return ["Or", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.Not():
+            return ["Not", sympy_to_mathjson(expr.args[0])]
+        case sympy.Xor():
+            return ["Xor", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.Implies():
+            return ["Implies", *(sympy_to_mathjson(arg) for arg in expr.args)]
+        case sympy.Equivalent():
+            return ["Equivalent", *(sympy_to_mathjson(arg) for arg in expr.args)]
         case sympy.Tuple():
             return ["Tuple", *(sympy_to_mathjson(arg) for arg in expr.args)]
         case sympy.Add():

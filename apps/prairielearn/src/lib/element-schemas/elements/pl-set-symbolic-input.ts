@@ -13,6 +13,7 @@ const plSetSymbolicInputAttributesSchema = z
     'blank-value': z.string().optional(),
     'correct-answer': z.string().optional(),
     'custom-functions': z.string().optional(),
+    'custom-predicates': z.string().optional(),
     display: z.enum(['block', 'inline']).optional(),
     'display-log-as-ln': booleanFormat().optional(),
     'display-simplified-expression': booleanFormat().optional(),

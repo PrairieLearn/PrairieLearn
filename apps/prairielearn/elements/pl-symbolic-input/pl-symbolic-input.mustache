@@ -40,6 +40,7 @@
                 data-placeholder-text = "{{placeholder}}"
                 data-variables="{{variables}}"
                 custom-functions="{{custom_functions}}"
+                custom-predicates="{{custom_predicates}}"
                 {{#log_as_ln}}log-as-ln="log-as-ln"{{/log_as_ln}}
                 {{#imaginary_unit}}imaginary-unit="{{imaginary_unit}}"{{/imaginary_unit}}
                 {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
@@ -136,6 +137,7 @@
                 id="symbolic-input-parse-error-{{uuid}}"
                 read-only
                 custom-functions="{{custom_functions}}"
+                custom-predicates="{{custom_predicates}}"
                 {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
                 {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
                 class="read-only"
@@ -215,6 +217,7 @@ ${{a_sub}}$
             {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
             {{#allow_sets}}allow-sets="allow-sets"{{/allow_sets}}
             custom-functions="{{custom_functions}}"
+            custom-predicates="{{custom_predicates}}"
             class="read-only"
         >
             {{raw_submitted_answer_latex}}
