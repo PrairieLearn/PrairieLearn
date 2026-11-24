@@ -166,12 +166,12 @@ function matchDecision(
     throw new HttpStatusError(
       409,
       review.decision === 'approved'
-        ? 'These changes were already approved, so your message was not sent. Send it again once the course agent continues.'
-        : 'These changes were already denied, so your message was not sent. Send it again once the course agent continues.',
+        ? 'This was already approved, so your message was not sent. Send it again once the course agent continues.'
+        : 'This was already denied, so your message was not sent. Send it again once the course agent continues.',
     );
   }
   if (review.decision !== decision) {
-    throw new HttpStatusError(409, 'This review already has a different decision.');
+    throw new HttpStatusError(409, 'This was already decided the other way.');
   }
   return { decision };
 }
@@ -188,7 +188,7 @@ async function deliverDenialByMessage(
   if (!(await deliverResult(conversation, row, ReviewResultSchema.parse(row.result)))) {
     throw new HttpStatusError(
       503,
-      'The changes were denied, but the course agent could not be reached, so your message was not sent. Try again.',
+      'Your denial was recorded, but the course agent could not be reached, so your message was not sent. Try again.',
     );
   }
 }

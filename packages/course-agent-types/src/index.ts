@@ -395,6 +395,8 @@ export const UserMessageMetadataSchema = z.object({
 export const ReviewPartSchema = z.object({
   reviewId: z.string(),
   autoApprove: z.boolean().optional(),
+  /** Set when the request is to read course data rather than to save file changes. */
+  dataRead: z.literal(true).optional(),
 });
 
 export type ReviewPart = z.infer<typeof ReviewPartSchema>;

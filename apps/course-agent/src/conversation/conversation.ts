@@ -1435,11 +1435,15 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     const key = courseDataRequestKey(request);
     const approved = this.record.approvedDataReads ?? [];
     if (approved.includes(key)) {
-      this.setRecord({
-        ...this.record,
-        approvedDataReads: approved.filter((other) => other !== key),
-      });
-      return await read();
+      const reply = await read();
+      // A read that failed, say on a timeout, keeps its approval for the agent's next try.
+      if (reply.success) {
+        this.setRecord({
+          ...this.record,
+          approvedDataReads: (this.record.approvedDataReads ?? []).filter((other) => other !== key),
+        });
+      }
+      return reply;
     }
     if (this.record.review) {
       return {
@@ -1477,7 +1481,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     this.native?.emit({
       type: 'data-review',
       id,
-      data: { reviewId: id } satisfies ReviewPart,
+      data: { reviewId: id, dataRead: true } satisfies ReviewPart,
     });
     return {
       success: true,
