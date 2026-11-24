@@ -238,8 +238,25 @@ describe('denial by message', () => {
         ],
       },
     ];
+    // A request to read course data is not described as submitted changes.
+    expect(
+      missedTurns(
+        [
+          { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Who is enrolled?' }] },
+          {
+            id: 'a1',
+            role: 'assistant',
+            parts: [{ type: 'data-review', id: 'r1', data: { reviewId: 'r1', dataRead: true } }],
+          },
+        ],
+        undefined,
+      ),
+    ).toEqual([
+      'Staff: Who is enrolled?',
+      'You: [Asked the instructor to approve a read of course data.]',
+    ]);
     expect(missedTurns(denial, undefined)).toEqual([
-      'PrairieLearn: The instructor denied the submitted changes by sending this message.',
+      'PrairieLearn: The instructor denied your pending request by sending this message.',
       'Staff: Use three midterms',
       'You: Switching to three midterms.',
     ]);

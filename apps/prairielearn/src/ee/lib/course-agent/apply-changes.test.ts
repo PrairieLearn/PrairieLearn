@@ -331,7 +331,7 @@ it('keeps an approval and refuses a message sent after it', async () => {
 it('refuses an approval after a denial by message', async () => {
   await withConfig({ fileEditorUseGit: true }, async () => {
     await decide('denied', review.id, true);
-    await expect(decide('approved')).rejects.toThrow('already has a different decision');
+    await expect(decide('approved')).rejects.toThrow('already decided the other way');
     expect(prepareJob).not.toHaveBeenCalled();
   });
 });
@@ -340,7 +340,7 @@ it('keeps the first decision and refuses a different one', async () => {
   await withConfig({ fileEditorUseGit: true }, async () => {
     await decide('approved');
     await expect(decide('approved')).resolves.toEqual({ decision: 'approved' });
-    await expect(decide('denied')).rejects.toThrow('already has a different decision');
+    await expect(decide('denied')).rejects.toThrow('already decided the other way');
     expect(prepareJob).toHaveBeenCalledOnce();
   });
 });

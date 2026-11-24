@@ -3,6 +3,7 @@ import type { UIMessage, UIMessageChunk } from 'ai';
 import {
   InputRequestPartSchema,
   NavigationPartSchema,
+  ReviewPartSchema,
   type ReviewResult,
   ToolCallSchema,
   UserMessageMetadataSchema,
@@ -228,7 +229,9 @@ function describePart(part: UIMessage['parts'][number]) {
     case 'text':
       return part.text.trim();
     case 'data-review':
-      return '[Submitted changes for instructor review.]';
+      return ReviewPartSchema.safeParse(part.data).data?.dataRead
+        ? '[Asked the instructor to approve a read of course data.]'
+        : '[Submitted changes for instructor review.]';
     case 'data-input-request':
       return describeInputRequest(part.data);
     case 'data-tool':
@@ -263,7 +266,12 @@ function splitTurns(history: UIMessage[]) {
       }
       if (part.type === 'data-denial') {
         // The marker follows the user message it describes, so it precedes it in catch-up.
-        turns.at(-1)?.entries.unshift(`PrairieLearn: ${DENIED_BY_MESSAGE}`);
+        // The marker does not say what kind of request was denied.
+        turns
+          .at(-1)
+          ?.entries.unshift(
+            'PrairieLearn: The instructor denied your pending request by sending this message.',
+          );
         continue;
       }
       const text = describePart(part);

@@ -841,13 +841,13 @@ const COURSE_DATA_VERSION = 1;
 
 /**
  * Plain names for columns an instructor would not recognize, used when a request to read course
- * data is shown to them. A column without one is shown by its own name.
+ * data is shown to them. A column without one is shown by its own name. A name applies in every
+ * dataset, so only list a column that means the same thing wherever it appears.
  */
 const COLUMN_LABELS: Record<string, string> = {
   course_instance_short_name: 'course instance',
   assessment_tid: 'assessment',
   qid: 'question',
-  uid: 'student',
 };
 
 /** Columns are serialized JSON, so an ID is a string of digits. */

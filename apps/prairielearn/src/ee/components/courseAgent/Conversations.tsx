@@ -560,8 +560,10 @@ function Chat({
   // waits for the turn to end rather than moving down as that text arrives. A review being
   // delivered is already decided and stays shown.
   const turnRunning = canStop;
-  const hiddenReviewId =
-    turnRunning && review.data?.status !== 'decided' ? (lifecycle.reviewId ?? null) : null;
+  const reviewDecided =
+    review.data?.status === 'decided' ||
+    (review.data?.status === 'data_read' && review.data.decision !== null);
+  const hiddenReviewId = turnRunning && !reviewDecided ? (lifecycle.reviewId ?? null) : null;
   const inputRequestOpen =
     !turnRunning &&
     latest?.role === 'assistant' &&
