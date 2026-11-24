@@ -88,7 +88,6 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput, onSceneRendered }) =
   );
 };
 
-/** Resolves once the initial scene has been drawn. */
 export async function initializeExcalidraw(uuid, name, metadata) {
   const sketch = {};
 
@@ -122,6 +121,7 @@ export async function initializeExcalidraw(uuid, name, metadata) {
   await sceneRendered;
   // The static canvas is painted right after the change is reported.
   await new Promise((resolve) => setTimeout(resolve));
+  rootElement.parentElement.dataset.plRenderStatus = 'ready';
 
   return sketch;
 }

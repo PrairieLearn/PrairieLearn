@@ -1,15 +1,8 @@
 {{#show_widget}}
 <script>
     $(async () => {
-        const container = document.getElementById("excalidraw-{{uuid}}").parentElement;
-        try {
-            const module = await import("pl-excalidraw-js");
-            await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
-            container.dataset.plRenderStatus = "ready";
-        } catch (error) {
-            container.dataset.plRenderStatus = "error";
-            throw error;
-        }
+        const module = await import("pl-excalidraw-js");
+        await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
     });
 </script>
 {{/show_widget}}

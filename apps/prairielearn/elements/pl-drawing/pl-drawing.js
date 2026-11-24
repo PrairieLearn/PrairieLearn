@@ -147,8 +147,6 @@ window.PLDrawingApi = {
    * @param root_elem DIV that holds the canvas.
    * @param elem_options Any options to give to the element
    * @param existing_answer_submission Existing submission to place on the canvas.
-   * @returns A promise that resolves once the initial objects, including asynchronously
-   * rendered LaTeX labels, are drawn.
    */
   async setupCanvas(root_elem, elem_options, existing_answer_submission) {
     const canvas_elem = $(root_elem).find('canvas')[0];
@@ -271,10 +269,18 @@ window.PLDrawingApi = {
       submittedAnswer._set(existing_answer_submission);
       window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
     }
-    await Promise.all(canvas.getObjects().map((obj) => obj.rendered));
-    // Fabric otherwise redraws on the next animation frame, and labels drawn by a parent object,
-    // such as a distributed load, don't redraw the canvas at all.
-    canvas.renderAll();
+
+    // Report the drawing as rendered once its LaTeX labels are drawn. Fabric otherwise redraws on
+    // the next animation frame, and labels drawn by a parent object, such as a distributed load,
+    // don't redraw the canvas at all.
+    try {
+      await Promise.all(canvas.getObjects().map((obj) => obj.rendered));
+      canvas.renderAll();
+      root_elem.dataset.plRenderStatus = 'ready';
+    } catch (error) {
+      root_elem.dataset.plRenderStatus = 'error';
+      throw error;
+    }
   },
 };
 

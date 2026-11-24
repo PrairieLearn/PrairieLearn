@@ -80,14 +80,8 @@
      {{#input_answer}}
      let submitted_answer = JSON.parse(`{{{input_answer}}}`);
      {{/input_answer}}
-     $(async function() {
-         try {
-             await window.PLDrawingApi.setupCanvas(element, options, submitted_answer);
-             element.dataset.plRenderStatus = 'ready';
-         } catch (error) {
-             element.dataset.plRenderStatus = 'error';
-             throw error;
-         }
+     $(function() {
+         window.PLDrawingApi.setupCanvas(element, options, submitted_answer);
      });
  })();
 </script>

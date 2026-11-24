@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { Locator, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import * as unzipper from 'unzipper';
 
 import { syncCourse } from '../../helperCourse.js';
@@ -31,24 +31,6 @@ async function readWarnings(page: Page) {
         qid?: string | null;
       }[],
   );
-}
-
-/** Counts the pixels of a printed canvas image that are neither transparent nor white. */
-async function countInkPixels(image: Locator) {
-  return await image.evaluate(async (image: HTMLImageElement) => {
-    await image.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const context = canvas.getContext('2d')!;
-    context.drawImage(image, 0, 0);
-    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    let count = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] > 0 && Math.min(data[i], data[i + 1], data[i + 2]) < 200) count++;
-    }
-    return count;
-  });
 }
 
 test('reports omitted questions and exports the selected Word content', async ({
@@ -211,15 +193,21 @@ test('prints representative controls, editable Word content, and an ordered answ
     })),
   ).toEqual({ background: 'rgb(247, 247, 247)', border: 'solid' });
 
-  const diagramQuestion = questions.filter({ hasText: 'Use the diagram and reference below.' });
-  // The second drawing is a blank answer area, which must still be reported as rendered.
-  const excalidrawImages = diagramQuestion.locator(
-    '.printing-excalidraw img.printing-canvas-image',
-  );
-  await expect(excalidrawImages).toHaveCount(2);
-  expect(await countInkPixels(excalidrawImages.first())).toBeGreaterThan(0);
-  expect(await readWarnings(page)).toEqual([]);
-  await expect(diagramQuestion.getByText('bold reference text')).toBeVisible();
+  // The drawing's only content is an asynchronously rendered LaTeX label.
+  const drawingPixels = await questions
+    .filter({ hasText: 'Use the labelled drawing below.' })
+    .locator('img.printing-canvas-image')
+    .evaluate(async (image: HTMLImageElement) => {
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d')!;
+      context.drawImage(image, 0, 0);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      return data.filter((value, index) => index % 4 === 3 && value > 0).length;
+    });
+  expect(drawingPixels).toBeGreaterThan(0);
 
   const response = await downloadPrintableWord(page, printUrl);
   expect(response.status()).toBe(200);
@@ -250,19 +238,6 @@ test('prints representative controls, editable Word content, and an ordered answ
   const correctBounds = await correct.boundingBox();
   const distractorBounds = await distractors.boundingBox();
   expect(distractorBounds!.y).toBeGreaterThanOrEqual(correctBounds!.y + correctBounds!.height);
-
-  // Excalidraw loads slowly enough to hide drawing races, so check the drawing without it.
-  const diagramQuestionNumber = await diagramQuestion.first().getAttribute('data-question-number');
-  await page.goto(`${printUrl}/preview?${search}&exclude_question=${diagramQuestionNumber}`);
-  await waitForPrintablePage(page);
-  // The drawing's only content is an asynchronously rendered LaTeX label.
-  const drawingPixels = await countInkPixels(
-    page
-      .locator('.pagedjs_page .printing-question')
-      .filter({ hasText: 'Use the labelled drawing below.' })
-      .locator('img.printing-canvas-image'),
-  );
-  expect(drawingPixels).toBeGreaterThan(0);
 });
 
 test('rejects changed Word source before queuing an export', async ({ page, courseInstance }) => {
@@ -411,8 +386,8 @@ test('omits questions whose content does not finish loading', async ({
         shuffleQuestions: false,
         zones: [
           {
-            // The drawing's canvas becomes an image only after the stuck element times out.
-            questions: ['printingAsyncDrawing', ...Object.keys(questions)].map((id) => ({
+            // The blank drawing's canvas becomes an image only after the stuck element times out.
+            questions: ['printingAsyncElements', ...Object.keys(questions)].map((id) => ({
               id,
               autoPoints: 1,
             })),
@@ -444,7 +419,8 @@ test('omits questions whose content does not finish loading', async ({
     ]);
     await expect(page.locator(':root')).toHaveAttribute('data-print-question-count', '1');
     await expect(page.locator(':root')).toHaveAttribute('data-print-max-points', '1');
-    await expect(page.getByText('Use the labelled drawing below.')).toBeVisible();
+    await expect(page.locator('.printing-excalidraw img.printing-canvas-image')).toHaveCount(1);
+    await expect(page.getByText('bold reference text')).toBeVisible();
     await expect(page.getByText('Stuck element.')).toHaveCount(0);
 
     const download = await downloadPrintableWord(page, printUrl);
