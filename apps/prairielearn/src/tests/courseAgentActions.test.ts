@@ -151,9 +151,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
   test('every action and input says what it does', () => {
     for (const [name, action] of Object.entries(COURSE_AGENT_ACTIONS)) {
       assert.match(name, /^[a-z][a-z_]*$/);
-      for (const text of [action.description, action.results]) {
-        assert.isNotEmpty(text.trim(), name);
-      }
+      assert.isNotEmpty(action.description.trim(), name);
       for (const [key, field] of Object.entries(action.input.shape)) {
         assert.isNotEmpty((field as z.ZodType).description?.trim(), `${name}.${key}`);
       }
@@ -270,8 +268,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       group: 'issues',
       icon: 'check-circle',
       tone: 'positive',
-      description: 'Closes an issue, then fails.',
-      results: 'Nothing.',
+      description: 'Close an issue, then fail.',
       requiredRole: ['Editor'],
       input: z.strictObject({}),
       describe: async () => ({ title: 'Close an issue', items: [] }),

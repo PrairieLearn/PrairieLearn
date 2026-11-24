@@ -80,10 +80,7 @@ export const issueActions = {
     group: 'issues',
     icon: 'check-circle',
     tone: 'positive',
-    description:
-      'Closes the issues with the given IDs that are open. Issues that are already closed are left as they are. Use it once the question is fixed, or when the report needs no change.',
-    results:
-      'The issues leave the open issues list, and the open issue count goes down. Students see no change.',
+    description: 'Close the open issues among issue_ids.',
     requiredRole: ['Editor'],
     input: IssuesInputSchema,
     describe: async ({ ctx, input }) => {
@@ -109,10 +106,7 @@ export const issueActions = {
     group: 'issues',
     icon: 'arrow-counterclockwise',
     tone: 'caution',
-    description:
-      'Reopens the issues with the given IDs that are closed. Issues that are already open are left as they are. Use it for an issue closed by mistake, or one whose problem has come back.',
-    results:
-      'The issues return to the open issues list, and the open issue count goes up. Students see no change.',
+    description: 'Reopen the closed issues among issue_ids.',
     requiredRole: ['Editor'],
     input: IssuesInputSchema,
     describe: async ({ ctx, input }) => {

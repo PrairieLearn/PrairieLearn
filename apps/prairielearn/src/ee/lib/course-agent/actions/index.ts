@@ -27,7 +27,6 @@ export function courseActionCatalog(): CourseActionCatalog {
         {
           group: action.group,
           description: action.description,
-          results: action.results,
           input: toJsonSchema(action.input),
         },
       ]),

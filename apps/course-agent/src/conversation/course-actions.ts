@@ -60,7 +60,6 @@ function describeCatalog(catalog: CourseActionCatalog) {
       return [
         '',
         `${name} (${action.group}): ${action.description}`,
-        `  Result: ${action.results}`,
         '  Input:',
         ...Object.entries(input.properties).map(([key, property]) =>
           describeInput(key, property, input.required.includes(key)),

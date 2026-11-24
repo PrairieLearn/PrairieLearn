@@ -518,7 +518,6 @@ export const CourseActionCatalogSchema = z.object({
     z.object({
       group: z.string(),
       description: z.string(),
-      results: z.string(),
       /** JSON Schema of the action's input. */
       input: z.looseObject({}),
     }),

@@ -45,10 +45,11 @@ interface CourseActionDefinition<Schema extends z.ZodObject> {
   icon: string;
   /** `positive` resolves or adds something; `caution` changes something that exists. */
   tone: CourseActionCard['tone'];
-  /** What the action does and when to use it instead of the nearest alternative. */
+  /**
+   * What the action does, in a sentence or two, for the course agent. Say what students or staff
+   * notice only when it is not obvious from what the action does.
+   */
   description: string;
-  /** What is different afterward, for staff and for students. */
-  results: string;
   /** The instructor needs one of these course roles, as model functions take them. */
   requiredRole: CourseRole[];
   input: Schema;
@@ -75,7 +76,6 @@ interface CourseActionDefinition<Schema extends z.ZodObject> {
 export interface CourseAction {
   group: CourseDatasetName;
   description: string;
-  results: string;
   input: z.ZodObject;
   describe: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionCard>;
   run: (ctx: CourseActionContext, input: unknown) => Promise<CourseActionOutcome>;
@@ -109,7 +109,6 @@ export function action<Schema extends z.ZodObject>(
   return {
     group: definition.group,
     description: definition.description,
-    results: definition.results,
     input: definition.input,
     async describe(ctx, raw) {
       const description = await definition.describe(check(ctx, raw));
