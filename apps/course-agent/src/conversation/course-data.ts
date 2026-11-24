@@ -217,7 +217,6 @@ export async function describeCourseDataRequest(
     card: {
       title: clip(`Read the ${request.dataset} dataset`, 200),
       rows: [
-        { label: 'What it holds', detail: clip(dataset.description, 2000) },
         { label: 'Columns', detail: clip(request.select.join(', '), 2000) },
         {
           label: 'Rows',

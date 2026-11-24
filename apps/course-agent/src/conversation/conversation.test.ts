@@ -784,7 +784,6 @@ it('asks the instructor before reading course data, then reads once it is approv
   const card = {
     title: 'Read the students dataset',
     rows: [
-      { label: 'What it holds', detail: 'Students in each course instance.' },
       { label: 'Columns', detail: 'uid, status' },
       { label: 'Rows', detail: 'Only those where status is joined' },
     ],
