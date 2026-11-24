@@ -11,10 +11,14 @@ import { getOauthProvider } from '../../lib/oauth/provider.js';
 
 const router = Router();
 
-/** Where approving sends the user, in words for the approval page. */
-function describeRedirectUri(uri: unknown) {
-  const url = typeof uri === 'string' ? URL.parse(uri) : null;
-  return url?.protocol === 'https:' ? url.host : 'an app on this computer';
+/**
+ * The website that approving sends the user to, or null if it is an app on the user's own
+ * computer: a loopback address or an app's own URL scheme, which the library allows only for
+ * those. The access goes wherever the user is sent.
+ */
+function websiteHost(redirectUri: unknown) {
+  const url = typeof redirectUri === 'string' ? URL.parse(redirectUri) : null;
+  return url?.protocol === 'https:' ? url.host : null;
 }
 
 function ApprovalForm({
@@ -28,19 +32,24 @@ function ApprovalForm({
   userName: string;
   csrfToken: string;
 }) {
+  const website = websiteHost(redirectUri);
   return (
     <div className="card mx-auto" style={{ maxWidth: '36rem' }}>
       <div className="card-body">
         <h1 className="h4">Connect {clientName} to PrairieLearn?</h1>
         <p className="text-muted">
           You are signed in as {userName}. If you allow this, you'll return to{' '}
-          {describeRedirectUri(redirectUri)}.
+          {website ?? 'an app on this computer'}.
         </p>
-        <div className="alert alert-warning" role="alert">
-          <i className="bi bi-exclamation-triangle me-2" aria-hidden="true" />
-          PrairieLearn can't verify this app's name. Only continue if you started this from an agent
-          you trust.
-        </div>
+        {website && (
+          // Any app can register under any name. One on the user's computer is already trusted
+          // with it, but a website could pose as a known agent to receive the access.
+          <div className="alert alert-warning" role="alert">
+            <i className="bi bi-exclamation-triangle me-2" aria-hidden="true" />
+            This agent's access will go to <strong>{website}</strong>. PrairieLearn can't verify the
+            name it gave, so only continue if you started this from an agent on that site.
+          </div>
+        )}
         <h2 className="h6">This agent will be able to</h2>
         <ul>
           {OAUTH_SCOPE_NAMES.map((scope) => (
