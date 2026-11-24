@@ -373,9 +373,11 @@ export class CodeCallerContainer implements CodeCaller {
       return;
     }
 
-    // This directory is only a mount point, so it's empty once the course is
-    // unmounted. Without `unsafeCleanup`, removing it fails instead of deleting
-    // the course's files if the course is somehow still mounted.
+    // We don't pass `unsafeCleanup`, so `cleanup()` removes this directory with
+    // a plain `rmdir` rather than recursively. The directory is only ever a
+    // mount point and is empty once the course is unmounted. If unmounting
+    // failed, a recursive removal could delete the course's files through the
+    // mount, while `rmdir` just fails.
     this.hostDirectory = await tmp.dir({ prefix: MOUNT_DIRECTORY_PREFIX });
     await ensureImage();
     await this._createAndAttachContainer(this.hostDirectory.path);
