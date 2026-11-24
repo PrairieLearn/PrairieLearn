@@ -22,6 +22,17 @@ WITH
       workspaces
     WHERE
       id = $workspace_id
+      AND (
+        NOT $launch_guarded::boolean
+        OR (
+          state = 'launching'
+          AND launch_uuid IS NOT DISTINCT FROM $launch_uuid
+          AND launched_at IS NOT DISTINCT FROM $launch_started_at::timestamptz
+          AND version = $version
+          AND workspace_host_id = $workspace_host_id
+        )
+      )
+    FOR NO KEY UPDATE
   ),
   deltas AS (
     SELECT
@@ -40,57 +51,46 @@ WITH
     UPDATE workspaces AS w
     SET
       state = $state::enum_workspace_state,
+      hostname = COALESCE($hostname, w.hostname),
       state_updated_at = now(),
       message = $message,
       message_updated_at = now(),
       launched_at = CASE
         WHEN $state = 'launching' THEN now()
-        ELSE launched_at
+        ELSE w.launched_at
       END,
       heartbeat_at = CASE
         WHEN $state = 'running' THEN now()
-        ELSE heartbeat_at
+        ELSE w.heartbeat_at
       END,
       running_at = CASE
         WHEN $state = 'running' THEN now()
-        ELSE running_at
+        ELSE w.running_at
       END,
       stopped_at = CASE
         WHEN $state = 'stopped' THEN now()
-        ELSE stopped_at
+        ELSE w.stopped_at
       END,
-      launching_duration = launching_duration + (
-        SELECT
-          launching_delta
-        FROM
-          deltas
-      ),
-      running_duration = running_duration + (
-        SELECT
-          running_delta
-        FROM
-          deltas
-      )
+      launching_duration = w.launching_duration + deltas.launching_delta,
+      running_duration = w.running_duration + deltas.running_delta
+    FROM
+      old_workspace
+      CROSS JOIN deltas
     WHERE
-      w.id = $workspace_id
+      w.id = old_workspace.id
     RETURNING
-      *
+      w.*
   )
 INSERT INTO
   workspace_logs (date, workspace_id, version, state, message)
-VALUES
-  (
-    now(),
-    $workspace_id,
-    (
-      SELECT
-        version
-      FROM
-        old_workspace
-    ),
-    $state,
-    $message
-  )
+SELECT
+  now(),
+  id,
+  version,
+  state,
+  message
+FROM
+  updated_workspace
 RETURNING
   (
     SELECT

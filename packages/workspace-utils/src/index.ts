@@ -6,7 +6,14 @@ import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import type { Server as SocketIOServer } from 'socket.io';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalScalar,
+  queryRow,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 export {
@@ -76,20 +83,77 @@ export async function updateWorkspaceState(
   state: string,
   message = '',
 ): Promise<void> {
-  // TODO: add locking
-  const duration_milliseconds = await queryScalar(
-    sql.update_workspace_state,
-    { workspace_id, state, message },
-    IntervalSchema,
-  );
-  if (duration_milliseconds > 0) {
-    await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration_milliseconds });
+  await updateWorkspaceStateInternal({ workspace_id, state, message });
+}
+
+interface WorkspaceLaunch {
+  id: string | number;
+  workspace_host_id: string;
+  launch_uuid: string | null;
+  launch_started_at: string | null;
+  version: number;
+}
+
+/** Completes a launch only if it still owns the workspace. */
+export async function updateWorkspaceLaunchState(
+  launch: WorkspaceLaunch,
+  result: { state: 'running'; hostname: string } | { state: 'stopped'; message: string },
+): Promise<boolean> {
+  return updateWorkspaceStateInternal({
+    workspace_id: launch.id,
+    state: result.state,
+    message: result.state === 'stopped' ? result.message : '',
+    hostname: result.state === 'running' ? result.hostname : undefined,
+    launch,
+  });
+}
+
+async function updateWorkspaceStateInternal({
+  workspace_id,
+  state,
+  message,
+  hostname,
+  launch,
+}: {
+  workspace_id: string | number;
+  state: string;
+  message: string;
+  hostname?: string;
+  launch?: WorkspaceLaunch;
+}): Promise<boolean> {
+  async function updateState() {
+    const queryDuration = launch ? queryOptionalScalar : queryScalar;
+    const duration_milliseconds = await queryDuration(
+      sql.update_workspace_state,
+      {
+        workspace_id,
+        state,
+        message,
+        hostname: hostname ?? null,
+        launch_guarded: launch !== undefined,
+        launch_uuid: launch?.launch_uuid ?? null,
+        launch_started_at: launch?.launch_started_at ?? null,
+        version: launch?.version ?? null,
+        workspace_host_id: launch?.workspace_host_id ?? null,
+      },
+      IntervalSchema,
+    );
+    if (duration_milliseconds === null) return false;
+    if (duration_milliseconds > 0) {
+      await updateCourseInstanceUsagesForWorkspace({ workspace_id, duration_milliseconds });
+    }
+    return true;
   }
+
+  // Keep launch accounting under the same lock and publish only after commit.
+  const updated = launch ? await runInTransactionAsync(updateState) : await updateState();
+  if (!updated) return false;
   emitMessageForWorkspace(workspace_id, 'change:state', {
     workspace_id,
     state,
     message,
   });
+  return true;
 }
 
 /**

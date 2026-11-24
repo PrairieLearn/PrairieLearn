@@ -1,26 +1,3 @@
--- BLOCK select_workspace
-SELECT
-  w.version,
-  c.id AS course_id,
-  i.id AS institution_id
-FROM
-  workspaces AS w
-  JOIN variants AS v ON (v.workspace_id = w.id)
-  JOIN questions AS q ON (q.id = v.question_id)
-  JOIN courses AS c ON (c.id = v.course_id)
-  JOIN institutions AS i ON (i.id = c.institution_id)
-WHERE
-  w.id = $workspace_id;
-
--- BLOCK select_and_lock_workspace
-SELECT
-  *
-FROM
-  workspaces
-WHERE
-  id = $workspace_id
-FOR NO KEY UPDATE;
-
 -- BLOCK select_workspace_settings
 SELECT
   q.*,
@@ -41,14 +18,12 @@ UPDATE workspaces AS w
 SET
   url_rewrite = $url_rewrite
 WHERE
-  w.id = $workspace_id;
-
--- BLOCK update_workspace_hostname
-UPDATE workspaces AS w
-SET
-  hostname = $hostname
-WHERE
-  w.id = $workspace_id;
+  w.id = $id
+  AND w.state = 'launching'
+  AND w.launch_uuid = $launch_uuid
+  AND w.launched_at IS NOT DISTINCT FROM $launch_started_at::timestamptz
+  AND w.version = $version
+  AND w.workspace_host_id = $workspace_host_id;
 
 -- BLOCK insert_workspace_hosts
 INSERT INTO
@@ -105,25 +80,40 @@ WHERE
   w.id = $workspace_id
   AND wh.instance_id = $instance_id;
 
--- BLOCK set_workspace_launch_uuid
+-- BLOCK claim_workspace_launch
 UPDATE workspaces AS w
 SET
   launch_uuid = $launch_uuid
 FROM
-  workspace_hosts AS wh
+  workspace_hosts AS wh,
+  variants AS v
+  JOIN courses AS c ON (c.id = v.course_id)
 WHERE
   w.id = $workspace_id
-  AND wh.instance_id = $instance_id;
+  AND w.state = 'launching'
+  AND w.workspace_host_id = wh.id
+  AND wh.instance_id = $instance_id
+  AND v.workspace_id = w.id
+RETURNING
+  w.id,
+  w.version,
+  w.workspace_host_id,
+  w.launch_uuid,
+  w.launched_at::text AS launch_started_at,
+  c.id AS course_id,
+  c.institution_id;
 
 -- BLOCK set_workspace_launch_port
 UPDATE workspaces AS w
 SET
   launch_port = $launch_port
-FROM
-  workspace_hosts AS wh
 WHERE
-  w.id = $workspace_id
-  AND wh.instance_id = $instance_id;
+  w.id = $id
+  AND w.state = 'launching'
+  AND w.launch_uuid = $launch_uuid
+  AND w.launched_at IS NOT DISTINCT FROM $launch_started_at::timestamptz
+  AND w.version = $version
+  AND w.workspace_host_id = $workspace_host_id;
 
 -- BLOCK get_is_port_occupied
 SELECT
@@ -141,7 +131,8 @@ SELECT
 -- BLOCK recover_crash_workspaces
 -- Similar to the query below, but we don't care if the launch_uuid options are null
 SELECT
-  w.*
+  w.*,
+  w.launched_at::text AS launch_started_at
 FROM
   workspaces AS w
   JOIN workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
@@ -168,7 +159,8 @@ WHERE
 
 -- BLOCK get_stopped_workspaces
 SELECT
-  w.*
+  w.*,
+  w.launched_at::text AS launch_started_at
 FROM
   workspaces AS w
   JOIN workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
@@ -185,11 +177,13 @@ SET
   launch_uuid = NULL,
   launch_port = NULL,
   workspace_host_id = NULL
-FROM
-  workspace_hosts AS wh
 WHERE
-  w.id = $workspace_id
-  AND wh.instance_id = $instance_id;
+  w.id = $id
+  AND w.state = 'stopped'
+  AND w.launch_uuid IS NOT DISTINCT FROM $launch_uuid
+  AND w.launched_at IS NOT DISTINCT FROM $launch_started_at::timestamptz
+  AND w.version = $version
+  AND w.workspace_host_id = $workspace_host_id;
 
 -- BLOCK mark_host_unhealthy
 WITH
