@@ -33,7 +33,7 @@ export function AgentCard({
 }) {
   return (
     <div className="course-agent-review border rounded-3">
-      <div className="d-flex align-items-start gap-2 mb-2">
+      <div className="d-flex align-items-center gap-2 mb-2">
         <span
           className={clsx('course-agent-card-icon', `course-agent-card-icon-${tone}`)}
           aria-hidden="true"
