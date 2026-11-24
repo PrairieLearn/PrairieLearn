@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
@@ -8,6 +10,7 @@ import { config } from '../lib/config.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 const ELEMENTS_PATH = path.resolve(APP_ROOT_PATH, 'elements');
@@ -82,6 +85,33 @@ describe('Static assets', () => {
         assert.fail(`Failed to fetch ${assetUrl}: ${res.status} ${res.statusText}`);
       }
     }
+  });
+
+  it('uses stable content hashes for shared symbolic input assets in production', async () => {
+    await withConfig({ devMode: false }, async () => {
+      const require = createRequire(import.meta.url);
+      const { version } = require('@prairielearn/symbolic-input/package.json');
+      for (const asset of [
+        '@prairielearn/symbolic-input/dist/index.js',
+        '@prairielearn/symbolic-input/style.css',
+      ]) {
+        const contents = await fs.readFile(require.resolve(asset));
+        const hash = createHash('sha256')
+          .update(version)
+          .update(contents)
+          .digest('hex')
+          .slice(0, 16);
+        const assetPath = assets.nodeModulesAssetPath(asset);
+
+        assert.include(assetPath, `/node_modules/${hash}/`);
+        assert.equal(assets.nodeModulesAssetPath(asset), assetPath);
+
+        const res = await fetch(`${SITE_URL}${assetPath}`);
+        assert.equal(res.status, 200);
+        assert.equal(res.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+        assert.equal(await res.text(), contents.toString('utf-8'));
+      }
+    });
   });
 
   it('serves all element assets', async () => {

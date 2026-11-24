@@ -21,7 +21,7 @@ import { APP_ROOT_PATH } from './paths.js';
 let assetsPrefix: string | null = null;
 let elementsHash: FileTreeHash | null = null;
 let publicHash: FileTreeHash | null = null;
-const cachedPackageVersionHashes: Record<string, string> = {};
+const cachedNodeModulesAssetHashes: Record<string, string> = {};
 
 async function computeElementsHash() {
   elementsHash = await hashFileTree(path.join(APP_ROOT_PATH, 'elements'));
@@ -125,12 +125,14 @@ function getPackageVersion(packageName: string): string {
 
 /**
  * For an asset path to a file within a `node_modules` directory, returns a
- * hash of the version of the package that contains the file.
+ * content hash for first-party assets, or a hash of the package version for
+ * third-party assets.
  */
 function getNodeModulesAssetHash(assetPath: string): string {
   const packageName = getPackageNameForAssetPath(assetPath);
+  const isFirstParty = packageName.startsWith('@prairielearn/');
 
-  if (config.devMode && packageName.startsWith('@prairielearn/')) {
+  if (config.devMode && isFirstParty) {
     // In dev mode, we don't want to cache the hash of our own packages, or use
     // a repeatable hash that would cause the browser to cache the asset. This
     // is because we want to be able to change them without changing the package
@@ -139,12 +141,17 @@ function getNodeModulesAssetHash(assetPath: string): string {
   }
 
   // Reading files synchronously and computing cryptographic hashes are both
-  // relatively expensive; cache the hashes for each package.
-  let hash = cachedPackageVersionHashes[packageName];
+  // relatively expensive; cache hashes for the lifetime of the server process.
+  const cacheKey = isFirstParty ? assetPath : packageName;
+  let hash = cachedNodeModulesAssetHashes[cacheKey];
   if (!hash) {
-    const version = getPackageVersion(packageName);
-    hash = crypto.createHash('sha256').update(version).digest('hex').slice(0, 16);
-    cachedPackageVersionHashes[packageName] = hash;
+    const hasher = crypto.createHash('sha256').update(getPackageVersion(packageName));
+    // Private workspace packages can change without changing their version.
+    if (isFirstParty) {
+      hasher.update(fs.readFileSync(createRequire(import.meta.url).resolve(assetPath)));
+    }
+    hash = hasher.digest('hex').slice(0, 16);
+    cachedNodeModulesAssetHashes[cacheKey] = hash;
   }
   return hash;
 }
