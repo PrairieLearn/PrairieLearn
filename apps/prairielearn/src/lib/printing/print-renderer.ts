@@ -7,7 +7,6 @@ import { ValueType, getHistogram, metrics } from '@prairielearn/opentelemetry';
 
 import { config } from '../config.js';
 
-import { createPdfOutput } from './pdf-output.js';
 import {
   PRINT_ASSET_TOKEN_HEADER,
   type PrintAssetScope,
@@ -120,7 +119,6 @@ export interface RenderPageOptions {
   signal?: AbortSignal;
 }
 
-export type RenderPdfOptions = RenderPageOptions;
 type ActiveRenderPageOptions = RenderPageOptions & {
   assetAccess?: { token: string; scope: PrintAssetScope };
 };
@@ -153,10 +151,6 @@ export class PrintRenderer {
       maxQueuedRenders ??
         (cloudflare ? DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS : DEFAULT_MAX_QUEUED_RENDERS),
     );
-  }
-
-  renderPdf(options: RenderPdfOptions): Promise<Buffer> {
-    return this.render(options, createPdfOutput());
   }
 
   render<T>(options: RenderPageOptions, output: PrintablePageOutput<T>): Promise<T> {
