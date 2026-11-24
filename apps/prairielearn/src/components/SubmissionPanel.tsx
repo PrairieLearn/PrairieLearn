@@ -64,20 +64,21 @@ export const SubmissionDetailedSchema = SubmissionSchema.pick({
 });
 
 /**
- * A submission with what's needed to show its panel. Its large JSON columns
- * aren't loaded; see {@link SubmissionWithDetailsForRender}.
+ * A submission with what its panel's header and staff feedback need (score,
+ * status, timestamps, and so on). Its large JSON columns aren't loaded, so the
+ * submission itself can't be rendered inside the panel; see
+ * {@link SubmissionWithDetails}.
  */
-export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> & {
+export type SubmissionSummary = z.infer<typeof SubmissionBasicSchema> & {
   submission_number: number;
   rubric_grading?: RubricGradingData | null;
 };
 
 /**
- * A submission whose JSON columns are also loaded, so that its contents can be
- * rendered.
+ * A submission whose JSON columns are also loaded, so that the submission
+ * itself (the question's submission HTML) can be rendered inside its panel.
  */
-export type SubmissionWithDetailsForRender = SubmissionForRender &
-  z.infer<typeof SubmissionDetailedSchema>;
+export type SubmissionWithDetails = SubmissionSummary & z.infer<typeof SubmissionDetailedSchema>;
 
 export function SubmissionPanel({
   questionContext,
@@ -104,7 +105,7 @@ export function SubmissionPanel({
   variant_id: string;
   course_instance?: CourseInstance | null;
   course: Course;
-  submission: SubmissionForRender;
+  submission: SubmissionSummary;
   submissionHtml?: string | null;
   submissionCount: number;
   rubric_data?: RubricData | null;
@@ -334,7 +335,7 @@ function SubmissionStatusBadge({
   assessment_question,
   instance_question,
 }: {
-  submission: SubmissionForRender;
+  submission: SubmissionSummary;
   question: Question;
   isLatestSubmission: boolean;
   assessment_question?: AssessmentQuestion | null;
@@ -476,7 +477,7 @@ function SubmissionInfoModal({
   course_instance_id,
   formattedDate,
 }: {
-  submission: SubmissionForRender;
+  submission: SubmissionSummary;
   question: Question;
   assessment_question?: AssessmentQuestion | null;
   course_id: string;

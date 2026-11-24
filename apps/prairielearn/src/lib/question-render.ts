@@ -18,10 +18,10 @@ import { QuestionScorePanelContent } from '../components/QuestionScore.js';
 import {
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
-  type SubmissionForRender,
   SubmissionGradingJobSchema,
   SubmissionPanel,
-  type SubmissionWithDetailsForRender,
+  type SubmissionSummary,
+  type SubmissionWithDetails,
 } from '../components/SubmissionPanel.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
@@ -278,7 +278,7 @@ interface ResLocalsBuildLocals {
   hasAttemptsOtherVariants: boolean;
   variantAttemptsLeft: number;
   variantAttemptsTotal: number;
-  submissions: SubmissionForRender[];
+  submissions: SubmissionSummary[];
   variantToken: string;
   jobSequenceTokens: Record<string, string>;
 }
@@ -630,8 +630,8 @@ export async function getAndRenderVariant(
 
   // The panels for all submissions share these objects, so that data added to
   // them below (such as rubric gradings) is shared too.
-  const detailedSubmissions: SubmissionWithDetailsForRender[] = [];
-  const submissions = basicSubmissions.map((s, idx): SubmissionForRender => {
+  const detailedSubmissions: SubmissionWithDetails[] = [];
+  const submissions = basicSubmissions.map((s, idx): SubmissionSummary => {
     const basic = { ...s, submission_number: submissionCount - idx };
     const details = detailsById.get(s.id);
     if (!details) return basic;
