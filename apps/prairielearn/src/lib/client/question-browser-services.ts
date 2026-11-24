@@ -10,6 +10,7 @@ import {
 } from './question-browser-services.transport.js';
 import type { QuestionBrowserServices } from './question-browser-services.types.js';
 import { createQuestionDialogs } from './question-dialogs.js';
+import { isStaleGradingStatus } from './question-grading-status.js';
 import { updateQuestionPagePanels } from './question-page-panels.js';
 
 /** Application implementation; endpoints and credentials never cross the port. */
@@ -30,6 +31,9 @@ export function createQuestionServicesHost({
 }): { services: QuestionBrowserServices; dispose: () => void } {
   const abortController = new AbortController();
   const dialogs = createQuestionDialogs(document, dialogData);
+  let renderSequence = 0;
+  let appliedPageSequence = 0;
+  const submissionSequences = new Map<string, number>();
   const subscriptions = new Set<{
     listener: (submissions: StatusMessageSubmission[]) => void;
   }>();
@@ -64,6 +68,8 @@ export function createQuestionServicesHost({
       const renderUrl = submissionRenderUrls.get(submissionId);
       if (!renderUrl) throw new Error('Unknown submission');
 
+      const sequence = ++renderSequence;
+      submissionSequences.set(submissionId, sequence);
       const url = new URL(renderUrl, document.location.origin);
       if (url.origin !== document.location.origin) {
         throw new Error('Submission render URL must be same-origin');
@@ -78,7 +84,16 @@ export function createQuestionServicesHost({
       // Aborting fetch alone is insufficient if the response was already received.
       requestSignal.throwIfAborted();
       assertCurrent();
-      updateQuestionPagePanels(document, panels);
+      if (submissionSequences.get(submissionId) !== sequence) {
+        throw new DOMException('Submission render was superseded', 'AbortError');
+      }
+      // Different submissions share scores, the answer, and the question footer.
+      // An older response may still supply its own submission, but not those panels.
+      const updatePage = purpose === 'grading-result' && sequence > appliedPageSequence;
+      if (updatePage) {
+        appliedPageSequence = sequence;
+        updateQuestionPagePanels(document, panels);
+      }
       if (panels.submissionInfo) dialogs.updateSubmissionInfo(panels.submissionInfo);
 
       // Select these fields explicitly: the question renderer must not receive
@@ -87,8 +102,8 @@ export function createQuestionServicesHost({
       return {
         submissionPanel: panels.submissionPanel,
         extraHeadersHtml: panels.extraHeadersHtml,
-        answerPanel: panels.answerPanel,
-        questionPanelFooter: panels.questionPanelFooter,
+        answerPanel: updatePage ? panels.answerPanel : null,
+        questionPanelFooter: updatePage ? panels.questionPanelFooter : null,
       };
     },
 
@@ -105,14 +120,34 @@ export function createQuestionServicesHost({
           if (msg == null) return;
           if (gradingSocket !== socket || abortController.signal.aborted || !isCurrent()) return;
           if (msg.variant_id !== variantId) return;
-          latestSubmissions ??= new Map();
-          for (const submission of msg.submissions) {
-            latestSubmissions.set(submission.id, submission);
-          }
-          subscriptions.forEach(({ listener }) => listener(msg.submissions));
+          const latest = (latestSubmissions ??= new Map());
+          const updates = msg.submissions.filter((submission) => {
+            const previous = latest.get(submission.id);
+            if (isStaleGradingStatus(submission, previous)) return false;
+            if (
+              previous &&
+              (previous.grading_job_id || null) !== (submission.grading_job_id || null)
+            ) {
+              // UI cancellation crosses the port asynchronously. Invalidate here
+              // before an old response can update scores or dialog metadata.
+              submissionSequences.delete(submission.id);
+            }
+            latest.set(submission.id, submission);
+            return true;
+          });
+          subscriptions.forEach(({ listener }) => listener(updates));
         };
+        let connection = 0;
         socket.on('connect', () => {
-          socket.emit('init', { variant_id: variantId, variant_token: variantToken }, onStatus);
+          const currentConnection = ++connection;
+          socket.emit(
+            'init',
+            { variant_id: variantId, variant_token: variantToken },
+            (msg: StatusMessage | null) => {
+              if (currentConnection !== connection) return;
+              onStatus(msg);
+            },
+          );
         });
         socket.on('change:status', onStatus);
       }
