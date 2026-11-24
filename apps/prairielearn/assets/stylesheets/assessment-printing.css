@@ -1,6 +1,14 @@
 @page {
   margin: 0.55in;
 
+  @bottom-left {
+    vertical-align: middle;
+  }
+
+  @bottom-center {
+    vertical-align: middle;
+  }
+
   @bottom-right {
     vertical-align: middle;
   }
@@ -123,6 +131,7 @@ body {
 
 .assessment-cover-summary {
   border: 1pt solid #777;
+  border-radius: 0.06in;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin: 0 0 0.18in;
@@ -155,6 +164,7 @@ body {
 .assessment-cover-instructions,
 .assessment-cover-honor-code {
   border: 0.6pt solid #aaa;
+  border-radius: 0.06in;
   font-size: 9.5pt;
   line-height: 1.25;
   margin-bottom: 0.14in;
@@ -186,6 +196,32 @@ body {
   height: 0.25in;
   margin-top: 0.08in;
   position: relative;
+}
+
+.assessment-grading-table {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.assessment-grading-grid {
+  display: grid;
+  column-gap: 20px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+.assessment-grading-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding-bottom: 6px;
+  font-size: 10pt;
+}
+
+.assessment-grading-score {
+  flex: 0 1 150px;
+  border-bottom: 1px solid #111;
+  margin-bottom: 3px;
 }
 
 .printing-question-page {
@@ -256,7 +292,7 @@ html[data-print-document='answer_key'] .printing-answer-key {
   align-items: center;
   background: #f5f5f5;
   border: 0.8pt solid #777;
-  border-radius: 0;
+  border-radius: 0.06in;
   box-sizing: border-box;
   break-inside: avoid;
   display: grid;
