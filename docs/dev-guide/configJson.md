@@ -93,7 +93,7 @@ Set the directories used to store workspace files in your `config.json`:
 
 #### Workspace file ownership
 
-Run PrairieLearn and the workspace host as your regular user, without `sudo`, and leave `workspaceJobsDirectoryOwnerUid` and `workspaceJobsDirectoryOwnerGid` at their defaults. Docker lets a regular user start containers that run as root (on Linux, your user must be in the `docker` group), so workspace containers start as root, change the owner of the workspace files to UID 1001, and then switch to that user.
+Run PrairieLearn and the workspace host as your regular user, without `sudo`, and leave `workspaceJobsDirectoryOwnerUid` and `workspaceJobsDirectoryOwnerGid` at their defaults. Docker lets a regular user start containers that run as root (on Linux, your user must be in the `docker` group). If necessary, workspace images can change the owner of the workspace files to UID 1001, and then switch to that user.
 
 When PrairieLearn and the workspace host run as root, as they do in production and in the Docker-based installation, they also change the owner of the workspace files to `workspaceJobsDirectoryOwnerUid`/`workspaceJobsDirectoryOwnerGid` before starting the container. They skip this step when running as a regular user, since only root can change file ownership.
 
