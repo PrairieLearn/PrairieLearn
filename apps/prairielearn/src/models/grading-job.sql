@@ -93,6 +93,7 @@ FROM
 -- BLOCK select_variant_for_grading_job_update
 SELECT
   s.credit,
+  s.recovered_from_user_id,
   v.id AS variant_id,
   iq.id AS instance_question_id,
   ai.id AS assessment_instance_id,

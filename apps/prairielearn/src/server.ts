@@ -471,6 +471,11 @@ export async function initExpress(): Promise<Express> {
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response
   app.use((await import('./middlewares/cors.js')).default);
   app.use((await import('./middlewares/content-security-policy.js')).default);
+  app.use(
+    '/pl/unsaved_submission_preview/:unsafe_unsaved_submission_id(\\d+)/:token',
+    (await import('./pages/instructorAssessmentInstance/unsavedSubmissionPreviewAssets.js'))
+      .default,
+  );
   app.use((await import('./middlewares/date.js')).default);
   app.use((await import('./middlewares/effectiveRequestChanged.js')).default);
 

@@ -74,8 +74,10 @@ async function insertSubmission({
   variant_id,
   user_id,
   auth_user_id,
+  recovered_from_user_id,
   client_fingerprint_id,
   clearUnsavedSubmissions,
+  instructorRecovery,
 }: {
   submitted_answer: Record<string, any> | null;
   raw_submitted_answer: Record<string, any> | null;
@@ -90,8 +92,10 @@ async function insertSubmission({
   variant_id: string;
   user_id: string;
   auth_user_id: string | null;
+  recovered_from_user_id: string | null;
   client_fingerprint_id?: string | null;
   clearUnsavedSubmissions: boolean;
+  instructorRecovery?: { draftUserId: string };
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
@@ -114,33 +118,44 @@ async function insertSubmission({
       throw new error.AugmentedError('Variant is broken', { status: 400, data: { variant_id } });
     }
 
-    if (!variant.open) {
+    if (!instructorRecovery && !variant.open) {
       throw new error.AugmentedError('Variant is not open', { status: 403, data: { variant_id } });
     }
-    if (variant.instance_question_id != null && !variant.instance_question_open) {
+    if (
+      !instructorRecovery &&
+      variant.instance_question_id != null &&
+      !variant.instance_question_open
+    ) {
       throw new error.AugmentedError('Instance question is not open', {
         status: 403,
         data: { variant_id },
       });
     }
-    if (variant.assessment_instance_id != null && !variant.assessment_instance_open) {
+    if (
+      !instructorRecovery &&
+      variant.assessment_instance_id != null &&
+      !variant.assessment_instance_open
+    ) {
       throw new error.AugmentedError('Assessment instance is not open', {
         status: 403,
         data: { variant_id },
       });
     }
 
-    const delta = await sqldb.queryOptionalScalar(
-      sql.select_and_update_last_access,
-      { user_id: variant.user_id, group_id: variant.team_id },
-      IntervalSchema.nullable(),
-    );
+    const delta = instructorRecovery
+      ? 0
+      : await sqldb.queryOptionalScalar(
+          sql.select_and_update_last_access,
+          { user_id: variant.user_id, group_id: variant.team_id },
+          IntervalSchema.nullable(),
+        );
 
     const submission_id = await sqldb.queryScalar(
       sql.insert_submission,
       {
         variant_id,
         auth_user_id,
+        recovered_from_user_id,
         raw_submitted_answer,
         submitted_answer,
         format_errors,
@@ -163,7 +178,7 @@ async function insertSubmission({
       if (clearUnsavedSubmissions) {
         await deleteUnsavedSubmissions({
           instance_question_id: variant.instance_question_id,
-          user_id,
+          user_id: instructorRecovery?.draftUserId ?? user_id,
         });
       }
       const instanceQuestion = await sqldb.queryRow(
@@ -191,6 +206,7 @@ async function insertSubmission({
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
+ * @param instructorRecovery - Author of an instructor-promoted draft, which may belong to a closed attempt.
  * @returns submission_id
  */
 export async function saveSubmission(
@@ -198,6 +214,7 @@ export async function saveSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
+  instructorRecovery?: { draftUserId: string },
 ): Promise<{ submission_id: string; variant: Variant }> {
   const featureContext = {
     institution_id: variant_course.institution_id,
@@ -206,12 +223,14 @@ export async function saveSubmission(
     user_id: submissionData.auth_user_id ?? undefined,
   };
   const clearUnsavedSubmissions =
-    variant.instance_question_id !== null &&
-    ((await features.enabled('unsaved-submissions-collection', featureContext)) ||
-      (await features.enabled('unsaved-submissions-ui', featureContext)));
+    instructorRecovery !== undefined ||
+    (variant.instance_question_id !== null &&
+      ((await features.enabled('unsaved-submissions-collection', featureContext)) ||
+        (await features.enabled('unsaved-submissions-ui', featureContext))));
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
     raw_submitted_answer: submissionData.submitted_answer,
+    recovered_from_user_id: instructorRecovery?.draftUserId ?? null,
     gradable: true,
   };
 
@@ -269,6 +288,7 @@ export async function saveSubmission(
     question_course,
     {
       userId: variant.user_id,
+      unsavedSubmissionUserId: instructorRecovery?.draftUserId,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },
@@ -290,9 +310,11 @@ export async function saveSubmission(
   return await insertSubmission({
     ...submission,
     ...data,
+    recovered_from_user_id: instructorRecovery?.draftUserId ?? null,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
     clearUnsavedSubmissions,
+    instructorRecovery,
   });
 }
 
@@ -359,6 +381,18 @@ async function selectSubmissionForGrading(
       submission.grading_requested_at != null || // grading is in progress
       submission.broken || // submission is broken
       !submission.gradable // submission did not pass parsing
+    ) {
+      return null;
+    }
+
+    // A newer answer on another variant can supersede a recovered draft while it awaits grading.
+    if (
+      submission.recovered_from_user_id !== null &&
+      (await sqldb.queryScalar(
+        sql.has_newer_submission_for_instance_question,
+        { submission_id: submission.id },
+        z.boolean(),
+      ))
     ) {
       return null;
     }
@@ -453,6 +487,7 @@ export async function gradeVariant({
       question_course,
       {
         userId: variant.user_id,
+        unsavedSubmissionUserId: submission.recovered_from_user_id ?? undefined,
         groupId: variant.team_id,
         variantCourse: variant_course,
       },

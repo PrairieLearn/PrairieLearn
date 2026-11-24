@@ -14,6 +14,7 @@ import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import type { StaffUnsavedSubmissionMetadata } from '../../lib/client/safe-db-types.js';
 import { getInstanceQuestionUrl, getQuestionUrl } from '../../lib/client/url.js';
 import {
   type Assessment,
@@ -28,6 +29,7 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import type { AssessmentInstanceActionRow } from '../instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { InstructorAssessmentInstanceActions } from './components/InstructorAssessmentInstanceActions.js';
+import { InstructorUnsavedSubmissions } from './components/InstructorUnsavedSubmissions.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -84,6 +86,8 @@ export function InstructorAssessmentInstance({
   assessmentInstanceLog,
   actionRow,
   trpcCsrfToken,
+  unsavedSubmissions,
+  canPromoteUnsavedSubmissions,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
   logCsvFilename: string;
@@ -92,6 +96,8 @@ export function InstructorAssessmentInstance({
   assessmentInstanceLog: InstanceLogEntry[];
   actionRow: AssessmentInstanceActionRow;
   trpcCsrfToken: string;
+  unsavedSubmissions: StaffUnsavedSubmissionMetadata[] | null;
+  canPromoteUnsavedSubmissions: boolean;
 }) {
   const headingLabel = resLocals.instance_group
     ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
@@ -365,6 +371,7 @@ export function InstructorAssessmentInstance({
                 <th class="text-center">Awarded points</th>
                 <th class="text-center" colspan="2" scope="colgroup">Percentage score</th>
                 <th><!--Manual grading column --></th>
+                ${unsavedSubmissions !== null ? html`<th>Unsaved work</th>` : ''}
                 <th class="text-end">Actions</th>
               </tr>
             </thead>
@@ -399,7 +406,10 @@ export function InstructorAssessmentInstance({
                       firstQuestion.lockpoint
                         ? html`
                             <tr>
-                              <td colspan="9" class="bg-light">
+                              <td
+                                colspan="${unsavedSubmissions !== null ? 10 : 9}"
+                                class="bg-light"
+                              >
                                 ${
                                   firstQuestion.lockpoint_crossed
                                     ? html`
@@ -429,7 +439,10 @@ export function InstructorAssessmentInstance({
                       showZoneInfo
                         ? html`
                             <tr>
-                              <th colspan="9" scope="rowgroup">
+                              <th
+                                colspan="${unsavedSubmissions !== null ? 10 : 9}"
+                                scope="rowgroup"
+                              >
                                 ${
                                   zoneHasInfo
                                     ? (() => {
@@ -577,6 +590,32 @@ export function InstructorAssessmentInstance({
                                 : ''
                             }
                           </td>
+                          ${
+                            unsavedSubmissions !== null
+                              ? html`<td>
+                                  ${run(() => {
+                                    const drafts = unsavedSubmissions.filter(
+                                      ({ unsaved_submission }) =>
+                                        unsaved_submission.instance_question_id ===
+                                        instance_question.id,
+                                    );
+                                    return drafts.length > 0
+                                      ? hydrateHtml(
+                                          <InstructorUnsavedSubmissions
+                                            drafts={drafts}
+                                            courseInstanceId={resLocals.course_instance.id}
+                                            assessmentId={resLocals.assessment.id}
+                                            assessmentInstanceId={resLocals.assessment_instance.id}
+                                            trpcCsrfToken={trpcCsrfToken}
+                                            timezone={resLocals.course_instance.display_timezone}
+                                            canPromote={canPromoteUnsavedSubmissions}
+                                          />,
+                                        )
+                                      : '—';
+                                  })}
+                                </td>`
+                              : ''
+                          }
                           <td class="text-end">
                             <div class="dropdown js-question-actions">
                               <button

@@ -32,6 +32,7 @@ function call({
   courseOptedIn,
   userId,
   groupId,
+  unsavedSubmissionUserId,
   sharePublicly = false,
   shareSourcePublicly = false,
 }: {
@@ -40,6 +41,7 @@ function call({
   courseOptedIn: boolean;
   userId: string | null;
   groupId: string | null;
+  unsavedSubmissionUserId?: string;
   sharePublicly?: boolean;
   shareSourcePublicly?: boolean;
 }) {
@@ -53,6 +55,7 @@ function call({
     caller: {
       userId,
       groupId,
+      unsavedSubmissionUserId,
       variantCourse: makeVariantCourse(variantCourseId),
     },
   });
@@ -77,7 +80,12 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
   });
 
   it('returns null user/group when course is not opted in', async () => {
-    const ctx = await call({ courseOptedIn: false, userId, groupId: null });
+    const ctx = await call({
+      courseOptedIn: false,
+      userId,
+      groupId: null,
+      unsavedSubmissionUserId: userId,
+    });
     assert.deepEqual(ctx, { user: null, group: null });
   });
 
@@ -128,7 +136,7 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     assert.deepEqual(ctx, { user: null, group: null });
   });
 
-  it('omits the individual user but exposes the group on group variants, even with an effective user', async () => {
+  it('exposes group data and only includes an individual author during draft recovery', async () => {
     const [u1, u2] = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
     const groupName = `testgroup${u1.id}`;
 
@@ -151,6 +159,15 @@ describe('buildQuestionUserContext', { timeout: 30_000 }, () => {
     assert.lengthOf(ctx.group?.members ?? [], 2);
     const memberUids = ctx.group?.members.map((m) => m.uid).sort();
     assert.deepEqual(memberUids, [u1.uid, u2.uid].sort());
+
+    const recovered = await call({
+      courseOptedIn: true,
+      userId: u1.id,
+      groupId: group.id,
+      unsavedSubmissionUserId: u2.id,
+    });
+    assert.deepEqual(recovered.user, { uid: u2.uid, name: u2.name, uin: u2.uin });
+    assert.deepEqual(recovered.group, ctx.group);
   });
 
   it('returns group with members when a group_id is provided without an effective user', async () => {

@@ -1,0 +1,1 @@
+ALTER TABLE submissions VALIDATE CONSTRAINT submissions_recovered_from_user_id_fkey;

@@ -56,6 +56,7 @@ SELECT
   s.is_ai_graded,
   s.mode,
   s.override_score,
+  s.recovered_from_user_id,
   s.score,
   s.v2_score,
   s.variant_id,

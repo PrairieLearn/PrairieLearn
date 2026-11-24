@@ -152,6 +152,7 @@ async function render({
     locals,
     caller: {
       userId: variant.user_id,
+      unsavedSubmissionUserId: submission?.recovered_from_user_id ?? undefined,
       groupId: variant.team_id,
       variantCourse: variant_course,
     },

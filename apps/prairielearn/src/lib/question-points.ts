@@ -38,12 +38,14 @@ export async function updateInstanceQuestionGrade({
   submissionScore,
   grading_job_id,
   authn_user_id,
+  allowClosed = false,
 }: {
   variant_id: string;
   instance_question_id: string;
   submissionScore: number;
   grading_job_id: string;
   authn_user_id: string | null;
+  allowClosed?: boolean;
 }) {
   await runInTransactionAsync(async () => {
     const {
@@ -60,7 +62,7 @@ export async function updateInstanceQuestionGrade({
       }),
     );
 
-    if (!instanceQuestion.open) {
+    if (!instanceQuestion.open && !allowClosed) {
       // This has been copied from legacy code. We should actually work to
       // prevent this from happening farther upstream, and avoid recording
       // an issue here.
@@ -101,6 +103,7 @@ export async function updateInstanceQuestionGrade({
     await execute(sql.update_instance_question_grade, {
       instance_question_id,
       ...computedPoints,
+      open: instanceQuestion.open && computedPoints.open,
       points,
       score_perc: (points / (assessmentQuestion.max_points || 1)) * 100,
       max_auto_points: assessmentQuestion.max_auto_points,
