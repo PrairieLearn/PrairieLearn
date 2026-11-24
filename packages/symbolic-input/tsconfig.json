@@ -1,0 +1,8 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.package-browser.json",
+  "compilerOptions": {
+    "customConditions": ["browser"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  }
+}

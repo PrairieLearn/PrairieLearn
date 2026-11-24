@@ -264,6 +264,7 @@ nav:
           - '<span class="muted">pl-</span>python-variable': 'elements/pl-python-variable.md'
           - '<span class="muted">pl-</span>question-panel': 'elements/pl-question-panel.md'
           - '<span class="muted">pl-</span>rich-text-editor': 'elements/pl-rich-text-editor.md'
+          - '<span class="muted">pl-</span>set-symbolic-input': 'elements/pl-set-symbolic-input.md'
           - '<span class="muted">pl-</span>sketch': 'elements/pl-sketch.md'
           - '<span class="muted">pl-</span>string-input': 'elements/pl-string-input.md'
           - '<span class="muted">pl-</span>submission-panel': 'elements/pl-submission-panel.md'
@@ -294,6 +295,7 @@ nav:
           - 'Numerical precision': python-reference/prairielearn/to_precision.md
           - 'Other': python-reference/prairielearn/misc_utils.md
           - 'Schema': python-reference/prairielearn/element_schemas.md
+          - 'Set expressions': python-reference/prairielearn/set_expression.md
           - 'SymPy': python-reference/prairielearn/sympy_utils.md
           - 'Timeouts': python-reference/prairielearn/timeout_utils.md
       - 'Workspaces': 'workspaces/index.md'
