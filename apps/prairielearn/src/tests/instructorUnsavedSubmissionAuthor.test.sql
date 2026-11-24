@@ -25,3 +25,13 @@ FROM
   submissions
 WHERE
   id = $submission_id;
+
+-- BLOCK select_submission_activity_users
+SELECT
+  user_id
+FROM
+  course_instance_usages
+WHERE
+  course_instance_id = $course_instance_id
+  AND type = 'Submission'
+  AND user_id = ANY ($user_ids);

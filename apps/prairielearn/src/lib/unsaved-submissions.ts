@@ -102,7 +102,7 @@ export async function promoteUnsavedSubmission({
     const result = await saveSubmission(
       {
         variant_id: draft.variant.id,
-        user_id: authn_user_id,
+        user_id: draft.unsaved_submission.user_id,
         auth_user_id: authn_user_id,
         submitted_answer: structuredClone(draft.unsaved_submission.raw_submitted_answer),
         credit: draft.unsaved_submission.credit,

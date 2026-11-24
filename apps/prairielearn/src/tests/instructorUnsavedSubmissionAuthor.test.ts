@@ -5,7 +5,7 @@ import path from 'node:path';
 import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
-import { loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryScalar, queryScalars } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -26,7 +26,7 @@ import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { getConfiguredUser } from './utils/auth.js';
+import { getConfiguredUser, withUser } from './utils/auth.js';
 import { withConfig } from './utils/config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -83,10 +83,10 @@ def file(data):
     await temporaryCourse.cleanup();
   });
 
-  test('uses each draft author in parsing, grading, rendered history, and generated files', async () => {
+  test('uses each draft author in activity, parsing, grading, rendered history, and generated files', async () => {
     const instructor = await getConfiguredUser();
-    const [author] = await generateAndEnrollUsers({
-      count: 1,
+    const authors = await generateAndEnrollUsers({
+      count: 2,
       course_instance_id: courseInstanceId,
     });
     const assessment = await selectAssessmentByTid({
@@ -114,11 +114,11 @@ def file(data):
     });
     await client.assessmentGroups.addGroup.mutate({
       groupName: 'RecoveryAuthors',
-      uids: `${instructor.uid},${author.uid}`,
+      uids: authors.map((author) => author.uid).join(','),
     });
     const assessmentInstanceId = await makeAssessmentInstance({
       assessment,
-      user_id: instructor.id,
+      user_id: authors[0].id,
       authn_user_id: instructor.id,
       mode: 'Public',
       time_limit_min: null,
@@ -131,7 +131,9 @@ def file(data):
       IdSchema,
     );
     const instanceQuestionUrl = `${siteUrl}/pl/course_instance/${courseInstanceId}/instance_question/${instanceQuestionId}`;
-    const initialPage = await helperClient.fetchCheerio(instanceQuestionUrl);
+    const initialPage = await withUser(authors[0], () =>
+      helperClient.fetchCheerio(instanceQuestionUrl),
+    );
     const variantId = initialPage
       .$('form.question-form input[name="__variant_id"]')
       .val() as string;
@@ -144,7 +146,7 @@ def file(data):
         },
       },
       async () => {
-        for (const draftAuthor of [instructor, author]) {
+        for (const draftAuthor of authors) {
           expect(
             await upsertUnsavedSubmission({
               variant_id: variantId,
@@ -177,11 +179,27 @@ def file(data):
             { submission_id },
             SubmissionSchema,
           );
-          expect(submission.submitted_answer).toMatchObject({ parsed_by: draftAuthor.uid });
-          expect(submission.feedback).toMatchObject({ graded_for: draftAuthor.uid });
+          expect(submission).toMatchObject({
+            auth_user_id: instructor.id,
+            recovered_from_user_id: draftAuthor.id,
+            submitted_answer: { parsed_by: draftAuthor.uid },
+            feedback: { graded_for: draftAuthor.uid },
+          });
         }
       },
     );
+    expect(
+      new Set(
+        await queryScalars(
+          sql.select_submission_activity_users,
+          {
+            course_instance_id: courseInstanceId,
+            user_ids: [instructor.id, ...authors.map((author) => author.id)],
+          },
+          IdSchema,
+        ),
+      ),
+    ).toEqual(new Set(authors.map((author) => author.id)));
     await gradeAssessmentInstance({
       assessment_instance_id: assessmentInstanceId,
       user_id: instructor.id,
@@ -194,21 +212,21 @@ def file(data):
     });
     const page = await helperClient.fetchCheerio(instanceQuestionUrl);
     expect(page.status).toBe(200);
-    expect(page.$('.author-question').text()).toBe(author.uid);
-    expect(page.$('.author-answer').text()).toBe(author.uid);
+    expect(page.$('.author-question').text()).toBe(authors[1].uid);
+    expect(page.$('.author-answer').text()).toBe(authors[1].uid);
     expect(
       page
         .$('.author-submission')
         .map((_, element) => page.$(element).text())
         .get(),
-    ).toEqual([author.uid, instructor.uid]);
+    ).toEqual([authors[1].uid, authors[0].uid]);
     for (const url of [
       page.$('.author-question-file').attr('src')!,
       page.$('.author-answer-file').attr('href')!,
     ]) {
       const response = await fetch(new URL(url, siteUrl));
       expect(response.status).toBe(200);
-      expect(await response.text()).toContain(`${author.uid}|${author.uid}`);
+      expect(await response.text()).toContain(`${authors[1].uid}|${authors[1].uid}`);
     }
   });
 });

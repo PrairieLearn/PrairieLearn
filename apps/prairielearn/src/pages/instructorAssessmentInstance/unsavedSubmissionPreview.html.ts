@@ -62,10 +62,14 @@ export function UnsavedSubmissionPreview({
               : ''
           }
           <fieldset ${question.type === 'Freeform' ? '' : html`disabled`}>
+            <legend class="visually-hidden">Unsaved work preview</legend>
             <section class="card mb-3" aria-labelledby="question-heading">
               <div class="card-header"><h1 id="question-heading" class="h5">Question</h1></div>
               <div class="card-body question-body">
-                <fieldset disabled>${unsafeHtml(rendered.questionHtml)}</fieldset>
+                <fieldset disabled>
+                  <legend class="visually-hidden">Question inputs</legend>
+                  ${unsafeHtml(rendered.questionHtml)}
+                </fieldset>
               </div>
             </section>
             <section class="card mb-3" aria-labelledby="submission-heading">
