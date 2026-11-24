@@ -276,18 +276,11 @@ Some features, such as [printing assessments](assessment/printing.md), capture a
 
 ```html title="pl-my-element.mustache"
 <div id="pl-my-element-{{uuid}}" data-pl-render-status="pending"></div>
-<script>
-  $(async () => {
-    const container = document.getElementById('pl-my-element-{{uuid}}');
-    try {
-      await drawMyElement(container);
-      container.dataset.plRenderStatus = 'ready';
-    } catch (error) {
-      container.dataset.plRenderStatus = 'error';
-      throw error;
-    }
-  });
-</script>
 ```
 
-Elements without the attribute are treated as ready once the page has loaded. Set the attribute on every code path, including errors. If an element reports `error` or is still `pending` after about 10 seconds, printing leaves its question out of the preview and asks the instructor to fix or exclude it. Question scripts that render asynchronously can use the same attribute.
+```javascript title="pl-my-element.js"
+await drawMyElement(container);
+container.dataset.plRenderStatus = 'ready';
+```
+
+Elements without the attribute are treated as ready once the page has loaded. If an element reports `error` or is still `pending` after about 10 seconds, printing leaves its question out of the preview and asks the instructor to fix or exclude it. Setting `error` when rendering fails reports the problem without that wait. Question scripts that render asynchronously can use the same attribute.

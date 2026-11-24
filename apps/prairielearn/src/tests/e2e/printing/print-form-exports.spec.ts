@@ -352,6 +352,8 @@ test('omits questions whose content does not finish loading', async ({
   testCoursePath,
 }) => {
   const questions = {
+    printingAsyncElements:
+      '<pl-question-panel><p>Sketch your answer.</p><pl-xss-safe language="markdown" contents="Markdown with **bold reference text**."></pl-xss-safe></pl-question-panel><pl-excalidraw answers-name="sketch" width="400px" height="200px"></pl-excalidraw>',
     printingStuckElement:
       '<pl-question-panel><p>Stuck element.</p><div data-pl-render-status="pending">Never ready</div></pl-question-panel>',
     printingExternalImage:
@@ -387,7 +389,7 @@ test('omits questions whose content does not finish loading', async ({
         zones: [
           {
             // The blank drawing's canvas becomes an image only after the stuck element times out.
-            questions: ['printingAsyncElements', ...Object.keys(questions)].map((id) => ({
+            questions: Object.keys(questions).map((id) => ({
               id,
               autoPoints: 1,
             })),
