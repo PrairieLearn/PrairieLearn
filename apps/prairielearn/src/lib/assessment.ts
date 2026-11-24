@@ -1,6 +1,5 @@
 import * as async from 'async';
 import debugfn from 'debug';
-import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -28,6 +27,7 @@ import {
 import { gradeVariant } from './grading.js';
 import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import { renderMustache } from './mustache.js';
 import { createServerJob } from './server-jobs.js';
 
 const debug = debugfn('prairielearn:assessment');
@@ -87,7 +87,7 @@ export function renderText(
     .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
     .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
 
-  return mustache.render(text, context);
+  return renderMustache(text, context);
 }
 
 /**

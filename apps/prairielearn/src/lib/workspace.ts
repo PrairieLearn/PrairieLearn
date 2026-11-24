@@ -7,7 +7,6 @@ import * as async from 'async';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import mustache from 'mustache';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
@@ -31,6 +30,7 @@ import {
   WorkspaceSchema,
 } from './db-types.js';
 import * as issues from './issues.js';
+import { renderMustache } from './mustache.js';
 import * as socketServer from './socket-server.js';
 import * as workspaceHostUtils from './workspaceHost.js';
 
@@ -532,7 +532,7 @@ export async function generateWorkspaceFiles({
           if (!file.stats.isFile()) return null;
           return {
             name: generatedFileName,
-            buffer: mustache.render(
+            buffer: renderMustache(
               await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
               mustacheParams,
             ),

@@ -21,33 +21,10 @@ html[data-print-status='error'] #assessment-print-status {
   color: #842029;
 }
 
-.assessment-grading-table {
-  flex-shrink: 0;
-  margin-bottom: 12px;
-}
-.assessment-grading-grid {
-  display: grid;
-  column-gap: 20px;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-}
-.assessment-grading-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding-bottom: 6px;
-  font-size: 10pt;
-}
-.assessment-grading-score {
-  flex: 0 1 150px;
-  border-bottom: 1px solid #111;
-  margin-bottom: 3px;
-}
-
 @media screen {
   html,
   body {
-    background: #e7eaee;
+    background: #d1d5db;
     margin: 0;
   }
 

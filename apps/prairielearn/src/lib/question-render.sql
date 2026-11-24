@@ -61,6 +61,9 @@ SELECT
   s.variant_id,
   s.manual_rubric_grading_id,
   s.modified_at,
+  -- Each submission's panel shows its manual feedback, even when the rest of
+  -- `feedback` isn't loaded.
+  s.feedback ->> 'manual' AS feedback_manual,
   to_jsonb(gj) AS grading_job,
   u.uid AS user_uid
 FROM
@@ -98,7 +101,8 @@ ORDER BY
 
 -- BLOCK select_detailed_submissions
 SELECT
-  -- This includes ONLY the jsonb columns from `submissions`.
+  -- This includes ONLY the jsonb columns from `submissions`, plus the ID.
+  s.id,
   s.feedback,
   s.format_errors,
   s.params,
@@ -109,9 +113,7 @@ SELECT
 FROM
   submissions AS s
 WHERE
-  s.id = ANY ($submission_ids::bigint[])
-ORDER BY
-  s.date DESC;
+  s.id = ANY ($submission_ids::bigint[]);
 
 -- BLOCK select_submission_info
 WITH
@@ -143,8 +145,18 @@ WITH
       )
   ),
   last_grading_job AS (
+    -- Only the columns needed to display grading job status and timing.
+    -- Columns like `feedback` can be very large for external grading jobs.
     SELECT
-      *
+      gj.id,
+      gj.grading_method,
+      gj.grading_requested_at,
+      gj.grading_submitted_at,
+      gj.grading_received_at,
+      gj.grading_started_at,
+      gj.grading_finished_at,
+      gj.graded_at,
+      gj.grading_request_canceled_at
     FROM
       grading_jobs AS gj
     WHERE
@@ -160,6 +172,7 @@ WITH
 SELECT
   to_jsonb(lgj) AS grading_job,
   to_jsonb(s) AS submission,
+  s.feedback ->> 'manual' AS feedback_manual,
   qo.question_number,
   qo.question_access_mode,
   jsonb_build_object(

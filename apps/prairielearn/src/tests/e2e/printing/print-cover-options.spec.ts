@@ -7,9 +7,52 @@ import * as unzipper from 'unzipper';
 import { syncCourse } from '../../helperCourse.js';
 import { createTest, expect } from '../fixtures.js';
 
-import { createPrintableForm, downloadPrintableWord, waitForPrintablePage } from './utils.js';
+import {
+  createPrintableForm,
+  downloadPrintableWord,
+  savePrintSettings,
+  waitForPrintablePage,
+} from './utils.js';
 
 const test = createTest({ features: { 'printable-assessments': true } });
+
+test('uses the shared footer on cover and question pages', async ({ page, courseInstance }) => {
+  test.setTimeout(120_000);
+  const { printUrl } = await createPrintableForm(courseInstance, 'exam20-assessmentTools');
+  for (const document of ['assessment', 'answer_key']) {
+    await page.goto(`${printUrl}/preview?paper_size=Letter&document=${document}`);
+    await waitForPrintablePage(page);
+    const pages = page.locator('.pagedjs_page');
+    const footerContent = await pages.evaluateAll((sheets) =>
+      sheets.map((sheet) => {
+        const left = sheet.querySelector('.pagedjs_margin-bottom-left .pagedjs_margin-content')!;
+        const center = sheet.querySelector(
+          '.pagedjs_margin-bottom-center .pagedjs_margin-content',
+        )!;
+        const right = sheet.querySelector('.pagedjs_margin-bottom-right .pagedjs_margin-content')!;
+        return {
+          left: getComputedStyle(left, '::after').content,
+          center: getComputedStyle(center, '::after').content,
+          right: getComputedStyle(right, '::after').content,
+        };
+      }),
+    );
+    expect(footerContent.length).toBeGreaterThan(1);
+    const separator = '\u00a0\u00a0|\u00a0\u00a0';
+    for (const footer of footerContent) {
+      expect(footer.left).toContain(`Test Course${separator}Spring 2015`);
+      expect(footer.center).toContain('Exam with assessment tools');
+      expect(footer.right).toContain(
+        document === 'answer_key'
+          ? `Answer key${separator}Form A1${separator}Page `
+          : `Form A1${separator}Page `,
+      );
+    }
+    await expect(page.getByRole('article', { name: /cover page/ }).locator('footer')).toHaveCount(
+      0,
+    );
+  }
+});
 
 test('fills the cover grading table down columns using only included questions', async ({
   page,
@@ -79,25 +122,22 @@ test('uses the configured honor code for printed pledges when requireHonorCode i
         ...JSON.parse(original),
         requireHonorCode: false,
         honorCode:
-          '## Academic integrity pledge\n\nI, {{user_name}}, agree to follow the **course collaboration policy**.',
+          '## Honor code\n\nI, {{user_name}}, agree to follow the **course collaboration policy**.',
       }),
     );
     await syncCourse(testCoursePath);
-    const { printUrl: base } = await createPrintableForm(courseInstance, tid);
-    await page.goto(`${base}/preview?paper_size=Letter&include_honor_code=true`);
+    const { printUrl: base, printForm } = await createPrintableForm(courseInstance, tid);
+    const search = await savePrintSettings(printForm, { includeHonorCode: true });
+    await page.goto(`${base}/preview?${search}`);
     await waitForPrintablePage(page);
-    const pledge = page.getByRole('region', { name: 'Academic integrity pledge' });
-    await expect(pledge.getByRole('heading', { name: 'Academic integrity pledge' })).toHaveCount(1);
+    const pledge = page.getByRole('region', { name: 'Honor code' });
+    await expect(pledge.getByRole('heading', { name: 'Honor code' })).toHaveCount(1);
     await expect(pledge).toContainText(
       'I, ____________________________, agree to follow the course collaboration policy.',
     );
     await expect(pledge.locator('strong')).toHaveText('course collaboration policy');
     await expect(pledge).not.toContainText('I pledge on my honor');
-    const response = await downloadPrintableWord(
-      page,
-      base,
-      'paper_size=Letter&include_honor_code=true',
-    );
+    const response = await downloadPrintableWord(page, base);
     expect(response.status()).toBe(200);
     const archive = await unzipper.Open.buffer(await response.body());
     const xml = (
