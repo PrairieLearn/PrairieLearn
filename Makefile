@@ -54,7 +54,11 @@ setup-devuser:
 	@scripts/setup-devuser.sh "$(PL_USER)"
 
 devuser: setup-devuser start-support python-deps
-	@su -s /bin/bash devuser -c 'export XDG_CACHE_HOME="$$HOME/.cache"; exec pnpm dev'
+	@su -s /bin/bash devuser -c 'set -e; \
+		export XDG_CACHE_HOME="$$HOME/.cache"; \
+		mkdir -p "$$HOME/.config/prairielearn"; \
+		node -e "const fs = require(\"node:fs\"); const path = process.argv[1]; const config = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, \"utf8\")) : {}; config.logFilename = process.argv[2]; fs.writeFileSync(path, JSON.stringify(config, null, 2) + \"\n\");" "$$HOME/.config/prairielearn/config.json" "$$HOME/server.log"; \
+		exec pnpm dev'
 devuser-all:
 	@echo "WARNING: Workspaces require PL to run as root; expect them to fail."
 	@$(MAKE) -s -j2 devuser dev-workspace-host
