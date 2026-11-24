@@ -43,12 +43,11 @@ export async function markAllWorkspaceHostsUnhealthy(reason: string): Promise<Wo
   );
 }
 
-const WorkspaceHostAssignmentSchema = z.object({
+export interface WorkspaceHostAssignment {
   /** Null if no host had capacity, or if the launch is no longer current. */
-  workspace_host_id: z.string().nullable(),
-  launch_current: z.boolean(),
-});
-export type WorkspaceHostAssignment = z.infer<typeof WorkspaceHostAssignmentSchema>;
+  workspace_host_id: string | null;
+  launch_current: boolean;
+}
 
 /**
  * Assigns a host to a workspace launch. A launch that has been superseded by
@@ -59,15 +58,18 @@ export async function assignWorkspaceToHost(
   launch: { id: string; launch_uuid: string },
   capacity: number,
 ): Promise<WorkspaceHostAssignment> {
-  return await queryRow(
+  const params = { workspace_id: launch.id, launch_uuid: launch.launch_uuid };
+  const workspace_host_id = await queryScalar(
     sql.assign_workspace_to_host,
-    {
-      workspace_id: launch.id,
-      launch_uuid: launch.launch_uuid,
-      capacity,
-    },
-    WorkspaceHostAssignmentSchema,
+    { ...params, capacity },
+    z.string().nullable(),
   );
+  if (workspace_host_id !== null) return { workspace_host_id, launch_current: true };
+
+  // The assignment's snapshot does not show a replacement launch that
+  // committed while it waited for a host lock, so check in a new statement.
+  const launch_current = await queryScalar(sql.select_launch_is_current, params, z.boolean());
+  return { workspace_host_id: null, launch_current };
 }
 
 /**

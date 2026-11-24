@@ -31,14 +31,22 @@ WITH
       )
     FOR NO KEY UPDATE
   ),
+  -- An unguarded update can wait on the lock above for a transition that
+  -- committed after this transaction started, so clamp the elapsed time.
   deltas AS (
     SELECT
       CASE
-        WHEN old_workspace.state = 'launching' THEN now() - old_workspace.state_updated_at
+        WHEN old_workspace.state = 'launching' THEN GREATEST(
+          now() - old_workspace.state_updated_at,
+          '0 seconds'::interval
+        )
         ELSE '0 seconds'::interval
       END AS launching_delta,
       CASE
-        WHEN old_workspace.state = 'running' THEN now() - old_workspace.state_updated_at
+        WHEN old_workspace.state = 'running' THEN GREATEST(
+          now() - old_workspace.state_updated_at,
+          '0 seconds'::interval
+        )
         ELSE '0 seconds'::interval
       END AS running_delta
     FROM

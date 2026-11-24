@@ -130,7 +130,10 @@ SELECT
       id
     FROM
       updated_workspace_host
-  ) AS workspace_host_id,
+  ) AS workspace_host_id;
+
+-- BLOCK select_launch_is_current
+SELECT
   EXISTS (
     SELECT
       1
@@ -140,7 +143,7 @@ SELECT
       w.id = $workspace_id
       AND w.state = 'launching'
       AND w.launch_uuid = $launch_uuid
-  ) AS launch_current;
+  );
 
 -- BLOCK recapture_draining_hosts
 WITH

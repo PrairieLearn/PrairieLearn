@@ -85,7 +85,7 @@ async function getWorkspaceHostLogs(id: string | number) {
 
 async function getWorkspaceLogs(id: string | number) {
   return sqldb.queryRows(
-    'SELECT * FROM workspace_logs WHERE workspace_id = $id;',
+    'SELECT * FROM workspace_logs WHERE workspace_id = $id ORDER BY id;',
     { id },
     WorkspaceLogsSchema,
   );

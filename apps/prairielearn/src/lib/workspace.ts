@@ -378,11 +378,17 @@ async function startup(workspace_id: string): Promise<void> {
     logger.error(`Error launching workspace ${workspace_id}`, err);
     // The student may have rebooted or reset the workspace while we were
     // waiting for a host. This failure must not stop the launch that replaced
-    // this one.
-    await workspaceUtils.updateWorkspaceLaunchState(launch, {
-      state: 'stopped',
-      message: `Error! Click "Reboot" to try again. Detail: ${err}`,
-    });
+    // this one. A failure here must not reach the caller, which stops the
+    // workspace without checking which launch is current.
+    await workspaceUtils
+      .updateWorkspaceLaunchState(launch, {
+        state: 'stopped',
+        message: `Error! Click "Reboot" to try again. Detail: ${err}`,
+      })
+      .catch((stopErr) => {
+        logger.error(`Error stopping failed launch of workspace ${workspace_id}`, stopErr);
+        Sentry.captureException(stopErr);
+      });
   }
 }
 
