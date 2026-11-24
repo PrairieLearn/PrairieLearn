@@ -2,21 +2,27 @@ import * as crypto from 'crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
+import { getMcpResource } from '../../ee/lib/oauth/config.js';
+import { selectAgentConnections } from '../../ee/lib/oauth/connections.js';
+import { deleteOauthGrantForUser } from '../../ee/models/oauth-record.js';
 import { getClientIpAddress } from '../../lib/client-ip.js';
 import { UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
 import { getUserTrpcUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { AccessTokenSchema, InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
+import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { selectUserSettings } from '../../models/user-settings.js';
 
@@ -60,6 +66,20 @@ router.get(
     });
 
     const isExamMode = mode !== 'Public';
+
+    const agentConnections = await run(async () => {
+      if (!isEnterprise() || isExamMode) return null;
+      const enabled = await features.enabled('mcp-server', {
+        institution_id: authn_user.institution_id,
+        user_id: authn_user.id,
+      });
+      if (!enabled) return null;
+      return {
+        serverUrl: getMcpResource(),
+        timezone: authn_institution.display_timezone,
+        agents: await selectAgentConnections(authn_user.id),
+      };
+    });
     const trpcCsrfToken = generatePrefixCsrfToken(
       { url: getUserTrpcUrl(), authn_user_id: authn_user.id },
       config.secretKey,
@@ -91,6 +111,7 @@ router.get(
                 ipAddress={getClientIpAddress(req)}
                 accessTokens={isExamMode ? [] : UserAccessTokenSchema.array().parse(accessTokens)}
                 newAccessTokens={isExamMode ? [] : newAccessTokens}
+                agentConnections={agentConnections}
                 isExamMode={isExamMode}
                 csrfToken={res.locals.__csrf_token}
                 trpcCsrfToken={trpcCsrfToken}
@@ -140,6 +161,13 @@ router.post(
         token_id: req.body.token_id,
         user_id: res.locals.authn_user.id,
       });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'agent_disconnect') {
+      const disconnected = await deleteOauthGrantForUser({
+        id: z.string().parse(req.body.oauth_grant_id),
+        user_id: res.locals.authn_user.id,
+      });
+      if (!disconnected) throw new HttpStatusError(404, 'Connected agent not found.');
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

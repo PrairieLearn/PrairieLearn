@@ -1431,6 +1431,18 @@ export const NewsItemSchema = z.object({
 });
 export type NewsItem = z.infer<typeof NewsItemSchema>;
 
+export const OauthRecordSchema = z.object({
+  consumed_at: DateFromISOString.nullable(),
+  expires_at: DateFromISOString.nullable(),
+  grant_id: z.string().nullable(),
+  id: z.string(),
+  model: z.string(),
+  payload: z.record(z.string(), z.unknown()),
+  uid: z.string().nullable(),
+  user_id: IdSchema.nullable(),
+});
+export type OauthRecord = z.infer<typeof OauthRecordSchema>;
+
 export const PageViewLogSchema = null;
 
 export const PlanGrantSchema = z.object({
@@ -1961,6 +1973,7 @@ export const TableNames = [
   'named_locks',
   'news_item_read_states',
   'news_items',
+  'oauth_records',
   'page_view_logs',
   'courses',
   'plan_grants',
