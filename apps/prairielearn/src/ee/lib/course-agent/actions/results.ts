@@ -2,6 +2,8 @@ import { CourseActionCardSchema, type CourseActionResult } from '@prairielearn/c
 
 import type { CourseAgentAction } from '../../../../lib/db-types.js';
 
+import type { CourseActionOutcome } from './action.js';
+
 /** Names the request in its result, so the course agent knows what the outcome is about. */
 function named(action: CourseAgentAction) {
   return { name: action.action, title: CourseActionCardSchema.parse(action.card).title };
@@ -21,7 +23,7 @@ export function deniedCourseActionResult(
 
 export function finishedCourseActionResult(
   action: CourseAgentAction,
-  outcome: { status: 'succeeded'; summary: string } | { status: 'failed'; error: string },
+  outcome: CourseActionOutcome,
 ): CourseActionResult {
   return { decision: 'approved', action: named(action), outcome };
 }

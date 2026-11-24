@@ -11,10 +11,12 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { COURSE_AGENT_ACTIONS } from '../ee/lib/course-agent/actions/index.js';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
+import { constructCourseOrInstanceContext } from '../lib/authz-data.js';
 import { config } from '../lib/config.js';
 import type { CourseAgentConversation, User } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { updateIssuesOpen } from '../models/issue.js';
+import { selectCourseById } from '../models/course.js';
+import { updateIssueOpen } from '../models/issue.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 
 import * as helperServer from './helperServer.js';
@@ -148,7 +150,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
   test('every action and input says what it does', () => {
     for (const [name, action] of Object.entries(COURSE_AGENT_ACTIONS)) {
       assert.match(name, /^[a-z][a-z_]*$/);
-      for (const text of [action.group, action.description, action.effects, action.undo ?? '-']) {
+      for (const text of [action.description, action.results]) {
         assert.isNotEmpty(text.trim(), name);
       }
       for (const [key, field] of Object.entries(action.input.shape)) {
@@ -165,7 +167,6 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     expect(Object.keys(catalog.actions)).toEqual(Object.keys(COURSE_AGENT_ACTIONS));
     expect(catalog.actions.issues_close).toMatchObject({
       group: 'issues',
-      undo: 'Reopen the same issues.',
       input: {
         required: ['issue_ids'],
         // IDs are serialized as strings.
@@ -190,7 +191,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     );
     expect(response.status).toBe(200);
     // The agent is told what it asked for. The rows are course data, which only the card shows.
-    expect(await response.json()).toEqual({ title: 'Close 2 issues', alwaysAsk: false });
+    expect(await response.json()).toEqual({ title: 'Close 2 issues' });
     expect(await issuesOpen(issueIds)).toEqual([true, true]);
 
     await withUser(owner, async () => {
@@ -198,14 +199,15 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       const input = { conversationId: conversation.id, actionId: id };
       expect(await client.courseAgent.getAction.query(input)).toEqual({
         card: {
+          icon: 'check-circle',
+          tone: 'positive',
           title: 'Close 2 issues',
-          context: '1 issue already closed',
-          rows: [
-            { label: `#${issueIds[0]} · addNumbers`, detail: 'Wrong answer accepted.' },
-            { label: `#${issueIds[1]} · addNumbers`, detail: 'It is broken.' },
-          ],
-          undo: 'Reopen the same issues.',
-          alwaysAsk: false,
+          subtitle: '1 other issue already closed',
+          // Each issue links to its question, as the Issues page does.
+          items: issueIds.map((issueId) => ({
+            label: `#${issueId} addNumbers`,
+            href: expect.stringMatching(/^\/pl\/course\/1\/question\/\d+\/$/),
+          })),
         },
         decision: null,
         result: null,
@@ -245,6 +247,30 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     });
     expect(malformed.status).toBe(400);
     expect(await issuesOpen([open, closed])).toEqual([true, false]);
+  });
+
+  test('an instructor acting in a role below the one an action needs is refused', async () => {
+    const open = await insertIssue();
+    // An owner viewing the course as a Viewer has a Viewer's permissions.
+    const { authzData } = await constructCourseOrInstanceContext({
+      user: owner,
+      course_id: '1',
+      course_instance_id: null,
+      ip: null,
+      req_date: new Date(),
+      is_administrator: false,
+      // The mode is otherwise found from the IP address of a request.
+      overrides: { course_role: 'Viewer', mode: 'Public' },
+    });
+    assert(authzData);
+    const ctx = { course: await selectCourseById('1'), user: owner, authz_data: authzData };
+    await expect(
+      COURSE_AGENT_ACTIONS.issues_close.describe(ctx, { issue_ids: [open] }),
+    ).rejects.toThrow('The instructor needs Editor access to the course');
+    await expect(COURSE_AGENT_ACTIONS.issues_close.run(ctx, { issue_ids: [open] })).rejects.toThrow(
+      'The instructor needs Editor access to the course',
+    );
+    expect(await issuesOpen([open])).toEqual([true]);
   });
 
   test('the course agent requests only in its conversation course, as an owner', async () => {
@@ -338,7 +364,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     const issueIds = [await insertIssue({ open: false })];
     const id = crypto.randomUUID();
     const response = await request(conversation, 'issues_reopen', { issue_ids: issueIds }, id);
-    expect(await response.json()).toEqual({ title: 'Reopen 1 issue', alwaysAsk: false });
+    expect(await response.json()).toEqual({ title: `Reopen issue #${issueIds[0]}` });
     await withUser(owner, async () => {
       await createClient(owner).courseAgent.postReviewDecision.mutate({
         conversationId: conversation.id,
@@ -384,7 +410,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     expect(await issuesOpen(issueIds)).toEqual([true]);
     const result = {
       decision: 'denied',
-      action: { name: 'issues_close', title: 'Close 1 issue' },
+      action: { name: 'issues_close', title: `Close issue #${issueIds[0]}` },
       outcome: { status: 'not_attempted' },
     };
     await waitForDeliveries(2);
@@ -397,10 +423,10 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     const id = crypto.randomUUID();
     await request(conversation, 'issues_close', { issue_ids: issueIds }, id);
     // Someone closes one of the two on the Issues page before the instructor decides.
-    await updateIssuesOpen({
-      course_id: '1',
-      issue_ids: [issueIds[0]],
+    await updateIssueOpen({
+      issue_id: issueIds[0],
       open: false,
+      course_id: '1',
       authn_user_id: owner.id,
     });
     await withUser(owner, async () => {

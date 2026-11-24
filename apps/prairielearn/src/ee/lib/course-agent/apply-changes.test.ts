@@ -446,11 +446,11 @@ it('leaves an approved action alone while it may still be running, then reports 
     action: 'issues_close',
     input: { issue_ids: ['1'] },
     card: {
+      icon: 'check-circle',
+      tone: 'positive',
       title: 'Close 1 issue',
-      context: null,
-      rows: [],
-      undo: 'Reopen the same issues.',
-      alwaysAsk: false,
+      subtitle: null,
+      items: [],
     },
   });
   // An approval claims its row before the action runs, so the row has no result meanwhile.

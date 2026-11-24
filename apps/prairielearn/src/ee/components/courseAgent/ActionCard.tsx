@@ -2,12 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { Button } from 'react-bootstrap';
 
-import type { CourseActionCard, CourseActionResult } from '@prairielearn/course-agent-types';
+import type { CourseActionResult } from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
+
+import { AgentCard } from './AgentCard.js';
+import { DecisionButtons, ResumeNotice } from './RequestChangesCard.js';
 
 /**
  * A course action the agent requested, for the instructor to approve or deny. Everything shown
@@ -87,111 +90,10 @@ export function ActionCard({
   const approving =
     (decision.isPending && decision.variables.decision === 'approved') ||
     (data?.decision === 'approved' && !data.result);
-  const disabled = !pending || decision.isPending;
-  return (
-    <div className="course-agent-review border rounded-3">
-      {data && (
-        <>
-          <div className="d-flex align-items-start gap-2">
-            <i
-              className={
-                pending
-                  ? 'bi bi-exclamation-triangle text-warning'
-                  : 'bi bi-lightning-charge text-body-secondary'
-              }
-              aria-hidden="true"
-            />
-            <div className="flex-grow-1" style={{ minWidth: 0 }}>
-              <div>{data.card.title}</div>
-              {data.card.context && (
-                <div className="small text-body-secondary">{data.card.context}</div>
-              )}
-            </div>
-          </div>
-          {data.card.rows.length > 0 && (
-            <div className="small border-top border-bottom my-2 py-2">
-              <ActionRows rows={data.card.rows.slice(0, ROWS_SHOWN)} />
-              {data.card.rows.length > ROWS_SHOWN && (
-                // The instructor decides on every row, so the rest are one click away.
-                <details>
-                  <summary className="text-body-secondary py-1">
-                    Show all {data.card.rows.length}
-                  </summary>
-                  <ActionRows rows={data.card.rows.slice(ROWS_SHOWN)} />
-                </details>
-              )}
-            </div>
-          )}
-          {data.result ? (
-            <ActionResult result={data.result} />
-          ) : (
-            <>
-              <p className="small text-body-secondary mb-2">
-                {data.card.undo ? `To undo: ${data.card.undo}` : 'This cannot be undone.'}
-                {data.card.alwaysAsk && ' PrairieLearn always asks before doing this.'}
-              </p>
-              {!approving && (
-                <div className="d-flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    className="course-agent-composer-button course-agent-composer-send"
-                    disabled={disabled}
-                    onClick={() => decide('approved')}
-                  >
-                    Approve once
-                  </Button>
-                  {!data.card.alwaysAsk && (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="course-agent-composer-button course-agent-review-always"
-                      disabled={disabled}
-                      onClick={() => decide('approved', true)}
-                    >
-                      Always approve
-                    </Button>
-                  )}
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="course-agent-composer-button"
-                    disabled={disabled}
-                    onClick={() => decide('denied')}
-                  >
-                    Deny
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
-      {approving && (
-        <p className="small text-muted mt-2 mb-0" role="status">
-          {autoApprove ? 'Approved automatically. Working…' : 'Working…'}
-        </p>
-      )}
-      {/* The composer delivers a denial by message again when the instructor resends it. */}
-      {canResume && data?.result && !data.result.viaMessage && (
-        <div className="d-flex align-items-center gap-2 mt-2">
-          <span className="small text-muted">The course agent has not received this result.</span>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            disabled={resume.isPending}
-            onClick={() => resume.mutate({ conversationId })}
-          >
-            Resume
-          </Button>
-        </div>
-      )}
+  const errors = (
+    <>
       {action.isError && (
-        <Button
-          className="mt-2"
-          size="sm"
-          variant="outline-secondary"
-          onClick={() => void action.refetch()}
-        >
+        <Button size="sm" variant="outline-secondary" onClick={() => void action.refetch()}>
           Reload request
         </Button>
       )}
@@ -202,29 +104,41 @@ export function ActionCard({
           render={{ UNKNOWN: ({ message }) => message }}
         />
       )}
-    </div>
+    </>
   );
-}
-
-const ROWS_SHOWN = 20;
-
-function ActionRows({ rows }: { rows: CourseActionCard['rows'] }) {
+  // Without the request there is nothing to show but why it did not load.
+  if (!data) return <div className="course-agent-review border rounded-3">{errors}</div>;
   return (
-    <ul className="list-unstyled mb-0">
-      {rows.map((row, index) => (
-        // Rows are fixed once requested, so their positions identify them. The instructor
-        // decides on these, so a long detail wraps instead of being cut off.
-        // oxlint-disable-next-line react/no-array-index-key
-        <li key={index} className="d-flex gap-3 py-1">
-          <span className="flex-shrink-0 course-agent-action-row-label">{row.label}</span>
-          {row.detail && (
-            <span className="text-body-secondary ms-auto text-end course-agent-action-row-detail">
-              {row.detail}
-            </span>
-          )}
-        </li>
-      ))}
-    </ul>
+    <AgentCard
+      icon={data.card.icon}
+      tone={data.card.tone}
+      title={data.card.title}
+      subtitle={data.card.subtitle}
+      items={data.card.items}
+    >
+      {data.result ? (
+        <ActionResult result={data.result} />
+      ) : approving ? (
+        <p className="small text-muted mb-0" role="status">
+          {autoApprove ? 'Approved automatically. Working…' : 'Working…'}
+        </p>
+      ) : (
+        <DecisionButtons
+          disabled={!pending || decision.isPending}
+          canApprove
+          onDecision={decide}
+          onApproveAlways={() => decide('approved', true)}
+        />
+      )}
+      {/* The composer delivers a denial by message again when the instructor resends it. */}
+      {canResume && data.result && !data.result.viaMessage && (
+        <ResumeNotice
+          disabled={resume.isPending}
+          onResume={() => resume.mutate({ conversationId })}
+        />
+      )}
+      {errors}
+    </AgentCard>
   );
 }
 

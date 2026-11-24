@@ -832,7 +832,7 @@ export const COURSE_DATA_DATASETS = {
   }),
 };
 
-type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;
+export type CourseDatasetName = keyof typeof COURSE_DATA_DATASETS;
 
 export function isCourseDataset(name: string): name is CourseDatasetName {
   return Object.hasOwn(COURSE_DATA_DATASETS, name);

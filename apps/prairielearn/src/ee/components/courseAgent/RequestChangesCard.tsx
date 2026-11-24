@@ -214,7 +214,7 @@ export function RequestChangesCard({
   );
 }
 
-function ResumeNotice({ disabled, onResume }: { disabled: boolean; onResume: () => void }) {
+export function ResumeNotice({ disabled, onResume }: { disabled: boolean; onResume: () => void }) {
   return (
     <div className="d-flex align-items-center gap-2 mt-2">
       <span className="small text-muted">The course agent has not received this result.</span>
@@ -226,7 +226,7 @@ function ResumeNotice({ disabled, onResume }: { disabled: boolean; onResume: () 
 }
 
 /** The three choices every request offers, in the order the file review shows them. */
-function DecisionButtons({
+export function DecisionButtons({
   disabled,
   canApprove,
   onDecision,

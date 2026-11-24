@@ -638,7 +638,7 @@ const listCourseActionsTool = {
   type: 'function',
   name: 'list_course_actions',
   description:
-    'List the actions request_course_action can request, which change things in PrairieLearn that course files do not hold, such as closing issues. Each entry says what the action does, what staff and students notice, how to undo it, and what input it takes.',
+    'List the actions request_course_action can request, which change things in PrairieLearn that course files do not hold, such as closing issues. Each entry says what the action does, what is different afterward, and what input it takes.',
   inputSchema: toolInputSchema(ListCourseActionsArguments),
 } satisfies DynamicToolSpec;
 

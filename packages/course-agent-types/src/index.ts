@@ -489,18 +489,21 @@ export type NavigationPart = z.infer<typeof NavigationPartSchema>;
  * do rather than on the agent's description of it.
  */
 export const CourseActionCardSchema = z.strictObject({
+  /** The action's Bootstrap icon, without the `bi-` prefix. */
+  icon: z.string().max(50),
+  /** `positive` resolves or adds something; `caution` changes something that exists. */
+  tone: z.enum(['positive', 'caution']),
   /** What will happen, such as `Close 3 issues`. */
   title: z.string().min(1).max(200),
-  /** Where it happens, such as `Exam 1 · Fa26`, when the title does not say. */
-  context: z.string().max(300).nullable(),
-  /** Everything affected, one line each. No action takes more inputs than this. */
-  rows: z
-    .array(z.strictObject({ label: z.string().max(300), detail: z.string().max(300).nullable() }))
+  /** Anything the title leaves out, such as what is left as is. */
+  subtitle: z.string().max(300).nullable(),
+  /**
+   * Everything that will change, each with a link to its page in PrairieLearn when it has one.
+   * No action takes more inputs than this.
+   */
+  items: z
+    .array(z.strictObject({ label: z.string().max(300), href: z.string().max(500).nullable() }))
     .max(1000),
-  /** How to reverse the action, or null when it cannot be reversed. */
-  undo: z.string().max(500).nullable(),
-  /** The instructor decides this one even when they chose to approve without being asked. */
-  alwaysAsk: z.boolean(),
 });
 
 export type CourseActionCard = z.infer<typeof CourseActionCardSchema>;
@@ -513,9 +516,7 @@ export const CourseActionCatalogSchema = z.object({
     z.object({
       group: z.string(),
       description: z.string(),
-      effects: z.string(),
-      undo: z.string().nullable(),
-      alwaysAsk: z.boolean(),
+      results: z.string(),
       /** JSON Schema of the action's input. */
       input: z.looseObject({}),
     }),
@@ -535,10 +536,7 @@ export const CourseActionRequestSchema = z.strictObject({
  * PrairieLearn: its rows hold course data, which the agent reads only with the instructor's
  * approval.
  */
-export const CourseActionRequestReplySchema = z.object({
-  title: z.string().max(200),
-  alwaysAsk: z.boolean(),
-});
+export const CourseActionRequestReplySchema = z.object({ title: z.string().max(200) });
 
 /**
  * The outcome of a course action request. An action occupies the conversation's review slot, so

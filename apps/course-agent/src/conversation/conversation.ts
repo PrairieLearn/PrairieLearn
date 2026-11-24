@@ -1449,6 +1449,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
    * takes the review slot, so new messages wait for its result as they do for a file review.
    */
   private async requestCourseAction(request: CourseActionRequest): Promise<ToolReply> {
+    // The review slot holds one request the instructor has not decided, of any kind.
     if (this.record.review) {
       return {
         success: false,
@@ -1479,7 +1480,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       },
     });
     // Chat history shows the request by ID; PrairieLearn holds what it asks and its outcome.
-    const autoApprove = this.record.approvalMode === 'always_approve' && !reply.alwaysAsk;
+    const autoApprove = this.record.approvalMode === 'always_approve';
     this.native?.emit({
       type: 'data-action',
       id,

@@ -727,10 +727,12 @@ export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 export const CourseAgentActionSchema = z.object({
   action: z.string(),
   agent_action_id: z.string(),
+  // Has one shape, CourseActionCardSchema, which is applied where the card is read.
   card: z.unknown(),
   course_agent_conversation_id: IdSchema,
   created_at: DateFromISOString,
   id: IdSchema,
+  // Each action has its own input schema, which is applied when the action is described or run.
   input: z.unknown(),
 });
 export type CourseAgentAction = z.infer<typeof CourseAgentActionSchema>;

@@ -44,7 +44,6 @@ router.post(
         ctx: {
           course: res.locals.course,
           user: res.locals.authn_user,
-          is_administrator: res.locals.is_administrator,
           authz_data: res.locals.authz_data,
         },
         conversation,

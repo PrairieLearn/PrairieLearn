@@ -13,7 +13,7 @@ import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getUrl } from '../../lib/url.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import { updateIssuesOpen } from '../../models/issue.js';
+import { closeIssues, updateIssueOpen } from '../../models/issue.js';
 
 import { InstructorIssues, IssueRowSchema, PAGE_SIZE } from './instructorIssues.html.js';
 
@@ -112,19 +112,13 @@ function parseRawQuery(str: string) {
   return filters;
 }
 
-async function updateIssueOpen(
+async function openOrCloseIssue(
   issue_id: string,
   new_open: boolean,
   course_id: string,
   authn_user_id: string,
 ) {
-  const { matched } = await updateIssuesOpen({
-    course_id,
-    issue_ids: [issue_id],
-    open: new_open,
-    authn_user_id,
-  });
-  if (matched === 0) {
+  if (!(await updateIssueOpen({ issue_id, open: new_open, course_id, authn_user_id }))) {
     throw new HttpStatusError(
       403,
       `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,
@@ -276,7 +270,7 @@ router.post(
     }
 
     if (req.body.__action === 'open') {
-      await updateIssueOpen(
+      await openOrCloseIssue(
         req.body.issue_id,
         true, // open status
         res.locals.course.id,
@@ -284,7 +278,7 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close') {
-      await updateIssueOpen(
+      await openOrCloseIssue(
         req.body.issue_id,
         false, // open status
         res.locals.course.id,
@@ -293,10 +287,9 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
       const issueIds = req.body.unsafe_issue_ids.split(',').filter((id: string) => id !== '');
-      const { updated: closedCount } = await updateIssuesOpen({
-        course_id: res.locals.course.id,
+      const closedCount = await closeIssues({
         issue_ids: issueIds,
-        open: false,
+        course_id: res.locals.course.id,
         authn_user_id: res.locals.authn_user.id,
       });
       flash('success', `Closed ${closedCount} ${closedCount === 1 ? 'issue' : 'issues'}.`);

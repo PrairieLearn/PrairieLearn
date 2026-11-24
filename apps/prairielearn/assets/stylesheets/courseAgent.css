@@ -138,9 +138,22 @@ textarea.course-agent-composer-input {
   width: 2rem;
   height: 2rem;
   font-size: 1rem;
+  border-radius: var(--bs-border-radius);
+}
+
+.course-agent-card-icon-neutral {
   color: var(--bs-primary-text-emphasis);
   background: var(--bs-primary-bg-subtle);
-  border-radius: var(--bs-border-radius);
+}
+
+.course-agent-card-icon-positive {
+  color: var(--bs-success-text-emphasis);
+  background: var(--bs-success-bg-subtle);
+}
+
+.course-agent-card-icon-caution {
+  color: var(--bs-warning-text-emphasis);
+  background: var(--bs-warning-bg-subtle);
 }
 
 /* The changed files open the diff; a grey button keeps them apart from the three choices. */
@@ -413,15 +426,4 @@ body:has(.course-agent-panel-animate) .app-main {
   body:has(.course-agent-panel-animate) .app-main {
     transition: none;
   }
-}
-
-/* A label keeps its words whole and takes at most half the row; only an unbroken string wraps. */
-.course-agent-action-row-label {
-  max-width: 50%;
-  overflow-wrap: anywhere;
-}
-
-.course-agent-action-row-detail {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }

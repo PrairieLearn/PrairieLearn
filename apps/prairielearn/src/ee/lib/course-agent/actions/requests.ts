@@ -48,7 +48,7 @@ export async function requestCourseAction({
   id: string;
   name: string;
   input: unknown;
-}): Promise<{ title: string; alwaysAsk: boolean }> {
+}): Promise<{ title: string }> {
   if (!Object.hasOwn(COURSE_AGENT_ACTIONS, name)) {
     throw new HttpStatusError(
       404,
@@ -66,7 +66,7 @@ export async function requestCourseAction({
     });
     // The card's rows are course data, which the agent reads only with approval, so it is told
     // only what it asked for.
-    return { title: card.title, alwaysAsk: card.alwaysAsk };
+    return { title: card.title };
   } catch (error) {
     if (error instanceof CourseActionError) throw new HttpStatusError(400, error.message);
     throw error;
@@ -103,8 +103,7 @@ async function runCourseAction(
         'Nothing was changed: what this request would do is no longer what the instructor approved, because the course changed in the meantime. Request it again so they can decide on the current change.',
       );
     }
-    const { summary } = await definition.run(ctx, action.input);
-    return finishedCourseActionResult(action, { status: 'succeeded', summary });
+    return finishedCourseActionResult(action, await definition.run(ctx, action.input));
   } catch (error) {
     if (error instanceof CourseActionError) {
       return finishedCourseActionResult(action, { status: 'failed', error: error.message });

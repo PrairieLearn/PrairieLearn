@@ -4,7 +4,6 @@ import { toJsonSchema } from '../json-schema.js';
 
 import type { CourseAction } from './action.js';
 import { issueActions } from './issues.js';
-import { studentActions } from './students.js';
 
 /**
  * The actions the course agent can request: the single source of truth for what it can change
@@ -14,7 +13,6 @@ import { studentActions } from './students.js';
  */
 export const COURSE_AGENT_ACTIONS: Record<string, CourseAction> = {
   ...issueActions,
-  ...studentActions,
 };
 
 const COURSE_ACTIONS_VERSION = 1;
@@ -29,9 +27,7 @@ export function courseActionCatalog(): CourseActionCatalog {
         {
           group: action.group,
           description: action.description,
-          effects: action.effects,
-          undo: action.undo,
-          alwaysAsk: action.alwaysAsk,
+          results: action.results,
           input: toJsonSchema(action.input),
         },
       ]),
