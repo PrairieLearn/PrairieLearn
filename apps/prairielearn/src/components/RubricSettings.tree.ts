@@ -186,8 +186,9 @@ export function sortChildrenByPoints<T extends EditorTreeRow>(
     .map(([start, end]) => rows.slice(start, end))
     .sort((a, b) => {
       const [pointsA, pointsB] = [a[0].rubric_item.points, b[0].rubric_item.points];
-      if (pointsA == null || pointsB == null)
+      if (pointsA == null || pointsB == null) {
         return (pointsA == null ? 1 : 0) - (pointsB == null ? 1 : 0);
+      }
       return sign * (pointsA - pointsB);
     });
   return [...rows.slice(0, i + 1), ...children.flat(), ...rows.slice(subtreeEnd(rows, i))];
