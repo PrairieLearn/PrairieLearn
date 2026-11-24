@@ -127,7 +127,7 @@ export async function getReview(
     if (result && isCourseDataReadResult(result)) {
       return describeDataRead(result.dataRead, result.decision, result.viaMessage === true);
     }
-    // A course action's decision is read with getAction, so only a file review's arrives here.
+    // A course action is answered before this is called, so only a file review's arrives here.
     return {
       status: 'decided' as const,
       result: result === null ? null : RequestChangesResultSchema.parse(result),
@@ -461,8 +461,8 @@ async function deliverUndeliveredReviewResult(
     if (row.result !== null) {
       return await deliverResult(conversation, row, ReviewResultSchema.parse(row.result));
     }
-    // Only approvals wait for a result. Each creates a job, so a missing one was deleted before
-    // its result was recorded.
+    // Only approvals wait for a result. A file review's approval creates a job, so a missing
+    // one was deleted before its result was recorded.
     if (row.job_sequence_id === null) {
       const action = await selectOptionalCourseAgentAction({
         course_agent_conversation_id: row.course_agent_conversation_id,

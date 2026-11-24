@@ -284,6 +284,8 @@ function describePart(part: UIMessage['parts'][number]) {
       return ReviewPartSchema.safeParse(part.data).data?.dataRead
         ? '[Asked the instructor to approve a read of course data.]'
         : '[Submitted changes for instructor review.]';
+    case 'data-action':
+      return '[Requested a course action for the instructor to approve.]';
     case 'data-input-request':
       return describeInputRequest(part.data);
     case 'data-tool':

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { type CourseActionCard, CourseActionCardSchema } from '@prairielearn/course-agent-types';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { type AuthzData, type CourseRole, hasRole } from '../../../../lib/authz-data-lib.js';
 import type { Course, User } from '../../../../lib/db-types.js';
@@ -62,10 +63,11 @@ interface CourseActionDefinition<Schema extends z.ZodObject> {
     input: z.infer<Schema>;
   }) => Promise<CourseActionDescription>;
   /**
-   * Carries the action out and says, in one sentence, what happened. A run fails in one of three
-   * ways, and each reaches the course agent as a failed result while the course stays unchanged:
-   * it returns `failed`; it throws `CourseActionError`, as the checks before it do; or it throws
-   * anything else, which is logged and reported and reaches the agent as an internal error.
+   * Carries the action out and says, in one sentence, what happened. It runs in a transaction. A
+   * run fails in one of three ways, and each rolls back what it changed and reaches the course
+   * agent as a failed result: it returns `failed`; it throws `CourseActionError`, as the checks
+   * before it do; or it throws anything else, which is logged and reported and reaches the agent
+   * as an internal error.
    */
   run: (args: { ctx: CourseActionContext; input: z.infer<Schema> }) => Promise<CourseActionOutcome>;
 }
@@ -119,6 +121,14 @@ export function action<Schema extends z.ZodObject>(
         items: description.items.map((item) => ({ ...item, label: clip(item.label, 300) })),
       });
     },
-    run: async (ctx, raw) => await definition.run(check(ctx, raw)),
+    async run(ctx, raw) {
+      const args = check(ctx, raw);
+      // A run that fails partway is rolled back, so a failed result always means nothing changed.
+      return await runInTransactionAsync(async () => {
+        const outcome = await definition.run(args);
+        if (outcome.status === 'failed') throw new CourseActionError(outcome.error);
+        return outcome;
+      });
+    },
   };
 }

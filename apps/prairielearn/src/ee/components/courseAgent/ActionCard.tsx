@@ -34,19 +34,22 @@ export function ActionCard({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const actionInput = { conversationId, actionId };
+  // The chat reads the same request with this query to decide what a new message does, so a
+  // denial sent as a message updates the card too.
+  const reviewInput = { conversationId, reviewId: actionId };
   const action = useQuery({
-    ...trpc.courseAgent.getAction.queryOptions(actionInput),
+    ...trpc.courseAgent.getReview.queryOptions(reviewInput),
     retry: false,
     // An approval made in another tab, or still running, has a decision before it has a result.
     refetchInterval: (query) => {
       const data = query.state.data;
-      return data?.decision === 'approved' && !data.result ? 2000 : false;
+      return data?.status === 'action' && data.decision === 'approved' && !data.result
+        ? 2000
+        : false;
     },
   });
   // Set when the instructor clicks "Always approve", so the mode changes once the approval succeeds.
   const alwaysApproveRef = useRef(false);
-  const reviewKey = trpc.courseAgent.getReview.queryKey({ conversationId, reviewId: actionId });
   const decision = useMutation({
     ...trpc.courseAgent.postReviewDecision.mutationOptions(),
     retry: false,
@@ -54,22 +57,18 @@ export function ActionCard({
     onSuccess: () => {
       if (alwaysApproveRef.current) onAlwaysApprove();
     },
-    // The chat reads the same request through getReview to decide what a new message does.
     onSettled: () =>
-      Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: trpc.courseAgent.getAction.queryKey(actionInput),
-        }),
-        queryClient.invalidateQueries({ queryKey: reviewKey }),
-      ]),
+      queryClient.invalidateQueries({
+        queryKey: trpc.courseAgent.getReview.queryKey(reviewInput),
+      }),
   });
   const resume = useMutation({
     ...trpc.courseAgent.resume.mutationOptions(),
     retry: false,
   });
-  const data = action.data;
+  const data = action.data?.status === 'action' ? action.data : null;
   const failure =
-    getAppError<CourseAgentError['GetAction']>(action.error) ??
+    getAppError<CourseAgentError['GetReview']>(action.error) ??
     getAppError<CourseAgentError['PostReviewDecision']>(decision.error) ??
     getAppError<CourseAgentError['Resume']>(resume.error);
   const pending = data?.decision === null;

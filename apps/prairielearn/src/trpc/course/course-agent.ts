@@ -61,11 +61,9 @@ export const courseAgentRouter = t.router({
         user_id: ctx.locals.authn_user.id,
       });
       if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      // A requested course action waits in the review slot; its card reads it with getAction.
+      // A requested course action waits in the review slot, and PrairieLearn holds it.
       const action = await getCourseAction(conversation, input.reviewId);
-      if (action) {
-        return { status: 'action' as const, decision: action.decision, result: action.result };
-      }
+      if (action) return { status: 'action' as const, ...action };
       return getReview(ctx.course, conversation, input.reviewId);
     }),
   postReviewDecision: courseAgentProcedure
@@ -100,9 +98,10 @@ export const courseAgentRouter = t.router({
       if (action) {
         return postCourseActionDecision({
           ctx: {
+            // The whole course row, which model functions take; `ctx.course` is the staff view.
             course: ctx.locals.course,
             user: ctx.locals.authn_user,
-            authz_data: ctx.locals.authz_data,
+            authz_data: ctx.authz_data,
           },
           conversation,
           action,
@@ -117,19 +116,6 @@ export const courseAgentRouter = t.router({
         user: ctx.locals.user,
         authzData: ctx.authz_data,
       });
-    }),
-  getAction: courseAgentProcedure
-    .input(z.object({ conversationId: IdSchema, actionId: z.uuid() }))
-    .query(async ({ ctx, input }) => {
-      const conversation = await selectOptionalCourseAgentConversation({
-        id: input.conversationId,
-        course_id: ctx.course.id,
-        user_id: ctx.locals.authn_user.id,
-      });
-      if (!conversation) throw new TRPCError({ code: 'NOT_FOUND' });
-      const action = await getCourseAction(conversation, input.actionId);
-      if (!action) throw new TRPCError({ code: 'NOT_FOUND' });
-      return action;
     }),
   list: courseAgentProcedure.query(async ({ ctx }) => {
     const conversations = await selectCourseAgentConversationsForUser({
@@ -247,7 +233,6 @@ export interface CourseAgentError {
   Create: never;
   Resume: never;
   GetReview: never;
-  GetAction: never;
   PostReviewDecision: never;
   SetTitle: never;
   SetApprovalMode: never;

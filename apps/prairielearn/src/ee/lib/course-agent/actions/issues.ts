@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -36,7 +35,7 @@ async function selectIssues(ctx: CourseActionContext, issueIds: string[]) {
 
 /**
  * What the instructor sees for a request that changes some of the issues it names: the issues
- * that will change, each linking where the Issues page links it, and a count of the rest.
+ * that will change, each linking to it on the Issues page, and a count of the rest.
  */
 function describeIssues({
   ctx,
@@ -68,9 +67,9 @@ function describeIssues({
     items: changing.map((issue) => ({
       // The Issues page shows the same number, which tells apart two reports on one question.
       label: `#${issue.id} ${issue.question_qid ?? ''}`.trim(),
-      // The question as its reporter saw it, where the Issues page's "instructor view" goes.
-      href: issue.question_id
-        ? `/pl/course/${ctx.course.id}/question/${issue.question_id}/${issue.variant_id ? `?variant_id=${issue.variant_id}` : ''}`
+      // The Issues page, searched for the question, shows the report and who can open what.
+      href: issue.question_qid
+        ? `/pl/course/${ctx.course.id}/course_admin/issues?q=${encodeURIComponent(`qid:${issue.question_qid}`)}`
         : null,
     })),
   };
@@ -128,20 +127,17 @@ export const issueActions = {
     },
     run: async ({ ctx, input }) => {
       // The Issues page opens one issue at a time, so this opens each closed one the same way.
-      const reopened = await runInTransactionAsync(async () => {
-        const issues = await selectIssues(ctx, input.issue_ids);
-        const closed = issues.filter((issue) => !issue.open);
-        for (const issue of closed) {
-          await updateIssueOpen({
-            issue_id: issue.id,
-            open: true,
-            course_id: ctx.course.id,
-            authn_user_id: ctx.user.id,
-          });
-        }
-        return closed.length;
-      });
-      return { status: 'succeeded', summary: `Reopened ${count(reopened, 'issue')}.` };
+      const issues = await selectIssues(ctx, input.issue_ids);
+      const closed = issues.filter((issue) => !issue.open);
+      for (const issue of closed) {
+        await updateIssueOpen({
+          issue_id: issue.id,
+          open: true,
+          course_id: ctx.course.id,
+          authn_user_id: ctx.user.id,
+        });
+      }
+      return { status: 'succeeded', summary: `Reopened ${count(closed.length, 'issue')}.` };
     },
   }),
 };

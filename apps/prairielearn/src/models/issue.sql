@@ -2,8 +2,6 @@
 SELECT
   i.id,
   i.open,
-  i.question_id,
-  i.variant_id,
   q.qid AS question_qid
 FROM
   issues AS i

@@ -5,12 +5,10 @@ import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/** What identifies an issue to staff and links to it, without its course and system data. */
+/** What identifies an issue to staff, without its course and system data. */
 const IssueSummarySchema = z.object({
   id: IdSchema,
   open: z.boolean().nullable(),
-  question_id: IdSchema.nullable(),
-  variant_id: IdSchema.nullable(),
   question_qid: z.string().nullable(),
 });
 export type IssueSummary = z.infer<typeof IssueSummarySchema>;

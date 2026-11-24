@@ -9,6 +9,7 @@ import { loadSqlEquiv, queryScalar, queryScalars } from '@prairielearn/postgres'
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
+import { action } from '../ee/lib/course-agent/actions/action.js';
 import { COURSE_AGENT_ACTIONS } from '../ee/lib/course-agent/actions/index.js';
 import { insertCourseAgentConversation } from '../ee/models/course-agent-conversation.js';
 import { constructCourseOrInstanceContext } from '../lib/authz-data.js';
@@ -196,26 +197,24 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
 
     await withUser(owner, async () => {
       const client = createClient(owner);
-      const input = { conversationId: conversation.id, actionId: id };
-      expect(await client.courseAgent.getAction.query(input)).toEqual({
+      // The card and the chat read the request with the same query.
+      const input = { conversationId: conversation.id, reviewId: id };
+      expect(await client.courseAgent.getReview.query(input)).toEqual({
+        status: 'action',
         card: {
           icon: 'check-circle',
           tone: 'positive',
           title: 'Close 2 issues',
           subtitle: '1 other issue already closed',
-          // Each issue links to its question, as the Issues page does.
+          // Each issue links to the Issues page, searched for its question.
           items: issueIds.map((issueId) => ({
             label: `#${issueId} addNumbers`,
-            href: expect.stringMatching(/^\/pl\/course\/1\/question\/\d+\/$/),
+            href: '/pl/course/1/course_admin/issues?q=qid%3AaddNumbers',
           })),
         },
         decision: null,
         result: null,
       });
-      // The chat asks about whatever waits in the review slot.
-      expect(
-        await client.courseAgent.getReview.query({ conversationId: conversation.id, reviewId: id }),
-      ).toEqual({ status: 'action', decision: null, result: null });
     });
   });
 
@@ -249,9 +248,8 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     expect(await issuesOpen([open, closed])).toEqual([true, false]);
   });
 
-  test('an instructor acting in a role below the one an action needs is refused', async () => {
-    const open = await insertIssue();
-    // An owner viewing the course as a Viewer has a Viewer's permissions.
+  /** The context an action runs in, for the owner acting in the given course role. */
+  async function actionContext(course_role: 'Owner' | 'Viewer') {
     const { authzData } = await constructCourseOrInstanceContext({
       user: owner,
       course_id: '1',
@@ -260,10 +258,43 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
       req_date: new Date(),
       is_administrator: false,
       // The mode is otherwise found from the IP address of a request.
-      overrides: { course_role: 'Viewer', mode: 'Public' },
+      overrides: { course_role, mode: 'Public' },
     });
     assert(authzData);
-    const ctx = { course: await selectCourseById('1'), user: owner, authz_data: authzData };
+    return { course: await selectCourseById('1'), user: owner, authz_data: authzData };
+  }
+
+  test('a run that fails leaves nothing changed', async () => {
+    const open = await insertIssue();
+    const closesThenFails = action({
+      group: 'issues',
+      icon: 'check-circle',
+      tone: 'positive',
+      description: 'Closes an issue, then fails.',
+      results: 'Nothing.',
+      requiredRole: ['Editor'],
+      input: z.strictObject({}),
+      describe: async () => ({ title: 'Close an issue', items: [] }),
+      run: async ({ ctx }) => {
+        await updateIssueOpen({
+          issue_id: open,
+          open: false,
+          course_id: ctx.course.id,
+          authn_user_id: ctx.user.id,
+        });
+        return { status: 'failed', error: 'The second step could not be done.' };
+      },
+    });
+    await expect(closesThenFails.run(await actionContext('Owner'), {})).rejects.toThrow(
+      'The second step could not be done.',
+    );
+    expect(await issuesOpen([open])).toEqual([true]);
+  });
+
+  test('an instructor acting in a role below the one an action needs is refused', async () => {
+    const open = await insertIssue();
+    // An owner viewing the course as a Viewer has a Viewer's permissions.
+    const ctx = await actionContext('Viewer');
     await expect(
       COURSE_AGENT_ACTIONS.issues_close.describe(ctx, { issue_ids: [open] }),
     ).rejects.toThrow('The instructor needs Editor access to the course');
@@ -297,7 +328,7 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     await withConfig({ features: { 'course-agent': false } }, async () => {
       expect(await status(headers)).toBe(403);
     });
-    // Without the service token, the route is an ordinary page request with no session.
+    // Without the service token, the request has no session and is not authenticated.
     const { Authorization: _token, ...sessionless } = headers;
     expect(await status(sessionless)).not.toBe(200);
   });
@@ -338,8 +369,8 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
         outcome: { status: 'succeeded', summary: 'Closed 2 issues.' },
       };
       expect(
-        await client.courseAgent.getAction.query({ conversationId: conversation.id, actionId: id }),
-      ).toMatchObject({ decision: 'approved', result });
+        await client.courseAgent.getReview.query({ conversationId: conversation.id, reviewId: id }),
+      ).toMatchObject({ status: 'action', decision: 'approved', result });
       await waitForDeliveries(1);
       expect(delivered).toEqual([
         {

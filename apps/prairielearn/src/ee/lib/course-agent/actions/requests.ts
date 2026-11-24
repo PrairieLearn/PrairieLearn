@@ -7,6 +7,7 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import {
+  type CourseActionCard,
   CourseActionCardSchema,
   type CourseActionResult,
   CourseActionResultSchema,
@@ -89,6 +90,11 @@ export async function getCourseAction(conversation: CourseAgentConversation, act
   };
 }
 
+/** What a card says will change. Its icon and tone can differ after a deploy and still be the same request. */
+function whatChanges({ title, subtitle, items }: CourseActionCard) {
+  return { title, subtitle, items };
+}
+
 async function runCourseAction(
   ctx: CourseActionContext,
   action: CourseAgentAction,
@@ -98,7 +104,9 @@ async function runCourseAction(
     // The instructor approved what the card said. If the course has changed since, so that the
     // action would now do something else, it is not run.
     const card = await definition.describe(ctx, action.input);
-    if (!isDeepStrictEqual(card, CourseActionCardSchema.parse(action.card))) {
+    if (
+      !isDeepStrictEqual(whatChanges(card), whatChanges(CourseActionCardSchema.parse(action.card)))
+    ) {
       throw new CourseActionError(
         'Nothing was changed: what this request would do is no longer what the instructor approved, because the course changed in the meantime. Request it again so they can decide on the current change.',
       );
