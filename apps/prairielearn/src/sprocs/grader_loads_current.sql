@@ -107,7 +107,7 @@ BEGIN
         grader_loads AS gl
     WHERE
         gl.queue_name = grader_loads_current.queue_name
-        AND (now() - gl.date) < grader_load_interval;
+        AND gl.date > now() - grader_load_interval;
 
     -- ######################################################################
     -- total number of users looking at an externally-graded question
