@@ -5,6 +5,8 @@ This page describes how to run, test, and develop PrairieLearn. Ensure that you 
 - Natively, by following the [running natively](installingNative.md) guide
 - Via Docker, by following the [running via Docker](installingLocal.md) guide
 
+Before running the development server or tests, run `make deps` from the repository root to install dependencies and build the workspace packages. This includes the browser assets used by elements.
+
 ## Development server
 
 Run the server in development mode to automatically restart when changes are detected:
