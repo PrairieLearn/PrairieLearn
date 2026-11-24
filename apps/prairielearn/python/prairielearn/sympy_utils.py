@@ -2250,7 +2250,9 @@ def _try_parse_mathjson_as_sympy(
             mathjson_value=cast(internal_mathjson.MathJsonExpression, value),
         )
     except Exception as exc:
-        return _parse_failure_from_exception(source_text, exc, allow_complex=allow_complex)
+        return _parse_failure_from_exception(
+            source_text, exc, allow_complex=allow_complex
+        )
     return SympyParseSuccess(parsed)
 
 
