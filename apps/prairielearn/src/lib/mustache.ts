@@ -19,6 +19,12 @@ const writer = new FastWriter();
  * Render a Mustache template. Use this instead of `mustache.render()`.
  */
 export function renderMustache(template: string, view: unknown): string {
+  // `Writer.render()` doesn't check this, unlike `mustache.render()`.
+  if (typeof template !== 'string') {
+    throw new TypeError(
+      `Invalid template! Template should be a "string" but "${Array.isArray(template) ? 'array' : typeof template}" was given as the first argument for mustache#render(template, view, partials)`,
+    );
+  }
   return writer.render(template, view);
 }
 

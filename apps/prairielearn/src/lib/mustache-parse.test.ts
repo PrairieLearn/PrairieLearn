@@ -123,4 +123,19 @@ describe('parseMustacheTemplate', () => {
       assertMatchesUpstream(template);
     }
   });
+
+  it('parses long lines in linear time', () => {
+    // Work that depends on the rest of the line or template, repeated for each
+    // tag, makes these take minutes or exhaust memory instead of milliseconds.
+    assert.lengthOf(parseMustacheTemplate('x{{&a}}'.repeat(500_000)), 1_000_000);
+    assert.lengthOf(parseMustacheTemplate('x{{>p}}'.repeat(50_000)), 100_000);
+  });
+
+  it('rejects long delimiters', () => {
+    assert.lengthOf(parseMustacheTemplate(`{{=${'<'.repeat(32)} >=}}`), 1);
+    assert.throws(
+      () => parseMustacheTemplate(`{{=${'<'.repeat(33)} >=}}`),
+      'Unsupported tags: ' + '<'.repeat(33) + ',>',
+    );
+  });
 });

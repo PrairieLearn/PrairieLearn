@@ -18,6 +18,7 @@ const nonSpaceRe = /\S/g;
 const nonSpaceReplaceRe = /\S/g;
 const spaceRe = /\s+/;
 const whitespaceCharRe = /\s/;
+const MAX_TAG_LENGTH = 32;
 const tagTypes = new Set(['#', '^', '/', '>', '{', '&', '=', '!']);
 
 /** Matches JavaScript's `\s` for a single UTF-16 code unit. */
@@ -44,19 +45,25 @@ function isWhitespace(code: number) {
  */
 export function parseMustacheTemplate(
   template: string,
-  tags: OpeningAndClosingTags = mustache.tags,
+  tags?: OpeningAndClosingTags,
 ): TemplateSpans {
   if (!template) return [];
 
   const flat: (TextPiece | Span)[] = [];
   const sections: Span[] = [];
   let linePieces: TextPiece[] = [];
+  let indent = '';
+  let indentedPieces = 0;
   let hasTag = false;
   let nonSpace = false;
   let lineHasNonSpace = false;
   let tagIndex = 0;
   let pos = 0;
   const len = template.length;
+  // The first newline at or after the last text start, or `len` if there are
+  // none. Searching from each text start instead would rescan the rest of a
+  // template with no newlines once per text run.
+  let nextNewline = -1;
 
   let openTag = '';
   let closeTag = '';
@@ -68,10 +75,21 @@ export function parseMustacheTemplate(
       throw new Error('Invalid tags: ' + String(tagsToCompile));
     }
     const [open, close] = tagsToCompile;
-    // Delimiter changes inside a template can't produce these, but tags passed
-    // in by a caller could. The scanning below relies on tags being non-empty
-    // and free of whitespace.
-    if (!open || !close || spaceRe.test(open) || spaceRe.test(close)) {
+    // The scanning below relies on tags being non-empty and free of whitespace.
+    // Delimiter changes inside a template can't produce such tags, but tags
+    // passed in by a caller could. Long tags are rejected because V8's
+    // `indexOf()` takes time proportional to the pattern length at each
+    // position for patterns longer than about 250 characters, which would make
+    // parsing quadratic. mustache.js rejects tags longer than about 32,000
+    // characters.
+    if (
+      !open ||
+      !close ||
+      open.length > MAX_TAG_LENGTH ||
+      close.length > MAX_TAG_LENGTH ||
+      spaceRe.test(open) ||
+      spaceRe.test(close)
+    ) {
       throw new Error('Unsupported tags: ' + String(tagsToCompile));
     }
     openTag = open;
@@ -121,6 +139,8 @@ export function parseMustacheTemplate(
       for (const piece of linePieces) piece.deleted = true;
     }
     linePieces = [];
+    indent = '';
+    indentedPieces = 0;
     hasTag = false;
     nonSpace = false;
   }
@@ -142,14 +162,17 @@ export function parseMustacheTemplate(
   }
 
   function processText(start: number, end: number) {
-    const firstNewline = template.indexOf('\n', start);
-    if (firstNewline === -1 || firstNewline >= end) {
+    if (nextNewline < start) {
+      nextNewline = template.indexOf('\n', start);
+      if (nextNewline === -1) nextNewline = len;
+    }
+    if (nextNewline >= end) {
       addLinePiece(start, end);
       return;
     }
-    addLinePiece(start, firstNewline + 1);
+    addLinePiece(start, nextNewline + 1);
     endLine();
-    let p = firstNewline + 1;
+    let p = nextNewline + 1;
     const lastNewline = template.lastIndexOf('\n', end - 1);
     if (lastNewline >= p) {
       // Whole lines with no tags: never standalone, and they reset line state.
@@ -159,15 +182,16 @@ export function parseMustacheTemplate(
     if (p < end) addLinePiece(p, end);
   }
 
+  /** The current line's indentation, extended as new pieces are added to the line. */
   function indentation() {
-    let result = '';
-    for (const piece of linePieces) {
-      result += template.slice(piece.start, piece.end).replace(nonSpaceReplaceRe, ' ');
+    for (; indentedPieces < linePieces.length; indentedPieces++) {
+      const piece = linePieces[indentedPieces];
+      indent += template.slice(piece.start, piece.end).replace(nonSpaceReplaceRe, ' ');
     }
-    return result;
+    return indent;
   }
 
-  compileTags(tags);
+  compileTags(tags || mustache.tags);
 
   while (pos < len) {
     const tagStart = template.indexOf(openTag, pos);
