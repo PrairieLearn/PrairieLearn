@@ -3,13 +3,15 @@ import clsx from 'clsx';
 import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
-import type { CourseDataReadCard, RequestChangesResult } from '@prairielearn/course-agent-types';
+import type { RequestChangesResult } from '@prairielearn/course-agent-types';
 import { getAppError } from '@prairielearn/trpc/client';
 import { AppErrorAlert } from '@prairielearn/trpc/react';
 
 import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 import type { ReviewDiffFile } from '../../lib/course-agent/review-diff.js';
+
+import { AgentCard } from './AgentCard.js';
 
 // The diff renderer and its syntax highlighter are only needed once the review is opened.
 const LazyReviewDiff = lazy(() =>
@@ -111,15 +113,23 @@ export function RequestChangesCard({
     />
   );
   if (data?.status === 'data_read') {
+    // The rows themselves are never shown here; an approval only lets the agent download them.
     return (
-      <div className="course-agent-review border rounded-3">
-        <DataReadRequest
-          card={data.card}
-          decision={data.decision}
-          disabled={decision.isPending}
-          onDecision={decide}
-          onApproveAlways={approveAlways}
-        />
+      <AgentCard icon={data.card.icon} title={data.card.title} subtitle={data.card.subtitle}>
+        {data.decision === null ? (
+          <DecisionButtons
+            disabled={decision.isPending}
+            canApprove
+            onDecision={decide}
+            onApproveAlways={approveAlways}
+          />
+        ) : (
+          <p className="mb-0" role="status">
+            {data.decision === 'approved'
+              ? 'Approved. The agent can read this once.'
+              : 'Denied. Nothing was read.'}
+          </p>
+        )}
         {/* The composer delivers a denial by message again when the instructor resends it. */}
         {canResume && data.decision !== null && !data.viaMessage && (
           <ResumeNotice
@@ -128,7 +138,7 @@ export function RequestChangesCard({
           />
         )}
         {failureAlert}
-      </div>
+      </AgentCard>
     );
   }
   return (
@@ -256,63 +266,6 @@ function DecisionButtons({
         Deny
       </Button>
     </div>
-  );
-}
-
-/**
- * A request to read course data: what it would read, then the choices or the decision made. The
- * rows themselves are never shown here; an approval only lets the agent download them.
- */
-function DataReadRequest({
-  card,
-  decision,
-  disabled,
-  onDecision,
-  onApproveAlways,
-}: {
-  card: CourseDataReadCard;
-  decision: 'approved' | 'denied' | null;
-  disabled: boolean;
-  onDecision: (decision: 'approved' | 'denied') => void;
-  onApproveAlways: () => void;
-}) {
-  return (
-    <>
-      <div className="d-flex align-items-center gap-2">
-        <i
-          className={clsx(
-            'bi',
-            decision === null
-              ? 'bi-exclamation-triangle text-warning'
-              : 'bi-database text-body-secondary',
-          )}
-          aria-hidden="true"
-        />
-        <span>{card.title}</span>
-      </div>
-      <dl className="small border-top border-bottom my-2 py-2">
-        {card.rows.map((row) => (
-          <div key={row.label} className="py-1">
-            <dt className="fw-normal text-body-secondary">{row.label}</dt>
-            <dd className="mb-0 text-break">{row.detail}</dd>
-          </div>
-        ))}
-      </dl>
-      {decision === null ? (
-        <DecisionButtons
-          disabled={disabled}
-          canApprove
-          onDecision={onDecision}
-          onApproveAlways={onApproveAlways}
-        />
-      ) : (
-        <p className="mb-0" role="status">
-          {decision === 'approved'
-            ? 'Approved. The agent can read this once.'
-            : 'Denied. Nothing was read.'}
-        </p>
-      )}
-    </>
   );
 }
 

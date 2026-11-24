@@ -243,8 +243,9 @@ it('denies an unreadable review without starting a save job', async () => {
 });
 
 const DATA_READ = {
-  title: 'Read the students dataset',
-  rows: [{ label: 'Columns', detail: 'uid, status' }],
+  icon: 'people',
+  title: 'View students',
+  subtitle: 'All students',
 };
 
 function requestDataRead() {

@@ -168,10 +168,12 @@ export type RequestChangesResult = z.infer<typeof RequestChangesResultSchema>;
  * service builds it from the request itself, so it says exactly what an approval lets the agent read.
  */
 export const CourseDataReadCardSchema = z.strictObject({
+  /** The dataset's Bootstrap icon, without the `bi-` prefix. */
+  icon: z.string().max(50),
+  /** What would be read, such as `View issues`. */
   title: z.string().max(200),
-  rows: z
-    .array(z.strictObject({ label: z.string().max(100), detail: z.string().max(2000) }))
-    .max(20),
+  /** Which rows, in the instructor's words. */
+  subtitle: z.string().max(2000),
 });
 
 export type CourseDataReadCard = z.infer<typeof CourseDataReadCardSchema>;

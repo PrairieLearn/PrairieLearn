@@ -129,6 +129,20 @@ textarea.course-agent-composer-input {
   padding: 0.75rem;
 }
 
+/* What a request is about, as an icon on a tint. */
+.course-agent-card-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1rem;
+  color: var(--bs-primary-text-emphasis);
+  background: var(--bs-primary-bg-subtle);
+  border-radius: var(--bs-border-radius);
+}
+
 /* The changed files open the diff; a grey button keeps them apart from the three choices. */
 .btn.course-agent-review-files {
   --bs-btn-color: var(--bs-body-color);
