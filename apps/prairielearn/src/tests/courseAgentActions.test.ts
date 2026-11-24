@@ -5,7 +5,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, expect, test, vi } f
 import { z } from 'zod';
 
 import { CourseActionCatalogSchema } from '@prairielearn/course-agent-types';
-import { loadSqlEquiv, queryScalar, queryScalars } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryScalar, queryScalars } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -443,6 +443,78 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     };
     await waitForDeliveries(2);
     expect(delivered.map(({ body }) => body)).toEqual([result, { ...result, viaMessage: true }]);
+  });
+
+  test('reports an issue on a question version, as the "Report an issue" button does', async () => {
+    const conversation = await createConversation(owner);
+    const variantId = await queryScalar(
+      sql.insert_preview_variant,
+      { user_id: owner.id },
+      IdSchema,
+    );
+    const input = { variant_id: variantId, description: 'The figure does not load.' };
+    expect(
+      (
+        await (
+          await request(conversation, 'issues_report', { ...input, variant_id: '999999' })
+        ).json()
+      ).message,
+    ).toContain('no question version with ID 999999');
+    const id = crypto.randomUUID();
+    const response = await request(conversation, 'issues_report', input, id);
+    expect(await response.json()).toEqual({ title: 'Report an issue on addNumbers' });
+    await withUser(owner, async () => {
+      const client = createClient(owner);
+      expect(
+        await client.courseAgent.getReview.query({ conversationId: conversation.id, reviewId: id }),
+      ).toMatchObject({
+        card: {
+          title: 'Report an issue on addNumbers',
+          subtitle: '"The figure does not load."',
+          items: [
+            {
+              label: `addNumbers, version ${variantId}`,
+              href: expect.stringMatching(
+                new RegExp(`^/pl/course/1/question/\\d+/\\?variant_id=${variantId}$`),
+              ),
+            },
+          ],
+        },
+      });
+      await client.courseAgent.postReviewDecision.mutate({
+        conversationId: conversation.id,
+        reviewId: id,
+        decision: 'approved',
+      });
+    });
+    await waitForDeliveries(1);
+    const summary = (delivered[0].body as { outcome: { summary: string } }).outcome.summary;
+    const issueId = /^Reported issue #(\d+)\.$/.exec(summary)![1];
+    expect(
+      await queryRow(
+        sql.select_issue,
+        { issue_id: issueId },
+        z.object({
+          variant_id: IdSchema,
+          open: z.boolean(),
+          manually_reported: z.boolean(),
+          course_caused: z.boolean(),
+          student_message: z.string(),
+          instructor_message: z.string(),
+          user_id: IdSchema,
+          authn_user_id: IdSchema,
+        }),
+      ),
+    ).toEqual({
+      variant_id: variantId,
+      open: true,
+      manually_reported: true,
+      course_caused: true,
+      student_message: 'The figure does not load.',
+      instructor_message: 'instructor-reported issue',
+      user_id: owner.id,
+      authn_user_id: owner.id,
+    });
   });
 
   test('an approval is refused when the course changed since the request', async () => {

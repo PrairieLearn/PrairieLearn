@@ -274,6 +274,11 @@ export async function selectAndAuthzVariant(options: {
   return variant;
 }
 
+/** The variant with this ID, or null. Callers check that the user may see it. */
+export async function selectOptionalVariantById(variant_id: string): Promise<Variant | null> {
+  return await queryOptionalRow(sql.select_variant_by_id, { variant_id }, VariantSchema);
+}
+
 /**
  * Locks the variant before a grading operation can proceed. If the variant is
  * associated to an assessment instance, lock the assessment instance instead.

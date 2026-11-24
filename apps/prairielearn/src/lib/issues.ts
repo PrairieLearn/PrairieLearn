@@ -114,6 +114,39 @@ export async function writeCourseIssues(
   });
 }
 
+/**
+ * Records an issue someone reported on a variant, with their description, as the "Report an
+ * issue" button does.
+ */
+export async function insertReportedIssue({
+  variant,
+  description,
+  reportedBy,
+  courseData,
+  userId,
+  authnUserId,
+}: {
+  variant: Variant;
+  description: string;
+  reportedBy: 'student' | 'instructor';
+  /** What the reporter was looking at, besides the variant. */
+  courseData: Record<string, any>;
+  userId: string;
+  authnUserId: string;
+}) {
+  return await insertIssue({
+    variantId: variant.id,
+    studentMessage: description,
+    instructorMessage: `${reportedBy}-reported issue`,
+    manuallyReported: true,
+    courseCaused: true,
+    courseData: { variant, ...courseData },
+    systemData: {},
+    userId,
+    authnUserId,
+  });
+}
+
 export async function reportIssueFromForm(
   req: Request,
   res: Response,
@@ -138,14 +171,11 @@ export async function reportIssueFromForm(
     user: res.locals.user,
     is_administrator: res.locals.is_administrator,
   });
-  await insertIssue({
-    variantId: variant.id,
-    studentMessage: description,
-    instructorMessage: `${studentSubmission ? 'student' : 'instructor'}-reported issue`,
-    manuallyReported: true,
-    courseCaused: true,
+  await insertReportedIssue({
+    variant,
+    description,
+    reportedBy: studentSubmission ? 'student' : 'instructor',
     courseData: {
-      variant,
       question: res.locals.question,
       course_instance: res.locals.course_instance,
       course: res.locals.course,
@@ -157,7 +187,6 @@ export async function reportIssueFromForm(
           }
         : {}),
     },
-    systemData: {},
     userId: res.locals.user.id,
     authnUserId: res.locals.authn_user.id,
   });

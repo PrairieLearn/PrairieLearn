@@ -2,12 +2,17 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { idsEqual } from '../../../../lib/id.js';
+import { insertReportedIssue } from '../../../../lib/issues.js';
+import { selectOptionalCourseInstanceById } from '../../../../models/course-instances.js';
 import {
   type IssueSummary,
   closeIssues,
   selectIssueSummariesByIds,
   updateIssueOpen,
 } from '../../../../models/issue.js';
+import { selectQuestionById } from '../../../../models/question.js';
+import { selectAndAuthzVariant, selectOptionalVariantById } from '../../../../models/variant.js';
 
 import { type CourseActionContext, CourseActionError, action, count } from './action.js';
 
@@ -75,6 +80,50 @@ function describeIssues({
   };
 }
 
+const ReportInputSchema = z.strictObject({
+  variant_id: IdSchema.describe(
+    'ID of the question version the issue is about, from the id column of the variants dataset.',
+  ),
+  description: z
+    .string()
+    .min(1)
+    .max(300)
+    .describe('What is wrong, in the words the report will show.'),
+});
+
+/**
+ * The variant an issue is reported on, if the instructor may see it. The "Report an issue"
+ * button checks the same: a student's variant needs Student Data Viewer access to its course
+ * instance.
+ */
+async function selectReportedVariant(ctx: CourseActionContext, variantId: string) {
+  const variant = await selectOptionalVariantById(variantId);
+  if (!variant || !idsEqual(variant.course_id, ctx.course.id)) {
+    throw new CourseActionError(
+      `This course has no question version with ID ${variantId}. Find one in the variants dataset.`,
+    );
+  }
+  try {
+    await selectAndAuthzVariant({
+      unsafe_variant_id: variant.id,
+      variant_course: ctx.course,
+      question_id: variant.question_id,
+      authz_data: ctx.authz_data,
+      authn_user: ctx.user,
+      user: ctx.user,
+      is_administrator: 'is_administrator' in ctx.authz_data && ctx.authz_data.is_administrator,
+    });
+  } catch (error) {
+    if ((error as { status?: number }).status === 403) {
+      throw new CourseActionError(
+        "The instructor needs Student Data Viewer access in this version's course instance to report an issue on it. Tell them, and do not retry.",
+      );
+    }
+    throw error;
+  }
+  return { variant, question: await selectQuestionById(variant.question_id) };
+}
+
 export const issueActions = {
   issues_close: action({
     group: 'issues',
@@ -132,6 +181,47 @@ export const issueActions = {
         });
       }
       return { status: 'succeeded', summary: `Reopened ${count(closed.length, 'issue')}.` };
+    },
+  }),
+  issues_report: action({
+    group: 'issues',
+    icon: 'flag',
+    tone: 'positive',
+    description:
+      'Report an issue on a question version, as an instructor does with "Report an issue".',
+    requiredRole: ['Previewer'],
+    input: ReportInputSchema,
+    describe: async ({ ctx, input }) => {
+      const { variant, question } = await selectReportedVariant(ctx, input.variant_id);
+      return {
+        title: `Report an issue on ${question.qid}`,
+        subtitle: `"${input.description}"`,
+        items: [
+          {
+            label: `${question.qid}, version ${variant.id}`,
+            // Where the Issues page's "instructor view" goes.
+            href: `/pl/course/${ctx.course.id}/question/${question.id}/?variant_id=${variant.id}`,
+          },
+        ],
+      };
+    },
+    run: async ({ ctx, input }) => {
+      const { variant, question } = await selectReportedVariant(ctx, input.variant_id);
+      const issueId = await insertReportedIssue({
+        variant,
+        description: input.description,
+        reportedBy: 'instructor',
+        courseData: {
+          question,
+          course_instance: variant.course_instance_id
+            ? await selectOptionalCourseInstanceById(variant.course_instance_id)
+            : undefined,
+          course: ctx.course,
+        },
+        userId: ctx.user.id,
+        authnUserId: ctx.user.id,
+      });
+      return { status: 'succeeded', summary: `Reported issue #${issueId}.` };
     },
   }),
 };
