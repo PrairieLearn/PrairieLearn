@@ -73,6 +73,32 @@ def test_evaluate_does_not_mutate_locals() -> None:
     }
 
 
+def test_evaluate_localizes_recognized_type_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def raise_type_error(*_args: Any, **_kwargs: Any) -> None:
+        raise TypeError("unsupported operand type(s) for /: 'Symbol' and 'Integer'")
+
+    monkeypatch.setattr(psu.sympy_parser, "eval_expr", raise_type_error)
+
+    with pytest.raises(psu.HasParseError) as exc_info:
+        psu.convert_string_to_sympy("x / 2", ["x"])
+    assert exc_info.value.offset == 2
+
+
+def test_evaluate_preserves_unrecognized_type_error_as_internal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def raise_type_error(*_args: Any, **_kwargs: Any) -> None:
+        raise TypeError("unexpected internal failure")
+
+    monkeypatch.setattr(psu.sympy_parser, "eval_expr", raise_type_error)
+
+    with pytest.raises(psu.BaseSympyError) as exc_info:
+        psu.convert_string_to_sympy("x / 2", ["x"])
+    assert isinstance(exc_info.value.__cause__, TypeError)
+
+
 @pytest.mark.parametrize("simplify_expression", [True, False])
 def test_evaluate_with_set_variables(*, simplify_expression: bool) -> None:
     locals_for_eval: psu.LocalsForEval = {

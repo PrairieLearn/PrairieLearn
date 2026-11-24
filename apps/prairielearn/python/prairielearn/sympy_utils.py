@@ -422,13 +422,6 @@ class HasArgumentTypeError(BaseSympyError):
             return f"a {self.allowable_types[0]}"
         return f"either {_format_comma_separated(list(dict.fromkeys(self.allowable_types)))}"
 
-    def as_type_error(self) -> TypeError:
-        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
-        return TypeError(
-            f"unsupported operand type(s) for {self.fn}: "
-            f"argument #{self.arg_idx + 1} requires {self.format_allowable_types()}, not {self.got}"
-        )
-
 
 @dataclass
 class HasFunctionArityError(BaseSympyError):
@@ -436,13 +429,6 @@ class HasFunctionArityError(BaseSympyError):
     provided: int
     expected: str
     offset: int = -1
-
-    def as_type_error(self) -> TypeError:
-        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
-        return TypeError(
-            f"wrong number of arguments for {self.fn}: "
-            f"got {self.provided} but expected {self.expected}"
-        )
 
 
 def _builtin_function_arities(name: str) -> tuple[int, ...] | None:
@@ -667,7 +653,12 @@ class CheckAST(ast.NodeVisitor):
 
         arg_index, _, got = max(fails, key=lambda f: f[0])
         expecteds = [e for i, e, _ in fails if i == arg_index]
-        raise HasArgumentTypeError(fn_name, got, expecteds, arg_idx=arg_index)
+        raise HasArgumentTypeError(
+            fn_name,
+            got,
+            expecteds,
+            arg_idx=arg_index,
+        )
 
     def _infer_set_function_type(
         self, name: str, args: list[ast.expr]
@@ -1255,27 +1246,25 @@ def _evaluate_normalized_source(
         oo=sympy.oo,
     )
 
+    resolved_names = global_dict | local_dict
+    if resolved_name_overrides is not None:
+        resolved_names.update(resolved_name_overrides)
     try:
-        resolved_names = global_dict | local_dict
-        if resolved_name_overrides is not None:
-            resolved_names.update(resolved_name_overrides)
         expression_ast, set_operations = _ast_check_str(
             code,
             parsed_locals_to_eval,
             allow_sets=allow_sets,
             resolved_names=resolved_names,
         )
-        _validate_ast_structure(
-            expression_ast,
-            locals_for_eval,
-            allow_extra_symbols=allow_extra_symbols,
-        )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
-        index = _find_type_error_offset(source, exc.as_type_error())
-        if index != -1:
-            exc.offset = index
-
+        exc.offset = _resolve_error_offset(source, exc.fn)
         raise
+
+    _validate_ast_structure(
+        expression_ast,
+        locals_for_eval,
+        allow_extra_symbols=allow_extra_symbols,
+    )
 
     evaluation_code: str | CodeType = code
     if not simplify_expression:
@@ -1303,14 +1292,10 @@ def _evaluate_normalized_source(
     try:
         res = sympy_parser.eval_expr(evaluation_code, local_dict, global_dict)
     except TypeError as exc:
-        # SymPy raises TypeError for semantically invalid set operations that are
-        # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
-        # Because the AST check above already ran, TypeErrors here are expected to
-        # come from SymPy's own type system, not from Python infrastructure bugs.
-        index = _find_type_error_offset(source, exc)
-        if index != -1:
-            raise HasParseError(index) from exc
-        # if we can't localize the type error, report to staff.
+        # SymPy may detect some invalid operand combinations only during evaluation.
+        offset = _resolve_evaluation_type_error_offset(source, exc)
+        if offset != -1:
+            raise HasParseError(offset) from exc
         raise BaseSympyError from exc
     except Exception as exc:
         raise BaseSympyError from exc
@@ -1566,34 +1551,42 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
     return expr.rfind(symbol)
 
 
-_TYPE_ERROR_OPERATOR_PATTERN = re.compile(
+_EVALUATION_TYPE_ERROR_PATTERN = re.compile(
     r"(unsupported operand type\(s\)|wrong number of arguments) for (?P<operator>[^:]+):"
 )
 
 
-def _find_type_error_offset(source: _MappedText, exc: TypeError) -> int:
-    """Return an approximate raw offset for a SymPy TypeError."""
-    match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
+def _resolve_evaluation_type_error_offset(source: _MappedText, exc: TypeError) -> int:
+    match = _EVALUATION_TYPE_ERROR_PATTERN.search(str(exc))
     if match is None:
         return -1
 
     # for some TypeErrors, both the op and magic-method are provided, e.g `...for ** or pow():...`
     # see https://chromium.googlesource.com/external/github.com/python/cpython/+/refs/tags/v3.7.17/Objects/abstract.c
     # line 925 for an example.
-    candidate_operators = match.group("operator").replace("()", "").split(" or ")
-    # account for de-sugaring
-    candidate_operators.extend(
+    names = match.group("operator").replace("()", "").split(" or ")
+    for name in names:
+        offset = _resolve_error_offset(source, name)
+        if offset != -1:
+            return offset
+    return -1
+
+
+def _resolve_error_offset(source: _MappedText, name: str) -> int:
+    candidates = [name]
+    candidates.extend(
         alias
         for alias, transformed_operator in const.set_operator_desugars.items()
-        if transformed_operator in candidate_operators
+        if transformed_operator == name
     )
-
-    text = source.text()
-    for candidate in candidate_operators:
-        ind = find_symbol_offset(text, candidate)
-        if ind != -1:
-            return source.chars[ind].raw_offset
-
+    for candidate in candidates:
+        raw_offset = -1
+        for token_offset, token in source.tokenize():
+            relative_offset = find_symbol_offset(token.string, candidate)
+            if relative_offset != -1:
+                raw_offset = source.chars[token_offset + relative_offset].raw_offset
+        if raw_offset != -1:
+            return raw_offset
     return -1
 
 
