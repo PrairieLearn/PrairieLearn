@@ -942,7 +942,9 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     throw new Error('Could not access workspace files.', { cause: err });
   }
 
-  if (config.workspaceJobsDirectoryChangeOwner) {
+  // Only root can change ownership. See the corresponding comment in
+  // `initialize()` in `apps/prairielearn/src/lib/workspace.ts`.
+  if (process.getuid?.() === 0) {
     await fs.chown(
       workspaceJobPath,
       config.workspaceJobsDirectoryOwnerUid,

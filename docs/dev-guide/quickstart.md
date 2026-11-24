@@ -41,7 +41,7 @@ make dev
 make dev-workspace-host
 ```
 
-You may also need to change your configuration to settings that vary depending on your environment. More information can be found in the [config.json](configJson.md#workspaces-and-external-graders) documentation.
+Workspaces need some configuration in your `config.json`, including the directories used for workspace files and, on macOS, the container hostname. See [workspaces and external graders](configJson.md#workspaces-and-external-graders) for the settings for your operating system.
 
 ??? note "Troubleshooting workspaces"
 

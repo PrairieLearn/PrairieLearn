@@ -805,10 +805,6 @@
       "default": 0,
       "type": "number"
     },
-    "workspaceJobsDirectoryChangeOwner": {
-      "default": true,
-      "type": "boolean"
-    },
     "workspaceHeartbeatIntervalSec": {
       "default": 60,
       "type": "number"
