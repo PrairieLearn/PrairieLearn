@@ -13,8 +13,42 @@ VALUES
     $user_id,
     $authn_user_id,
     $label,
-    $settings
+    $settings::jsonb
   )
+RETURNING
+  *;
+
+-- BLOCK update_print_form_settings
+UPDATE print_forms
+SET
+  settings = $settings::jsonb
+WHERE
+  id = $print_form_id
+  AND assessment_id = $assessment_id
+  AND archived_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK lock_print_form_question_selections
+UPDATE print_forms
+SET
+  question_selection_locked_at = COALESCE(question_selection_locked_at, CURRENT_TIMESTAMP)
+WHERE
+  assessment_id = $assessment_id
+  AND id = ANY ($print_form_ids::bigint[]);
+
+-- BLOCK update_print_form_paper_size
+UPDATE print_forms
+SET
+  settings = jsonb_set(
+    settings,
+    '{paperSize}',
+    to_jsonb($paper_size::text)
+  )
+WHERE
+  id = $print_form_id
+  AND assessment_id = $assessment_id
+  AND archived_at IS NULL
 RETURNING
   *;
 
@@ -69,6 +103,19 @@ WHERE
   AND ci.deleted_at IS NULL
 ORDER BY
   pf.id DESC;
+
+-- BLOCK select_randomizable_print_form_ids
+SELECT DISTINCT
+  pfq.print_form_id
+FROM
+  print_forms AS pf
+  JOIN print_form_questions AS pfq ON pfq.print_form_id = pf.id
+  JOIN assessment_questions AS aq ON aq.id = pfq.assessment_question_id
+  JOIN questions AS q ON q.id = aq.question_id
+WHERE
+  pf.assessment_id = $assessment_id
+  AND pf.archived_at IS NULL
+  AND q.single_variant IS DISTINCT FROM TRUE;
 
 -- BLOCK archive_print_form
 UPDATE print_forms

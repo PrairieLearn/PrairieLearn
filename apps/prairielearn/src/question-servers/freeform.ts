@@ -5,7 +5,6 @@ import * as async from 'async';
 import debugfn from 'debug';
 import { difference, isEmptyObject, isEqual, mapValues, omit, union } from 'es-toolkit';
 import fs from 'fs-extra';
-import mustache from 'mustache';
 import objectHash from 'object-hash';
 
 import { cache } from '@prairielearn/cache';
@@ -24,6 +23,7 @@ import { type Course, type Question, type Submission, type Variant } from '../li
 import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
+import { renderMustache } from '../lib/mustache.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
@@ -338,27 +338,57 @@ function defaultServerRet(phase: Phase, data: ExecutionData, html: string) {
   }
 }
 
+/**
+ * Most `server.py` files only define some phases. Calling a missing function
+ * still serializes and transfers all of `data`, which can include entire
+ * submitted files, so we remember which functions each version of a
+ * `server.py` file lacks and skip those calls.
+ */
+const missingServerFunctions = new Map<string, Set<Phase>>();
+const MAX_MISSING_SERVER_FUNCTION_FILES = 10_000;
+
+/**
+ * Returns a key identifying the current version of the question's `server.py`,
+ * or `null` if it doesn't exist.
+ */
+async function getServerFileVersion(context: QuestionProcessingContext) {
+  const fullFilename = path.join(context.question_dir_host, 'server.py');
+  try {
+    const stat = await fs.stat(fullFilename);
+    return `${fullFilename}:${stat.mtimeMs}:${stat.size}`;
+  } catch {
+    return null;
+  }
+}
+
+function recordMissingServerFunction(serverFileVersion: string, phase: Phase) {
+  let phases = missingServerFunctions.get(serverFileVersion);
+  if (!phases) {
+    if (missingServerFunctions.size >= MAX_MISSING_SERVER_FUNCTION_FILES) {
+      // Maps iterate in insertion order, so this evicts the oldest entry.
+      const oldest = missingServerFunctions.keys().next().value;
+      if (oldest !== undefined) missingServerFunctions.delete(oldest);
+    }
+    phases = new Set();
+    missingServerFunctions.set(serverFileVersion, phases);
+  }
+  phases.add(phase);
+}
+
 async function execPythonServer(
   codeCaller: CodeCaller,
   phase: Phase,
   data: ExecutionData,
   html: string,
   context: QuestionProcessingContext,
+  serverFileVersion: string,
 ) {
   const pythonFile = 'server';
   const pythonFunction = phase;
   const pythonArgs: any[] = [data];
   if (phase === 'render') pythonArgs.push(html);
-  const fullFilename = path.join(context.question_dir_host, 'server.py');
   const type = 'question';
   const directory = context.question.directory;
-
-  try {
-    await fs.access(fullFilename, fs.constants.R_OK);
-  } catch {
-    // server.py does not exist
-    return { result: defaultServerRet(phase, data, html), output: '' };
-  }
 
   debug(
     `execPythonServer(): codeCaller.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`,
@@ -377,6 +407,7 @@ async function execPythonServer(
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
       debug('execPythonServer(): function not present');
+      recordMissingServerFunction(serverFileVersion, phase);
       return {
         result: defaultServerRet(phase, data, html),
         output: '',
@@ -388,7 +419,7 @@ async function execPythonServer(
 
 async function execTemplate(htmlFilename: string, data: ExecutionData) {
   const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
-  const html = mustache.render(rawFile, data);
+  const html = renderMustache(rawFile, data);
   return markdown.processQuestion(html);
 }
 
@@ -649,6 +680,13 @@ async function processQuestionServer<T extends ExecutionData>(
   context: QuestionProcessingContext,
 ) {
   const courseIssues: CourseIssueError[] = [];
+
+  const serverFileVersion = await getServerFileVersion(context);
+  if (serverFileVersion == null || missingServerFunctions.get(serverFileVersion)?.has(phase)) {
+    // There's no function to call, so everything passes through unchanged.
+    return { courseIssues, data, html, fileData };
+  }
+
   const origData = structuredClone(data);
 
   const checkErrBefore = checkData(data, origData, phase);
@@ -663,7 +701,14 @@ async function processQuestionServer<T extends ExecutionData>(
 
   let result, output;
   try {
-    ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
+    ({ result, output } = await execPythonServer(
+      codeCaller,
+      phase,
+      data,
+      html,
+      context,
+      serverFileVersion,
+    ));
   } catch (err: any) {
     // Log the error message and any Python output to help diagnose test failures.
     if (config.devMode) {

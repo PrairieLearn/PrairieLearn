@@ -1,6 +1,7 @@
-import mustache from 'mustache';
+import type { TemplateSpans } from 'mustache';
 import * as parse5 from 'parse5';
 
+import { parseMustacheTemplate } from '../../lib/mustache-parse.js';
 import { lintQuestionHtml } from '../../lib/question-html-linter.js';
 
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
@@ -31,21 +32,13 @@ const CORRECT_ANSWER_INPUT_ELEMENTS = new Set([
   'pl-symbolic-input',
 ]);
 
-type MustacheTextToken = ['text', string, number, number];
-type MustacheNameToken = ['name', string, number, number];
-type MustacheSectionToken = ['#' | '^' | '&', string, number, number, MustacheToken[]];
-type MustacheToken = MustacheTextToken | MustacheNameToken | MustacheSectionToken;
-
 export function extractMustacheTemplateNames(str: string): Set<string> {
-  // We use a temporary writer to avoid any long-lived storage of the parsed
-  // template in Mustache's cache.
-  const writer = new mustache.Writer();
-  const tokens = writer.parse(str);
+  const tokens = parseMustacheTemplate(str);
 
   const names = new Set<string>();
 
   /** Helper function to recursively collect names. */
-  function collectNames(tokensList: MustacheToken[]) {
+  function collectNames(tokensList: TemplateSpans) {
     for (const token of tokensList) {
       const [type, value] = token;
 

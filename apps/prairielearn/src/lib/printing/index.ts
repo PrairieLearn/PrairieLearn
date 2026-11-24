@@ -205,7 +205,7 @@ function selectIncludedQuestions(
     (question) => !excludedQuestionNumbers.has(question.print_form_question.question_number),
   );
   if (includedQuestions.length === 0) {
-    throw new HttpStatusError(400, 'Include at least one question in the printable assessment');
+    throw new HttpStatusError(400, 'Include at least one question in this form');
   }
   return includedQuestions;
 }
@@ -231,17 +231,22 @@ export async function getPrintableQuestionListDigest(
   return digestPrintableQuestions(selectIncludedQuestions(questions, excludedQuestionNumbers));
 }
 
-/** Validates a Word export's layout against the form and returns the included question IDs. */
-export async function getPrintableFormQuestionIds(
+/**
+ * Validates an export's layout against the form and returns the included questions' IDs and
+ * the digest its preview snapshot must match.
+ */
+export async function getPrintableFormQuestions(
   printFormId: string,
   questionBlockSizeOverrides: ReadonlyMap<string, QuestionBlockSize>,
   excludedQuestionNumbers: ReadonlySet<string>,
-): Promise<string[]> {
+): Promise<{ printFormQuestionIds: string[]; questionListDigest: string }> {
   const questions = await selectPrintFormQuestions(printFormId);
   assertQuestionBlockSizeOverridesExist(questions, questionBlockSizeOverrides);
-  return selectIncludedQuestions(questions, excludedQuestionNumbers).map(
-    ({ print_form_question }) => print_form_question.id,
-  );
+  const included = selectIncludedQuestions(questions, excludedQuestionNumbers);
+  return {
+    printFormQuestionIds: included.map(({ print_form_question }) => print_form_question.id),
+    questionListDigest: digestPrintableQuestions(included),
+  };
 }
 
 export interface RenderPrintFormQuestionsOptions {

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { appendFile, cp } from 'node:fs/promises';
 import path from 'node:path';
 
+import { load } from 'cheerio';
 import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
@@ -214,12 +215,14 @@ def file(data):
     expect(page.status).toBe(200);
     expect(page.$('.author-question').text()).toBe(authors[1].uid);
     expect(page.$('.author-answer').text()).toBe(authors[1].uid);
-    expect(
-      page
-        .$('.author-submission')
-        .map((_, element) => page.$(element).text())
-        .get(),
-    ).toEqual([authors[1].uid, authors[0].uid]);
+    expect(page.$('.author-submission').text()).toBe(authors[1].uid);
+    const olderSubmissionUrl = page
+      .$('.js-submission-body.render-pending')
+      .attr('data-dynamic-render-url')!;
+    const olderSubmissionResponse = await fetch(new URL(olderSubmissionUrl, siteUrl));
+    expect(olderSubmissionResponse.status).toBe(200);
+    const olderPanels = await olderSubmissionResponse.json();
+    expect(load(olderPanels.submissionPanel)('.author-submission').text()).toBe(authors[0].uid);
     for (const url of [
       page.$('.author-question-file').attr('src')!,
       page.$('.author-answer-file').attr('href')!,

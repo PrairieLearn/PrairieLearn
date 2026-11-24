@@ -436,7 +436,7 @@ const SKIP_ROUTES = [
   // API routes.
   '/pl/course_instance/lookup',
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_preparation/exports/:printExportId',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print/exports/:printExportId',
 ];
 
 function shouldSkipPath(path: string) {
@@ -457,6 +457,7 @@ describe('accessibility', () => {
   let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
   let routeUrls: Record<string, string> = {};
+  let printAssessmentId: string;
 
   beforeAll(async function () {
     config.cronActive = false;
@@ -474,6 +475,11 @@ describe('accessibility', () => {
       tid: 'hw1-automaticTestSuite',
     });
     const assessment_id = assessment.id;
+    const printAssessment = await selectAssessmentByTid({
+      course_instance_id: STATIC_ROUTE_PARAMS.course_instance_id,
+      tid: 'exam20-assessmentTools',
+    });
+    printAssessmentId = printAssessment.id;
 
     const question_id = await sqldb.queryScalar(
       'SELECT id FROM questions WHERE qid = $qid',
@@ -500,6 +506,7 @@ describe('accessibility', () => {
 
     await features.enable('question-sharing');
     await features.enable('ai-grading');
+    await features.enable('printable-assessments');
     await features.enable('unsaved-submissions-ui');
 
     const assessment_instance_id = await makeAssessmentInstance({
@@ -602,13 +609,19 @@ describe('accessibility', () => {
         continue;
       }
 
-      const missingParams = getMissingRouteParams(endpoint.path, routeParams);
+      // Print preparation requires an Exam rather than the default Homework assessment.
+      const params =
+        endpoint.path ===
+        '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print'
+          ? { ...routeParams, assessment_id: printAssessmentId }
+          : routeParams;
+      const missingParams = getMissingRouteParams(endpoint.path, params);
       if (missingParams.length > 0) {
         missingParamsEndpoints.push(endpoint);
         continue;
       }
 
-      const url = routeUrls[endpoint.path] ?? substituteParams(endpoint.path, routeParams);
+      const url = routeUrls[endpoint.path] ?? substituteParams(endpoint.path, params);
       const messages = await checkPage(url, endpoint.path);
       if (messages !== '') {
         failingEndpoints.push([endpoint, messages]);

@@ -19,6 +19,7 @@ import { makeAwsClientConfig } from '../aws.js';
 import { config } from '../config.js';
 
 import {
+  type CallSummary,
   type CallType,
   type CodeCaller,
   type CodeCallerResult,
@@ -141,7 +142,7 @@ export class CodeCallerContainer implements CodeCaller {
   outputStdout: string[];
   outputStderr: string[];
   outputBoth: string;
-  lastCallData: any;
+  lastCall: CallSummary | null;
   coursePath: string | null;
   forbiddenModules: string[];
   hostDirectory: tmp.DirectoryResult | undefined;
@@ -177,7 +178,7 @@ export class CodeCallerContainer implements CodeCaller {
     this.outputBoth = '';
 
     // for error logging
-    this.lastCallData = null;
+    this.lastCall = null;
 
     this.coursePath = null;
     this.forbiddenModules = [];
@@ -231,6 +232,12 @@ export class CodeCallerContainer implements CodeCaller {
    * course.
    */
   async prepareForCourse({ coursePath, forbiddenModules }: PrepareForCourseOptions) {
+    // The caller may have failed while it was idle in the pool. Mounting the
+    // course would then race `_cleanup()`.
+    if (!this._checkState([WAITING])) {
+      throw new Error(`Invalid CodeCallerContainer state: ${String(this.state)}`);
+    }
+
     this.forbiddenModules = forbiddenModules;
 
     if (this.coursePath && this.coursePath === coursePath) {
@@ -259,7 +266,7 @@ export class CodeCallerContainer implements CodeCaller {
     this.callCount += 1;
 
     // Reset this so that we don't include old data if the checks below fail.
-    this.lastCallData = null;
+    this.lastCall = null;
 
     if (!this._checkState([WAITING])) {
       throw new Error('invalid CodeCallerContainer state');
@@ -297,7 +304,7 @@ export class CodeCallerContainer implements CodeCaller {
         : this.options.questionTimeoutMilliseconds;
     this.timeoutID = setTimeout(this._handleTimeout.bind(this), containerTimeout + 5000);
 
-    this.lastCallData = callData;
+    this.lastCall = { type, directory, file, fcn, bytes: Buffer.byteLength(callDataString) };
 
     this.stdinStream?.write(callDataString);
     this.stdinStream?.write('\n');
@@ -366,7 +373,12 @@ export class CodeCallerContainer implements CodeCaller {
       return;
     }
 
-    this.hostDirectory = await tmp.dir({ unsafeCleanup: true, prefix: MOUNT_DIRECTORY_PREFIX });
+    // We don't pass `unsafeCleanup`, so `cleanup()` removes this directory with
+    // a plain `rmdir` rather than recursively. The directory is only ever a
+    // mount point and is empty once the course is unmounted. If unmounting
+    // failed, a recursive removal could delete the course's files through the
+    // mount, while `rmdir` just fails.
+    this.hostDirectory = await tmp.dir({ prefix: MOUNT_DIRECTORY_PREFIX });
     await ensureImage();
     await this._createAndAttachContainer(this.hostDirectory.path);
 
@@ -444,6 +456,11 @@ export class CodeCallerContainer implements CodeCaller {
     this.stdoutStream = new MemoryStream();
     this.stderrStream = new MemoryStream();
     this.stdinStream.pipe(stream);
+    // `pipe()` doesn't forward errors, and nothing else listens for them on
+    // this socket. Without this, writing to a container that has just been
+    // killed (e.g. a large payload still in flight when a call times out)
+    // fails with EPIPE and crashes the whole process.
+    stream.on('error', (err) => this._handleStreamError(err));
     this.container.modem.demuxStream(stream, this.stdoutStream, this.stderrStream);
     this.stdoutStream.setEncoding('utf8');
     this.stderrStream.setEncoding('utf8');
@@ -475,6 +492,27 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('enter _handleStderr()');
     this.outputStderr.push(data);
     this.debug('exit _handleStderr()');
+  }
+
+  _handleStreamError(err: Error) {
+    this.debug('enter _handleStreamError()');
+    if (this.state === WAITING || this.state === IN_CALL) {
+      this._logError(`CodeCallerContainer stream error in state ${String(this.state)}: ${err}`);
+      const wasInCall = this.state === IN_CALL;
+      this._clearTimeout();
+      this.state = EXITING;
+      void this._cleanup();
+      if (wasInCall) {
+        this._callCallback(new Error(`CodeCallerContainer stream error: ${err}`));
+      }
+    } else if (this.state === CREATED) {
+      // The container is still starting. `ensureChild()` will fail when its
+      // ping times out.
+      this._logError(`CodeCallerContainer stream error in state ${String(this.state)}: ${err}`);
+    }
+    // In any other state, the container is already being torn down, so the
+    // error is expected.
+    this.debug('exit _handleStreamError()');
   }
 
   _handleTimeout() {
@@ -573,10 +611,6 @@ export class CodeCallerContainer implements CodeCaller {
       }
     }
 
-    // This is potentially quite a large object. Drop our reference to it to
-    // allow this memory to be quickly garbage collected.
-    this.lastCallData = null;
-
     this.debug('exit _callIsFinished()');
   }
 
@@ -595,11 +629,14 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.timeoutID) {
       this._clearTimeout();
     }
-    if (this.container) {
+    // `_handleContainerExit()` can set `this.container` to null while we're
+    // awaiting `kill()` below, which is when the `catch` reads it.
+    const container = this.container;
+    if (container) {
       try {
-        await this.container.kill();
+        await container.kill();
       } catch (e: any) {
-        logger.error(`Error killing Docker container ${this.container.id}`, e);
+        logger.error(`Error killing Docker container ${container.id}`, e);
       }
     }
     // Note that we can't safely do any of this until the container is actually dead
@@ -627,7 +664,7 @@ export class CodeCallerContainer implements CodeCaller {
       timeoutIDIsNull: this.timeoutID == null,
       outputBoth: this.outputBoth,
       stack: errForStack.stack,
-      lastCallData: this.lastCallData,
+      lastCall: this.lastCall,
     };
   }
 
