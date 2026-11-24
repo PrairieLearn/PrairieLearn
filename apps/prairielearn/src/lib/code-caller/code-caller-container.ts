@@ -232,6 +232,12 @@ export class CodeCallerContainer implements CodeCaller {
    * course.
    */
   async prepareForCourse({ coursePath, forbiddenModules }: PrepareForCourseOptions) {
+    // The caller may have failed while it was idle in the pool. Mounting the
+    // course would then race `_cleanup()`.
+    if (!this._checkState([WAITING])) {
+      throw new Error(`Invalid CodeCallerContainer state: ${String(this.state)}`);
+    }
+
     this.forbiddenModules = forbiddenModules;
 
     if (this.coursePath && this.coursePath === coursePath) {
@@ -367,7 +373,10 @@ export class CodeCallerContainer implements CodeCaller {
       return;
     }
 
-    this.hostDirectory = await tmp.dir({ unsafeCleanup: true, prefix: MOUNT_DIRECTORY_PREFIX });
+    // This directory is only a mount point, so it's empty once the course is
+    // unmounted. Without `unsafeCleanup`, removing it fails instead of deleting
+    // the course's files if the course is somehow still mounted.
+    this.hostDirectory = await tmp.dir({ prefix: MOUNT_DIRECTORY_PREFIX });
     await ensureImage();
     await this._createAndAttachContainer(this.hostDirectory.path);
 
@@ -494,6 +503,10 @@ export class CodeCallerContainer implements CodeCaller {
       if (wasInCall) {
         this._callCallback(new Error(`CodeCallerContainer stream error: ${err}`));
       }
+    } else if (this.state === CREATED) {
+      // The container is still starting. `ensureChild()` will fail when its
+      // ping times out.
+      this._logError(`CodeCallerContainer stream error in state ${String(this.state)}: ${err}`);
     }
     // In any other state, the container is already being torn down, so the
     // error is expected.
@@ -614,11 +627,13 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.timeoutID) {
       this._clearTimeout();
     }
-    if (this.container) {
+    // `_handleContainerExit()` can clear `this.container` while we wait.
+    const container = this.container;
+    if (container) {
       try {
-        await this.container.kill();
+        await container.kill();
       } catch (e: any) {
-        logger.error(`Error killing Docker container ${this.container.id}`, e);
+        logger.error(`Error killing Docker container ${container.id}`, e);
       }
     }
     // Note that we can't safely do any of this until the container is actually dead
