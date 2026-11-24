@@ -1699,9 +1699,7 @@ def json_to_sympy(
         resolved_name_overrides=(
             dict.fromkeys(variables) if allow_sets and variables is not None else None
         ),
-        additional_variables=(
-            const.serialized_named_sets if allow_sets else None
-        ),
+        additional_variables=(const.serialized_named_sets if allow_sets else None),
         additional_functions=const.serialized_functions,
     )
     return result
