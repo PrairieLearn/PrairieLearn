@@ -1,7 +1,7 @@
 <pl-question-panel>
     <p>
         <i>
-            This question uses the built-in methods in <code>code_feedback.py</code> to check Matplotlib plots.  The <code>Feedback.check_plot()</code> function can be used to check correctness of plots, with an optional keyword argument <code>check_axes_scale</code> to check if the student plot has the same axis scales as the reference solution.
+            This question shows how the Python autograder checks Matplotlib plots. Student code draws the plot as usual and saves its axes in a variable. The test reads that variable with <code>sandbox.query("plot")</code> and receives the plot as a Matplotlib figure. It compares that figure with a reference plot using <code>assert_plot_equal</code>, which checks the axis scales and line data. It also passes the figure to <code>feedback.add_image</code>, which shows the plot with the grading results.
         </i>
     </p>
     <p>
@@ -10,14 +10,12 @@
         on the integer values of $x \in \left[0, 10\right]$, with a linear scale for the x-axis and a logarithmic scale for the y-axis.  Save the plot in the variable <code>plot</code> using <code>plt.gca()</code>.
     </p>
 
-    <p>The setup code does not provide any variables.</p>
-
     <p>Your code snippet should define the following variables:</p>
     <pl-external-grader-variables params-name="names_from_user">
-        <pl-variable name="plot" type="matplotlib.axes instance">The plot as described above.</pl-variable>
+        <pl-variable name="plot" type="Matplotlib Axes">The plot as described above.</pl-variable>
     </pl-external-grader-variables>
     <pl-file-editor
-        file-name="user_code.py"
+        file-name="student_code.py"
         ace-mode="ace/mode/python"
         source-file-name="tests/initial_code.py"></pl-file-editor>
 </pl-question-panel>

@@ -1,0 +1,148 @@
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+
+import { HttpStatusError } from '@prairielearn/error';
+import { IdSchema } from '@prairielearn/zod';
+
+import { printFormLabelBase } from '../../lib/client/printing/print-form-label.js';
+import { StaffPrintFormSchema } from '../../lib/client/safe-db-types.js';
+import { features } from '../../lib/features/index.js';
+import { createPrintForm, ensureInitialPrintForm } from '../../lib/printing/print-forms.js';
+import { inspectPrintPreparationQuestions } from '../../lib/printing/print-preparation.js';
+import {
+  archivePrintForm,
+  selectOptionalPrintForm,
+  selectPrintFormsForAssessment,
+} from '../../models/print-form.js';
+
+import {
+  type createContext,
+  requireCoursePermissionEdit,
+  requireCoursePermissionPreview,
+  t,
+} from './init.js';
+
+/** @knipignore Consumed by the preparation UI in the following PR. */
+export interface PrintFormsError {
+  archive: never;
+  questions: never;
+  list: never;
+  create: never;
+  ensureInitial: never;
+  regenerate: never;
+}
+
+export const requirePrintableAssessments = t.middleware(async (opts) => {
+  // Everyone has preview access to example courses, so shared print forms there would be one
+  // pool that any user could fill or regenerate.
+  if (
+    opts.ctx.course.example_course ||
+    !(await features.enabledFromLocals('printable-assessments', opts.ctx.locals))
+  ) {
+    throw new TRPCError({ code: 'NOT_FOUND' });
+  }
+  return opts.next();
+});
+
+const printFormProcedure = t.procedure
+  .use(requireCoursePermissionPreview)
+  .use(requirePrintableAssessments);
+const editorPrintFormProcedure = printFormProcedure.use(requireCoursePermissionEdit);
+
+const rejectGroupWork = t.middleware(async ({ ctx, next }) => {
+  if (ctx.assessment.team_work) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Creating print forms for group assessments is not supported yet.',
+    });
+  }
+  return next();
+});
+
+const assessmentFormProcedure = printFormProcedure
+  .input(z.object({ printFormId: IdSchema }))
+  .use(async ({ ctx, input, next }) => {
+    const form = await selectOptionalPrintForm({
+      printFormId: input.printFormId,
+      assessmentId: ctx.assessment.id,
+    });
+    if (!form) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is not available.' });
+    }
+    return next({ ctx: { printForm: form } });
+  });
+const editorAssessmentFormProcedure = assessmentFormProcedure.use(requireCoursePermissionEdit);
+
+async function createForm({
+  ctx,
+  replacesPrintFormId,
+  ensureInitial = false,
+}: {
+  ctx: ReturnType<typeof createContext>;
+  replacesPrintFormId?: string;
+  ensureInitial?: boolean;
+}) {
+  try {
+    const options = {
+      assessment: ctx.assessment,
+      course: ctx.course,
+      courseInstance: ctx.course_instance,
+      userId: ctx.locals.user.id,
+      authnUserId: ctx.authn_user.id,
+    };
+    const form = ensureInitial
+      ? await ensureInitialPrintForm(options)
+      : await createPrintForm({ ...options, replacesPrintFormId });
+    return { printFormId: form.id, label: form.label };
+  } catch (error) {
+    if (error instanceof HttpStatusError) {
+      if (error.status === 400) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+      }
+      if (error.status === 404) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: error.message, cause: error });
+      }
+      if (error.status === 409) {
+        throw new TRPCError({ code: 'CONFLICT', message: error.message, cause: error });
+      }
+    }
+    throw error;
+  }
+}
+
+export const printFormsRouter = t.router({
+  questions: assessmentFormProcedure.query(async ({ input }) => {
+    return await inspectPrintPreparationQuestions(input.printFormId);
+  }),
+  list: printFormProcedure.query(async ({ ctx }) =>
+    StaffPrintFormSchema.array().parse(
+      await selectPrintFormsForAssessment({ assessmentId: ctx.assessment.id }),
+    ),
+  ),
+  create: editorPrintFormProcedure
+    .use(rejectGroupWork)
+    .mutation(async ({ ctx }) => await createForm({ ctx })),
+  ensureInitial: editorPrintFormProcedure
+    .use(rejectGroupWork)
+    .mutation(async ({ ctx }) => await createForm({ ctx, ensureInitial: true })),
+  regenerate: editorAssessmentFormProcedure
+    .use(rejectGroupWork)
+    .mutation(
+      async ({ ctx, input }) => await createForm({ ctx, replacesPrintFormId: input.printFormId }),
+    ),
+  archive: editorAssessmentFormProcedure.mutation(async ({ ctx, input }) => {
+    if (ctx.printForm.archived_at === null && printFormLabelBase(ctx.printForm.label) === 'A') {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Form A cannot be archived. Regenerate it to make a new version.',
+      });
+    }
+    const archived = await archivePrintForm({
+      printFormId: input.printFormId,
+      assessmentId: ctx.assessment.id,
+    });
+    if (!archived) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'This print form is no longer active.' });
+    }
+  }),
+});

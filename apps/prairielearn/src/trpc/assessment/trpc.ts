@@ -1,5 +1,7 @@
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
+import type { RequestHandler } from 'express';
 
+import { MAX_PRINT_EXPORT_UPLOAD_BYTES } from '../../lib/client/printing/print-packet.js';
 import { config } from '../../lib/config.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 
@@ -10,6 +12,8 @@ import { assessmentQuestionsRouter } from './assessment-questions.js';
 import { assessmentSettingsRouter } from './assessment-settings.js';
 import { assessmentUploadsRouter } from './assessment-uploads.js';
 import { createContext, t } from './init.js';
+import { printFormsRouter } from './print-forms.js';
+import { printableAssessmentExportRouter } from './printable-assessment-export.js';
 import { unsavedSubmissionsRouter } from './unsaved-submissions.js';
 
 const assessmentRouter = t.router({
@@ -19,12 +23,14 @@ const assessmentRouter = t.router({
   assessmentGroups: assessmentGroupsRouter,
   assessmentInstances: assessmentInstancesRouter,
   assessmentUploads: assessmentUploadsRouter,
+  printForms: printFormsRouter,
+  printableAssessmentExport: printableAssessmentExportRouter,
   unsavedSubmissions: unsavedSubmissionsRouter,
 });
 
 export type AssessmentRouter = typeof assessmentRouter;
 
-export const assessmentTrpcRouter = createExpressMiddleware({
+const assessmentMiddleware = createExpressMiddleware({
   router: assessmentRouter,
   createContext,
   onError: handleTrpcError,
@@ -32,3 +38,18 @@ export const assessmentTrpcRouter = createExpressMiddleware({
   // the previous multer-based upload route did.
   maxBodySize: config.fileUploadMaxBytes,
 });
+
+const printableAssessmentPdfMiddleware = createExpressMiddleware({
+  router: assessmentRouter,
+  createContext,
+  onError: handleTrpcError,
+  maxBodySize: MAX_PRINT_EXPORT_UPLOAD_BYTES,
+});
+
+export const assessmentTrpcRouter: RequestHandler = (req, res, next) => {
+  const middleware =
+    req.path === '/printableAssessmentExport.pdf'
+      ? printableAssessmentPdfMiddleware
+      : assessmentMiddleware;
+  middleware(req, res, next);
+};
