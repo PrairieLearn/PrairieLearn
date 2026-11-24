@@ -22,6 +22,7 @@ indexes
     job_sequences_assessment_id_idx: USING btree (assessment_id)
     job_sequences_course_id_idx: USING btree (course_id)
     job_sequences_course_request_id_idx: USING btree (course_request_id)
+    job_sequences_ongoing_idx: USING btree (type) WHERE status = ANY (ARRAY['Running'::enum_job_status, 'Stopping'::enum_job_status])
 
 foreign-key constraints
     job_sequences_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
