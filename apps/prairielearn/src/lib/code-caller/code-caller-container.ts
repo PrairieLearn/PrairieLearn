@@ -627,7 +627,8 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.timeoutID) {
       this._clearTimeout();
     }
-    // `_handleContainerExit()` can clear `this.container` while we wait.
+    // `_handleContainerExit()` can set `this.container` to null while we're
+    // awaiting `kill()` below, which is when the `catch` reads it.
     const container = this.container;
     if (container) {
       try {
