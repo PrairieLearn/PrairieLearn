@@ -25,7 +25,7 @@ import { lockVariant } from './variant.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/** Locks draft state until the caller's transaction finishes. */
+/** Locks draft state until the caller's transaction finishes. Requires an active transaction. */
 export async function lockUnsavedSubmissionState({
   instance_question_id,
   user_id,
