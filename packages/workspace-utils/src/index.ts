@@ -74,55 +74,84 @@ export async function updateWorkspaceMessage(
 /**
  * Updates a workspace's current state and message.
  *
+ * This applies no matter which launch the workspace is on, so it is only for
+ * transitions that are meant to end whatever launch is current. Use
+ * {@link startWorkspaceLaunch} to start a launch and
+ * {@link updateWorkspaceLaunchState} to finish one.
+ *
  * @param workspace_id The workspace's id.
  * @param state The workspace's new state.
  * @param message The workspace's new message.
  */
 export async function updateWorkspaceState(
   workspace_id: string | number,
-  state: string,
+  state: 'uninitialized' | 'stopped',
   message = '',
 ): Promise<void> {
-  await updateWorkspaceStateInternal({ workspace_id, state, message });
+  await setWorkspaceState({ workspace_id, state, message });
 }
 
-interface WorkspaceLaunch {
+/**
+ * Identifies one attempt to launch a workspace. `launch_uuid` is only null for
+ * a launch started by a main server that predates launch identities.
+ */
+export interface WorkspaceLaunch {
   id: string | number;
-  workspace_host_id: string;
   launch_uuid: string | null;
-  launch_started_at: string | null;
-  version: number;
 }
 
-/** Completes a launch only if it still owns the workspace. */
+/**
+ * Moves a workspace to `launching` and returns the identity of the new launch.
+ * Everything that later acts on behalf of this launch must present that
+ * identity, so a launch that was superseded by a reboot or a reset can't
+ * affect its replacement.
+ */
+export async function startWorkspaceLaunch(
+  workspace_id: string | number,
+  message: string,
+): Promise<string> {
+  const launch_uuid = crypto.randomUUID();
+  await setWorkspaceState({ workspace_id, state: 'launching', message, launch_uuid });
+  return launch_uuid;
+}
+
+/**
+ * Finishes a launch, unless it is no longer the workspace's current launch.
+ *
+ * @returns Whether the workspace was updated.
+ */
 export async function updateWorkspaceLaunchState(
   launch: WorkspaceLaunch,
   result: { state: 'running'; hostname: string } | { state: 'stopped'; message: string },
 ): Promise<boolean> {
-  return updateWorkspaceStateInternal({
+  return setWorkspaceState({
     workspace_id: launch.id,
     state: result.state,
     message: result.state === 'stopped' ? result.message : '',
     hostname: result.state === 'running' ? result.hostname : undefined,
-    launch,
+    expectedLaunch: launch,
   });
 }
 
-async function updateWorkspaceStateInternal({
+async function setWorkspaceState({
   workspace_id,
   state,
   message,
   hostname,
-  launch,
+  launch_uuid,
+  expectedLaunch,
 }: {
   workspace_id: string | number;
-  state: string;
+  state: 'uninitialized' | 'stopped' | 'launching' | 'running';
   message: string;
   hostname?: string;
-  launch?: WorkspaceLaunch;
+  /** The identity of the launch that a transition to `launching` starts. */
+  launch_uuid?: string;
+  /** If set, the update only applies while this launch is in progress. */
+  expectedLaunch?: WorkspaceLaunch;
 }): Promise<boolean> {
   async function updateState() {
-    const queryDuration = launch ? queryOptionalScalar : queryScalar;
+    const queryDuration = expectedLaunch ? queryOptionalScalar : queryScalar;
     const duration_milliseconds = await queryDuration(
       sql.update_workspace_state,
       {
@@ -130,11 +159,9 @@ async function updateWorkspaceStateInternal({
         state,
         message,
         hostname: hostname ?? null,
-        launch_guarded: launch !== undefined,
-        launch_uuid: launch?.launch_uuid ?? null,
-        launch_started_at: launch?.launch_started_at ?? null,
-        version: launch?.version ?? null,
-        workspace_host_id: launch?.workspace_host_id ?? null,
+        new_launch_uuid: launch_uuid ?? null,
+        launch_guarded: expectedLaunch !== undefined,
+        expected_launch_uuid: expectedLaunch?.launch_uuid ?? null,
       },
       IntervalSchema,
     );
@@ -145,8 +172,10 @@ async function updateWorkspaceStateInternal({
     return true;
   }
 
-  // Keep launch accounting under the same lock and publish only after commit.
-  const updated = launch ? await runInTransactionAsync(updateState) : await updateState();
+  // A guarded update commits before it is published, so a client never loads a
+  // workspace whose `running` state it can't see yet. Other callers may already
+  // be inside a transaction, in which case they publish before their commit.
+  const updated = expectedLaunch ? await runInTransactionAsync(updateState) : await updateState();
   if (!updated) return false;
   emitMessageForWorkspace(workspace_id, 'change:state', {
     workspace_id,

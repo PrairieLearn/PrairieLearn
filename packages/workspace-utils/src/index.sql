@@ -26,10 +26,7 @@ WITH
         NOT $launch_guarded::boolean
         OR (
           state = 'launching'
-          AND launch_uuid IS NOT DISTINCT FROM $launch_uuid
-          AND launched_at IS NOT DISTINCT FROM $launch_started_at::timestamptz
-          AND version = $version
-          AND workspace_host_id = $workspace_host_id
+          AND launch_uuid IS NOT DISTINCT FROM $expected_launch_uuid
         )
       )
     FOR NO KEY UPDATE
@@ -51,6 +48,12 @@ WITH
     UPDATE workspaces AS w
     SET
       state = $state::enum_workspace_state,
+      -- Every launch gets a new identity, so writes from an earlier launch of
+      -- this workspace can never match the current one.
+      launch_uuid = CASE
+        WHEN $state = 'launching' THEN $new_launch_uuid
+        ELSE w.launch_uuid
+      END,
       hostname = COALESCE($hostname, w.hostname),
       state_updated_at = now(),
       message = $message,

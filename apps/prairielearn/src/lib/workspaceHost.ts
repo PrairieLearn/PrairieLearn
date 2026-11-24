@@ -1,13 +1,6 @@
 import { z } from 'zod';
 
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalScalar,
-  queryRow,
-  queryRows,
-  queryScalar,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 
 import {
   type WorkspaceHost,
@@ -50,17 +43,30 @@ export async function markAllWorkspaceHostsUnhealthy(reason: string): Promise<Wo
   );
 }
 
+const WorkspaceHostAssignmentSchema = z.object({
+  /** Null if no host had capacity, or if the launch is no longer current. */
+  workspace_host_id: z.string().nullable(),
+  launch_current: z.boolean(),
+});
+export type WorkspaceHostAssignment = z.infer<typeof WorkspaceHostAssignmentSchema>;
+
+/**
+ * Assigns a host to a workspace launch. A launch that has been superseded by
+ * a reboot or a reset is not assigned, since that would take the workspace
+ * away from the host its replacement is running on.
+ */
 export async function assignWorkspaceToHost(
-  workspace_id: string,
+  launch: { id: string; launch_uuid: string },
   capacity: number,
-): Promise<string | null> {
-  return await queryOptionalScalar(
+): Promise<WorkspaceHostAssignment> {
+  return await queryRow(
     sql.assign_workspace_to_host,
     {
-      workspace_id,
+      workspace_id: launch.id,
+      launch_uuid: launch.launch_uuid,
       capacity,
     },
-    z.string(),
+    WorkspaceHostAssignmentSchema,
   );
 }
 

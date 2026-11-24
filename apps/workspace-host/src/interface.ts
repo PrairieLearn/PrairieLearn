@@ -54,24 +54,14 @@ const WorkspaceRowSchema = z.object({
   version: z.coerce.number(), // BIGINT, but always fits a number
 });
 
-const WorkspaceLaunchSchema = WorkspaceRowSchema.pick({
-  id: true,
-  launch_uuid: true,
-  version: true,
-}).extend({
-  workspace_host_id: z.coerce.string(),
-  // A reboot can start another launch before the host replaces the UUID.
-  // Keep PostgreSQL's microsecond precision so we can distinguish those launches.
-  launch_started_at: z.string().nullable(),
-});
+const WorkspaceLaunchSchema = WorkspaceRowSchema.pick({ id: true, launch_uuid: true });
 
-const ClaimedWorkspaceLaunchSchema = WorkspaceLaunchSchema.extend({
+const ClaimedWorkspaceLaunchSchema = WorkspaceRowSchema.pick({ id: true, version: true }).extend({
   launch_uuid: z.string(),
   course_id: z.coerce.string(),
   institution_id: z.coerce.string(),
 });
 
-type WorkspaceLaunch = z.infer<typeof WorkspaceLaunchSchema>;
 type ClaimedWorkspaceLaunch = z.infer<typeof ClaimedWorkspaceLaunchSchema>;
 
 const PortOccupiedSchema = z.boolean();
@@ -170,7 +160,8 @@ app.post(
       res.status(500).send('Missing action');
     } else if (action === 'init') {
       const useInitialZip: boolean = req.body.options?.useInitialZip ?? false;
-      await initSequence(workspace_id, useInitialZip, res);
+      const launch_uuid: string | null = req.body.options?.launch_uuid ?? null;
+      await initSequence(workspace_id, launch_uuid, useInitialZip, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
     } else if (action === 'getLogs') {
@@ -314,7 +305,10 @@ async
             message: 'Status unknown',
           });
           if (!stopped) return;
-          await sqldb.execute(sql.clear_workspace_on_shutdown, ws);
+          await sqldb.execute(sql.clear_workspace_on_shutdown, {
+            ...ws,
+            instance_id: workspace_server_settings.instance_id,
+          });
           if (ws.launch_uuid === null) return;
           try {
             const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
@@ -358,7 +352,7 @@ async function pruneStoppedContainers() {
   );
   await async.each(recently_stopped, async (ws) => {
     const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid).catch(() => null);
-    await sqldb.execute(sql.clear_workspace_on_shutdown, ws);
+    await sqldb.execute(sql.clear_workspace_on_shutdown, { ...ws, instance_id });
     if (container) await killAndRemoveWorkspace(ws.id, container);
   });
 }
@@ -990,7 +984,7 @@ async function _startContainer(workspace_id: string | number, container: Docker.
 /**
  * A failed state update should still allow container cleanup to proceed.
  */
-async function stopFailedLaunch(launch: WorkspaceLaunch, message: string) {
+async function stopFailedLaunch(launch: workspaceUtils.WorkspaceLaunch, message: string) {
   await workspaceUtils
     .updateWorkspaceLaunchState(launch, { state: 'stopped', message })
     .catch((err) => {
@@ -999,18 +993,17 @@ async function stopFailedLaunch(launch: WorkspaceLaunch, message: string) {
     });
 }
 
-function workspaceLaunchParams({
-  id,
-  workspace_host_id,
-  launch_uuid,
-  launch_started_at,
-  version,
-}: WorkspaceLaunch) {
-  return { id, workspace_host_id, launch_uuid, launch_started_at, version };
+function workspaceLaunchParams({ id, launch_uuid }: ClaimedWorkspaceLaunch) {
+  return { id, launch_uuid };
 }
 
 /** Called by the main server the first time a workspace is used by a user */
-async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
+async function initSequence(
+  workspace_id: string | number,
+  requested_launch_uuid: string | null,
+  useInitialZip: boolean,
+  res: Response,
+) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
@@ -1018,12 +1011,18 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     sql.claim_workspace_launch,
     {
       workspace_id,
-      launch_uuid: crypto.randomUUID(),
+      launch_uuid: requested_launch_uuid,
+      fallback_launch_uuid: crypto.randomUUID(),
       instance_id: workspace_server_settings.instance_id,
     },
     ClaimedWorkspaceLaunchSchema,
   );
-  if (!launch) return;
+  if (!launch) {
+    logger.info(
+      `Ignoring launch ${requested_launch_uuid} for workspace ${workspace_id}: it is not the current launch on this host`,
+    );
+    return;
+  }
 
   // Check before pulling or creating a container so failed launches also trigger a check.
   await checkDiskSpace();
@@ -1086,6 +1085,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       });
       if (!running) {
         logger.info(`Abandoning superseded launch ${launch_uuid} for workspace ${workspace.id}`);
+        await killAndRemoveWorkspace(workspace.id, container);
       }
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
