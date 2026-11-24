@@ -366,7 +366,10 @@ def worker_loop() -> None:
                 val = {
                     "html": result if fcn == "render" else None,
                     "file": result if fcn == "file" else None,
-                    "data": data,
+                    # The caller ignores changes to `data` during `render` and
+                    # `file`. It can contain entire submitted files, so we avoid
+                    # serializing it and sending it back.
+                    "data": None if fcn in ("render", "file") else data,
                     "processed_elements": list(processed_elements),
                 }
 
