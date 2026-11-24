@@ -95,10 +95,18 @@ const SubmissionInfoSchema = z.object({
 });
 
 /**
- * To improve performance, we'll only render at most three submissions on page
- * load. If the user requests more, we'll render them on the fly.
+ * To improve performance, we'll only load full details for at most three
+ * submissions on page load. Older submissions only show basic information
+ * until they're expanded.
  */
 const MAX_RECENT_SUBMISSIONS = 3;
+
+/**
+ * Only the latest submission is expanded on page load, so it's the only one
+ * whose panel we render eagerly. Rendering a panel occupies a Python worker,
+ * and the others are rendered on the fly if the user expands them.
+ */
+const MAX_EAGERLY_RENDERED_SUBMISSIONS = 1;
 
 export class FatalQuestionRenderError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -631,9 +639,17 @@ export async function getAndRenderVariant(
     const submissionsToRender = needsAllSubmissions
       ? basicSubmissions
       : basicSubmissions.slice(0, MAX_RECENT_SUBMISSIONS);
+    // Submitted answers are only needed for the submissions whose panels we
+    // render now.
+    const submissionsWithAnswers = needsAllSubmissions
+      ? basicSubmissions
+      : basicSubmissions.slice(0, MAX_EAGERLY_RENDERED_SUBMISSIONS);
     const submissionDetails = await sqldb.queryRows(
       sql.select_detailed_submissions,
-      { submission_ids: submissionsToRender.map((s) => s.id) },
+      {
+        submission_ids: submissionsToRender.map((s) => s.id),
+        answer_submission_ids: submissionsWithAnswers.map((s) => s.id),
+      },
       SubmissionDetailedSchema,
     );
 
@@ -681,7 +697,7 @@ export async function getAndRenderVariant(
     variant,
     question,
     submission: isAiGradingPreview ? null : (submission as Submission),
-    submissions: submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
+    submissions: submissions.slice(0, MAX_EAGERLY_RENDERED_SUBMISSIONS) as Submission[],
     question_course,
     locals: {
       ...urls,

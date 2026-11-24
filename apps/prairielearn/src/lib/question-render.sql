@@ -98,13 +98,19 @@ ORDER BY
 
 -- BLOCK select_detailed_submissions
 SELECT
-  -- This includes ONLY the jsonb columns from `submissions`.
+  -- This includes ONLY the jsonb columns from `submissions`. Submitted
+  -- answers can be very large (e.g. entire files), so we only load them for
+  -- the submissions that need them.
   s.feedback,
   s.format_errors,
   s.params,
   s.partial_scores,
-  s.raw_submitted_answer,
-  s.submitted_answer,
+  CASE
+    WHEN s.id = ANY ($answer_submission_ids::bigint[]) THEN s.raw_submitted_answer
+  END AS raw_submitted_answer,
+  CASE
+    WHEN s.id = ANY ($answer_submission_ids::bigint[]) THEN s.submitted_answer
+  END AS submitted_answer,
   s.true_answer
 FROM
   submissions AS s
