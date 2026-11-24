@@ -480,6 +480,10 @@ export async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
+    if (rubric_item_data.some((item) => item.is_group)) {
+      throw new Error('Rubric groups cannot be selected. Select the items inside them instead.');
+    }
+
     const sum_rubric_item_points = sum(
       rubric_items.map(
         (item) =>

@@ -1,6 +1,13 @@
 import { assert, describe, it } from 'vitest';
 
-import { RUBRIC_MAX_DEPTH, type RubricTreeNodeInput, resolveRubricTree } from './rubric-tree.js';
+import {
+  RUBRIC_MAX_DEPTH,
+  type RubricTreeNodeInput,
+  buildRubricTree,
+  describeSelectionRule,
+  leafItems,
+  resolveRubricTree,
+} from './rubric-tree.js';
 
 const leaf = (depth = 0, points = 1): RubricTreeNodeInput => ({ depth, points });
 const group = (
@@ -130,5 +137,53 @@ describe('resolveRubricTree', () => {
       () => resolveRubricTree([group(0, { min_selections: 2 }), leaf(1)]),
       /could never be satisfied/,
     );
+  });
+});
+
+describe('buildRubricTree', () => {
+  const row = (id: string, parent_id: string | null = null, is_group = false) => ({
+    id,
+    parent_id,
+    is_group,
+  });
+  const accessors = {
+    parentId: (item: { parent_id: string | null }) => item.parent_id,
+    isGroup: (item: { is_group: boolean }) => item.is_group,
+  };
+
+  it('nests rows under their groups in order', () => {
+    const tree = buildRubricTree(
+      [row('a'), row('g', null, true), row('b', 'g'), row('h', 'g', true), row('c', 'h'), row('d')],
+      accessors,
+    );
+    assert.deepEqual(
+      tree.map((node) => [node.item.id, node.children.map((child) => child.item.id)]),
+      [
+        ['a', []],
+        ['g', ['b', 'h']],
+        ['d', []],
+      ],
+    );
+    assert.deepEqual(
+      leafItems(tree[1]).map((item) => item.id),
+      ['b', 'c'],
+    );
+  });
+
+  it('treats an empty group as having no items', () => {
+    const [empty] = buildRubricTree([row('g', null, true)], accessors);
+    assert.deepEqual(leafItems(empty), []);
+  });
+});
+
+describe('describeSelectionRule', () => {
+  it.each([
+    [null, null, null],
+    [1, 1, 'Select one'],
+    [null, 1, 'Select up to one'],
+    [2, null, 'Select at least 2'],
+    [1, 3, 'Select 1–3'],
+  ])('min %s, max %s', (minSelections, maxSelections, expected) => {
+    assert.equal(describeSelectionRule(minSelections, maxSelections), expected);
   });
 });

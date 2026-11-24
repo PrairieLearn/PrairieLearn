@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import superjson from 'superjson';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -8,6 +8,7 @@ import { gradeAllAssessmentInstances } from '../lib/assessment.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema, RubricItemSchema } from '../lib/db-types.js';
+import { insertRubricGrading } from '../lib/manualGrading.js';
 import { selectJobSequenceStatus } from '../lib/server-jobs.js';
 import { updateAssessmentInstancesTimeLimit } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -1247,6 +1248,15 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
 
         test('nesting does not change the existing grade', async () => {
           assert.equal(await selectManualPoints(), manualPointsBefore);
+        });
+
+        test('a group cannot be applied as a grading item', async () => {
+          const rows = await sqldb.queryRows(sql.select_rubric_items, { iqId }, RubricItemSchema);
+          const groupRow = rows.find((row) => row.is_group);
+          assert.isDefined(groupRow);
+          await expect(
+            insertRubricGrading(groupRow.rubric_id, 6, 6, [{ rubric_item_id: groupRow.id }], null),
+          ).rejects.toThrow(/Rubric groups cannot be selected/);
         });
 
         test.each([
