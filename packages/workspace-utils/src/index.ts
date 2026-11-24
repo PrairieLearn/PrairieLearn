@@ -72,6 +72,44 @@ export async function updateWorkspaceMessage(
 }
 
 /**
+ * Whether the launch is still the workspace's current launch, as of this
+ * statement rather than an earlier snapshot.
+ */
+export async function isWorkspaceLaunchCurrent(launch: WorkspaceLaunch): Promise<boolean> {
+  return await queryScalar(
+    sql.select_workspace_launch_is_current,
+    { workspace_id: launch.id, launch_uuid: launch.launch_uuid },
+    z.boolean(),
+  );
+}
+
+/**
+ * Updates the message of a launch that is still in progress. A superseded
+ * launch writes and publishes nothing, so that its progress never appears on
+ * the launch that replaced it.
+ *
+ * @param toDatabase Whether to write the message to the database.
+ * @returns Whether the launch is still current.
+ */
+export async function updateWorkspaceLaunchMessage(
+  launch: WorkspaceLaunch,
+  message: string,
+  toDatabase = true,
+): Promise<boolean> {
+  const current = toDatabase
+    ? await queryScalar(
+        sql.update_workspace_launch_message,
+        { workspace_id: launch.id, launch_uuid: launch.launch_uuid, message },
+        z.boolean(),
+      )
+    : await isWorkspaceLaunchCurrent(launch);
+  if (current) {
+    emitMessageForWorkspace(launch.id, 'change:message', { workspace_id: launch.id, message });
+  }
+  return current;
+}
+
+/**
  * Updates a workspace's current state and message.
  *
  * This applies no matter which launch the workspace is on, so it is only for

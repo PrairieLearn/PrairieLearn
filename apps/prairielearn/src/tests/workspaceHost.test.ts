@@ -192,6 +192,30 @@ describe('workspaceHost utilities', function () {
         expect.anything(),
       );
     });
+
+    it('publishes progress only for the current launch', async () => {
+      const original = await startLaunch('1');
+      const replacement = await startLaunch('1');
+      const before = await selectWorkspace('1');
+      const logCount = (await getWorkspaceLogs(1)).length;
+      broadcast.mockClear();
+
+      assert.isFalse(await workspaceUtils.updateWorkspaceLaunchMessage(original, 'Stale'));
+      assert.isFalse(await workspaceUtils.updateWorkspaceLaunchMessage(original, 'Stale', false));
+      assert.deepEqual(await selectWorkspace('1'), before);
+      assert.lengthOf(await getWorkspaceLogs(1), logCount);
+      expect(broadcast).not.toHaveBeenCalled();
+
+      assert.isTrue(await workspaceUtils.updateWorkspaceLaunchMessage(replacement, 'Current'));
+      assert.equal((await selectWorkspace('1')).message, 'Current');
+      assert.equal((await getWorkspaceLogs(1)).at(-1)?.message, 'Current');
+      expect(broadcast).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          data: ['change:message', { workspace_id: replacement.id, message: 'Current' }],
+        }),
+        expect.anything(),
+      );
+    });
   });
 
   describe('markWorkspaceHostUnhealthy()', () => {

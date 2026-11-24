@@ -132,19 +132,6 @@ SELECT
       updated_workspace_host
   ) AS workspace_host_id;
 
--- BLOCK select_launch_is_current
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      workspaces AS w
-    WHERE
-      w.id = $workspace_id
-      AND w.state = 'launching'
-      AND w.launch_uuid = $launch_uuid
-  );
-
 -- BLOCK recapture_draining_hosts
 WITH
   -- Find ids of at most `needed_hosts` hosts that are currently draining

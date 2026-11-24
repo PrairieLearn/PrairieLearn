@@ -110,6 +110,53 @@ RETURNING
       deltas
   ) AS delta;
 
+-- BLOCK update_workspace_launch_message
+WITH
+  workspace AS (
+    UPDATE workspaces AS w
+    SET
+      message = $message,
+      message_updated_at = now()
+    WHERE
+      w.id = $workspace_id
+      AND w.state = 'launching'
+      AND w.launch_uuid = $launch_uuid
+    RETURNING
+      w.id,
+      w.version
+  ),
+  workspace_log AS (
+    INSERT INTO
+      workspace_logs (date, workspace_id, version, message)
+    SELECT
+      now(),
+      workspace.id,
+      workspace.version,
+      $message
+    FROM
+      workspace
+  )
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      workspace
+  );
+
+-- BLOCK select_workspace_launch_is_current
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      workspaces AS w
+    WHERE
+      w.id = $workspace_id
+      AND w.state = 'launching'
+      AND w.launch_uuid = $launch_uuid
+  );
+
 -- BLOCK update_workspace_message
 WITH
   workspace AS (

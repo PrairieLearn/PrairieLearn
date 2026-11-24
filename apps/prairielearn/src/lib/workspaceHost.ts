@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { execute, loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import {
   type WorkspaceHost,
@@ -68,7 +69,7 @@ export async function assignWorkspaceToHost(
 
   // The assignment's snapshot does not show a replacement launch that
   // committed while it waited for a host lock, so check in a new statement.
-  const launch_current = await queryScalar(sql.select_launch_is_current, params, z.boolean());
+  const launch_current = await workspaceUtils.isWorkspaceLaunchCurrent(launch);
   return { workspace_host_id: null, launch_current };
 }
 

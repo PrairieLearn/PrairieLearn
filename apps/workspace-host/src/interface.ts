@@ -698,7 +698,7 @@ async function _pullImage(workspace: Workspace) {
     return;
   }
 
-  await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
+  await workspaceUtils.updateWorkspaceLaunchMessage(workspace, 'Checking image');
   const workspace_image = workspace.settings.workspace_image;
   logger.info(`Pulling docker image: ${workspace_image}`);
 
@@ -773,7 +773,7 @@ async function _pullImage(workspace: Workspace) {
           1000 * 60 * 60 * 24 * 30, // 30 days
         );
         void workspaceUtils
-          .updateWorkspaceMessage(workspace.id, 'Pulling image (100%)', toDatabase)
+          .updateWorkspaceLaunchMessage(workspace, 'Pulling image (100%)', toDatabase)
           .catch((err) => {
             logger.error('Error updating workspace message', err);
             Sentry.captureException(err);
@@ -821,7 +821,7 @@ async function _pullImage(workspace: Workspace) {
             percentDisplayed = true;
             const toDatabase = false;
             workspaceUtils
-              .updateWorkspaceMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase)
+              .updateWorkspaceLaunchMessage(workspace, `Pulling image (${percent}%)`, toDatabase)
               .catch((err) => {
                 logger.error('Error updating workspace message', err);
                 Sentry.captureException(err);
@@ -976,8 +976,8 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   return container;
 }
 
-async function _startContainer(workspace_id: string | number, container: Docker.Container) {
-  await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Starting container');
+async function _startContainer(workspace: Workspace, container: Docker.Container) {
+  await workspaceUtils.updateWorkspaceLaunchMessage(workspace, 'Starting container');
   await container.start();
 }
 
@@ -1063,7 +1063,10 @@ async function initSequence(
 
     let container: Docker.Container | undefined;
     try {
-      await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
+      if (!(await workspaceUtils.updateWorkspaceLaunchMessage(workspace, 'Creating container'))) {
+        logger.info(`Abandoning superseded launch ${launch_uuid} for workspace ${workspace.id}`);
+        return;
+      }
       container = await _createContainer(workspace);
     } catch (err: any) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
@@ -1075,7 +1078,7 @@ async function initSequence(
     }
 
     try {
-      await _startContainer(workspace.id, container);
+      await _startContainer(workspace, container);
       await _checkServer(workspace);
       debug(`init: container initialized for workspace_id=${workspace.id}`);
 

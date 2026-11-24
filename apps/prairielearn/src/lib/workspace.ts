@@ -423,15 +423,20 @@ async function launchOnHost(
     }
 
     const t = attempt * config.workspaceLaunchingRetryIntervalSec;
-    await workspaceUtils.updateWorkspaceMessage(
-      workspace_id,
+    const current = await workspaceUtils.updateWorkspaceLaunchMessage(
+      launch,
       `Deploying more computational resources (${t} seconds elapsed)`,
     );
+    if (!current) return;
     await sleep(config.workspaceLaunchingRetryIntervalSec * 1000);
     attempt++;
   }
 
-  await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Sending launch command to host');
+  if (
+    !(await workspaceUtils.updateWorkspaceLaunchMessage(launch, 'Sending launch command to host'))
+  ) {
+    return;
+  }
   await controlContainer(workspace_id, 'init', {
     useInitialZip,
     launch_uuid: launch.launch_uuid,
