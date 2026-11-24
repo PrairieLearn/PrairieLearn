@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { CourseSandbox } from '../sandbox/sandbox.js';
 
-import { getCourseData, listCourseDatasets } from './course-data.js';
+import { describeCourseDataRequest, getCourseData, listCourseDatasets } from './course-data.js';
 
 vi.mock('../monitoring.js', () => ({ logEvent: vi.fn() }));
 
@@ -141,6 +141,54 @@ describe('course data tools', () => {
     expect(reply).toEqual({
       success: true,
       text: 'Wrote 25 rows (25.0 MB) to /workspace/session/course-data/submissions-1.jsonl. No filters. Stopped at the 25 MB download limit, so the file holds only the first rows returned and more rows match. Columns: id, feedback.',
+    });
+  });
+});
+
+describe('describeCourseDataRequest', () => {
+  it('says what a read covers in plain words, for any dataset and filter', async () => {
+    const schema = {
+      version: 1,
+      column_labels: { qid: 'question' },
+      datasets: {
+        issues: {
+          label: 'issues',
+          icon: 'bug',
+          description: 'Problems reported on questions.',
+          schema: { properties: { id: {}, qid: {}, open: {} } },
+        },
+        // A catalog from an older PrairieLearn names neither the rows nor an icon.
+        instance_questions: {
+          description: 'Questions in attempts.',
+          schema: { properties: { id: {} } },
+        },
+      },
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json(schema)),
+    );
+    expect(
+      await describeCourseDataRequest(context, {
+        dataset: 'issues',
+        select: ['id'],
+        filters: [
+          { column: 'open', op: 'eq', value: true },
+          { column: 'qid', op: 'in', value: ['addNumbers', 'addVectors'] },
+        ],
+        limit: 50,
+      }),
+    ).toEqual({
+      card: {
+        icon: 'bug',
+        title: 'View issues',
+        subtitle: 'Where open is yes and question is one of addNumbers, addVectors (at most 50)',
+      },
+    });
+    expect(
+      await describeCourseDataRequest(context, { dataset: 'instance_questions', select: ['id'] }),
+    ).toEqual({
+      card: { icon: 'table', title: 'View instance questions', subtitle: 'All instance questions' },
     });
   });
 });

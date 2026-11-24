@@ -726,8 +726,11 @@ it('keeps the course context when its timezone is not a zone name', () => {
 it('asks the instructor before reading course data, then reads once it is approved', async () => {
   const schema = {
     version: 1,
+    column_labels: { uid: 'student' },
     datasets: {
       students: {
+        label: 'students',
+        icon: 'people',
         description: 'Students in each course instance.',
         schema: { properties: { uid: { type: 'string' }, status: { type: 'string' } } },
       },
@@ -781,14 +784,8 @@ it('asks the instructor before reading course data, then reads once it is approv
   const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-review');
   const reviewId = conversation.state.reviewId!;
   expect(part).toMatchObject({ data: { reviewId } });
-  const card = {
-    title: 'Read the students dataset',
-    rows: [
-      { label: 'What it holds', detail: 'Students in each course instance.' },
-      { label: 'Columns', detail: 'uid, status' },
-      { label: 'Rows', detail: 'Only those where status is joined' },
-    ],
-  };
+  // The card names the dataset and the rows in plain words, and no columns.
+  const card = { icon: 'people', title: 'View students', subtitle: 'Where status is joined' };
   expect(conversation.getReview(reviewId)).toEqual({
     id: reviewId,
     snapshot: { type: 'local', additions: [], deletions: [] },
@@ -813,7 +810,7 @@ it('asks the instructor before reading course data, then reads once it is approv
   await conversation.deliverWaitingResult();
   await vi.waitFor(() => expect(SandboxTurn).toHaveBeenCalledTimes(2));
   const delivery = vi.mocked(SandboxTurn).mock.calls[1][2];
-  expect(delivery.input.text).toContain('approved the request "Read the students dataset"');
+  expect(delivery.input.text).toContain('approved the request "View students"');
   expect(delivery.input.text).toContain(JSON.stringify(request));
   await delivery.prepare();
   delivery.onReady();

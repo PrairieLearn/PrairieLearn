@@ -42,11 +42,17 @@ const ModeSchema = EnumModeSchema.exclude(['SEB']);
 const JsonObjectSchema = z.record(z.string(), z.unknown());
 
 function dataset<Shape extends Record<string, z.ZodType>>({
+  label,
+  icon,
   description,
   query,
   schema,
   largeColumns = [],
 }: {
+  /** What the rows are, as a plural an instructor would use, such as `attempts`. */
+  label: string;
+  /** A Bootstrap icon for the dataset, without the `bi-` prefix. */
+  icon: string;
   description: string;
   query: string;
   schema: z.ZodObject<Shape>;
@@ -54,6 +60,8 @@ function dataset<Shape extends Record<string, z.ZodType>>({
   largeColumns?: (keyof Shape & string)[];
 }) {
   return {
+    label,
+    icon,
     description,
     query,
     schema,
@@ -89,6 +97,8 @@ const CHANGED_BY = {
  */
 export const COURSE_DATA_DATASETS = {
   course_instances: dataset({
+    label: 'course instances',
+    icon: 'easel',
     description: 'Offerings of the course, each with its own students and assessments.',
     query: sql.select_course_instances_by_course_id,
     schema: z.object({
@@ -109,6 +119,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   assessments: dataset({
+    label: 'assessments',
+    icon: 'list-check',
     description: 'Assessments in each course instance.',
     query: sql.select_assessments_by_course_id,
     schema: z.object({
@@ -147,6 +159,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   questions: dataset({
+    label: 'questions',
+    icon: 'question-circle',
     description: 'Questions in the course question bank.',
     query: sql.select_questions_by_course_id,
     schema: z.object({
@@ -165,6 +179,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   assessment_questions: dataset({
+    label: 'questions on assessments',
+    icon: 'list-ol',
     description:
       'Questions as placed on an assessment, with their points and statistics. The statistics cover attempts that count in statistics and are recalculated every few minutes, so the latest activity may be missing.',
     query: sql.select_assessment_questions_by_course_id,
@@ -198,6 +214,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   assessment_instances: dataset({
+    label: 'attempts',
+    icon: 'clipboard-check',
     description:
       'Attempts at assessments by students or teams, with totals. An assessment with multiple_instance can have several attempts per student.',
     query: sql.select_assessment_instances_by_course_id,
@@ -238,6 +256,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   instance_questions: dataset({
+    label: 'question scores',
+    icon: 'clipboard-data',
     description: "Questions in a student's assessment attempt, with their scores.",
     query: sql.select_instance_questions_by_course_id,
     schema: z.object({
@@ -287,6 +307,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   variants: dataset({
+    label: 'question versions',
+    icon: 'shuffle',
     description:
       'Generated versions of a question that students saw. Instructor previews are excluded.',
     query: sql.select_variants_by_course_id,
@@ -326,6 +348,8 @@ export const COURSE_DATA_DATASETS = {
     largeColumns: ['params', 'true_answer'],
   }),
   submissions: dataset({
+    label: 'submissions',
+    icon: 'file-earmark-text',
     description: 'Student answer submissions. Instructor previews are excluded.',
     query: sql.select_submissions_by_course_id,
     schema: z.object({
@@ -393,6 +417,8 @@ export const COURSE_DATA_DATASETS = {
     largeColumns: ['submitted_answer', 'partial_scores', 'feedback'],
   }),
   issues: dataset({
+    label: 'issues',
+    icon: 'bug',
     description:
       "Problems reported on the course's questions, by students or by PrairieLearn when a question's code fails.",
     query: sql.select_issues_by_course_id,
@@ -431,6 +457,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   sharing_sets: dataset({
+    label: 'sharing sets',
+    icon: 'share',
     description:
       "The course's sharing sets, which group questions to share with other courses. They are defined in infoCourse.json, and a question joins one in its info.json.",
     query: sql.select_sharing_sets_by_course_id,
@@ -441,6 +469,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   sharing_set_courses: dataset({
+    label: 'courses with access to sharing sets',
+    icon: 'building',
     description: "Other courses that can use the questions in one of this course's sharing sets.",
     query: sql.select_sharing_set_courses_by_course_id,
     schema: z.object({
@@ -454,6 +484,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   students: dataset({
+    label: 'students',
+    icon: 'people',
     description:
       'People enrolled in or invited to each course instance. Course staff are not listed.',
     query: sql.select_students_by_course_id,
@@ -476,6 +508,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   student_label_members: dataset({
+    label: 'student labels',
+    icon: 'tags',
     description:
       'Which students are in which student labels. Labels are defined in "studentLabels" in infoCourseInstance.json.',
     query: sql.select_student_label_members_by_course_id,
@@ -488,6 +522,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   publishing_extension_students: dataset({
+    label: 'publishing extensions',
+    icon: 'calendar-plus',
     description:
       'Students with extended access to a course instance after it closes for everyone else, one row per student per extension.',
     query: sql.select_publishing_extension_students_by_course_id,
@@ -501,6 +537,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   group_members: dataset({
+    label: 'group members',
+    icon: 'diagram-3',
     description:
       'Which students are in which group, for assessments that use group work. One row per student per group.',
     query: sql.select_group_members_by_course_id,
@@ -516,6 +554,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   staff: dataset({
+    label: 'staff',
+    icon: 'person-badge',
     description: "People on the course's staff and their course roles.",
     query: sql.select_staff_by_course_id,
     schema: z.object({
@@ -528,6 +568,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   attempt_score_changes: dataset({
+    label: 'attempt score changes',
+    icon: 'clock-history',
     description:
       "Each change to an attempt's total score, from grading or from staff setting it. The latest change for an attempt is its current total, as in assessment_instances.",
     query: sql.select_attempt_score_changes_by_course_id,
@@ -550,6 +592,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   question_score_changes: dataset({
+    label: 'question score changes',
+    icon: 'clock-history',
     description:
       "Each change to a question's score in an attempt, from grading or from staff setting it. The latest change for a question is its current score, as in instance_questions.",
     query: sql.select_question_score_changes_by_course_id,
@@ -582,6 +626,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   attempt_state_changes: dataset({
+    label: 'attempt history',
+    icon: 'clock-history',
     description:
       'Each time an attempt opened, closed, or had its time limit changed, whether by the student, by staff, or by the time running out.',
     query: sql.select_attempt_state_changes_by_course_id,
@@ -605,6 +651,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   grading_jobs: dataset({
+    label: 'grading history',
+    icon: 'check2-square',
     description:
       'Each grading of a submission: by the question, by an external grader, by staff, or by AI grading. A submission can be graded more than once, and its latest grading sets its score.',
     query: sql.select_grading_jobs_by_course_id,
@@ -645,6 +693,8 @@ export const COURSE_DATA_DATASETS = {
     largeColumns: ['feedback'],
   }),
   ai_grading_jobs: dataset({
+    label: 'AI grading history',
+    icon: 'stars',
     description:
       'Details of each AI grading, one per grading in grading_jobs whose grading_method is AI. The score and feedback it gave are in grading_jobs.',
     query: sql.select_ai_grading_jobs_by_course_id,
@@ -669,6 +719,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   rubrics: dataset({
+    label: 'rubrics',
+    icon: 'card-checklist',
     description:
       "Manual grading rubrics, one per assessment question that has one. Items are in rubric_items. Rubrics are edited on the question's manual grading page, not in course files.",
     query: sql.select_rubrics_by_course_id,
@@ -700,6 +752,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   rubric_items: dataset({
+    label: 'rubric items',
+    icon: 'card-list',
     description: 'Items of the rubrics in the rubrics dataset, in the order graders see them.',
     query: sql.select_rubric_items_by_course_id,
     schema: z.object({
@@ -724,6 +778,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   staff_student_data_access: dataset({
+    label: 'staff access to student data',
+    icon: 'shield-lock',
     description:
       'Staff who can see or edit student data in each course instance. A course role, even Owner, gives no access to student data on its own. Grading, changing scores, and managing students need Student Data Editor.',
     query: sql.select_staff_student_data_access_by_course_id,
@@ -739,6 +795,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   sharing_set_questions: dataset({
+    label: 'questions in sharing sets',
+    icon: 'collection',
     description:
       "Which of the course's questions are in which sharing set. A question joins a sharing set in its info.json.",
     query: sql.select_sharing_set_questions_by_course_id,
@@ -750,6 +808,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   shared_question_usages: dataset({
+    label: 'uses of shared questions',
+    icon: 'box-arrow-up-right',
     description:
       "Assessments in other courses that use this course's shared questions, one row per question per assessment.",
     query: sql.select_shared_question_usages_by_course_id,
@@ -779,6 +839,17 @@ export function isCourseDataset(name: string): name is CourseDatasetName {
 
 const COURSE_DATA_VERSION = 1;
 
+/**
+ * Plain names for columns an instructor would not recognize, used when a request to read course
+ * data is shown to them. A column without one is shown by its own name.
+ */
+const COLUMN_LABELS: Record<string, string> = {
+  course_instance_short_name: 'course instance',
+  assessment_tid: 'assessment',
+  qid: 'question',
+  uid: 'student',
+};
+
 /** Columns are serialized JSON, so an ID is a string of digits. */
 function toJsonSchema(schema: z.ZodType) {
   return z.toJSONSchema(schema, {
@@ -796,10 +867,16 @@ export function courseDataSchema() {
   return {
     version: COURSE_DATA_VERSION,
     query: toJsonSchema(CourseDataQuerySchema),
+    column_labels: COLUMN_LABELS,
     datasets: Object.fromEntries(
       Object.entries(COURSE_DATA_DATASETS).map(([name, dataset]) => [
         name,
-        { description: dataset.description, schema: toJsonSchema(dataset.schema) },
+        {
+          label: dataset.label,
+          icon: dataset.icon,
+          description: dataset.description,
+          schema: toJsonSchema(dataset.schema),
+        },
       ]),
     ),
   };
