@@ -567,7 +567,8 @@ function Chat({
   const turnRunning = canStop;
   const reviewDecided =
     review.data?.status === 'decided' ||
-    (review.data?.status === 'action' && review.data.decision !== null);
+    (review.data?.status === 'action' && review.data.decision !== null) ||
+    (review.data?.status === 'data_read' && review.data.decision !== null);
   const hiddenReviewId = turnRunning && !reviewDecided ? (lifecycle.reviewId ?? null) : null;
   const inputRequestOpen =
     !turnRunning &&

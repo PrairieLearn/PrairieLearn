@@ -804,7 +804,6 @@ it('keeps the course context when its timezone is not a zone name', () => {
 it('asks the instructor before reading course data, then reads once it is approved', async () => {
   const schema = {
     version: 1,
-    column_labels: { uid: 'student' },
     datasets: {
       students: {
         label: 'students',
@@ -814,10 +813,15 @@ it('asks the instructor before reading course data, then reads once it is approv
       },
     },
   };
+  let failNextDownload = false;
   const fetch = vi.fn(async (url: string | URL, options?: RequestInit) => {
     if (String(url).endsWith('/usage')) return decision();
     if (String(url).endsWith('/course_agent/data')) return Response.json(schema);
     if (String(url).endsWith('/course_agent/data/students') && options?.method === 'POST') {
+      if (failNextDownload) {
+        failNextDownload = false;
+        return Response.json({ message: 'The query timed out.' }, { status: 500 });
+      }
       return new Response('{"uid":"a@example.com","status":"joined"}\n');
     }
     return modelResponse();
@@ -895,12 +899,15 @@ it('asks the instructor before reading course data, then reads once it is approv
   // Codex accepting the delivery is what frees the review slot.
   delivery.onAccepted('native-turn');
 
+  // A read that fails keeps its approval, so the agent can try again without asking again.
+  failNextDownload = true;
+  expect(await courseData.getCourseData(request)).toMatchObject({ success: false });
   // The approval covers that read once, whatever order the columns are named in.
   const read = await courseData.getCourseData({ ...request, select: ['status', 'uid'] });
   expect(read).toMatchObject({ success: true, text: expect.stringContaining('Wrote 1 rows') });
-  expect(downloads()).toBe(1);
+  expect(downloads()).toBe(2);
   expect((await courseData.getCourseData(request)).text).toContain('nothing was downloaded yet');
-  expect(downloads()).toBe(1);
+  expect(downloads()).toBe(2);
 });
 
 it('reads course data without asking when the instructor chose to always approve', async () => {

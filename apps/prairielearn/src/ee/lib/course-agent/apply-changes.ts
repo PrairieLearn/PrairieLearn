@@ -180,7 +180,7 @@ export function matchDecision(
     );
   }
   if (review.decision !== decision) {
-    throw new HttpStatusError(409, 'This review already has a different decision.');
+    throw new HttpStatusError(409, 'This was already decided the other way.');
   }
   return { decision };
 }
@@ -197,7 +197,7 @@ export async function deliverDenialByMessage(
   if (!(await deliverResult(conversation, row, ReviewResultSchema.parse(row.result)))) {
     throw new HttpStatusError(
       503,
-      'The changes were denied, but the course agent could not be reached, so your message was not sent. Try again.',
+      'Your denial was recorded, but the course agent could not be reached, so your message was not sent. Try again.',
     );
   }
 }
