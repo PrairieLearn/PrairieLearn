@@ -49,8 +49,9 @@ WITH
       c.id
   ),
   -- Narrow to the course instances this user can see before computing
-  -- access-rule dates. Without this, the planner computes the LATERAL below
-  -- for every course instance in the database and filters afterwards.
+  -- access-rule dates. Otherwise the planner can compute the LATERAL below
+  -- for every course instance in the database and filter afterwards, which
+  -- is what it does in prod.
   -- Non-administrators can only see course instances through their own
   -- course permissions (course instance permissions hang off those), so that
   -- branch starts from the user's `course_permissions` rows.
