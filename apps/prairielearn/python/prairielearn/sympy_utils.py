@@ -7,17 +7,16 @@ from prairielearn.sympy_utils import ...
 
 import ast
 import html
-import operator
 import re
 import string
 import unicodedata
 from collections import deque
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from functools import wraps
+from functools import lru_cache, wraps
 from io import StringIO
-from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
+from tokenize import NAME, NUMBER, OP, TokenError, TokenInfo, generate_tokens
 from types import CodeType
 from types import MappingProxyType as FrozenDict
 from typing import (
@@ -35,18 +34,75 @@ from sympy.parsing import sympy_parser
 from sympy.parsing.sympy_parser import DICT, TOKEN, TRANS
 from sympy.printing.str import StrPrinter
 
+from prairielearn.internal import sympy_constants as const
 from prairielearn.misc_utils import full_unidecode
 
-STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
-SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+__all__ = [
+    "SET_NOTATION_OPERATORS",
+    "STANDARD_OPERATORS",
+    "SYMPY_PARSE_ERROR_WITHOUT_LOCATION",
+    "ASTSympyType",
+    "ASTWhiteListT",
+    "AssumptionsDictT",
+    "BaseSympyError",
+    "CheckAST",
+    "FunctionNameWithoutArgumentsError",
+    "HasArgumentTypeError",
+    "HasCommentError",
+    "HasComplexError",
+    "HasConflictingFunctionError",
+    "HasConflictingVariableError",
+    "HasEscapeError",
+    "HasFloatError",
+    "HasFunctionArityError",
+    "HasInvalidAssumptionError",
+    "HasInvalidExpressionError",
+    "HasInvalidFunctionError",
+    "HasInvalidSymbolError",
+    "HasInvalidVariableError",
+    "HasParseError",
+    "HasSetNotationError",
+    "LocalsForEval",
+    "SymbolicSubmissionParseResult",
+    "SymbolicSubmissionParseSuccess",
+    "SympyFunctionMapT",
+    "SympyJson",
+    "SympyMapT",
+    "SympyParseFailure",
+    "SympyParseResult",
+    "SympyParseSuccess",
+    "ast_check_str",
+    "convert_string_to_sympy",
+    "convert_string_to_sympy_with_source",
+    "evaluate",
+    "evaluate_with_source",
+    "find_symbol_offset",
+    "get_builtin_callable_functions",
+    "get_builtin_constants",
+    "get_builtin_functions",
+    "get_items_list",
+    "greek_unicode_transform",
+    "is_sympy_json",
+    "json_to_sympy",
+    "point_to_error",
+    "sympy_check",
+    "sympy_to_json",
+    "try_parse_string_as_sympy",
+    "try_parse_symbolic_submission",
+    "validate_names_for_conflicts",
+    "validate_string_as_sympy",
+]
+
+STANDARD_OPERATORS = const.standard_operators
+SET_NOTATION_OPERATORS = const.set_notation_operators
+# Compatibility alias for code that previously accessed the container class.
+_Constants = const
 SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
     "Your answer has a syntax error. "
     "This issue might be caused by mismatched parentheses or some other misplaced symbol."
 )
 
 SympyMapT = dict[str, sympy.Basic | complex]
-_FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
-_FrozenSympyFunctionMapT = FrozenDict[str, Callable[..., Any]]
 SympyFunctionMapT = dict[str, Callable[..., Any]]
 AssumptionsDictT = dict[str, dict[str, Any]]
 """
@@ -57,17 +113,6 @@ Examples:
 """
 
 ASTWhiteListT = tuple[type[ast.AST], ...]
-
-
-def _load_sympy_globals() -> FrozenDict[str, Any]:
-    # Based on code here:
-    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
-    sympy_globals: DICT = {}
-    exec("from sympy import *", sympy_globals)
-    return FrozenDict(sympy_globals)
-
-
-_SYMPY_GLOBALS: Final[FrozenDict[str, Any]] = _load_sympy_globals()
 
 
 class SympyJson(TypedDict):
@@ -93,6 +138,80 @@ class SympyParseFailure:
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
 
 
+@dataclass(frozen=True, slots=True)
+class _MappedChar:
+    """One transformed character and its offset in the raw source."""
+
+    value: str
+    raw_offset: int
+
+    def __post_init__(self) -> None:
+        """Validate that this token represents one transformed character."""
+        if len(self.value) != 1:
+            raise ValueError(f"{type(self)} must contain exactly one character")
+
+    def rewrite(self, text: Sequence[str]) -> tuple["_MappedChar", ...]:
+        return tuple(_MappedChar(char, self.raw_offset) for char in text)
+
+
+@dataclass(frozen=True, slots=True)
+class _MappedText:
+    """Transformed characters mapped to offsets in the immutable raw source."""
+
+    raw_text: str
+    chars: tuple[_MappedChar, ...]
+
+    def __post_init__(self) -> None:
+        """Validate that token provenance refers to the raw source in order."""
+        if any(
+            token.raw_offset < 0 or token.raw_offset >= len(self.raw_text)
+            for token in self.chars
+        ):
+            raise ValueError("MappedText offsets must refer to the raw source")
+        if any(
+            left.raw_offset > right.raw_offset
+            for left, right in zip(self.chars, self.chars[1:], strict=False)
+        ):
+            raise ValueError("MappedText offsets must be nondecreasing")
+
+    def text(self) -> str:
+        return "".join(token.value for token in self.chars)
+
+    def tokenize(self) -> Iterator[tuple[int, TokenInfo]]:
+        stream = StringIO(self.text())
+        row_start = 0
+
+        def readline() -> str:
+            nonlocal row_start
+            row_start = stream.tell()
+            return stream.readline()
+
+        for token in generate_tokens(readline):
+            yield row_start + token.start[1], token
+
+    @classmethod
+    def from_raw_text(cls, text: str) -> "_MappedText":
+        """Make a new _MappedText with the default source offsets"""
+        return cls(
+            text,
+            tuple(_MappedChar(char, offset) for offset, char in enumerate(text)),
+        )
+
+    def rebuild(
+        self,
+        parts: Iterable[_MappedChar | tuple[_MappedChar, ...]],
+    ) -> "_MappedText":
+        """Build transformed source from individual characters or rewritten runs."""
+        return _MappedText(
+            self.raw_text,
+            tuple(
+                char
+                for part in parts
+                for char in (part if isinstance(part, tuple) else (part,))
+            ),
+        )
+
+
 def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
     """Check if the input is a valid SymPy JSON dict.
 
@@ -115,117 +234,6 @@ class LocalsForEval(TypedDict):
     functions: SympyFunctionMapT
     variables: SympyMapT
     helpers: SympyFunctionMapT
-
-
-class _Constants:
-    helpers: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "Number": sympy.Number,
-        "_Integer": sympy.Integer,
-    })
-
-    variables: Final[_FrozenSympyMapT] = FrozenDict({
-        "pi": sympy.pi,
-        "e": sympy.E,
-        "infty": sympy.oo,
-    })
-
-    hidden_variables: Final[_FrozenSympyMapT] = FrozenDict({
-        "_Exp1": sympy.E,
-    })
-
-    complex_variables: Final[_FrozenSympyMapT] = FrozenDict({
-        "i": sympy.I,
-        "j": sympy.I,
-    })
-
-    hidden_complex_variables: Final[_FrozenSympyMapT] = FrozenDict({
-        "_ImaginaryUnit": sympy.I,
-    })
-
-    functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "exp": sympy.exp,
-        "log": sympy.log,
-        "ln": sympy.log,
-        "sqrt": sympy.sqrt,
-        "factorial": sympy.factorial,
-        "abs": sympy.Abs,
-        "sgn": sympy.sign,
-        "max": sympy.Max,
-        "min": sympy.Min,
-        # Extra aliases to make parsing works correctly
-        "sign": sympy.sign,
-        "Abs": sympy.Abs,
-        "Max": sympy.Max,
-        "Min": sympy.Min,
-    })
-
-    trig_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "cos": sympy.cos,
-        "sin": sympy.sin,
-        "tan": sympy.tan,
-        "sec": sympy.sec,
-        "cot": sympy.cot,
-        "csc": sympy.csc,
-        "cosh": sympy.cosh,
-        "sinh": sympy.sinh,
-        "tanh": sympy.tanh,
-        "arccos": sympy.acos,
-        "arcsin": sympy.asin,
-        "arctan": sympy.atan,
-        "acos": sympy.acos,
-        "asin": sympy.asin,
-        "atan": sympy.atan,
-        "arctan2": sympy.atan2,
-        "atan2": sympy.atan2,
-        "atanh": sympy.atanh,
-        "acosh": sympy.acosh,
-        "asinh": sympy.asinh,
-    })
-
-    set_functions: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "Interval": sympy.Interval,
-        "FiniteSet": sympy.FiniteSet,
-        "Union": sympy.Union,
-        "Intersection": sympy.Intersection,
-        "Complement": sympy.Complement,
-    })
-
-    set_operators: Final[_FrozenSympyFunctionMapT] = FrozenDict({
-        "U": operator.or_,
-        "cup": operator.or_,
-        "∪": operator.or_,  # ruff:ignore[ambiguous-unicode-character-string]
-        "cap": operator.and_,
-        "∩": operator.and_,
-    })
-
-    # Unicode operators that the formula editor or common pastes produce. They must
-    # be mapped before unidecode, which would otherwise turn them into "[?]"
-    # (misreported as set notation), drop them, or change their meaning (e.g. the
-    # multiplication sign becomes the letter "x").
-    unicode_operators: Final[FrozenDict[str, str]] = FrozenDict({
-        "·": "*",  # middle dot
-        "×": "*",  # ruff:ignore[ambiguous-unicode-character-string]
-        "•": "*",  # bullet
-        "∗": "*",  # ruff:ignore[ambiguous-unicode-character-string]
-        "∙": "*",  # bullet operator
-        "⋅": "*",  # dot operator
-        "\u2062": "*",  # invisible times
-        "—": "-",  # em dash
-        "―": "-",  # horizontal bar
-        "∕": "/",  # ruff:ignore[ambiguous-unicode-character-string]
-        "\u2061": "",  # function application
-    })
-
-    # Operators that give two values; unidecode would turn "±" into "+-".
-    plus_minus_operators: Final[frozenset[str]] = frozenset({"±", "∓"})
-
-    set_operator_desugars: Final[FrozenDict[str, str]] = FrozenDict({
-        "U": "|",
-        "cup": "|",
-        "∪": "|",  # ruff:ignore[ambiguous-unicode-character-string]
-        "cap": "&",
-        "∩": "&",
-    })
 
 
 class _SympyJsonStrPrinter(StrPrinter):
@@ -366,6 +374,7 @@ class HasCommentError(BaseSympyError):
 @dataclass
 class HasInvalidSymbolError(BaseSympyError):
     symbol: str
+    offset: int | None = None
 
 
 # Deprecated / unused, kept for backwards compatibility.
@@ -395,12 +404,9 @@ _SET_OPERATION_FUNCTIONS: Final[FrozenDict[type[ast.operator], str]] = FrozenDic
     ast.BitOr: "Union",
 })
 
-# Complement was accepted as a custom function before it became a set builtin.
-_LEGACY_CUSTOM_FUNCTION_OVERRIDES: Final[frozenset[str]] = frozenset({"Complement"})
-
 
 def _allows_legacy_custom_function_override(name: str) -> bool:
-    return name in _LEGACY_CUSTOM_FUNCTION_OVERRIDES
+    return name in const.legacy_custom_function_overrides
 
 
 @dataclass
@@ -416,13 +422,6 @@ class HasArgumentTypeError(BaseSympyError):
             return f"a {self.allowable_types[0]}"
         return f"either {_format_comma_separated(list(dict.fromkeys(self.allowable_types)))}"
 
-    def as_type_error(self) -> TypeError:
-        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
-        return TypeError(
-            f"unsupported operand type(s) for {self.fn}: "
-            f"argument #{self.arg_idx + 1} requires {self.format_allowable_types()}, not {self.got}"
-        )
-
 
 @dataclass
 class HasFunctionArityError(BaseSympyError):
@@ -431,28 +430,12 @@ class HasFunctionArityError(BaseSympyError):
     expected: str
     offset: int = -1
 
-    def as_type_error(self) -> TypeError:
-        # NOTE: must match format of `_TYPE_ERROR_OPERATOR_PATTERN`
-        return TypeError(
-            f"wrong number of arguments for {self.fn}: "
-            f"got {self.provided} but expected {self.expected}"
-        )
-
-
-# `sqrt` is a plain function whose second parameter is `evaluate`, so it has no
-# `nargs` and would silently accept a second argument.
-_BUILTIN_FUNCTION_ARITY_OVERRIDES: Final[FrozenDict[str, tuple[int, ...]]] = (
-    FrozenDict({
-        "sqrt": (1,),
-    })
-)
-
 
 def _builtin_function_arities(name: str) -> tuple[int, ...] | None:
     """Return the argument counts a built-in function accepts, or None if any count is allowed."""
-    if name in _BUILTIN_FUNCTION_ARITY_OVERRIDES:
-        return _BUILTIN_FUNCTION_ARITY_OVERRIDES[name]
-    function = _Constants.functions.get(name) or _Constants.trig_functions.get(name)
+    if name in const.builtin_function_arity_overrides:
+        return const.builtin_function_arity_overrides[name]
+    function = const.functions.get(name) or const.trig_functions.get(name)
     nargs = getattr(function, "nargs", None)
     if isinstance(nargs, sympy.FiniteSet):
         return tuple(sorted(int(cast(sympy.Integer, arity)) for arity in nargs))
@@ -611,14 +594,14 @@ class CheckAST(ast.NodeVisitor):
                 return self._set_type(node, ASTSympyType.SCALAR)
             case fn if (
                 self.allow_sets
-                and fn in _Constants.set_functions
-                and resolved_function == _Constants.set_functions[fn]
+                and fn in const.set_functions
+                and resolved_function == const.set_functions[fn]
             ):
                 inferred_type = self._infer_set_function_type(name, args)
                 if fn in _SET_OPERATION_FUNCTIONS.values():
                     self.__set_operations.add(node)
                 return self._set_type(node, inferred_type)
-            case fn if fn in _Constants.functions or fn in _Constants.trig_functions:
+            case fn if fn in const.functions or fn in const.trig_functions:
                 arities = _builtin_function_arities(fn) or (len(args),)
                 self._enforce_signature(
                     fn, args, *(arity * [ASTSympyType.SCALAR] for arity in arities)
@@ -670,7 +653,12 @@ class CheckAST(ast.NodeVisitor):
 
         arg_index, _, got = max(fails, key=lambda f: f[0])
         expecteds = [e for i, e, _ in fails if i == arg_index]
-        raise HasArgumentTypeError(fn_name, got, expecteds, arg_idx=arg_index)
+        raise HasArgumentTypeError(
+            fn_name,
+            got,
+            expecteds,
+            arg_idx=arg_index,
+        )
 
     def _infer_set_function_type(
         self, name: str, args: list[ast.expr]
@@ -767,7 +755,7 @@ def _ast_check_str(
             for values in locals_for_eval.values()
             for name, value in cast(Mapping[str, Any], values).items()
         }
-        resolved_names = _SYMPY_GLOBALS | local_names
+        resolved_names = const.sympy_globals | local_names
 
     return CheckAST(
         whitelist,
@@ -864,7 +852,7 @@ class _SetOperationTransformer(ast.NodeTransformer):
                     protected_name += "_"
                 used_names.add(protected_name)
                 protected_names[function_name] = protected_name
-                self.evaluation_locals[protected_name] = _Constants.set_functions[
+                self.evaluation_locals[protected_name] = const.set_functions[
                     function_name
                 ]
             self._function_names[operation_type] = protected_name
@@ -1004,20 +992,13 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
     return f" {last_conjunction} ".join(comma_sep.rsplit(", ", maxsplit=1))
 
 
-def _normalize_expr(expr: str) -> tuple[str, list[int]]:
-    """Normalize expr and build a mapping from normalized indices to original indices.
+def _normalize_unicode_source(
+    source: _MappedText, *, formula_editor: bool = False
+) -> _MappedText:
+    """Normalize Unicode while retaining the raw offset of every output character."""
 
-    Returns:
-        A tuple of the normalized expression and, for each of its characters, the
-        index of the character in expr that it came from.
-
-    Raises:
-        HasInvalidSymbolError: If expr contains a character that cannot be transliterated.
-    """
-    const = _Constants
-    parts: list[str] = []
-    offsets: list[int] = []
-    for ind, char in enumerate(expr):
+    def normalize_char(token: _MappedChar) -> tuple[_MappedChar, ...]:
+        char = token.value
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
@@ -1027,56 +1008,60 @@ def _normalize_expr(expr: str) -> tuple[str, list[int]]:
         ):
             # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
             # formula editor writes exponents and subscripts with "^" and "_".
-            raise HasInvalidSymbolError(char)
-        # Single-char codepoints only; multi-char keys like "cup" are unidecoded char-by-char (no-op for ASCII).
+            raise HasInvalidSymbolError(char, token.raw_offset)
+        # Single-char codepoints only; multi-char keys like "cup" are unidecoded
+        # character-by-character (a no-op for ASCII).
         elif char not in const.set_operators:
-            normalized_char = full_unidecode(greek_unicode_transform(char))
+            greek_normalized = greek_unicode_transform(char)
+            normalized_char = full_unidecode(greek_normalized)
             # unidecode uses "[?]" for characters it doesn't know, which would
             # otherwise be misreported as set notation.
             if normalized_char == "[?]" and char != normalized_char:
-                raise HasInvalidSymbolError(char)
+                raise HasInvalidSymbolError(char, token.raw_offset)
+            if formula_editor and greek_normalized != char:
+                normalized_char = f" {' '.join(normalized_char)} "
 
-        parts.append(normalized_char)
-        offsets.extend([ind] * len(normalized_char))
-    return "".join(parts), offsets
+        return token.rewrite(normalized_char)
 
-
-# The lookahead allows overlapping pairs, so a Unicode sign after "**" is checked.
-_MULTIPLICATION_PAIR_PATTERN = r"(?=(?P<left>\*)\s*(?P<right>\*))"
+    return source.rebuild(normalize_char(token) for token in source.chars)
 
 
-def _validate_multiplication(
-    original_expr: str, normalized_expr: str, char_offsets: list[int]
-) -> None:
+def _validate_multiplication(source: _MappedText) -> None:
     """Reject multiplication signs that normalization would turn into exponentiation."""
-    for match in re.finditer(_MULTIPLICATION_PAIR_PATTERN, normalized_expr):
-        left_offset = char_offsets[match.start("left")]
-        right_offset = char_offsets[match.start("right")]
-        if original_expr[right_offset] != "*":
+    for left_index, left in enumerate(source.chars):
+        if left.value != "*":
+            continue
+
+        right_index = left_index + 1
+        while (
+            right_index < len(source.chars)
+            and source.chars[right_index].value.isspace()
+        ):
+            right_index += 1
+        if right_index >= len(source.chars) or source.chars[right_index].value != "*":
+            continue
+
+        left_offset = left.raw_offset
+        right_offset = source.chars[right_index].raw_offset
+        if source.raw_text[right_offset] != "*":
             raise HasInvalidExpressionError(right_offset)
-        if original_expr[left_offset] != "*":
+        if source.raw_text[left_offset] != "*":
             raise HasInvalidExpressionError(left_offset)
-        if match.start("right") > match.end("left"):
+        if right_index > left_index + 1:
             raise HasInvalidExpressionError(left_offset)
 
 
-def _validate_adjacent_numbers(expr: str, char_offsets: list[int]) -> None:
+def _validate_adjacent_numbers(source: _MappedText) -> None:
     """Reject numeric tokens that implicit multiplication would silently combine."""
-    line_offsets = [0]
-    for line in expr.splitlines(keepends=True):
-        line_offsets.append(line_offsets[-1] + len(line))
-
     previous_number_end: tuple[int, int] | None = None
     try:
-        for token in generate_tokens(StringIO(expr).readline):
+        for offset, token in source.tokenize():
             if token.type != NUMBER:
                 previous_number_end = None
                 continue
 
             if token.start == previous_number_end:
-                row, column = token.start
-                offset = line_offsets[row - 1] + column
-                raise HasInvalidExpressionError(char_offsets[offset])
+                raise HasInvalidExpressionError(source.chars[offset].raw_offset)
 
             previous_number_end = token.end
     except TokenError:
@@ -1084,39 +1069,75 @@ def _validate_adjacent_numbers(expr: str, char_offsets: list[int]) -> None:
         return
 
 
-def _regex_sub_expr_and_map_offsets(
-    expr: str, offsets: list[int], pattern: re.Pattern[str], replacement: str
-) -> tuple[str, list[int]]:
-    r"""Apply a regex substitution while keeping the offset map aligned.
+def _validate_and_rewrite_source(
+    source: _MappedText,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+) -> _MappedText:
+    _validate_multiplication(source)
 
-    Returns:
-        a tuple of the transformed expr and the new offset list
+    for symbol in const.plus_minus_operators:
+        invalid_symbol = next(
+            (char for char in source.chars if char.value == symbol), None
+        )
+        if invalid_symbol is not None:
+            raise HasInvalidSymbolError(symbol, invalid_symbol.raw_offset)
 
-    Example:
-        >>> import re
-        >>> _regex_sub_expr_and_map_offsets(
-        ...     "x^2",
-        ...     [0, 1, 2],
-        ...     re.compile(r"\\^"),
-        ...     r"**",
-        ... )
-        ('x**2', [0, 1, 1, 2])
-    """
-    parts: list[str] = []
-    new_offsets: list[int] = []
-    last_end = 0
+    escape = next((char for char in source.chars if char.value == "\\"), None)
+    if escape is not None:
+        raise HasEscapeError(escape.raw_offset)
+    comment = next((char for char in source.chars if char.value == "#"), None)
+    if comment is not None:
+        raise HasCommentError(comment.raw_offset)
+    for left, middle, right in zip(
+        source.chars,
+        source.chars[1:],
+        source.chars[2:],
+        strict=False,
+    ):
+        if left.value == middle.value == right.value == "*":
+            raise HasInvalidExpressionError(left.raw_offset)
+    if not allow_sets and any(
+        char.value in r"[]{}∪∩&|"  # ruff:ignore[ambiguous-unicode-character-string]
+        for char in source.chars
+    ):
+        raise HasSetNotationError
 
-    for match in pattern.finditer(expr):
-        parts.append(expr[last_end : match.start()])
-        new_offsets.extend(offsets[last_end : match.start()])
-        replacement_text = match.expand(replacement)
-        parts.append(replacement_text)
-        new_offsets.extend([offsets[match.start()]] * len(replacement_text))
-        last_end = match.end()
+    def rewrite_char(
+        index: int, char: _MappedChar
+    ) -> _MappedChar | tuple[_MappedChar, ...]:
+        previous = source.chars[index - 1].value if index > 0 else None
+        following = (
+            source.chars[index + 1].value if index + 1 < len(source.chars) else None
+        )
+        if char.value == "^":
+            return char.rewrite("**")
+        if (
+            previous is not None
+            and previous.isdecimal()
+            and char.value in "eE"
+            and following is not None
+            and following in "+-"
+        ):
+            return char.rewrite(f"*{char.value}")
+        if (
+            not allow_complex
+            and previous is not None
+            and previous.isdecimal()
+            and char.value in "jJ"
+            and (
+                following is None or not following.isascii() or not following.isalnum()
+            )
+        ):
+            return char.rewrite(f"*{char.value}")
+        return char
 
-    parts.append(expr[last_end:])
-    new_offsets.extend(offsets[last_end:])
-    return "".join(parts), new_offsets
+    source = source.rebuild(
+        rewrite_char(index, char) for index, char in enumerate(source.chars)
+    )
+    _validate_adjacent_numbers(source)
+    return source
 
 
 def _evaluate_with_source(
@@ -1134,75 +1155,34 @@ def _evaluate_with_source(
     Returns:
         A tuple of the SymPy expression and the code that was used to generate it.
 
-    Raises:
-        HasEscapeError: If the expression contains an escape character.
-        HasCommentError: If the expression contains a comment character.
-        HasInvalidExpressionError: If the expression contains "***", whitespace
-            between two multiplication signs, or a unicode multiplication sign next
-            to another multiplication sign.
-        HasSetNotationError: If the expression contains interval or set characters.
-        HasArgumentTypeError: If an expression is given the wrong types.
-        HasFunctionArityError: If a function is given the wrong number of args.
-        HasParseError: If the expression cannot be parsed.
-        BaseSympyError: If the expression cannot be evaluated.
     """
-    normalized_expr, char_offsets = _normalize_expr(expr)
-    _validate_multiplication(expr, normalized_expr, char_offsets)
-
-    # Check for escape and comment characters after normalization, since some
-    # unicode characters normalize to "#" or "\\". The offset map translates
-    # back to the original string position in all cases.
-    ind = normalized_expr.find("\\")
-    if ind != -1:
-        raise HasEscapeError(char_offsets[ind])
-    ind = normalized_expr.find("#")
-    if ind != -1:
-        raise HasCommentError(char_offsets[ind])
-
-    # Python would read "***" (e.g. the formula editor's \star) as "**" followed by
-    # "*", and report the syntax error at an offset into SymPy's transformed code.
-    if stars := re.search(r"\*{3,}", normalized_expr):
-        raise HasInvalidExpressionError(char_offsets[stars.start()])
-
-    # the only thing this can't catch is open intervals `(-, -)`, checked later
-    if not allow_sets and any(
-        token in normalized_expr
-        for token in ("[", "]", "{", "}", "∪", "∩", "&", "|")  # ruff:ignore[ambiguous-unicode-character-string]
-    ):
-        raise HasSetNotationError
-
-    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-    # for exponentiation. In Python, only the latter can be used.
-    normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
-        normalized_expr, char_offsets, re.compile(r"\^"), r"**"
+    source = _validate_and_rewrite_source(
+        _normalize_unicode_source(_MappedText.from_raw_text(expr)),
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+    return _evaluate_normalized_source(
+        source,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+        simplify_expression=simplify_expression,
+        allow_extra_symbols=allow_extra_symbols,
+        resolved_name_overrides=resolved_name_overrides,
     )
 
-    # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
-    # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
-    # Euler's number plus 3), not 2000.0.
-    normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
-        normalized_expr,
-        char_offsets,
-        re.compile(r"(\d)([eE])([+-])"),
-        r"\1*\2\3",
-    )
 
-    # When complex numbers are not allowed, prevent Python from interpreting
-    # patterns like "3j" or "3J" as complex literals. Convert "<digits>j" to "<digits>*j"
-    # so that 'j' is treated as a variable instead. This fixes issue #13661.
-    #
-    # The negative lookahead (?![a-zA-Z0-9]) ensures we only match standalone "j"/"J".
-    # Patterns like "3jn" are NOT transformed because Python tokenizes "3jn" as "3j"
-    # (complex) + "n" regardless - they will still fail with HasComplexError.
-    if not allow_complex:
-        normalized_expr, char_offsets = _regex_sub_expr_and_map_offsets(
-            normalized_expr,
-            char_offsets,
-            re.compile(r"(\d)([jJ])(?![a-zA-Z0-9])"),
-            r"\1*\2",
-        )
-
-    _validate_adjacent_numbers(normalized_expr, char_offsets)
+def _evaluate_normalized_source(
+    source: _MappedText,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool,
+    allow_sets: bool,
+    simplify_expression: bool,
+    allow_extra_symbols: bool,
+    resolved_name_overrides: Mapping[str, Any] | None = None,
+) -> tuple[sympy.Expr, str | CodeType]:
+    normalized_expr = source.text()
 
     local_dict: DICT = {
         k: v
@@ -1211,7 +1191,7 @@ def _evaluate_with_source(
     }
 
     # Keep mutations made during one parse from affecting later parses.
-    global_dict = dict(_SYMPY_GLOBALS)
+    global_dict = dict(const.sympy_globals)
 
     transformations = (
         *sympy_parser.standard_transformations,
@@ -1219,7 +1199,7 @@ def _evaluate_with_source(
     )
     if allow_sets:
         transformations = (
-            _unmangle_infix_binops_transformation(_Constants.set_operators.keys()),
+            _unmangle_infix_binops_transformation(const.set_operators.keys()),
             _set_literal_transformation,
             _set_operation_transformation,
             _interval_transformation,
@@ -1266,29 +1246,25 @@ def _evaluate_with_source(
         oo=sympy.oo,
     )
 
+    resolved_names = global_dict | local_dict
+    if resolved_name_overrides is not None:
+        resolved_names.update(resolved_name_overrides)
     try:
-        resolved_names = global_dict | local_dict
-        if resolved_name_overrides is not None:
-            resolved_names.update(resolved_name_overrides)
         expression_ast, set_operations = _ast_check_str(
             code,
             parsed_locals_to_eval,
             allow_sets=allow_sets,
             resolved_names=resolved_names,
         )
-        _validate_ast_structure(
-            expression_ast,
-            locals_for_eval,
-            allow_extra_symbols=allow_extra_symbols,
-        )
     except (HasArgumentTypeError, HasFunctionArityError) as exc:
-        index = _find_type_error_offset(
-            normalized_expr, char_offsets, exc.as_type_error()
-        )
-        if index != -1:
-            exc.offset = index
-
+        exc.offset = _resolve_error_offset(source, exc.fn)
         raise
+
+    _validate_ast_structure(
+        expression_ast,
+        locals_for_eval,
+        allow_extra_symbols=allow_extra_symbols,
+    )
 
     evaluation_code: str | CodeType = code
     if not simplify_expression:
@@ -1316,14 +1292,10 @@ def _evaluate_with_source(
     try:
         res = sympy_parser.eval_expr(evaluation_code, local_dict, global_dict)
     except TypeError as exc:
-        # SymPy raises TypeError for semantically invalid set operations that are
-        # nonetheless syntactically valid (e.g. `{1, 2} / {3, 4}`, `sin((1, 3])`).
-        # Because the AST check above already ran, TypeErrors here are expected to
-        # come from SymPy's own type system, not from Python infrastructure bugs.
-        index = _find_type_error_offset(normalized_expr, char_offsets, exc)
-        if index != -1:
-            raise HasParseError(index) from exc
-        # if we can't localize the type error, report to staff.
+        # SymPy may detect some invalid operand combinations only during evaluation.
+        offset = _resolve_evaluation_type_error_offset(source, exc)
+        if offset != -1:
+            raise HasParseError(offset) from exc
         raise BaseSympyError from exc
     except Exception as exc:
         raise BaseSympyError from exc
@@ -1415,7 +1387,8 @@ def convert_string_to_sympy(
     )[0]
 
 
-def _convert_string_to_sympy_with_source(
+def _convert_source_to_sympy_with_source(
+    source: _MappedText | None,
     expr: str,
     variables: Iterable[str] | None = None,
     *,
@@ -1453,7 +1426,7 @@ def _convert_string_to_sympy_with_source(
             )
 
     # Check user-defined names are valid
-    conflict_vars, conflict_fns, valid_names = _build_name_conflict_data(
+    name_validation = _validate_and_normalize_names(
         variables if variables is not None else [],
         custom_functions if custom_functions is not None else [],
         allow_complex=allow_complex,
@@ -1462,19 +1435,17 @@ def _convert_string_to_sympy_with_source(
         allow_trig_functions=allow_trig_functions,
     )
 
-    if conflict_vars:
-        raise HasConflictingVariableError(
-            f"Conflicting variable name(s): {', '.join(conflict_vars)}"
-        )
-    if conflict_fns:
+    if isinstance(name_validation, _NameValidationFailure):
+        if name_validation.variable_conflicts:
+            raise HasConflictingVariableError(
+                f"Conflicting variable name(s): {', '.join(name_validation.variable_conflicts)}"
+            )
         raise HasConflictingFunctionError(
-            f"Conflicting function name(s): {', '.join(conflict_fns)}"
+            f"Conflicting function name(s): {', '.join(name_validation.custom_function_conflicts)}"
         )
 
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
-    const = _Constants
-
     locals_for_eval: LocalsForEval = {
         "functions": dict(const.functions),
         "variables": dict(const.variables),
@@ -1494,16 +1465,26 @@ def _convert_string_to_sympy_with_source(
     if allow_sets:
         locals_for_eval["functions"].update(const.set_functions)
 
-    for name, (is_var, raw_name) in valid_names.items():
-        if is_var:
-            var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
-            locals_for_eval["variables"][name] = sympy.Symbol(name, **var_assumptions)
-        else:
-            locals_for_eval["functions"][name] = sympy.Function(name)
+    for name, raw_name in name_validation.normalized_variables.items():
+        var_assumptions = (assumptions and assumptions.get(raw_name)) or {}
+        locals_for_eval["variables"][name] = sympy.Symbol(name, **var_assumptions)
+
+    for name in name_validation.normalized_custom_functions:
+        locals_for_eval["functions"][name] = sympy.Function(name)
 
     # Do the conversion
-    return _evaluate_with_source(
-        expr,
+    if source is None:
+        return _evaluate_with_source(
+            expr,
+            locals_for_eval,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+            allow_extra_symbols=allow_extra_symbols,
+            resolved_name_overrides=resolved_name_overrides,
+        )
+    return _evaluate_normalized_source(
+        source,
         locals_for_eval,
         allow_complex=allow_complex,
         allow_sets=allow_sets,
@@ -1527,7 +1508,8 @@ def convert_string_to_sympy_with_source(
     allow_extra_symbols: bool = False,
 ) -> tuple[sympy.Expr, str | CodeType]:
     """Convert a string to a SymPy expression and return its source code."""
-    return _convert_string_to_sympy_with_source(
+    return _convert_source_to_sympy_with_source(
+        None,
         expr,
         variables,
         allow_hidden=allow_hidden,
@@ -1569,33 +1551,42 @@ def find_symbol_offset(expr: str, symbol: str) -> int:
     return expr.rfind(symbol)
 
 
-_TYPE_ERROR_OPERATOR_PATTERN = re.compile(
+_EVALUATION_TYPE_ERROR_PATTERN = re.compile(
     r"(unsupported operand type\(s\)|wrong number of arguments) for (?P<operator>[^:]+):"
 )
 
 
-def _find_type_error_offset(expr: str, offsets: list[int], exc: TypeError) -> int:
-    """Return an approximate offset for a SymPy TypeError in expr."""
-    match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
+def _resolve_evaluation_type_error_offset(source: _MappedText, exc: TypeError) -> int:
+    match = _EVALUATION_TYPE_ERROR_PATTERN.search(str(exc))
     if match is None:
         return -1
 
     # for some TypeErrors, both the op and magic-method are provided, e.g `...for ** or pow():...`
     # see https://chromium.googlesource.com/external/github.com/python/cpython/+/refs/tags/v3.7.17/Objects/abstract.c
     # line 925 for an example.
-    candidate_operators = match.group("operator").replace("()", "").split(" or ")
-    # account for de-sugaring
-    candidate_operators.extend(
+    names = match.group("operator").replace("()", "").split(" or ")
+    for name in names:
+        offset = _resolve_error_offset(source, name)
+        if offset != -1:
+            return offset
+    return -1
+
+
+def _resolve_error_offset(source: _MappedText, name: str) -> int:
+    candidates = [name]
+    candidates.extend(
         alias
-        for alias, transformed_operator in _Constants.set_operator_desugars.items()
-        if transformed_operator in candidate_operators
+        for alias, transformed_operator in const.set_operator_desugars.items()
+        if transformed_operator == name
     )
-
-    for candidate in candidate_operators:
-        ind = find_symbol_offset(expr, candidate)
-        if ind != -1:
-            return offsets[ind]
-
+    for candidate in candidates:
+        raw_offset = -1
+        for token_offset, token in source.tokenize():
+            relative_offset = find_symbol_offset(token.string, candidate)
+            if relative_offset != -1:
+                raw_offset = source.chars[token_offset + relative_offset].raw_offset
+        if raw_offset != -1:
+            return raw_offset
     return -1
 
 
@@ -1645,7 +1636,7 @@ def sympy_to_json(
         name
         for func_obj in function_atoms
         if _allows_legacy_custom_function_override(name := str(func_obj.func))
-        and func_obj.func != _Constants.set_functions[name]
+        and func_obj.func != const.set_functions[name]
     }
     custom_functions = list(
         (functions_set - reserved) | legacy_custom_function_overrides
@@ -1689,7 +1680,8 @@ def json_to_sympy(
     # Older set-enabled submissions could contain scalar `x | y` or `x & y`.
     # Keep their variables untyped during validation so stored answers remain
     # renderable and gradable, while new text submissions use strict scalar types.
-    result, _ = _convert_string_to_sympy_with_source(
+    result, _ = _convert_source_to_sympy_with_source(
+        None,
         sympy_expr_dict["_value"],
         variables,
         allow_hidden=True,
@@ -1734,7 +1726,7 @@ def try_parse_string_as_sympy(
             print(result.expr)
     """
     try:
-        expr_parsed = convert_string_to_sympy(
+        parsed = convert_string_to_sympy(
             expr,
             variables,
             allow_hidden=allow_hidden,
@@ -1745,117 +1737,647 @@ def try_parse_string_as_sympy(
             simplify_expression=simplify_expression,
             assumptions=assumptions,
         )
-    except HasFloatError as exc:
-        return SympyParseFailure(
-            f"Your answer contains the floating-point number {exc.n}. "
-            f"All numbers must be expressed as integers (or ratios of integers)."
-        )
-    except HasComplexError:
-        err_string = [
-            "Your answer contains a complex number. ",
-            "All numbers must be expressed as integers (or ratios of integers). ",
-        ]
-
-        if allow_complex:
-            err_string.append(
-                "To include a complex number in your expression, write it as the product "
-                "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
-            )
-
-        return SympyParseFailure("".join(err_string))
-    except HasSetNotationError:
-        return SympyParseFailure(
-            "Your answer contains set notation, but set notation is not allowed for this question."
-        )
-    except HasInvalidExpressionError as exc:
-        return SympyParseFailure(
-            f"Your answer has an invalid expression. "
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasInvalidFunctionError as exc:
-        return SympyParseFailure(
-            f'Your answer calls an invalid function "{exc.text}". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except FunctionNameWithoutArgumentsError as exc:
-        return SympyParseFailure(
-            f'Your answer mentions the function "{exc.text}" without '
-            "applying it to anything. "
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasInvalidSymbolError as exc:
-        return SympyParseFailure(
-            f'Your answer refers to an invalid symbol "{exc.symbol}". '
-            f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasArgumentTypeError as exc:
-        error_text = (
-            f"Your answer provides the wrong types to {exc.fn}. "
-            f"It was expecting {exc.format_allowable_types()}, but got a {exc.got} "
-            f"for argument #{exc.arg_idx + 1} instead."
-        )
-        if exc.offset != -1:
-            return SympyParseFailure(
-                f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-                "Note that the location of the syntax error is approximate."
-            )
-        return SympyParseFailure(error_text)
-    except HasFunctionArityError as exc:
-        error_text = f"Your answer provides the wrong number of arguments to '{exc.fn}', expected {exc.expected}."
-        if exc.offset != -1:
-            return SympyParseFailure(
-                f"{error_text} <br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-                "Note that the location of the syntax error is approximate."
-            )
-        return SympyParseFailure(error_text)
-    except HasParseError as exc:
-        # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
-        # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
-        if exc.offset == -1:
-            return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
-        return SympyParseFailure(
-            f"Your answer has a syntax error. "
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasEscapeError as exc:
-        return SympyParseFailure(
-            f'Your answer must not contain the character "\\". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasCommentError as exc:
-        return SympyParseFailure(
-            f'Your answer must not contain the character "#". '
-            f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
-        )
-    except HasConflictingVariableError as exc:
-        return SympyParseFailure(
-            f"Question configuration error: {exc}. "
-            "The variable list contains a name that conflicts with a built-in constant. "
-            "Please contact the course staff."
-        )
-    except HasConflictingFunctionError as exc:
-        return SympyParseFailure(
-            f"Question configuration error: {exc}. "
-            "The custom function list contains a name that conflicts with a built-in function. "
-            "Please contact the course staff."
-        )
-    except HasInvalidAssumptionError as exc:
-        return SympyParseFailure(
-            f"Question configuration error: {exc}. Please contact the course staff."
-        )
     except Exception as exc:
-        return SympyParseFailure(
-            f"Unexpected error: {exc}. Please contact the course staff."
-        )
+        return _parse_failure_from_exception(expr, exc, allow_complex=allow_complex)
+    return SympyParseSuccess(parsed)
 
-    return SympyParseSuccess(expr_parsed)
+
+def _parse_failure_from_exception(
+    raw_input: str, exc: Exception, *, allow_complex: bool
+) -> SympyParseFailure:
+    match exc:
+        case HasFloatError():
+            return SympyParseFailure(
+                f"Your answer contains the floating-point number {exc.n}. "
+                f"All numbers must be expressed as integers (or ratios of integers)."
+            )
+        case HasComplexError():
+            err_string = [
+                "Your answer contains a complex number. ",
+                "All numbers must be expressed as integers (or ratios of integers). ",
+            ]
+
+            if allow_complex:
+                err_string.append(
+                    "To include a complex number in your expression, write it as the product "
+                    "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
+                )
+
+            return SympyParseFailure("".join(err_string))
+        case HasSetNotationError():
+            return SympyParseFailure(
+                "Your answer contains set notation, but set notation is not allowed for this question."
+            )
+        case HasInvalidExpressionError():
+            return SympyParseFailure(
+                f"Your answer has an invalid expression. "
+                f"<br><br><pre>{point_to_error(raw_input, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        case HasInvalidFunctionError():
+            return SympyParseFailure(
+                f'Your answer calls an invalid function "{exc.text}". '
+                f"<br><br><pre>{point_to_error(raw_input, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        case FunctionNameWithoutArgumentsError():
+            return SympyParseFailure(
+                f'Your answer mentions the function "{exc.text}" without '
+                "applying it to anything. "
+                f"<br><br><pre>{point_to_error(raw_input, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        case HasInvalidSymbolError():
+            offset = (
+                exc.offset
+                if exc.offset is not None
+                else find_symbol_offset(raw_input, exc.symbol)
+            )
+            return SympyParseFailure(
+                f'Your answer refers to an invalid symbol "{exc.symbol}". '
+                f"<br><br><pre>{point_to_error(raw_input, offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        case HasArgumentTypeError():
+            error_text = (
+                f"Your answer provides the wrong types to {exc.fn}. "
+                f"It was expecting {exc.format_allowable_types()}, but got a {exc.got} "
+                f"for argument #{exc.arg_idx + 1} instead."
+            )
+            if exc.offset != -1:
+                return SympyParseFailure(
+                    f"{error_text} <br><br><pre>{point_to_error(raw_input, exc.offset)}</pre>"
+                    "Note that the location of the syntax error is approximate."
+                )
+            return SympyParseFailure(error_text)
+        case HasFunctionArityError():
+            error_text = f"Your answer provides the wrong number of arguments to '{exc.fn}', expected {exc.expected}."
+            if exc.offset != -1:
+                return SympyParseFailure(
+                    f"{error_text} <br><br><pre>{point_to_error(raw_input, exc.offset)}</pre>"
+                    "Note that the location of the syntax error is approximate."
+                )
+            return SympyParseFailure(error_text)
+        case HasParseError():
+            # Special case where there is no error offset to point at. In practice, this is almost always a missing closing
+            # parenthesis that SymPy only catches at the end of parsing, so try to give a slightly more helpful error message.
+            if exc.offset == -1:
+                return SympyParseFailure(SYMPY_PARSE_ERROR_WITHOUT_LOCATION)
+            return SympyParseFailure(
+                f"Your answer has a syntax error. "
+                f"<br><br><pre>{point_to_error(raw_input, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        case HasEscapeError():
+            return SympyParseFailure(
+                f'Your answer must not contain the character "\\". '
+                f"<br><br><pre>{point_to_error(raw_input, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        case HasCommentError():
+            return SympyParseFailure(
+                f'Your answer must not contain the character "#". '
+                f"<br><br><pre>{point_to_error(raw_input, exc.offset)}</pre>"
+                "Note that the location of the syntax error is approximate."
+            )
+        case HasConflictingVariableError():
+            return SympyParseFailure(
+                f"Question configuration error: {exc}. "
+                "The variable list contains a name that conflicts with a built-in constant. "
+                "Please contact the course staff."
+            )
+        case HasConflictingFunctionError():
+            return SympyParseFailure(
+                f"Question configuration error: {exc}. "
+                "The custom function list contains a name that conflicts with a built-in function. "
+                "Please contact the course staff."
+            )
+        case HasInvalidAssumptionError():
+            return SympyParseFailure(
+                f"Question configuration error: {exc}. Please contact the course staff."
+            )
+        case _:
+            return SympyParseFailure(
+                f"Unexpected error: {exc}. Please contact the course staff."
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class _SymbolicInputNormalizationError(Exception):
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
+class SymbolicSubmissionParseSuccess:
+    expr: sympy.Expr | Literal[""]
+    json: SympyJson | Literal[""]
+
+
+type _SymbolicInputNormalizationResult = _MappedText | SympyParseFailure
+type SymbolicSubmissionParseResult = SymbolicSubmissionParseSuccess | SympyParseFailure
+
+
+_PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
+
+
+def _restore_plus_minus_source(source: _MappedText, latex: str) -> _MappedText | None:
+    r"""Restore formula-editor ``+-`` sequences that came from ``\pm``."""
+    from_plus_minus = [
+        match.group(0).startswith("\\")
+        for match in _PLUS_MINUS_LATEX_PATTERN.finditer(latex)
+    ]
+    matches = list(re.finditer(r"\+-", source.text()))
+    if len(matches) != len(from_plus_minus):
+        return None
+    if not any(from_plus_minus):
+        return source
+
+    tokens: list[_MappedChar] = []
+    last_end = 0
+    for match, is_plus_minus in zip(matches, from_plus_minus, strict=True):
+        tokens.extend(source.chars[last_end : match.start()])
+        if is_plus_minus:
+            tokens.extend(source.chars[match.start()].rewrite("±"))
+        else:
+            tokens.extend(source.chars[match.start() : match.end()])
+        last_end = match.end()
+    tokens.extend(source.chars[last_end:])
+    return source.rebuild(tokens)
+
+
+def _delete_literal(source: _MappedText, literal: str) -> _MappedText:
+    tokens: list[_MappedChar] = []
+    last_end = 0
+    for match in re.finditer(re.escape(literal), source.text()):
+        tokens.extend(source.chars[last_end : match.start()])
+        last_end = match.end()
+    tokens.extend(source.chars[last_end:])
+    return source.rebuild(tokens)
+
+
+def _replace_editor_operators(
+    source: _MappedText,
+) -> _MappedText:
+    text = source.text()
+    tokens: list[_MappedChar] = []
+    index = 0
+    while index < len(text):
+        if text.startswith("-:", index):
+            tokens.extend(source.chars[index].rewrite("/"))
+            index += 2
+            continue
+        if text.startswith(" ** ", index):
+            left_star = source.chars[index + 1]
+            right_star = source.chars[index + 2]
+            if (
+                source.raw_text[left_star.raw_offset] == "*"
+                and source.raw_text[right_star.raw_offset] == "*"
+            ):
+                tokens.extend((
+                    source.chars[index],
+                    left_star,
+                    source.chars[index + 3],
+                ))
+                index += 4
+                continue
+        tokens.append(source.chars[index])
+        index += 1
+    return source.rebuild(tokens)
+
+
+def _build_formula_editor_tokens(
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    allow_trig_functions: bool,
+    allow_sets: bool,
+) -> list[str]:
+    tokens = (
+        list(const.standard_operators)
+        + list(
+            get_builtin_functions(
+                allow_trig_functions=allow_trig_functions,
+                allow_sets=allow_sets,
+            )
+        )
+        + list(custom_functions)
+        + list(variables)
+    )
+    tokens += [
+        greek_unicode_transform(token)
+        for token in tokens
+        if greek_unicode_transform(token) != token
+    ]
+    return [token for token in tokens if len(token) > 1 and token != "**"]
+
+
+def _merge_spaced_source(source: _MappedText, tokens: Sequence[str]) -> _MappedText:
+    spaced = [(token, " ".join(token)) for token in tokens]
+    spaced.sort(key=lambda item: -len(item[1]))
+
+    merged_tokens: list[_MappedChar] = []
+    text = source.text()
+    index = 0
+    while index < len(text):
+        for token, spaced_token in spaced:
+            if text.startswith(spaced_token, index):
+                for char_index, char in enumerate(token):
+                    merged_tokens.extend(
+                        source.chars[index + char_index * 2].rewrite(char)
+                    )
+                index += len(spaced_token)
+                break
+        else:
+            merged_tokens.append(source.chars[index])
+            index += 1
+    return source.rebuild(merged_tokens)
+
+
+def _add_multiplication_spaces_source(
+    source: _MappedText, protected_tokens: Sequence[str]
+) -> _MappedText:
+    text = source.text()
+    protected_positions: set[int] = set()
+    for token in protected_tokens:
+        if not re.search(r"\d", token):
+            continue
+        for match in re.finditer(re.escape(token), text):
+            protected_positions.update(range(match.start(), match.end()))
+
+    tokens: list[_MappedChar] = []
+    for index, token in enumerate(source.chars):
+        tokens.append(token)
+        if index + 1 >= len(source.chars):
+            continue
+        if (
+            token.value.isalpha()
+            and source.chars[index + 1].value.isdigit()
+            and index + 1 not in protected_positions
+        ):
+            tokens.extend(source.chars[index + 1].rewrite(" "))
+    return source.rebuild(tokens)
+
+
+_TRAILING_IDENTIFIER_PATTERN = re.compile(r"[A-Za-z_]\w*$")
+
+
+def _is_implicit_multiplication_paren(
+    text: str,
+    argument_start: int,
+    argument_end: int,
+    function_names: frozenset[str],
+) -> bool:
+    """
+    Whether a "(" after an argument multiplies it rather than calling a function
+    or grouping an exponent.
+
+    Returns:
+        True if the argument ends with a number, a closing bracket, or a name
+        that isn't a function.
+    """
+    # An empty candidate provides no left-hand factor for implicit multiplication.
+    if argument_end == argument_start:
+        return False
+
+    # Isolate the final identifier before checking its last character. This keeps
+    # digit-suffixed function names such as atan2 from looking like numbers.
+    name_start = argument_end
+    while name_start > argument_start and (
+        text[name_start - 1].isalnum() or text[name_start - 1] == "_"
+    ):
+        name_start -= 1
+    name = _TRAILING_IDENTIFIER_PATTERN.search(text, name_start, argument_end)
+
+    # Known functions consume the "(" as a call; all other names multiply the
+    # parenthesized factor.
+    if name is not None:
+        return name.group(0) not in function_names
+
+    # Known digit-suffixed functions were handled above, so a remaining digit
+    # ends a numeric argument before the next implicitly multiplied factor.
+    if text[argument_end - 1].isdigit():
+        return True
+
+    # A closing delimiter completes a grouped argument, making the following
+    # "(" the start of a new implicitly multiplied factor.
+    return text[argument_end - 1] in ")]}"
+
+
+@lru_cache(maxsize=128)
+def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[str]:
+    names = sorted(function_names, key=len, reverse=True)
+    return re.compile(
+        r"(?P<function>(?<![A-Za-z_])(?:"
+        + "|".join(map(re.escape, names))
+        + r")\s+(?=[^\s(]))|(?P<token>\*+|[()\[\]{}+\-/,])"
+    )
+
+
+def _wrap_bare_function_arguments_source(
+    source: _MappedText, function_names: frozenset[str]
+) -> _MappedText:
+    if not function_names:
+        return source
+    text = source.text()
+    pattern = _bare_function_token_pattern(function_names)
+    # Each "(" sorts before a ")" at the same index, which only happens for an
+    # empty argument.
+    insertions: list[tuple[int, _MappedChar]] = []
+    # Only the first bare function at a given nesting depth can claim the next
+    # implicit multiplication boundary; any later one is inside its argument.
+    pending_arguments: dict[int, int] = {}
+    depth = 0
+    for match in pattern.finditer(text):
+        if match.lastgroup == "function":
+            pending_arguments.setdefault(depth, match.end())
+            continue
+
+        token = match.group(0)
+        match token:
+            case "(" | "*":
+                start = pending_arguments.get(depth)
+                if start is not None:
+                    argument_start = start
+                    while (
+                        argument_start < match.start()
+                        and text[argument_start].isspace()
+                    ):
+                        argument_start += 1
+                    argument_end = match.start()
+                    while (
+                        argument_end > argument_start
+                        and text[argument_end - 1].isspace()
+                    ):
+                        argument_end -= 1
+                    if token == "*" or _is_implicit_multiplication_paren(
+                        text, argument_start, argument_end, function_names
+                    ):
+                        pending_arguments.pop(depth)
+                        open_token = source.chars[
+                            min(argument_start, len(source.chars) - 1)
+                        ].rewrite("(")[0]
+                        close_token = source.chars[max(argument_end - 1, 0)].rewrite(
+                            ")"
+                        )[0]
+                        insertions.extend((
+                            (start, open_token),
+                            (argument_end, close_token),
+                        ))
+                if token == "(":
+                    depth += 1
+            case "[" | "{":
+                depth += 1
+            case ")" | "]" | "}":
+                pending_arguments.pop(depth, None)
+                depth -= 1
+            case "+" | "-" | "/" | ",":
+                pending_arguments.pop(depth, None)
+            case _:
+                pass
+
+    tokens: list[_MappedChar] = []
+    position = 0
+    for index, parenthesis in sorted(
+        insertions, key=lambda insertion: (insertion[0], insertion[1].value)
+    ):
+        tokens.extend(source.chars[position:index])
+        tokens.append(parenthesis)
+        position = index
+    tokens.extend(source.chars[position:])
+    return source.rebuild(tokens)
+
+
+def _format_formula_editor_source(
+    source: _MappedText,
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    allow_trig_functions: bool,
+    allow_sets: bool,
+) -> _MappedText:
+    source = _delete_literal(_delete_literal(source, "{:"), ":}")
+    source = _replace_editor_operators(source)
+    known_tokens = _build_formula_editor_tokens(
+        variables,
+        custom_functions,
+        allow_trig_functions=allow_trig_functions,
+        allow_sets=allow_sets,
+    )
+    source = _merge_spaced_source(source, known_tokens)
+    source = _add_multiplication_spaces_source(source, known_tokens)
+    function_names = frozenset(
+        greek_unicode_transform(name)
+        for name in (
+            get_builtin_callable_functions(
+                allow_trig_functions=allow_trig_functions,
+                allow_sets=allow_sets,
+            )
+            | set(custom_functions)
+        )
+    )
+    return _wrap_bare_function_arguments_source(source, function_names)
+
+
+_ABSOLUTE_VALUE_PATTERN = re.compile(
+    r"(\|\s*[a-zA-Z0-9(+\-]([^|]*[a-zA-Z0-9!)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)"
+)
+
+
+def _convert_absolute_values_source(
+    source: _MappedText, *, allow_sets: bool
+) -> _MappedText:
+    original_text = source.text()
+    text = original_text
+    tokens = list(source.chars)
+    bar_pattern = re.compile(r"\|")
+    search_from = 0
+    preceding_bars: list[int] = []
+    while match := _ABSOLUTE_VALUE_PATTERN.search(text, search_from):
+        preceding_bars.extend(
+            bar_match.start()
+            for bar_match in bar_pattern.finditer(text, search_from, match.start())
+        )
+        content = text[match.start() + 1 : match.end() - 1]
+        if allow_sets and "," in content:
+            preceding_bars.append(match.start())
+            search_from = match.start() + 1
+            continue
+
+        replacement_tokens = (
+            tokens[match.start()].rewrite("abs(")
+            + tuple(tokens[match.start() + 1 : match.end() - 1])
+            + tokens[match.end() - 1].rewrite(")")
+        )
+        text = text[: match.start()] + f"abs({content})" + text[match.end() :]
+        tokens[match.start() : match.end()] = replacement_tokens
+        search_from = preceding_bars.pop() if preceding_bars else match.start()
+
+    if not allow_sets and "|" in text:
+        raise _SymbolicInputNormalizationError(
+            f"The absolute value bars in your answer are mismatched or ambiguous: <code>{original_text}</code>."
+        )
+    return source.rebuild(tokens)
+
+
+def _normalize_symbolic_input(
+    text: str,
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    formula_editor: bool,
+    latex: str | None,
+    allow_trig_functions: bool,
+    allow_complex: bool,
+    allow_sets: bool,
+) -> _MappedText:
+    """Normalize a symbolic-input submission in its required transformation order."""
+    source = _normalize_unicode_source(
+        _MappedText.from_raw_text(text), formula_editor=formula_editor
+    )
+    if formula_editor:
+        if latex is not None:
+            restored = _restore_plus_minus_source(source, latex)
+            if restored is None:
+                raise _SymbolicInputNormalizationError(
+                    SYMPY_PARSE_ERROR_WITHOUT_LOCATION
+                )
+            source = restored
+        source = _format_formula_editor_source(
+            source,
+            variables,
+            custom_functions,
+            allow_trig_functions=allow_trig_functions,
+            allow_sets=allow_sets,
+        )
+    source = _convert_absolute_values_source(source, allow_sets=allow_sets)
+    return _validate_and_rewrite_source(
+        source,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+
+
+def _try_normalize_symbolic_input(
+    text: str,
+    variables: Sequence[str],
+    custom_functions: Sequence[str],
+    *,
+    formula_editor: bool,
+    latex: str | None,
+    allow_trig_functions: bool,
+    allow_complex: bool,
+    allow_sets: bool,
+) -> _SymbolicInputNormalizationResult:
+    """Normalize a submission, returning existing user-facing parse failures."""
+    try:
+        return _normalize_symbolic_input(
+            text,
+            variables,
+            custom_functions,
+            formula_editor=formula_editor,
+            latex=latex,
+            allow_trig_functions=allow_trig_functions,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+        )
+    except _SymbolicInputNormalizationError as exc:
+        return SympyParseFailure(exc.message)
+    except BaseSympyError as exc:
+        return _parse_failure_from_exception(text, exc, allow_complex=allow_complex)
+
+
+def try_parse_symbolic_submission(
+    submission: str | None,
+    variables: Iterable[str] | None,
+    *,
+    formula_editor: bool = False,
+    formula_editor_latex: str | None = None,
+    allow_blank: bool = False,
+    blank_value: str = "0",
+    allow_complex: bool = False,
+    allow_sets: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Sequence[str] = (),
+    imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
+    assumptions: AssumptionsDictT | None = None,
+) -> SymbolicSubmissionParseResult:
+    """Normalize, parse, and serialize a symbolic element submission."""
+    if submission is None:
+        return SympyParseFailure("No submitted answer.")
+
+    variable_list = list(variables or ())
+    custom_function_list = list(custom_functions)
+    normalized = _try_normalize_symbolic_input(
+        submission,
+        variable_list,
+        custom_function_list,
+        formula_editor=formula_editor,
+        latex=formula_editor_latex,
+        allow_trig_functions=allow_trig_functions,
+        allow_complex=allow_complex,
+        allow_sets=allow_sets,
+    )
+    if isinstance(normalized, SympyParseFailure):
+        return normalized
+
+    if all(char.value.isspace() for char in normalized.chars):
+        if not allow_blank:
+            return SympyParseFailure("No submitted answer.")
+        if not blank_value.strip():
+            return SymbolicSubmissionParseSuccess("", "")
+        result = try_parse_string_as_sympy(
+            blank_value,
+            variable_list,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            allow_trig_functions=allow_trig_functions,
+            imaginary_unit=imaginary_unit,
+            custom_functions=custom_function_list,
+            simplify_expression=simplify_expression,
+            assumptions=assumptions,
+        )
+    else:
+        try:
+            parsed, _ = _convert_source_to_sympy_with_source(
+                normalized,
+                submission,
+                variable_list,
+                allow_hidden=True,
+                allow_complex=allow_complex,
+                allow_sets=allow_sets,
+                allow_trig_functions=allow_trig_functions,
+                custom_functions=custom_function_list,
+                simplify_expression=simplify_expression,
+                assumptions=assumptions,
+            )
+        except Exception as exc:
+            return _parse_failure_from_exception(
+                submission, exc, allow_complex=allow_complex
+            )
+        result = SympyParseSuccess(parsed)
+    if isinstance(result, SympyParseFailure):
+        return result
+
+    try:
+        submission_json = sympy_to_json(
+            result.expr,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+        )
+        json_to_sympy(
+            submission_json,
+            allow_complex=allow_complex,
+            allow_sets=allow_sets,
+            simplify_expression=simplify_expression,
+        )
+    except Exception:
+        return SympyParseFailure(
+            "Your answer was simplified to this, which contains an invalid expression: "
+            f"$${sympy.latex(result.expr)}$$"
+        )
+    return SymbolicSubmissionParseSuccess(result.expr, submission_json)
 
 
 def validate_string_as_sympy(
@@ -1960,7 +2482,7 @@ def _try_rewrite_interval_literal(
         raise TokenError("interval notation is incomplete")
 
     set_notation_only_tokens = {"[", "]", "{", "}", "|", "&"}
-    set_fn_names = _Constants.set_functions.keys() | set_notation_only_tokens
+    set_fn_names = const.set_functions.keys() | set_notation_only_tokens
 
     def _contains_set_notation(tokens: list[TOKEN]) -> bool:
         return any((typ == NAME and text in set_fn_names) for typ, text in tokens)
@@ -2079,7 +2601,7 @@ def _set_operation_transformation(
     Returns:
         A transformed sequence of SymPy tokens.
     """
-    set_ops = _Constants.set_operator_desugars
+    set_ops = const.set_operator_desugars
     return [
         (OP, set_ops[text]) if text in set_ops else (typ, text) for typ, text in tokens
     ]
@@ -2097,7 +2619,6 @@ def get_builtin_constants(
     Returns:
         A set of built-in constant names.
     """
-    const = _Constants
     names = set(const.variables.keys())
     if allow_complex:
         names |= const.complex_variables.keys()
@@ -2124,7 +2645,6 @@ def get_builtin_callable_functions(
     Returns:
         A set of built-in callable function names.
     """
-    const = _Constants
     names = set(const.functions)
     if include_helpers:
         names.update(const.helpers)
@@ -2147,7 +2667,6 @@ def get_builtin_functions(
     Returns:
         A set of built-in function and operator names.
     """
-    const = _Constants
     names = get_builtin_callable_functions(
         allow_trig_functions=allow_trig_functions,
         allow_sets=allow_sets,
@@ -2157,7 +2676,22 @@ def get_builtin_functions(
     return names
 
 
-def _build_name_conflict_data(
+@dataclass(frozen=True, slots=True)
+class _NameValidationSuccess:
+    normalized_variables: FrozenDict[str, str]
+    normalized_custom_functions: FrozenDict[str, str]
+
+
+@dataclass(frozen=True, slots=True)
+class _NameValidationFailure:
+    variable_conflicts: tuple[str, ...]
+    custom_function_conflicts: tuple[str, ...]
+
+
+type _NameValidationResult = _NameValidationSuccess | _NameValidationFailure
+
+
+def _validate_and_normalize_names(
     variables: Iterable[str],
     custom_functions: Iterable[str],
     *,
@@ -2165,11 +2699,10 @@ def _build_name_conflict_data(
     allow_hidden: bool,
     allow_trig_functions: bool,
     allow_sets: bool,
-) -> tuple[list[str], list[str], dict[str, tuple[bool, str]]]:
+) -> _NameValidationResult:
     """Validate that user-specified names don't conflict with built-in constants or functions.
 
     Parameters:
-        element_name: Name of the element (for error messages).
         variables: User-specified variable names.
         custom_functions: User-specified custom function names.
         allow_complex: Whether complex constants (i, j) are available.
@@ -2178,9 +2711,8 @@ def _build_name_conflict_data(
         allow_trig_functions: Whether trig functions are available.
 
     Returns:
-        A list of (var_names, fun_names, valid_sanitized_names) where var/fun_names conflict
-        with builtins or themselves and valid_sanitized_names maps `sanitized_unique_name ->
-        (was_variable, unsanitized)`.
+        The normalized variable and custom function names, or all names that conflict with
+        built-ins or each other.
     """
     builtins = get_builtin_functions(
         allow_trig_functions=allow_trig_functions,
@@ -2189,35 +2721,49 @@ def _build_name_conflict_data(
         allow_complex=allow_complex,
         allow_hidden=allow_hidden,
     )
-    set_ops = tuple(_Constants.set_operators.keys())
+    set_ops = tuple(const.set_operators.keys())
 
     def _conflicts(name: str) -> bool:
         if name in builtins:
             return True
         return allow_sets and _split_mangled_binop(set_ops, name) is not None
 
-    valid_names: dict[str, tuple[bool, str]] = {}
+    valid_vars: dict[str, str] = {}
     conflict_vars: list[str] = []
-    conflict_fns: list[str] = []
 
     for raw in variables:
         sanitized = greek_unicode_transform(raw)
-        if sanitized in valid_names or _conflicts(sanitized):
+        if sanitized in valid_vars or _conflicts(sanitized):
             conflict_vars.append(raw)
         else:
-            valid_names[sanitized] = (True, raw)
+            valid_vars[sanitized] = raw
 
+    valid_fns: dict[str, str] = {}
+    conflict_fns: list[str] = []
     for raw in custom_functions:
         sanitized = greek_unicode_transform(raw)
-        if sanitized in valid_names or (
-            _conflicts(sanitized)
-            and not _allows_legacy_custom_function_override(sanitized)
+        if (
+            sanitized in valid_vars
+            or sanitized in valid_fns
+            or (
+                _conflicts(sanitized)
+                and not _allows_legacy_custom_function_override(sanitized)
+            )
         ):
             conflict_fns.append(raw)
         else:
-            valid_names[sanitized] = (False, raw)
+            valid_fns[sanitized] = raw
 
-    return conflict_vars, conflict_fns, valid_names
+    if conflict_vars or conflict_fns:
+        return _NameValidationFailure(
+            variable_conflicts=tuple(conflict_vars),
+            custom_function_conflicts=tuple(conflict_fns),
+        )
+
+    return _NameValidationSuccess(
+        normalized_variables=FrozenDict(valid_vars),
+        normalized_custom_functions=FrozenDict(valid_fns),
+    )
 
 
 def validate_names_for_conflicts(
@@ -2244,7 +2790,7 @@ def validate_names_for_conflicts(
     Raises:
         ValueError: If any names conflict with built-ins.
     """
-    v_conflicts, f_conflicts, _valid = _build_name_conflict_data(
+    result = _validate_and_normalize_names(
         variables,
         custom_functions,
         allow_complex=allow_complex,
@@ -2252,67 +2798,17 @@ def validate_names_for_conflicts(
         allow_sets=allow_sets,
         allow_trig_functions=allow_trig_functions,
     )
-    conflicts = v_conflicts + f_conflicts
-    if conflicts:
-        raise ValueError(
-            f'Element "{element_name}" specifies names that conflict with built-ins: '
-            f"{', '.join(conflicts)}. These are automatically available and should not be listed."
-        )
 
+    if isinstance(result, _NameValidationSuccess):
+        return
 
-# From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
-_GREEK_ALPHABET = {
-    0x0391: "Alpha",
-    0x0392: "Beta",
-    0x0393: "Gamma",
-    0x0394: "Delta",
-    0x0395: "Epsilon",
-    0x0396: "Zeta",
-    0x0397: "Eta",
-    0x0398: "Theta",
-    0x0399: "Iota",
-    0x039A: "Kappa",
-    0x039B: "Lambda",
-    0x039C: "Mu",
-    0x039D: "Nu",
-    0x039E: "Xi",
-    0x039F: "Omicron",
-    0x03A0: "Pi",
-    0x03A1: "Rho",
-    0x03A3: "Sigma",
-    0x03A4: "Tau",
-    0x03A5: "Upsilon",
-    0x03A6: "Phi",
-    0x03A7: "Chi",
-    0x03A8: "Psi",
-    0x03A9: "Omega",
-    0x03B1: "alpha",
-    0x03B2: "beta",
-    0x03B3: "gamma",
-    0x03B4: "delta",
-    0x03B5: "epsilon",
-    0x03B6: "zeta",
-    0x03B7: "eta",
-    0x03B8: "theta",
-    0x03B9: "iota",
-    0x03BA: "kappa",
-    0x03BB: "lambda",
-    0x03BC: "mu",
-    0x03BD: "nu",
-    0x03BE: "xi",
-    0x03BF: "omicron",
-    0x03C0: "pi",
-    0x03C1: "rho",
-    0x03C3: "sigma",
-    0x03C4: "tau",
-    0x03C5: "upsilon",
-    0x03C6: "phi",
-    0x03C7: "chi",
-    0x03C8: "psi",
-    0x03C9: "omega",
-}
+    conflicts = result.variable_conflicts + result.custom_function_conflicts
+    raise ValueError(
+        f'Element "{element_name}" specifies names that conflict with built-ins: '
+        f"{', '.join(conflicts)}. These are automatically available and should not be listed."
+    )
 
 
 def greek_unicode_transform(input_str: str) -> str:
     """Return input_str where all unicode greek letters are replaced by their spelled-out english names."""
-    return input_str.translate(_GREEK_ALPHABET)
+    return input_str.translate(const.greek_alphabet)
