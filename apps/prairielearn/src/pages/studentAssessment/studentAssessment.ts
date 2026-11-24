@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import mustache from 'mustache';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -17,6 +16,7 @@ import {
   updateGroupRoles,
 } from '../../lib/groups.js';
 import { canUserAssignGroupRoles } from '../../lib/groups.shared.js';
+import { renderMustache } from '../../lib/mustache.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
@@ -90,7 +90,7 @@ router.get(
       res.locals.assessment.honor_code
     ) {
       customHonorCode = markdownToHtml(
-        mustache.render(res.locals.assessment.honor_code, {
+        renderMustache(res.locals.assessment.honor_code, {
           user_name: res.locals.user.name,
         }),
         { allowHtml: false, interpretMath: false },

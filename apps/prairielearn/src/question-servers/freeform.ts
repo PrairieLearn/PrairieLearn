@@ -5,7 +5,6 @@ import * as async from 'async';
 import debugfn from 'debug';
 import { difference, isEmptyObject, isEqual, mapValues, omit, union } from 'es-toolkit';
 import fs from 'fs-extra';
-import mustache from 'mustache';
 import objectHash from 'object-hash';
 
 import { cache } from '@prairielearn/cache';
@@ -24,6 +23,7 @@ import { type Course, type Question, type Submission, type Variant } from '../li
 import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
+import { renderMustache } from '../lib/mustache.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
@@ -419,7 +419,7 @@ async function execPythonServer(
 
 async function execTemplate(htmlFilename: string, data: ExecutionData) {
   const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
-  const html = mustache.render(rawFile, data);
+  const html = renderMustache(rawFile, data);
   return markdown.processQuestion(html);
 }
 
