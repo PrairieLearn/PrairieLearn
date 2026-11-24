@@ -25,9 +25,14 @@ const ColumnSchema = JsonSchemaProperty.extend({
 });
 const SchemaResponse = z.object({
   version: z.number(),
+  /** Plain names for columns, by column name. */
+  column_labels: z.record(z.string(), z.string()).default({}),
   datasets: z.record(
     z.string(),
     z.object({
+      /** What the rows are, as a plural an instructor would use. */
+      label: z.string().optional(),
+      icon: z.string().default('table'),
       description: z.string(),
       schema: z.object({ properties: z.record(z.string(), ColumnSchema) }),
     }),
@@ -170,11 +175,18 @@ const FILTER_WORDS = {
   in: 'is one of',
 };
 
-/** A filter in the instructor's words, such as `status is one of joined, invited`. */
-function describeFilterForStaff(filter: NonNullable<CourseDataRequest['filters']>[number]) {
+/** A filter in the instructor's words, such as `question is one of addNumbers, addVectors`. */
+function describeFilterForStaff(
+  filter: NonNullable<CourseDataRequest['filters']>[number],
+  columnLabels: Record<string, string>,
+) {
   const values = filter.op === 'in' ? filter.value : [filter.value];
-  const shown = values.slice(0, 10).map(String).join(', ');
-  return `${filter.column} ${FILTER_WORDS[filter.op]} ${shown}${values.length > 10 ? `, and ${values.length - 10} more` : ''}`;
+  const shown = values
+    .slice(0, 10)
+    .map((value) => (typeof value === 'boolean' ? (value ? 'yes' : 'no') : String(value)))
+    .join(', ');
+  const column = columnLabels[filter.column] ?? filter.column.replaceAll('_', ' ');
+  return `${column} ${FILTER_WORDS[filter.op]} ${shown}${values.length > 10 ? `, and ${values.length - 10} more` : ''}`;
 }
 
 /**
@@ -212,23 +224,20 @@ export async function describeCourseDataRequest(
   }
   const clip = (text: string, max: number) =>
     text.length > max ? `${text.slice(0, max - 1)}…` : text;
-  const filters = (request.filters ?? []).map(describeFilterForStaff);
+  const label = dataset.label ?? request.dataset.replaceAll('_', ' ');
+  const filters = (request.filters ?? []).map((filter) =>
+    describeFilterForStaff(filter, fetched.schema.column_labels),
+  );
+  // One rule for every dataset and filter, so a new dataset needs no wording of its own.
+  const rows = filters.length > 0 ? `Where ${filters.join(' and ')}` : `All ${label}`;
   return {
     card: {
-      title: clip(`Read the ${request.dataset} dataset`, 200),
-      rows: [
-        { label: 'Columns', detail: clip(request.select.join(', '), 2000) },
-        {
-          label: 'Rows',
-          detail: clip(
-            filters.length > 0 ? `Only those where ${filters.join(' and ')}` : 'Every row',
-            2000,
-          ),
-        },
-        ...(request.limit === undefined
-          ? []
-          : [{ label: 'At most', detail: `${request.limit} rows` }]),
-      ],
+      icon: dataset.icon,
+      title: clip(`View ${label}`, 200),
+      subtitle: clip(
+        request.limit === undefined ? rows : `${rows} (at most ${request.limit})`,
+        2000,
+      ),
     },
   };
 }

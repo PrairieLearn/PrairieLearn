@@ -36,11 +36,17 @@ const ModeSchema = EnumModeSchema.exclude(['SEB']);
 const JsonObjectSchema = z.record(z.string(), z.unknown());
 
 function dataset<Shape extends Record<string, z.ZodType>>({
+  label,
+  icon,
   description,
   query,
   schema,
   largeColumns = [],
 }: {
+  /** What the rows are, as a plural an instructor would use, such as `attempts`. */
+  label: string;
+  /** A Bootstrap icon for the dataset, without the `bi-` prefix. */
+  icon: string;
   description: string;
   query: string;
   schema: z.ZodObject<Shape>;
@@ -48,6 +54,8 @@ function dataset<Shape extends Record<string, z.ZodType>>({
   largeColumns?: (keyof Shape & string)[];
 }) {
   return {
+    label,
+    icon,
     description,
     query,
     schema,
@@ -65,6 +73,8 @@ function dataset<Shape extends Record<string, z.ZodType>>({
  */
 export const COURSE_DATA_DATASETS = {
   course_instances: dataset({
+    label: 'course instances',
+    icon: 'easel',
     description: 'Offerings of the course, each with its own students and assessments.',
     query: sql.select_course_instances_by_course_id,
     schema: z.object({
@@ -85,6 +95,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   assessments: dataset({
+    label: 'assessments',
+    icon: 'list-check',
     description: 'Assessments in each course instance.',
     query: sql.select_assessments_by_course_id,
     schema: z.object({
@@ -123,6 +135,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   questions: dataset({
+    label: 'questions',
+    icon: 'question-circle',
     description: 'Questions in the course question bank.',
     query: sql.select_questions_by_course_id,
     schema: z.object({
@@ -141,6 +155,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   assessment_questions: dataset({
+    label: 'questions on assessments',
+    icon: 'list-ol',
     description:
       'Questions as placed on an assessment, with their points and statistics. The statistics cover attempts that count in statistics and are recalculated every few minutes, so the latest activity may be missing.',
     query: sql.select_assessment_questions_by_course_id,
@@ -174,6 +190,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   assessment_instances: dataset({
+    label: 'attempts',
+    icon: 'clipboard-check',
     description:
       'Attempts at assessments by students or teams, with totals. An assessment with multiple_instance can have several attempts per student.',
     query: sql.select_assessment_instances_by_course_id,
@@ -214,6 +232,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   instance_questions: dataset({
+    label: 'question scores',
+    icon: 'clipboard-data',
     description: "Questions in a student's assessment attempt, with their scores.",
     query: sql.select_instance_questions_by_course_id,
     schema: z.object({
@@ -259,6 +279,8 @@ export const COURSE_DATA_DATASETS = {
     }),
   }),
   variants: dataset({
+    label: 'question versions',
+    icon: 'shuffle',
     description:
       'Generated versions of a question that students saw. Instructor previews are excluded.',
     query: sql.select_variants_by_course_id,
@@ -298,6 +320,8 @@ export const COURSE_DATA_DATASETS = {
     largeColumns: ['params', 'true_answer'],
   }),
   submissions: dataset({
+    label: 'submissions',
+    icon: 'file-earmark-text',
     description: 'Student answer submissions. Instructor previews are excluded.',
     query: sql.select_submissions_by_course_id,
     schema: z.object({
@@ -374,6 +398,17 @@ export function isCourseDataset(name: string): name is CourseDatasetName {
 
 const COURSE_DATA_VERSION = 1;
 
+/**
+ * Plain names for columns an instructor would not recognize, used when a request to read course
+ * data is shown to them. A column without one is shown by its own name.
+ */
+const COLUMN_LABELS: Record<string, string> = {
+  course_instance_short_name: 'course instance',
+  assessment_tid: 'assessment',
+  qid: 'question',
+  uid: 'student',
+};
+
 /** Columns are serialized JSON, so an ID is a string of digits. */
 function toJsonSchema(schema: z.ZodType) {
   return z.toJSONSchema(schema, {
@@ -391,10 +426,16 @@ export function courseDataSchema() {
   return {
     version: COURSE_DATA_VERSION,
     query: toJsonSchema(CourseDataQuerySchema),
+    column_labels: COLUMN_LABELS,
     datasets: Object.fromEntries(
       Object.entries(COURSE_DATA_DATASETS).map(([name, dataset]) => [
         name,
-        { description: dataset.description, schema: toJsonSchema(dataset.schema) },
+        {
+          label: dataset.label,
+          icon: dataset.icon,
+          description: dataset.description,
+          schema: toJsonSchema(dataset.schema),
+        },
       ]),
     ),
   };
