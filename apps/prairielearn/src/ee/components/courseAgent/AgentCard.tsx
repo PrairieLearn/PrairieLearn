@@ -18,7 +18,7 @@ export function AgentCard({
 }) {
   return (
     <div className="course-agent-review border rounded-3">
-      <div className="d-flex align-items-start gap-2 mb-2">
+      <div className="d-flex align-items-center gap-2 mb-2">
         <span className="course-agent-card-icon" aria-hidden="true">
           <i className={`bi bi-${icon}`} />
         </span>
