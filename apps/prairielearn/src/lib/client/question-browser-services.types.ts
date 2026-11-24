@@ -15,6 +15,10 @@ export type QuestionContentPanels = Pick<
  * signals and callbacks into cancellation and subscription messages.
  */
 export interface QuestionBrowserServices {
+  openCopyQuestion(): Promise<void>;
+
+  openSubmissionInfo(request: { submissionId: string }): Promise<void>;
+
   renderSubmission(
     request: { submissionId: string; purpose: 'history' | 'grading-result' },
     options: { signal: AbortSignal },
