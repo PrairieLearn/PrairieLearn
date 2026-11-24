@@ -1,6 +1,12 @@
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+
+import mustache from 'mustache';
 import { assert, describe, it } from 'vitest';
 
-import { safeMustacheRender } from './mustache.js';
+import { parseMustacheTemplate } from './mustache-parse.js';
+import { MustacheRenderLimitError, renderMustache, safeMustacheRender } from './mustache.js';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 describe('safeMustacheRender', () => {
   it('renders a valid template', () => {
@@ -106,5 +112,97 @@ describe('safeMustacheRender', () => {
     const result = safeMustacheRender(template, {});
     assert.equal(result.rendered, template);
     assert.isUndefined(result.error);
+  });
+});
+
+/**
+ * Builds a view in which every name the template uses is defined, so that
+ * sections iterate and variables render. Variables get `value`, and sections
+ * get `section`.
+ */
+function viewForTemplate(template: string, value: unknown, section: unknown) {
+  const view: Record<string, any> = {};
+  const define = (name: string, leaf: unknown) => {
+    if (name === '.') return;
+    const segments = name.split('.');
+    let object = view;
+    for (const segment of segments.slice(0, -1)) {
+      if (typeof object[segment] !== 'object' || Array.isArray(object[segment])) {
+        object[segment] = {};
+      }
+      object = object[segment];
+    }
+    const last = segments.at(-1)!;
+    if (typeof object[last] !== 'object' || Array.isArray(object[last])) object[last] = leaf;
+  };
+  const visit = (tokens: any[]) => {
+    for (const token of tokens) {
+      if (token[0] === 'name' || token[0] === '&') define(token[1], value);
+      if (token[0] === '#' || token[0] === '^') {
+        define(token[1], section);
+        visit(token[4]);
+      }
+    }
+  };
+  visit(parseMustacheTemplate(template));
+  return view;
+}
+
+describe('renderMustache', () => {
+  it('matches mustache.js for templates in the example course and test course', async () => {
+    let count = 0;
+    for (const root of [EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]) {
+      for (const file of await fs.readdir(root, { recursive: true })) {
+        if (!file.endsWith('question.html')) continue;
+        const template = await fs.readFile(path.join(root, file), 'utf8');
+        for (const view of [
+          {},
+          viewForTemplate(template, '<b>"&\'</b>', [{ i: 1 }, { i: 2 }]),
+          viewForTemplate(template, ['a<', 2, [3, '&']], 'section'),
+        ]) {
+          assert.equal(renderMustache(template, view), mustache.render(template, view), file);
+        }
+        count++;
+      }
+    }
+    assert.isAbove(count, 200);
+  });
+
+  it('limits sections nested inside loops', () => {
+    const template = '{{#a}}'.repeat(6) + 'x' + '{{/a}}'.repeat(6);
+    assert.throws(
+      () => renderMustache(template, { a: Array.from({ length: 20 }, (_, i) => i) }),
+      MustacheRenderLimitError,
+      /work limit/,
+    );
+  });
+
+  it('limits section nesting depth', () => {
+    const template = '{{^a}}'.repeat(1000) + 'x' + '{{/a}}'.repeat(1000);
+    assert.throws(() => renderMustache(template, {}), MustacheRenderLimitError, /nested/);
+  });
+
+  it('limits output length', () => {
+    assert.throws(
+      () =>
+        renderMustache('{{#a}}{{{big}}}{{/a}}', {
+          a: Array.from({ length: 100 }, (_, i) => i),
+          big: 'x'.repeat(1_000_000),
+        }),
+      MustacheRenderLimitError,
+      /output limit/,
+    );
+  });
+
+  it('limits calls to built-in methods on large views', () => {
+    assert.throws(
+      () =>
+        renderMustache('{{#r}}{{#w}}{{^join}}{{/join}}{{/w}}{{/r}}', {
+          r: Array.from({ length: 10_000 }, (_, i) => i),
+          w: [Array.from({ length: 100_000 }, (_, i) => i)],
+        }),
+      MustacheRenderLimitError,
+      /work limit/,
+    );
   });
 });
