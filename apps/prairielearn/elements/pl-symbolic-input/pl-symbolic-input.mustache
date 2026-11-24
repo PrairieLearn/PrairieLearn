@@ -18,6 +18,13 @@
                 data-deferred-initial-value="true"
             />
             <input
+                name="{{name}}-json"
+                id="symbolic-input-json-{{uuid}}"
+                type="hidden"
+                value=""
+                data-deferred-initial-value="true"
+            />
+            <input
                 name="{{name}}-latex"
                 id="symbolic-input-latex-{{uuid}}"
                 type="hidden"
@@ -31,6 +38,7 @@
                 {{#parse_error}}aria-invalid="true" aria-errormessage="pl-symbolic-input-{{uuid}}-error"{{/parse_error}}
                 {{^editable}}contentEditable="false"{{/editable}}
                 data-placeholder-text = "{{placeholder}}"
+                data-variables="{{variables}}"
                 custom-functions="{{custom_functions}}"
                 {{#log_as_ln}}log-as-ln="log-as-ln"{{/log_as_ln}}
                 {{#imaginary_unit}}imaginary-unit="{{imaginary_unit}}"{{/imaginary_unit}}

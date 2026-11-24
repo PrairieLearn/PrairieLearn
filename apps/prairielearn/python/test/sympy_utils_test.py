@@ -7,6 +7,14 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+from prairielearn.internal import mathjson as internal_mathjson
+from prairielearn.internal import sympy_constants
+
+
+def test_constants_compatibility_alias() -> None:
+    assert psu._Constants is sympy_constants
+    assert psu.STANDARD_OPERATORS is sympy_constants.standard_operators
+    assert psu.SET_NOTATION_OPERATORS is sympy_constants.set_notation_operators
 
 
 def _caret_template(template_expr: str) -> tuple[str, str]:
@@ -73,30 +81,53 @@ def test_evaluate_does_not_mutate_locals() -> None:
     }
 
 
-def test_evaluate_localizes_recognized_type_error(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize(
+    ("expression", "expected", "expected_structure"),
+    [
+        (
+            "f 2xy",
+            sympy.Function("f")(2 * sympy.Symbol("x") * sympy.Symbol("y")),
+            "f((2*(x*y)))",
+        ),
+        ("sin cos x", sympy.sin(sympy.cos(sympy.Symbol("x"))), "sin(cos(x))"),
+        ("sin^2 2x", sympy.sin(2 * sympy.Symbol("x")) ** 2, "(sin((2*x))**2)"),
+        (
+            "sin 2x * y",
+            sympy.sin(2 * sympy.Symbol("x")) * sympy.Symbol("y"),
+            "(sin((2*x))*y)",
+        ),
+        (
+            "sin 2 / x",
+            sympy.sin(2) / sympy.Symbol("x"),
+            "(sin(2)/x)",
+        ),
+        (
+            "sin 2 % x",
+            sympy.Mod(sympy.sin(2), sympy.Symbol("x")),
+            "(sin(2)%x)",
+        ),
+        (
+            "sin^3 x",
+            sympy.sin(sympy.Symbol("x")) ** 3,
+            "(sin(x)**3)",
+        ),
+        (
+            "f^3 x",
+            sympy.Function("f")(sympy.Symbol("x")) ** 3,
+            "(f(x)**3)",
+        ),
+    ],
+)
+def test_unparenthesized_call_consumes_implicit_token_stream(
+    expression: str, expected: sympy.Expr, expected_structure: str
 ) -> None:
-    def raise_type_error(*_args: Any, **_kwargs: Any) -> None:
-        raise TypeError("unsupported operand type(s) for /: 'Symbol' and 'Integer'")
-
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", raise_type_error)
-
-    with pytest.raises(psu.HasParseError) as exc_info:
-        psu.convert_string_to_sympy("x / 2", ["x"])
-    assert exc_info.value.offset == 2
-
-
-def test_evaluate_preserves_unrecognized_type_error_as_internal(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def raise_type_error(*_args: Any, **_kwargs: Any) -> None:
-        raise TypeError("unexpected internal failure")
-
-    monkeypatch.setattr(psu.sympy_parser, "eval_expr", raise_type_error)
-
-    with pytest.raises(psu.BaseSympyError) as exc_info:
-        psu.convert_string_to_sympy("x / 2", ["x"])
-    assert isinstance(exc_info.value.__cause__, TypeError)
+    result, structure = psu.convert_string_to_sympy_with_source(
+        expression,
+        ["x", "y"],
+        custom_functions=["f"],
+    )
+    assert result == expected
+    assert structure == expected_structure
 
 
 @pytest.mark.parametrize("simplify_expression", [True, False])
@@ -1524,6 +1555,113 @@ def test_builtin_callable_functions_exclude_set_operators() -> None:
     assert callable_functions.isdisjoint({"U", "cup", "cap", "∪", "∩"})  # ruff:ignore[ambiguous-unicode-character-string]
 
 
+def test_symbolic_submission_mathjson_bypasses_text_parser() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "not valid text",
+        ["x"],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps([
+            "Add",
+            ["Sin", "x"],
+            ["InvisibleOperator", 2, "x"],
+        ]),
+    )
+
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
+    assert result.expr == sympy.sin(sympy.Symbol("x")) + 2 * sympy.Symbol("x")
+
+
+def test_symbolic_submission_accepts_compute_engine_bare_log_boundary() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "ln 8(x + 1)",
+        ["x"],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps([
+            "InvisibleOperator",
+            ["Ln", 8],
+            ["Delimiter", ["Add", "x", 1]],
+        ]),
+    )
+
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
+    x = sympy.Symbol("x")
+    assert result.expr == sympy.log(8) * (x + 1)
+
+
+def test_symbolic_submission_mathjson_symbols_bypass_name_lowering() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "xy",
+        ["x", "y"],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps("xy"),
+    )
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert 'invalid symbol "xy"' in result.error
+
+
+def test_symbolic_submission_mathjson_enforces_configuration() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "sin(x)",
+        ["x"],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps(["Sin", "x"]),
+        allow_trig_functions=False,
+    )
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert 'invalid function "sin"' in result.error
+
+    result = psu.try_parse_symbolic_submission(
+        "RR",
+        [],
+        formula_editor=True,
+        formula_editor_mathjson=json.dumps("RealNumbers"),
+        allow_sets=False,
+    )
+
+    assert isinstance(result, psu.SympyParseFailure)
+    assert "set notation" in result.error
+
+
+def test_symbolic_submission_backfills_mathjson() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "x + 1",
+        ["x"],
+        formula_editor=True,
+    )
+
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
+    assert result.mathjson is not None
+    assert result.expr != ""
+    assert json.loads(result.mathjson) == internal_mathjson.sympy_to_mathjson(
+        result.expr
+    )
+
+
+def test_symbolic_submission_blank_mathjson_falls_back_to_text() -> None:
+    result = psu.try_parse_symbolic_submission(
+        "x + 1",
+        ["x"],
+        formula_editor=True,
+        formula_editor_mathjson="   ",
+    )
+
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
+    assert result.expr == sympy.Symbol("x") + 1
+    assert result.mathjson is not None
+
+
+def test_mathlive_named_sets_replace_single_letter_sets() -> None:
+    named_set = psu.try_parse_symbolic_submission("NN", [], allow_sets=True)
+    ordinary_symbol = psu.try_parse_symbolic_submission("N", ["N"], allow_sets=True)
+
+    assert isinstance(named_set, psu.SymbolicSubmissionParseSuccess)
+    assert named_set.expr is sympy.S.Naturals0
+    assert isinstance(ordinary_symbol, psu.SymbolicSubmissionParseSuccess)
+    assert ordinary_symbol.expr == sympy.Symbol("N")
+
+
 class TestValidateNamesForConflicts:
     """Tests for validate_names_for_conflicts()."""
 
@@ -1551,6 +1689,19 @@ class TestValidateNamesForConflicts:
             psu.validate_names_for_conflicts(
                 "test", ["Complement"], [], allow_sets=True
             )
+
+    @pytest.mark.parametrize("conflicting_name", ["NN", "ZZ", "QQ", "RR", "CC"])
+    def test_mathlive_named_sets_conflict_when_sets_enabled(
+        self, conflicting_name: str
+    ) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [conflicting_name], [], allow_sets=True
+            )
+
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_sets=False
+        )
 
     @pytest.mark.parametrize("conflicting_name", ["i", "j"])
     def test_complex_constants_only_conflict_when_enabled(

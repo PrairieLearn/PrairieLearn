@@ -71,7 +71,7 @@ See example question for details.
 
 !!! warning
 
-    `allow-sets="true"` is deprecated. Existing questions keep their current parsing and grading behavior, but new questions should use [`pl-set-symbolic-input`](pl-set-symbolic-input.md). To migrate, replace the element tag, remove `allow-sets`, and verify that the correct answer uses the dedicated element's documented syntax. The new element intentionally rejects constructor calls and scalar-valued roots, and reserves `RR`, `QQ`, `ZZ`, `NN`, and `CC` for named sets.
+    `allow-sets="true"` is deprecated; new questions should use [`pl-set-symbolic-input`](pl-set-symbolic-input.md). To migrate, replace the element tag, remove `allow-sets`, and verify that the correct answer uses the dedicated element's documented syntax. The new element intentionally rejects constructor calls and scalar-valued roots, and reserves `RR`, `QQ`, `ZZ`, `NN`, and `CC` for named sets.
 
 If `allow-sets="true"`, the following additional layer of syntax is enabled:
 
@@ -79,6 +79,8 @@ If `allow-sets="true"`, the following additional layer of syntax is enabled:
 - Interval set notation, including $\infty$ (e.g `(-sin(x), +sin(x))`, `(-infty, 5]`, `[2, oo]`)
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
   intersection (`cap` or `&`), and difference (`-`)
+- Named sets: `RR`, `QQ`, `ZZ`, `NN`, and `CC` for the real, rational,
+  integer, nonnegative integer, and complex numbers
 
 Names listed in the `variables` attribute are scalar symbols, not named sets,
 even when `allow-sets="true"`; sets must be constructed with set notation.
