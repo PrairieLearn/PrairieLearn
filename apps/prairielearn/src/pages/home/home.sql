@@ -48,9 +48,60 @@ WITH
     GROUP BY
       c.id
   ),
+  -- Narrow to the course instances this user can see before computing
+  -- access-rule dates. Otherwise the planner can compute the LATERAL below
+  -- for every course instance in the database and filter afterwards.
+  -- Non-administrators can only see course instances through their own
+  -- course permissions (course instance permissions hang off those), so that
+  -- branch starts from the user's `course_permissions` rows.
+  permitted_course_instances AS MATERIALIZED (
+    SELECT
+      ci.id,
+      ci.course_id,
+      ci.long_name,
+      ci.publishing_start_date,
+      ci.publishing_end_date
+    FROM
+      courses AS c
+      JOIN course_instances AS ci ON (
+        ci.course_id = c.id
+        AND ci.deleted_at IS NULL
+      )
+    WHERE
+      $is_administrator
+      AND c.deleted_at IS NULL
+      AND c.example_course IS FALSE
+    UNION ALL
+    SELECT
+      ci.id,
+      ci.course_id,
+      ci.long_name,
+      ci.publishing_start_date,
+      ci.publishing_end_date
+    FROM
+      course_permissions AS cp
+      JOIN courses AS c ON (c.id = cp.course_id)
+      JOIN course_instances AS ci ON (
+        ci.course_id = c.id
+        AND ci.deleted_at IS NULL
+      )
+      LEFT JOIN course_instance_permissions AS cip ON (
+        cip.course_permission_id = cp.id
+        AND cip.course_instance_id = ci.id
+      )
+    WHERE
+      NOT $is_administrator
+      AND cp.user_id = $user_id
+      AND c.deleted_at IS NULL
+      AND c.example_course IS FALSE
+      AND (
+        cp.course_role > 'None'
+        OR cip.course_instance_role > 'None'
+      )
+  ),
   instructor_course_instances AS (
     SELECT
-      c.id,
+      ci.course_id AS id,
       jsonb_agg(
         jsonb_build_object(
           'long_name',
@@ -69,19 +120,7 @@ WITH
           ci.id DESC
       ) AS course_instances
     FROM
-      courses AS c
-      JOIN course_instances AS ci ON (
-        ci.course_id = c.id
-        AND ci.deleted_at IS NULL
-      )
-      LEFT JOIN course_permissions AS cp ON (
-        cp.user_id = $user_id
-        AND cp.course_id = c.id
-      )
-      LEFT JOIN course_instance_permissions AS cip ON (
-        cip.course_permission_id = cp.id
-        AND cip.course_instance_id = ci.id
-      ),
+      permitted_course_instances AS ci,
       LATERAL (
         SELECT
           -- Use new publishing dates if available, otherwise fall back to legacy access rules
@@ -101,17 +140,8 @@ WITH
         WHERE
           ar.course_instance_id = ci.id
       ) AS d
-    WHERE
-      c.deleted_at IS NULL
-      AND c.example_course IS FALSE
-      AND (
-        $is_administrator
-        OR cp.course_role > 'None'
-        OR cip.course_instance_role > 'None'
-      )
     GROUP BY
-      c.id,
-      cp.id
+      ci.course_id
   ),
   instructor_courses AS (
     SELECT

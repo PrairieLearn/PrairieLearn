@@ -35,6 +35,7 @@ import {
 } from './print-export-render.js';
 import { PrintPacketError } from './print-packet.js';
 import { PRINT_PAPER_SIZES_MISMATCH_MESSAGE, sameExcludedQuestions } from './print-settings.js';
+import { RenderQueueFullError } from './render-queue.js';
 
 import { getPrintableQuestionListDigest, isBrowserRenderingAvailable } from './index.js';
 
@@ -44,8 +45,8 @@ const QUEUE_NAME = 'print-exports';
 // throughput scales with the number of workers. PrairieMQ persists this value in Redis
 // and stops workers that disagree, so changing it also requires a new queue prefix.
 const COURSE_CONCURRENCY = 2;
-// A run interrupted by a graceful shutdown counts as an attempt, so allow for a rolling
-// deploy interrupting it more than once. Crashed runs are recovered separately as stalls.
+// Runs interrupted by a graceful shutdown or refused by a busy renderer count as attempts,
+// so allow for more than one. Crashed runs are recovered separately as stalls.
 const MAX_ATTEMPTS = 3;
 // Spreads retries over a few seconds so a brief database or S3 outage doesn't use them all.
 const RETRY_BACKOFF = { type: 'exponential', delay: 2_000, jitter: 0.2 } as const;
@@ -107,7 +108,10 @@ export function initPrintExportWorker() {
   }
   worker = new Worker<{ printExportId: string }, void>(
     QUEUE_NAME,
-    async (job) => await processPrintExport(IdSchema.parse(job.data.printExportId)),
+    async (job) =>
+      await processPrintExport(IdSchema.parse(job.data.printExportId), {
+        finalAttempt: job.failedAttempts + 1 >= job.attempts,
+      }),
     {
       ...queueConnection(config.nonVolatileRedisUrl),
       concurrency: 2,
@@ -283,7 +287,10 @@ export async function queuePrintExport({
   return printExportId;
 }
 
-async function processPrintExport(printExportId: string) {
+async function processPrintExport(
+  printExportId: string,
+  { finalAttempt }: { finalAttempt: boolean },
+) {
   const signal = shutdownController.signal;
   signal.throwIfAborted();
   const printExport = await selectOptionalPendingPrintExport(printExportId);
@@ -314,6 +321,10 @@ async function processPrintExport(printExportId: string) {
   } catch (error) {
     // PrairieMQ retries a run interrupted by shutdown on another worker.
     if (signal.aborted) throw error;
+    // Let PrairieMQ retry after a backoff, since a busy renderer refuses work before starting it.
+    if (!finalAttempt && error instanceof RenderQueueFullError) {
+      throw error;
+    }
     getCounter(meter, 'print.export.failures', { valueType: ValueType.INT }).add(1, attributes);
     const failureMessage = printableFailureMessage(error, format);
     if (failureMessage === null) {

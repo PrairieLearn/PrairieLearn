@@ -31,7 +31,7 @@ import type { SimpleVariantWithScore } from '../models/variant.js';
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
-import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
+import { SubmissionPanel, type SubmissionSummary } from './SubmissionPanel.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
@@ -1086,7 +1086,7 @@ function SubmissionList({
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
-  submissions: SubmissionForRender[];
+  submissions: SubmissionSummary[];
   submissionHtmls: string[];
   submissionCount: number;
   renderSubmissionSearchParams?: URLSearchParams;

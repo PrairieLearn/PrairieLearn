@@ -11,6 +11,7 @@ import { assertNever, withResolvers } from '@prairielearn/utils';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
 import {
+  type CallSummary,
   type CallType,
   type CodeCaller,
   type CodeCallerResult,
@@ -62,7 +63,7 @@ export interface ErrorData {
   outputData: string;
   outputRestart: string;
   stack: string;
-  lastCallData: any;
+  lastCall: CallSummary | null;
 }
 
 export type CodeCallerError = Error & { data?: ErrorData };
@@ -104,7 +105,7 @@ export class CodeCallerNative implements CodeCaller {
   outputBoth: string[];
   outputData: string[];
   outputRestart: string;
-  lastCallData: any;
+  lastCall: CallSummary | null;
   coursePath: string | null;
   forbiddenModules: string[];
 
@@ -147,7 +148,7 @@ export class CodeCallerNative implements CodeCaller {
     this.outputRestart = '';
 
     // for error logging
-    this.lastCallData = null;
+    this.lastCall = null;
 
     this.coursePath = null;
     this.forbiddenModules = [];
@@ -189,7 +190,7 @@ export class CodeCallerNative implements CodeCaller {
     this.debug('enter call()');
 
     // Reset this so that we don't include old data if the checks below fail.
-    this.lastCallData = null;
+    this.lastCall = null;
 
     if (!this._checkState([WAITING])) {
       throw new Error(`Invalid CodeCallerNative state: ${String(this.state)}`);
@@ -252,7 +253,7 @@ export class CodeCallerNative implements CodeCaller {
     this.outputData = [];
     this.outputRestart = '';
 
-    this.lastCallData = callData;
+    this.lastCall = { type, directory, file, fcn, bytes: Buffer.byteLength(callDataString) };
 
     this.child?.stdin?.write(callDataString);
     this.child?.stdin?.write('\n');
@@ -382,6 +383,9 @@ export class CodeCallerNative implements CodeCaller {
 
     child.on('exit', this._handleChildExit.bind(this));
     child.on('error', this._handleChildError.bind(this));
+    // Writing to stdin after the child has died fails with EPIPE. Without a
+    // listener, that error would crash the whole process.
+    child.stdin?.on('error', this._handleChildError.bind(this));
 
     this.child = child;
     this.state = WAITING;
@@ -605,10 +609,6 @@ export class CodeCallerNative implements CodeCaller {
       }
     }
 
-    // This is potentially quite a large object. Drop our reference to it to
-    // allow this memory to be quickly garbage collected.
-    this.lastCallData = null;
-
     this.debug('exit _callIsFinished()');
   }
 
@@ -659,7 +659,7 @@ export class CodeCallerNative implements CodeCaller {
       outputData: this.outputData.join(''),
       outputRestart: this.outputRestart,
       stack: errForStack.stack ?? '',
-      lastCallData: this.lastCallData,
+      lastCall: this.lastCall,
     };
   }
 
