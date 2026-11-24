@@ -12,8 +12,8 @@ import { assessmentQuestionsRouter } from './assessment-questions.js';
 import { assessmentSettingsRouter } from './assessment-settings.js';
 import { assessmentUploadsRouter } from './assessment-uploads.js';
 import { createContext, t } from './init.js';
+import { printExportsRouter } from './print-exports.js';
 import { printFormsRouter } from './print-forms.js';
-import { printableAssessmentExportRouter } from './printable-assessment-export.js';
 
 const assessmentRouter = t.router({
   accessControl: accessControlRouter,
@@ -23,7 +23,7 @@ const assessmentRouter = t.router({
   assessmentInstances: assessmentInstancesRouter,
   assessmentUploads: assessmentUploadsRouter,
   printForms: printFormsRouter,
-  printableAssessmentExport: printableAssessmentExportRouter,
+  printExports: printExportsRouter,
 });
 
 export type AssessmentRouter = typeof assessmentRouter;
@@ -37,7 +37,7 @@ const assessmentMiddleware = createExpressMiddleware({
   maxBodySize: config.fileUploadMaxBytes,
 });
 
-const printableAssessmentPdfMiddleware = createExpressMiddleware({
+const printExportUploadMiddleware = createExpressMiddleware({
   router: assessmentRouter,
   createContext,
   onError: handleTrpcError,
@@ -46,8 +46,8 @@ const printableAssessmentPdfMiddleware = createExpressMiddleware({
 
 export const assessmentTrpcRouter: RequestHandler = (req, res, next) => {
   const middleware =
-    req.path === '/printableAssessmentExport.pdf'
-      ? printableAssessmentPdfMiddleware
+    req.path === '/printExports.pdf' || req.path === '/printExports.preflight'
+      ? printExportUploadMiddleware
       : assessmentMiddleware;
   middleware(req, res, next);
 };

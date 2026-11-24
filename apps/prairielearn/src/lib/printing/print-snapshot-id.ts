@@ -16,6 +16,7 @@ const SnapshotIdSchema = z.strictObject({
   authnUserId: z.string(),
   search: z.string(),
   questionListDigest: z.string(),
+  coverDigest: z.string(),
   htmlDigest: z.string(),
   sourceDigest: z.string(),
 });
@@ -42,6 +43,7 @@ export function createPrintSnapshotId(
     authnUserId,
     search,
     questionListDigest,
+    coverDigest,
     html,
     source,
   }: {
@@ -49,6 +51,7 @@ export function createPrintSnapshotId(
     authnUserId: string;
     search: URLSearchParams;
     questionListDigest: string;
+    coverDigest: string;
     html: string;
     source: DocxSource;
   },
@@ -60,6 +63,7 @@ export function createPrintSnapshotId(
       authnUserId,
       search: normalizedSearch(search),
       questionListDigest,
+      coverDigest,
       htmlDigest: digestPrintHtml(html),
       sourceDigest: digest(JSON.stringify(source)),
     },
@@ -79,6 +83,7 @@ export function checkPrintSnapshotId(
     authnUserId,
     search,
     questionListDigest,
+    coverDigest,
     source,
   }: {
     id: string;
@@ -86,6 +91,8 @@ export function checkPrintSnapshotId(
     authnUserId: string;
     search: URLSearchParams;
     questionListDigest: string;
+    /** Word exports rebuild the cover, so they also check its signed text. */
+    coverDigest?: string;
     source?: DocxSource;
   },
   secretKey: SecretKey,
@@ -100,6 +107,7 @@ export function checkPrintSnapshotId(
     snapshot.authnUserId === authnUserId &&
     snapshot.search === normalizedSearch(search) &&
     snapshot.questionListDigest === questionListDigest &&
+    (coverDigest === undefined || snapshot.coverDigest === coverDigest) &&
     (source === undefined || snapshot.sourceDigest === digest(JSON.stringify(source)));
   return matches ? snapshot.htmlDigest : null;
 }

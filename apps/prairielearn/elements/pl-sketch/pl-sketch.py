@@ -880,6 +880,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     config: SketchClientConfig = copy.deepcopy(params["config"])
     solution = params["solution_state"]
 
+    format_error = data["format_errors"].get(name)
     submission = data["raw_submitted_answers"].get(
         name + "-sketchresponse-submission", None
     )
@@ -891,7 +892,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # the same format, so piping one into the other is very convenient.
             config["initialstate"] = submission_parsed["data"]
         except Exception:
-            data["format_errors"][name] = (
+            format_error = (
                 "Invalid or corrupted submission data received from SketchResponse."
             )
 
@@ -959,7 +960,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "score_class": score_class,
         "score_icon": score_icon,
         "alert_class": alert_class,
-        "format_error": data["format_errors"].get(name, None),
+        "format_error": format_error,
         "read_only": read_only,
     }
 

@@ -8,6 +8,7 @@ The browser lays out questions and splits them into pages. PDFs use the finished
 
 ```ts
 import { config } from './config.js';
+import { createPdfOutput } from './printing/pdf-output.js';
 import { PrintRenderer } from './printing/print-renderer.js';
 
 const renderer = new PrintRenderer({
@@ -19,12 +20,15 @@ const renderer = new PrintRenderer({
         }
       : undefined,
 });
-const pdf = await renderer.renderPdf({
-  url: previewUrl,
-  browserOrigin: config.serverCanonicalHost ?? undefined,
-  html: paginatedHtml,
-  assetScope,
-});
+const pdf = await renderer.render(
+  {
+    url: previewUrl,
+    browserOrigin: config.serverCanonicalHost ?? undefined,
+    html: paginatedHtml,
+    assetScope,
+  },
+  createPdfOutput(),
+);
 await renderer.close(); // during shutdown
 ```
 
@@ -46,9 +50,9 @@ For each render with `assetScope`, the renderer issues a five-minute, job-specif
 
 The caller owns the paginated HTML page. It must set `document.documentElement.dataset.printStatus` to `ready` after Paged.js finishes, or to `error` with a `data-print-error` message if pagination fails. The page's CSS `@page` rule is authoritative for the physical paper size.
 
-For outputs that also need metadata from the paginated page, use `renderer.render(options, output)` with a custom `PrintablePageOutput`. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
+For outputs that also need metadata from the paginated page, pass a custom `PrintablePageOutput` instead. Its `produce(page)` callback can inspect the DOM and then call `createPdfOutput().produce(page)` to reuse the standard PDF output.
 
-`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy printed pages, sharing fonts and images across repeated copies. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
+`assemblePrintPacket()` keeps the original bytes for a single complete document. Combined packets use `pdf-lib` to copy each selected form once and add blank pages after shorter forms so every form has the same number of pages. Uploaded covers must be readable, unencrypted PDFs within the file, byte, and page limits. Form fields must have saved appearances; otherwise, the cover must be flattened before uploading.
 
 ### Word output
 
@@ -66,25 +70,25 @@ Omit the `cover` option to start with questions on the first page.
 
 ### PrairieLearn endpoint parameters
 
-Forms are created explicitly for an assessment and store a permanent label, selected questions, order, point values, and floating variants. The first form is A1. Regenerating archives a form and creates the next numbered version of its letter, such as A2; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
+Form A1 is created automatically when a course editor first opens the print preparation view for an assessment with questions. Forms store a permanent label, selected questions, order, point values, floating variants, and print settings such as paper size, default cover options, question exclusions, and spacing. Regenerating an unlocked form replaces its variants in place while retaining its label, question rows, and settings. Once an export is queued, the form is locked; regeneration then archives it and creates the next numbered version of its letter, such as A2. The replacement inherits the form's print settings but resets question exclusions and individual spacing; archived versions remain available. Reading a preview reuses saved variants; it does not create student assessment instances or change a student's work.
 
-The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. Course staff with preview permission can inspect any form for the assessment, including archived forms. Creating or changing forms and starting PDF or Word exports require Course Editor permission.
+The form resource is `/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/print_form/:print_form_id`. Its `/preview` endpoint renders HTML, and `/docx` queues a Word export from a submitted page snapshot and returns `{printExportId}`. `/docx` accepts only `document` as a query parameter and uses the form's saved print settings. Course staff with preview permission can inspect any form for the assessment, including archived forms. Creating or changing forms and starting PDF or Word exports require Course Editor permission.
 
 `document=assessment` selects the student-facing document and is the default when omitted. Use `document=answer_key` to include correct answers.
 
-The PrairieLearn print endpoint accepts layout choices as query parameters. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
+The preview endpoint accepts layout choices as query parameters. PDF and Word exports always use the form's saved settings, so their snapshots must come from a preview rendered with those settings. `block_size` sets the default for every question to `auto`, `third`, `half`, or `full`; it defaults to `auto` when omitted. Repeat `question_block_size=<question-number>:<size>` to override individual questions. Repeat `identity_field=<label>` to add up to six fill-in lines to the cover alongside its built-in Name field. Identity labels are trimmed and may contain up to 40 characters.
 
-The form's saved label appears on covers and footers. New forms use the first available letter with version 1 among up to 26 active slots. Archiving a slot makes its letter available again with the next numbered version, such as C2. The active A slot cannot be archived directly. Query parameters cannot change labels.
+The form's saved label appears on covers and footers. New forms use the first available letter from `A` through `Z` and start at version `1`; up to 26 forms can be active. Archiving a slot makes its letter available to the next added form, which receives the next numbered version (for example, `C2`). Any active form can be archived while another active form remains. Query parameters cannot change labels.
 
 `include_cover=false` omits the default cover in previews, PDFs, and Word downloads, including answer keys. The default is `true`.
 
-`include_honor_code=true` or `false` controls the student cover pledge independently of the online assessment requirement. Omitting it uses the assessment’s `requireHonorCode` setting. The printed pledge uses the configured `honorCode` when present, with a blank name line for `{{user_name}}`; otherwise it uses the standard pledge.
+`include_honor_code=true` or `false` controls the student cover pledge independently of the online assessment requirement. Omitting it uses the assessment’s `requireHonorCode` setting. The printed pledge uses the configured `honorCode` when present, with a blank name line for `{{user_name}}`; otherwise it uses the default honor code.
 
 `grading_table=true` adds blank question scores and a total to student covers. The table uses only included questions and fills down the available cover space before wrapping to another column.
 
-The print preparation page can combine multiple saved print forms and uploaded PDF cover pages into a booklet PDF. Each student copy contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled. Copies cycle through the selected forms. After all student copies, the booklet appends one answer key per selected form, in form order, even when there are fewer student copies than selected forms. Uploaded covers are included in student copies, including individual form downloads. Answer key downloads exclude uploaded covers. Generated page numbers and identification codes continue to identify pages within the original form; uploaded pages retain their own appearance and have no generated identification codes.
+The print preparation page can combine all current student forms into one PDF, or all current answer keys into another. Each student form contains the default cover when enabled, the uploaded PDFs in order, and that form's questions. Uploaded PDFs still precede the questions when the default cover is disabled and are included in individual form downloads. Answer key downloads exclude uploaded covers. Shorter forms or answer keys receive blank pages at the end so each form in a combined PDF occupies the same number of pages. Generated page numbers remain within the original form; uploaded pages retain their own appearance.
 
-PDF and Word exports are queued. Each export is a row in `print_exports`, which records its status and result; its input is stored in S3, and its ID is published to PrairieMQ for dispatch. If the publication fails, the export is marked failed and the request returns an error. Each user can have at most five exports in progress per assessment. Exports are grouped by course so courses take turns, and total throughput scales with the number of workers. Workers run on hosts with `printExportWorkerActive` and a browser renderer (local Chromium or Cloudflare). PrairieMQ retries a run interrupted by a graceful shutdown on another worker and recovers crashed runs as stalls; an export that runs out of retries is marked failed. An export still pending after 30 minutes, e.g. because Redis lost its job, reads as failed. Downloads are available to the requesting user for 24 hours. The app doesn't delete export files: configure an S3 lifecycle rule on the `print-exports/` prefix that also expires noncurrent versions. PrairieMQ requires a non-clustered Redis without eviction through `nonVolatileRedisUrl`. The queue namespace defaults to a hash of the PostgreSQL host and database, so deployments sharing a Redis stay separate; set `printExportQueuePrefix` when hosts use different aliases for the same database.
+PDF and Word exports are queued. Each export is a row in `print_exports`, which records its status and result; its input is stored in S3, and its ID is published to PrairieMQ for dispatch. If the publication fails, the export is marked failed and the request returns an error. Each user can have at most five exports in progress per assessment. Exports are grouped by course so courses take turns, and total throughput scales with the number of workers. Workers run on hosts with `printExportWorkerActive` and a browser renderer (local Chromium or Cloudflare). PrairieMQ retries a run interrupted by a graceful shutdown on another worker and recovers crashed runs as stalls; an export that runs out of retries is marked failed. An export still pending after 30 minutes, e.g. because Redis lost its job, reads as failed. Downloads are available to the requesting user for up to 24 hours after the export is queued. The app doesn't delete export files: configure an S3 lifecycle rule on the `print-exports/` prefix that also expires noncurrent versions. PrairieMQ requires a non-clustered Redis without eviction through `nonVolatileRedisUrl`. The queue namespace defaults to a hash of the PostgreSQL host and database, so deployments sharing a Redis stay separate; set `printExportQueuePrefix` when hosts use different aliases for the same database.
 
 Automatic blocks are measured at the final printable width after asynchronous question content, MathJax, fonts, and images have settled, then packed in question order. Explicit blocks reserve an exact fraction of the printable content height, including the question's internal spacing, when the content fits. Taller content uses its measured height and moves to the next page or flows across pages when needed.
 

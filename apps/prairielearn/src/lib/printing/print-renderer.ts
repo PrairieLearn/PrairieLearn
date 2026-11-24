@@ -7,7 +7,6 @@ import { ValueType, getHistogram, metrics } from '@prairielearn/opentelemetry';
 
 import { config } from '../config.js';
 
-import { createPdfOutput } from './pdf-output.js';
 import {
   PRINT_ASSET_TOKEN_HEADER,
   type PrintAssetScope,
@@ -16,15 +15,6 @@ import {
 } from './print-asset-access.js';
 import type { PrintablePageOutput } from './printable-page-output.js';
 import { RenderQueue } from './render-queue.js';
-
-const QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE = 'question-block-size-overflow';
-
-export class QuestionBlockSizeOverflowError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'QuestionBlockSizeOverflowError';
-  }
-}
 
 const DEFAULT_RENDER_TIMEOUT_MS = 45_000;
 const DEFAULT_MAX_QUEUED_RENDERS = 16;
@@ -121,7 +111,6 @@ export interface RenderPageOptions {
   signal?: AbortSignal;
 }
 
-export type RenderPdfOptions = RenderPageOptions;
 type ActiveRenderPageOptions = RenderPageOptions & {
   assetAccess?: { token: string; scope: PrintAssetScope };
 };
@@ -154,10 +143,6 @@ export class PrintRenderer {
       maxQueuedRenders ??
         (cloudflare ? DEFAULT_CLOUDFLARE_MAX_QUEUED_RENDERS : DEFAULT_MAX_QUEUED_RENDERS),
     );
-  }
-
-  renderPdf(options: RenderPdfOptions): Promise<Buffer> {
-    return this.render(options, createPdfOutput());
   }
 
   render<T>(options: RenderPageOptions, output: PrintablePageOutput<T>): Promise<T> {
@@ -450,14 +435,11 @@ export class PrintRenderer {
       const printState = await page.evaluate(() => ({
         status: document.documentElement.dataset.printStatus ?? null,
         error: document.documentElement.dataset.printError ?? null,
-        errorCode: document.documentElement.dataset.printErrorCode ?? null,
       }));
       if (printState.status === 'error') {
-        const message = `The printable page failed: ${printState.error ?? 'No pagination error was provided'}`;
-        if (printState.errorCode === QUESTION_BLOCK_SIZE_OVERFLOW_ERROR_CODE) {
-          throw new QuestionBlockSizeOverflowError(message);
-        }
-        throw new Error(message);
+        throw new Error(
+          `The printable page failed: ${printState.error ?? 'No pagination error was provided'}`,
+        );
       }
       if (printState.status !== 'ready') {
         throw new Error(`The printable page reported an unexpected status: ${printState.status}`);
