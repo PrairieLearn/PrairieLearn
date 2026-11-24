@@ -10,7 +10,7 @@ def _normalize_symbolic_input(
     *,
     formula_editor: bool = False,
     allow_sets: bool = False,
-) -> psu._SourceText:
+) -> psu._MappedText:
     return psu._normalize_symbolic_input(
         text,
         ["alpha", "x", "y", "j"],
@@ -24,7 +24,7 @@ def _normalize_symbolic_input(
 
 
 def _format_absolute_values(submission: str, *, allow_sets: bool = False) -> str:
-    source = psu._SourceText.from_text(
+    source = psu._MappedText.from_raw_text(
         submission.replace(
             "∣",  # ruff:ignore[ambiguous-unicode-character-string]
             "|",
@@ -42,7 +42,7 @@ def _format_formula_editor_submission(
     allow_sets: bool = False,
 ) -> str:
     source = psu._normalize_unicode_source(
-        psu._SourceText.from_text(submission), formula_editor=True
+        psu._MappedText.from_raw_text(submission), formula_editor=True
     )
     return psu._format_formula_editor_source(
         source,
@@ -223,7 +223,7 @@ def test_format_formula_editor_submission_with_set_names(
 )
 def test_restore_plus_minus(submission: str, latex: str, expected: str | None) -> None:
     source = psu._restore_plus_minus_source(
-        psu._SourceText.from_text(submission), latex
+        psu._MappedText.from_raw_text(submission), latex
     )
     assert (None if source is None else source.text()) == expected
 
@@ -300,7 +300,16 @@ def test_symbolic_input_normalization_preserves_source_offsets(
     source = _normalize_symbolic_input(text, formula_editor=formula_editor)
     assert source.raw_text == text
     assert source.text() == expected_text
-    assert tuple(token.offset for token in source.chars) == expected_offsets
+    assert tuple(token.raw_offset for token in source.chars) == expected_offsets
+
+
+def test_mapped_text_tokenize_supplies_offsets() -> None:
+    source = psu._MappedText.from_raw_text("x\n12")
+    assert [
+        (offset, token.string)
+        for offset, token in source.tokenize()
+        if token.string in {"x", "12"}
+    ] == [(0, "x"), (2, "12")]
 
 
 def test_symbolic_input_normalization_combines_stages_in_order() -> None:
@@ -337,7 +346,7 @@ def test_formula_editor_does_not_merge_normalized_unicode_multiplication() -> No
 def test_symbolic_input_normalization_preserves_set_unions() -> None:
     text = "[0,1] | (2,3) | [4,5]"
     source = _normalize_symbolic_input(text, allow_sets=True)
-    assert source == psu._SourceText.from_text(text)
+    assert source == psu._MappedText.from_raw_text(text)
 
 
 def test_parse_symbolic_submission_serializes_result() -> None:

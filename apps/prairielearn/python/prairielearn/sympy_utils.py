@@ -11,12 +11,12 @@ import re
 import string
 import unicodedata
 from collections import deque
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache, wraps
 from io import StringIO
-from tokenize import NAME, NUMBER, OP, TokenError, generate_tokens
+from tokenize import NAME, NUMBER, OP, TokenError, TokenInfo, generate_tokens
 from types import CodeType
 from types import MappingProxyType as FrozenDict
 from typing import (
@@ -137,61 +137,72 @@ class SympyParseFailure:
 
 type SympyParseResult = SympyParseSuccess | SympyParseFailure
 
-type _Char = str
-
 
 @dataclass(frozen=True, slots=True)
-class _SourceChar:
-    """One transformed character and its position in the raw source."""
+class _MappedChar:
+    """One transformed character and its offset in the raw source."""
 
-    ch: _Char
-    offset: int
+    value: str
+    raw_offset: int
 
     def __post_init__(self) -> None:
         """Validate that this token represents one transformed character."""
-        if len(self.ch) != 1:
+        if len(self.value) != 1:
             raise ValueError(f"{type(self)} must contain exactly one character")
 
-    def rewrite(self, text: Sequence[_Char]) -> tuple["_SourceChar", ...]:
-        return tuple(_SourceChar(char, self.offset) for char in text)
+    def rewrite(self, text: Sequence[str]) -> tuple["_MappedChar", ...]:
+        return tuple(_MappedChar(char, self.raw_offset) for char in text)
 
 
 @dataclass(frozen=True, slots=True)
-class _SourceText:
-    """Transformed tokens that retain positions in the immutable raw source."""
+class _MappedText:
+    """Transformed characters mapped to offsets in the immutable raw source."""
 
     raw_text: str
-    chars: tuple[_SourceChar, ...]
+    chars: tuple[_MappedChar, ...]
 
     def __post_init__(self) -> None:
         """Validate that token provenance refers to the raw source in order."""
         if any(
-            token.offset < 0 or token.offset >= len(self.raw_text)
+            token.raw_offset < 0 or token.raw_offset >= len(self.raw_text)
             for token in self.chars
         ):
-            raise ValueError("SourceText offsets must refer to the raw source")
+            raise ValueError("MappedText offsets must refer to the raw source")
         if any(
-            left.offset > right.offset
+            left.raw_offset > right.raw_offset
             for left, right in zip(self.chars, self.chars[1:], strict=False)
         ):
-            raise ValueError("SourceText offsets must be nondecreasing")
+            raise ValueError("MappedText offsets must be nondecreasing")
 
     def text(self) -> str:
-        return "".join(token.ch for token in self.chars)
+        return "".join(token.value for token in self.chars)
+
+    def tokenize(self) -> Iterator[tuple[int, TokenInfo]]:
+        stream = StringIO(self.text())
+        row_start = 0
+
+        def readline() -> str:
+            nonlocal row_start
+            row_start = stream.tell()
+            return stream.readline()
+
+        for token in generate_tokens(readline):
+            yield row_start + token.start[1], token
 
     @classmethod
-    def from_text(cls, text: str) -> "_SourceText":
+    def from_raw_text(cls, text: str) -> "_MappedText":
+        """Make a new _MappedText with the default source offsets"""
         return cls(
             text,
-            tuple(_SourceChar(char, offset) for offset, char in enumerate(text)),
+            tuple(_MappedChar(char, offset) for offset, char in enumerate(text)),
         )
 
     def rebuild(
         self,
-        parts: Iterable[_SourceChar | tuple[_SourceChar, ...]],
-    ) -> "_SourceText":
+        parts: Iterable[_MappedChar | tuple[_MappedChar, ...]],
+    ) -> "_MappedText":
         """Build transformed source from individual characters or rewritten runs."""
-        return _SourceText(
+        return _MappedText(
             self.raw_text,
             tuple(
                 char
@@ -991,12 +1002,12 @@ def _format_comma_separated(items: Iterable[Any], last_conjunction: str = "or") 
 
 
 def _normalize_unicode_source(
-    source: _SourceText, *, formula_editor: bool = False
-) -> _SourceText:
+    source: _MappedText, *, formula_editor: bool = False
+) -> _MappedText:
     """Normalize Unicode while retaining the raw offset of every output character."""
 
-    def normalize_char(token: _SourceChar) -> tuple[_SourceChar, ...]:
-        char = token.ch
+    def normalize_char(token: _MappedChar) -> tuple[_MappedChar, ...]:
+        char = token.value
         normalized_char = char
         if char in const.unicode_operators:
             normalized_char = const.unicode_operators[char]
@@ -1006,7 +1017,7 @@ def _normalize_unicode_source(
         ):
             # unidecode would turn "±" into "+-" and "x²" into "x2" (i.e. 2*x). The
             # formula editor writes exponents and subscripts with "^" and "_".
-            raise HasInvalidSymbolError(char, token.offset)
+            raise HasInvalidSymbolError(char, token.raw_offset)
         # Single-char codepoints only; multi-char keys like "cup" are unidecoded
         # character-by-character (a no-op for ASCII).
         elif char not in const.set_operators:
@@ -1015,7 +1026,7 @@ def _normalize_unicode_source(
             # unidecode uses "[?]" for characters it doesn't know, which would
             # otherwise be misreported as set notation.
             if normalized_char == "[?]" and char != normalized_char:
-                raise HasInvalidSymbolError(char, token.offset)
+                raise HasInvalidSymbolError(char, token.raw_offset)
             if formula_editor and greek_normalized != char:
                 normalized_char = f" {' '.join(normalized_char)} "
 
@@ -1024,22 +1035,23 @@ def _normalize_unicode_source(
     return source.rebuild(normalize_char(token) for token in source.chars)
 
 
-def _validate_multiplication(source: _SourceText) -> None:
+def _validate_multiplication(source: _MappedText) -> None:
     """Reject multiplication signs that normalization would turn into exponentiation."""
     for left_index, left in enumerate(source.chars):
-        if left.ch != "*":
+        if left.value != "*":
             continue
 
         right_index = left_index + 1
         while (
-            right_index < len(source.chars) and source.chars[right_index].ch.isspace()
+            right_index < len(source.chars)
+            and source.chars[right_index].value.isspace()
         ):
             right_index += 1
-        if right_index >= len(source.chars) or source.chars[right_index].ch != "*":
+        if right_index >= len(source.chars) or source.chars[right_index].value != "*":
             continue
 
-        left_offset = left.offset
-        right_offset = source.chars[right_index].offset
+        left_offset = left.raw_offset
+        right_offset = source.chars[right_index].raw_offset
         if source.raw_text[right_offset] != "*":
             raise HasInvalidExpressionError(right_offset)
         if source.raw_text[left_offset] != "*":
@@ -1048,24 +1060,17 @@ def _validate_multiplication(source: _SourceText) -> None:
             raise HasInvalidExpressionError(left_offset)
 
 
-def _validate_adjacent_numbers(source: _SourceText) -> None:
+def _validate_adjacent_numbers(source: _MappedText) -> None:
     """Reject numeric tokens that implicit multiplication would silently combine."""
-    text = source.text()
-    line_offsets = [0]
-    for line in text.splitlines(keepends=True):
-        line_offsets.append(line_offsets[-1] + len(line))
-
     previous_number_end: tuple[int, int] | None = None
     try:
-        for token in generate_tokens(StringIO(text).readline):
+        for offset, token in source.tokenize():
             if token.type != NUMBER:
                 previous_number_end = None
                 continue
 
             if token.start == previous_number_end:
-                row, column = token.start
-                offset = line_offsets[row - 1] + column
-                raise HasInvalidExpressionError(source.chars[offset].offset)
+                raise HasInvalidExpressionError(source.chars[offset].raw_offset)
 
             previous_number_end = token.end
     except TokenError:
@@ -1074,67 +1079,67 @@ def _validate_adjacent_numbers(source: _SourceText) -> None:
 
 
 def _validate_and_rewrite_source(
-    source: _SourceText,
+    source: _MappedText,
     *,
     allow_complex: bool,
     allow_sets: bool,
-) -> _SourceText:
+) -> _MappedText:
     _validate_multiplication(source)
 
     for symbol in const.plus_minus_operators:
         invalid_symbol = next(
-            (char for char in source.chars if char.ch == symbol), None
+            (char for char in source.chars if char.value == symbol), None
         )
         if invalid_symbol is not None:
-            raise HasInvalidSymbolError(symbol, invalid_symbol.offset)
+            raise HasInvalidSymbolError(symbol, invalid_symbol.raw_offset)
 
-    escape = next((char for char in source.chars if char.ch == "\\"), None)
+    escape = next((char for char in source.chars if char.value == "\\"), None)
     if escape is not None:
-        raise HasEscapeError(escape.offset)
-    comment = next((char for char in source.chars if char.ch == "#"), None)
+        raise HasEscapeError(escape.raw_offset)
+    comment = next((char for char in source.chars if char.value == "#"), None)
     if comment is not None:
-        raise HasCommentError(comment.offset)
+        raise HasCommentError(comment.raw_offset)
     for left, middle, right in zip(
         source.chars,
         source.chars[1:],
         source.chars[2:],
         strict=False,
     ):
-        if left.ch == middle.ch == right.ch == "*":
-            raise HasInvalidExpressionError(left.offset)
+        if left.value == middle.value == right.value == "*":
+            raise HasInvalidExpressionError(left.raw_offset)
     if not allow_sets and any(
-        char.ch in r"[]{}∪∩&|"  # ruff:ignore[ambiguous-unicode-character-string]
+        char.value in r"[]{}∪∩&|"  # ruff:ignore[ambiguous-unicode-character-string]
         for char in source.chars
     ):
         raise HasSetNotationError
 
     def rewrite_char(
-        index: int, char: _SourceChar
-    ) -> _SourceChar | tuple[_SourceChar, ...]:
-        previous = source.chars[index - 1].ch if index > 0 else None
+        index: int, char: _MappedChar
+    ) -> _MappedChar | tuple[_MappedChar, ...]:
+        previous = source.chars[index - 1].value if index > 0 else None
         following = (
-            source.chars[index + 1].ch if index + 1 < len(source.chars) else None
+            source.chars[index + 1].value if index + 1 < len(source.chars) else None
         )
-        if char.ch == "^":
+        if char.value == "^":
             return char.rewrite("**")
         if (
             previous is not None
             and previous.isdecimal()
-            and char.ch in "eE"
+            and char.value in "eE"
             and following is not None
             and following in "+-"
         ):
-            return char.rewrite(f"*{char.ch}")
+            return char.rewrite(f"*{char.value}")
         if (
             not allow_complex
             and previous is not None
             and previous.isdecimal()
-            and char.ch in "jJ"
+            and char.value in "jJ"
             and (
                 following is None or not following.isascii() or not following.isalnum()
             )
         ):
-            return char.rewrite(f"*{char.ch}")
+            return char.rewrite(f"*{char.value}")
         return char
 
     source = source.rebuild(
@@ -1161,7 +1166,7 @@ def _evaluate_with_source(
 
     """
     source = _validate_and_rewrite_source(
-        _normalize_unicode_source(_SourceText.from_text(expr)),
+        _normalize_unicode_source(_MappedText.from_raw_text(expr)),
         allow_complex=allow_complex,
         allow_sets=allow_sets,
     )
@@ -1177,7 +1182,7 @@ def _evaluate_with_source(
 
 
 def _evaluate_normalized_source(
-    source: _SourceText,
+    source: _MappedText,
     locals_for_eval: LocalsForEval,
     *,
     allow_complex: bool,
@@ -1398,7 +1403,7 @@ def convert_string_to_sympy(
 
 
 def _convert_source_to_sympy_with_source(
-    source: _SourceText | None,
+    source: _MappedText | None,
     expr: str,
     variables: Iterable[str] | None = None,
     *,
@@ -1566,7 +1571,7 @@ _TYPE_ERROR_OPERATOR_PATTERN = re.compile(
 )
 
 
-def _find_type_error_offset(source: _SourceText, exc: TypeError) -> int:
+def _find_type_error_offset(source: _MappedText, exc: TypeError) -> int:
     """Return an approximate raw offset for a SymPy TypeError."""
     match = _TYPE_ERROR_OPERATOR_PATTERN.search(str(exc))
     if match is None:
@@ -1587,7 +1592,7 @@ def _find_type_error_offset(source: _SourceText, exc: TypeError) -> int:
     for candidate in candidate_operators:
         ind = find_symbol_offset(text, candidate)
         if ind != -1:
-            return source.chars[ind].offset
+            return source.chars[ind].raw_offset
 
     return -1
 
@@ -1875,14 +1880,14 @@ class SymbolicSubmissionParseSuccess:
     json: SympyJson | Literal[""]
 
 
-type _SymbolicInputNormalizationResult = _SourceText | SympyParseFailure
+type _SymbolicInputNormalizationResult = _MappedText | SympyParseFailure
 type SymbolicSubmissionParseResult = SymbolicSubmissionParseSuccess | SympyParseFailure
 
 
 _PLUS_MINUS_LATEX_PATTERN = re.compile(r"\\pm(?![a-zA-Z])|\+[{}]*-")
 
 
-def _restore_plus_minus_source(source: _SourceText, latex: str) -> _SourceText | None:
+def _restore_plus_minus_source(source: _MappedText, latex: str) -> _MappedText | None:
     r"""Restore formula-editor ``+-`` sequences that came from ``\pm``."""
     from_plus_minus = [
         match.group(0).startswith("\\")
@@ -1894,7 +1899,7 @@ def _restore_plus_minus_source(source: _SourceText, latex: str) -> _SourceText |
     if not any(from_plus_minus):
         return source
 
-    tokens: list[_SourceChar] = []
+    tokens: list[_MappedChar] = []
     last_end = 0
     for match, is_plus_minus in zip(matches, from_plus_minus, strict=True):
         tokens.extend(source.chars[last_end : match.start()])
@@ -1907,8 +1912,8 @@ def _restore_plus_minus_source(source: _SourceText, latex: str) -> _SourceText |
     return source.rebuild(tokens)
 
 
-def _delete_literal(source: _SourceText, literal: str) -> _SourceText:
-    tokens: list[_SourceChar] = []
+def _delete_literal(source: _MappedText, literal: str) -> _MappedText:
+    tokens: list[_MappedChar] = []
     last_end = 0
     for match in re.finditer(re.escape(literal), source.text()):
         tokens.extend(source.chars[last_end : match.start()])
@@ -1918,10 +1923,10 @@ def _delete_literal(source: _SourceText, literal: str) -> _SourceText:
 
 
 def _replace_editor_operators(
-    source: _SourceText,
-) -> _SourceText:
+    source: _MappedText,
+) -> _MappedText:
     text = source.text()
-    tokens: list[_SourceChar] = []
+    tokens: list[_MappedChar] = []
     index = 0
     while index < len(text):
         if text.startswith("-:", index):
@@ -1932,8 +1937,8 @@ def _replace_editor_operators(
             left_star = source.chars[index + 1]
             right_star = source.chars[index + 2]
             if (
-                source.raw_text[left_star.offset] == "*"
-                and source.raw_text[right_star.offset] == "*"
+                source.raw_text[left_star.raw_offset] == "*"
+                and source.raw_text[right_star.raw_offset] == "*"
             ):
                 tokens.extend((
                     source.chars[index],
@@ -1973,11 +1978,11 @@ def _build_formula_editor_tokens(
     return [token for token in tokens if len(token) > 1 and token != "**"]
 
 
-def _merge_spaced_source(source: _SourceText, tokens: Sequence[str]) -> _SourceText:
+def _merge_spaced_source(source: _MappedText, tokens: Sequence[str]) -> _MappedText:
     spaced = [(token, " ".join(token)) for token in tokens]
     spaced.sort(key=lambda item: -len(item[1]))
 
-    merged_tokens: list[_SourceChar] = []
+    merged_tokens: list[_MappedChar] = []
     text = source.text()
     index = 0
     while index < len(text):
@@ -1996,8 +2001,8 @@ def _merge_spaced_source(source: _SourceText, tokens: Sequence[str]) -> _SourceT
 
 
 def _add_multiplication_spaces_source(
-    source: _SourceText, protected_tokens: Sequence[str]
-) -> _SourceText:
+    source: _MappedText, protected_tokens: Sequence[str]
+) -> _MappedText:
     text = source.text()
     protected_positions: set[int] = set()
     for token in protected_tokens:
@@ -2006,14 +2011,14 @@ def _add_multiplication_spaces_source(
         for match in re.finditer(re.escape(token), text):
             protected_positions.update(range(match.start(), match.end()))
 
-    tokens: list[_SourceChar] = []
+    tokens: list[_MappedChar] = []
     for index, token in enumerate(source.chars):
         tokens.append(token)
         if index + 1 >= len(source.chars):
             continue
         if (
-            token.ch.isalpha()
-            and source.chars[index + 1].ch.isdigit()
+            token.value.isalpha()
+            and source.chars[index + 1].value.isdigit()
             and index + 1 not in protected_positions
         ):
             tokens.extend(source.chars[index + 1].rewrite(" "))
@@ -2076,15 +2081,15 @@ def _bare_function_token_pattern(function_names: frozenset[str]) -> re.Pattern[s
 
 
 def _wrap_bare_function_arguments_source(
-    source: _SourceText, function_names: frozenset[str]
-) -> _SourceText:
+    source: _MappedText, function_names: frozenset[str]
+) -> _MappedText:
     if not function_names:
         return source
     text = source.text()
     pattern = _bare_function_token_pattern(function_names)
     # Each "(" sorts before a ")" at the same index, which only happens for an
     # empty argument.
-    insertions: list[tuple[int, _SourceChar]] = []
+    insertions: list[tuple[int, _MappedChar]] = []
     # Only the first bare function at a given nesting depth can claim the next
     # implicit multiplication boundary; any later one is inside its argument.
     pending_arguments: dict[int, int] = {}
@@ -2137,10 +2142,10 @@ def _wrap_bare_function_arguments_source(
             case _:
                 pass
 
-    tokens: list[_SourceChar] = []
+    tokens: list[_MappedChar] = []
     position = 0
     for index, parenthesis in sorted(
-        insertions, key=lambda insertion: (insertion[0], insertion[1].ch)
+        insertions, key=lambda insertion: (insertion[0], insertion[1].value)
     ):
         tokens.extend(source.chars[position:index])
         tokens.append(parenthesis)
@@ -2150,13 +2155,13 @@ def _wrap_bare_function_arguments_source(
 
 
 def _format_formula_editor_source(
-    source: _SourceText,
+    source: _MappedText,
     variables: Sequence[str],
     custom_functions: Sequence[str],
     *,
     allow_trig_functions: bool,
     allow_sets: bool,
-) -> _SourceText:
+) -> _MappedText:
     source = _delete_literal(_delete_literal(source, "{:"), ":}")
     source = _replace_editor_operators(source)
     known_tokens = _build_formula_editor_tokens(
@@ -2186,8 +2191,8 @@ _ABSOLUTE_VALUE_PATTERN = re.compile(
 
 
 def _convert_absolute_values_source(
-    source: _SourceText, *, allow_sets: bool
-) -> _SourceText:
+    source: _MappedText, *, allow_sets: bool
+) -> _MappedText:
     original_text = source.text()
     text = original_text
     tokens = list(source.chars)
@@ -2231,10 +2236,10 @@ def _normalize_symbolic_input(
     allow_trig_functions: bool,
     allow_complex: bool,
     allow_sets: bool,
-) -> _SourceText:
+) -> _MappedText:
     """Normalize a symbolic-input submission in its required transformation order."""
     source = _normalize_unicode_source(
-        _SourceText.from_text(text), formula_editor=formula_editor
+        _MappedText.from_raw_text(text), formula_editor=formula_editor
     )
     if formula_editor:
         if latex is not None:
@@ -2323,7 +2328,7 @@ def try_parse_symbolic_submission(
     if isinstance(normalized, SympyParseFailure):
         return normalized
 
-    if all(char.ch.isspace() for char in normalized.chars):
+    if all(char.value.isspace() for char in normalized.chars):
         if not allow_blank:
             return SympyParseFailure("No submitted answer.")
         if not blank_value.strip():
