@@ -35,6 +35,7 @@ import {
 } from '../lib/printing/print-preparation.js';
 import { DEFAULT_PRINT_SETTINGS } from '../lib/printing/print-settings.js';
 import { createPrintSnapshotId } from '../lib/printing/print-snapshot-id.js';
+import { RenderQueueFullError } from '../lib/printing/render-queue.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -1326,6 +1327,20 @@ describe('print preparation', { timeout: 60_000 }, () => {
       ).toMatchObject({ status: 'pending' });
 
       startPrintExportWorker();
+      await completePrintExport(assessment.id, printExportId);
+      expect(render).toHaveBeenCalledTimes(2);
+    } finally {
+      render.mockRestore();
+    }
+  });
+
+  test('retries an export when the renderer is busy', async () => {
+    const render = vi
+      .spyOn(printExportRender, 'renderPrintExport')
+      .mockRejectedValueOnce(new RenderQueueFullError())
+      .mockResolvedValue(Buffer.from('%PDF-1.4 retried export'));
+    try {
+      const { assessment, printExportId } = await queueTestPdf('retried-export.pdf');
       await completePrintExport(assessment.id, printExportId);
       expect(render).toHaveBeenCalledTimes(2);
     } finally {
