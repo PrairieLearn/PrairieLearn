@@ -1,6 +1,9 @@
 import z from 'zod';
 
-import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+import type {
+  SubmissionForRender,
+  SubmissionWithDetailsForRender,
+} from '../components/SubmissionPanel.js';
 
 import { IssueSchema, type Variant } from './db-types.js';
 import type { RubricData } from './manualGrading.types.js';
@@ -46,7 +49,7 @@ export interface ResLocalsQuestionRenderAdded extends QuestionUrls {
   question_is_shared: boolean;
   variant: Variant;
   showCorrectAnswer: boolean;
-  submission: SubmissionForRender | null;
+  submission: SubmissionWithDetailsForRender | null;
   submissions: SubmissionForRender[];
   extraHeadersHtml: string;
   questionHtml: string;

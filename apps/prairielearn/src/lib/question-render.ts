@@ -19,7 +19,9 @@ import {
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
   type SubmissionForRender,
+  SubmissionGradingJobSchema,
   SubmissionPanel,
+  type SubmissionWithDetailsForRender,
 } from '../components/SubmissionPanel.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
@@ -41,7 +43,6 @@ import {
   CourseSchema,
   type EnumQuestionAccessMode,
   EnumQuestionAccessModeSchema,
-  GradingJobSchema,
   type GroupConfig,
   GroupConfigSchema,
   type InstanceQuestion,
@@ -73,8 +74,9 @@ import { ensureVariant, getQuestionCourse } from './question-variant.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SubmissionInfoSchema = z.object({
-  grading_job: GradingJobSchema.nullable(),
+  grading_job: SubmissionGradingJobSchema.nullable(),
   submission: SubmissionSchema,
+  feedback_manual: z.string().nullable(),
   question_number: z.string().nullable(),
   question_access_mode: EnumQuestionAccessModeSchema.nullable(),
   next_instance_question: z.object({
@@ -93,20 +95,6 @@ const SubmissionInfoSchema = z.object({
   submission_count: z.coerce.number(),
   group_config: GroupConfigSchema.nullable(),
 });
-
-/**
- * To improve performance, we'll only load full details for at most three
- * submissions on page load. Older submissions only show basic information
- * until they're expanded.
- */
-const MAX_RECENT_SUBMISSIONS = 3;
-
-/**
- * Only the latest submission is expanded on page load, so it's the only one
- * whose panel we render eagerly. Rendering a panel occupies a Python worker,
- * and the others are rendered on the fly if the user expands them.
- */
-const MAX_EAGERLY_RENDERED_SUBMISSIONS = 1;
 
 export class FatalQuestionRenderError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -610,12 +598,11 @@ export async function getAndRenderVariant(
   }
   Object.assign(locals, newLocals);
 
-  // We only fully render a small number of submissions on initial page
-  // load; the rest only require basic information like timestamps. As
-  // such, we'll load submissions in two passes: we'll load basic
-  // information for all submissions to this variant, and then we'll
-  // load the full submission for only the submissions that we'll
-  // actually render.
+  // Submissions can be very large, and we only render the latest one on page
+  // load. The others only need basic information like timestamps, and are
+  // rendered on the fly if the user expands them. So we load submissions in
+  // two passes: basic information for all submissions to this variant, and
+  // then the full submission for only the ones that we need.
   const basicSubmissions = includeSubmissions
     ? await sqldb.queryRows(
         sql.select_basic_submissions,
@@ -625,44 +612,35 @@ export async function getAndRenderVariant(
     : [];
   const submissionCount = basicSubmissions.length;
 
-  const submissions = await run(async () => {
-    if (submissionCount === 0) {
-      return [];
-    }
+  // Non-Freeform questions serialize every submission into the HTML (see
+  // `questionJsonBase64` below), so they need details for all of them. v2
+  // questions don't have any easy way to support async rendering of
+  // submissions.
+  const needsAllSubmissions = locals.question.type !== 'Freeform';
+  const submissionDetails = await sqldb.queryRows(
+    sql.select_detailed_submissions,
+    {
+      submission_ids: (needsAllSubmissions ? basicSubmissions : basicSubmissions.slice(0, 1)).map(
+        (s) => s.id,
+      ),
+    },
+    SubmissionDetailedSchema,
+  );
+  const detailsById = new Map(submissionDetails.map((details) => [details.id, details]));
 
-    // Load detailed information for the submissions that we'll render.
-    // Note that for non-Freeform questions, we unfortunately have to
-    // eagerly load detailed data for all submissions, as that ends up
-    // being serialized in the HTML. v2 questions don't have any easy
-    // way to support async rendering of submissions.
-    const needsAllSubmissions = locals.question.type !== 'Freeform';
-    const submissionsToRender = needsAllSubmissions
-      ? basicSubmissions
-      : basicSubmissions.slice(0, MAX_RECENT_SUBMISSIONS);
-    // Submitted answers are only needed for the submissions whose panels we
-    // render now.
-    const submissionsWithAnswers = needsAllSubmissions
-      ? basicSubmissions
-      : basicSubmissions.slice(0, MAX_EAGERLY_RENDERED_SUBMISSIONS);
-    const submissionDetails = await sqldb.queryRows(
-      sql.select_detailed_submissions,
-      {
-        submission_ids: submissionsToRender.map((s) => s.id),
-        answer_submission_ids: submissionsWithAnswers.map((s) => s.id),
-      },
-      SubmissionDetailedSchema,
-    );
-
-    return basicSubmissions.map((s, idx) => ({
-      submission_number: submissionCount - idx,
-      ...s,
-      // Both queries order results consistently, so we can just use
-      // the array index to match up the basic and detailed results.
-      ...(idx < submissionDetails.length ? submissionDetails[idx] : {}),
-    })) satisfies SubmissionForRender[];
+  // The panels for all submissions share these objects, so that data added to
+  // them below (such as rubric gradings) is shared too.
+  const detailedSubmissions: SubmissionWithDetailsForRender[] = [];
+  const submissions = basicSubmissions.map((s, idx): SubmissionForRender => {
+    const basic = { ...s, submission_number: submissionCount - idx };
+    const details = detailsById.get(s.id);
+    if (!details) return basic;
+    const detailed = { ...basic, ...details };
+    detailedSubmissions.push(detailed);
+    return detailed;
   });
 
-  const submission = submissions.at(0) ?? null;
+  const submission = detailedSubmissions.at(0) ?? null;
 
   const showCorrectAnswer = run(() => {
     if (showCorrectAnswerOverride !== undefined) {
@@ -696,8 +674,8 @@ export async function getAndRenderVariant(
     renderSelection,
     variant,
     question,
-    submission: isAiGradingPreview ? null : (submission as Submission),
-    submissions: submissions.slice(0, MAX_EAGERLY_RENDERED_SUBMISSIONS) as Submission[],
+    submission: isAiGradingPreview ? null : submission,
+    submissions: submission ? [submission] : [],
     question_course,
     locals: {
       ...urls,
@@ -754,7 +732,7 @@ export async function getAndRenderVariant(
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
       trueAnswer: showCorrectAnswer ? variant.true_answer : null,
-      submissions: submissions.length > 0 ? submissions : null,
+      submissions: detailedSubmissions.length > 0 ? detailedSubmissions : null,
     });
 
     const encodedJson = encodeURIComponent(questionJson);
@@ -839,6 +817,7 @@ export async function renderPanelsForSubmission({
     course_instance,
     submission_index,
     submission_count,
+    feedback_manual,
     grading_job,
     user_uid,
     question_number,
@@ -923,6 +902,7 @@ export async function renderPanelsForSubmission({
         course_instance,
         submission: {
           ...submission,
+          feedback_manual,
           grading_job,
           user_uid,
           submission_number: submission_index,

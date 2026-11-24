@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
+import { markdownToHtml } from '@prairielearn/markdown';
 
 import {
   type AssessmentQuestion,
@@ -37,7 +38,7 @@ const detailedSubmissionColumns = {
   true_answer: true,
 } as const;
 
-const SubmissionGradingJobSchema = GradingJobSchema.pick({
+export const SubmissionGradingJobSchema = GradingJobSchema.pick({
   id: true,
   grading_method: true,
   grading_requested_at: true,
@@ -51,18 +52,32 @@ const SubmissionGradingJobSchema = GradingJobSchema.pick({
 type SubmissionGradingJob = z.infer<typeof SubmissionGradingJobSchema>;
 
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
+  /** `feedback.manual`, which is shown even when `feedback` isn't loaded. */
+  feedback_manual: z.string().nullable(),
   grading_job: SubmissionGradingJobSchema.nullable(),
   user_uid: z.string().nullable(),
 });
 
-export const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
+export const SubmissionDetailedSchema = SubmissionSchema.pick({
+  id: true,
+  ...detailedSubmissionColumns,
+});
 
-export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
-  Partial<z.infer<typeof SubmissionDetailedSchema>> & {
-    feedback_manual_html?: string;
-    submission_number: number;
-    rubric_grading?: RubricGradingData | null;
-  };
+/**
+ * A submission with what's needed to show its panel. Its large JSON columns
+ * aren't loaded; see {@link SubmissionWithDetailsForRender}.
+ */
+export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> & {
+  submission_number: number;
+  rubric_grading?: RubricGradingData | null;
+};
+
+/**
+ * A submission whose JSON columns are also loaded, so that its contents can be
+ * rendered.
+ */
+export type SubmissionWithDetailsForRender = SubmissionForRender &
+  z.infer<typeof SubmissionDetailedSchema>;
 
 export function SubmissionPanel({
   questionContext,
@@ -123,7 +138,7 @@ export function SubmissionPanel({
       id="submission-${submission.id}"
     >
       ${
-        submission.feedback?.manual || submission.rubric_grading
+        submission.feedback_manual || submission.rubric_grading
           ? html`
               <div class="card mb-4 grading-block border-info">
                 <div
@@ -205,10 +220,10 @@ export function SubmissionPanel({
                         : ''
                     }
                     ${
-                      submission.feedback?.manual
+                      submission.feedback_manual
                         ? html`
                             <div data-testid="feedback-body">
-                              ${unsafeHtml(submission.feedback_manual_html ?? '')}
+                              ${unsafeHtml(markdownToHtml(submission.feedback_manual))}
                             </div>
                           `
                         : ''
