@@ -19,6 +19,7 @@ import { makeAwsClientConfig } from '../aws.js';
 import { config } from '../config.js';
 
 import {
+  type CallSummary,
   type CallType,
   type CodeCaller,
   type CodeCallerResult,
@@ -141,7 +142,7 @@ export class CodeCallerContainer implements CodeCaller {
   outputStdout: string[];
   outputStderr: string[];
   outputBoth: string;
-  lastCallData: any;
+  lastCall: CallSummary | null;
   coursePath: string | null;
   forbiddenModules: string[];
   hostDirectory: tmp.DirectoryResult | undefined;
@@ -177,7 +178,7 @@ export class CodeCallerContainer implements CodeCaller {
     this.outputBoth = '';
 
     // for error logging
-    this.lastCallData = null;
+    this.lastCall = null;
 
     this.coursePath = null;
     this.forbiddenModules = [];
@@ -259,7 +260,7 @@ export class CodeCallerContainer implements CodeCaller {
     this.callCount += 1;
 
     // Reset this so that we don't include old data if the checks below fail.
-    this.lastCallData = null;
+    this.lastCall = null;
 
     if (!this._checkState([WAITING])) {
       throw new Error('invalid CodeCallerContainer state');
@@ -297,7 +298,7 @@ export class CodeCallerContainer implements CodeCaller {
         : this.options.questionTimeoutMilliseconds;
     this.timeoutID = setTimeout(this._handleTimeout.bind(this), containerTimeout + 5000);
 
-    this.lastCallData = callData;
+    this.lastCall = { type, directory, file, fcn, bytes: Buffer.byteLength(callDataString) };
 
     this.stdinStream?.write(callDataString);
     this.stdinStream?.write('\n');
@@ -444,6 +445,11 @@ export class CodeCallerContainer implements CodeCaller {
     this.stdoutStream = new MemoryStream();
     this.stderrStream = new MemoryStream();
     this.stdinStream.pipe(stream);
+    // `pipe()` doesn't forward errors, and nothing else listens for them on
+    // this socket. Without this, writing to a container that has just been
+    // killed (e.g. a large payload still in flight when a call times out)
+    // fails with EPIPE and crashes the whole process.
+    stream.on('error', (err) => this._handleStreamError(err));
     this.container.modem.demuxStream(stream, this.stdoutStream, this.stderrStream);
     this.stdoutStream.setEncoding('utf8');
     this.stderrStream.setEncoding('utf8');
@@ -475,6 +481,23 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('enter _handleStderr()');
     this.outputStderr.push(data);
     this.debug('exit _handleStderr()');
+  }
+
+  _handleStreamError(err: Error) {
+    this.debug('enter _handleStreamError()');
+    if (this.state === WAITING || this.state === IN_CALL) {
+      this._logError(`CodeCallerContainer stream error in state ${String(this.state)}: ${err}`);
+      const wasInCall = this.state === IN_CALL;
+      this._clearTimeout();
+      this.state = EXITING;
+      void this._cleanup();
+      if (wasInCall) {
+        this._callCallback(new Error(`CodeCallerContainer stream error: ${err}`));
+      }
+    }
+    // In any other state, the container is already being torn down, so the
+    // error is expected.
+    this.debug('exit _handleStreamError()');
   }
 
   _handleTimeout() {
@@ -573,10 +596,6 @@ export class CodeCallerContainer implements CodeCaller {
       }
     }
 
-    // This is potentially quite a large object. Drop our reference to it to
-    // allow this memory to be quickly garbage collected.
-    this.lastCallData = null;
-
     this.debug('exit _callIsFinished()');
   }
 
@@ -627,7 +646,7 @@ export class CodeCallerContainer implements CodeCaller {
       timeoutIDIsNull: this.timeoutID == null,
       outputBoth: this.outputBoth,
       stack: errForStack.stack,
-      lastCallData: this.lastCallData,
+      lastCall: this.lastCall,
     };
   }
 
