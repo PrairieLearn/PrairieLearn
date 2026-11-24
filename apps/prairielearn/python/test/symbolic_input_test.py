@@ -300,7 +300,7 @@ def test_symbolic_input_normalization_preserves_source_offsets(
     source = _normalize_symbolic_input(text, formula_editor=formula_editor)
     assert source.raw_text == text
     assert source.text() == expected_text
-    assert tuple(token.raw_offset for token in source.tokens) == expected_offsets
+    assert tuple(token.offset for token in source.chars) == expected_offsets
 
 
 def test_symbolic_input_normalization_combines_stages_in_order() -> None:
@@ -308,13 +308,12 @@ def test_symbolic_input_normalization_combines_stages_in_order() -> None:
     source = _normalize_symbolic_input(raw, formula_editor=True)
     assert source.text() == "abs(ln (2) * x)**2 + 2*e+3 + 3*j"
 
-    result = psu._try_parse_normalized_source_as_sympy(
-        source,
+    result = psu.try_parse_symbolic_submission(
         raw,
         ["x", "j"],
-        allow_hidden=True,
+        formula_editor=True,
     )
-    assert isinstance(result, psu.SympyParseSuccess)
+    assert isinstance(result, psu.SymbolicSubmissionParseSuccess)
     x, j = sympy.symbols("x j")
     assert result.expr == sympy.Abs(sympy.log(2) * x) ** 2 + 2 * sympy.E + 3 + 3 * j
 

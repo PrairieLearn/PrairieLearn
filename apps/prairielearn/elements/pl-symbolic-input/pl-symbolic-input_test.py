@@ -654,9 +654,9 @@ def test_parse_does_not_evaluate_unsimplified_json_during_validation(
             raise TypeError("factorial argument was evaluated")
         return sympy.factorial(value)
 
-    functions = dict(psu._Constants.functions)
+    functions = dict(psu.const.functions)
     functions["factorial"] = factorial_without_integer_evaluation
-    monkeypatch.setattr(psu._Constants, "functions", psu.FrozenDict(functions))
+    monkeypatch.setattr(psu.const, "functions", psu.FrozenDict(functions))
 
     element_html = build_element_html(
         'allow-complex="true"',
