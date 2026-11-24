@@ -10,6 +10,7 @@ import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
+import { insertSharedQuestionUsagesForSubmission } from '../models/shared-question-usages.js';
 import { deleteUnsavedSubmissions } from '../models/unsaved-submission.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -76,6 +77,7 @@ async function insertSubmission({
   auth_user_id,
   client_fingerprint_id,
   clearUnsavedSubmissions,
+  question,
 }: {
   submitted_answer: Record<string, any> | null;
   raw_submitted_answer: Record<string, any> | null;
@@ -92,6 +94,7 @@ async function insertSubmission({
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
   clearUnsavedSubmissions: boolean;
+  question: Question;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
@@ -158,6 +161,12 @@ async function insertSubmission({
     );
 
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
+
+    await insertSharedQuestionUsagesForSubmission({
+      question,
+      course_id: variant.course_id,
+      assessment_instance_id: variant.assessment_instance_id,
+    });
 
     if (variant.instance_question_id != null) {
       if (clearUnsavedSubmissions) {
@@ -293,6 +302,7 @@ export async function saveSubmission(
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
     clearUnsavedSubmissions,
+    question,
   });
 }
 

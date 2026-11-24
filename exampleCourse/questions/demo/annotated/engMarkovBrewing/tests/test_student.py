@@ -1,9 +1,9 @@
+import numbers
+
 import numpy as np
 import pytest
-from pytest_prairielearn_grader.assertions import assert_true
+from pytest_prairielearn_grader.assertions import assert_approx_equal, assert_true
 from pytest_prairielearn_grader.fixture import StudentFixture
-
-pytestmark = pytest.mark.output(level="friendly")
 
 sandbox_timeout = 15
 
@@ -54,13 +54,10 @@ def test_hours(
     expected, _ = expected_solution
     value = sandbox.query("hours")
     assert_true(
-        isinstance(value, (complex, float, int, np.number)),
+        isinstance(value, numbers.Number),
         msg="'hours' is not a number",
     )
-    assert_true(
-        abs(expected - value) < abs(expected) * 1e-5 or abs(expected - value) < 1e-8,
-        msg="'hours' is inaccurate",
-    )
+    assert_approx_equal(value, expected, msg="'hours' is inaccurate")
 
 
 @pytest.mark.grading_data(name="composition", points=2)
