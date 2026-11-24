@@ -84,3 +84,31 @@ export function createPublicFetch({
 }
 
 export const publicFetch = createPublicFetch();
+
+/** Thrown when a response body exceeds the caller's byte limit. */
+export class ResponseTooLargeError extends Error {
+  constructor() {
+    super('The response body exceeds the byte limit.');
+    this.name = 'ResponseTooLargeError';
+  }
+}
+
+/** Reads a response body with a byte limit, canceling the stream if it is exceeded. */
+export async function readResponseWithLimit(response: Response, maxBytes: number): Promise<Buffer> {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+    throw new RangeError('maxBytes must be a nonnegative safe integer.');
+  }
+  if (Number(response.headers.get('content-length')) > maxBytes) {
+    await response.body?.cancel();
+    throw new ResponseTooLargeError();
+  }
+  const chunks: Buffer[] = [];
+  let bytes = 0;
+  for await (const chunk of response.body ?? []) {
+    const buffer = Buffer.from(chunk);
+    bytes += buffer.byteLength;
+    if (bytes > maxBytes) throw new ResponseTooLargeError();
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks, bytes);
+}

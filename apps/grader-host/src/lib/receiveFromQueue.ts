@@ -56,8 +56,7 @@ async function startHeartbeat(sqs: SQSClient, queueUrl: string, receiptHandle: s
 
   // We want this process to run in the background, so we don't await it.
   // `extendVisibilityTimeout` will handle errors.
-  // eslint-disable-next-line no-floating-promise/no-floating-promise
-  (async () => {
+  void (async () => {
     while (!abortController.signal.aborted) {
       await sleep(config.visibilityTimeoutHeartbeatIntervalSec * 1000, null, { ref: false });
 

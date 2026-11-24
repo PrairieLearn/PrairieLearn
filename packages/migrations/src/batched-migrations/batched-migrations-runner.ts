@@ -167,7 +167,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
       throw new Error('BatchedMigrationsRunner is already running');
     }
 
-    this.loop(options);
+    void this.loop(options);
   }
 
   async loop({ workDurationMs, sleepDurationMs }: BatchedMigrationStartOptions) {

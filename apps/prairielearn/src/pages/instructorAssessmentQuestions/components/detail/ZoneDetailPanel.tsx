@@ -168,7 +168,7 @@ export function ZoneDetailPanel({
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch, trigger });
 
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
     onFormValidChange(isValid);
   }, [isValid, onFormValidChange]);
 

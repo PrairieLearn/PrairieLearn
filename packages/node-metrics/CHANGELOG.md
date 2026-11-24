@@ -1,5 +1,11 @@
 # @prairielearn/node-metrics
 
+## 3.0.12
+
+### Patch Changes
+
+- 0998223: Minor cleanups for oxlint; no behavior changes.
+
 ## 3.0.11
 
 ### Patch Changes

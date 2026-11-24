@@ -5,13 +5,13 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { UserSchema } from '../lib/db-types.js';
+import { type Course, type Question, UserSchema } from '../lib/db-types.js';
 import { getModeForRequest } from '../lib/exam-mode.js';
 import { features } from '../lib/features/index.js';
 import { isEnterprise } from '../lib/license.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById } from '../models/question.js';
-import { selectAndAuthzVariant } from '../models/variant.js';
+import { selectAndAuthzVariant, selectUserOwnsVariant } from '../models/variant.js';
 
 import { authzCourseOrInstance } from './authzCourseOrInstance.js';
 import { authzHasCoursePreviewOrInstanceView } from './authzHasCoursePreviewOrInstanceView.js';
@@ -28,25 +28,85 @@ const SelectAuthDataFromWorkspaceSchema = z.object({
   course_instance_id: IdSchema.nullable(),
   course_id: IdSchema,
 });
+type AuthDataFromWorkspace = z.infer<typeof SelectAuthDataFromWorkspaceSchema>;
 
-export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: false }) {
+async function selectAuthDataFromWorkspace(workspace_id: string): Promise<AuthDataFromWorkspace> {
+  const result = await sqldb.queryOptionalRow(
+    sql.select_auth_data_from_workspace,
+    { workspace_id },
+    SelectAuthDataFromWorkspaceSchema,
+  );
+
+  if (!result) {
+    // We couldn't find the workspace. Someone could have put in a bad workspace ID,
+    // or there could be a dangling workspace after a variant was deleted. Either way,
+    // translate this to a 403 the error out of our monitoring.
+    //
+    // We use a 403 instead of a 404 to avoid leaking information about the existence
+    // of particular workspace IDs.
+    throw new HttpStatusError(403, 'Access denied');
+  }
+
+  return result;
+}
+
+async function isQuestionPubliclyShared(course: Course, question: Question): Promise<boolean> {
+  const questionSharingEnabled = await features.enabled('question-sharing', {
+    institution_id: course.institution_id,
+    course_id: course.id,
+  });
+
+  return (
+    questionSharingEnabled &&
+    (!!course.sharing_name || course.example_course) &&
+    question.deleted_at == null &&
+    (question.share_publicly || question.share_source_publicly) &&
+    course.id === question.course_id
+  );
+}
+
+/**
+ * Authorizes requests to a workspace container.
+ *
+ * A container's base URL (`WORKSPACE_BASE_URL`) is fixed when it launches, and
+ * containers that don't use URL rewriting (e.g. JupyterLab) only respond under
+ * that path. Containers are therefore always served from
+ * `/pl/workspace/:workspace_id/container`, including for workspaces opened from
+ * the public question preview, so this accepts the same access that the public
+ * workspace page grants in addition to the usual workspace authorization.
+ */
+export function authzWorkspaceContainer() {
+  const authzWorkspacePrivate = authzWorkspace({ publicQuestionEndpoint: false });
+
+  return asyncHandler(async (req, res, next) => {
+    const result = await selectAuthDataFromWorkspace(res.locals.workspace_id);
+
+    if (result.instance_question_id == null) {
+      const course = await selectCourseById(result.course_id);
+      const question = await selectQuestionById(result.question_id);
+      if (
+        (await isQuestionPubliclyShared(course, question)) &&
+        (res.locals.is_administrator ||
+          (await selectUserOwnsVariant({
+            user_id: res.locals.authn_user.id,
+            variant_id: result.variant_id,
+          })))
+      ) {
+        next();
+        return;
+      }
+    }
+
+    authzWorkspacePrivate(req, res, next);
+  });
+}
+
+export default function authzWorkspace(
+  { publicQuestionEndpoint } = { publicQuestionEndpoint: false },
+) {
   return asyncHandler(async (req, res, next) => {
     // We rely on having res.locals.workspace_id already set to the correct value here
-    const result = await sqldb.queryOptionalRow(
-      sql.select_auth_data_from_workspace,
-      { workspace_id: res.locals.workspace_id },
-      SelectAuthDataFromWorkspaceSchema,
-    );
-
-    if (!result) {
-      // We couldn't find the workspace. Someone could have put in a bad workspace ID,
-      // or there could be a dangling workspace after a variant was deleted. Either way,
-      // translate this to a 403 the error out of our monitoring.
-      //
-      // We use a 403 instead of a 404 to avoid leaking information about the existence
-      // of particular workspace IDs.
-      throw new HttpStatusError(403, 'Access denied');
-    }
+    const result = await selectAuthDataFromWorkspace(res.locals.workspace_id);
     Object.assign(res.locals, result);
 
     if (publicQuestionEndpoint) {
@@ -54,18 +114,7 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       res.locals.user = UserSchema.parse(res.locals.authn_user);
       res.locals.question = await selectQuestionById(result.question_id);
 
-      const questionSharingEnabled = await features.enabled('question-sharing', {
-        institution_id: res.locals.course.institution_id,
-        course_id: res.locals.course.id,
-      });
-
-      if (
-        !questionSharingEnabled ||
-        (!res.locals.course.sharing_name && !res.locals.course.example_course) ||
-        res.locals.question.deleted_at != null ||
-        !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
-        res.locals.course.id !== res.locals.question.course_id
-      ) {
+      if (!(await isQuestionPubliclyShared(res.locals.course, res.locals.question))) {
         throw new HttpStatusError(403, 'Access denied');
       }
     } else if (result.course_instance_id) {

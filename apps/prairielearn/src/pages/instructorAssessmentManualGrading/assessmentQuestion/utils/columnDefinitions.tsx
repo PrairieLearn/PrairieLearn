@@ -51,7 +51,7 @@ interface CreateColumnsParams {
   assessment: StaffAssessment;
   courseInstanceId: string;
   studentLabels: StaffStudentLabel[];
-  onEditPointsSuccess: () => void;
+  onEditPointsSuccess: (instanceQuestionId: string) => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
   scrollRef: React.RefObject<HTMLDivElement | null> | null;
   displayedStatuses: Record<string, JobItemStatus | undefined>;
@@ -84,7 +84,7 @@ export function createColumns({
       urlPrefix={urlPrefix}
       csrfToken={csrfToken}
       scrollRef={scrollRef}
-      onSuccess={onEditPointsSuccess}
+      onSuccess={() => onEditPointsSuccess(row.instance_question.id)}
       onConflict={onEditPointsConflict}
     />
   );
@@ -298,7 +298,7 @@ export function createColumns({
           urlPrefix={urlPrefix}
           csrfToken={csrfToken}
           scrollRef={scrollRef}
-          onSuccess={onEditPointsSuccess}
+          onSuccess={() => onEditPointsSuccess(info.row.original.instance_question.id)}
           onConflict={onEditPointsConflict}
         />
       ),
@@ -382,6 +382,24 @@ export function createColumns({
         return aLastHumanGrader.localeCompare(bLastHumanGrader);
       },
     }),
+
+    columnHelper.accessor(
+      (row) => row.instance_question.ai_grading?.latest_update.ai_grading_model ?? null,
+      {
+        id: 'ai_grading_model',
+        header: 'AI model',
+        size: 220,
+        cell: (info) => (
+          <span className="font-monospace" title={info.getValue() ?? undefined}>
+            {info.getValue() ?? '—'}
+          </span>
+        ),
+        filterFn: (row, columnId, filter: MultiSelectFilterValue) =>
+          applyMultiSelectFilter(filter, (values) =>
+            values.includes(row.getValue<string | null>(columnId) ?? 'None'),
+          ),
+      },
+    ),
 
     // AI agreement column
     columnHelper.accessor((row) => row.instance_question.rubric_difference, {

@@ -1,4 +1,3 @@
-/* eslint-disable jsdoc/check-param-names */
 // This is a fork of Sentry's Express integration, lightly modified to remove
 // unused code and conform to PrairieLearn's coding style. We retain this manual
 // integration so PrairieLearn can assign error IDs and translate Postgres errors

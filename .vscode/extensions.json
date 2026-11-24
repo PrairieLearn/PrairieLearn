@@ -12,6 +12,7 @@
     "ms-playwright.playwright",
     "ms-python.python",
     "ms-python.vscode-pylance",
+    "oxc.oxc-vscode",
     "prairielearn.tree-sitter-htmlmustache",
     "redhat.vscode-yaml",
     "supabase.postgrestools",

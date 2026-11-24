@@ -6,21 +6,9 @@ import pygraphviz
 
 
 def _render_graph(graph, layout="dot"):
-    class TempFile:
-        def __init__(self):
-            self.data = b""
-
-        def write(self, data):
-            self.data += data
-
-        def get_bytes(self):
-            return self.data
-
     graph.layout(layout)
-
-    buffer = TempFile()
-    graph.draw(buffer, format="svg")
-    return ipd.display(ipd.SVG(buffer.get_bytes()))
+    # Without a path, draw() returns the image's bytes.
+    return ipd.display(ipd.SVG(graph.draw(format="svg")))
 
 
 def _draw_adj_matrix(

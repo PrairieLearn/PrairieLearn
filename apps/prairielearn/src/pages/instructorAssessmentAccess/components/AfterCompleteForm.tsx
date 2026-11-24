@@ -1,5 +1,5 @@
 import { Alert, Button, Form } from 'react-bootstrap';
-import { get, useController, useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { get, useController, useFormState, useWatch } from 'react-hook-form';
 
 import { OverlayTrigger, RichSelect, type RichSelectItem } from '@prairielearn/ui';
 
@@ -448,7 +448,6 @@ export function DefaultAfterCompleteForm({
 
   const { field: svField } = useController<AccessControlFormData, 'defaultRule.scoreVisibility'>({
     name: 'defaultRule.scoreVisibility',
-    rules: { deps: qvField.name },
   });
 
   const { errors } = useFormState<AccessControlFormData>();
@@ -543,7 +542,6 @@ export function OverrideAfterCompleteForm({
   title?: string;
   displayTimezone: string;
 }) {
-  const { trigger } = useFormContext<AccessControlFormData>();
   const defaultRuleQV = useWatch<AccessControlFormData, 'defaultRule.questionVisibility'>({
     name: 'defaultRule.questionVisibility',
   });
@@ -593,7 +591,6 @@ export function OverrideAfterCompleteForm({
     `overrides.${number}.scoreVisibility`
   >({
     name: `overrides.${index}.scoreVisibility`,
-    rules: { deps: qvField.name },
   });
 
   return (
@@ -605,12 +602,8 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             svField.onChange({ ...defaultRuleSV });
             addSvOverride();
-            void trigger(qvField.name);
           }}
-          onRemoveOverride={() => {
-            removeSvOverride();
-            void trigger(qvField.name);
-          }}
+          onRemoveOverride={removeSvOverride}
         >
           <ScoreVisibilityInput
             value={svField.value}
@@ -629,12 +622,8 @@ export function OverrideAfterCompleteForm({
           onOverride={() => {
             qvField.onChange({ ...defaultRuleQV });
             addQvOverride();
-            void trigger(svField.name);
           }}
-          onRemoveOverride={() => {
-            removeQvOverride();
-            void trigger(svField.name);
-          }}
+          onRemoveOverride={removeQvOverride}
         >
           <QuestionVisibilityInput
             value={qvField.value}

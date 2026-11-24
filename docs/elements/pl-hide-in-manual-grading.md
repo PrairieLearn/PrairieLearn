@@ -1,6 +1,6 @@
 # `pl-hide-in-manual-grading` element
 
-Hide the contents so that it is **not** displayed to graders in the manual grading page.
+Hide the contents so that it is **not** displayed to graders in the manual grading page or in the AI grading process.
 
 ## Sample element
 
@@ -12,7 +12,7 @@ Hide the contents so that it is **not** displayed to graders in the manual gradi
 
 ## Details
 
-This element is typically used to abbreviate the question description and allow graders to focus on the actual answers during grading. It is the reverse of [the `pl-manual-grading-only` element](pl-manual-grading-only.md), which explicitly shows content only during grading.
+This element is typically used to abbreviate the question description and allow graders to focus on the actual answers during grading. It may be used to provide instructions that can be useful for students, but are not necessary for graders to see, such as testing instructions, hints, execution samples, and similar information. It is the reverse of [the `pl-manual-grading-only` element](pl-manual-grading-only.md), which explicitly shows content only during grading.
 
 ## Example implementations
 

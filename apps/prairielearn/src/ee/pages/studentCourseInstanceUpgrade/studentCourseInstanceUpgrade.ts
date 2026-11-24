@@ -366,6 +366,7 @@ router.post(
         cancel_url: `${urlBase}${lti13UpgradeAuthorization !== null ? '?lti13_relaunch=1' : ''}`,
         metadata,
         payment_intent_data: {
+          description: 'Student course access',
           metadata,
         },
       });

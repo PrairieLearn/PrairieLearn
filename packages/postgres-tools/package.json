@@ -1,19 +1,16 @@
 {
   "name": "@prairielearn/postgres-tools",
   "version": "3.0.16",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/postgres-tools"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "bin": {
     "pg-describe": "./bin/pg-describe.js",
     "pg-diff": "./bin/pg-diff.js"
   },
+  "type": "module",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc && tscp",
@@ -36,5 +33,8 @@
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript-cp": "^0.1.11"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

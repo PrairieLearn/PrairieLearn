@@ -703,6 +703,7 @@ export async function updateInstanceQuestionScore({
           feedback: score.feedback,
           partial_scores: score.partial_scores,
           manual_rubric_grading_id,
+          modified_at_conflict: current_submission.modified_at_conflict,
         },
         IdSchema,
       );

@@ -1,13 +1,19 @@
 import * as http from 'node:http';
 import * as https from 'node:https';
 import type { AddressInfo } from 'node:net';
+import { gzipSync } from 'node:zlib';
 
 import * as pem from 'pem';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { isPublicIpAddress, resolvePublicAddressWithLookup } from './network.js';
 
-import { createPublicFetch, publicFetch } from './index.js';
+import {
+  ResponseTooLargeError,
+  createPublicFetch,
+  publicFetch,
+  readResponseWithLimit,
+} from './index.js';
 
 let certificate: pem.CertificateCreationResult;
 
@@ -317,5 +323,30 @@ describe('publicFetch', () => {
       },
     );
     expect(clientPorts.size).toBe(1);
+  });
+});
+
+describe('readResponseWithLimit integration', () => {
+  it('enforces the limit on decompressed response bytes', async () => {
+    const maxBytes = 1024;
+    const compressed = gzipSync('x'.repeat(maxBytes + 1));
+    expect(compressed.byteLength).toBeLessThan(maxBytes);
+
+    await withHttpsServer(
+      (_request, response) => {
+        response.writeHead(200, {
+          'Content-Encoding': 'gzip',
+          'Content-Length': compressed.byteLength,
+        });
+        response.end(compressed);
+      },
+      async (port) => {
+        const fetch = createTestPublicFetch({ resolveAddress: async () => '127.0.0.1' });
+        const response = await fetch(`https://public.example:${port}/compressed`);
+        await expect(readResponseWithLimit(response, maxBytes)).rejects.toBeInstanceOf(
+          ResponseTooLargeError,
+        );
+      },
+    );
   });
 });

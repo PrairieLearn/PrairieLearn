@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
+import type { Readable } from 'node:stream';
 import * as path from 'path';
-import { type Stream } from 'stream';
 
 import debugfn from 'debug';
 
@@ -146,7 +146,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
  * @param file_id - The file to get.
  * @returns Requested file stream.
  */
-export async function getStream(file_id: number | string): Promise<Stream> {
+export async function getStream(file_id: number | string): Promise<Readable> {
   debug(`getStream(): file_id=${file_id}`);
   const file = await getFile(file_id, 'stream');
   return file.contents;
@@ -156,7 +156,7 @@ export async function getFile(
   file_id: number | string,
   data_type: 'stream',
 ): Promise<{
-  contents: Stream;
+  contents: Readable;
   file: File;
 }>;
 
@@ -177,7 +177,7 @@ export async function getFile(
   file_id: number | string,
   data_type: 'stream' | 'buffer' = 'buffer',
 ): Promise<{
-  contents: Buffer | Stream;
+  contents: Buffer | Readable;
   file: File;
 }> {
   const file = await sqldb.queryOptionalRow(sql.select_file, { file_id }, FileSchema);

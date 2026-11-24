@@ -33,6 +33,7 @@ import type { PageContext } from '../lib/client/page-context.js';
 import {
   type Course,
   type CourseInstance,
+  CourseInstanceSchema,
   type Enrollment,
   EnrollmentSchema,
   type EnumEnrollmentStatus,
@@ -51,8 +52,34 @@ import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/** Includes deleted instances to match the enrollments removed by deleteCoursePermissions. */
+export async function selectEnrollmentsForUsersInCourse({
+  courseId,
+  userIds,
+}: {
+  courseId: string;
+  userIds: string[];
+}) {
+  return await queryRows(
+    sql.select_enrollments_for_users_in_course,
+    { course_id: courseId, user_ids: userIds },
+    z.object({ enrollment: EnrollmentSchema, course_instance: CourseInstanceSchema }),
+  );
+}
+
 type CourseInstanceContext =
-  CourseInstance | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
+  | CourseInstance
+  | PageContext<'courseInstance', 'student' | 'instructor'>['course_instance'];
+
+export async function countJoinedStudentsInCourseInstance(
+  courseInstance: CourseInstanceContext,
+): Promise<number> {
+  return await queryScalar(
+    sql.count_joined_students_in_course_instance,
+    { course_instance_id: courseInstance.id },
+    z.number(),
+  );
+}
 
 function assertEnrollmentStatus(
   enrollment: Enrollment,

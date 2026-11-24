@@ -5,6 +5,8 @@ import {
   imageRegistryRestrictionsText,
 } from '@prairielearn/docker-utils/registry';
 
+import { QuestionAuthorUidsSchema } from '../lib/question-authors.js';
+
 import { CommentJsonSchema } from './comment.js';
 
 // This schema is intentionally a subset of JSON Schema. The `type`, `default`,
@@ -73,35 +75,6 @@ const QuestionDependencyJsonSchema = z
   })
   .strict()
   .describe("The question's client-side dependencies.");
-
-const QuestionAuthorJsonSchema = z
-  .object({
-    name: z
-      .string()
-      .describe('A human-readable name of a question author.')
-      .trim()
-      .min(3)
-      .max(255)
-      .optional(),
-    email: z
-      .string()
-      .describe('An email address to contact a question author.')
-      .max(255)
-      .optional(),
-    orcid: z
-      .string()
-      .describe('An ORCID identifier that uniquely identifies an individual question author.')
-      .regex(/^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$/)
-      .optional(),
-    originCourse: z
-      .string()
-      .describe('The sharing name of a course whose staff is a question author.')
-      .optional(),
-  })
-  .strict()
-  .describe(
-    'An author (individual person, or staff of a course of origin) credited with creating a question.',
-  );
 
 const WorkspaceOptionsJsonSchema = z
   .object({
@@ -232,6 +205,12 @@ export const QuestionJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     uuid: z.guid().describe('Unique identifier (UUID).'),
+    copiedFrom: z
+      .templateLiteral([z.guid(), '/', z.guid(), z.string().startsWith('/').optional()])
+      .describe(
+        'The course UUID and question UUID of the source question, separated by a slash, optionally followed by a slash and human-readable text. Only the two UUIDs identify the source.',
+      )
+      .optional(),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
       .describe('Type of the question. This should be set to "v3" for new questions.'),
@@ -246,7 +225,11 @@ export const QuestionJsonSchema = z
       .describe("Extra tags associated with the question (e.g., 'Exam Only', 'Broken').")
       .optional()
       .default([]),
-    authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
+    authors: QuestionAuthorUidsSchema.describe(
+      'Author UIDs or full ORCID URLs. UIDs need not identify an existing account or be a routable email.',
+    )
+      .optional()
+      .default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
       .describe(

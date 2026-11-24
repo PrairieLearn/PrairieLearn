@@ -72,3 +72,10 @@ export const requireCoursePermissionEdit = t.middleware(async (opts) => {
   }
   return opts.next();
 });
+
+export const requireCoursePermissionOwn = t.middleware(async (opts) => {
+  if (!opts.ctx.authz_data.has_course_permission_own) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied (must be a course owner)' });
+  }
+  return opts.next();
+});

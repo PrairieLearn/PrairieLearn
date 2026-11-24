@@ -162,6 +162,26 @@ async function cleanAndResetRepository(
   });
 }
 
+/**
+ * Like `cleanAndResetRepository`, but also switches the local checkout to the
+ * course's configured branch (and its upstream), so that a subsequent `git push`
+ * goes to that branch even if the configured branch changed since the last sync.
+ */
+async function cleanAndCheckOutRemoteBranch(
+  course: Course,
+  env: NodeJS.ProcessEnv,
+  job: ServerJob,
+) {
+  job.info('Clean local files not in remote git repository');
+  await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
+  job.info('Check out branch and reset to remote git repository');
+  await job.exec(
+    'git',
+    ['checkout', '--force', '-B', course.branch, '--track', `origin/${course.branch}`],
+    { cwd: course.path, env },
+  );
+}
+
 interface BaseEditorOptions<ResLocals = object> {
   locals: {
     authz_data: Record<string, any>;
@@ -224,7 +244,10 @@ export abstract class Editor {
     return serverJob;
   }
 
-  async executeWithServerJob(serverJob: ServerJobExecutor) {
+  async executeWithServerJob(
+    serverJob: ServerJobExecutor,
+    { beforeWrite }: { beforeWrite?: (job: ServerJob) => Promise<void> } = {},
+  ) {
     // We deliberately use `executeUnsafe` here because we want to wait
     // for the edit to complete during the request during which it was
     // made. We use `executeUnsafe` instead of `execute` because we want
@@ -249,6 +272,7 @@ export abstract class Editor {
 
           job.info('Write changes to disk');
           job.data.saveAttempted = true;
+          await beforeWrite?.(job);
           await this.write();
           job.data.saveSucceeded = true;
 
@@ -272,11 +296,11 @@ export abstract class Editor {
 
         // If we are using git (e.g., if we are running in production), then we:
         //
-        // - Clean and reset the repository
+        // - Clean the repository and check out the course's branch at the remote's state
         // - Write changes to disk
         // - Commit changes to the repository
         // - Push to remote
-        //   - If the push fails, pull from remote, clean, reset, write, commit, and push
+        //   - If the push fails, fetch from remote, clean, check out, write, commit, and push
         // - Clean and reset the repository
         // - Sync changes from disk
         //
@@ -301,12 +325,15 @@ export abstract class Editor {
           env: gitEnv,
         });
 
-        await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+        await cleanAndCheckOutRemoteBranch(this.course, gitEnv, job);
 
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
 
           job.info('Write changes to disk');
+          // Validate the entire edit under the course lock, including after a push
+          // retry resets to newer remote files. No part may be written before validation.
+          await beforeWrite?.(job);
           const writeResult = await this.write();
 
           if (!writeResult) {
@@ -399,7 +426,7 @@ export abstract class Editor {
 
             // This will both discard the commit we made locally and also pull
             // in any new changes from the remote.
-            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+            await cleanAndCheckOutRemoteBranch(this.course, gitEnv, job);
 
             await writeAndCommitChanges();
 
@@ -417,12 +444,7 @@ export abstract class Editor {
               // left behind by operations like renames. This will also ensure
               // that we get back to a good state if the changes couldn't be
               // pushed to the remote.
-              await cleanAndResetRepository(
-                this.course,
-                `origin/${this.course.branch}`,
-                gitEnv,
-                job,
-              );
+              await cleanAndCheckOutRemoteBranch(this.course, gitEnv, job);
             }
           }
         } finally {
@@ -621,6 +643,18 @@ export class AssessmentCopyEditor extends Editor {
 
     delete infoJson.shareSourcePublicly;
     removeStudentSpecificAccessControlRulesForCopy(infoJson);
+    for (const rule of infoJson.accessControl ?? []) {
+      if (rule.integrations) {
+        delete rule.integrations.prairieTest;
+        if (Object.keys(rule.integrations).length === 0) {
+          delete rule.integrations;
+        }
+      }
+    }
+    if (infoJson.allowAccess) {
+      // Removing only the exam UUID would broaden access beyond that PrairieTest exam.
+      infoJson.allowAccess = infoJson.allowAccess.filter((rule) => !rule.examUuid);
+    }
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -1020,6 +1054,7 @@ export class CourseInstanceCopyEditor extends Editor {
           from_course: this.from_course,
           from_path,
           from_qid,
+          source_qid: question.qid,
           uuid,
           existingTitles: existingQuestionTitles,
           existingQids: existingQuestionQids,
@@ -2091,6 +2126,7 @@ async function copyQuestion({
   from_course,
   from_path,
   from_qid,
+  source_qid = from_qid,
   uuid,
   existingTitles: oldLongNames,
   existingQids: oldShortNames,
@@ -2099,6 +2135,7 @@ async function copyQuestion({
   from_course: Course | StaffCourse;
   from_path: string;
   from_qid: string;
+  source_qid?: string;
   uuid: string;
   existingTitles: string[];
   existingQids: string[];
@@ -2140,6 +2177,11 @@ async function copyQuestion({
   debug('Write info.json with new title and uuid');
   infoJson.title = questionTitle;
   infoJson.uuid = uuid;
+
+  if (!idsEqual(course.id, from_course.id)) {
+    infoJson.copiedFrom = `${from_course.uuid}/${sourceInfoJson.uuid}/${source_qid}`;
+    delete infoJson.authors;
+  }
 
   // When transferring a question from an example/template course, drop the tags. They
   // are likely undesirable in the template course.

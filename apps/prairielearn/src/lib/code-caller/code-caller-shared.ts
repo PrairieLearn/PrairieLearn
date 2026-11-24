@@ -11,7 +11,12 @@ export interface CodeCallerResult {
 }
 
 export type CallType =
-  'question' | 'v2-question' | 'course-element' | 'core-element' | 'ping' | 'restart';
+  | 'question'
+  | 'v2-question'
+  | 'course-element'
+  | 'core-element'
+  | 'ping'
+  | 'restart';
 
 export interface PrepareForCourseOptions {
   coursePath: string;

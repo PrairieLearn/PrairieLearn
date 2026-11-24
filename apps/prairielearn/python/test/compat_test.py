@@ -50,6 +50,8 @@ def test_external_exports():
             load_host_script,
             numpy_to_matlab,
             numpy_to_matlab_sf,
+            render_raw_input_popover,
+            render_raw_input_popover_content,
             set_all_or_nothing_score_data,
             set_weighted_score_data,
             string_fraction_to_number,

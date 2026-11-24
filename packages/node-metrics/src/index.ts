@@ -83,7 +83,7 @@ async function emit(options: NodeMetricsOptions) {
     ] as const;
 
     // We must use a config passed in from outside this package.
-    // eslint-disable-next-line @prairielearn/aws-client-shared-config
+    // oxlint-disable-next-line @prairielearn/aws-client-shared-config
     const cloudwatch = new CloudWatch(options.awsConfig);
     await cloudwatch.putMetricData({
       Namespace: options.namespace,
@@ -123,7 +123,7 @@ export function start(options: NodeMetricsOptions) {
   cpuUsage = process.cpuUsage();
   time = process.hrtime.bigint();
 
-  (() => emitLoop({ signal: abortController.signal, ...options }))();
+  void emitLoop({ signal: abortController.signal, ...options });
 }
 
 export function stop() {

@@ -4,6 +4,10 @@ To allow instructors to share their course content with others and to avoid inst
 
 ## Using shared questions
 
+You can use a shared question by referencing it from an assessment, or by copying it when source copying is allowed. A reference uses the question maintained in the source course; a copy is a separate question in your course that you can edit independently.
+
+### Using a question by reference
+
 To refer to a question from another course, use the question ID (qid) prefixed by the `@` symbol and the sharing name of the other course. For example, to use the question `addNumbers` from the course with sharing name `test-course`, you would put `@test-course/addNumbers` into your `assessmentInfo.json`. In the context of the `assessmentInfo.json`, this may look like:
 
 ```json title="assessmentInfo.json"
@@ -21,6 +25,28 @@ To refer to a question from another course, use the question ID (qid) prefixed b
 }
 ```
 
+### Copying a shared question
+
+When a question's source code is shared with your course, you can make a copy to edit independently. On the question's Settings page, choose **Make a copy** and select the destination course. Changes to your copy do not affect the source question, and later changes to the source are not automatically applied to your copy.
+
+When you copy a question into another course, PrairieLearn records its source in `copiedFrom` and removes the copied `authors` list. This also applies to questions copied when adopting a course instance. Copying within the same course preserves existing authors and `copiedFrom`.
+
+### Question-copy provenance
+
+The optional `copiedFrom` field in a question's `info.json` identifies the question it was copied from:
+
+```json title="info.json (partial)"
+{
+  "copiedFrom": "ed80830c-fd51-43e3-9f13-6a41e4c7dfd5/cbf5cbf2-6458-4f13-a418-aa4d2b1093ff/mechanics/newtonsThirdLaw"
+}
+```
+
+The first UUID identifies the source course, and the second identifies the source question. Everything after the second UUID is optional text for readers, such as the source question's QID. Renaming that QID does not break the reference. A value containing just the two UUIDs is also valid.
+
+If you copy a question that was itself copied, the new copy points to the question you copied directly. For example, copying from course A to B, then from B to C, records B's question as C's source.
+
+You can edit or remove this field. It records the declared source of a copy; it does not verify authorship or grant access to the source question. It does not change the sharing-name syntax used to reference shared questions in assessments.
+
 ## Sharing questions
 
 !!! info
@@ -29,7 +55,9 @@ To refer to a question from another course, use the question ID (qid) prefixed b
 
 ### Sharing names
 
-In order for another course to use questions from your course into their assessments, you must have chosen a _sharing name_ for your course that they will use as a prefix to your question IDs when using them. This sharing name will be unique across all PrairieLearn instances and because it will be used in the JSON files for other courses, there will be no way to change the sharing name for your course once you have chosen it. It is recommended that you choose something short but descriptive. For example, if you're teaching a calculus course at a university that goes by the abbreviation "XYZ", then you could choose the sharing name "xyz-calculus". Then other courses will use questions from your course with the syntax `@xyz-calculus/qid`.
+In order for another course to use questions from your course in their assessments, you must choose a _sharing name_ for your course that they will use as a prefix to your question IDs. This sharing name will be unique across all PrairieLearn instances. Sharing names must be 1–64 characters long and contain only ASCII letters, digits, hyphens, or underscores. It is recommended that you choose something short but descriptive. For example, if you're teaching a calculus course at a university that goes by the abbreviation "XYZ", then you could choose the sharing name "xyz-calculus". Then other courses will use questions from your course with the syntax `@xyz-calculus/qid`.
+
+Course owners can choose or change the sharing name on the "Sharing" tab of the course settings page. An existing sharing name can be changed only while no question in the course is shared publicly (including source-code sharing) or included in a sharing set. This restriction protects references to shared questions in other courses, even if no other course is currently using them.
 
 ### Two ways to share: publicly or through "Sharing sets"
 

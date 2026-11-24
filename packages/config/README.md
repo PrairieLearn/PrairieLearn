@@ -7,8 +7,9 @@ This package _should not_ be depended upon by other packages directly. Instead, 
 ## Usage
 
 ```ts
-import { ConfigLoader, makeFileConfigSource } from '@prairielearn/config';
 import { z } from 'zod';
+
+import { ConfigLoader, makeFileConfigSource } from '@prairielearn/config';
 
 const ConfigSchema = z.object({
   hello: z.string().default('world'),
@@ -25,8 +26,9 @@ console.log(configLoader.config);
 Typically, you'll want to have a `config.ts` file in your own project that encapsulates this. Then, you can import the config elsewhere in the project.
 
 ```ts
-import { ConfigLoader, makeFileConfigSource } from '@prairielearn/config';
 import { z } from 'zod';
+
+import { ConfigLoader, makeFileConfigSource } from '@prairielearn/config';
 
 const configLoader = new ConfigLoader(z.any());
 

@@ -1,0 +1,15 @@
+<pl-question-panel>
+  <p>Place a point at $(2,1)$.</p>
+</pl-question-panel>
+<pl-sketch answers-name="sketch" width="800" height="450">
+  <pl-sketch-tool id="point" type="point" label="Point"></pl-sketch-tool>
+  <pl-sketch-tool id="horizontal" type="horizontal-line" label="Horizontal line"></pl-sketch-tool>
+  <pl-sketch-tool id="vertical" type="vertical-line" label="Vertical line"></pl-sketch-tool>
+  <pl-sketch-tool id="line" type="line" label="Line segment"></pl-sketch-tool>
+  <pl-sketch-tool id="polygon" type="polygon" label="Polygon"></pl-sketch-tool>
+  <pl-sketch-tool id="spline" type="spline" label="Spline"></pl-sketch-tool>
+  <pl-sketch-tool id="freeform" type="free-draw" label="Freeform"></pl-sketch-tool>
+  <pl-sketch-grade type="match" tool-id="point" x="2" y="1"></pl-sketch-grade>
+  <pl-sketch-grade type="count" tool-id="point" count="1"></pl-sketch-grade>
+  <pl-sketch-solution tool-id="point" coordinates="(2,1)"></pl-sketch-solution>
+</pl-sketch>

@@ -10,7 +10,7 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]',
   '[contenteditable="true"]',
 ]
-  .map((selector) => `${selector}:not([tabindex^="-"]):not(.btn-close)`)
+  .map((selector) => `${selector}:not([tabindex^="-"])`)
   .join(',');
 
 function isElement(object: Element) {
@@ -56,25 +56,65 @@ function isDisabled(element: Element) {
   return element.hasAttribute('disabled') && element.getAttribute('disabled') !== 'false';
 }
 
-function focusableChildren(element: Element): HTMLElement[] {
+function focusableChildren(element: Element, includeCloseButtons = false): HTMLElement[] {
   const focusableChildren = element.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-  return Array.from(focusableChildren).filter((child) => !isDisabled(child) && isVisible(child));
+  return Array.from(focusableChildren).filter(
+    (child) =>
+      (includeCloseButtons || !child.classList.contains('btn-close')) &&
+      !isDisabled(child) &&
+      isVisible(child),
+  );
 }
 
 export interface FocusTrap {
   deactivate(): void;
 }
 
-export function trapFocus(element: Element): FocusTrap {
-  // Store the previous active element so we can restore it later.
-  const previousActiveElement = document.activeElement ?? document.body;
+export function trapFocus(
+  element: Element,
+  { returnFocusTo }: { returnFocusTo?: HTMLElement } = {},
+): FocusTrap {
+  // Store the element that focus should return to. The active element isn't
+  // always the right one: WebKit focuses an `autofocus` element as soon as it
+  // is inserted, so focus can already be inside the container by now.
+  const previousActiveElement = returnFocusTo ?? document.activeElement ?? document.body;
 
   function keyDown(e: KeyboardEvent) {
     if (e.key !== 'Tab') return;
 
-    const focusable = focusableChildren(element);
+    const focusable = focusableChildren(element, true);
     const firstFocusable = focusable[0];
     const lastFocusable = focusable[focusable.length - 1];
+
+    // Focus can be on an element inside the container that isn't in the tab
+    // order, such as one with `tabindex="-1"` that was focused by script. The
+    // browser would continue from that element's position in the document,
+    // which can take focus out of the container, so we pick the target here.
+    //
+    // `tabIndex` is also negative for some elements that are in the tab order,
+    // such as a `contenteditable` element with no `tabindex` attribute, so we
+    // leave anything in `focusable` to the browser.
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLElement &&
+      element.contains(activeElement) &&
+      activeElement.tabIndex < 0 &&
+      !focusable.includes(activeElement)
+    ) {
+      const position = e.shiftKey
+        ? Node.DOCUMENT_POSITION_PRECEDING
+        : Node.DOCUMENT_POSITION_FOLLOWING;
+      const candidates = focusable.filter(
+        (child) => activeElement.compareDocumentPosition(child) & position,
+      );
+      const target = e.shiftKey
+        ? (candidates[candidates.length - 1] ?? lastFocusable)
+        : (candidates[0] ?? firstFocusable);
+      // With nothing to move to, focus stays where it is.
+      if (focusable.length > 0) focusElementOrCheckedOption(target);
+      e.preventDefault();
+      return;
+    }
 
     if (e.shiftKey) {
       // Tabbing backwards

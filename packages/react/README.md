@@ -9,8 +9,8 @@ Utilities for rendering React components within PrairieLearn's HTML templating s
 To render a non-interactive React component to an HTML-safe string, use `renderHtml`:
 
 ```tsx
-import { renderHtml } from '@prairielearn/react/server';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react/server';
 
 function MyComponent() {
   return <div>Hello, world!</div>;
@@ -61,8 +61,8 @@ When rendering the page, wrap the component in `<Hydrate>`:
 Alternatively, you can use the `hydrateHtml` convenience function to produce an HTML-safe string directly:
 
 ```tsx
-import { hydrateHtml } from '@prairielearn/react/server';
 import { html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/react/server';
 
 const template = html`
   <div class="container">${hydrateHtml(<InteractiveComponent name="Alice" />)}</div>

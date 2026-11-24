@@ -1,11 +1,8 @@
 {
   "name": "@prairielearn/workspace-host",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "scripts": {
     "build": "tsc && tscp",
     "dev": "tsx watch --clear-screen=false --include \"**/*.sql\" --include \"**/*.json\" --include \"$HOME/.config/prairielearn/config.json\" --include \"../../config.json\" src/interface.js",
@@ -28,10 +25,9 @@
     "@prairielearn/sentry": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
-    "archiver": "^8.0.0",
     "async": "^3.2.6",
     "async-mutex": "^0.5.0",
-    "body-parser": "^1.20.8 <2",
+    "body-parser": "^1.20.9 <2",
     "debug": "^4.4.3",
     "dockerode": "^5.0.1",
     "express": "^4.22.3 <5",
@@ -43,7 +39,6 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/archiver": "^8.0.0",
     "@types/async": "^3.2.26",
     "@types/body-parser": "^1.19.6 <2",
     "@types/debug": "^4.1.13",
@@ -52,9 +47,12 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "tsx": "^4.23.15",
     "typescript-cp": "^0.1.11",
-    "vitest": "^5.0.2"
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

@@ -1,15 +1,12 @@
 {
   "name": "@prairielearn/postgres",
-  "version": "8.0.2",
-  "type": "module",
+  "version": "8.0.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/postgres"
   },
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -32,5 +29,8 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.2",
     "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

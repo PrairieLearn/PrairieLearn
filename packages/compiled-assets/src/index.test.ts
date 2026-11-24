@@ -38,6 +38,11 @@ async function testProject(options: CompiledAssetsOptions) {
       const stylesPath = path.join(stylesRoot, 'baz.css');
       await fs.writeFile(stylesPath, 'body { color: red; }');
 
+      await fs.copy(
+        path.join(import.meta.dirname, 'test-fixtures/lazy-loading'),
+        path.join(tmpDir, 'assets'),
+      );
+
       if (!options.dev) {
         await build(path.join(tmpDir, 'assets'), path.join(tmpDir, 'public', 'build'));
       }
@@ -64,6 +69,15 @@ async function testProject(options: CompiledAssetsOptions) {
         const cssText = await cssRes.text();
         assert.match(cssText, /body\s*\{/);
         assert.match(cssText, /color:\s*red/);
+
+        const moduleUrl = `http://localhost:${port}${compiledScriptPath('esm-bundles/main.js')}`;
+        const moduleRes = await fetch(moduleUrl);
+        assert.isTrue(moduleRes.ok);
+        const lazyImport = /import\("([^"]+)"\)/.exec(await moduleRes.text());
+        assert.isNotNull(lazyImport);
+        const lazyRes = await fetch(new URL(lazyImport[1], moduleUrl));
+        assert.isTrue(lazyRes.ok);
+        assert.include(await lazyRes.text(), 'lazy:');
 
         assert.throws(
           () => compiledScriptPath('nonexistent.js'),
@@ -92,5 +106,34 @@ describe('compiled-assets', () => {
 
   it('works in prod mode', async () => {
     await testProject({ dev: false });
+  });
+
+  it('preloads shared static dependencies without crossing lazy boundaries', async () => {
+    await tmp.withDir(
+      async (dir) => {
+        const sourceDirectory = path.join(import.meta.dirname, 'test-fixtures/lazy-loading');
+        const buildDirectory = await fs.realpath(dir.path);
+        const manifest = await build(sourceDirectory, buildDirectory);
+
+        // Three entrypoints force separate eager and base chunks, with base
+        // shared transitively by eager and directly by the lazy module.
+        const main = manifest['scripts/esm-bundles/main.js'];
+        const other = manifest['scripts/esm-bundles/other.js'];
+        const base = manifest['scripts/esm-bundles/base.js'];
+        const lazy = manifest['scripts/lib/lazy.js'];
+        const nested = manifest['scripts/lib/nested.js'];
+
+        assert.lengthOf(base.preloads, 1);
+        assert.lengthOf(other.preloads, 2);
+        assert.includeMembers(other.preloads, base.preloads);
+        assert.sameMembers(main.preloads, other.preloads);
+
+        // The dependency shared only by lazy modules stays out of initial preloads.
+        assert.lengthOf(nested.preloads, 1);
+        assert.notInclude(main.preloads, nested.preloads[0]);
+        assert.sameMembers(lazy.preloads, [...base.preloads, ...nested.preloads]);
+      },
+      { unsafeCleanup: true },
+    );
   });
 });

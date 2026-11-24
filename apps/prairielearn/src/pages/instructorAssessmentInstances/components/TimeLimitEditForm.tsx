@@ -12,7 +12,13 @@ import { useTRPC } from '../../../trpc/assessment/context.js';
 import { useInvalidateAssessmentInstancesList } from './useInvalidateAssessmentInstancesList.js';
 
 type TimeLimitAction =
-  'set_total' | 'set_rem' | 'set_exact' | 'add' | 'subtract' | 'remove' | 'expire';
+  | 'set_total'
+  | 'set_rem'
+  | 'set_exact'
+  | 'add'
+  | 'subtract'
+  | 'remove'
+  | 'expire';
 
 function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
   let explanation = '';

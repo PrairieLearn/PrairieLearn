@@ -9,7 +9,7 @@ export interface UserSettingsError {
 }
 
 // The authenticated user owns this settings row, so no additional resource permission applies.
-// eslint-disable-next-line @prairielearn/require-trpc-permission-middleware
+// oxlint-disable-next-line @prairielearn/require-trpc-permission-middleware
 const update = t.procedure
   .use(requireAuthenticatedUser)
   .input(z.object({ enableSingleKeyShortcuts: z.boolean() }))

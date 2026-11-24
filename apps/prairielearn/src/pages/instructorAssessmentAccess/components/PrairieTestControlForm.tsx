@@ -1,4 +1,4 @@
-import { type ChangeEvent, useEffect } from 'react';
+import { type ChangeEvent } from 'react';
 import { Alert, Button, Form } from 'react-bootstrap';
 import {
   get,
@@ -17,7 +17,9 @@ import { useAccessControlRuleEditable } from './AccessControlEditabilityContext.
 import type { AccessControlFormData } from './types.js';
 
 type AfterCompleteVisibilityMode =
-  'show_questions_and_score' | 'show_score_only' | 'hide_questions_and_score';
+  | 'show_questions_and_score'
+  | 'show_score_only'
+  | 'hide_questions_and_score';
 
 const AFTER_COMPLETE_VISIBILITY_ITEMS: RichSelectItem<AfterCompleteVisibilityMode>[] = [
   {
@@ -109,7 +111,7 @@ function ExamAfterCompleteFields({ index }: { index: number }) {
 
 export function PrairieTestControlForm() {
   const ruleEditable = useAccessControlRuleEditable();
-  const { register, setValue, trigger } = useFormContext<AccessControlFormData>();
+  const { register, setValue } = useFormContext<AccessControlFormData>();
 
   const {
     fields: examFields,
@@ -121,22 +123,10 @@ export function PrairieTestControlForm() {
 
   const { errors } = useFormState();
 
-  const watchedExams = useWatch<AccessControlFormData, 'defaultRule.prairieTestExams'>({
-    name: 'defaultRule.prairieTestExams',
-  });
-  const watchedExamUuids = watchedExams.map((exam) => exam.examUuid).join('\0');
   const addExamDisabled = examFields.length >= MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS;
   const addExamDisabledTitle = addExamDisabled
     ? `A rule can have at most ${MAX_ACCESS_CONTROL_PRAIRIETEST_EXAMS} PrairieTest exams.`
     : undefined;
-
-  // Validate when the number of exams changes, any UUID is edited, or on mount
-  // so empty exam UUIDs (added by the PrairieTest checkbox in
-  // IntegrationsSection) show errors immediately and duplicate detection
-  // re-runs after add/remove/edit.
-  useEffect(() => {
-    void trigger('defaultRule.prairieTestExams');
-  }, [examFields.length, watchedExamUuids, trigger]);
 
   const getExamUuidError = (index: number): string | undefined => {
     return get(errors, `defaultRule.prairieTestExams.${index}.examUuid`)?.message;
@@ -246,8 +236,6 @@ export function PrairieTestControlForm() {
                 afterCompleteQuestionsHidden: false,
                 afterCompleteScoreHidden: false,
               });
-              // Trigger validation so the empty UUID error shows immediately.
-              void trigger('defaultRule.prairieTestExams');
             }}
           >
             <i className="bi bi-plus-circle me-1" aria-hidden="true" />

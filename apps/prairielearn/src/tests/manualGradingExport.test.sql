@@ -83,3 +83,29 @@ SELECT
   id
 FROM
   new_team;
+
+-- BLOCK insert_ai_grading_metadata
+INSERT INTO
+  ai_grading_jobs (
+    grading_job_id,
+    course_id,
+    course_instance_id,
+    model,
+    prompt,
+    completion,
+    prompt_tokens,
+    completion_tokens
+  )
+SELECT
+  $grading_job_id,
+  ci.course_id,
+  ci.id,
+  $model,
+  '[]'::jsonb,
+  '{}'::jsonb,
+  0,
+  0
+FROM
+  course_instances AS ci
+WHERE
+  ci.id = $course_instance_id;

@@ -76,6 +76,13 @@ If `allow-sets="true"`, the following additional layer of syntax is enabled:
 - Common set operators: union (`U`, `cup`, `+`, or `|`),
   intersection (`cap` or `&`), and difference (`-`)
 
+Names listed in the `variables` attribute are scalar symbols, not named sets,
+even when `allow-sets="true"`; sets must be constructed with set notation.
+
+Tuples and coordinate points are not supported. A parenthesized pair such as
+`(a, b)` is always interpreted as an open interval. Use separate inputs for point
+coordinates.
+
 ## Example implementations
 
 - [element/symbolicInput]

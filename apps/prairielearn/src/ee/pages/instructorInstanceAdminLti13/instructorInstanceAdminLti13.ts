@@ -182,7 +182,7 @@ router.post(
           },
           Lti13CourseInstanceSchema,
         );
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        // oxlint-disable-next-line typescript/no-deprecated
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.id,
           table_name: 'lti13_course_instances',

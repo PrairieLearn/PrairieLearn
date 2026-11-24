@@ -5,10 +5,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import {
-  StudentAccessRulesPopover,
-  StudentAccessTimelinePopover,
-} from '../../components/StudentAccessPopovers.js';
+import { StudentAvailableCredit } from '../../components/StudentAvailableCredit.js';
 import type { AssessmentAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import {
   AssessmentInstanceSchema,
@@ -192,20 +189,13 @@ function AvailableCredit({
     }
     return html`<span class="text-muted">Not yet available</span>`;
   }
-  const creditDateString = authzResult.credit_date_string ?? 'None';
-  if (creditDateString === 'None') return null;
+  if ((authzResult.credit_date_string ?? 'None') === 'None') return null;
   if (row.assessment_instance_open !== false) {
-    return html`
-      ${creditDateString}
-      ${
-        row.modern_access_control
-          ? StudentAccessTimelinePopover({
-              accessTimeline: authzResult.access_timeline,
-              displayTimezone,
-            })
-          : StudentAccessRulesPopover({ accessRules: authzResult.access_rules })
-      }
-    `;
+    return StudentAvailableCredit({
+      authzResult,
+      modernAccessControl: row.modern_access_control,
+      displayTimezone,
+    });
   }
   return html`Assessment closed.`;
 }

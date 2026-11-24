@@ -1,16 +1,13 @@
 {
   "name": "@prairielearn/docker-utils",
   "version": "2.0.12",
-  "type": "module",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/docker-utils"
   },
-  "private": true,
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
@@ -32,5 +29,8 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.2",
     "vitest": "^5.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

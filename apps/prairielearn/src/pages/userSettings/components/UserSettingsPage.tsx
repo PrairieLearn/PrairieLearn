@@ -275,7 +275,7 @@ const EXAMPLE_BROKEN_LATEX = String.raw`$ x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
 function BrowserConfigurationCard() {
   const handleResetMathJax = () => {
     localStorage.removeItem('MathJax-Menu-Settings');
-    // eslint-disable-next-line no-alert -- Matches original behavior for user feedback
+    // oxlint-disable-next-line no-alert -- Matches original behavior for user feedback
     alert('MathJax menu settings have been reset');
   };
 
@@ -334,6 +334,8 @@ function UserSettingsCard({
             id="enable-keyboard-shortcuts"
             className="form-check-input"
             type="checkbox"
+            // False positive: https://github.com/oxc-project/oxc/issues/24838
+            // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props
             role="switch"
             aria-describedby="enable-keyboard-shortcuts-description"
             checked={enableSingleKeyShortcuts}

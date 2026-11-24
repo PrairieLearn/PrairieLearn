@@ -83,7 +83,7 @@ export function ManualGradingAssessment({
                 // React doesn't let us emit raw event handlers, so
                 // instead we render these buttons inside a `dangerouslySetInnerHTML` block.
 
-                // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+                // oxlint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{
                   __html: html`
                     <form method="POST" class="d-inline">
@@ -192,7 +192,7 @@ function AssessmentQuestionRow({
         </a>
         {question.manual_rubric_id != null && (
           // TODO: Fix this
-          // eslint-disable-next-line jsx-a11y-x/anchor-is-valid
+          // oxlint-disable-next-line jsx-a11y/anchor-is-valid
           <a
             href="#"
             className="ms-2 text-info"

@@ -45,7 +45,11 @@ interface CourseInstanceContext extends CourseContext {
 }
 
 type FeatureContext =
-  EmptyContext | UserContext | InstitutionContext | CourseContext | CourseInstanceContext;
+  | EmptyContext
+  | UserContext
+  | InstitutionContext
+  | CourseContext
+  | CourseInstanceContext;
 
 export class FeatureManager<FeatureName extends string> {
   features: Set<FeatureName>;

@@ -1,10 +1,13 @@
 columns
     cheating_reports_enabled: boolean not null default false
+    end_date: timestamp with time zone
     id: bigint not null default nextval('pt_courses_id_seq'::regclass)
     name: text
+    term: text not null default 'Unknown'::text
 
 indexes
     pt_courses_pkey: PRIMARY KEY (id) USING btree (id)
 
 referenced by
+    pt_center_courses: FOREIGN KEY (course_id) REFERENCES pt_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     pt_exams: FOREIGN KEY (course_id) REFERENCES pt_courses(id)

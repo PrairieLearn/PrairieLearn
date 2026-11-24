@@ -100,6 +100,13 @@ const SubmissionInfoSchema = z.object({
  */
 const MAX_RECENT_SUBMISSIONS = 3;
 
+export class FatalQuestionRenderError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'FatalQuestionRenderError';
+  }
+}
+
 /**
  * Renders the HTML for a variant.
  *
@@ -114,6 +121,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param params.locals The current locals for the page response.
  * @param params.user The effective user to attribute errors to.
  * @param params.authn_user The authenticated user to attribute errors to.
+ * @param params.throwOnFatalError Reject fatal rendering errors instead of returning incomplete HTML.
  */
 async function render({
   variant_course,
@@ -126,6 +134,7 @@ async function render({
   locals,
   user,
   authn_user,
+  throwOnFatalError = false,
 }: {
   variant_course: Course;
   renderSelection: questionServers.RenderSelection;
@@ -139,6 +148,7 @@ async function render({
   user: User;
   /** The authenticated user to attribute errors to. */
   authn_user: User;
+  throwOnFatalError?: boolean;
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -167,6 +177,15 @@ async function render({
     studentMessage,
     courseData,
   );
+  if (throwOnFatalError) {
+    const fatalIssue = courseIssues.find((issue) => issue.fatal);
+    if (fatalIssue) {
+      throw new FatalQuestionRenderError(
+        `Question ${question.qid ?? question.id} could not be rendered.`,
+        { cause: fatalIssue },
+      );
+    }
+  }
   return data;
 }
 
@@ -462,6 +481,9 @@ export async function getAndRenderVariant(
     publicQuestionPreview = false,
     issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
     questionRenderContext,
+    includeSubmissions = true,
+    showCorrectAnswer: showCorrectAnswerOverride,
+    throwOnFatalError = false,
   }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
@@ -481,6 +503,12 @@ export async function getAndRenderVariant(
      * Leave undefined for normal student/instructor rendering.
      */
     questionRenderContext?: QuestionRenderContext;
+    /** Whether to load and render previous submissions. Defaults to true. */
+    includeSubmissions?: boolean;
+    /** Overrides correct-answer visibility. If omitted, the existing visibility rules apply. */
+    showCorrectAnswer?: boolean;
+    /** Reject fatal rendering errors instead of returning incomplete HTML. Defaults to false. */
+    throwOnFatalError?: boolean;
   } = {},
 ): Promise<ResLocalsInstanceQuestionRender> {
   const question_course = await getQuestionCourse(locals.question, locals.course);
@@ -580,11 +608,13 @@ export async function getAndRenderVariant(
   // information for all submissions to this variant, and then we'll
   // load the full submission for only the submissions that we'll
   // actually render.
-  const basicSubmissions = await sqldb.queryRows(
-    sql.select_basic_submissions,
-    { variant_id: variant.id },
-    SubmissionBasicSchema,
-  );
+  const basicSubmissions = includeSubmissions
+    ? await sqldb.queryRows(
+        sql.select_basic_submissions,
+        { variant_id: variant.id },
+        SubmissionBasicSchema,
+      )
+    : [];
   const submissionCount = basicSubmissions.length;
 
   const submissions = await run(async () => {
@@ -619,6 +649,9 @@ export async function getAndRenderVariant(
   const submission = submissions.at(0) ?? null;
 
   const showCorrectAnswer = run(() => {
+    if (showCorrectAnswerOverride !== undefined) {
+      return showCorrectAnswerOverride;
+    }
     if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
       // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
       return true;
@@ -634,28 +667,32 @@ export async function getAndRenderVariant(
     showCorrectAnswer,
   });
 
+  // The AI grading preview mirrors the arguments used by the AI grader: the answer is always
+  // rendered, with no submission and with `showCorrectAnswer` false.
+  const isAiGradingPreview = questionRenderContext === 'ai_grading';
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
-    answer: showCorrectAnswer,
+    answer: showCorrectAnswer || isAiGradingPreview,
   };
   const htmls = await render({
     variant_course: course,
     renderSelection,
     variant,
     question,
-    submission: submission as Submission,
+    submission: isAiGradingPreview ? null : (submission as Submission),
     submissions: submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
     question_course,
     locals: {
       ...urls,
       urlPrefix,
-      showCorrectAnswer,
+      showCorrectAnswer: showCorrectAnswer && !isAiGradingPreview,
       allowAnswerEditing: newLocals.allowAnswerEditing,
       questionRenderContext,
     },
     user: locals.user,
     authn_user: locals.authn_user,
+    throwOnFatalError,
   });
 
   // Load issues last in case rendering produced any new ones.
@@ -955,12 +992,18 @@ export async function renderPanelsForSubmission({
       // If there is no assessment, the next question button won't exist, so it
       // does not need to be rendered. If there is no next question, the button
       // is disabled, so it does not need to be replaced.
-      if (variant.instance_question_id == null || next_instance_question.id == null) return;
+      if (
+        variant.instance_question_id == null ||
+        next_instance_question.id == null ||
+        assessment_instance == null
+      ) {
+        return;
+      }
 
       let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
       let userGroupRoles = 'None';
 
-      if (assessment_instance?.team_id && group_config?.has_roles) {
+      if (assessment_instance.team_id && group_config?.has_roles) {
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
           assessment_instance.team_id,
@@ -976,6 +1019,7 @@ export async function renderPanelsForSubmission({
         instanceQuestionId: next_instance_question.id,
         nextQuestionAccessMode: next_instance_question.question_access_mode,
         urlPrefix,
+        assessmentInstanceId: assessment_instance.id,
         whichButton: 'next',
         groupRolePermissions: nextQuestionGroupRolePermissions,
         advanceScorePerc: assessment_question?.advance_score_perc,

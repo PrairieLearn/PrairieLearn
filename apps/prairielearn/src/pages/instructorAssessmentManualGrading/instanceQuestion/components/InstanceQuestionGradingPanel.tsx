@@ -289,7 +289,7 @@ function InstanceQuestionGradingPanelInner({
               className="markdown-body mt-3"
               data-testid="grader-guidelines"
               // The server handles Markdown, Mustache substitution, and template-error escaping.
-              // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+              // oxlint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: data.graderGuidelinesRendered }}
             />
           </li>

@@ -10,7 +10,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { type AuthzData } from '../lib/authz-data-lib.js';
-// eslint-disable-next-line no-restricted-imports
+// oxlint-disable-next-line no-restricted-imports
 import type { StaffEnrollment } from '../lib/client/safe-db-types.js';
 import {
   type CourseInstance,

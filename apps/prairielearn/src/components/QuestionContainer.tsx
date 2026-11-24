@@ -23,6 +23,7 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.shared.js';
 import { idsEqual } from '../lib/id.js';
+import { issueMailtoLink } from '../lib/issues.shared.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
@@ -38,6 +39,7 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  questionNumber,
   questionRenderContext,
   showFooter = true,
   manualGradingPreviewUrl,
@@ -48,6 +50,7 @@ export function QuestionContainer({
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
+  questionNumber?: string;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
@@ -66,11 +69,17 @@ export function QuestionContainer({
     course_instance,
     authz_data,
     is_administrator,
-    showCorrectAnswer,
     submissions,
     submissionHtmls,
     answerHtml,
   } = resLocals;
+
+  const isAiGradingPreview = questionRenderContext === 'ai_grading';
+  // The AI grader always receives the answer when it is non-blank, regardless of `showCorrectAnswer`.
+  const answerVisible = isAiGradingPreview ? !!answerHtml.trim() : resLocals.showCorrectAnswer;
+  const answerBody = isAiGradingPreview
+    ? AiGradingHtmlPreview(answerHtml.trim())
+    : unsafeHtml(answerHtml);
 
   return html`
     <div
@@ -95,6 +104,7 @@ export function QuestionContainer({
                 ${QuestionPanel({
                   resLocals,
                   questionContext,
+                  questionNumber,
                   questionRenderContext,
                   showFooter,
                   manualGradingPreviewUrl,
@@ -103,19 +113,18 @@ export function QuestionContainer({
                 })}
               </form>
             `
-          : QuestionPanel({ resLocals, showFooter, questionContext })
+          : QuestionPanel({ resLocals, showFooter, questionContext, questionNumber })
       }
       ${
-        // The correct answer isn't used when performing AI grading, so we hide
-        // it here to avoid confusion.
-        questionRenderContext !== 'ai_grading'
+        // The AI grader omits a blank answer, so the preview omits the card entirely.
+        !isAiGradingPreview || answerVisible
           ? html`
-              <div class="card mb-3 grading-block${showCorrectAnswer ? '' : ' d-none'}">
+              <div class="card mb-3 grading-block${answerVisible ? '' : ' d-none'}">
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
                 <div class="card-body overflow-x-auto answer-body">
-                  ${showCorrectAnswer ? unsafeHtml(answerHtml) : ''}
+                  ${answerVisible ? answerBody : ''}
                 </div>
               </div>
             `
@@ -128,6 +137,7 @@ export function QuestionContainer({
                 ${
                   aiGradingInfo
                     ? AIGradingExplanation({
+                        model: aiGradingInfo.model,
                         explanation: aiGradingInfo.explanation,
                         hasImage: aiGradingInfo.hasImage,
                         rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
@@ -222,10 +232,12 @@ export function AIGradingPrompt({ prompt }: { prompt: string }) {
 }
 
 export function AIGradingExplanation({
+  model,
   explanation,
   hasImage,
   rotationCorrectionDegrees,
 }: {
+  model: InstanceQuestionAIGradingInfo['model'];
   explanation: string | null;
   hasImage: boolean;
   rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
@@ -245,7 +257,7 @@ export function AIGradingExplanation({
         <h2>AI grading explanation</h2>
         <button
           type="button"
-          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto"
+          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto flex-shrink-0"
           data-bs-toggle="collapse"
           data-bs-target="#ai-grading-explanation-body"
           aria-expanded="true"
@@ -299,6 +311,13 @@ ${explanation}
               : ''
           }
         </div>
+        <div class="card-footer small text-body-secondary">
+          ${
+            model
+              ? html`Graded with <span class="font-monospace text-break">${model}</span>`
+              : 'Model not recorded'
+          }
+        </div>
       </div>
     </div>
   `;
@@ -335,15 +354,19 @@ function IssuePanel({
       idsEqual(course_instance.id, issue.course_instance_id) &&
       authz_data.has_course_instance_permission_view);
 
-  const msgBody = `Hello ${issue.user_name}\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`;
-  const mailtoLink = `mailto:${
-    issue.user_email || issue.user_uid || '-'
-  }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(msgBody)}`;
+  const mailtoLink = issueMailtoLink(issue);
+  const userUid = issue.user_uid || '-';
+  const userUidLink = mailtoLink ? html`<a href="${mailtoLink}">${userUid}</a>` : userUid;
 
   return html`
     <div class="card mb-3">
-      <div class="card-header bg-danger text-white">
+      <div
+        class="card-header ${issue.open === true ? 'bg-danger' : 'bg-secondary'} text-white d-flex flex-wrap align-items-center justify-content-between gap-2"
+      >
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
+        <span class="badge text-bg-light"
+          >${issue.open === null ? 'Unknown' : issue.open ? 'Open' : 'Closed'}</span
+        >
       </div>
 
       <div class="table-responsive">
@@ -355,14 +378,16 @@ function IssuePanel({
             ${
               showUserName
                 ? html`
-                    <tr>
-                      <th>User:</th>
-                      <td>
-                        ${issue.user_name || '-'} (<a href="${mailtoLink}"
-                          >${issue.user_uid || '-'}</a
-                        >)
-                      </td>
-                    </tr>
+                    ${
+                      issue.user_id != null
+                        ? html`
+                            <tr>
+                              <th>User:</th>
+                              <td>${issue.user_name || '-'} (${userUidLink})</td>
+                            </tr>
+                          `
+                        : ''
+                    }
                     <tr>
                       <th>Student message:</th>
                       <td style="white-space: pre-wrap;">${issue.student_message}</td>
@@ -705,7 +730,12 @@ export function QuestionFooterContent({
                     />
                   `
                 : html`
-                    <input type="hidden" name="postData" class="postData" />
+                    <input
+                      type="hidden"
+                      name="postData"
+                      class="postData"
+                      data-deferred-initial-value="true"
+                    />
                     <input type="hidden" name="__action" class="__action" />
                   `
             }
@@ -922,6 +952,7 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  questionNumber,
   questionRenderContext,
   showFooter,
   manualGradingPreviewUrl,
@@ -930,6 +961,7 @@ function QuestionPanel({
 }: {
   resLocals: UntypedResLocals;
   questionContext: QuestionContext;
+  questionNumber?: string;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
@@ -953,7 +985,7 @@ function QuestionPanel({
           ${QuestionTitle({
             questionContext,
             question,
-            questionNumber: instance_question_info?.question_number,
+            questionNumber: questionNumber ?? instance_question_info?.question_number,
             // Student contexts honor the assessment setting; other contexts always render titles.
             showQuestionTitles:
               questionContext === 'student_exam' || questionContext === 'student_homework'

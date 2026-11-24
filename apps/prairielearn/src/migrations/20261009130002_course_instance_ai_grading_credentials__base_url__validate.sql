@@ -1,0 +1,1 @@
+ALTER TABLE course_instance_ai_grading_credentials VALIDATE CONSTRAINT ci_ai_grading_credentials_base_url_check;

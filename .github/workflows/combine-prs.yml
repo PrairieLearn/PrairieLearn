@@ -31,11 +31,21 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      # Use the CI app so the new PR triggers reviewer assignment and other workflows.
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: create-combined-pr
         name: Create Combined PR
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{ steps.generate-token.outputs.token }}
           script: |
             const pulls = await github.paginate('GET /repos/:owner/:repo/pulls', {
               owner: context.repo.owner,

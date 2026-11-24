@@ -128,7 +128,36 @@ SELECT DISTINCT
   pt_x.id::text AS pt_exam_id,
   pt_x.name AS pt_exam_name,
   pt_c.id::text AS pt_course_id,
-  pt_c.name AS pt_course_name
+  pt_c.name AS pt_course_name,
+  pt_c.term AS pt_course_term,
+  pt_c.end_date < CURRENT_TIMESTAMP AS pt_course_archived,
+  (
+    SELECT
+      COALESCE(
+        jsonb_agg(
+          center
+          ORDER BY
+            center.name,
+            center.term,
+            center.id
+        ),
+        '[]'::jsonb
+      )
+    FROM
+      (
+        SELECT
+          pt_n.id::text AS id,
+          pt_n.name,
+          pt_n.term,
+          pt_n.end_date < CURRENT_TIMESTAMP AS archived
+        FROM
+          pt_center_exams AS pt_nx
+          JOIN pt_center_courses AS pt_nc ON (pt_nc.id = pt_nx.center_course_id)
+          JOIN pt_centers AS pt_n ON (pt_n.id = pt_nc.center_id)
+        WHERE
+          pt_nx.exam_id = pt_x.id
+      ) AS center
+  ) AS pt_centers
 FROM
   unnest($exam_uuids::uuid[]) AS u
   LEFT JOIN pt_exams AS pt_x ON (pt_x.uuid = u)

@@ -275,7 +275,7 @@ function FileBrowser({
       ? 'Course Files'
       : navPage === 'instance_admin'
         ? 'Course Instance Files'
-        : navPage === 'assessment'
+        : navPage === 'assessment' || navPage === 'public_assessment'
           ? 'Assessment Files'
           : navPage === 'question' || navPage === 'public_question'
             ? `Files (${resLocals.question.qid})`

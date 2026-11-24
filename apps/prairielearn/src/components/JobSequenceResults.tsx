@@ -119,7 +119,7 @@ function JobSequenceResultsJobItem({
           id={`output-${job.id}`}
           className="text-white rounded p-3 mb-0 mt-3"
           style={outputStyle}
-          // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+          // oxlint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: job.outputHtml }}
         />
       </div>
@@ -151,32 +151,35 @@ export function JobSequenceResults({
       );
     });
 
-    socket.emit(
-      'joinJobSequence',
-      { job_sequence_id: jobSequence.id, token: jobSequenceToken },
-      (msg: { job_count: number }) => {
-        if (msg.job_count !== initialJobs.length) {
-          redirectWithReferrer();
-        }
-      },
-    );
-
-    for (const job of initialJobs) {
+    // Refresh job snapshots when reconnecting so changes made while offline are reflected.
+    socket.on('connect', () => {
       socket.emit(
-        'joinJob',
-        { job_id: job.id, token: job.token },
-        (msg: { status: JobSequenceResultsJob['status']; output: string }) => {
-          if (msg.status !== job.status) {
+        'joinJobSequence',
+        { job_sequence_id: jobSequence.id, token: jobSequenceToken },
+        (msg: { job_count: number }) => {
+          if (msg.job_count !== initialJobs.length) {
             redirectWithReferrer();
           }
-          setJobs((currentJobs) =>
-            currentJobs.map((currentJob) =>
-              currentJob.id === job.id ? { ...currentJob, outputHtml: msg.output } : currentJob,
-            ),
-          );
         },
       );
-    }
+
+      for (const job of initialJobs) {
+        socket.emit(
+          'joinJob',
+          { job_id: job.id, token: job.token },
+          (msg: { status: JobSequenceResultsJob['status']; output: string }) => {
+            if (msg.status !== job.status) {
+              redirectWithReferrer();
+            }
+            setJobs((currentJobs) =>
+              currentJobs.map((currentJob) =>
+                currentJob.id === job.id ? { ...currentJob, outputHtml: msg.output } : currentJob,
+              ),
+            );
+          },
+        );
+      }
+    });
 
     return () => {
       socket.disconnect();

@@ -15,12 +15,6 @@ import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
 
-// We don't compare against 'test' since we use the 'MODE' environment variable
-// for running a subset of our tests.
-const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 'development';
-const IS_VITE = (import.meta as any).env?.MODE === 'development';
-export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
-
 const TokenPricingSchema = z.object({
   input: z.number().nonnegative(),
   cachedInput: z.number().nonnegative(),
@@ -66,7 +60,6 @@ export const STANDARD_COURSE_DIRS = [
 ];
 
 export const ConfigSchema = z.object({
-  startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
   postgresqlDatabase: z.string().default('postgres'),
@@ -176,6 +169,13 @@ export const ConfigSchema = z.object({
    * `https://us.prairielearn.com`.
    */
   serverCanonicalHost: z.string().nullable().default(null),
+  /** Cloudflare Browser Run account and API token for printing. */
+  printingCloudflareAccountId: z.string().nullable().default(null),
+  printingCloudflareApiToken: z.string().nullable().default(null),
+  /** Override the database-derived Redis namespace when hosts use different aliases for the same database. */
+  printExportQueuePrefix: z.string().nullable().default(null),
+  /** Whether this host renders queued print exports. Requires Chromium or Cloudflare credentials. */
+  printExportWorkerActive: z.boolean().default(true),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**
@@ -222,6 +222,7 @@ export const ConfigSchema = z.object({
   cronIntervalWorkspaceHostLoadsSec: z.number().default(10),
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
+  cronIntervalCourseAgentReviewResultsSec: z.number().default(60),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
   cronIntervalFetchNewsItemsSec: z.number().default(5 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
@@ -543,6 +544,11 @@ export const ConfigSchema = z.object({
    */
   serverJobsAbandonedTimeoutSec: z.number().default(30),
   devMode: z.boolean().default(DEV_MODE),
+  /**
+   * Whether to compile assets on the fly with esbuild instead of serving them
+   * from the prebuilt `public/build` directory. Defaults to the value of `devMode`.
+   */
+  compiledAssetsDevMode: z.boolean().nullable().default(null),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */
@@ -655,6 +661,13 @@ export const ConfigSchema = z.object({
    */
   aiQuestionGenerationRateLimitDollars: z.number().default(1),
   /**
+   * The hourly spending limit for the course agent, in US dollars. This is applied per user,
+   * across courses and conversations.
+   */
+  courseAgentRateLimitDollars: z.number().default(50),
+  /** What the course agent is charged for each web search command, in US dollars. */
+  courseAgentWebSearchCallCostDollars: z.number().default(0.01),
+  /**
    * OpenAI credentials for administrator tasks like AI-assisted course request review.
    */
   administratorOpenAiApiKey: z.string().nullable().default(null),
@@ -674,6 +687,21 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
+  /**
+   * Base URL of the course agent service (`apps/course-agent`), e.g.
+   * `http://localhost:8790` in development. The course agent is unavailable
+   * unless both this and `courseAgentServiceToken` are set.
+   */
+  courseAgentServiceUrl: z.string().nullable().default(null),
+  /**
+   * Bearer token that authenticates PrairieLearn to the course agent service,
+   * and the service to PrairieLearn when it reports usage.
+   * Must match the Cloudflare Worker's PL_SERVICE_TOKEN secret, or
+   * PL_SERVICE_TOKEN in its .dev.vars file for local development. Multiple
+   * tokens are supported to allow for rotation; the first token is sent to
+   * the service.
+   */
+  courseAgentServiceToken: KeyRingSchema.nullable().prefault(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
   /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */
@@ -757,6 +785,13 @@ export async function loadConfig(paths: string[]) {
     makeSecretsManagerConfigSource('ConfSecret'),
     makeKmsConfigSource(),
   ]);
+
+  const { printingCloudflareAccountId: accountId, printingCloudflareApiToken: apiToken } = config;
+  if ((accountId !== null || apiToken !== null) && (!accountId || !apiToken)) {
+    throw new Error(
+      'printingCloudflareAccountId and printingCloudflareApiToken must both be set to use Cloudflare Browser Run',
+    );
+  }
 
   if (config.questionRenderCacheType !== null) {
     logger.warn(

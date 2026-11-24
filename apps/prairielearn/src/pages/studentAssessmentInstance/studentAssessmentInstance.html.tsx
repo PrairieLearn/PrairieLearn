@@ -12,10 +12,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import {
-  StudentAccessRulesPopover,
-  StudentAccessTimelinePopover,
-} from '../../components/StudentAccessPopovers.js';
+import { StudentAvailableCredit } from '../../components/StudentAvailableCredit.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import type { AssessmentInstanceAuthzResult } from '../../lib/assessment-access-control/authz-result.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -482,17 +479,12 @@ function AssessmentStatus({
     return html`
       Assessment is <strong>open</strong> and you can answer questions.
       <br />
-      Available credit: ${authz_result.credit_date_string}
-      ${
-        assessment.modern_access_control
-          ? StudentAccessTimelinePopover({
-              accessTimeline: authz_result.access_timeline,
-              displayTimezone,
-            })
-          : StudentAccessRulesPopover({
-              accessRules: authz_result.access_rules,
-            })
-      }
+      Available credit:
+      ${StudentAvailableCredit({
+        authzResult: authz_result,
+        modernAccessControl: assessment.modern_access_control,
+        displayTimezone,
+      })}
     `;
   }
 

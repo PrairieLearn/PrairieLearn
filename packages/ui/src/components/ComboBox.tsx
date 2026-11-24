@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { useFilter } from 'react-aria';
 import {
   ComboBox as AriaComboBox,
@@ -66,6 +66,13 @@ export interface ComboBoxProps<T = void> extends Omit<
 }
 
 export interface TagPickerProps<T = void> {
+  /** Accept a trimmed custom value. */
+  onCreate?: (value: string) => void;
+  /** Label for the button that commits a custom value. */
+  createButtonLabel?: string;
+  /** Control the pending input text separately from the selected tags. */
+  inputValue?: string;
+  onInputChange?: (value: string) => void;
   items: ComboBoxItem<T>[];
   value: string[];
   onChange: (value: string[]) => void;
@@ -225,6 +232,10 @@ export function ComboBox<T = void>({
  */
 export function TagPicker<T = void>({
   items,
+  onCreate,
+  createButtonLabel = 'Add',
+  inputValue,
+  onInputChange,
   value,
   onChange,
   placeholder = 'Select...',
@@ -240,10 +251,26 @@ export function TagPicker<T = void>({
   tagClassName = defaultTagClassName,
 }: TagPickerProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
-  const [filterText, setFilterText] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uncontrolledInputValue, setUncontrolledInputValue] = useState('');
+  const filterText = inputValue ?? uncontrolledInputValue;
 
-  const filteredItems = items.filter((item) =>
-    contains(item.searchableText ?? item.label, filterText),
+  function setFilterText(text: string) {
+    setUncontrolledInputValue(text);
+    onInputChange?.(text);
+  }
+
+  function createValue() {
+    const nextValue = filterText.trim();
+    if (nextValue && !value.includes(nextValue)) onCreate?.(nextValue);
+    setFilterText('');
+    inputRef.current?.focus();
+  }
+
+  const filteredItems = items.filter(
+    (item) =>
+      (!onCreate || !value.includes(item.id)) &&
+      contains(item.searchableText ?? item.label, filterText),
   );
   const selectedItems = items.filter((item) => value.includes(item.id));
 
@@ -253,8 +280,8 @@ export function TagPicker<T = void>({
         value.length > 0 &&
         value.map((v) => <input key={v} name={name} type="hidden" value={v} />)}
 
-      {/* Render selected tags outside the Select trigger button. The HTML spec prohibits
-          interactive content (buttons) inside buttons: https://adrianroselli.com/2016/12/be-wary-of-nesting-roles.html */}
+      {/* Keep the two collection contexts as siblings. Nesting TagGroup inside
+          ComboBox mixes their React Aria collection state when the input filters. */}
       {selectedItems.length > 0 && (
         <TagGroup
           aria-label="Selected items"
@@ -275,13 +302,12 @@ export function TagPicker<T = void>({
                 {renderTagContent(item.data as T) ?? item.label}
                 {!disabled && (
                   <Button
-                    aria-label={`Remove ${item.label}`}
                     className="border-0 bg-transparent p-0 lh-1"
                     slot="remove"
                     style={{ fontSize: '0.75em', marginRight: '-0.25em' }}
                   >
                     <i
-                      className="bi bi-x-lg d-flex align-items-center justify-content-center"
+                      className="bi bi-x d-flex align-items-center justify-content-center"
                       aria-hidden="true"
                       style={{ width: '1.25em', height: '1.25em' }}
                     />
@@ -302,7 +328,8 @@ export function TagPicker<T = void>({
         menuTrigger="focus"
         selectionMode="multiple"
         value={value}
-        allowsEmptyCollection
+        allowsEmptyCollection={!onCreate}
+        allowsCustomValue={!!onCreate}
         onChange={(keys) => {
           setFilterText('');
           onChange(keys as string[]);
@@ -323,21 +350,45 @@ export function TagPicker<T = void>({
               style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' }}
             >
               <Input
+                ref={inputRef}
                 className="border-0 flex-grow-1 bg-transparent"
                 id={id}
                 placeholder={placeholder}
-                style={{ outline: 'none' }}
+                style={{ outline: 'none', minWidth: 0 }}
+                onKeyDown={(event) => {
+                  if (!onCreate || event.nativeEvent.isComposing) return;
+                  if (event.key !== 'Enter' && event.key !== ',') return;
+                  if (event.key === 'Enter' && isComboBoxOpen) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  createValue();
+                }}
               />
-              <Button aria-label="Show suggestions" className="border-0 bg-transparent p-0 ms-auto">
-                <i
-                  aria-hidden="true"
-                  className={clsx(
-                    'bi',
-                    isComboBoxOpen ? 'bi-chevron-up' : 'bi-chevron-down',
-                    'text-muted',
-                  )}
-                />
-              </Button>
+              {onCreate && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary flex-shrink-0"
+                  disabled={disabled || !filterText.trim()}
+                  onClick={createValue}
+                >
+                  {createButtonLabel}
+                </button>
+              )}
+              {(!onCreate || filteredItems.length > 0) && (
+                <Button
+                  aria-label="Show suggestions"
+                  className="border-0 bg-transparent p-0 ms-auto"
+                >
+                  <i
+                    aria-hidden="true"
+                    className={clsx(
+                      'bi',
+                      isComboBoxOpen ? 'bi-chevron-up' : 'bi-chevron-down',
+                      'text-muted',
+                    )}
+                  />
+                </Button>
+              )}
             </Group>
 
             {description && (

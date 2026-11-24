@@ -1,5 +1,5 @@
-FROM amazonlinux:2023.12.20260831.0
-ARG CACHEBUST=2026-09-15-14-09-16
+FROM amazonlinux:2023.12.20260930.0
+ARG CACHEBUST=2026-10-22-11-58-28
 
 WORKDIR /PrairieLearn
 
@@ -29,8 +29,11 @@ RUN make python-deps-core
 # code that will be built during the install process.
 COPY --parents pnpm-lock.yaml pnpm-workspace.yaml package.json apps/*/package.json packages/*/package.json packages/bind-mount/ packages/*/bin/ /PrairieLearn/
 
-# Install Node dependencies.
-RUN pnpm install --frozen-lockfile && pnpm store prune
+# Pruning clears registry metadata outside the package store. Remove both
+# caches in this layer so they do not add to the final image.
+RUN pnpm install --frozen-lockfile \
+    && pnpm store prune \
+    && rm -rf "$(pnpm store path)"
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . .

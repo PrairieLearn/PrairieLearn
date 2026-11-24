@@ -34,7 +34,7 @@ The `width` and `height` attributes are used as CSS property values. Unitless nu
 
 ## Accessibility
 
-`pl-excalidraw` is a canvas-based drawing tool and is not fully accessible. While the toolbar can be reached with the keyboard, shapes cannot be drawn using the keyboard alone, and the drawing surface is not exposed to screen readers. If you use this element, consider providing an alternative version of the question for students who cannot use it, for example a freeform text input where they can describe the diagram in words.
+`pl-excalidraw` is a canvas-based drawing tool and is not fully accessible. While the toolbar can be reached with the keyboard, shapes cannot be drawn using the keyboard alone, and the drawing surface is not exposed to screen readers. See [alternatives to drawing input](../question/accessibility.md#alternatives-to-drawing-input) for other ways students can answer.
 
 ## Example implementations
 

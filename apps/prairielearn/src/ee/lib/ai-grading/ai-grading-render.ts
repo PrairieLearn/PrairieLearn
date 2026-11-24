@@ -120,10 +120,10 @@ export async function stripHtmlForAiGrading(html: string) {
     stripBootstrapAttributes(el);
   });
 
-  // Remove all elements that have no text content.
+  // Remove elements that have neither text content nor images.
   $('*').each((_, el) => {
     if (!isTag(el)) return;
-    if ($(el).text().trim() === '') {
+    if (el.name !== 'img' && $(el).text().trim() === '' && $(el).find('img').length === 0) {
       $(el).remove();
     }
   });
@@ -132,7 +132,7 @@ export async function stripHtmlForAiGrading(html: string) {
   if (result.length > 10000) {
     // Prevent denial of service attacks by skipping Prettier formatting
     // if the HTML is too large. 10,000 characters was chosen arbitrarily.
-    return html.trim();
+    return result.trim();
   }
 
   return (await formatHtmlWithPrettier(result)).trim();

@@ -26,7 +26,7 @@ import type {
   StaffCourse,
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
-import { getQuestionCreateUrl } from '../../../lib/client/url.js';
+import { getAssessmentUrl, getQuestionCreateUrl } from '../../../lib/client/url.js';
 import {
   type CalculatorType,
   type EnumAssessmentTool,
@@ -56,6 +56,7 @@ import type { AssessmentAdvancedDefaults } from '../utils/formHelpers.js';
 import { buildPropsMap, computeChangeTracking } from '../utils/modifiedTracking.js';
 import {
   buildQuestionMetadata,
+  hasUnavailableQuestions,
   normalizeQuestionPoints,
   questionDisplayName,
   toEditorMetadata,
@@ -95,7 +96,7 @@ function useBeforeUnload(enabled: boolean): () => void {
       event.preventDefault();
       // MDN recommends setting returnValue for legacy browser support:
       // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event
-      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      // oxlint-disable-next-line typescript/no-deprecated
       event.returnValue = 'prompt';
     };
     window.addEventListener('beforeunload', handler);
@@ -153,6 +154,7 @@ interface AssessmentEditorInnerProps {
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
+  printingAvailable: boolean;
   courseHasQuestions: boolean;
   csrfToken: string;
   origHash: string;
@@ -177,6 +179,7 @@ function AssessmentEditorInner({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   canEdit,
+  printingAvailable,
   courseHasQuestions,
   csrfToken,
   origHash,
@@ -293,7 +296,6 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -333,8 +335,23 @@ function AssessmentEditorInner({
     return qidToZones;
   }, [zones]);
 
+  const readOnlyQids = useMemo(() => {
+    const qids = new Set<string>();
+    for (const zone of zones) {
+      for (const question of zone.questions) {
+        if (!hasUnavailableQuestions(question, questionMetadata)) continue;
+        if (question.alternatives) {
+          for (const alternative of question.alternatives) qids.add(alternative.id);
+        } else {
+          qids.add(question.id);
+        }
+      }
+    }
+    return qids;
+  }, [zones, questionMetadata]);
+
   const disabledQids = useMemo(() => {
-    const disabled = new Set<string>();
+    const disabled = new Set(readOnlyQids);
     if (selectedItem?.type === 'picker') {
       const returnTo = selectedItem.returnToSelection;
       if (returnTo?.type === 'alternative') {
@@ -369,7 +386,7 @@ function AssessmentEditorInner({
       }
     }
     return disabled;
-  }, [selectedItem, zones]);
+  }, [selectedItem, zones, readOnlyQids]);
 
   const currentChangeQid = useMemo(() => {
     if (selectedItem?.type !== 'picker' || !selectedItem.returnToSelection) return undefined;
@@ -465,6 +482,7 @@ function AssessmentEditorInner({
   };
 
   const handleQuestionPicked = async (qid: string) => {
+    if (readOnlyQids.has(qid)) return;
     try {
       const questionData = await questionByQidMutation.mutateAsync(qid);
       dispatch({
@@ -553,6 +571,7 @@ function AssessmentEditorInner({
   };
 
   const handleRemoveQuestionByQid = (qid: string) => {
+    if (readOnlyQids.has(qid)) return;
     dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
@@ -644,13 +663,14 @@ function AssessmentEditorInner({
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPos || !toPos) return;
       if (fromPos.alternativeIndex == null || toPos.alternativeIndex == null) return;
 
       // Only handle within-pool reorder here; cross-pool is handled in handleDragOver
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
       const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+      if (hasUnavailableQuestions(fromBlock, questionMetadata)) return;
       if (fromBlock.trackingId !== toBlock.trackingId) return;
       if (fromPos.alternativeIndex === toPos.alternativeIndex) return;
 
@@ -672,6 +692,8 @@ function AssessmentEditorInner({
     // Merge standalone question into alt pool via merge zone
     if (over.data.current?.type === 'merge-zone') {
       const altPoolTrackingId = over.data.current.altPoolTrackingId as string;
+      const target = findAltPoolByTrackingId(zones, altPoolTrackingId);
+      if (target && hasUnavailableQuestions(target.altPool, questionMetadata)) return;
       dispatch({
         type: 'MERGE_QUESTION_INTO_ALT_POOL',
         questionTrackingId: activeIdStr,
@@ -684,7 +706,7 @@ function AssessmentEditorInner({
     // Question block reorder within same zone
     const fromPosition = positionByStableId[activeIdStr];
     const rawToPosition = positionByStableId[overIdStr];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    // oxlint-disable-next-line typescript/no-unnecessary-condition
     if (!fromPosition || !rawToPosition) return;
 
     // If "over" resolved to an alternative inside an alt pool, use the alt pool's position
@@ -725,12 +747,13 @@ function AssessmentEditorInner({
 
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPos) return;
       // After extraction, the item becomes a question block (no alternativeIndex).
       // dnd-kit's active.data.current.type stays frozen as 'alternative', so guard here.
       if (fromPos.alternativeIndex == null) return;
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
+      if (hasUnavailableQuestions(fromBlock, questionMetadata)) return;
 
       // Alternative dragged over empty zone drop target → extract to zone
       const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
@@ -746,12 +769,13 @@ function AssessmentEditorInner({
       }
 
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!toPos) return;
 
       if (overType === 'alternative' && toPos.alternativeIndex != null) {
         // Alternative dragged over alternative in different pool → cross-pool move
         const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+        if (hasUnavailableQuestions(toBlock, questionMetadata)) return;
         if (fromBlock.trackingId !== toBlock.trackingId) {
           dispatch({
             type: 'REORDER_ALTERNATIVE',
@@ -782,7 +806,7 @@ function AssessmentEditorInner({
 
     if (activeType === 'question') {
       const fromPosition = positionByStableId[activeIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!fromPosition) return;
       const fromZone = zones[fromPosition.zoneIndex];
 
@@ -799,7 +823,7 @@ function AssessmentEditorInner({
       }
 
       const toPos = positionByStableId[overIdStr];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (!toPos) return;
 
       // Cross-zone question reorder
@@ -918,7 +942,7 @@ function AssessmentEditorInner({
     // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
     // correctly captures all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
     [zones, selectedItem],
   );
 
@@ -984,7 +1008,7 @@ function AssessmentEditorInner({
     // (used by handleQuestionPicked to build metadata), so these deps
     // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
     [zones, selectedItem, courseQuestions, handleDismissBanner],
   );
 
@@ -1119,21 +1143,35 @@ function AssessmentEditorInner({
                   actions={treeActions}
                   isAllExpanded={isAllExpanded}
                   editControls={
-                    <EditModeToolbar
-                      csrfToken={csrfToken}
-                      origHash={origHash}
-                      zones={zonesForSave}
-                      editMode={editMode}
-                      canEdit={canEdit && !!origHash}
-                      setEditMode={setEditMode}
-                      saveButtonDisabled={saveButtonDisabled}
-                      saveButtonDisabledReason={saveButtonDisabledReason}
-                      onSubmit={disableBeforeUnload}
-                      onCancel={() => {
-                        dispatch({ type: 'RESET' });
-                        setEditMode(false);
-                      }}
-                    />
+                    <div className="d-flex align-items-center gap-2">
+                      <EditModeToolbar
+                        csrfToken={csrfToken}
+                        origHash={origHash}
+                        zones={zonesForSave}
+                        editMode={editMode}
+                        canEdit={canEdit && !!origHash}
+                        setEditMode={setEditMode}
+                        saveButtonDisabled={saveButtonDisabled}
+                        saveButtonDisabledReason={saveButtonDisabledReason}
+                        onSubmit={disableBeforeUnload}
+                        onCancel={() => {
+                          dispatch({ type: 'RESET' });
+                          setEditMode(false);
+                        }}
+                      />
+                      {!editMode &&
+                        hasCoursePermissionPreview &&
+                        printingAvailable &&
+                        !groupsConfigured &&
+                        questionRows.length > 0 && (
+                          <a
+                            className="btn btn-outline-secondary btn-sm"
+                            href={`${getAssessmentUrl({ courseInstanceId: courseInstance.id, assessmentId: assessment.id })}/print`}
+                          >
+                            <i className="bi bi-printer me-1" aria-hidden="true" /> Print
+                          </a>
+                        )}
+                    </div>
                   }
                   canEdit={canEdit}
                   canAddQuestions={canEdit && !!origHash}
@@ -1158,6 +1196,7 @@ function AssessmentEditorInner({
                   courseQuestionsLoading={courseQuestionsQuery.isLoading}
                   questionsInAssessment={questionsInAssessment}
                   disabledQids={disabledQids}
+                  readOnlyQids={readOnlyQids}
                   currentChangeQid={currentChangeQid}
                   currentAssessmentId={assessment.id}
                   isPickingQuestion={questionByQidMutation.isPending}

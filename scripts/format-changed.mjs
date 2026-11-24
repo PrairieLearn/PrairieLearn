@@ -7,38 +7,27 @@
 import { execFileSync, spawn } from 'node:child_process';
 
 // File patterns matching the project's linter configurations
-const ESLINT_EXTENSIONS = new Set([
-  '.js',
-  '.jsx',
-  '.ts',
-  '.tsx',
-  '.mjs',
-  '.cjs',
-  '.mts',
-  '.cts',
-  '.html',
-  '.mustache',
-]);
+const OXLINT_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.mts', '.cts']);
 
-const PRETTIER_EXTENSIONS = new Set([
-  '.js',
-  '.jsx',
-  '.ts',
-  '.tsx',
-  '.mjs',
-  '.cjs',
-  '.mts',
-  '.cts',
+// ESLint only runs `@prairielearn/safe-db-types` on these `.tsx` files, plus HTML/mustache files.
+const ESLINT_TSX_PREFIX = 'apps/prairielearn/';
+const ESLINT_EXTENSIONS = new Set(['.html', '.mustache']);
+
+const OXFMT_EXTENSIONS = new Set([
+  ...OXLINT_EXTENSIONS,
   '.md',
-  '.sql',
   '.json',
+  '.jsonc',
   '.yml',
+  '.yaml',
   '.toml',
   '.html',
   '.css',
   '.scss',
-  '.sh',
 ]);
+
+// oxfmt doesn't support these, so Prettier (with plugins) still formats them.
+const PRETTIER_EXTENSIONS = new Set(['.sql', '.sh']);
 
 const RUFF_EXTENSIONS = new Set(['.py']);
 
@@ -150,11 +139,27 @@ if (changedFiles.length === 0) {
 console.log(`Found ${changedFiles.length} changed file(s)\n`);
 
 // Categorize files by tool
-const eslintFiles = changedFiles.filter((f) => ESLINT_EXTENSIONS.has(getExtension(f)));
+const oxlintFiles = changedFiles.filter((f) => OXLINT_EXTENSIONS.has(getExtension(f)));
+const eslintFiles = changedFiles.filter(
+  (f) =>
+    ESLINT_EXTENSIONS.has(getExtension(f)) ||
+    (f.startsWith(ESLINT_TSX_PREFIX) && getExtension(f) === '.tsx'),
+);
+const oxfmtFiles = changedFiles.filter((f) => OXFMT_EXTENSIONS.has(getExtension(f)));
 const prettierFiles = changedFiles.filter((f) => PRETTIER_EXTENSIONS.has(getExtension(f)));
 const ruffFiles = changedFiles.filter((f) => RUFF_EXTENSIONS.has(getExtension(f)));
 
 let hasErrors = false;
+
+// Run oxlint
+if (oxlintFiles.length > 0) {
+  console.log(`Running oxlint on ${oxlintFiles.length} file(s)...`);
+  const result = await runCommand('pnpm', ['oxlint', '--fix', '--', ...oxlintFiles]);
+  if (!result.success) {
+    console.error('oxlint encountered errors');
+    hasErrors = true;
+  }
+}
 
 // Run ESLint
 if (eslintFiles.length > 0) {
@@ -162,6 +167,21 @@ if (eslintFiles.length > 0) {
   const result = await runCommand('pnpm', ['eslint', '--fix', '--', ...eslintFiles]);
   if (!result.success) {
     console.error('ESLint encountered errors');
+    hasErrors = true;
+  }
+}
+
+// Run oxfmt
+if (oxfmtFiles.length > 0) {
+  console.log(`Running oxfmt on ${oxfmtFiles.length} file(s)...`);
+  const result = await runCommand('pnpm', [
+    'oxfmt',
+    '--no-error-on-unmatched-pattern',
+    '--',
+    ...oxfmtFiles,
+  ]);
+  if (!result.success) {
+    console.error('oxfmt encountered errors');
     hasErrors = true;
   }
 }

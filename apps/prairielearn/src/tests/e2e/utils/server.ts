@@ -6,14 +6,13 @@ import type { WorkerInfo } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
 import type { Config } from '../../../lib/config.js';
+import { APP_ROOT_PATH } from '../../../lib/paths.js';
 
 const BASE_PORT = 3014;
 
 interface WorkerServerOptions {
   /** Additional course directories to include beyond the defaults */
   courseDirs?: string[];
-  /** Additional config overrides to pass to the server */
-  configOverrides?: Partial<Config>;
 }
 
 /**
@@ -40,9 +39,17 @@ export async function setupWorkerServer(
         postgresqlUser: setupResults.user,
         postgresqlDatabase: setupResults.database,
         postgresqlHost: setupResults.host,
-        devMode: true, // We need this to start up the asset server.
+        devMode: true,
+        // Global setup has already built the assets, so serve them instead of
+        // having every worker bundle them again on the fly.
+        compiledAssetsDevMode: false,
+        // The worker database is cloned from an already-migrated template.
+        runMigrations: false,
+        // Enterprise-only routes are registered at startup, so they can't be
+        // enabled per test with config overrides (see `RuntimeConfigKey` in
+        // `fixtures.ts`). Every e2e server runs as enterprise instead.
+        isEnterprise: true,
         ...(options.courseDirs && { courseDirs: options.courseDirs }),
-        ...options.configOverrides,
       };
 
       await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
@@ -70,25 +77,20 @@ export async function setupWorkerServer(
 async function startServerSubprocess(
   configPath: string,
 ): Promise<{ serverProcess: ChildProcess; kill: () => Promise<void> }> {
-  // We do this instead of importing the server.ts file directly because Playwright
-  // doesn't respect tsconfig.json files.
-
-  // See https://github.com/microsoft/playwright/issues/26936
-  // and https://github.com/PrairieLearn/PrairieLearn/pull/13493
-  // > For tsx transformations that add inject semantics (email, pdf),
-  // > I would still recommend compiling the code with the production bundler that applies these
-  // > semantics and only then test it with the test runner, Playwright or different.
-
-  // We don't want to require building the production bundle for tests to make iteration speed faster.
-
-  const serverDir = path.resolve(import.meta.dirname, '..', '..', '..');
-
-  const serverProcess = spawn('pnpm', ['dev:no-watch'], {
-    cwd: serverDir,
+  // We run the server built by global setup (see `global-setup.ts`) rather than
+  // the TypeScript sources, both locally and in CI. Tests then exercise the same
+  // build that runs in production, and every worker shares one asset build
+  // instead of bundling assets on the fly.
+  const serverProcess = spawn('node', [path.join(APP_ROOT_PATH, 'dist', 'server.js')], {
+    // The server writes `server.log` to its working directory. It must not land
+    // in `src/`, since that would change the build's inputs on every run and
+    // force global setup to rebuild.
+    cwd: APP_ROOT_PATH,
     env: {
       ...process.env,
       PL_CONFIG_PATH: configPath,
       NODE_ENV: 'test',
+      DANGEROUSLY_ENABLE_TEST_ROUTES: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     // Create a new process group so we can kill all child processes

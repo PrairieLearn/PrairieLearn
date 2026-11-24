@@ -10,6 +10,7 @@ import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
+import { insertSharedQuestionUsagesForSubmission } from '../models/shared-question-usages.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -73,6 +74,7 @@ async function insertSubmission({
   user_id,
   auth_user_id,
   client_fingerprint_id,
+  question,
 }: {
   submitted_answer: Record<string, any> | null;
   raw_submitted_answer: Record<string, any> | null;
@@ -88,6 +90,7 @@ async function insertSubmission({
   user_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
+  question: Question;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
@@ -154,6 +157,12 @@ async function insertSubmission({
     );
 
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
+
+    await insertSharedQuestionUsagesForSubmission({
+      question,
+      course_id: variant.course_id,
+      assessment_instance_id: variant.assessment_instance_id,
+    });
 
     if (variant.instance_question_id != null) {
       const instanceQuestion = await sqldb.queryRow(
@@ -226,7 +235,7 @@ export async function saveSubmission(
           for await (const zipEntry of zip) {
             const name = zipEntry.path;
             const contents = (await zipEntry.buffer()).toString('base64');
-            submission.submitted_answer._files.push({ name, contents });
+            submission.submitted_answer._files.push({ name, contents, source: 'workspace' });
           }
           await fs.promises.unlink(zipPath);
         }
@@ -272,6 +281,7 @@ export async function saveSubmission(
     ...data,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
+    question,
   });
 }
 

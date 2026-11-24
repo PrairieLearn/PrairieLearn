@@ -1,0 +1,12 @@
+{
+  "uuid": "9482acdd-da76-4371-b508-82c69691ab2c",
+  "title": "External Grading: Alpine with no partial credit",
+  "topic": "Autograder",
+  "tags": ["code", "v3"],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "sharePublicly": true,
+  "partialCredit": false,
+  "externalGradingOptions": { "image": "alpine:latest", "entrypoint": "/grade/tests/grade.sh" }
+}

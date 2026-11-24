@@ -34,7 +34,7 @@ ruleTester.run('jsx-no-dollar-interpolation', rule, {
   ],
   invalid: [
     {
-      // eslint-disable-next-line no-template-curly-in-string
+      // oxlint-disable-next-line no-template-curly-in-string
       code: '<div>${message}</div>',
       errors: [
         {

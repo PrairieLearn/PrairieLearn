@@ -4,7 +4,16 @@ SELECT
 FROM
   workspace_hosts AS wh
 WHERE
-  wh.state != 'terminated';
+  -- Equivalent to `wh.state != 'terminated'`, but written as an explicit list
+  -- so it can use `workspace_hosts_state_terminated_at_key`. The table keeps
+  -- every host ever launched, so a `!=` filter scans all of them.
+  wh.state IN (
+    'launching',
+    'ready',
+    'draining',
+    'unhealthy',
+    'terminating'
+  );
 
 -- BLOCK select_healthy_hosts
 SELECT

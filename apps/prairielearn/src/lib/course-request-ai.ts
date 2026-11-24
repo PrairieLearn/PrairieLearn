@@ -90,6 +90,7 @@ export async function checkInstructorLegitimacy({
     'You are helping a PrairieLearn administrator vet a course creation request.',
     'Search the web to determine whether the person described by the user is a legitimate academic instructor or researcher at their stated institution.',
     'Use sources like faculty pages, staff directories, university websites, or professional profiles (e.g. LinkedIn, Google Scholar).',
+    'Cite the web sources supporting your findings in the summary.',
     'The user provides both the requester name and contact email and the name and UID on their PrairieLearn account. If these identities differ significantly, lower your confidence accordingly and treat it as a reason to doubt the request.',
   ]);
   const input: ModelMessage[] = [
@@ -106,7 +107,7 @@ export async function checkInstructorLegitimacy({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-4o-mini'),
+    model: openai.responses('gpt-6-luna'),
     output: Output.object({ schema: legitimacySchema }),
     instructions,
     messages: input,
@@ -145,7 +146,7 @@ export async function suggestTimezone({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-4o-mini'),
+    model: openai.responses('gpt-6-luna'),
     output: Output.object({ schema: timezoneSchema }),
     instructions,
     messages: input,
@@ -176,10 +177,11 @@ export async function suggestInstitutionPrefix({
   const instructions = formatPrompt([
     'You are helping a PrairieLearn administrator name a GitHub repository for a new course.',
     'Repository names follow the pattern "pl-{institution-prefix}-{course-name}". Your job is to determine the correct institution prefix.',
-    'Identify the institution as a whole, NOT a department. For example, if the domain is "cs.illinois.edu", the prefix is "uiuc" (not "cs").',
+    'Identify the institution as a whole, NOT a department. For example, if the domain is "cs.berkeley.edu", the prefix is "berkeley" (not "cs").',
     'Derive the prefix from the institution\'s primary domain name. For example, "berkeley.edu" gives "berkeley", "ubc.ca" gives "ubc".',
     'The contact email and PrairieLearn account UID domains are supporting hints. The contact email may be self-reported, while the UID domain may identify an institution without being a routable email address.',
     "Search the web to find the institution's primary domain if it is not obvious from the provided domains.",
+    'If you use web sources, cite them in your reasoning.',
     'You MUST always return a non-empty prefix. If the domain or institution is unfamiliar, derive the best short prefix you can from the available information (e.g. the domain name itself). Never refuse or return an empty prefix.',
   ]);
   const input: ModelMessage[] = [
@@ -195,7 +197,7 @@ export async function suggestInstitutionPrefix({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-4o-mini'),
+    model: openai.responses('gpt-6-luna'),
     output: Output.object({ schema: prefixSchema }),
     instructions,
     messages: input,

@@ -17,11 +17,13 @@ type ColumnFilter = (props: { header: TanstackTableHeader<InstanceQuestionRow> }
 
 export function createColumnFilters({
   allGraders,
+  allAiModels,
   studentLabels,
   allSubmissionGroups,
   allAiAgreementItems,
 }: {
   allGraders: string[];
+  allAiModels: string[];
   studentLabels: StaffStudentLabel[];
   allSubmissionGroups: string[];
   allAiAgreementItems: { number: number; description: string }[];
@@ -49,6 +51,9 @@ export function createColumnFilters({
         allColumnValues={[...allGraders, 'Unassigned']}
         showSearch
       />
+    ),
+    ai_grading_model: ({ header }) => (
+      <MultiSelectColumnFilter column={header.column} allColumnValues={allAiModels} showSearch />
     ),
     instance_question_group_name: ({ header }) => (
       <MultiSelectColumnFilter

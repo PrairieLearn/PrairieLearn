@@ -73,6 +73,20 @@ export async function selectAssessmentByTid({
   );
 }
 
+export async function selectOptionalAssessmentByTid({
+  course_instance_id,
+  tid,
+}: {
+  course_instance_id: string;
+  tid: string;
+}) {
+  return await queryOptionalRow(
+    sql.select_assessment_by_tid,
+    { course_instance_id, tid },
+    AssessmentSchema,
+  );
+}
+
 export async function selectAssessmentByUuid({
   course_instance_id,
   uuid,

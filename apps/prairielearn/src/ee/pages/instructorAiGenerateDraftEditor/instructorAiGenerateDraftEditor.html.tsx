@@ -62,6 +62,7 @@ export function InstructorAiGenerateDraftEditor({
       // Hide the sidebar by default. We want to maximize the horizontal space for the editor.
       // This will also prevent persisting sidebar state changes.
       forcedInitialNavToggleState: false,
+      showCourseAgentPanel: false,
     },
     headContent: [
       html`<meta

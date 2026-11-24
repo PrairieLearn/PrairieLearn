@@ -55,6 +55,16 @@ FROM
 WHERE
   id = $id;
 
+-- BLOCK count_joined_students_in_course_instance
+SELECT
+  COUNT(e.user_id)::integer AS student_count
+FROM
+  enrollments AS e
+WHERE
+  e.course_instance_id = $course_instance_id
+  AND e.status = 'joined'
+  AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id);
+
 -- BLOCK select_enrollments_by_ids_in_course_instance
 SELECT
   *
@@ -185,3 +195,18 @@ FROM
 WHERE
   id = ANY ($enrollment_ids::bigint[])
   AND course_instance_id = $course_instance_id;
+
+-- BLOCK select_enrollments_for_users_in_course
+SELECT
+  to_jsonb(e.*) AS enrollment,
+  to_jsonb(ci.*) AS course_instance
+FROM
+  enrollments AS e
+  JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+WHERE
+  ci.course_id = $course_id
+  AND e.user_id = ANY ($user_ids::bigint[])
+ORDER BY
+  e.user_id,
+  e.course_instance_id,
+  e.id;

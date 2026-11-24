@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import type { Element } from 'domhandler';

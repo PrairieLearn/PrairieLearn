@@ -51,3 +51,13 @@ FROM
     ORDER BY
       ci.id
   ) AS result;
+
+-- BLOCK select_authors
+SELECT
+  u.uid,
+  u.name
+FROM
+  course_permissions AS cp
+  JOIN users AS u ON (u.id = cp.user_id)
+WHERE
+  cp.course_id = $course_id;

@@ -351,7 +351,7 @@ test.describe('Access control UI', () => {
 
     // Verify DB state
     const records = await getAccessControlRecords(assessment.id);
-    const sectionARule = records.find((r) => r.number > 0);
+    const sectionARule = records.find((r) => r.target_type === 'student_label');
     expect(sectionARule?.date_control_duration_minutes).toBe(60);
     expect(sectionARule?.after_complete_questions_hidden).toBe(true);
 

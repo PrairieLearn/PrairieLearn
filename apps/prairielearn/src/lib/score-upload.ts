@@ -1,5 +1,4 @@
 import { isPlainObject } from 'es-toolkit';
-import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -64,20 +63,17 @@ export async function uploadInstanceQuestionScores(
     let skippedCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvParser = createCsvParser(
-      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
-      {
-        integerColumns: ['instance'],
-        floatColumns: [
-          'score_perc',
-          'points',
-          'manual_score_perc',
-          'manual_points',
-          'auto_score_perc',
-          'auto_points',
-        ],
-      },
-    );
+    const csvParser = createCsvParser(csvFile.buffer, {
+      integerColumns: ['instance'],
+      floatColumns: [
+        'score_perc',
+        'points',
+        'manual_score_perc',
+        'manual_points',
+        'auto_score_perc',
+        'auto_points',
+      ],
+    });
 
     for await (const { info, record } of csvParser) {
       try {
@@ -151,10 +147,10 @@ export async function uploadAssessmentInstanceScores(
     let errorCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvParser = createCsvParser(
-      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
-      { integerColumns: ['instance'], floatColumns: ['score_perc', 'points'] },
-    );
+    const csvParser = createCsvParser(csvFile.buffer, {
+      integerColumns: ['instance'],
+      floatColumns: ['score_perc', 'points'],
+    });
 
     for await (const { info, record } of csvParser) {
       job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);

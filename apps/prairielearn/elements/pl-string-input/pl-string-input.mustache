@@ -126,6 +126,7 @@
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#a_sub}}<code>{{a_sub}}</code>{{/a_sub}}
+    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/multiline}}
 {{#multiline}}
@@ -145,22 +146,7 @@
             disabled
             {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
-        >{{a_sub}}</textarea>
-        {{#a_sub}}
-        <button
-            type="button"
-            class="btn btn-sm btn-secondary"
-            data-bs-toggle="popover"
-            data-bs-html="true"
-            data-bs-placement="auto"
-            data-bs-title="Raw string"
-            data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
-            &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
-            &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
-        >
-            <i class="fas fa-question-circle" aria-hidden="true"></i>
-        </button>
-        {{/a_sub}}
+        >{{a_sub}}{{raw_submitted_answer}}</textarea>
     </span>
     <div class="mt-1">
 {{/multiline}}
@@ -213,24 +199,7 @@
 {{/multiline}}
 
 
-{{^multiline}}
-{{#a_sub}}
-{{! Show raw value submitted answer was parsed from }}
-<button
-    type="button"
-    class="ms-1 btn btn-sm btn-secondary"
-    data-bs-toggle="popover"
-    data-bs-html="true"
-    data-bs-placement="auto"
-    data-bs-title="Raw string"
-    data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
-    &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
-    &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
->
-    <i class="fas fa-question-circle" aria-hidden="true"></i>
-</button>
-{{/a_sub}}
-{{/multiline}}
+{{{raw_input_popover}}}
 
 <span>
 {{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}

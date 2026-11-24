@@ -7,6 +7,21 @@ import { encodeSearchString } from './uri-util.shared.js';
 
 export function getNavPageTabs() {
   const navPagesTabs = {
+    public_assessment: [
+      {
+        activeSubPage: 'file_view',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/file_view`,
+        iconClasses: 'fa fa-edit',
+        tabLabel: 'Files',
+        renderCondition: ({ assessment }) => assessment.share_source_publicly,
+      },
+      {
+        activeSubPage: 'questions',
+        urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
+        iconClasses: 'far fa-file-alt',
+        tabLabel: 'Questions',
+      },
+    ],
     public_question: [
       {
         activeSubPage: 'file_view',
@@ -148,7 +163,8 @@ export function getNavPageTabs() {
         activeSubPage: 'manual_grading',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/manual_grading`,
         iconClasses: 'fas fa-marker',
-        tabLabel: 'Manual grading',
+        tabLabel: ({ ai_grading_enabled }) =>
+          ai_grading_enabled ? 'Manual & AI grading' : 'Manual grading',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {

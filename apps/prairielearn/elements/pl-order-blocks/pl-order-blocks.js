@@ -177,14 +177,14 @@ window.PLOrderBlocks = function (uuid, options) {
           case 'ArrowDown':
             handleKey(ev, block, () => {
               if (block.nextElementSibling) {
-                block.nextElementSibling.insertAdjacentElement('afterend', block);
+                block.nextElementSibling.after(block);
               }
             });
             break;
           case 'ArrowUp':
             handleKey(ev, block, () => {
               if (block.previousElementSibling) {
-                block.previousElementSibling.insertAdjacentElement('beforebegin', block);
+                block.previousElementSibling.before(block);
               }
             });
             break;

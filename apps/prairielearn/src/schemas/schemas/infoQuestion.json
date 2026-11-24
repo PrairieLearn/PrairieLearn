@@ -15,6 +15,11 @@
       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
       "description": "Unique identifier (UUID)."
     },
+    "copiedFrom": {
+      "type": "string",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(\\/.*)?$",
+      "description": "The course UUID and question UUID of the source question, separated by a slash, optionally followed by a slash and human-readable text. Only the two UUIDs identify the source."
+    },
     "type": {
       "type": "string",
       "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"],
@@ -38,35 +43,12 @@
       "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken')."
     },
     "authors": {
-      "default": [],
-      "maxItems": 10,
+      "description": "Author UIDs or full ORCID URLs. UIDs need not identify an existing account or be a routable email.",
+      "maxItems": 100,
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 255,
-            "description": "A human-readable name of a question author."
-          },
-          "email": {
-            "type": "string",
-            "maxLength": 255,
-            "description": "An email address to contact a question author."
-          },
-          "orcid": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$",
-            "description": "An ORCID identifier that uniquely identifies an individual question author."
-          },
-          "originCourse": {
-            "type": "string",
-            "description": "The sharing name of a course whose staff is a question author."
-          }
-        },
-        "additionalProperties": false,
-        "description": "An author (individual person, or staff of a course of origin) credited with creating a question."
+        "type": "string",
+        "minLength": 1
       }
     },
     "clientFiles": {

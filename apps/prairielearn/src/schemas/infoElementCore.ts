@@ -2,6 +2,14 @@ import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
+export const ElementLocalFilePathJsonSchema = z
+  .string()
+  .regex(
+    /^(?![\\/])(?![A-Za-z]:)(?!.*%(?:2[eEfF]|5[cC]))(?!.*(?:^|[\\/])\.\.(?:[\\/]|$)).+$/,
+    'Path must stay within the element directory.',
+  )
+  .describe("A file path contained within the element's directory.");
+
 const DependencyJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
@@ -24,11 +32,11 @@ const DependencyJsonSchema = z
       .describe('The scripts required by this element from /node_modules.')
       .optional(),
     elementStyles: z
-      .array(z.string().describe("A .css file located in the element's directory."))
+      .array(ElementLocalFilePathJsonSchema)
       .describe("The styles required by this element from the element's directory.")
       .optional(),
     elementScripts: z
-      .array(z.string().describe("A .js file located in the element's directory."))
+      .array(ElementLocalFilePathJsonSchema)
       .describe("The scripts required by this element from the element's directory.")
       .optional(),
   })
@@ -43,7 +51,7 @@ const DynamicDependencyJsonSchema = z
       .describe('The scripts required by this element from /node_modules as an importmap.')
       .optional(),
     elementScripts: z
-      .record(z.string(), z.string())
+      .record(z.string(), ElementLocalFilePathJsonSchema)
       .describe(
         "The scripts required by this element from the element's directory as an importmap.",
       )
@@ -55,7 +63,7 @@ const DynamicDependencyJsonSchema = z
 export const ElementCoreJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
-    controller: z.string().describe("The name of the element's controller file."),
+    controller: ElementLocalFilePathJsonSchema,
     dependencies: DependencyJsonSchema.optional(),
     dynamicDependencies: DynamicDependencyJsonSchema.optional(),
     additionalNames: z

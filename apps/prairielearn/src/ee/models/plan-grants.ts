@@ -42,7 +42,7 @@ export async function ensurePlanGrant({
     },
     PlanGrantSchema,
   );
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  // oxlint-disable-next-line typescript/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',
@@ -69,7 +69,7 @@ export async function updatePlanGrant({
     { id: plan_grant.id, type },
     PlanGrantSchema,
   );
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  // oxlint-disable-next-line typescript/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',
@@ -96,7 +96,7 @@ export async function deletePlanGrant({
     { id: plan_grant.id },
     PlanGrantSchema,
   );
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  // oxlint-disable-next-line typescript/no-deprecated
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',

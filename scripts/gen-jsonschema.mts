@@ -6,7 +6,6 @@
 import fs from 'fs';
 import path from 'path';
 
-import * as prettier from 'prettier';
 import { z } from 'zod';
 
 import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
@@ -16,6 +15,8 @@ import {
 } from '../apps/prairielearn/src/lib/config.js';
 import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
+
+import { formatWithOxfmt } from './format-with-oxfmt.mjs';
 
 // Zod 4's `z.toJSONSchema` only emits `additionalProperties: false` for strict
 // objects, but the runtime config schema is a plain (non-strict) `z.object` that
@@ -45,12 +46,10 @@ const configToJsonSchema = (schema: z.ZodType) => {
   return jsonSchema;
 };
 
-// Serialize the raw Zod 4 output and format it with the repo's prettier config so
-// the result is identical to the committed files (no separate prettier pass needed).
-const formatSchema = async (filePath: string, schema: unknown) => {
-  const config = await prettier.resolveConfig(filePath);
-  return prettier.format(JSON.stringify(schema, null, 2), { ...config, filepath: filePath });
-};
+// Serialize the raw Zod 4 output and format it with the repo's oxfmt config so
+// the result is identical to the committed files (no separate formatter pass needed).
+const formatSchema = (filePath: string, schema: unknown) =>
+  formatWithOxfmt(filePath, JSON.stringify(schema, null, 2));
 
 // determine if we are checking or writing
 const check = process.argv[2] === 'check';
@@ -98,7 +97,7 @@ if (check) {
   for (const [filePath, schema] of targets) {
     try {
       const file = fs.readFileSync(filePath, 'utf8');
-      if (file !== (await formatSchema(filePath, schema))) {
+      if (file !== formatSchema(filePath, schema)) {
         console.error(
           `Mismatch in ${path.basename(filePath)} (Do you need to run \`make update-jsonschema\`?)`,
         );
@@ -111,6 +110,6 @@ if (check) {
   }
 } else {
   for (const [filePath, schema] of targets) {
-    fs.writeFileSync(filePath, await formatSchema(filePath, schema));
+    fs.writeFileSync(filePath, formatSchema(filePath, schema));
   }
 }

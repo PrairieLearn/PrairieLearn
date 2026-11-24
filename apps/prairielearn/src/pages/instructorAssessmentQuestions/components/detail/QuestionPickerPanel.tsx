@@ -31,6 +31,7 @@ export function QuestionPickerPanel({
   isLoading,
   questionsInAssessment,
   disabledQids,
+  readOnlyQids,
   currentChangeQid,
   isPickingQuestion,
   pickerError,
@@ -46,6 +47,7 @@ export function QuestionPickerPanel({
   isLoading?: boolean;
   questionsInAssessment: Map<string, string[]>;
   disabledQids: Set<string>;
+  readOnlyQids: Set<string>;
   currentChangeQid?: string;
   courseId: string;
   courseInstanceId: string;
@@ -303,6 +305,8 @@ export function QuestionPickerPanel({
               const isCurrentChange = currentChangeQid === qid;
               const isDisabled = (disabledQids.has(qid) && !isCurrentChange) || !!isPickingQuestion;
               return (
+                // oxlint doesn't recognize the conditional `role` as making this element interactive.
+                // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
                 <div
                   role={isDisabled ? undefined : 'button'}
                   tabIndex={isDisabled ? undefined : 0}
@@ -409,6 +413,8 @@ export function QuestionPickerPanel({
                 question.assessments?.filter((a) => a.assessment_id !== currentAssessmentId) ?? [];
 
               return (
+                // oxlint doesn't recognize the conditional `role` as making this element interactive.
+                // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
                 <div
                   key={virtualRow.key}
                   ref={rowVirtualizer.measureElement}
@@ -483,7 +489,7 @@ export function QuestionPickerPanel({
                       </div>
                     )}
                   </div>
-                  {isInAssessment && (
+                  {isInAssessment && !readOnlyQids.has(qid) && (
                     <button
                       type="button"
                       className="btn btn-sm border-0 text-muted ms-1 picker-delete-btn hover-show"

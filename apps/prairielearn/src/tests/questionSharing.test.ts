@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import type { ComponentProps } from 'react';
+import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -28,6 +29,7 @@ import {
 } from '../models/question.js';
 import { selectOptionalSharingSetByName } from '../models/sharing-set.js';
 import { selectUserByUid } from '../models/user.js';
+import type { AssessmentQuestionsEditor } from '../pages/instructorAssessmentQuestions/components/AssessmentEditor.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { createCourseTrpcClient } from '../trpc/course/client.js';
 import type { SharingError } from '../trpc/course/sharing.js';
@@ -326,9 +328,17 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
 
     test('Fail to access shared question, because permission has not yet been granted', async () => {
-      // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
       const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
-      assert(!(await res.text()).includes(SHARING_QUESTION_QID));
+      const editor = res.$('div[data-component="AssessmentQuestionsEditor"]');
+      assert.include(editor.text(), `@${SHARING_COURSE_SHARING_NAME}/${SHARING_QUESTION_QID}`);
+      assert.include(editor.text(), 'Unavailable locally');
+      assert.lengthOf(editor.find('a[href*="/question/"]'), 0);
+      assert.notInclude(await res.text(), sharingCourseData.questions[SHARING_QUESTION_QID].title);
+
+      const props = superjson.parse<ComponentProps<typeof AssessmentQuestionsEditor>>(
+        res.$('script[data-component-props][data-component="AssessmentQuestionsEditor"]').text(),
+      );
+      assert.isEmpty(props.questionRows);
 
       // Question can be accessed through the owning course
       const questionId = (
@@ -348,9 +358,26 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
 
     test('Fail if trying to set an invalid sharing name', async () => {
-      await expect(setSharingName(sharingCourse.id, 'invalid@sharingname')).rejects.toThrow();
-      await expect(setSharingName(sharingCourse.id, 'invalid / sharingname')).rejects.toThrow();
-      await expect(setSharingName(sharingCourse.id, '')).rejects.toThrow();
+      for (const name of [
+        'invalid@sharingname',
+        'invalid/sharingname',
+        'Nothing shared yet',
+        'café',
+      ]) {
+        await expect(setSharingName(sharingCourse.id, name)).rejects.toThrow('only letters');
+      }
+      await expect(setSharingName(sharingCourse.id, '   ')).rejects.toThrow(
+        'Course sharing name is required.',
+      );
+    });
+
+    test('Enforce the sharing name length limit after trimming', async () => {
+      const name = 'A'.repeat(64);
+      await setSharingName(sharingCourse.id, `  ${name}  `);
+      assert.equal((await selectCourseById(sharingCourse.id)).sharing_name, name);
+      await expect(setSharingName(sharingCourse.id, 'A'.repeat(65))).rejects.toThrow(
+        'Course sharing name must be 64 characters or fewer.',
+      );
     });
 
     test('Set consuming course sharing name', async () => {
@@ -374,7 +401,10 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
 
     test('Successfully change the sharing name when no questions have been shared', async () => {
-      await setSharingName(sharingCourse.id, 'Nothing shared yet');
+      await setSharingName(sharingCourse.id, '  Nothing_shared-yet  ');
+      assert.equal((await selectCourseById(sharingCourse.id)).sharing_name, 'Nothing_shared-yet');
+      await setSharingName(sharingCourse.id, '7');
+      assert.equal((await selectCourseById(sharingCourse.id)).sharing_name, '7');
       await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
     });
 
@@ -460,7 +490,9 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
     });
 
     test('Fail to change the sharing name when a question has been shared', async () => {
-      await expect(setSharingName(sharingCourse.id, 'Question shared')).rejects.toThrow();
+      await expect(setSharingName(sharingCourse.id, 'Question-shared')).rejects.toThrow(
+        'At least one question has been shared.',
+      );
     });
   });
 
@@ -1108,6 +1140,18 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
       assert.equal(syncResult.status, 'complete');
       assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 
+      const question = await selectQuestionByQid({
+        course_id: sharingCourse.id,
+        qid: ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID,
+      });
+      const downloadUrl = `${baseUrl}/public/course/${sharingCourse.id}/question/${question.id}/file_download/questions/${question.qid}/info.json`;
+      const download = await fetch(downloadUrl);
+      assert.equal(download.status, 200);
+      assert.deepEqual(
+        await download.json(),
+        sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID],
+      );
+
       sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID].sharePublicly =
         true;
       delete sharingCourseData.questions[ASSESSMENT_ONLY_PUBLICLY_SHARED_QUESTION_QID]
@@ -1158,6 +1202,37 @@ describe('Question Sharing', { timeout: 60_000, concurrent: false }, function ()
       const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
 
       assert(sharedAssessmentPage.ok);
+    });
+
+    test('Successfully access the files tab for the shared assessment', async () => {
+      const sharedAssessmentId = (
+        await selectAssessmentByTid({
+          tid: 'test',
+          course_instance_id: sharingCourseInstanceId,
+        })
+      ).id;
+      const sharedAssessmentFilesUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/file_view`;
+      const sharedAssessmentFilesPage = await fetchCheerio(sharedAssessmentFilesUrl);
+
+      assert(sharedAssessmentFilesPage.ok);
+      assert.lengthOf(sharedAssessmentFilesPage.$('a:contains("infoAssessment.json")'), 1);
+    });
+
+    test('Successfully download a file from the shared assessment', async () => {
+      const sharedAssessmentId = (
+        await selectAssessmentByTid({
+          tid: 'test',
+          course_instance_id: sharingCourseInstanceId,
+        })
+      ).id;
+      const sharedAssessmentFileDownloadUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/file_download/courseInstances/Fa19/assessments/test/infoAssessment.json`;
+      const sharedAssessmentFileDownloadPage = await fetchCheerio(sharedAssessmentFileDownloadUrl);
+
+      assert(sharedAssessmentFileDownloadPage.ok);
+      assert.deepEqual(
+        JSON.parse(await sharedAssessmentFileDownloadPage.text()),
+        sharingCourseData.courseInstances['Fa19'].assessments['test'],
+      );
     });
 
     test('Try adding a draft question to a sharing set, ensure sync error is created', async () => {

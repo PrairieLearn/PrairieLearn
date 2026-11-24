@@ -1,5 +1,23 @@
 # @prairielearn/sentry
 
+## 6.0.2
+
+### Patch Changes
+
+- d8fbd26: Update the Sentry Node SDK and core together to 11.9.0 so error reporting uses a consistent SDK version.
+
+## 6.0.1
+
+### Patch Changes
+
+- d03c74b: Redact credentials from errors reported to Sentry.
+
+## 6.0.0
+
+### Major Changes
+
+- 08f657e: Upgrade to Sentry v11, remove the obsolete SentryContextManager export, and link errors to independently managed OpenTelemetry traces. Preserve manual Express error capture and restrictive HTTP data collection defaults, and adopt v11's message stack traces and source context defaults.
+
 ## 5.0.11
 
 ### Patch Changes

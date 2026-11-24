@@ -37,6 +37,7 @@ interface AssessmentQuestionManualGradingProps {
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
   trpcCsrfToken: string;
+  courseInstanceTrpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -72,6 +73,7 @@ function AssessmentQuestionManualGradingInner({
   courseInstance,
   urlPrefix,
   csrfToken,
+  courseInstanceTrpcCsrfToken,
   assessment,
   assessmentQuestion,
   questionQid,
@@ -143,6 +145,8 @@ function AssessmentQuestionManualGradingInner({
               <input
                 className="form-check-input"
                 type="checkbox"
+                // False positive: https://github.com/oxc-project/oxc/issues/24838
+                // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
@@ -174,6 +178,7 @@ function AssessmentQuestionManualGradingInner({
         course={course}
         courseInstance={courseInstance}
         csrfToken={csrfToken}
+        courseInstanceTrpcCsrfToken={courseInstanceTrpcCsrfToken}
         instanceQuestionsInfo={instanceQuestionsInfo}
         urlPrefix={urlPrefix}
         assessment={assessment}

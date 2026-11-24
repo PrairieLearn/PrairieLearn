@@ -1,7 +1,9 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import type { PageLocation } from '@prairielearn/course-agent-types';
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
@@ -154,9 +156,13 @@ function UnpublishedBannerComponent({
   navContext: NavContext;
   resLocals: UntypedResLocals;
 }) {
-  if (navContext.type !== 'instructor') return null;
-  if (!navContext.page) return null;
-  if (!['instance_admin', 'assessment', 'students'].includes(navContext.page)) return null;
+  if (
+    navContext.type !== 'instructor' ||
+    !navContext.page ||
+    !['instance_admin', 'assessment', 'students'].includes(navContext.page)
+  ) {
+    return null;
+  }
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
   const { course_instance: courseInstance, urlPrefix } = resLocals;
@@ -220,10 +226,16 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Sets the html and body tag heights to 100% */
+    /**
+     * Fills the available height below navigation. Content can provide its own scroll regions;
+     * with side navigation, the main container remains the scroll parent for overflowing content
+     * (for example, when panes switch to a stacked layout).
+     */
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
+    /** Whether to render sync errors and warnings above the page content. */
+    showSyncErrorsAndWarnings?: boolean;
     /** Additional classes to apply to the main content container. */
     contentContainerClassName?: string;
     /** A note to display after the pageTitle, shown in parenthesis. */
@@ -248,6 +260,8 @@ export function PageLayout({
     forcedInitialNavToggleState?: boolean;
     /** Whether or not to show the branded page footer. */
     showFooter?: boolean;
+    /** Whether to show the course agent panel. Disable on pages with their own AI chat. */
+    showCourseAgentPanel?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
@@ -262,12 +276,14 @@ export function PageLayout({
     fullWidth: false,
     fullHeight: false,
     contentPadding: true,
+    showSyncErrorsAndWarnings: true,
     contentContainerClassName: '',
     hxExt: '',
     dataAttributes: {},
     enableNavbar: true,
     hideNavbarSessionControls: false,
     showFooter: false,
+    showCourseAgentPanel: true,
     ...options,
   };
 
@@ -282,11 +298,36 @@ export function PageLayout({
   const sideNavExpanded =
     sideNavEnabled && (resolvedOptions.forcedInitialNavToggleState ?? resLocals.side_nav_expanded);
 
+  // Rendered by the course agent panel middleware (EE) when the user has access.
+  const courseAgentPanel =
+    sideNavEnabled && resolvedOptions.enableNavbar && resolvedOptions.showCourseAgentPanel
+      ? resLocals.course_agent_panel
+      : null;
+
+  // The agent sees the page through its nav key, not the page title, which can name students.
+  // A shared question from another course is flagged, since its files are not in this checkout.
+  const courseAgentPage = courseAgentPanel
+    ? EncodedData(
+        {
+          page: [navContext.page, navContext.subPage].filter((part) => part != null).join('.'),
+          courseInstance: resLocals.course_instance?.short_name ?? undefined,
+          assessment: resLocals.assessment?.tid ?? undefined,
+          question: resLocals.question?.qid ?? undefined,
+          questionFromAnotherCourse:
+            resLocals.question && resLocals.question.course_id !== resLocals.course.id
+              ? true
+              : undefined,
+        } satisfies Omit<PageLocation, 'path'>,
+        'course-agent-page',
+      )
+    : '';
+
   let showContextNavigation = [
     'instructor',
     'administrator_institution',
     'administrator',
     'institution',
+    'public',
   ].includes(navContext.type ?? '');
 
   // If additional navigation capabilities are not needed, such as on the
@@ -327,13 +368,17 @@ export function PageLayout({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({
-          resLocals,
-          pageTitle,
-          pageNote: resolvedOptions.pageNote,
-        })}
-        ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
-        ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
+        ${[
+          HeadContents({
+            resLocals,
+            pageTitle,
+            pageNote: resolvedOptions.pageNote,
+          }),
+          compiledStylesheetTag('pageLayout.css'),
+          courseAgentPanel ? compiledStylesheetTag('courseAgent.css') : '',
+          headContentString,
+          sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : '',
+        ]}
       </head>
       <body
         class="${clsx({
@@ -369,11 +414,11 @@ export function PageLayout({
                   ${Navbar({
                     resLocals,
                     navPage: navContext.page,
-                    navSubPage: navContext.subPage,
                     navbarType: navContext.type,
                     sideNavEnabled,
                     hideSessionControls: resolvedOptions.hideNavbarSessionControls,
                     showInstructorSupport: resolvedOptions.showInstructorSupport,
+                    courseAgentPanel,
                   })}
                 </div>`
               : ''
@@ -474,16 +519,25 @@ export function PageLayout({
                   resolvedOptions.contentPadding && sideNavEnabled && 'px-3',
                   resolvedOptions.contentPadding && 'pb-3',
                   resolvedOptions.fullHeight && 'h-100',
+                  resolvedOptions.fullHeight && 'app-content-full-height flex-grow-1',
                 )}"
               >
-                ${renderHtml(
-                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
-                )}
+                ${
+                  resolvedOptions.showSyncErrorsAndWarnings
+                    ? renderHtml(
+                        <SyncErrorsAndWarningsForContext
+                          navContext={navContext}
+                          resLocals={resLocals}
+                        />,
+                      )
+                    : ''
+                }
                 ${contentString}
               </main>
               ${postContentString}
             </div>
           </div>
+          ${courseAgentPage}
         </div>
         ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>

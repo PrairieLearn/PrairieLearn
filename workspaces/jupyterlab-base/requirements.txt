@@ -1,1 +1,1 @@
-jupyter-collaboration==5.0.3
+jupyter-collaboration==5.0.4

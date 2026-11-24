@@ -39,6 +39,10 @@ export function downloadAsJSON(data: any, filename: string): void {
  * @param filename The desired filename.
  */
 export function downloadAsCSV(header: string[], data: unknown[][], filename: string): void {
-  const csvContent = stringify(data, { header: true, columns: header });
+  const csvContent = stringify(data, {
+    header: true,
+    columns: header,
+    escape_formulas: true,
+  });
   downloadTextFile(csvContent, filename, 'text/csv');
 }

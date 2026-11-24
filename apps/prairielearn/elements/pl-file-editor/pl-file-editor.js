@@ -68,10 +68,8 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  let currentContents = '';
-  if (options.currentContents) {
-    currentContents = this.b64DecodeUnicode(options.currentContents);
-  }
+  const encodedContents = this.inputElement.val();
+  const currentContents = encodedContents ? this.b64DecodeUnicode(encodedContents) : '';
   this.setEditorContents(currentContents, { resetUndo: true });
 
   this.previewVersion = 0;
@@ -289,12 +287,12 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       const fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
       const fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
       fontSelect.empty();
-      for (const entries in fontSizeList) {
+      for (const fontSize of fontSizeList) {
         fontSelect.append(
           $('<option>', {
-            value: fontSizeList[entries],
-            text: fontSizeList[entries],
-            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
+            value: fontSize,
+            text: fontSize,
+            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSize,
           }),
         );
       }
@@ -302,13 +300,13 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       const keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
       const keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
       keyboardHandlerSelect.empty();
-      for (const index in keyboardHandlerList) {
-        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
+      for (const keyboardHandlerName of keyboardHandlerList) {
+        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerName.toLowerCase();
 
         keyboardHandlerSelect.append(
           $('<option>', {
             value: keyboardHandler,
-            text: keyboardHandlerList[index],
+            text: keyboardHandlerName,
             selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
           }),
         );

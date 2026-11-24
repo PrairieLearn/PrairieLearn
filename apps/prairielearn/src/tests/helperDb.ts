@@ -18,8 +18,11 @@ const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';
 const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres';
 
-const POSTGRES_DATABASE = 'pltest';
-const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
+// Playwright sets its own namespace (see `playwright.config.ts`) so that e2e
+// tests don't share the template or worker databases with Vitest, which would
+// break running both suites at once.
+const POSTGRES_DATABASE = process.env.PL_TEST_DATABASE_NAMESPACE ?? 'pltest';
+const POSTGRES_DATABASE_TEMPLATE = `${POSTGRES_DATABASE}_template`;
 
 const postgresTestUtils = sqldb.makePostgresTestUtils({
   user: POSTGRES_USER,
@@ -103,7 +106,7 @@ async function closeSql(): Promise<void> {
   await sqldb.closeAsync();
 }
 
-export async function databaseExists(dbName: string): Promise<boolean> {
+async function databaseExists(dbName: string): Promise<boolean> {
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   const result = await client.query(

@@ -17,6 +17,11 @@ import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { closePrintRenderer } from '../lib/printing/index.js';
+import {
+  beginPrintExportShutdown,
+  waitForPrintExportWorkers,
+} from '../lib/printing/print-exports.js';
 import * as serverJobs from '../lib/server-jobs.js';
 import * as socketServer from '../lib/socket-server.js';
 import * as freeformServer from '../question-servers/freeform.js';
@@ -28,7 +33,6 @@ import * as helperDb from './helperDb.js';
 const debug = debugfn('prairielearn:helperServer');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-config.startServer = false;
 // Pick a unique port based on the Vitest worker ID.
 config.serverPort = (3007 + Number.parseInt(process.env.VITEST_POOL_ID ?? '0')).toString();
 
@@ -102,14 +106,9 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
 
 export async function after(): Promise<void> {
   debug('after()');
-  // call close()/stop() functions in reverse order to the
-  // start() functions above
+  beginPrintExportShutdown();
+  // Drain background work before closing the resources it may still use.
   try {
-    await assets.close();
-
-    debug('after(): finish workers');
-    await codeCaller.finish();
-
     debug('after(): stop server');
     await server.stopServer();
 
@@ -118,6 +117,13 @@ export async function after(): Promise<void> {
 
     debug('after(): close server jobs');
     await serverJobs.stop();
+
+    await waitForPrintExportWorkers();
+    await closePrintRenderer();
+    await assets.close();
+
+    debug('after(): finish workers');
+    await codeCaller.finish();
 
     debug('after(): close cache');
     await cache.close();

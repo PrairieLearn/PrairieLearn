@@ -145,7 +145,7 @@ registerHydratedComponent(${componentName});</code></pre>
       ))}
       <script
         type="application/json"
-        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+        // oxlint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{
           __html: escapeJsonForHtml(props),
         }}
@@ -159,7 +159,7 @@ registerHydratedComponent(${componentName});</code></pre>
         // position, matching the client-side hydration which also places the component
         // at the root of its own tree. This ensures hooks like `useId()` generate
         // consistent values between server and client.
-        // eslint-disable-next-line @eslint-react/dom-no-dangerously-set-innerhtml
+        // oxlint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{
           __html: renderToString(<Component {...props} />),
         }}

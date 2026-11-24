@@ -5,7 +5,6 @@ from typing import TypedDict
 import lxml.html
 import prairielearn as pl
 from dag_checker import ColoredEdges, Edges
-from lxml.etree import _Comment
 
 SCHEMA_MANIFEST_PATH = pathlib.Path(__file__).parent / "schema.json"
 
@@ -138,7 +137,7 @@ SPEC_CHAR = frozenset(SPEC_CHAR_STR)
 
 def is_multigraph(element: lxml.html.HtmlElement) -> bool:
     for html_tag in element:  # iterate through the html tags inside pl-order-blocks
-        if isinstance(html_tag, _Comment):
+        if isinstance(html_tag, lxml.html.HtmlComment):
             continue
         has_colors = "|" in pl.get_string_attrib(html_tag, "depends", "")
         if has_colors:
@@ -517,14 +516,14 @@ def collect_answer_options(
 ) -> list[AnswerOptions]:
     answer_options = []
     for inner_element in html_element:
-        if isinstance(inner_element, _Comment):
+        if isinstance(inner_element, lxml.html.HtmlComment):
             continue
 
         match inner_element.tag:
             case "pl-block-group":
                 group_tag, group_depends = get_graph_info(inner_element)
                 for answer_element in inner_element:
-                    if isinstance(answer_element, _Comment):
+                    if isinstance(answer_element, lxml.html.HtmlComment):
                         continue
                     options = AnswerOptions(
                         answer_element,

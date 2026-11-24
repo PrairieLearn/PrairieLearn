@@ -239,8 +239,9 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test('can delete user', async () => {
+  test('can delete another Owner', async () => {
     const trpc = createClient();
+    await trpc.courseStaff.updateCourseRole.mutate({ userId: '3', courseRole: 'Owner' });
     await trpc.courseStaff.deleteUser.mutate({ userId: '3' });
     updatePermissions(users, 'staff03@example.com', null, null);
     await checkPermissions(users);
@@ -463,8 +464,9 @@ function runTest(context: TestContext) {
     await checkPermissions(users);
   });
 
-  test('can bulk delete non-owners via bulk delete', async () => {
+  test('can bulk delete another Owner', async () => {
     const trpc = createClient();
+    await trpc.courseStaff.updateCourseRole.mutate({ userId: '5', courseRole: 'Owner' });
     await trpc.courseStaff.bulkDelete.mutate({ userIds: ['5'] });
     updatePermissions(users, 'staff05@example.com', null, null);
     await checkPermissions(users);

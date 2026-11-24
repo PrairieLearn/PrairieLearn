@@ -596,8 +596,7 @@ export function createEditorReducer(initialState: EditorState) {
       }
 
       case 'DISMISS_BANNER': {
-        const newDismissedBanners = new Set(state.dismissedBanners);
-        newDismissedBanners.add(action.trackingId);
+        const newDismissedBanners = new Set([...state.dismissedBanners, action.trackingId]);
         return {
           ...state,
           dismissedBanners: newDismissedBanners,

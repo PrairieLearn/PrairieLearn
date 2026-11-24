@@ -880,6 +880,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     config: SketchClientConfig = copy.deepcopy(params["config"])
     solution = params["solution_state"]
 
+    format_error = data["format_errors"].get(name)
     submission = data["raw_submitted_answers"].get(
         name + "-sketchresponse-submission", None
     )
@@ -891,7 +892,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # the same format, so piping one into the other is very convenient.
             config["initialstate"] = submission_parsed["data"]
         except Exception:
-            data["format_errors"][name] = (
+            format_error = (
                 "Invalid or corrupted submission data received from SketchResponse."
             )
 
@@ -948,8 +949,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             score_class = alert_class = "warning"
 
-    # Each SketchResponse instance needs a unique ID, but only the question panel ID
-    # matters because it gets parsed on submission.
+    # Print views may show the same answer more than once, so DOM IDs must differ.
+    # The question panel's form name must match the answer key used for grading.
     random_id = "".join(random.choice(string.ascii_lowercase) for _ in range(15))
 
     scoring_params = {
@@ -959,7 +960,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "score_class": score_class,
         "score_icon": score_icon,
         "alert_class": alert_class,
-        "format_error": data["format_errors"].get(name, None),
+        "format_error": format_error,
         "read_only": read_only,
     }
 
@@ -967,14 +968,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         if read_only or not data["editable"]:
             config["readonly"] = True
-        html_params = {"id": name, **scoring_params}
+        html_params = {"id": random_id, "submission_name": name, **scoring_params}
     elif data["panel"] == "submission":
         config["readonly"] = True
-        html_params = {"id": random_id, **scoring_params}
+        html_params = {"id": random_id, "submission_name": random_id, **scoring_params}
     elif len(solution) > 0:  # answer panel (has solution to display)
         config["initialstate"] = solution
         config["readonly"] = True
-        html_params = {"id": random_id, "read_only": True}
+        html_params = {"id": random_id, "submission_name": random_id, "read_only": True}
     else:  # answer panel (no solution to display)
         html_params = {"no_answer": True}
 

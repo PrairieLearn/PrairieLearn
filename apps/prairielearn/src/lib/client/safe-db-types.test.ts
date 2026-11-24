@@ -1,7 +1,8 @@
-/* eslint perfectionist/sort-objects: error */
-
+// `oxlint.config.mts` keeps the objects in this file sorted; update it if this file moves.
 import { describe, expect, it } from 'vitest';
 import type z from 'zod';
+
+import { DEFAULT_PRINT_SETTINGS } from '../printing/print-settings.js';
 
 import {
   AdminInstitutionSchema,
@@ -20,6 +21,7 @@ import {
   StaffInstitutionSchema,
   StaffJobSchema,
   StaffJobSequenceSchema,
+  StaffPrintFormSchema,
   StaffQuestionSchema,
   StaffTagSchema,
   StaffTopicSchema,
@@ -63,6 +65,7 @@ const minimalStaffCourse: z.input<typeof StaffCourseSchema> = {
   sync_warnings: null,
   template_course: false,
   title: null,
+  uuid: '00000000-0000-4000-8000-000000000001',
 };
 
 // StudentCourse omits many fields from StaffCourse
@@ -272,6 +275,16 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   user_id: null,
 };
 
+const minimalStaffPrintForm: z.input<typeof StaffPrintFormSchema> = {
+  archived_at: null,
+  assessment_id: '2',
+  created_at: new Date(),
+  id: '10',
+  label: 'A',
+  question_selection_locked_at: null,
+  settings: DEFAULT_PRINT_SETTINGS,
+};
+
 const minimalStudentAssessmentInstanceAuthzResult: z.input<
   typeof StudentAssessmentInstanceAuthzResultSchema
 > = {
@@ -377,6 +390,7 @@ const minimalStaffAlternativePool: z.input<typeof StaffAlternativePoolSchema> = 
 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
+  ai_grading_last_selected_credential_id: null,
   ai_grading_last_selected_model: null,
   ai_grading_mode: false,
   allow_real_time_grading: true,
@@ -508,7 +522,10 @@ const minimalStaffJobSequence: z.input<typeof StaffJobSequenceSchema> = {
 };
 
 const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
+  authors: null,
   client_files: null,
+  copied_from: null,
+  copied_from_question_id: null,
   course_id: '1',
   deleted_at: null,
   dependencies: {},
@@ -730,6 +747,15 @@ describe('safe-db-types schemas', () => {
     });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStudentAssessmentInstance);
+  });
+
+  it('parses valid StaffPrintForm and drops owner and actor IDs', () => {
+    const parsed = StaffPrintFormSchema.parse({
+      ...minimalStaffPrintForm,
+      authn_user_id: '4',
+      user_id: '5',
+    });
+    expect(parsed).toEqual(minimalStaffPrintForm);
   });
 
   it('parses valid StudentAssessmentInstanceAuthzResult and strips password', () => {

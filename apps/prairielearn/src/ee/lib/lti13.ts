@@ -233,7 +233,7 @@ export async function getOpenidClientConfig(
 
   // Only for testing
   if (config.devMode) {
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    // oxlint-disable-next-line typescript/no-deprecated
     client.allowInsecureRequests(openidClientConfig);
   }
 
@@ -772,7 +772,6 @@ export async function fetchRetryPaginated(
 }
 
 // https://www.imsglobal.org/spec/lti-ags/v2p0#score-publish-service
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Lti13ScoreSchema = z.object({
   scoreGiven: z.number(),
   scoreMaximum: z.number(),

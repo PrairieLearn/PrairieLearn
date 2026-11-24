@@ -20,7 +20,7 @@ export function QueryErrors<T>({
 
     return (
       <Alert
-        // eslint-disable-next-line @eslint-react/no-array-index-key
+        // oxlint-disable-next-line react/no-array-index-key
         key={index}
         variant="danger"
         className="mb-3"

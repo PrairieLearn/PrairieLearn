@@ -307,6 +307,9 @@
     },
   ];
 
+  // Bullet (U+2022), bullet operator (U+2219), and asterisk operator (U+2217)
+  const unicodeMultiplicationKeys = new Set(['•', '∙', '∗']);
+
   const isSelected = (mf) => {
     const firstSelection = mf.selection?.ranges?.[0];
     return firstSelection && firstSelection[1] !== firstSelection[0];
@@ -351,10 +354,10 @@
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
-   * @param {string} name Name of the element to look up the tag
+   * @param {string} uuid Unique DOM ID suffix for this rendered element
    */
-  window.PLSymbolicInput = function (name) {
-    const mf = document.getElementById('symbolic-input-' + name);
+  window.PLSymbolicInput = function (uuid) {
+    const mf = document.getElementById('symbolic-input-' + uuid);
 
     // Always keep basic right-click items and append to other menu items
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
@@ -470,7 +473,8 @@
         ],
         [
           ...onlyIfSets('[separator]'),
-          { class: 'small', latex: '|#0|', insert: '|{#0}|' },
+          // Paired fences keep implicit fraction insertion inside the absolute value.
+          { class: 'small', latex: '|#0|', insert: '\\left|{#0}\\right|' },
           { class: 'small', latex: '\\min', insert: '\\operatorname{min}\\left({#0}\\right)' },
           { class: 'small', latex: '\\max', insert: '\\operatorname{max}\\left({#0}\\right)' },
           '[separator]',
@@ -605,7 +609,7 @@
     mf.addEventListener('focus', updateKeyboardLayout);
     mf.addEventListener('selection-change', updateKeyboardLayout);
 
-    const initialLatex = $('#symbolic-input-latex-' + name).val();
+    const initialLatex = $('#symbolic-input-latex-' + uuid).val();
 
     setUpSymbolicInputMacros(mf);
 
@@ -621,12 +625,14 @@
 
     // Set up sync between input box and hidden submission data inputs
     const updateSubmissionData = function () {
-      $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
-      $('#symbolic-input-latex-' + name).val(mf.getValue('latex'));
+      const latex = mf.getValue('latex');
+      $('#symbolic-input-sub-' + uuid).val(mf.getValue('plain-text'));
+      $('#symbolic-input-latex-' + uuid).val(latex.trim() === '' ? '' : latex);
     };
 
     updateSubmissionData();
     mf.addEventListener('input', updateSubmissionData);
+    mf.closest('form')?.addEventListener('submit', updateSubmissionData);
 
     // Disable access to manual "\" macro mode
     mf.addEventListener(
@@ -635,6 +641,11 @@
         if (ev.key === '\\') {
           ev.preventDefault();
           mf.executeCommand(['insert', '\\backslash']);
+        } else if (unicodeMultiplicationKeys.has(ev.key)) {
+          // MathLive would insert these as \bullet, \textbullet, or \ast, which are
+          // not submitted as multiplication. Treat them like the "×" keyboard key.
+          ev.preventDefault();
+          mf.executeCommand(['insert', '{#@}\\cdot']);
         } else if (ev.key === 'Escape') {
           ev.preventDefault();
         }
@@ -724,7 +735,7 @@
         value: '{#@}\\cdot',
       },
       '|': {
-        value: '|{#0}|',
+        value: '\\left|{#0}\\right|',
       },
       sqrt: {
         value: '\\sqrt{#0}',

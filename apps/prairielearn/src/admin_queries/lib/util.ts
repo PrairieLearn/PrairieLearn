@@ -35,7 +35,7 @@ export async function runLegacySqlAdminQuery(
     encoding: 'utf8',
   });
   // We wanted to discourage the use of queryAsync, but it is still needed here.
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  // oxlint-disable-next-line typescript/no-deprecated
   const result = await defaultPool.queryAsync(sql, params);
   return { rows: result.rows, columns: result.fields.map((field: { name: string }) => field.name) };
 }
@@ -53,7 +53,7 @@ export async function loadAdminQueryModule(query: string): Promise<{
     default: (params: Record<string, any>) => Promise<AdministratorQueryResult>;
   };
   try {
-    module = await import(/* @vite-ignore */ modulePath);
+    module = await import(modulePath);
   } catch (err) {
     logger.error(`Failed to load module for query ${query}:`, err);
     throw new Error(`Query module ${query} could not be imported`, { cause: err });

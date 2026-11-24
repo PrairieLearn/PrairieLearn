@@ -17,23 +17,28 @@
     }
   },
   "[javascript][typescript][javascriptreact][typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "oxc.oxc-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
+      "source.fixAll.oxc": "explicit",
       "source.fixAll.eslint": "explicit"
     }
   },
-  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][toml][shellscript]": {
+  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][toml]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.formatOnSave": true
+  },
+  // oxfmt doesn't support SQL or shell scripts, so Prettier (with plugins) still formats them.
+  "[sql][shellscript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
   "[markdown]": {
-    // Ruff must be specified as default to format Python blocks in Markdown files, but prettier will still run on save because of the codeActionsOnSave config below.
-    "editor.defaultFormatter": "charliermarsh.ruff",
+    // oxfmt formats Markdown on save. Ruff's fixes still run on Python code blocks below, but
+    // only `make format-python` formats them.
+    "editor.defaultFormatter": "oxc.oxc-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      // We want to run both Prettier and Ruff on Markdown files, so we need to explicitly specify both.
-      "source.fixAll.prettier": "explicit",
       "source.fixAll.ruff": "explicit",
       "source.organizeImports.ruff": "explicit"
     }
@@ -109,6 +114,6 @@
     "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format",
     "tag:yaml.org,2002:python/object/apply:pymdownx.slugs.slugify mapping"
   ],
-  // This conflicts with the Prettier formatter, so we disable it.
+  // This conflicts with the oxfmt formatter, so we disable it.
   "yaml.format.enable": false
 }

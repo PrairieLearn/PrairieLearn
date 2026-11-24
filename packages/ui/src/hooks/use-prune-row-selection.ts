@@ -26,7 +26,7 @@ export function usePruneRowSelection<TData extends RowData>(
     const validRowIds = new Set(table.getCoreRowModel().flatRows.map((row) => row.id));
 
     // TanStack Table retains selected row IDs after data changes, so synchronize selection with the core rows.
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
     table.setRowSelection((selection) => pruneRowSelection(selection, validRowIds));
   }, [data, table]);
 }

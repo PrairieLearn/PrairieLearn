@@ -145,10 +145,8 @@ export async function sync(
       z.string(),
     );
 
-    const validInstitutionSet = new Set(validInstitutions);
-
-    // This is a special hardcoded value that is always valid.
-    validInstitutionSet.add('Any');
+    // 'Any' is a special hardcoded value that is always valid.
+    const validInstitutionSet = new Set([...validInstitutions, 'Any']);
 
     // Add sync errors for invalid institutions.
     Object.values(courseData.courseInstances).forEach(({ courseInstance }) => {

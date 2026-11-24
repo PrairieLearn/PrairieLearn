@@ -6,6 +6,7 @@ import { decryptFromStorage } from '../../../../lib/encrypted-storage.js';
 export interface AiGradingApiKeyCredential {
   id: string;
   provider: EnumAiGradingProvider;
+  base_url: string | null;
   apiKeyMasked: string;
   dateAdded: string;
 }
@@ -21,6 +22,7 @@ export function formatCredential(
   cred: {
     id: string;
     provider: string;
+    base_url?: string | null;
     encrypted_secret_key: string;
     created_at: Date;
   },
@@ -29,6 +31,7 @@ export function formatCredential(
   const decrypted = decryptFromStorage(cred.encrypted_secret_key);
   return {
     id: cred.id,
+    base_url: cred.base_url ?? null,
     provider: cred.provider as EnumAiGradingProvider,
     apiKeyMasked: maskApiKey(decrypted),
     dateAdded: formatDateYMD(cred.created_at, displayTimezone),
@@ -40,12 +43,14 @@ export function formatCredentialRedacted(
   cred: {
     id: string;
     provider: string;
+    base_url?: string | null;
     created_at: Date;
   },
   displayTimezone: string,
 ): AiGradingApiKeyCredential {
   return {
     id: cred.id,
+    base_url: cred.base_url ?? null,
     provider: cred.provider as EnumAiGradingProvider,
     apiKeyMasked: '........',
     dateAdded: formatDateYMD(cred.created_at, displayTimezone),

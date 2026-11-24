@@ -10,9 +10,10 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { Fragment, useId, useMemo } from 'react';
+import { dequal } from 'dequal';
+import { Fragment, memo, useId, useRef } from 'react';
 import { Alert, Badge, Button } from 'react-bootstrap';
-import { type FieldErrors, useFormState } from 'react-hook-form';
+import { type FieldErrors, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import type { PrairieTestExamMetadata } from '../../../models/assessment-access-control-rules.js';
 
@@ -30,6 +31,7 @@ import {
   type AccessControlFormData,
   type DefaultRuleData,
   type OverrideData,
+  getOverrideName,
   isOverrideEditable,
 } from './types.js';
 
@@ -43,8 +45,32 @@ function countErrors(obj: unknown): number {
   return Object.values(obj).reduce((sum: number, val) => sum + countErrors(val), 0);
 }
 
-function SortableOverrideCard({
+// Defined once so the sensors, and with them every sortable card's drag
+// listeners, keep the same identity across renders.
+const pointerSensorOptions = { activationConstraint: { distance: 6 } };
+
+/**
+ * Returns copies of `items` that keep the same identity across renders while
+ * their contents are unchanged, so memoized children can skip rendering.
+ * react-hook-form mutates form values and errors in place, so the live objects
+ * can't be compared with what was rendered last time; each item is instead
+ * compared with a snapshot taken when it was last rendered. This runs over
+ * every rule on every change, so it uses `dequal`, which is several times
+ * faster than `es-toolkit`'s `isEqual` on this data.
+ */
+function useStableSnapshots<T>(items: T[]): T[] {
+  const previousRef = useRef<T[]>([]);
+  const previous = previousRef.current;
+  const snapshots = items.map((item, index) =>
+    dequal(previous[index], item) ? previous[index] : structuredClone(item),
+  );
+  previousRef.current = snapshots;
+  return snapshots;
+}
+
+const SortableOverrideCard = memo(function SortableOverrideCard({
   id,
+  index,
   override,
   formErrors,
   title,
@@ -55,13 +81,14 @@ function SortableOverrideCard({
   canEdit,
 }: {
   id: string;
+  index: number;
   override: OverrideData;
   formErrors: OverrideRuleFormErrors | undefined;
   title: string;
   displayTimezone: string;
   isActive: boolean;
-  onEdit: () => void;
-  onRemove: () => void;
+  onEdit: (index: number) => void;
+  onRemove: (index: number) => void;
   canEdit: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -86,14 +113,14 @@ function SortableOverrideCard({
         isActive={isActive}
         dragHandleProps={canEdit ? { ...attributes, ...listeners } : undefined}
         canEdit={canEdit}
-        onEdit={onEdit}
-        onRemove={canEdit ? onRemove : undefined}
+        onEdit={() => onEdit(index)}
+        onRemove={canEdit ? () => onRemove(index) : undefined}
       />
     </div>
   );
-}
+});
 
-function DefaultRuleSummaryContent({
+const DefaultRuleSummaryContent = memo(function DefaultRuleSummaryContent({
   rule,
   formErrors,
   displayTimezone,
@@ -158,13 +185,10 @@ function DefaultRuleSummaryContent({
       )}
     </div>
   );
-}
+});
 
 export function AccessControlSummary({
-  defaultRule,
-  overrides,
   selectedOverrideIndex,
-  getOverrideName,
   onAddOverride,
   addOverrideDisabledReason,
   onRemoveOverride,
@@ -181,11 +205,7 @@ export function AccessControlSummary({
   readOnlyMessage,
   hiddenEnrollmentRuleCount,
 }: {
-  defaultRule: DefaultRuleData;
-  overrides: OverrideData[];
   selectedOverrideIndex: number | null;
-  /** Get the display name for an override by index */
-  getOverrideName: (index: number) => string;
   onAddOverride: () => void;
   addOverrideDisabledReason?: string | null;
   onRemoveOverride: (index: number) => void;
@@ -207,11 +227,27 @@ export function AccessControlSummary({
 }) {
   const dndId = useId();
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, pointerSensorOptions),
     useSensor(KeyboardSensor),
   );
 
-  const sortableIds = useMemo(() => overrides.map((o) => o.trackingId), [overrides]);
+  // The watches only trigger re-renders. Values are read with `getValues`
+  // because react-hook-form reports add/remove/move to watchers one render
+  // late, which would briefly render the old list against new errors and
+  // selection.
+  useWatch<AccessControlFormData, 'defaultRule'>({ name: 'defaultRule' });
+  useWatch<AccessControlFormData, 'overrides'>({ name: 'overrides' });
+  const { getValues } = useFormContext<AccessControlFormData>();
+  const { defaultRule, overrides } = getValues();
+  const { errors } = useFormState<AccessControlFormData>();
+
+  const [defaultRuleSnapshot] = useStableSnapshots([defaultRule]);
+  const [defaultRuleErrorsSnapshot] = useStableSnapshots([errors.defaultRule]);
+  const overrideSnapshots = useStableSnapshots(overrides);
+  const overrideErrorsSnapshots = useStableSnapshots(
+    overrides.map((_, index) => errors.overrides?.[index]),
+  );
+  const [sortableIds] = useStableSnapshots([overrides.map((o) => o.trackingId)]);
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!canEditAccessSettings) return;
@@ -228,7 +264,6 @@ export function AccessControlSummary({
     onMoveOverride(oldIndex, newIndex);
   };
 
-  const { errors } = useFormState<AccessControlFormData>();
   const defaultRuleErrorCount = countErrors(errors.defaultRule);
   const overridesErrorCount = countErrors(errors.overrides);
   const hiddenEnrollmentRuleNoun =
@@ -288,8 +323,8 @@ export function AccessControlSummary({
         </small>
 
         <DefaultRuleSummaryContent
-          rule={defaultRule}
-          formErrors={errors.defaultRule}
+          rule={defaultRuleSnapshot}
+          formErrors={defaultRuleErrorsSnapshot}
           displayTimezone={displayTimezone}
           prairieTestExamMetadata={prairieTestExamMetadata}
           ptHost={ptHost}
@@ -365,10 +400,11 @@ export function AccessControlSummary({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
-              {overrides.map((override, index) => {
+              {overrideSnapshots.map((override, index) => {
                 const isFirstOfSection =
                   index === 0 ||
-                  overrides[index - 1].appliesTo.targetType !== override.appliesTo.targetType;
+                  overrideSnapshots[index - 1].appliesTo.targetType !==
+                    override.appliesTo.targetType;
                 const sectionLabel =
                   override.appliesTo.targetType === 'enrollment'
                     ? 'Overrides for specific students'
@@ -389,14 +425,15 @@ export function AccessControlSummary({
                     )}
                     <SortableOverrideCard
                       id={sortableIds[index]}
+                      index={index}
                       override={override}
-                      formErrors={errors.overrides?.[index]}
-                      title={getOverrideName(index)}
+                      formErrors={overrideErrorsSnapshots[index]}
+                      title={getOverrideName(override.appliesTo, index)}
                       displayTimezone={displayTimezone}
                       isActive={selectedOverrideIndex === index}
                       canEdit={canEditOverride}
-                      onEdit={() => onEditOverride(index)}
-                      onRemove={() => onRemoveOverride(index)}
+                      onEdit={onEditOverride}
+                      onRemove={onRemoveOverride}
                     />
                   </Fragment>
                 );

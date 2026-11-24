@@ -1,5 +1,46 @@
 # @prairielearn/ui
 
+## 4.5.0
+
+### Minor Changes
+
+- e003824: Export `OverlayTrigger` from `@prairielearn/ui/overlay-trigger` so eagerly loaded bundles can use it without pulling in the rest of the package.
+
+### Patch Changes
+
+- 1d53679: Add a button for creating custom tags and allow consumers to control pending input text.
+- da082ba: Make table column resize handles easier to grab with a wider drag target and a thin divider that highlights on hover, keyboard focus, and drag.
+
+## 4.4.1
+
+### Patch Changes
+
+- 0998223: Minor cleanups for oxlint; no behavior changes.
+
+## 4.4.0
+
+### Minor Changes
+
+- 0cab990: Allow TagPicker to create typed values.
+
+## 4.3.0
+
+### Minor Changes
+
+- e6c306d: Add accessible Close buttons to click-triggered popovers and include them in focus traps.
+
+## 4.2.0
+
+### Minor Changes
+
+- 32a1f8b: Support async CSV and JSON data providers for table downloads, with shared row eligibility and a pending state.
+
+## 4.1.2
+
+### Patch Changes
+
+- 4e683bf: Respect table filters when downloading selected rows as CSV or JSON, including the selected download count.
+
 ## 4.1.1
 
 ### Patch Changes

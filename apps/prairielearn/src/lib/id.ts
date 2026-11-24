@@ -21,6 +21,6 @@
  * parsing IDs as `BigInt` objects as they come out of the database.
  */
 export function idsEqual(id1: string | number, id2: string | number): boolean {
-  // eslint-disable-next-line eqeqeq
+  // oxlint-disable-next-line eqeqeq
   return id1 == id2;
 }

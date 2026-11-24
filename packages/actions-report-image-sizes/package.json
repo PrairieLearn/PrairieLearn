@@ -1,16 +1,13 @@
 {
   "name": "@prairielearn/actions-report-image-sizes",
   "version": "1.0.0",
-  "type": "module",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/actions-report-image-sizes"
   },
-  "private": true,
-  "engines": {
-    "node": ">=24.0.0"
-  },
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc"
@@ -23,5 +20,8 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.19.0",
     "@typescript/native": "npm:typescript@^7.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

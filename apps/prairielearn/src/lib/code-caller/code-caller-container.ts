@@ -33,7 +33,11 @@ const EXITING = Symbol('EXITING');
 const EXITED = Symbol('EXITED');
 
 type CallerState =
-  typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED;
+  | typeof CREATED
+  | typeof WAITING
+  | typeof IN_CALL
+  | typeof EXITING
+  | typeof EXITED;
 
 interface CodeCallerContainerOptions {
   questionTimeoutMilliseconds: number;
@@ -324,6 +328,7 @@ export class CodeCallerContainer implements CodeCaller {
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
+      if (result === 'restart-required') return false;
       this.forbiddenModules = [];
       this.coursePath = null;
       this.callCount = 0;

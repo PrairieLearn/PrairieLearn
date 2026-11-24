@@ -15,6 +15,7 @@ import {
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import { issueMailtoLink } from '../../lib/issues.shared.js';
 
 export const PAGE_SIZE = 100;
 
@@ -229,13 +230,11 @@ function IssueRow({
   hasCoursePermissionEdit: boolean;
   csrfToken: string;
 }) {
-  // eslint-disable-next-line @eslint-react/purity -- server-rendered only, no re-renders
+  // oxlint-disable-next-line react/purity -- server-rendered only, no re-renders
   const now = Date.now();
-  const mailtoLink = `mailto:${
-    issue.user_email || issue.user_uid || '-'
-  }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(
-    `Hello ${issue.user_name},\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`,
-  )}`;
+  const mailtoLink = issueMailtoLink(issue);
+  const userUid = issue.user_uid || '-';
+  const userUidLink = mailtoLink ? <a href={mailtoLink}>{userUid}</a> : userUid;
   const questionPreviewUrl = `${urlPrefix}/question/${issue.question_id}/`;
   const studentViewUrl = `/pl/course_instance/${issue.course_instance_id}/instance_question/${issue.instance_question_id}/?variant_id=${issue.variant_id}`;
   const manualGradingUrl = `/pl/course_instance/${issue.course_instance_id}/instructor/assessment/${issue.assessment_id}/manual_grading/instance_question/${issue.instance_question_id}`;
@@ -274,9 +273,7 @@ function IssueRow({
                 className="badge text-bg-warning badge-sm"
                 data-bs-toggle="tooltip"
                 data-bs-html="true"
-                title={
-                  "This issue was not raised in an assessment. You do not have access to this question outside of an assessment, so you can't view some of the issue details. Course permissions can be granted by a course owner on the Staff page."
-                }
+                title="This issue was not raised in an assessment. You do not have access to this question outside of an assessment, so you can't view some of the issue details. Course permissions can be granted by a course owner on the Staff page."
               >
                 Insufficient permissions
               </button>
@@ -336,8 +333,7 @@ function IssueRow({
           )}{' '}
           {issue.showUser && issue.user_id != null && (
             <>
-              {issue.manually_reported ? 'by' : 'for'} {issue.user_name || '-'} (
-              <a href={mailtoLink}>{issue.user_uid || '-'}</a>)
+              {issue.manually_reported ? 'by' : 'for'} {issue.user_name || '-'} ({userUidLink})
             </>
           )}
         </small>

@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { type Result, withBrand } from '@prairielearn/utils';
@@ -348,6 +348,8 @@ export interface ResLocalsCourse {
   course_has_course_instances: boolean;
   question_sharing_enabled: boolean;
   is_administrator: boolean;
+  /** Set by the course agent panel middleware (EE) on instructor pages. */
+  course_agent_panel?: HtmlSafeString;
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
@@ -700,7 +702,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   }
 
   // The session middleware does not run for API requests.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  // oxlint-disable-next-line typescript/no-unnecessary-condition
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
 
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({

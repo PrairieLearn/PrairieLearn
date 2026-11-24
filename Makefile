@@ -50,8 +50,6 @@ refresh-workspace-hosts-dev:
 
 dev: start-support python-deps
 	@pnpm dev
-dev-vite: start-support python-deps
-	@pnpm dev-vite
 dev-bun: python-deps
 	@pnpm dev-bun
 dev-workspace-host: start-support
@@ -109,11 +107,13 @@ check-element-schemas:
 	@pnpm dlx tsx scripts/gen-element-schemas.mts check
 compile-badge-colors:
 	@npx sass --no-source-map apps/prairielearn/public/stylesheets/colors.scss apps/prairielearn/public/stylesheets/colors.css
-	@pnpm prettier --write apps/prairielearn/public/stylesheets/colors.css
+	@pnpm oxfmt apps/prairielearn/public/stylesheets/colors.css
 check-badge-contrast:
 	@node scripts/check-badge-contrast.mjs
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
+check-python-dependencies:
+	@python3 scripts/check_python_dependencies.py
 check-python-helper-dependencies:
 	@uv run python scripts/sync-python-helper-dependencies.py --check
 update-python-helper-dependencies:
@@ -128,22 +128,20 @@ lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint
 
 lint: lint-js lint-python lint-html lint-links lint-changeset
 lint-js:
-	@pnpm eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
-	@pnpm prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check
+	@pnpm oxlint
+	@pnpm eslint "apps/prairielearn/**/*.tsx" "**/*.{html,mustache}"
+	@pnpm oxfmt --check
+	@pnpm prettier "**/*.{sql,sh}" --check
 # Separate target since the caches don't respect updates to plugins.
-# Split into two passes: the first pass lints the type-aware files without a cache (see `typeAwareFiles` in eslint.config.mjs), and the second
-# pass lints the non-type-aware files with a cache. We check apps/prairielearn first since it is more likely to have lint errors.
-# Keep the Prettier cache locations split too: each Prettier run reconciles all entries in its cache, even entries outside the current glob.
+# oxlint (including its type-aware rules) and oxfmt are fast enough to run without a cache.
+# ESLint only lints `.tsx` files (for `@prairielearn/safe-db-types`) and HTML/mustache files. The type-aware
+# `.tsx` pass runs without a cache, since its results depend on other files; the HTML/mustache pass is cached.
 lint-js-cached:
-	@pnpm eslint "apps/prairielearn/**/*.{ts,tsx}"
-	@pnpm prettier "apps/prairielearn/**/*.{ts,tsx}" --check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/apps-prairielearn-tsx
-	@pnpm eslint --cache --cache-strategy content \
-		--ignore-pattern "apps/prairielearn/**/*.{ts,tsx}" \
-		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
-	@pnpm prettier \
-		"**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" \
-		"!apps/prairielearn/**/*.{ts,tsx}" \
-		--check --cache --cache-strategy content --cache-location node_modules/.cache/prettier/non-apps-prairielearn-tsx
+	@pnpm oxlint
+	@pnpm eslint "apps/prairielearn/**/*.tsx"
+	@pnpm eslint --cache --cache-strategy content "**/*.{html,mustache}"
+	@pnpm oxfmt --check
+	@pnpm prettier "**/*.{sql,sh}" --check --cache --cache-strategy content
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
@@ -187,17 +185,23 @@ format-actions-version:
 	@pnpm exec pin-github-actions
 
 fix-js:
-	@pnpm eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
-	@pnpm prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
+	@pnpm oxlint --fix
+	@pnpm eslint --fix "apps/prairielearn/**/*.tsx" "**/*.{html,mustache}"
+	@pnpm oxfmt
+	@pnpm prettier --write "**/*.{sql,sh}"
 # This is a separate target since the caches don't respect updates to plugins.
 fix-js-cached:
-	@pnpm prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
-	@pnpm eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+	@pnpm oxlint --fix
+	@pnpm eslint --fix --cache --cache-strategy content "apps/prairielearn/**/*.tsx" "**/*.{html,mustache}"
+	@pnpm oxfmt
+	@pnpm prettier --write --cache --cache-strategy content "**/*.{sql,sh}"
 
 format-js:
-	@pnpm prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
+	@pnpm oxfmt
+	@pnpm prettier --write "**/*.{sql,sh}"
 format-js-cached:
-	@pnpm prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
+	@pnpm oxfmt
+	@pnpm prettier --write --cache --cache-strategy content "**/*.{sql,sh}"
 
 format-mustache:
 	@pnpm htmlmustache format --write

@@ -147,7 +147,13 @@ function LoginPageContainer({
                   rel="noreferrer"
                   class="text-body"
                 >
-                  PrairieLearn
+                  <img
+                    src="${assetPath('images/prairielearn-logo-transparent.png')}"
+                    alt="PrairieLearn"
+                    width="2029"
+                    height="404"
+                    style="width: 320px; max-width: 100%; height: auto;"
+                  />
                 </a>
               </h1>
               <h2 class="text-center subheader mb-5">
