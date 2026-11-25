@@ -17,7 +17,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { omit } from 'es-toolkit';
 import { type CSSProperties, useEffect, useId, useRef, useState } from 'react';
 import { Alert, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
@@ -49,6 +48,7 @@ import {
   type TreeGuide,
   canIndent,
   depthsFromParents,
+  groupWarning,
   hasSubgroup,
   indent,
   isSortedHighestFirst,
@@ -63,6 +63,9 @@ import {
   subtreeEnd,
   treeGuides,
 } from './RubricSettings.tree.js';
+import { CollapseToggleButton } from './tree/CollapseToggleButton.js';
+import { DragHandle } from './tree/DragHandle.js';
+import { WarningIndicator } from './tree/WarningIndicator.js';
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
   rubric_item: Omit<
@@ -225,6 +228,7 @@ export function RubricSettings({
   );
 
   const [activeDragKey, setActiveDragKey] = useState<string | null>(null);
+  const [collapsedKeys, setCollapsedKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
@@ -381,20 +385,46 @@ export function RubricSettings({
   // is dragged, and each sibling counts as one block (a group together with
   // its contents) when deciding where the row lands.
   const activeDragIdx = rubricItems.findIndex((it) => it.unique_key === activeDragKey);
-  const hiddenEnd = activeDragIdx === -1 ? -1 : subtreeEnd(rubricItems, activeDragIdx);
-  const isHiddenWhileDragging = (idx: number) => idx > activeDragIdx && idx < hiddenEnd;
+  const isCollapsedGroup = (idx: number) =>
+    idx === activeDragIdx ||
+    (rubricItems[idx].rubric_item.is_group && collapsedKeys.has(rubricItems[idx].unique_key));
+  const hiddenRows = run(() => {
+    const hidden = rubricItems.map(() => false);
+    for (const [idx] of rubricItems.entries()) {
+      if (hidden[idx] || !isCollapsedGroup(idx)) continue;
+      for (let child = idx + 1; child < subtreeEnd(rubricItems, idx); child++) hidden[child] = true;
+    }
+    return hidden;
+  });
+  const isHidden = (idx: number) => hiddenRows[idx];
   const parentKeys = rubricItems.map((_, idx) => {
     const parent = parentIndex(rubricItems, idx);
     return parent == null ? null : rubricItems[parent].unique_key;
   });
-  const lastKeys = rubricItems.map(
-    (_, idx) => rubricItems[subtreeEnd(rubricItems, idx) - 1].unique_key,
-  );
+  // The last row of each block that is on screen, used to measure the block when dragging.
+  const lastKeys = rubricItems.map((_, idx) => {
+    let last = subtreeEnd(rubricItems, idx) - 1;
+    while (last > idx && isHidden(last)) last--;
+    return rubricItems[last].unique_key;
+  });
   const displayRows = buildDisplayRows(rubricItems, {
     withAddRows: hasCourseInstancePermissionEdit,
-    isHidden: (idx) => isHiddenWhileDragging(idx),
-    isCollapsedGroup: (idx) => idx === activeDragIdx,
+    isHidden,
+    isCollapsedGroup,
   });
+  const toggleCollapsed = (key: string) =>
+    setCollapsedKeys((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  const expandGroup = (key: string) =>
+    setCollapsedKeys((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
   const guides = treeGuides(displayRows);
   const customKeys = rubricItems.map((it) =>
     it.rubric_item.is_group ? null : it.rubric_item.key_binding,
@@ -406,6 +436,7 @@ export function RubricSettings({
       customKey: keyErrors[idx] == null ? customKeys[idx] : null,
     })),
   );
+  const columnCount = hasCourseInstancePermissionEdit ? 9 : 8;
 
   const siblingCollisionDetection: CollisionDetection = (args) => {
     const { active, droppableContainers, droppableRects } = args;
@@ -451,7 +482,12 @@ export function RubricSettings({
 
   const moveUp = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, -1));
   const moveDown = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, 1));
-  const indentRow = (idx: number) => setRubricItems((prev) => indent(prev, idx));
+  const indentRow = (idx: number) => {
+    // Open the group the row moves into, so the row stays on screen.
+    const target = parentIndex(indent(rubricItems, idx), idx);
+    if (target != null) expandGroup(rubricItems[target].unique_key);
+    setRubricItems((prev) => indent(prev, idx));
+  };
   // Sorting a group that is already highest-first flips it to lowest-first.
   const sortGroupByPoints = (idx: number) =>
     setRubricItems((prev) =>
@@ -789,7 +825,7 @@ export function RubricSettings({
             aria-controls="rubric-setting"
             aria-label="Toggle rubric settings"
           >
-            <i className="fa fa-angle-up ms-1 expand-icon" aria-hidden="true" />
+            <i className="bi bi-chevron-up ms-1 expand-icon" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -1033,41 +1069,34 @@ export function RubricSettings({
                     <td>Points</td>
                     <td className="text-nowrap">
                       Key
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-ghost py-0 px-1"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="bottom"
-                        data-bs-title="The key that selects the item while grading. Leave blank to use the next free digit, shown in gray."
-                        aria-label="More information about keyboard shortcuts"
-                      >
-                        <i className="fas fa-circle-info" aria-hidden="true" />
-                      </button>
+                      <InfoButton
+                        label="More information about keyboard shortcuts"
+                        title="The key that selects the item while grading. Leave blank to use the next free digit, shown in gray."
+                      />
                     </td>
                     <td>Description</td>
                     <td>Detailed explanation</td>
                     <td>Grader note</td>
-                    <td className="text-nowrap">
+                    <td>
                       Always show
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-ghost py-0 px-1"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="bottom"
-                        data-bs-title="Students always see checked items. They see unchecked items only when the item is selected for their submission."
-                        aria-label="More information about showing items to students"
-                      >
-                        <i className="fas fa-circle-info" aria-hidden="true" />
-                      </button>
+                      <InfoButton
+                        label="More information about showing items to students"
+                        title="Students always see checked items. They see unchecked items only when the item is selected for their submission."
+                      />
                     </td>
                     {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
+                    {hasCourseInstancePermissionEdit && (
+                      <td className="rubric-actions-cell" style={{ width: '1px' }}>
+                        <span className="visually-hidden">Actions</span>
+                      </td>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {rubricItems.length > 0 ? (
                     <SortableContext
                       items={rubricItems
-                        .filter((_, idx) => !isHiddenWhileDragging(idx))
+                        .filter((_, idx) => !isHidden(idx))
                         .map((it) => it.unique_key)}
                       strategy={verticalListSortingStrategy}
                     >
@@ -1079,6 +1108,7 @@ export function RubricSettings({
                               groupDepth={rubricItems[row.groupIdx].depth}
                               groupName={rubricItems[row.groupIdx].rubric_item.description}
                               guides={guides[position]}
+                              columnCount={columnCount}
                               subgroupBlocker={subgroupBlocker(rubricItems, row.groupIdx)}
                               onAddItem={() => addItemToGroup(row.groupIdx)}
                               onAddGroup={() => addSubgroup(row.groupIdx)}
@@ -1095,7 +1125,27 @@ export function RubricSettings({
                             lastKey={lastKeys[idx]}
                             guides={guides[position]}
                             hasChildren={(displayRows.at(position + 1)?.depth ?? -1) > it.depth}
-                            hiddenChildCount={idx === activeDragIdx ? hiddenEnd - idx - 1 : 0}
+                            collapse={
+                              it.rubric_item.is_group && subtreeEnd(rubricItems, idx) > idx + 1
+                                ? {
+                                    isCollapsed: isCollapsedGroup(idx),
+                                    itemCount: rubricItems
+                                      .slice(idx + 1, subtreeEnd(rubricItems, idx))
+                                      .filter((child) => !child.rubric_item.is_group).length,
+                                    toggle: () => toggleCollapsed(it.unique_key),
+                                  }
+                                : null
+                            }
+                            pointRange={
+                              it.rubric_item.is_group && subtreeEnd(rubricItems, idx) > idx + 1
+                                ? rubricPointRange(
+                                    rubricItems
+                                      .slice(idx, subtreeEnd(rubricItems, idx))
+                                      .map((row) => ({ ...row, depth: row.depth - it.depth })),
+                                  )
+                                : null
+                            }
+                            warning={groupWarning(rubricItems, idx)}
                             showAiGradingStats={showAiGradingStats}
                             submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                             hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
@@ -1126,7 +1176,7 @@ export function RubricSettings({
                     </SortableContext>
                   ) : (
                     <tr>
-                      <td colSpan={8} className="text-muted py-3">
+                      <td colSpan={columnCount} className="text-muted py-3">
                         This question does not have any rubric items.
                         {hasCourseInstancePermissionEdit && (
                           <>
@@ -1159,15 +1209,18 @@ export function RubricSettings({
                 </tbody>
                 <tfoot className="table-light">
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={columnCount}>
                       <div className="d-flex flex-wrap column-gap-4 row-gap-1 small">
                         <span>
                           <span className="fw-semibold">Max score from items:</span> {totalPositive}{' '}
                           / {maxPoints} points
                           {maxPointsShortfall > 0 && rubricItems.length > 0 && (
-                            <span className="text-muted ms-2">
-                              <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
-                              {maxPointsShortfall} below maximum
+                            <span className="ms-2">
+                              <WarningIndicator
+                                tooltipId="rubric-max-shortfall"
+                                label={`${maxPointsShortfall} below maximum`}
+                                body={`Selecting items can reach at most ${totalPositive} of the ${maxPoints} points for this question.`}
+                              />
                             </span>
                           )}
                         </span>
@@ -1175,9 +1228,12 @@ export function RubricSettings({
                           <span className="fw-semibold">Min score from items:</span> {totalNegative}{' '}
                           / {minRubricScore} points
                           {minPointsShortfall > 0 && rubricItems.length > 0 && (
-                            <span className="text-muted ms-2">
-                              <i className="bi bi-exclamation-triangle-fill" aria-hidden="true" />{' '}
-                              {minPointsShortfall} above minimum
+                            <span className="ms-2">
+                              <WarningIndicator
+                                tooltipId="rubric-min-shortfall"
+                                label={`${minPointsShortfall} above minimum`}
+                                body={`Selecting items can go down to ${totalNegative} points, above the minimum score of ${minRubricScore}.`}
+                              />
                             </span>
                           )}
                         </span>
@@ -1188,10 +1244,7 @@ export function RubricSettings({
               </table>
               <DragOverlay dropAnimation={null}>
                 {activeDragIdx === -1 ? null : (
-                  <RubricDragPreview
-                    item={rubricItems[activeDragIdx]}
-                    childCount={subtreeEnd(rubricItems, activeDragIdx) - activeDragIdx - 1}
-                  />
+                  <RubricDragPreview item={rubricItems[activeDragIdx]} />
                 )}
               </DragOverlay>
             </DndContext>
@@ -1240,7 +1293,7 @@ export function RubricSettings({
               </>
             )}
             <button type="button" className="btn btn-primary" onClick={exportRubric}>
-              <i className="fas fa-download" aria-hidden="true" /> Export rubric
+              <i className="bi bi-download" aria-hidden="true" /> Export rubric
             </button>
             {hasCourseInstancePermissionEdit && (
               <button
@@ -1249,7 +1302,7 @@ export function RubricSettings({
                 className="btn btn-primary"
                 onClick={() => setShowImportModal(!showImportModal)}
               >
-                <i className="fas fa-upload" aria-hidden="true" /> Import rubric
+                <i className="bi bi-upload" aria-hidden="true" /> Import rubric
               </button>
             )}
             <Modal
@@ -1305,16 +1358,10 @@ export function RubricSettings({
               </Modal.Footer>
             </Modal>
             {hasCourseInstancePermissionEdit && (
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                data-bs-toggle="tooltip"
-                data-bs-placement="bottom"
-                data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
-                aria-label="More information about importing rubrics"
-              >
-                <i className="fas fa-circle-info" aria-hidden="true" />
-              </button>
+              <InfoButton
+                label="More information about importing rubrics"
+                title="Imported rubric point values will be scaled to match the maximum points for this question."
+              />
             )}
             {hasCourseInstancePermissionEdit && (
               <div className="ms-auto d-flex gap-2">
@@ -1372,7 +1419,7 @@ export function RubricSettings({
                   disabled={!isDirty || isSubmitting}
                   onClick={() => submitSettings(true)}
                 >
-                  Save
+                  <i className="bi bi-floppy" aria-hidden="true" /> Save
                 </button>
               </div>
             )}
@@ -1439,17 +1486,13 @@ function KeyBindingInput({
 }
 
 function InfoButton({ label, title }: { label: string; title: string }) {
+  const tooltipId = useId();
   return (
-    <button
-      type="button"
-      className="btn btn-sm btn-ghost py-0"
-      data-bs-toggle="tooltip"
-      data-bs-placement="bottom"
-      data-bs-title={title}
-      aria-label={label}
-    >
-      <i className="fas fa-circle-info" aria-hidden="true" />
-    </button>
+    <OverlayTrigger placement="bottom" tooltip={{ props: { id: tooltipId }, body: title }}>
+      <button type="button" className="btn btn-sm btn-ghost py-0 px-1" aria-label={label}>
+        <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+      </button>
+    </OverlayTrigger>
   );
 }
 
@@ -1481,7 +1524,7 @@ function RubricRowTextarea({
        */
       value={value}
       maxLength={10000}
-      style={{ minWidth: '15rem' }}
+      style={{ minWidth: '12rem' }}
       aria-label={label}
       disabled={disabled}
       onFocus={() => setIsFocused(true)}
@@ -1497,7 +1540,9 @@ function RubricRow({
   lastKey,
   guides,
   hasChildren,
-  hiddenChildCount,
+  collapse,
+  pointRange,
+  warning,
   showAiGradingStats,
   submissionCount,
   canIndent,
@@ -1520,8 +1565,11 @@ function RubricRow({
   lastKey: string;
   guides: TreeGuide[];
   hasChildren: boolean;
-  /** Number of rows inside this group that are hidden while it is dragged. */
-  hiddenChildCount: number;
+  /** For groups: whether the contents are hidden (collapsed, or while dragging the group). */
+  collapse: { isCollapsed: boolean; itemCount: number; toggle: () => void } | null;
+  /** For groups: the points that selecting items inside could add. */
+  pointRange: { min: number; max: number } | null;
+  warning: { label: string; body: string } | null;
   showAiGradingStats: boolean;
   submissionCount: number;
   canIndent: boolean;
@@ -1556,13 +1604,13 @@ function RubricRow({
         ...(isGroup && {
           '--bs-table-bg': groupTint(item.depth),
         }),
-        ...(isEditing && { '--bs-table-bg-state': 'var(--bs-warning-bg-subtle)' }),
         opacity: isDragging ? 0.4 : undefined,
         // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
         // which visually warps variable-height rows.
         transform: CSS.Translate.toString(transform),
         transition,
       }}
+      className={clsx('tree-row', isEditing && 'tree-row-selected')}
       data-testid={isGroup ? 'rubric-editor-group' : 'rubric-editor-item'}
       // Highlight the whole row while one of its fields has focus.
       onFocus={() => setIsEditing(true)}
@@ -1570,86 +1618,54 @@ function RubricRow({
         if (!e.currentTarget.contains(e.relatedTarget)) setIsEditing(false);
       }}
     >
-      <td className="text-nowrap align-middle position-relative">
+      <td
+        className={clsx(
+          'text-nowrap align-middle position-relative',
+          warning && 'tree-row-warning-indicator',
+        )}
+      >
         <TreeGuideLines
           guides={guides}
-          groupDepth={isGroup && hasChildren && hiddenChildCount === 0 ? item.depth : null}
+          groupDepth={isGroup && hasChildren && !collapse?.isCollapsed ? item.depth : null}
         />
-        {hasCourseInstancePermissionEdit && (
-          <div style={{ paddingLeft: `${item.depth * TREE_INDENT}px` }}>
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost px-0"
-              // The handle is as wide as one indent level, so that the guide
-              // lines run down from the middle of a group's handle.
-              style={{ cursor: 'grab', touchAction: 'none', width: `${TREE_INDENT}px` }}
-              aria-label="Drag to reorder"
-              // Native buttons already have the role supplied by dnd-kit.
-              {...omit({ ...attributes, ...listeners }, ['role'])}
-            >
-              <i className="fas fa-grip-vertical" aria-hidden="true" />
-            </button>
-            <button type="button" className="visually-hidden" aria-label="Move up" onClick={moveUp}>
-              <i className="fas fa-arrow-up" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="visually-hidden"
-              aria-label="Move down"
-              onClick={moveDown}
-            >
-              <i className="fas fa-arrow-down" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
-              aria-label="Move out of group"
-              title="Move out of group"
-              disabled={!canOutdent}
-              onClick={outdentRow}
-            >
-              <i className="bi bi-text-indent-right" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
-              aria-label="Move into group above"
-              title="Move into group above"
-              disabled={!canIndent}
-              onClick={indentRow}
-            >
-              <i className="bi bi-text-indent-left" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost text-danger"
-              aria-label={isGroup ? 'Delete group and its items' : 'Delete'}
-              title={isGroup ? 'Delete group and its items' : undefined}
-              onClick={deleteRow}
-            >
-              <i className="fas fa-trash text-danger" aria-hidden="true" />
-            </button>
-            {sortByPoints && (
+        <div
+          className="d-flex align-items-center"
+          style={{ paddingLeft: `${item.depth * TREE_INDENT}px` }}
+        >
+          {hasCourseInstancePermissionEdit ? (
+            <>
+              <DragHandle
+                attributes={attributes}
+                listeners={listeners}
+                // The handle is as wide as one indent level, so that the guide
+                // lines run down from the middle of a group's handle.
+                className="d-inline-flex justify-content-center"
+                style={{ width: `${TREE_INDENT}px` }}
+              />
               <button
                 type="button"
-                className="btn btn-sm btn-ghost"
-                aria-label={sortLabel}
-                title={sortLabel}
-                onClick={sortByPoints.sort}
-              >
-                <i
-                  className={clsx(
-                    'bi',
-                    sortByPoints.sortedHighestFirst
-                      ? 'bi-sort-numeric-down'
-                      : 'bi-sort-numeric-down-alt',
-                  )}
-                  aria-hidden="true"
-                />
-              </button>
-            )}
-          </div>
-        )}
+                className="visually-hidden"
+                aria-label="Move up"
+                onClick={moveUp}
+              />
+              <button
+                type="button"
+                className="visually-hidden"
+                aria-label="Move down"
+                onClick={moveDown}
+              />
+            </>
+          ) : (
+            <span className="d-inline-block" style={{ width: `${TREE_INDENT}px` }} />
+          )}
+          {collapse && (
+            <CollapseToggleButton
+              isCollapsed={collapse.isCollapsed}
+              ariaLabel={`${collapse.isCollapsed ? 'Expand' : 'Collapse'} ${item.rubric_item.description || 'group'}`}
+              onToggle={collapse.toggle}
+            />
+          )}
+        </div>
         {item.rubric_item.id && (
           <>
             <input
@@ -1734,18 +1750,11 @@ function RubricRow({
           className="d-flex align-items-center gap-2"
           style={{ paddingLeft: `${item.depth}rem` }}
         >
-          {isGroup && (
-            <i
-              className="bi bi-collection"
-              style={{ color: nestingLevelColor(item.depth) }}
-              aria-hidden="true"
-            />
-          )}
           <input
             type="text"
             className={clsx('form-control', isGroup && 'fw-semibold')}
             maxLength={100}
-            style={{ minWidth: '15rem' }}
+            style={{ minWidth: '12rem' }}
             value={item.rubric_item.description}
             placeholder={isGroup ? 'Group name' : undefined}
             aria-label={isGroup ? 'Group name' : 'Description'}
@@ -1753,8 +1762,34 @@ function RubricRow({
             required
             onInput={(e) => updateRubricItem({ description: e.currentTarget.value })}
           />
-          {hiddenChildCount > 0 && (
-            <span className="small text-muted text-nowrap">+{hiddenChildCount} inside</span>
+          {isGroup && (
+            <span className="d-inline-flex align-items-center gap-1 flex-shrink-0">
+              {warning && (
+                <WarningIndicator
+                  tooltipId={`${item.unique_key}-warning`}
+                  label={warning.label}
+                  body={warning.body}
+                />
+              )}
+              {collapse?.isCollapsed && (
+                <span className="badge color-blue3">
+                  {collapse.itemCount} item{collapse.itemCount === 1 ? '' : 's'}
+                </span>
+              )}
+              {pointRange && (
+                <OverlayTrigger
+                  placement="top"
+                  tooltip={{
+                    props: { id: `${item.unique_key}-points` },
+                    body: 'Points that selecting items in this group can add, following its rules',
+                  }}
+                >
+                  <button type="button" className="btn btn-badge color-blue3 text-nowrap">
+                    {formatPointRange(pointRange)}
+                  </button>
+                </OverlayTrigger>
+              )}
+            </span>
           )}
         </div>
       </td>
@@ -1821,31 +1856,86 @@ function RubricRow({
                 : `${item.num_submissions} submissions`}
         </td>
       )}
+
+      {hasCourseInstancePermissionEdit && (
+        <td className="rubric-actions-cell align-middle text-nowrap text-end">
+          {/* Shown while the row is hovered or being edited, like the assessment question editor. */}
+          <div className={clsx('d-inline-flex', !isEditing && 'hover-show')}>
+            <button
+              type="button"
+              className="btn btn-sm border-0 text-muted"
+              aria-label="Move out of group"
+              title="Move out of group"
+              disabled={!canOutdent}
+              onClick={outdentRow}
+            >
+              <i className="bi bi-text-indent-right" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm border-0 text-muted"
+              aria-label="Move into group above"
+              title="Move into group above"
+              disabled={!canIndent}
+              onClick={indentRow}
+            >
+              <i className="bi bi-text-indent-left" aria-hidden="true" />
+            </button>
+            {isGroup && (
+              <button
+                type="button"
+                className="btn btn-sm border-0 text-muted"
+                aria-label={sortLabel}
+                title={sortByPoints ? sortLabel : 'Groups of two or more items can be sorted'}
+                disabled={!sortByPoints}
+                onClick={sortByPoints?.sort}
+              >
+                <i
+                  className={clsx(
+                    'bi',
+                    sortByPoints?.sortedHighestFirst
+                      ? 'bi-sort-numeric-down'
+                      : 'bi-sort-numeric-down-alt',
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn-sm border-0 text-muted tree-delete-btn"
+              aria-label={isGroup ? 'Delete group and its items' : 'Delete'}
+              title={isGroup ? 'Delete group and its items' : 'Delete item'}
+              onClick={deleteRow}
+            >
+              <i className="bi bi-trash3" aria-hidden="true" />
+            </button>
+          </div>
+        </td>
+      )}
     </tr>
   );
 }
 
-/** What follows the pointer while a row is dragged. */
-function RubricDragPreview({ item, childCount }: { item: RubricItemData; childCount: number }) {
+/** What follows the pointer while a row is dragged, styled like the assessment question editor's. */
+function RubricDragPreview({ item }: { item: RubricItemData }) {
   const isGroup = item.rubric_item.is_group;
   return (
-    <div className="d-inline-flex align-items-center gap-2 bg-body border rounded shadow px-2 py-1">
-      <i className="fas fa-grip-vertical text-muted" aria-hidden="true" />
-      {isGroup ? (
-        <i
-          className="bi bi-collection"
-          style={{ color: nestingLevelColor(item.depth) }}
-          aria-hidden="true"
-        />
-      ) : (
-        <span className="text-muted">{item.rubric_item.points ?? ''}</span>
+    <div
+      className={clsx(
+        'd-inline-block border rounded shadow-sm px-3 py-2',
+        isGroup ? 'bg-body-secondary fw-semibold' : 'bg-body',
       )}
-      <span className={clsx(isGroup && 'fw-semibold')}>
-        {item.rubric_item.description || (isGroup ? 'Untitled group' : 'Untitled item')}
-      </span>
-      {childCount > 0 && <span className="small text-muted">+{childCount} inside</span>}
+    >
+      {item.rubric_item.description || (isGroup ? 'Untitled group' : 'Untitled item')}
     </div>
   );
+}
+
+/** "Up to 3 pts", or "-1 to 3 pts" when items can also take points away. */
+function formatPointRange({ min, max }: { min: number; max: number }) {
+  const round = (points: number) => Math.round(points * 100) / 100;
+  return min < 0 ? `${round(min)} to ${round(max)} pts` : `Up to ${round(max)} pts`;
 }
 
 /**
@@ -1953,6 +2043,7 @@ function AddToGroupRow({
   groupDepth,
   groupName,
   guides,
+  columnCount,
   subgroupBlocker,
   onAddItem,
   onAddGroup,
@@ -1960,6 +2051,7 @@ function AddToGroupRow({
   groupDepth: number;
   groupName: string;
   guides: TreeGuide[];
+  columnCount: number;
   /** Why a subgroup can't be added here, or null if it can. */
   subgroupBlocker: string | null;
   onAddItem: () => void;
@@ -1968,10 +2060,10 @@ function AddToGroupRow({
   const target = groupName ? `to ${groupName}` : 'to group';
   const blockerId = useId();
   const buttonClass =
-    'btn btn-sm btn-link text-decoration-none px-0 py-0 d-inline-flex align-items-center';
+    'btn btn-sm btn-link text-muted text-decoration-none px-0 py-0 d-inline-flex align-items-center';
   return (
     <tr style={{ '--bs-table-bg': groupTint(groupDepth) } as CSSProperties}>
-      <td colSpan={8} className="position-relative py-0">
+      <td colSpan={columnCount} className="position-relative py-0">
         <TreeGuideLines guides={guides} groupDepth={null} />
         <div
           className="d-flex align-items-center gap-3"
@@ -2008,7 +2100,7 @@ function AddToGroupRow({
               >
                 <button
                   type="button"
-                  className={clsx(buttonClass, 'text-body-secondary opacity-75')}
+                  className={clsx(buttonClass, 'opacity-50')}
                   style={{ cursor: 'not-allowed' }}
                   aria-label={`Add group ${target}`}
                   aria-describedby={blockerId}
