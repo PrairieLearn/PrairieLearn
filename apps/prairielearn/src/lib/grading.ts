@@ -172,7 +172,7 @@ async function insertSubmission({
       if (clearUnsavedSubmissions) {
         await deleteUnsavedSubmissions({
           instance_question_id: variant.instance_question_id,
-          user_id,
+          user_id: variant.team_id !== null ? null : user_id,
         });
       }
       const instanceQuestion = await sqldb.queryRow(
@@ -207,7 +207,7 @@ export async function saveSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
-): Promise<{ submission_id: string; variant: Variant }> {
+): Promise<{ submission_id: string; variant: Variant; broken: boolean }> {
   const featureContext = {
     institution_id: variant_course.institution_id,
     course_id: variant_course.id,
@@ -296,14 +296,15 @@ export async function saveSubmission(
 
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
-  return await insertSubmission({
+  const result = await insertSubmission({
     ...submission,
     ...data,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
-    clearUnsavedSubmissions,
+    clearUnsavedSubmissions: clearUnsavedSubmissions && !hasFatalIssue,
     question,
   });
+  return { ...result, broken: hasFatalIssue };
 }
 
 async function selectSubmissionForGrading(

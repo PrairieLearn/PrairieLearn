@@ -90,12 +90,13 @@ export async function deleteUnsavedSubmission({
   });
 }
 
+/** Pass a null user ID to clear drafts and invalidate captures for the entire group. */
 export async function deleteUnsavedSubmissions({
   instance_question_id,
   user_id,
 }: {
   instance_question_id: string;
-  user_id: string;
+  user_id: string | null;
 }) {
   await execute(sql.delete_unsaved_submissions, { instance_question_id, user_id });
 }

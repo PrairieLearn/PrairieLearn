@@ -42,3 +42,23 @@ WHERE
   datname = current_database()
   AND wait_event_type = 'Lock'
   AND query LIKE $query_pattern;
+
+-- BLOCK count_parse_issues
+SELECT
+  count(*)::integer
+FROM
+  issues
+WHERE
+  variant_id = $variant_id
+  AND instructor_message = 'Error: Fatal recovery parsing issue';
+
+-- BLOCK select_group_instance_question
+SELECT
+  iq.id
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+  JOIN questions AS q ON (q.id = aq.question_id)
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id
+  AND q.qid = 'addNumbers';
