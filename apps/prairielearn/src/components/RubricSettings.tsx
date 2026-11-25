@@ -1696,9 +1696,12 @@ function RubricRow({
               }}
               listeners={{ ...listeners, onKeyDown: onHandleKeyDown }}
               // The handle is as wide as one indent level, so that the guide
-              // lines run down from the middle of a group's handle.
+              // lines run down from the middle of a group's handle. The grip's
+              // dots sit half a pixel left of the middle of the icon, so the
+              // extra left padding centers them on the lines, which browsers
+              // snap to whole pixels.
               className="d-inline-flex justify-content-center"
-              style={{ width: `${TREE_INDENT}px` }}
+              style={{ width: `${TREE_INDENT}px`, paddingLeft: '1px' }}
             />
           ) : (
             <span className="d-inline-block" style={{ width: `${TREE_INDENT}px` }} />
@@ -1977,9 +1980,7 @@ function TreeGuideLines({
   guides: TreeGuide[];
   groupDepth: number | null;
 }) {
-  // The dots of `bi-grip-vertical` sit about half a pixel left of the middle of its box.
-  const lineX = (level: number) =>
-    `calc(0.25rem + ${level * TREE_INDENT + TREE_INDENT / 2 - 1.5}px)`;
+  const lineX = (level: number) => `calc(0.25rem + ${level * TREE_INDENT + TREE_INDENT / 2 - 1}px)`;
   const lineColor = (level: number) =>
     `color-mix(in srgb, ${nestingLevelColor(level)} 60%, transparent)`;
   const line = (key: string, level: number, style: CSSProperties) => (
@@ -2007,8 +2008,8 @@ function TreeGuideLines({
             height: '2px',
             // Reaches to just before the child's grip, which is narrower than its
             // handle, and fades out instead of stopping abruptly.
-            width: `${TREE_INDENT / 2 + 8}px`,
-            background: `linear-gradient(to right, ${lineColor(level)} calc(100% - 8px), transparent)`,
+            width: `${TREE_INDENT / 2 + 7}px`,
+            background: `linear-gradient(to right, ${lineColor(level)} calc(100% - 4px), transparent)`,
           }),
         ];
       })}
@@ -2018,7 +2019,7 @@ function TreeGuideLines({
           bottom: '-1px',
           width: '2px',
           // Fades in below the group's grip.
-          background: `linear-gradient(to bottom, transparent, ${lineColor(groupDepth)} 0.75rem)`,
+          background: `linear-gradient(to bottom, transparent, ${lineColor(groupDepth)} 0.375rem)`,
         })}
     </>
   );
