@@ -194,13 +194,16 @@ function modelResponse(inputTokens = 10_000, outputTokens = 2_000) {
 /** Route PrairieLearn usage reports and provider requests to separate handlers. */
 function stubFetch(handlers: {
   usage: () => Promise<Response>;
+  approve?: () => Promise<Response>;
   model?: (options: RequestInit) => Promise<Response>;
 }) {
-  const fetch = vi.fn(async (url: string | URL, options: RequestInit) =>
-    String(url).endsWith('/usage')
-      ? await handlers.usage()
-      : await (handlers.model ?? (async () => modelResponse()))(options),
-  );
+  const fetch = vi.fn(async (url: string | URL, options: RequestInit) => {
+    if (String(url).endsWith('/usage')) return await handlers.usage();
+    if (String(url).endsWith('/approve')) {
+      return await (handlers.approve ?? (async () => new Response('{}')))();
+    }
+    return await (handlers.model ?? (async () => modelResponse()))(options);
+  });
   vi.stubGlobal('fetch', fetch);
   return {
     fetch,
@@ -533,6 +536,8 @@ it('marks reviews for automatic approval from the latest message that chose a mo
   const marked = await submitReview((await startTurn(always, {})).options);
   expect(marked.part).toHaveProperty('data.autoApprove', true);
   expect(marked.reply.text).toContain('they are being saved now');
+  const reviewId = always.state.reviewId!;
+  expect(always.schedule).toHaveBeenCalledWith(0, 'approveReview', { reviewId, attempt: 0 });
 
   // The instructor can also change the mode between messages.
   emit.mockClear();
@@ -542,6 +547,43 @@ it('marks reviews for automatic approval from the latest message that chose a mo
   switched.setApprovalMode('always_approve');
   expect(switched.state.approvalMode).toBe('always_approve');
   expect((await submitReview(turn.options)).part).toHaveProperty('data.autoApprove', true);
+});
+
+it('asks PrairieLearn to approve, retrying only while it is unreachable', async () => {
+  const approvals: number[] = [];
+  const { fetch } = stubFetch({
+    usage: async () => decision(),
+    approve: async () => new Response(null, { status: approvals.shift() ?? 200 }),
+  });
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const { conversation } = await runningConversation();
+  await vi.mocked(SandboxTurn).mock.calls.at(-1)![2].onReview!({
+    threadId: 'native-thread',
+    turnId: 'native-turn',
+    callId: 'call',
+    namespace: null,
+    tool: 'request_changes',
+    arguments: {},
+  });
+  const reviewId = conversation.state.reviewId!;
+  const approve = async (attempt: number, status: number) => {
+    approvals.push(status);
+    vi.mocked(conversation.schedule).mockClear();
+    await conversation.approveReview({ reviewId, attempt });
+  };
+
+  await approve(0, 503);
+  expect(fetch).toHaveBeenLastCalledWith(
+    new URL(
+      `https://pl.test/pl/api/course-agent/conversations/test-conversation/reviews/${reviewId}/approve`,
+    ),
+    expect.objectContaining({ method: 'POST' }),
+  );
+  expect(conversation.schedule).toHaveBeenCalledWith(15, 'approveReview', { reviewId, attempt: 1 });
+  // PrairieLearn refused, for example because the instructor can no longer edit the course.
+  await approve(1, 403);
+  expect(conversation.schedule).not.toHaveBeenCalled();
 });
 
 it('saves a review result while limited and delivers it once Resume clears the limit', async () => {
