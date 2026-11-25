@@ -149,14 +149,17 @@ export function restorePendingCalculatorFences(
   input: MathfieldElement,
   draft: { fences: number[]; position: number },
 ) {
-  const { model } = getMathLiveInternals(input);
+  const field = getMathLiveInternals(input);
   for (const offset of draft.fences) {
-    const atom = model.atoms.at(offset);
+    const atom = field.model.atoms.at(offset);
     if (atom?.type !== 'leftright') continue;
     atom.rightDelim = '?';
     atom.isDirty = true;
   }
   input.position = draft.position;
+  // setValue() recorded the parsed, closed fences before we restored the draft.
+  input.resetUndo();
+  field.snapshot();
 }
 
 function hasOnlyClosingParenthesis(atom: CalculatorAtom) {

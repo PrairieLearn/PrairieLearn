@@ -130,6 +130,10 @@ async function checkParenthesisMultiplication(page: Page) {
   await expectLatex(input, String.raw`2\cdot\left(4+3\right)`);
   await expectLatex(output, '=14');
   await page.reload();
+  await input.press('5');
+  await expectLatex(input, String.raw`2\cdot\left(45+3\right)`);
+  await input.press('Control+z');
+  await expectLatex(input, String.raw`2\cdot\left(4+3\right)`);
   await input.press(')');
   await expectLatex(input, String.raw`2\cdot\left(4\right)+3`);
   await expectLatex(output, '=11');
