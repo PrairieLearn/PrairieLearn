@@ -1,6 +1,7 @@
 import * as url from 'node:url';
 
 import { differenceInMilliseconds } from 'date-fns';
+import { sum } from 'es-toolkit';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -21,6 +22,8 @@ import type {
   RubricData,
   RubricGradingData,
 } from '../lib/manualGrading.types.js';
+import { roundPoints } from '../lib/points.js';
+import { type RubricTreeNode, buildRubricTree, leafItems } from '../lib/rubric-tree.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -161,22 +164,10 @@ export function SubmissionPanel({
                     ${
                       submission.rubric_grading
                         ? html`
-                            ${(rubric_data?.rubric_items || [])
-                              .filter(
-                                (item) =>
-                                  item.rubric_item.always_show_to_students ||
-                                  submission.rubric_grading?.rubric_items?.[item.rubric_item.id]
-                                    ?.score,
-                              )
-                              .map((item) =>
-                                RubricItem({
-                                  item,
-                                  item_grading:
-                                    submission.rubric_grading?.rubric_items?.[
-                                      item.rubric_item.id
-                                    ] ?? null,
-                                }),
-                              )}
+                            ${RubricItemList({
+                              items: rubric_data?.rubric_items ?? [],
+                              gradingItems: submission.rubric_grading.rubric_items ?? {},
+                            })}
                             ${
                               submission.rubric_grading.adjust_points
                                 ? html`
@@ -573,6 +564,85 @@ function SubmissionInfoModal({
   });
 }
 
+/**
+ * The rubric items shown with a submission's feedback. Students see items that
+ * are always shown or that were selected for them. Groups are headings with
+ * their items indented under them, and a group is shown only when something
+ * inside it is.
+ */
+function RubricItemList({
+  items,
+  gradingItems,
+}: {
+  items: RenderedRubricItem[];
+  gradingItems: Partial<Record<string, RubricGradingItem>>;
+}): HtmlValue {
+  const tree = buildRubricTree(items, {
+    id: (item) => item.rubric_item.id,
+    parentId: (item) => item.rubric_item.parent_id,
+    isGroup: (item) => item.rubric_item.is_group,
+  });
+  const isShown = (item: RenderedRubricItem) =>
+    item.rubric_item.always_show_to_students || !!gradingItems[item.rubric_item.id]?.score;
+
+  const renderNode = (node: RubricTreeNode<RenderedRubricItem>): HtmlValue => {
+    if (!node.isGroup) {
+      return isShown(node.item)
+        ? RubricItem({ item: node.item, item_grading: gradingItems[node.item.rubric_item.id] })
+        : null;
+    }
+    const shownLeaves = leafItems(node).filter(isShown);
+    if (shownLeaves.length === 0) return null;
+    const selectedPoints = sum(
+      shownLeaves.map(
+        (leaf) => (gradingItems[leaf.rubric_item.id]?.score ?? 0) * leaf.rubric_item.points,
+      ),
+    );
+    const anySelected = shownLeaves.some((leaf) => gradingItems[leaf.rubric_item.id]?.score);
+    return html`
+      <div class="mb-1" data-testid="rubric-group-${node.item.rubric_item.id}">
+        <div class="fw-semibold">
+          <span data-testid="rubric-group-description">
+            ${unsafeHtml(node.item.description_rendered ?? '')}
+          </span>
+          ${
+            anySelected
+              ? html`
+                  <span
+                    class="text-${selectedPoints >= 0 ? 'success' : 'danger'}"
+                    data-testid="rubric-group-points"
+                  >
+                    [${(selectedPoints >= 0 ? '+' : '') + roundPoints(selectedPoints)}]
+                  </span>
+                `
+              : ''
+          }
+          ${RubricExplanationButton({ explanation: node.item.explanation_rendered })}
+        </div>
+        <div class="ms-2 ps-2 border-start">${node.children.map(renderNode)}</div>
+      </div>
+    `;
+  };
+  return tree.map(renderNode);
+}
+
+function RubricExplanationButton({ explanation }: { explanation: string | undefined }) {
+  if (!explanation) return '';
+  return html`
+    <button
+      type="button"
+      class="btn btn-xs btn-ghost"
+      data-bs-toggle="popover"
+      data-bs-content="${explanation}"
+      data-bs-html="true"
+      data-testid="rubric-item-explanation"
+      aria-label="Details"
+    >
+      <i class="fas fa-circle-info"></i>
+    </button>
+  `;
+}
+
 function RubricItem({
   item,
   item_grading,
@@ -592,23 +662,7 @@ function RubricItem({
         <span class="d-inline-block" data-testid="rubric-item-description">
           ${unsafeHtml(item.description_rendered ?? '')}
         </span>
-        ${
-          item.explanation_rendered
-            ? html`
-                <button
-                  type="button"
-                  class="btn btn-xs btn-ghost"
-                  data-bs-toggle="popover"
-                  data-bs-content="${item.explanation_rendered}"
-                  data-bs-html="true"
-                  data-testid="rubric-item-explanation"
-                  aria-label="Details"
-                >
-                  <i class="fas fa-circle-info"></i>
-                </button>
-              `
-            : ''
-        }
+        ${RubricExplanationButton({ explanation: item.explanation_rendered })}
       </label>
     </div>
   `;
