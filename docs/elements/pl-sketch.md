@@ -199,6 +199,7 @@ The following attributes apply to both initial and solution drawings:
 | `coordinates` | string | -       | Comma-separated list of coordinates (e.g., `-4.5`, `(1,2)`, or `(1,2),(3,4)`) to be used for the drawing. See below for details.                                                                                                                                      |
 | `function`    | string | -       | Symbolic function definition (see below) to be used to draw a `spline` or `free-draw` object. Only one of `coordinates` and `function` can be used.                                                                                                                   |
 | `x-range`     | string | `","`   | Interval for which the function definition should be plotted as a comma-separated pair of numbers, e.g. `"-3,1.5"`. Only applicable if `function` is used. Start and/or end of the range can be blank (e.g., `"-3,"` or `",-3"`) to extend to the edge of the canvas. |
+| `tag`         | string | `""`    | Annotation on this drawing. Tagged initial drawings require a read-only tool or canvas; solution drawings are read-only.                                                                                                                                              |
 
 Note that the expected number and interpretation of coordinates depends on the type of tool that is referenced. The `vertical-line` and `horizontal-line` tools only require a single coordinate (`x` or `y`). The `point` tool expects a comma-separated coordinate pair `(x,y)`, while `line` needs 2 pairs (`(x1,y1),(x2,y2)`), and complex line tools or `polygon` need 2 or more coordinate pairs that represent the points connected by the line. Multiple tags can reference the same tool to create independent drawings (e.g., multiple points or disconnected lines).
 
@@ -220,6 +221,40 @@ should be defined as:
 ```
 
 to avoid the left and right hand side of the vertical asymptote being connected.
+
+### Fixed instructor tags
+
+`pl-sketch-initial` and `pl-sketch-solution` accept an optional `tag` string for every drawing tool. It labels the drawing on the canvas. The `label` attribute on `pl-sketch-tool` continues to name the toolbar button.
+
+A nonempty tag on an initial drawing requires a read-only tool or a read-only canvas; otherwise an authoring error is raised. Solutions are displayed read-only and may be tagged even when their tool is editable in the question panel. PrairieLearn leaves editable response tools without tag configuration, so student drawings do not receive default tags.
+
+Tags use PrairieLearn's host MathJax renderer and the normal math delimiters. A tag can mix text and mathematics, for example `tag="Reference \(f(x)\)"`. Different drawings on the same tool can independently contain plain text, math, or both; no formatting parameter is needed.
+
+```html
+<pl-sketch answers-name="graph" x-range="-2,2" y-range="-2,2">
+  <pl-sketch-tool id="given" type="spline" read-only="true"></pl-sketch-tool>
+  <pl-sketch-tool id="response" type="point" color="red"></pl-sketch-tool>
+  <pl-sketch-initial
+    tool-id="given"
+    function="x"
+    x-range="-1,1"
+    tag="Reference \(f(x)\)"
+  ></pl-sketch-initial>
+  <pl-sketch-grade type="match" tool-id="response" x="0" y="0"></pl-sketch-grade>
+  <pl-sketch-grade type="count" tool-id="response" count="1"></pl-sketch-grade>
+  <pl-sketch-solution
+    tool-id="response"
+    coordinates="(0,0)"
+    tag="Origin \(O\)"
+  ></pl-sketch-solution>
+</pl-sketch>
+```
+
+Fixed references persist in question, submission, and answer panels. The answer panel adds the solution drawings; an explicit solution for the same tool replaces that tool's reference state. Solution overlays toggle annotations together with their geometry.
+
+Tags sit 5 pixels right and 5 pixels above the existing tool anchor: the first point for curves, polygons, points, and line segments, and the canvas midpoint along horizontal/vertical lines. A function split at discontinuities receives only one tag. Use separate tool IDs for overlapping functions to preserve the existing function-per-tool validation rules.
+
+For a runnable example combining all eight drawing types and a graded response, see the `sketchTags` example-course question.
 
 ## Defining grading criteria with `pl-sketch-grade`
 

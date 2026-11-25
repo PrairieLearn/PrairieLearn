@@ -4,6 +4,7 @@ import json
 import random
 import re
 import string
+from collections.abc import Iterable
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import chevron
@@ -17,6 +18,7 @@ from sketchresponse.types import (
     SketchGradeableData,
     SketchGrader,
     SketchItem,
+    SketchTag,
     SketchTool,
 )
 from sketchresponse.utils import format_drawing, parse_function_string
@@ -103,6 +105,13 @@ ENFORCE_BOUNDS_DEFAULT = False
 READ_ONLY_DEFAULT = False
 OVERLAY_SOLUTION_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
+TAG_DEFAULTS: SketchTag = {
+    "mathjax": True,
+    "xoffset": 5,
+    "yoffset": -5,
+    "align": "start",
+    "position": "start",
+}
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -269,6 +278,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             graders.append(grader)
         elif html_tag.tag == "pl-sketch-initial":
             initial = _check_drawing(html_tag, tool_data, ranges_config)
+            if initial.get("tag") and not (
+                read_only or tool_data[initial["toolid"]]["readonly"]
+            ):
+                raise ValueError(
+                    "A tag on pl-sketch-initial requires a read-only tool or canvas. "
+                    'Set read-only="true" on the tool or pl-sketch element.'
+                )
             initials.append(initial)
         elif html_tag.tag == "pl-sketch-solution":
             solution = _check_drawing(html_tag, tool_data, ranges_config)
@@ -862,6 +878,9 @@ def _check_drawing(
         "fun": drawing_fun,
         "xrange": drawing_xrange,
     }
+    tag = pl.get_string_attrib(drawing_tag, "tag", "")
+    if tag:
+        drawing["tag"] = tag
     return drawing
 
 
@@ -896,13 +915,88 @@ def _parse_drawing_coordinates(drawing_coords: str, tool_name: str) -> list[floa
     return coords
 
 
+def _has_tags(drawings: DrawingData) -> bool:
+    for drawing in drawings:
+        if isinstance(drawing, list):
+            if drawing and drawing[0].get("tag"):
+                return True
+        elif drawing.get("tag"):
+            return True
+    return False
+
+
+def _configure_display_tags(
+    plugins: Iterable[ToolbarPlugin],
+    state: dict[str, DrawingData],
+    instructor_tools: set[str],
+) -> None:
+    for plugin in plugins:
+        if plugin["name"] == "group":
+            _configure_display_tags(
+                cast(SketchGroup, plugin)["plugins"], state, instructor_tools
+            )
+        elif plugin["name"] != "axes":
+            tool = cast(SketchTool, plugin)
+            if tool["id"] in instructor_tools and _has_tags(state.get(tool["id"], [])):
+                tool["tag"] = TAG_DEFAULTS.copy()
+            else:
+                # A solution's tag presentation must not enable default tags on
+                # the student's original editable tool.
+                tool.pop("tag", None)
+
+
+def _display_config(
+    params: SketchAnswerParams,
+    submitted_state: dict[str, DrawingData] | None,
+    *,
+    panel: str,
+    read_only: bool,
+    editable: bool,
+    show_overlay: bool,
+) -> tuple[SketchClientConfig, bool]:
+    config: SketchClientConfig = copy.deepcopy(params["config"])
+    references = {
+        tool_id: drawings
+        for tool_id, drawings in params["initial_state"].items()
+        if read_only or params["tool_data"][tool_id]["readonly"]
+    }
+    solution = params["solution_state"]
+    instructor_tools = set(references)
+    if panel == "answer":
+        state = {**references, **solution}
+        instructor_tools.update(solution)
+    else:
+        state = {
+            **(params["initial_state"] if submitted_state is None else submitted_state),
+            **references,
+        }
+    config["initialstate"] = copy.deepcopy(state)
+    config["readonly"] = read_only or panel != "question" or not editable
+
+    overlay_displayed = panel != "answer" and show_overlay and bool(solution)
+    if overlay_displayed:
+        for tool_id, drawings in solution.items():
+            overlay_tool = cast(
+                OverlayTool, copy.deepcopy(params["tool_data"][tool_id])
+            )
+            overlay_id = f"{tool_id}-solution-overlay"
+            overlay_tool["id"] = overlay_id
+            overlay_tool["readonly"] = True
+            overlay_tool["overlay"] = True
+            config["plugins"].insert(1, overlay_tool)
+            config["initialstate"][overlay_id] = copy.deepcopy(drawings)
+            instructor_tools.add(overlay_id)
+
+    _configure_display_tags(config["plugins"], config["initialstate"], instructor_tools)
+    return config, overlay_displayed
+
+
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
     params: SketchAnswerParams = data["params"][name]
-    config: SketchClientConfig = copy.deepcopy(params["config"])
-    solution = params["solution_state"]
+    submitted_state: dict[str, DrawingData] | None = None
 
     format_error = data["format_errors"].get(name)
     submission = data["raw_submitted_answers"].get(
@@ -911,10 +1005,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if submission:
         try:
             submission_parsed = json.loads(base64.b64decode(submission).decode("utf-8"))
-            # If the submission is valid, it will replace the initial state of the canvas
-            # Note that the initialstate input and the submission output of the client have
-            # the same format, so piping one into the other is very convenient.
-            config["initialstate"] = submission_parsed["data"]
+            # Editable drawings come from the saved submission; the display
+            # builder restores fixed references from the instructor's state.
+            state = submission_parsed["data"]
+            if not isinstance(state, dict):
+                raise TypeError("Drawing state must be an object")
+            submitted_state = state
         except Exception:
             format_error = (
                 "Invalid or corrupted submission data received from SketchResponse."
@@ -925,31 +1021,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "overlay-solution", OVERLAY_SOLUTION_DEFAULT
     )
 
-    overlay_displayed = False
-
-    # In the question/submission panel, if overlay_solution is true and the correct answer is shown,
-    # overlay the solution drawings translucently on top of the student's submission
-    if (
-        data["panel"] != "answer"
-        and overlay_solution
-        and len(solution) > 0
-        and data["correct_answer_shown"]
-    ):
-        overlay_displayed = True
-        for tool_id, drawings in solution.items():
-            # We need to create a tool copy to be able to set up a different config
-            overlay_tool = cast(OverlayTool, dict(params["tool_data"][tool_id]))
-            overlay_tool_id = f"{tool_id}-solution-overlay"
-            overlay_tool["id"] = overlay_tool_id
-            overlay_tool["readonly"] = True
-            overlay_tool["overlay"] = True
-
-            # Plugins are rendered in order, so we want to insert solutions at the start (but after the axes, which are at position 0)
-            config["plugins"].insert(1, overlay_tool)
-            existing = cast(
-                list[Any], config["initialstate"].setdefault(overlay_tool_id, [])
-            )
-            existing.extend(drawings)
+    config, overlay_displayed = _display_config(
+        params,
+        submitted_state,
+        panel=data["panel"],
+        read_only=read_only,
+        editable=data["editable"],
+        show_overlay=overlay_solution and data["correct_answer_shown"],
+    )
 
     scored = False
     score = None
@@ -990,17 +1069,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params: dict[str, Any]
     if data["panel"] == "question":
-        if read_only or not data["editable"]:
-            config["readonly"] = True
         html_params = {"id": random_id, "submission_name": name, **scoring_params}
     elif data["panel"] == "submission":
-        config["readonly"] = True
         html_params = {"id": random_id, "submission_name": random_id, **scoring_params}
-    elif len(solution) > 0:  # answer panel (has solution to display)
-        config["initialstate"] = solution
-        config["readonly"] = True
+    elif config["initialstate"]:  # answer panel (has references or a solution)
         html_params = {"id": random_id, "submission_name": random_id, "read_only": True}
-    else:  # answer panel (no solution to display)
+    else:  # answer panel (no references or solution to display)
         html_params = {"no_answer": True}
 
     if not html_params.get("no_answer"):
@@ -1282,9 +1356,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     canvas_height = params["config"]["height"]
 
     submission_state = copy.deepcopy(params["initial_state"])
-    submitted_solution_state = solution_state
+    submitted_solution_state = copy.deepcopy(solution_state)
+    # Solution annotations describe the displayed answer, not the student's
+    # response. Read-only references keep their canonical initial tags below.
+    for drawings in submitted_solution_state.values():
+        for drawing in drawings:
+            if isinstance(drawing, list):
+                for point in drawing:
+                    point.pop("tag", None)
+            else:
+                drawing.pop("tag", None)
     if result == "incorrect":
-        submitted_solution_state = _corrupted_drawing_state(solution_state, tool_data)
+        submitted_solution_state = _corrupted_drawing_state(
+            submitted_solution_state, tool_data
+        )
 
     for tool_id, drawings in submitted_solution_state.items():
         if not tool_data[tool_id]["readonly"]:
@@ -1340,7 +1425,12 @@ def _solution_to_gradeable(
                 # To convert points into the spline format, we need to add control points in-between each point pair.
                 # Note that line-segment is a special case where len(curve) is exactly 2, but the logic works the same
                 values = []
-                for curve in drawings:
+                curves = (
+                    [drawings[i : i + 2] for i in range(0, len(drawings) - 1, 2)]
+                    if tool_name == "line-segment"
+                    else drawings
+                )
+                for curve in curves:
                     pts = []
                     for i in range(len(curve) - 1):
                         p1 = [curve[i]["x"], curve[i]["y"]]
@@ -1388,6 +1478,15 @@ def _solution_to_gradeable(
             case _:
                 continue
 
+        if tool_name in {"freeform", "spline", "polyline"}:
+            tag_points = [curve[0] for curve in drawings]
+        elif tool_name == "line-segment":
+            tag_points = drawings[::2]
+        else:
+            tag_points = drawings
+        for value, point in zip(values, tag_points, strict=True):
+            if point.get("tag"):
+                value["tag"] = point["tag"]
         gradeable[tool_id] = values
 
     # Fill empty lists for tools not in solution

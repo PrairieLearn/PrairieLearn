@@ -1,4 +1,5 @@
 import base64
+import copy
 import importlib
 import json
 from pathlib import Path
@@ -149,6 +150,232 @@ def _run_submission_lifecycle(
     config = json.loads(base64.b64decode(encoded_config).decode("utf-8"))
 
     return data, submission, config
+
+
+def _render_config(element_html: str, data: dict[str, Any]) -> dict[str, Any]:
+    rendered = lxml.html.fragment_fromstring(
+        pl_sketch.render(element_html, data), create_parent=True
+    )
+    encoded = rendered.xpath('.//div[contains(@id, "-sketchresponse-data")]')[0].text
+    return json.loads(base64.b64decode(encoded))
+
+
+@pytest.mark.parametrize(
+    ("tool_type", "coordinates"),
+    [
+        ("point", "(-1,-1)"),
+        ("line", "(-1,-1),(1,1)"),
+        ("horizontal-line", "-1"),
+        ("vertical-line", "-1"),
+        ("free-draw", "(-1,-1),(1,1)"),
+        ("spline", "(-1,-1),(1,1)"),
+        ("polyline", "(-1,-1),(1,1)"),
+        ("polygon", "(-1,-1),(1,1),(1,-1)"),
+    ],
+)
+def test_fixed_tags_use_existing_tool_presentation(
+    tool_type: str, coordinates: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    html = rf"""<pl-sketch answers-name="graph">
+        <pl-sketch-tool id="given" type="{tool_type}" read-only="true"></pl-sketch-tool>
+        <pl-sketch-initial tool-id="given" coordinates="{coordinates}" tag="Point \(A_1\)"></pl-sketch-initial>
+        <pl-sketch-initial tool-id="given" coordinates="{coordinates}"></pl-sketch-initial>
+    </pl-sketch>"""
+    data = _make_question_data()
+    pl_sketch.prepare(html, data)
+    before = copy.deepcopy(data["params"])
+    config = _render_config(html, data)
+    tool = next(tool for tool in config["plugins"] if tool.get("id") == "given")
+    assert tool["readonly"] is True
+    assert tool["tag"]["mathjax"] is True
+    assert "latex" not in tool["tag"]
+    drawings = config["initialstate"]["given"]
+    points = (
+        [point for drawing in drawings for point in drawing]
+        if isinstance(drawings[0], list)
+        else drawings
+    )
+    assert [point["tag"] for point in points if "tag" in point] == [r"Point \(A_1\)"]
+    assert data["params"] == before
+
+
+TAGGED_REFERENCE_HTML = r"""<pl-sketch answers-name="graph">
+    <pl-sketch-tool id="given" type="point" read-only="true" group="References"></pl-sketch-tool>
+    <pl-sketch-tool id="response" type="point"></pl-sketch-tool>
+    <pl-sketch-initial tool-id="given" coordinates="(-1,-1)" tag="Point \(A_1\)"></pl-sketch-initial>
+    <pl-sketch-grade type="match" tool-id="response" x="1" y="1"></pl-sketch-grade>
+    <pl-sketch-solution tool-id="response" coordinates="(1,1)" tag="Origin \(B_1\)"></pl-sketch-solution>
+</pl-sketch>"""
+
+
+@pytest.mark.parametrize("panel", ["question", "submission", "answer"])
+def test_fixed_references_persist_and_solutions_do_not_tag_student_tools(
+    panel: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data = _make_question_data()
+    data["panel"] = panel
+    data["editable"] = True
+    pl_sketch.prepare(TAGGED_REFERENCE_HTML, data)
+    params = data["params"]["graph"]
+    data["raw_submitted_answers"]["graph-sketchresponse-submission"] = base64.b64encode(
+        json.dumps({
+            "data": {
+                "given": [{"x": 1, "y": 2, "tag": "changed"}],
+                "response": [{"x": 20, "y": 30}],
+            }
+        }).encode()
+    ).decode()
+    before = copy.deepcopy(params)
+    config = _render_config(TAGGED_REFERENCE_HTML, data)
+    assert config["initialstate"]["given"] == params["initial_state"]["given"]
+    reference = next(tool for tool in config["plugins"] if tool["name"] == "group")[
+        "plugins"
+    ][0]
+    assert "latex" not in reference["tag"]
+    assert reference["tag"]["mathjax"] is True
+    response = next(tool for tool in config["plugins"] if tool.get("id") == "response")
+    if panel == "answer":
+        assert (
+            config["initialstate"]["response"] == params["solution_state"]["response"]
+        )
+        assert "latex" not in response["tag"]
+        assert response["tag"]["mathjax"] is True
+    else:
+        assert config["initialstate"]["response"] == [{"x": 20, "y": 30}]
+        assert "tag" not in response
+    assert params == before
+
+
+def test_solution_overlays_keep_tags_separate_from_student_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data = _make_question_data()
+    data["panel"] = "question"
+    data["editable"] = True
+    data["correct_answer_shown"] = True
+    pl_sketch.prepare(TAGGED_REFERENCE_HTML, data)
+    config = _render_config(TAGGED_REFERENCE_HTML, data)
+    overlay = next(tool for tool in config["plugins"] if tool.get("overlay"))
+    assert overlay["id"] == "response-solution-overlay"
+    assert overlay["readonly"] is True
+    assert "latex" not in overlay["tag"]
+    assert overlay["tag"]["mathjax"] is True
+    assert config["initialstate"][overlay["id"]][0]["tag"] == r"Origin \(B_1\)"
+    assert "tag" not in next(
+        tool for tool in config["plugins"] if tool.get("id") == "response"
+    )
+
+
+@pytest.mark.parametrize(("test_type", "score"), [("correct", 1), ("incorrect", 0)])
+def test_generated_answers_preserve_reference_tags_without_solution_annotations(
+    test_type: Literal["correct", "incorrect"],
+    score: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data, submission, _ = _run_submission_lifecycle(TAGGED_REFERENCE_HTML, test_type)
+    assert "graph" not in data["format_errors"]
+    assert data["partial_scores"]["graph"]["score"] == score
+    assert submission["data"]["given"][0]["tag"] == r"Point \(A_1\)"
+    assert submission["gradeable"]["given"][0]["tag"] == r"Point \(A_1\)"
+    assert "tag" not in submission["data"]["response"][0]
+    assert "tag" not in submission["gradeable"]["response"][0]
+
+
+def test_tagged_initial_requires_readonly_but_accepts_readonly_canvas() -> None:
+    html = """<pl-sketch answers-name="graph">
+        <pl-sketch-tool id="curve" type="spline"></pl-sketch-tool>
+        <pl-sketch-initial tool-id="curve" function="x" tag="f(x)"></pl-sketch-initial>
+    </pl-sketch>"""
+    with pytest.raises(ValueError, match="requires a read-only tool or canvas"):
+        pl_sketch.prepare(html, _make_question_data())
+    data = _make_question_data()
+    pl_sketch.prepare(
+        html.replace('answers-name="graph"', 'answers-name="graph" read-only="true"'),
+        data,
+    )
+    assert data["params"]["graph"]["initial_state"]["curve"][0][0]["tag"] == "f(x)"
+
+
+def test_answer_solution_replaces_reference_for_the_same_tool(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    html = TAGGED_REFERENCE_HTML.replace(
+        "</pl-sketch>",
+        '<pl-sketch-solution tool-id="given" coordinates="(0,0)" tag="A_2"></pl-sketch-solution></pl-sketch>',
+    )
+    data = _make_question_data()
+    data["panel"] = "answer"
+    pl_sketch.prepare(html, data)
+    config = _render_config(html, data)
+    assert (
+        config["initialstate"]["given"]
+        == data["params"]["graph"]["solution_state"]["given"]
+    )
+    assert config["initialstate"]["given"][0]["tag"] == "A_2"
+
+
+def test_saved_variants_without_tag_settings_still_render(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data = _make_question_data()
+    pl_sketch.prepare(POINT_SKETCH_WITH_INITIAL_HTML, data)
+    params = data["params"]["graph"]
+    for tool in params["tool_data"].values():
+        tool.pop("tag", None)
+    config = _render_config(POINT_SKETCH_WITH_INITIAL_HTML, data)
+    assert config["initialstate"] == params["initial_state"]
+    assert all("tag" not in tool for tool in config["plugins"])
+
+
+def test_generated_line_reference_uses_flat_client_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    html = TAGGED_REFERENCE_HTML.replace(
+        'id="given" type="point"', 'id="given" type="line"'
+    ).replace('coordinates="(-1,-1)"', 'coordinates="(-1,-1),(1,-1)"')
+    data, submission, _ = _run_submission_lifecycle(html, "correct")
+    assert data["partial_scores"]["graph"]["score"] == 1
+    assert len(submission["data"]["given"]) == 2
+    line = submission["gradeable"]["given"][0]
+    assert len(line["spline"]) == 4
+    assert line["tag"] == r"Point \(A_1\)"
+    start, end = submission["data"]["given"]
+    assert line["spline"][0] == [start["x"], start["y"]]
+    assert line["spline"][-1] == [end["x"], end["y"]]
+
+
+def test_answer_without_solutions_keeps_fixed_references(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element = lxml.html.fragment_fromstring(TAGGED_REFERENCE_HTML)
+    element.remove(element.findall("pl-sketch-solution")[0])
+    html = lxml.html.tostring(element, encoding="unicode")
+    data = _make_question_data()
+    data["panel"] = "answer"
+    pl_sketch.prepare(html, data)
+    config = _render_config(html, data)
+    assert config["initialstate"] == data["params"]["graph"]["initial_state"]
+
+
+def test_corrupt_saved_state_falls_back_to_instructor_initial_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    data = _make_question_data()
+    pl_sketch.prepare(TAGGED_REFERENCE_HTML, data)
+    data["raw_submitted_answers"]["graph-sketchresponse-submission"] = base64.b64encode(
+        json.dumps({"data": []}).encode()
+    ).decode()
+    config = _render_config(TAGGED_REFERENCE_HTML, data)
+    assert config["initialstate"] == data["params"]["graph"]["initial_state"]
 
 
 def test_axis_labels_are_configurable() -> None:
