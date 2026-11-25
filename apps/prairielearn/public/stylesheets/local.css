@@ -516,3 +516,20 @@ input.form-check-input:disabled {
   right: 0;
   z-index: 1;
 }
+
+/* Gray the rubric editor row under the pointer or being edited, like the assessment question editor's rows. */
+.table > tbody > tr.rubric-editor-row:is(:hover, :focus-within) > * {
+  --bs-table-bg-state: var(--bs-table-hover-bg);
+}
+
+/* Where a row dragged with the keyboard will land in the rubric editor. */
+.table > tbody > tr.rubric-drop-before > * {
+  box-shadow:
+    inset 0 2px 0 var(--bs-primary),
+    inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+.table > tbody > tr.rubric-drop-after > * {
+  box-shadow:
+    inset 0 -2px 0 var(--bs-primary),
+    inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
