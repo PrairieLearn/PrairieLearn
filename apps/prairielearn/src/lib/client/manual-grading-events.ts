@@ -43,3 +43,18 @@ export function subscribeToInstanceQuestionGradingPanelUpdates<T>(
   return () =>
     document.removeEventListener(INSTANCE_QUESTION_GRADING_PANEL_UPDATE_EVENT, handleUpdate);
 }
+
+const RUBRIC_EDITOR_DIRTY_EVENT = 'rubric-editor-dirty-change';
+
+/** Tells the grading panel whether the rubric editor has unsaved changes. */
+export function dispatchRubricEditorDirtyChange(isDirty: boolean): void {
+  document.dispatchEvent(new CustomEvent(RUBRIC_EDITOR_DIRTY_EVENT, { detail: isDirty }));
+}
+
+export function subscribeToRubricEditorDirtyChange(
+  callback: (isDirty: boolean) => void,
+): () => void {
+  const handleChange = (event: Event) => callback((event as CustomEvent<boolean>).detail);
+  document.addEventListener(RUBRIC_EDITOR_DIRTY_EVENT, handleChange);
+  return () => document.removeEventListener(RUBRIC_EDITOR_DIRTY_EVENT, handleChange);
+}

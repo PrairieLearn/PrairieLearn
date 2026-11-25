@@ -29,7 +29,7 @@ import {
   useFieldArray,
 } from 'react-hook-form';
 
-import { DragHandle } from '../../instructorAssessmentQuestions/components/tree/DragHandle.js';
+import { DragHandle } from '../../../components/tree/DragHandle.js';
 import type {
   PreferenceField,
   QuestionSettingsFormValues,

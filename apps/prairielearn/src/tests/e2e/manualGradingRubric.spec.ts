@@ -108,8 +108,12 @@ test.describe('Manual grading rubric submission panel update', () => {
     );
     await expect(page.locator('[data-testid^="rubric-item-container-"]')).toHaveCount(0);
 
-    // Set up a rubric and grade the submission.
-    await page.locator('[aria-label="Toggle rubric settings"]').click();
+    // Set up a rubric and grade the submission. The editor stays hidden until it's opened.
+    await expect(page.locator('#rubric-editor')).toBeHidden();
+    await page
+      .locator('.js-main-grading-panel')
+      .getByRole('button', { name: 'Create rubric' })
+      .click();
     await expect(page.locator('#rubric-setting')).toBeVisible();
 
     const rubricTable = page.locator('#rubric-editor table[aria-label="Rubric items"] tbody');
@@ -120,9 +124,16 @@ test.describe('Manual grading rubric submission panel update', () => {
       .fill('Full credit for correct solution');
 
     await page.locator('#rubric-setting').getByRole('button', { name: 'Save' }).click();
+    await expect(page.locator('#rubric-setting').getByText('Rubric saved')).toBeVisible({
+      timeout: 10000,
+    });
+
+    // The grading sidebar is hidden while the rubric editor is open, to give the editor room.
+    await expect(page.locator('.instance-question-manual-grading-sidebar')).toBeHidden();
+    await page.locator('#rubric-editor').getByRole('button', { name: 'Back to grading' }).click();
     await expect(
       page.locator('.js-main-grading-panel .js-selectable-rubric-item').first(),
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible();
 
     await page.locator('.js-selectable-rubric-item').first().check();
     await page.locator('form[name="manual-grading-form"] textarea').fill('Good work on this!');
@@ -139,7 +150,10 @@ test.describe('Manual grading rubric submission panel update', () => {
       document.body.setAttribute('data-e2e-no-reload', 'true');
     });
 
-    await page.locator('[aria-label="Toggle rubric settings"]').click();
+    await page
+      .locator('.js-main-grading-panel')
+      .getByRole('button', { name: 'Edit rubric' })
+      .click();
     await expect(page.locator('#rubric-setting')).toBeVisible();
 
     const newRow = await addRubricItem(page, rubricTable);

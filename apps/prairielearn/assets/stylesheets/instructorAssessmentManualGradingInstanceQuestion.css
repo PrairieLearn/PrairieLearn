@@ -23,6 +23,24 @@
   overflow-y: auto;
 }
 
+/*
+ * The grading panel opens the rubric editor ("Edit rubric" or "Create rubric"),
+ * so the editor's card only shows while it is open.
+ */
+#rubric-editor:not(:has(#rubric-setting.show, #rubric-setting.collapsing)) {
+  display: none;
+}
+
+/* Give the rubric editor the full width while it is open. */
+.instance-question-manual-grading-panes:has(#rubric-setting.show, #rubric-setting.collapsing) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.instance-question-manual-grading-panes:has(#rubric-setting.show, #rubric-setting.collapsing)
+  .instance-question-manual-grading-sidebar {
+  display: none;
+}
+
 @container manual-grading (max-width: 1099.98px) {
   /* Stacked content scrolls in PageLayout's main container instead of each pane. */
   .instance-question-manual-grading-panes {

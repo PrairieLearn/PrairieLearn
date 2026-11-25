@@ -22,7 +22,7 @@ import type {
   InstanceQuestionGradingPanelProps,
 } from './InstanceQuestionGradingPanel.types.js';
 import { InstanceQuestionGroupSelector } from './InstanceQuestionGroupSelector.js';
-import { RubricInput } from './RubricInput.js';
+import { RubricInput, openRubricEditor } from './RubricInput.js';
 
 const SCORE_DISPLAY_CHANGE_EVENT = 'manual-grading-score-display-change';
 
@@ -367,6 +367,16 @@ function InstanceQuestionGradingPanelInner({
             }
           />
           {!showRubricWithTotal && rubricInput}
+          {!data.rubricData && !data.disabled && data.context === 'main' && (
+            <button
+              type="button"
+              className="btn btn-sm btn-link p-0 mt-2 text-decoration-none"
+              onClick={openRubricEditor}
+            >
+              <i className="bi bi-plus-lg me-1" aria-hidden="true" />
+              Create rubric
+            </button>
+          )}
         </li>
 
         {showAutoPoints && (

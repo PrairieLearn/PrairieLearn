@@ -472,3 +472,64 @@ input.form-check-input:disabled {
 .markdown-body > :last-child {
   margin-bottom: 0;
 }
+
+/* Tree editors (assessment questions, rubrics): row actions that appear on hover, selection and warnings. */
+.tree-delete-btn:hover {
+  color: var(--bs-danger) !important;
+}
+
+/* Shared hover-show pattern for tree and picker rows */
+.hover-show {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tree-row:hover .hover-show,
+.picker-row:hover .hover-show {
+  opacity: 1;
+}
+.hover-show:focus-within {
+  opacity: 1;
+}
+[data-dragging] .hover-show {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Selection highlight */
+.tree-row-selected {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+.tree-row-warning-indicator::before {
+  content: '';
+  position: absolute;
+  inset: 0.25rem auto 0.25rem 0.25rem;
+  width: 4px;
+  border-radius: 999px;
+  background-color: var(--bs-warning);
+}
+
+/* The rubric editor's table scrolls sideways; keep each row's actions in view. */
+.rubric-actions-cell {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+}
+
+/* Gray the rubric editor row under the pointer or being edited, like the assessment question editor's rows. */
+.table > tbody > tr.rubric-editor-row:is(:hover, :focus-within) > * {
+  --bs-table-bg-state: var(--bs-table-hover-bg);
+}
+
+/* Where a row dragged with the keyboard will land in the rubric editor. */
+.table > tbody > tr.rubric-drop-before > * {
+  box-shadow:
+    inset 0 2px 0 var(--bs-primary),
+    inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+.table > tbody > tr.rubric-drop-after > * {
+  box-shadow:
+    inset 0 -2px 0 var(--bs-primary),
+    inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}

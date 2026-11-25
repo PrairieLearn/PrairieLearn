@@ -1,9 +1,11 @@
 import clsx from 'clsx';
-import { type ReactNode, type RefObject, useState } from 'react';
+import { type ReactNode, type RefObject, useEffect, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 
 import { run } from '@prairielearn/run';
+
+import { subscribeToRubricEditorDirtyChange } from '../../../../lib/client/manual-grading-events.js';
 
 import {
   type GradingPanelRubricItem,
@@ -57,6 +59,11 @@ export function RubricInput({
   showEditRubricButton: boolean;
   usePercentage: boolean;
 }) {
+  const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
+  // The rubric editor is a separate React island; it reports unsaved changes
+  // that are kept while it is closed.
+  useEffect(() => subscribeToRubricEditorDirtyChange(setHasUnsavedEdits), []);
+
   return (
     <>
       <div className="d-flex align-items-center justify-content-between mb-1">
@@ -78,21 +85,11 @@ export function RubricInput({
           <button
             type="button"
             className="btn btn-sm btn-link p-0 text-decoration-none"
-            onClick={() => {
-              // TODO: RubricSettings is a separate React island. Keep this DOM bridge until the
-              // page is hydrated under a shared React root.
-              const panel = document.getElementById('rubric-setting');
-              if (panel && !panel.classList.contains('show')) {
-                document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]')?.click();
-              }
-              (document.getElementById('rubric-editor') ?? panel)?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-              });
-            }}
+            onClick={openRubricEditor}
           >
             <i className="bi bi-pencil me-1" aria-hidden="true" />
             Edit rubric
+            {hasUnsavedEdits && <span className="text-warning-emphasis"> (unsaved changes)</span>}
           </button>
         )}
       </div>
@@ -201,6 +198,20 @@ interface RubricTreeProps {
   onRubricItemChange: (id: string, selected: boolean) => void;
   selectedRubricItemIds: Set<string>;
   usePercentage: boolean;
+}
+
+/** Opens the rubric editor, which is hidden on this page until a grader asks for it. */
+export function openRubricEditor() {
+  // TODO: RubricSettings is a separate React island. Keep this DOM bridge until the
+  // page is hydrated under a shared React root.
+  const panel = document.getElementById('rubric-setting');
+  if (panel && !panel.classList.contains('show')) {
+    document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]')?.click();
+  }
+  (document.getElementById('rubric-editor') ?? panel)?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
 }
 
 function formatPoints(points: number, usePercentage: boolean, maxRubricPoints: number) {
