@@ -9,6 +9,38 @@ WHERE
   iq.assessment_instance_id = $assessment_instance_id
   AND q.qid = 'addNumbers';
 
+-- BLOCK set_question_grading_method
+UPDATE questions
+SET
+  grading_method = $grading_method
+WHERE
+  id = $question_id;
+
+-- BLOCK mark_external_job_submitted
+UPDATE grading_jobs
+SET
+  grading_submitted_at = CURRENT_TIMESTAMP
+WHERE
+  id = $grading_job_id;
+
+-- BLOCK select_external_grading_duration
+SELECT
+  coalesce(
+    sum(
+      extract(
+        EPOCH
+        FROM
+          duration
+      )
+    ),
+    0
+  )::double precision
+FROM
+  course_instance_usages
+WHERE
+  course_instance_id = $course_instance_id
+  AND type = 'External grading';
+
 -- BLOCK select_variant
 SELECT
   *

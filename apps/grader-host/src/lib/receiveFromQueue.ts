@@ -16,6 +16,8 @@ import globalLogger from './logger.js';
 const GradingJobMessageSchema = z.object({
   /** The unique ID for this job. */
   jobId: z.string(),
+  /** Whether this job needs recovery-safe execution and result replay. */
+  recovered: z.boolean().optional(),
   /** The Docker image that the grading job will be executed in. */
   image: z.string(),
   /** The entrypoint for the container. If null, uses the default entrypoint for the image. */

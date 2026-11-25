@@ -2527,6 +2527,8 @@ if (esMain(import.meta)) {
 
     await sqldb.initAsync(pgConfig, idleErrorHandler);
 
+    await externalGrader.initRecoveredGradingJobLocks(pgConfig, idleErrorHandler);
+
     // Our named locks code maintains a separate pool of database connections.
     // This ensures that we avoid deadlocks.
     await namedLocks.init(pgConfig, idleErrorHandler, {
@@ -2885,7 +2887,11 @@ async function close() {
 
   // Close the database pools only after background work and its resources have
   // finished shutting down.
-  await settleShutdownTasks([namedLocks.close(), sqldb.closeAsync()]);
+  await settleShutdownTasks([
+    externalGrader.closeRecoveredGradingJobLocks(),
+    namedLocks.close(),
+    sqldb.closeAsync(),
+  ]);
 }
 
 async function settleShutdownTasks(tasks: Promise<unknown>[]) {

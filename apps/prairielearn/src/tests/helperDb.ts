@@ -181,8 +181,8 @@ async function runRemainingMigrations(): Promise<void> {
   await runMigrations();
 }
 
-export async function before(): Promise<void> {
-  await setupDatabases();
+export async function before() {
+  return await setupDatabases();
 }
 
 /**

@@ -42,44 +42,58 @@ export class ExternalGraderSqs implements Grader {
     const emitter = new EventEmitter();
 
     const dir = getJobDirectory(grading_job.id);
-    const s3RootKey = getS3RootKey(grading_job.id);
+    const s3RootKey = grading_job.s3_root_key ?? getS3RootKey(grading_job.id);
+    const s3Bucket = grading_job.s3_bucket ?? config.externalGradingS3Bucket;
+    const prepared = grading_job.s3_bucket !== null && grading_job.s3_root_key !== null;
 
     void (async () => {
       try {
-        await buildDirectory(dir, submission, variant, question, course);
+        // A recovered dispatch reuses its committed payload after a process interruption.
+        if (!prepared) {
+          try {
+            await buildDirectory(dir, submission, variant, question, course);
 
-        // Now that we've built up our directory, let's zip it up and send
-        // it off to S3
-        const tarball = tar.create({ gzip: true, cwd: dir }, ['.']);
+            // Now that we've built up our directory, let's zip it up and send
+            // it off to S3
+            const tarball = tar.create({ gzip: true, cwd: dir }, ['.']);
 
-        const passthrough = new PassThrough();
-        tarball.pipe(passthrough);
+            const passthrough = new PassThrough();
+            tarball.pipe(passthrough);
 
-        const params = {
-          Bucket: config.externalGradingS3Bucket,
-          Key: `${s3RootKey}/job.tar.gz`,
-          Body: passthrough,
-        };
+            const params = {
+              Bucket: s3Bucket,
+              Key: `${s3RootKey}/job.tar.gz`,
+              Body: passthrough,
+            };
 
-        const s3 = new S3(makeS3ClientConfig());
-        await new Upload({ client: s3, params }).done();
+            const s3 = new S3(makeS3ClientConfig());
+            await new Upload({ client: s3, params }).done();
 
-        // Store S3 info for this job
-        await sqldb.execute(sql.update_s3_info, {
-          grading_job_id: grading_job.id,
-          s3_bucket: config.externalGradingS3Bucket,
-          s3_root_key: s3RootKey,
+            // Store S3 info for this job
+            await sqldb.execute(sql.update_s3_info, {
+              grading_job_id: grading_job.id,
+              s3_bucket: s3Bucket,
+              s3_root_key: s3RootKey,
+            });
+          } finally {
+            await fs.remove(dir).catch((err) => {
+              logger.error('Error removing directory', err);
+              Sentry.captureException(err);
+            });
+          }
+        }
+
+        await sendJobToQueue({
+          jobId: grading_job.id,
+          question,
+          config,
+          s3Bucket,
+          s3RootKey,
+          recovered: submission.recovered_from_user_id !== null,
         });
-
-        await sendJobToQueue(grading_job.id, question, config);
         emitter.emit('submit');
       } catch (err) {
         emitter.emit('error', err);
-      } finally {
-        fs.remove(dir).catch((err) => {
-          logger.error('Error removing directory', err);
-          Sentry.captureException(err);
-        });
       }
     })();
 
@@ -91,7 +105,21 @@ function getS3RootKey(jobId: string) {
   return `job_${jobId}`;
 }
 
-async function sendJobToQueue(jobId: string, question: Question, config: Config) {
+async function sendJobToQueue({
+  jobId,
+  question,
+  config,
+  s3Bucket,
+  s3RootKey,
+  recovered,
+}: {
+  jobId: string;
+  question: Question;
+  config: Config;
+  s3Bucket: string;
+  s3RootKey: string;
+  recovered: boolean;
+}) {
   const sqs = new SQSClient(makeAwsClientConfig());
 
   if (!QUEUE_URL) {
@@ -102,8 +130,9 @@ async function sendJobToQueue(jobId: string, question: Question, config: Config)
     jobId,
     image: question.external_grading_image,
     entrypoint: question.external_grading_entrypoint,
-    s3Bucket: config.externalGradingS3Bucket,
-    s3RootKey: getS3RootKey(jobId),
+    s3Bucket,
+    s3RootKey,
+    ...(recovered ? { recovered: true } : {}),
     timeout: Math.min(
       question.external_grading_timeout ?? config.externalGradingDefaultTimeout,
       config.externalGradingMaximumTimeout,

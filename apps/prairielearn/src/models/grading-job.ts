@@ -60,6 +60,22 @@ export async function selectOptionalGradingJobById(
   return await queryOptionalRow(sql.select_grading_job, { grading_job_id }, GradingJobSchema);
 }
 
+/** Select the persisted job to resume without loading its result payloads. */
+export async function selectLatestGradingJobForSubmission(submission_id: string) {
+  return await queryRow(
+    sql.select_latest_grading_job_for_submission,
+    { submission_id },
+    GradingJobSchema.pick({
+      id: true,
+      grading_method: true,
+      graded_at: true,
+      grading_request_canceled_at: true,
+      grading_submitted_at: true,
+      grading_received_at: true,
+    }),
+  );
+}
+
 /**
  * Select a grading job by ID, throwing an error if it does not exist.
  *

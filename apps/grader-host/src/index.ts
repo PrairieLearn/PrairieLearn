@@ -36,6 +36,11 @@ import * as load from './lib/load.js';
 import globalLogger from './lib/logger.js';
 import pullImages from './lib/pullImages.js';
 import { type GradingJobMessage, receiveFromQueue } from './lib/receiveFromQueue.js';
+import {
+  closeRecoveredGradingJobLocks,
+  handleRecoveredGradingJob,
+  initRecoveredGradingJobLocks,
+} from './lib/recoveredGradingJob.js';
 import * as timeReporter from './lib/timeReporter.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -77,6 +82,7 @@ async function drainJobsAndExit(waitForLifecycleAction: boolean) {
   await workersFinished.catch((error) => {
     globalLogger.error('Error while draining grader workers', error);
   });
+  await closeRecoveredGradingJobLocks();
 
   if (waitForLifecycleAction) {
     try {
@@ -140,6 +146,7 @@ async.series(
         'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database,
       );
       await sqldb.initAsync(pgConfig, idleErrorHandler);
+      await initRecoveredGradingJobLocks(pgConfig, idleErrorHandler);
       globalLogger.info('Successfully connected to database');
     },
     async () => {
@@ -191,7 +198,9 @@ async.series(
               return;
             }
 
-            await handleJob(job).then(
+            const processJob =
+              job.recovered === true ? handleRecoveredGradingJob(job, handleJob) : handleJob(job);
+            await processJob.then(
               () => globalLogger.info(`handleJob(${job.jobId}) succeeded`),
               (err) => {
                 globalLogger.info(`handleJob(${job.jobId}) errored`, err);

@@ -15,7 +15,38 @@ WHERE
   s.recovered_from_user_id IS NOT NULL
   AND s.score IS NULL
   AND s.graded_at IS NULL
-  AND s.grading_requested_at IS NULL
+  AND (
+    s.grading_requested_at IS NULL
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        grading_jobs AS gj
+      WHERE
+        gj.id = (
+          SELECT
+            latest.id
+          FROM
+            grading_jobs AS latest
+          WHERE
+            latest.submission_id = s.id
+          ORDER BY
+            latest.id DESC
+          LIMIT
+            1
+        )
+        AND gj.graded_at IS NULL
+        AND gj.grading_request_canceled_at IS NULL
+        AND (
+          gj.grading_method = 'Internal'
+          OR (
+            gj.grading_method = 'External'
+            AND gj.grading_submitted_at IS NULL
+            AND gj.grading_received_at IS NULL
+          )
+        )
+    )
+  )
   AND s.gradable IS TRUE
   AND s.broken IS NOT TRUE
   AND v.broken_at IS NULL

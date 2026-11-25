@@ -22,7 +22,8 @@ const featureNames = [
   'question-hosting-update',
   'unsaved-submissions-collection',
   'unsaved-submissions-ui',
-  // Enable only after all grading-result consumers support recovered submissions on closed questions.
+  // Enable only after all grader-hosts support recovered-job locking and all result
+  // consumers support recovered submissions on closed questions.
   'unsaved-submissions-instructor-promotion',
 
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.

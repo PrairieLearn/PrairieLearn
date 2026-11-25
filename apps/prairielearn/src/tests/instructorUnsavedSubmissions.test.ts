@@ -29,6 +29,7 @@ import {
   type User,
   VariantSchema,
 } from '../lib/db-types.js';
+import * as externalGrader from '../lib/externalGrader.js';
 import * as grading from '../lib/grading.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
@@ -37,6 +38,7 @@ import { selectCourseInstanceById } from '../models/course-instances.js';
 import { insertCourseInstancePermissions } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { insertGradingJob } from '../models/grading-job.js';
 import {
   selectOptionalUnsavedSubmissionForAssessment,
   selectOptionalUnsavedSubmissionMetadataForAssessment,
@@ -507,12 +509,107 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
     },
   );
 
-  test('resumes a committed recovery after grading is interrupted without duplicating its submission or score', async () => {
+  test.each(['before job creation', 'during internal grading', 'with a committed job'] as const)(
+    'resumes a recovery interrupted %s without duplicating its submission or score',
+    async (interruption) => {
+      const draft = await seedDraft();
+      await execute(sql.set_open, { variant_id: variantId, open: false });
+      const startGrading =
+        interruption === 'during internal grading'
+          ? vi
+              .spyOn(questionServers.getModule('Freeform'), 'grade')
+              .mockRejectedValueOnce(new Error('Interrupted during grading'))
+          : vi
+              .spyOn(grading, 'gradeVariant')
+              .mockRejectedValueOnce(new Error('Interrupted before grading'));
+      try {
+        await withConfig(
+          {
+            features: {
+              'unsaved-submissions-ui': true,
+              'unsaved-submissions-instructor-promotion': true,
+            },
+          },
+          async () =>
+            withUser(editor, async () => {
+              await expect(
+                createClient(editor).unsavedSubmissions.promote.mutate({
+                  unsaved_submission_id: draft.unsaved_submission.id,
+                  revision: draft.revision,
+                }),
+              ).rejects.toMatchObject({ data: { code: 'INTERNAL_SERVER_ERROR' } });
+            }),
+        );
+      } finally {
+        startGrading.mockRestore();
+      }
+      const saved = (await selectLatestSubmission())!;
+      expect(saved).toMatchObject({
+        score: null,
+        grading_requested_at: null,
+        recovered_from_user_id: student.id,
+      });
+      expect((await selectAssessmentInstanceById(assessmentInstanceId)).grading_needed).toBe(false);
+      expect(
+        await selectOptionalUnsavedSubmissionForAssessment({
+          unsaved_submission_id: draft.unsaved_submission.id,
+          assessment_id: assessmentId,
+        }),
+      ).toBeNull();
+
+      if (interruption === 'with a committed job') {
+        await insertGradingJob({ submission_id: saved.id, authn_user_id: editor.id });
+      }
+      expect((await selectLatestSubmission())!.grading_requested_at !== null).toBe(
+        interruption === 'with a committed job',
+      );
+
+      await withConfig(
+        {
+          features: {
+            'unsaved-submissions-ui': false,
+            'unsaved-submissions-instructor-promotion': false,
+          },
+        },
+        async () => {
+          await autoFinishExams();
+          await autoFinishExams();
+        },
+      );
+      expect(await selectLatestSubmission()).toMatchObject({
+        id: saved.id,
+        score: 1,
+        credit: 25,
+        auth_user_id: editor.id,
+        recovered_from_user_id: student.id,
+      });
+      expect((await selectAssessmentInstanceById(assessmentInstanceId)).score_perc).toBe(25);
+      expect(
+        await queryRow(
+          sql.select_recovery_grading_counts,
+          { submission_id: saved.id },
+          z.object({
+            grading_job_count: z.number(),
+            auth_user_id: IdSchema,
+            number_attempts: z.number(),
+          }),
+        ),
+      ).toEqual({ grading_job_count: 1, auth_user_id: editor.id, number_attempts: 1 });
+    },
+  );
+
+  test('resumes external dispatch using the same job and counts replayed results once', async () => {
     const draft = await seedDraft();
-    await execute(sql.set_open, { variant_id: variantId, open: false });
-    const startGrading = vi
-      .spyOn(grading, 'gradeVariant')
-      .mockRejectedValueOnce(new Error('Interrupted before grading'));
+    await execute(sql.set_question_grading_method, {
+      question_id: draft.question.id,
+      grading_method: 'External',
+    });
+    const dispatch = vi
+      .spyOn(externalGrader, 'beginGradingJob')
+      .mockRejectedValueOnce(new Error('Interrupted before external dispatch'))
+      .mockImplementation(async (grading_job_id) => {
+        await execute(sql.mark_external_job_submitted, { grading_job_id });
+      });
     try {
       await withConfig(
         {
@@ -531,54 +628,58 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
             ).rejects.toMatchObject({ data: { code: 'INTERNAL_SERVER_ERROR' } });
           }),
       );
-    } finally {
-      startGrading.mockRestore();
-    }
-    const saved = (await selectLatestSubmission())!;
-    expect(saved).toMatchObject({
-      score: null,
-      grading_requested_at: null,
-      recovered_from_user_id: student.id,
-    });
-    expect((await selectAssessmentInstanceById(assessmentInstanceId)).grading_needed).toBe(false);
-    expect(
-      await selectOptionalUnsavedSubmissionForAssessment({
-        unsaved_submission_id: draft.unsaved_submission.id,
-        assessment_id: assessmentId,
-      }),
-    ).toBeNull();
-
-    await withConfig(
-      {
-        features: {
-          'unsaved-submissions-ui': false,
-          'unsaved-submissions-instructor-promotion': false,
+      const saved = (await selectLatestSubmission())!;
+      expect(saved.grading_requested_at).not.toBeNull();
+      const gradingJobId = dispatch.mock.calls[0][0];
+      await autoFinishExams();
+      await autoFinishExams();
+      expect(dispatch.mock.calls.map(([id]) => id)).toEqual([gradingJobId, gradingJobId]);
+      expect(await selectLatestSubmission()).toMatchObject({ id: saved.id, score: null });
+      const before = await queryScalar(
+        sql.select_external_grading_duration,
+        { course_instance_id: courseInstanceId },
+        z.number(),
+      );
+      const result = {
+        gradingId: gradingJobId,
+        grading: {
+          score: 1,
+          receivedTime: '2026-01-01T12:00:00Z',
+          startTime: '2026-01-01T12:00:00Z',
+          endTime: '2026-01-01T12:00:10Z',
+          feedback: { succeeded: true, results: { succeeded: true, gradable: true } },
         },
-      },
-      async () => {
-        await autoFinishExams();
-        await autoFinishExams();
-      },
-    );
-    expect(await selectLatestSubmission()).toMatchObject({
-      id: saved.id,
-      score: 1,
-      credit: 25,
-      auth_user_id: editor.id,
-      recovered_from_user_id: student.id,
-    });
-    expect((await selectAssessmentInstanceById(assessmentInstanceId)).score_perc).toBe(25);
-    expect(
-      await queryRow(
-        sql.select_recovery_grading_counts,
-        { submission_id: saved.id },
-        z.object({
-          grading_job_count: z.number(),
-          auth_user_id: IdSchema,
-          number_attempts: z.number(),
-        }),
-      ),
-    ).toEqual({ grading_job_count: 1, auth_user_id: editor.id, number_attempts: 1 });
+      };
+      await Promise.all([
+        externalGrader.processGradingResult(structuredClone(result)),
+        externalGrader.processGradingResult(structuredClone(result)),
+      ]);
+      expect(await selectLatestSubmission()).toMatchObject({ id: saved.id, score: 1 });
+      expect(
+        await queryScalar(
+          sql.select_external_grading_duration,
+          { course_instance_id: courseInstanceId },
+          z.number(),
+        ),
+      ).toBe(before + 10);
+      expect(
+        await queryRow(
+          sql.select_recovery_grading_counts,
+          { submission_id: saved.id },
+          z.object({
+            grading_job_count: z.number(),
+            auth_user_id: IdSchema,
+            number_attempts: z.number(),
+          }),
+        ),
+      ).toEqual({ grading_job_count: 1, auth_user_id: editor.id, number_attempts: 1 });
+    } finally {
+      dispatch.mockRestore();
+      await execute(sql.set_question_grading_method, {
+        question_id: draft.question.id,
+        grading_method: draft.question.grading_method,
+      });
+    }
   });
 
   test('does not retry a recovery superseded by a student Save on another variant', async () => {

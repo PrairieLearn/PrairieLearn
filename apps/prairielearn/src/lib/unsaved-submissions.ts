@@ -136,7 +136,7 @@ export async function promoteUnsavedSubmission({
   return { submission_id: saved.submission_id };
 }
 
-/** Resume recovered answers committed before their grading request could be created. */
+/** Resume recovered answers and grading jobs interrupted before execution or dispatch completed. */
 export async function retryPendingRecoveredSubmissions(): Promise<void> {
   const submissionIds = await queryScalars(sql.select_pending_recovered_submission_ids, IdSchema);
   for (const submissionId of submissionIds) {

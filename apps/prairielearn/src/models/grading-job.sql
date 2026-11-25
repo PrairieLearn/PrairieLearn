@@ -6,6 +6,23 @@ FROM
 WHERE
   id = $grading_job_id;
 
+-- BLOCK select_latest_grading_job_for_submission
+SELECT
+  id,
+  grading_method,
+  graded_at,
+  grading_request_canceled_at,
+  grading_submitted_at,
+  grading_received_at
+FROM
+  grading_jobs
+WHERE
+  submission_id = $submission_id
+ORDER BY
+  id DESC
+LIMIT
+  1;
+
 -- BLOCK insert_grading_job
 WITH
   grading_job_data AS (
