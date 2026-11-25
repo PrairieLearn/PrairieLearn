@@ -1,4 +1,3 @@
-// Shared by PrairieLearn symbolic-input elements.
 // oxlint-disable typescript/consistent-type-imports -- Import declarations would mark the emitted standalone browser asset as an ES module.
 type MathfieldElement = import('mathlive').MathfieldElement;
 type InlineShortcutDefinitions = import('mathlive').InlineShortcutDefinitions;
