@@ -120,6 +120,7 @@ export function initializeUnsavedSubmissions(
     if (action !== 'save' && action !== 'grade') return;
 
     lifecycleVersion++;
+    clearRecoveryDirtyTimeout();
     submitting = true;
     queueMicrotask(() => {
       if (event.defaultPrevented) submitting = false;
@@ -133,6 +134,7 @@ export function initializeUnsavedSubmissions(
     if (!event.target.closest('button.question-save, button.question-grade')) return;
 
     lifecycleVersion++;
+    clearRecoveryDirtyTimeout();
     submitting = true;
     queueMicrotask(() => {
       if (event.defaultPrevented) submitting = false;

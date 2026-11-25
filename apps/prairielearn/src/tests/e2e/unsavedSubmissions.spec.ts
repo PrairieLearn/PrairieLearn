@@ -287,7 +287,7 @@ recoveryTest(
 );
 
 recoveryTest(
-  'replaces a recoverable draft only after the form stays dirty for two minutes',
+  'replaces a recoverable draft only after two dirty minutes, restarting after a prevented save',
   async ({ page, courseInstance }) => {
     await page.clock.install();
     const selectDraft = await openRecoverableDraft(page, courseInstance);
@@ -301,8 +301,21 @@ recoveryTest(
     await expect(heading).toBeVisible();
     expect((await selectDraft())!.raw_submitted_answer).toEqual({ c: '17' });
 
+    await page.locator('form.question-form').evaluate((form) => {
+      form.addEventListener('submit', (event) => event.preventDefault(), { once: true });
+    });
+    await page.getByRole('button', { name: 'Save only', exact: true }).click();
+    await page.locator('input[name="c"]').fill('31');
+    await page.clock.fastForward(1_001);
+    await expect(heading).toBeVisible();
+    expect((await selectDraft())!.raw_submitted_answer).toEqual({ c: '17' });
+
+    await page.clock.fastForward(118_000);
+    await expect(heading).toBeVisible();
+    expect((await selectDraft())!.raw_submitted_answer).toEqual({ c: '17' });
+
     await page.clock.fastForward(1_001);
     await expect(heading).toHaveCount(0);
-    await expect.poll(async () => (await selectDraft())?.raw_submitted_answer).toEqual({ c: '29' });
+    await expect.poll(async () => (await selectDraft())?.raw_submitted_answer).toEqual({ c: '31' });
   },
 );

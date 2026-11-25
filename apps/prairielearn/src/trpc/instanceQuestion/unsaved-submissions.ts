@@ -131,7 +131,7 @@ const recoveryProcedure = t.procedure
 const restore = recoveryProcedure
   .input(z.object({ variant_id: IdSchema }))
   .mutation(async ({ input, ctx }) => {
-    await runInTransactionAsync(async () => {
+    const { broken } = await runInTransactionAsync(async () => {
       // Keep captures, saves, and discards from changing the draft during restoration.
       await lockAssessmentInstanceForInstanceQuestion(ctx.instance_question.id);
       await lockUnsavedSubmissionState({
@@ -163,7 +163,7 @@ const restore = recoveryProcedure
       if (!variant.open || variant.broken_at !== null) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Variant is not open' });
       }
-      await saveSubmission(
+      return await saveSubmission(
         {
           variant_id: variant.id,
           user_id: ctx.user.id,
@@ -178,6 +178,14 @@ const restore = recoveryProcedure
         ctx.course,
       );
     });
+    // Commit the course issue and broken submission so staff can diagnose the failure.
+    if (broken) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message:
+          'A question error prevented restoring your answers. Your draft has been kept. Please contact course staff.',
+      });
+    }
   });
 
 // oxlint-disable-next-line @prairielearn/require-trpc-permission-middleware
