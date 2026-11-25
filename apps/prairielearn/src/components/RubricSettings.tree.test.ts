@@ -12,6 +12,7 @@ import {
   removeSubtree,
   rubricPointRange,
   sortChildrenByPoints,
+  subgroupBlocker,
   treeGuides,
 } from './RubricSettings.tree.js';
 
@@ -144,5 +145,14 @@ describe('treeGuides', () => {
       [],
     ]);
     assert.deepEqual(treeGuides(rows('G g', '  G h', '    a')), [[], ['end'], ['none', 'end']]);
+  });
+});
+
+describe('subgroupBlocker', () => {
+  it('allows a subgroup only in top-level groups without a selection rule', () => {
+    const list = rows('G g', '  a', 'G r 1-1', '  b', 'G h', '  G i', '    c');
+    assert.isNull(subgroupBlocker(list, 0));
+    assert.match(subgroupBlocker(list, 2) ?? '', /selection rule/);
+    assert.match(subgroupBlocker(list, 5) ?? '', /at most 3 levels/);
   });
 });
