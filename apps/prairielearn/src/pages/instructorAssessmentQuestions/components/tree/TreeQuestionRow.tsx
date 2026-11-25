@@ -27,8 +27,8 @@ import {
 import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
-import { DragHandle } from './DragHandle.js';
-import { WarningIndicator } from './WarningIndicator.js';
+import { DragHandle } from '../../../../components/tree/DragHandle.js';
+import { WarningIndicator } from '../../../../components/tree/WarningIndicator.js';
 
 export function PointsBadge({
   question,

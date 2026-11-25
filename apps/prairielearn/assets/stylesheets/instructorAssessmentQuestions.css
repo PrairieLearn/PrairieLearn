@@ -54,27 +54,6 @@
 }
 
 /* ── Assessment tree hover/drag styles ──────────────────────────────── */
-.tree-delete-btn:hover {
-  color: var(--bs-danger) !important;
-}
-
-/* Shared hover-show pattern for tree and picker rows */
-.hover-show {
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.tree-row:hover .hover-show,
-.picker-row:hover .hover-show {
-  opacity: 1;
-}
-.hover-show:focus-within {
-  opacity: 1;
-}
-[data-dragging] .hover-show {
-  opacity: 0 !important;
-  pointer-events: none;
-}
-
 .tree-row.list-group-item-action:has(a:hover, .tree-interactive-badge:hover) {
   background-color: transparent;
 }
@@ -91,19 +70,4 @@
 }
 .picker-delete-btn:hover {
   color: var(--bs-danger) !important;
-}
-
-/* Selection highlight */
-.tree-row-selected {
-  outline: 2px solid var(--bs-primary);
-  outline-offset: -2px;
-}
-
-.tree-row-warning-indicator::before {
-  content: '';
-  position: absolute;
-  inset: 0.25rem auto 0.25rem 0.25rem;
-  width: 4px;
-  border-radius: 999px;
-  background-color: var(--bs-warning);
 }

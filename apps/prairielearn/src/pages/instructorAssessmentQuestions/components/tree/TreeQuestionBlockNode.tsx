@@ -23,11 +23,11 @@ import {
 } from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
-import { CollapseToggleButton } from './CollapseToggleButton.js';
-import { DragHandle } from './DragHandle.js';
+import { CollapseToggleButton } from '../../../../components/tree/CollapseToggleButton.js';
+import { DragHandle } from '../../../../components/tree/DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
-import { WarningIndicator } from './WarningIndicator.js';
+import { WarningIndicator } from '../../../../components/tree/WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
 /**
