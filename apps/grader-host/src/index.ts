@@ -351,11 +351,14 @@ async function handleJob(job: GradingJobMessage) {
     logger.info(`Job ${job.jobId} completed with results:`, results);
 
     try {
-      await Promise.all([
+      // Keep the job lock until results finish uploading, even if the archive fails first.
+      const uploads = await Promise.allSettled([
         uploadResults(context, results),
         // Only attempt to upload the archive if the directory was created.
         tempDir ? uploadArchive(context, tempDir.path) : Promise.resolve(),
       ]);
+      const failure = uploads.find((upload) => upload.status === 'rejected');
+      if (failure) throw failure.reason;
 
       if (tempDir) {
         logger.info('Removing temporary directories');
