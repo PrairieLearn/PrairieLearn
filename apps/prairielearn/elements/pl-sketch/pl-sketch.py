@@ -100,7 +100,6 @@ READ_ONLY_DEFAULT = False
 OVERLAY_SOLUTION_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 TAG_DEFAULTS: SketchTag = {
-    "latex": False,
     "xoffset": 5,
     "yoffset": -5,
     "align": "start",
@@ -399,7 +398,6 @@ def _check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
     # Common list of optional tool attribs
     optional_attribs = [
         "label",
-        "tag-latex",
         "limit",
         "color",
         "helper",
@@ -509,10 +507,6 @@ def _check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
             tool_tag, "arrowhead", defaults.get("arrowHead")
         ),
         "closed": defaults.get("closed"),
-    }
-    tool_params["tag"] = {
-        **TAG_DEFAULTS,
-        "latex": pl.get_boolean_attrib(tool_tag, "tag-latex", False),
     }
 
     if tool_params["readonly"] and tool_params["helper"]:
@@ -919,7 +913,7 @@ def _configure_display_tags(
         elif plugin["name"] != "axes":
             tool = cast(SketchTool, plugin)
             if tool["id"] in instructor_tools and _has_tags(state.get(tool["id"], [])):
-                tool["tag"] = {**TAG_DEFAULTS, **tool.get("tag", {})}
+                tool["tag"] = TAG_DEFAULTS.copy()
             else:
                 # A solution's tag presentation must not enable default tags on
                 # the student's original editable tool.

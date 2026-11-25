@@ -177,9 +177,9 @@ def test_fixed_tags_use_existing_tool_presentation(
     tool_type: str, coordinates: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(Path(__file__).parent)
-    html = f"""<pl-sketch answers-name="graph">
-        <pl-sketch-tool id="given" type="{tool_type}" read-only="true" tag-latex="true"></pl-sketch-tool>
-        <pl-sketch-initial tool-id="given" coordinates="{coordinates}" tag="A_1"></pl-sketch-initial>
+    html = rf"""<pl-sketch answers-name="graph">
+        <pl-sketch-tool id="given" type="{tool_type}" read-only="true"></pl-sketch-tool>
+        <pl-sketch-initial tool-id="given" coordinates="{coordinates}" tag="Point \(A_1\)"></pl-sketch-initial>
         <pl-sketch-initial tool-id="given" coordinates="{coordinates}"></pl-sketch-initial>
     </pl-sketch>"""
     data = _make_question_data()
@@ -188,23 +188,23 @@ def test_fixed_tags_use_existing_tool_presentation(
     config = _render_config(html, data)
     tool = next(tool for tool in config["plugins"] if tool.get("id") == "given")
     assert tool["readonly"] is True
-    assert tool["tag"]["latex"] is True
+    assert "latex" not in tool["tag"]
     drawings = config["initialstate"]["given"]
     points = (
         [point for drawing in drawings for point in drawing]
         if isinstance(drawings[0], list)
         else drawings
     )
-    assert [point["tag"] for point in points if "tag" in point] == ["A_1"]
+    assert [point["tag"] for point in points if "tag" in point] == [r"Point \(A_1\)"]
     assert data["params"] == before
 
 
-TAGGED_REFERENCE_HTML = """<pl-sketch answers-name="graph">
-    <pl-sketch-tool id="given" type="point" read-only="true" group="References" tag-latex="true"></pl-sketch-tool>
-    <pl-sketch-tool id="response" type="point" tag-latex="true"></pl-sketch-tool>
-    <pl-sketch-initial tool-id="given" coordinates="(-1,-1)" tag="A_1"></pl-sketch-initial>
+TAGGED_REFERENCE_HTML = r"""<pl-sketch answers-name="graph">
+    <pl-sketch-tool id="given" type="point" read-only="true" group="References"></pl-sketch-tool>
+    <pl-sketch-tool id="response" type="point"></pl-sketch-tool>
+    <pl-sketch-initial tool-id="given" coordinates="(-1,-1)" tag="Point \(A_1\)"></pl-sketch-initial>
     <pl-sketch-grade type="match" tool-id="response" x="1" y="1"></pl-sketch-grade>
-    <pl-sketch-solution tool-id="response" coordinates="(1,1)" tag="B_1"></pl-sketch-solution>
+    <pl-sketch-solution tool-id="response" coordinates="(1,1)" tag="Origin \(B_1\)"></pl-sketch-solution>
 </pl-sketch>"""
 
 
@@ -232,13 +232,13 @@ def test_fixed_references_persist_and_solutions_do_not_tag_student_tools(
     reference = next(tool for tool in config["plugins"] if tool["name"] == "group")[
         "plugins"
     ][0]
-    assert reference["tag"]["latex"] is True
+    assert "latex" not in reference["tag"]
     response = next(tool for tool in config["plugins"] if tool.get("id") == "response")
     if panel == "answer":
         assert (
             config["initialstate"]["response"] == params["solution_state"]["response"]
         )
-        assert response["tag"]["latex"] is True
+        assert "latex" not in response["tag"]
     else:
         assert config["initialstate"]["response"] == [{"x": 20, "y": 30}]
         assert "tag" not in response
@@ -258,8 +258,8 @@ def test_solution_overlays_keep_tags_separate_from_student_data(
     overlay = next(tool for tool in config["plugins"] if tool.get("overlay"))
     assert overlay["id"] == "response-solution-overlay"
     assert overlay["readonly"] is True
-    assert overlay["tag"]["latex"] is True
-    assert config["initialstate"][overlay["id"]][0]["tag"] == "B_1"
+    assert "latex" not in overlay["tag"]
+    assert config["initialstate"][overlay["id"]][0]["tag"] == r"Origin \(B_1\)"
     assert "tag" not in next(
         tool for tool in config["plugins"] if tool.get("id") == "response"
     )
@@ -275,8 +275,8 @@ def test_generated_answers_preserve_reference_tags_without_solution_annotations(
     data, submission, _ = _run_submission_lifecycle(TAGGED_REFERENCE_HTML, test_type)
     assert "graph" not in data["format_errors"]
     assert data["partial_scores"]["graph"]["score"] == score
-    assert submission["data"]["given"][0]["tag"] == "A_1"
-    assert submission["gradeable"]["given"][0]["tag"] == "A_1"
+    assert submission["data"]["given"][0]["tag"] == r"Point \(A_1\)"
+    assert submission["gradeable"]["given"][0]["tag"] == r"Point \(A_1\)"
     assert "tag" not in submission["data"]["response"][0]
     assert "tag" not in submission["gradeable"]["response"][0]
 
@@ -341,7 +341,7 @@ def test_generated_line_reference_uses_flat_client_state(
     assert len(submission["data"]["given"]) == 2
     line = submission["gradeable"]["given"][0]
     assert len(line["spline"]) == 4
-    assert line["tag"] == "A_1"
+    assert line["tag"] == r"Point \(A_1\)"
     start, end = submission["data"]["given"]
     assert line["spline"][0] == [start["x"], start["y"]]
     assert line["spline"][-1] == [end["x"], end["y"]]

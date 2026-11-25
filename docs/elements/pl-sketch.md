@@ -83,7 +83,6 @@ _Note that all attributes other than `type` and `id` are optional, but default v
 | `type`                 | string                                                                       | -                                                       | Type of the tool (see below)                                                                                                                                     |
 | `id`                   | string                                                                       | All                                                     | Unique name of the tool that is referenced in `pl-sketch-grade` and `pl-sketch-initial` elements.                                                                |
 | `label`                | string                                                                       | All                                                     | Label for the tool in the toolbar.                                                                                                                               |
-| `tag-latex`            | boolean                                                                      | All                                                     | Render drawing tags as complete LaTeX expressions instead of plain text (default: false).                                                                        |
 | `read-only`            | boolean                                                                      | All                                                     | If set to `true`, students cannot use this tool and it does not appear in the toolbar. It is only available when the initial state of the canvas is defined.     |
 | `limit`                | integer                                                                      | All                                                     | The maximum number of drawings that can be created with this tool. Note that the limit does not affect the number of possible segments for splines or polylines. |
 | `helper`               | boolean                                                                      | All                                                     | If set to `true`, the tool is displayed in a separate dropdown list of "helper" tools that are only meant to support students in the drawing process.            |
@@ -223,16 +222,25 @@ to avoid the left and right hand side of the vertical asymptote being connected.
 
 A tagged initial drawing requires a read-only tool or a read-only canvas. Solutions are displayed read-only and may be tagged even when their tool is editable in the question panel. Student drawings do not receive default tags.
 
-Set `tag-latex="true"` on a tool to render all its tags as complete KaTeX expressions without math delimiters. The default is plain text; use `\text{...}` for ordinary text inside a math tag. Formatting belongs to the tool, while tag values belong to individual drawings.
+Tags use PrairieLearn's host MathJax renderer and the normal math delimiters. A tag can mix text and mathematics, for example `tag="Reference \(f(x)\)"`. Different drawings on the same tool can independently contain plain text, math, or both; no formatting parameter is needed.
 
 ```html
 <pl-sketch answers-name="graph" x-range="-2,2" y-range="-2,2">
-  <pl-sketch-tool id="given" type="spline" read-only="true" tag-latex="true"></pl-sketch-tool>
-  <pl-sketch-tool id="response" type="point" color="red" tag-latex="true"></pl-sketch-tool>
-  <pl-sketch-initial tool-id="given" function="x" x-range="-1,1" tag="f(x)"></pl-sketch-initial>
+  <pl-sketch-tool id="given" type="spline" read-only="true"></pl-sketch-tool>
+  <pl-sketch-tool id="response" type="point" color="red"></pl-sketch-tool>
+  <pl-sketch-initial
+    tool-id="given"
+    function="x"
+    x-range="-1,1"
+    tag="Reference \(f(x)\)"
+  ></pl-sketch-initial>
   <pl-sketch-grade type="match" tool-id="response" x="0" y="0"></pl-sketch-grade>
   <pl-sketch-grade type="count" tool-id="response" count="1"></pl-sketch-grade>
-  <pl-sketch-solution tool-id="response" coordinates="(0,0)" tag="O"></pl-sketch-solution>
+  <pl-sketch-solution
+    tool-id="response"
+    coordinates="(0,0)"
+    tag="Origin \(O\)"
+  ></pl-sketch-solution>
 </pl-sketch>
 ```
 
