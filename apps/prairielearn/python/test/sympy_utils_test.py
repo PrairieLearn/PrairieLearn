@@ -531,6 +531,126 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(
+        ("value", "allowed_types"),
+        [
+            (sympy.Symbol("m") + 1, {"expression"}),
+            (sympy.FiniteSet(1, 2), {"finite-set"}),
+            (sympy.Interval(1, 2), {"interval"}),
+            (sympy.EmptySet, {"finite-set"}),
+            (sympy.EmptySet, {"interval"}),
+            (
+                sympy.Complement(
+                    sympy.Interval(0, 5),
+                    sympy.FiniteSet(sympy.Symbol("m")),
+                    evaluate=False,
+                ),
+                {"set"},
+            ),
+        ],
+    )
+    def test_check_sympy_types_accepts_allowed_values(
+        self,
+        value: sympy.Basic,
+        allowed_types: set[psu.AllowedSympyType],
+    ) -> None:
+        assert psu.check_sympy_types(value, allowed_types) is None
+
+    @pytest.mark.parametrize(
+        ("value", "allowed_types", "missing_types"),
+        [
+            (sympy.Symbol("m") + 1, {"set"}, "expression"),
+            (
+                sympy.FiniteSet(sympy.Interval(1, 2)),
+                {"finite-set"},
+                "interval",
+            ),
+            (
+                sympy.Union(
+                    sympy.Interval(1, 2),
+                    sympy.FiniteSet(3),
+                    evaluate=False,
+                ),
+                {"interval"},
+                "finite-set",
+            ),
+            (sympy.S.Integers, {"interval"}, "set"),
+        ],
+    )
+    def test_check_sympy_types_rejects_disallowed_values(
+        self,
+        value: sympy.Basic,
+        allowed_types: set[psu.AllowedSympyType],
+        missing_types: str,
+    ) -> None:
+        assert psu.check_sympy_types(value, allowed_types) == psu.SympyParseFailure(
+            f"Your answer uses {missing_types}, which this input does not accept. "
+            f"Allowed types: {', '.join(sorted(allowed_types))}."
+        )
+
+    def test_type_validation_preserves_unsimplified_expression(self) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "[0, sin(pi/2)] U {1}",
+            None,
+            allow_sets=True,
+            simplify_expression=False,
+            allowed_types={"interval"},
+        )
+
+        assert isinstance(result, psu.SympyParseSuccess)
+        assert isinstance(result.expr, sympy.Union)
+        assert result.expr.doit() == sympy.Interval(0, 1)
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Reals",
+            "Reals U Naturals",
+        ],
+    )
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_full_real_line_is_classified_as_an_interval(
+        self, text: str, *, simplify_expression: bool
+    ) -> None:
+        result = psu.try_parse_string_as_sympy(
+            text,
+            None,
+            allow_sets=True,
+            simplify_expression=simplify_expression,
+            allowed_types={"interval"},
+        )
+
+        assert isinstance(result, psu.SympyParseSuccess)
+
+    @pytest.mark.parametrize("simplify_expression", [True, False])
+    def test_equivalent_infinite_union_members_require_set_type(
+        self,
+        *,
+        simplify_expression: bool,
+    ) -> None:
+        result = psu.check_sympy_types(
+            sympy.Union(
+                sympy.S.Naturals0,
+                sympy.Range(0, sympy.oo, 1),
+                evaluate=False,
+            ),
+            {"interval"},
+            simplify_expression=simplify_expression,
+        )
+
+        assert result == psu.SympyParseFailure(
+            "Your answer uses set, which this input does not accept. "
+            "Allowed types: interval."
+        )
+
+    def test_declared_set_domain_names_are_scalar_variables(self) -> None:
+        assert psu.try_parse_string_as_sympy(
+            "Reals + 1",
+            ["Reals"],
+            allow_sets=True,
+            allowed_types={"expression"},
+        ) == psu.SympyParseSuccess(sympy.Symbol("Reals") + 1)
+
+    @pytest.mark.parametrize(
         ("a_sub", "sympy_ref"),
         [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)],
     )
@@ -631,12 +751,6 @@ class TestSympy:
 
         assert ref_expr == psu.json_to_sympy(psu.sympy_to_json(ref_expr))
 
-    @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
-    def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
-        assert sympy_expr == psu.json_to_sympy(
-            psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
-        )
-
     def test_nested_tuple_json_conversion_is_rejected(self) -> None:
         with pytest.raises(ValueError, match="SymPy Tuple values are not supported"):
             psu.sympy_to_json(sympy.FiniteSet(sympy.Tuple(1, 2)), allow_sets=True)
@@ -657,6 +771,62 @@ class TestSympy:
         )
 
         assert restored == expression
+
+    @pytest.mark.parametrize(
+        "sympy_range",
+        [sympy.Range(0, 3, 1), sympy.Range(0, sympy.oo, 1)],
+    )
+    def test_range_json_conversion(self, sympy_range: sympy.Range) -> None:
+        encoded = psu.sympy_to_json(sympy_range, allow_sets=True)
+
+        assert psu.json_to_sympy(encoded, allow_sets=True) == sympy_range
+
+    @pytest.mark.parametrize(
+        ("serialized_value", "expected_error"),
+        [
+            ("Range(0, 3)", psu.HasFunctionArityError),
+            ("Range({}, 3, 1)", psu.HasArgumentTypeError),
+        ],
+    )
+    def test_range_json_conversion_validates_signature(
+        self,
+        serialized_value: str,
+        expected_error: type[psu.BaseSympyError],
+    ) -> None:
+        encoded: psu.SympyJson = {
+            "_type": "sympy",
+            "_value": serialized_value,
+            "_variables": [],
+        }
+
+        with pytest.raises(expected_error):
+            psu.json_to_sympy(encoded, allow_sets=True)
+
+    def test_range_is_not_a_builtin_set_function(self) -> None:
+        result = psu.try_parse_string_as_sympy(
+            "Range(0, 3, 1)",
+            None,
+            allow_sets=True,
+            allowed_types={"all"},
+        )
+
+        assert isinstance(result, psu.SympyParseFailure)
+        assert 'invalid function "Range"' in result.error
+
+    def test_custom_range_function_round_trips_with_sets(self) -> None:
+        x = sympy.Symbol("x")
+        expected = sympy.Function("Range")(x)
+        parsed = psu.convert_string_to_sympy(
+            "Range(x)",
+            ["x"],
+            allow_sets=True,
+            custom_functions=["Range"],
+        )
+        encoded = psu.sympy_to_json(parsed, allow_sets=True)
+
+        assert parsed == expected
+        assert encoded.get("_custom_functions") == ["Range"]
+        assert psu.json_to_sympy(encoded, allow_sets=True) == expected
 
     @pytest.mark.parametrize("simplify_expression", [True, False])
     @pytest.mark.parametrize("operator", ["|", "&"])
@@ -680,9 +850,39 @@ class TestSympy:
             == expected
         )
 
+    @pytest.mark.parametrize("sympy_expr", [out for _, out in SET_EXPR_PAIRS])
+    def test_sets_json_conversion(self, sympy_expr: sympy.Set) -> None:
+        assert sympy_expr == psu.json_to_sympy(
+            psu.sympy_to_json(sympy_expr, allow_sets=True), allow_sets=True
+        )
+
+    def test_set_domain_json_conversion(self) -> None:
+        assert sympy.S.Reals == psu.json_to_sympy(
+            psu.sympy_to_json(sympy.S.Reals, allow_sets=True), allow_sets=True
+        )
+
     def test_sets_json_conversion_requires_sets_enabled(self) -> None:
         with pytest.raises(psu.HasSetNotationError):
             psu.sympy_to_json(sympy.Interval(0, 1))
+
+    def test_range_type_classification(self) -> None:
+        assert psu.check_sympy_types(sympy.Range(0, 3), {"finite-set"}) is None
+
+        result = psu.check_sympy_types(sympy.Range(0, sympy.oo), {"finite-set"})
+        assert isinstance(result, psu.SympyParseFailure)
+        assert "uses set" in result.error
+
+        n = sympy.Symbol("n")
+        assert psu.check_sympy_types(sympy.Range(0, n), {"finite-set"}) is None
+
+    def test_unevaluated_symbolic_range_operation_type_classification(self) -> None:
+        n = sympy.Symbol("n", integer=True, positive=True)
+        expr = sympy.Complement(sympy.Range(1, n), sympy.FiniteSet(2), evaluate=False)
+
+        assert (
+            psu.check_sympy_types(expr, {"finite-set"}, simplify_expression=False)
+            is None
+        )
 
     @pytest.mark.parametrize(
         ("fn_name", "fn_args"),
@@ -699,7 +899,7 @@ class TestSympy:
         fn_args: tuple[Any, ...],
     ) -> None:
         expr = sympy.Function(fn_name)(*fn_args)
-        assert isinstance(expr, sympy.Basic)
+        assert isinstance(expr, sympy.Expr)
 
         without_sets = psu.sympy_to_json(expr, allow_sets=False)
         with_sets = psu.sympy_to_json(expr, allow_sets=True)
@@ -736,8 +936,8 @@ class TestSympy:
 
     def test_sets_reserveds_are_custom_functions_by_default(self) -> None:
         x = sympy.Symbol("x")
-        union = sympy.Function("Union")
-        expr = union(x)
+        expr = sympy.Function("Union")(x)
+        assert isinstance(expr, sympy.Expr)
 
         assert psu.json_to_sympy(psu.sympy_to_json(expr)) == expr
 
@@ -869,6 +1069,7 @@ class TestAllowExtraSymbols:
         [
             ("n*log(n) + m", None, {"m", "n"}),
             ("x + y", ["x"], {"x", "y"}),
+            ("Reals + x", ["x"], {"Reals", "x"}),
             # Builtin constants are resolved, not treated as free symbols.
             ("2*e + n", None, {"n"}),
             # Greek letters are normalized to their spelled-out names.

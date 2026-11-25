@@ -16,11 +16,18 @@
     },
     "allow-sets": {
       "type": "string",
-      "format": "boolean"
+      "format": "boolean",
+      "deprecated": true,
+      "description": "Use allowed-types instead."
     },
     "allow-trig-functions": {
       "type": "string",
       "format": "boolean"
+    },
+    "allowed-types": {
+      "default": "expression",
+      "type": "string",
+      "pattern": "^\\s*(all|set|finite-set|interval|expression)(\\s*,\\s*(all|set|finite-set|interval|expression))*\\s*$"
     },
     "answers-name": {
       "type": "string"
