@@ -101,6 +101,10 @@ const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
 // Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
 // within one decision.
 const MAX_PROVIDER_REQUESTS = 4;
+// A review submitted under `always_approve` is approved by PrairieLearn. While PrairieLearn is
+// unreachable the request is retried with backoff, then the review waits for the instructor.
+const AUTO_APPROVAL_RETRY_SECONDS = 15;
+const MAX_AUTO_APPROVAL_ATTEMPTS = 6;
 
 const OPENAI_API = 'https://api.openai.com';
 
@@ -662,21 +666,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     let response: Response;
     try {
-      const url = new URL(
-        `pl/api/course-agent/conversations/${this.name}/usage`,
-        this.env.PL_SERVICE_URL.endsWith('/')
-          ? this.env.PL_SERVICE_URL
-          : `${this.env.PL_SERVICE_URL}/`,
-      );
-      response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(report),
-        signal: AbortSignal.timeout(10_000),
-      });
+      response = await this.postToPrairieLearn(`conversations/${this.name}/usage`, report);
     } catch (error) {
       logEvent('usage_report_unavailable', { conversationId: this.name, error: String(error) });
       return false;
@@ -709,6 +699,52 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     });
     this.allowedAt = decision.data.status === 'allowed' ? Date.now() : null;
     return true;
+  }
+
+  /** Calls PrairieLearn's service API, relative to its configured URL so a path prefix is kept. */
+  private postToPrairieLearn(path: string, body: unknown) {
+    const base = this.env.PL_SERVICE_URL.endsWith('/')
+      ? this.env.PL_SERVICE_URL
+      : `${this.env.PL_SERVICE_URL}/`;
+    return fetch(new URL(`pl/api/course-agent/${path}`, base), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.env.PL_SERVICE_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10_000),
+    });
+  }
+
+  private scheduleAutoApproval(reviewId: string, attempt: number, delaySeconds: number) {
+    void this.schedule(delaySeconds, 'approveReview', { reviewId, attempt }).catch(
+      (error: unknown) => this.reportError(error),
+    );
+  }
+
+  /**
+   * Asks PrairieLearn to approve a review submitted under `always_approve`. PrairieLearn checks
+   * that the instructor can still edit the course and saves the changes as their approval, so no
+   * browser needs to be open. A refusal leaves the review for the instructor to decide.
+   */
+  async approveReview({ reviewId, attempt }: { reviewId: string; attempt: number }) {
+    const review = this.record.review;
+    if (review?.id !== reviewId || review.result) return;
+    let status: number;
+    try {
+      status = (
+        await this.postToPrairieLearn(`conversations/${this.name}/reviews/${reviewId}/approve`, {})
+      ).status;
+    } catch {
+      status = 0;
+    }
+    if (status >= 200 && status < 300) return;
+    const unreachable = status === 0 || status >= 500;
+    logEvent('review_auto_approval_failed', { conversationId: this.name, reviewId, status });
+    if (unreachable && attempt + 1 < MAX_AUTO_APPROVAL_ATTEMPTS) {
+      this.scheduleAutoApproval(reviewId, attempt + 1, AUTO_APPROVAL_RETRY_SECONDS * 2 ** attempt);
+    }
   }
 
   /**
@@ -1386,6 +1422,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       id,
       data: { reviewId: id, ...(autoApprove ? { autoApprove } : {}) } satisfies ReviewPart,
     });
+    if (autoApprove) this.scheduleAutoApproval(id, 0, 0);
     return {
       success: true,
       text: `${
