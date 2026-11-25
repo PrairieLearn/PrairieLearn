@@ -1,13 +1,30 @@
-<div class="pl-overlay {{#clip}}pl-overlay-clip{{/clip}}"
-     style="{{#width}}width: {{width}}px;{{/width}} {{#height}}height: {{height}}px{{/height}}">
+<div
+  class="pl-overlay {{#clip}}pl-overlay-clip{{/clip}}"
+  style="{{#width}}width: {{width}}px;{{/width}}"
+>
+  <div class="pl-overlay-coordinate-plane" style="{{#height}}height: {{height}}px{{/height}}">
     <div class="pl-overlay-locations-container">
-        {{#locations}}
-            <div class="pl-overlay-location" style="{{{outer_style}}}">
-                {{{html}}}
-            </div>
-        {{/locations}}
+      {{#locations}}
+        <div class="pl-overlay-location" style="{{{outer_style}}}">{{{html}}}</div>
+      {{/locations}}
     </div>
-    {{#background}}
-        {{{background}}}
-    {{/background}}
+    {{#background}}{{{background}}}{{/background}}
+  </div>
 </div>
+<script>
+  (() => {
+    const overlay = document.currentScript.previousElementSibling;
+    const plane = overlay.firstElementChild;
+    const [locationsContainer, ...background] = plane.children;
+    const observed = [plane, ...background, ...locationsContainer.children];
+    const resize = () => {
+      const bottoms = observed.map(
+        (element) => element.getBoundingClientRect().bottom,
+      );
+      overlay.style.height = `${Math.ceil(Math.max(...bottoms) - overlay.getBoundingClientRect().top)}px`;
+    };
+    const observer = new ResizeObserver(resize);
+    observed.forEach((element) => observer.observe(element));
+    resize();
+  })();
+</script>
