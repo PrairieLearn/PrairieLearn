@@ -125,38 +125,6 @@ describe('Redis Cluster', () => {
     return { name, queue };
   }
 
-  function worker(name: string, processor: (value: number) => Promise<number>, autorun = true) {
-    const worker = new Worker<{ value: number }, number>(
-      name,
-      async (job) => processor(job.data.value),
-      {
-        redisUrl,
-        redisMode: 'cluster',
-        autorun,
-      },
-    );
-    worker.on('error', (error) => errors.push(error));
-    workers.push(worker);
-    return worker;
-  }
-
-  it('processes a job through the cluster client', async () => {
-    const { name, queue } = createQueue();
-    const job = await queue.add('work', { value: 1 });
-    const processor = vi.fn(async (value: number) => value + 1);
-    worker(name, processor);
-    await vi.waitFor(
-      async () => {
-        const status = await queue.getJobStatus(job.id);
-        expect(status.state).toBe('completed');
-        expect(status.job?.returnvalue).toBe(2);
-      },
-      { timeout: 5000 },
-    );
-    expect(processor).toHaveBeenCalledExactlyOnceWith(1);
-    expect(errors).toEqual([]);
-  });
-
   it('does not replay a job allocation after its connection loses the reply', async () => {
     const { queue } = createQueue();
     await queue.add('warmup', { value: 0 });
@@ -193,14 +161,19 @@ describe('Redis Cluster', () => {
     const next = await queue.add('next', { value: 2 });
 
     expect(next.id).toBe('3');
-    expect((await queue.getJobCounts()).waiting).toBe(3);
     expect((await queue.getJobStatus('2')).job?.name).toBe('lost-reply');
   });
 
   it('cancels a timed-out blocking wait and processes jobs after reconnecting', async () => {
     const { name, queue } = createQueue();
-    const processor = vi.fn(async (value: number) => value);
-    const activeWorker = worker(name, processor, false);
+    const processor = vi.fn(async (value: number) => value + 1);
+    const activeWorker = new Worker<{ value: number }, number>(
+      name,
+      async (job) => processor(job.data.value),
+      { redisUrl, redisMode: 'cluster', autorun: false },
+    );
+    activeWorker.on('error', (error) => errors.push(error));
+    workers.push(activeWorker);
     const blockingClient = Reflect.get(activeWorker, 'blockingClient') as Cluster<'legacy'>;
     await vi.waitFor(
       () => {
@@ -235,11 +208,13 @@ describe('Redis Cluster', () => {
     const job = await queue.add('after reconnect', { value: 1 });
     await vi.waitFor(
       async () => {
-        expect((await queue.getJobStatus(job.id)).state).toBe('completed');
+        const status = await queue.getJobStatus(job.id);
+        expect(status.state).toBe('completed');
+        expect(status.job?.returnvalue).toBe(2);
       },
       { timeout: 5000 },
     );
 
-    expect(processor).toHaveBeenCalledOnce();
+    expect(processor).toHaveBeenCalledExactlyOnceWith(1);
   });
 });

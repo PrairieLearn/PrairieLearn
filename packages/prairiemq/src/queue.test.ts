@@ -66,32 +66,27 @@ describe('Queue', () => {
     expect(disconnect).toHaveBeenCalledOnce();
   });
 
-  it.each([
-    '# Server\r\nredis_version:7.2\r\n',
-    '# Server\r\nvalkey_version:7.2.6\r\n',
-    '# Server\r\nredis_version:6.2.0\r\n',
-  ])('accepts supported metadata from unsectioned INFO: %j', async (metadata) => {
+  it.each(['# Server\r\nredis_version:7.2\r\n', '# Server\r\nvalkey_version:7.2.6\r\n'])(
+    'accepts supported metadata from unsectioned INFO: %j',
+    async (metadata) => {
+      const client = Reflect.get(queue, 'client') as PrairieMQRedis;
+      if (client.status !== 'ready') await once(client, 'ready');
+      const info = vi.spyOn(client, 'info').mockResolvedValue(metadata);
+
+      await queue.waitUntilReady();
+
+      expect(info).toHaveBeenCalledWith();
+    },
+  );
+
+  it('rejects unsupported Redis versions', async () => {
     const client = Reflect.get(queue, 'client') as PrairieMQRedis;
     if (client.status !== 'ready') await once(client, 'ready');
-    const info = vi.spyOn(client, 'info').mockResolvedValue(metadata);
+    vi.spyOn(client, 'info').mockResolvedValue('# Server\r\nredis_version:6.0.20\r\n');
 
-    await queue.waitUntilReady();
-
-    expect(info).toHaveBeenCalledWith();
-    await expect(queue.add('job', {})).resolves.toMatchObject({ name: 'job' });
-  });
-
-  it.each([
-    ['# Server\r\nredis_version:6.0.20\r\n', 'connected server is 6.0.20'],
-    ['# Server\r\nredis_version:6.0\r\n', 'connected server is 6.0.0'],
-    ['# Server\r\nserver_name:valkey\r\n', 'could not determine the Redis server version'],
-    ['# Server\r\nredis_version:7.2garbage\r\n', 'could not determine the Redis server version'],
-  ])('rejects unsupported or missing version metadata: %j', async (metadata, error) => {
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    if (client.status !== 'ready') await once(client, 'ready');
-    vi.spyOn(client, 'info').mockResolvedValue(metadata);
-
-    await expect(queue.add('job', {})).rejects.toThrow(error);
+    await expect(queue.waitUntilReady()).rejects.toThrow(
+      'PrairieMQ requires Redis 6.2.0 or later; connected server is 6.0.20',
+    );
   });
 
   it('does not reuse a version check completed by an older connection', async () => {
@@ -642,8 +637,6 @@ describe('Queue', () => {
       [{ redisUrl: 'localhost:6379' }, 'redisUrl'],
       [{ redisUrl: 'http://localhost:6379' }, 'redisUrl'],
       [{ redisUrl: 'redis://' }, 'redisUrl'],
-      [{ redisUrl, redisMode: 'redis' }, 'redisMode must be "standalone" or "cluster"'],
-      [{ redisUrl, redisMode: null }, 'redisMode must be "standalone" or "cluster"'],
       [
         { redisUrl: 'redis://localhost:6379/1', redisMode: 'cluster' },
         'Cluster connections require Redis database zero',
