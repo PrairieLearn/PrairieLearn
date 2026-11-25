@@ -53,7 +53,10 @@ export default defineConfig(({ mode }) => {
             ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
             : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
         passWithNoTests: true,
-        hookTimeout: 20_000,
+        // With `isolate: false`, the first file on each worker pays for importing
+        // the entire app in `helperServer.before()`. Under CI coverage and CPU
+        // contention, that alone has exceeded 20s.
+        hookTimeout: 60_000,
         testTimeout: 10_000,
 
         coverage: {
