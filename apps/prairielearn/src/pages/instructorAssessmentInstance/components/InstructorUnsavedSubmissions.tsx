@@ -1,6 +1,6 @@
 import { QueryClient, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Button, Form, Modal } from 'react-bootstrap';
+import { Alert, Button, Form, Modal } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
 import { getAppError } from '@prairielearn/trpc/client';
@@ -139,6 +139,12 @@ function DraftPreview({
             {selected.unsaved_submission.credit !== null &&
               `Applicable credit: ${selected.unsaved_submission.credit}%.`}
           </p>
+          {selected.variant_invalidated && (
+            <Alert variant="warning">
+              This draft's question variant was reset or invalidated. You can inspect its captured
+              answer, but it cannot be saved or graded.
+            </Alert>
+          )}
           <AppErrorAlert
             error={error}
             render={{
@@ -166,7 +172,7 @@ function DraftPreview({
               revision: selected.revision,
             })}
           />
-          {canPromote && (
+          {canPromote && !selected.variant_invalidated && (
             <p className="mt-3 mb-0">
               Saving this draft creates a submission and grades it using the credit recorded with
               the draft.
@@ -180,7 +186,7 @@ function DraftPreview({
           {canPromote && (
             <Button
               variant="primary"
-              disabled={promotion.isPending}
+              disabled={promotion.isPending || selected.variant_invalidated}
               onClick={() =>
                 promotion.mutate({
                   unsaved_submission_id: selectedId,

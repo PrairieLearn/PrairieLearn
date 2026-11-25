@@ -1,24 +1,33 @@
+import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { appendFile, cp } from 'node:fs/promises';
+import { appendFile, cp, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { MockLanguageModelV4 } from 'ai/test';
 import { load } from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
+import sharp from 'sharp';
 import * as tmp from 'tmp-promise';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import { loadSqlEquiv, queryRow, queryScalar, queryScalars } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { IdSchema } from '@prairielearn/zod';
 
+import * as aiGradingModel from '../ee/lib/ai-grading/ai-grading-model.js';
+import { aiGrade } from '../ee/lib/ai-grading/ai-grading.js';
 import { gradeAssessmentInstance, makeAssessmentInstance } from '../lib/assessment.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { SubmissionSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import * as progress from '../lib/serverJobProgressSocket.js';
+import { selectAssessmentQuestionByQuestionId } from '../models/assessment-question.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { updateCourseQuestionsReceiveUserData } from '../models/course.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseByShortName, updateCourseQuestionsReceiveUserData } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { selectQuestionByInstanceQuestionId } from '../models/question.js';
 import {
   selectOptionalUnsavedSubmissionForAssessment,
   selectUnsavedSubmissionGeneration,
@@ -60,7 +69,9 @@ def grade(data):
 
 
 def file(data):
-    return f'<svg xmlns="http://www.w3.org/2000/svg"><text>{author_uid(data)}|{data["submitted_answers"]["parsed_by"]}</text></svg>'
+    author = author_uid(data)
+    shade = sum(ord(character) for character in author) % 256
+    return f'<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><metadata>{author}|{data["submitted_answers"]["parsed_by"]}</metadata><rect width="20" height="10" fill="rgb({shade},0,0)"/></svg>'
 `,
     );
     await appendFile(
@@ -73,10 +84,18 @@ def file(data):
 <pl-submission-panel><p class="author-submission">{{options.user.uid}}</p></pl-submission-panel>
 <pl-answer-panel>
   <p class="author-answer">{{options.user.uid}}</p>
+  <img class="author-answer-image" src="{{options.client_files_question_dynamic_url}}/author.svg">
   <a class="author-answer-file" href="{{options.client_files_question_dynamic_url}}/author.svg">Author figure</a>
 </pl-answer-panel>
 `,
     );
+    const assessmentPath = path.join(
+      coursePath,
+      'courseInstances/Sp15/assessments/exam14-groupWork/infoAssessment.json',
+    );
+    const assessmentInfo = JSON.parse(await readFile(assessmentPath, 'utf8'));
+    assessmentInfo.zones[0].questions[0].manualPoints = 1;
+    await writeFile(assessmentPath, JSON.stringify(assessmentInfo));
     await helperServer.before(coursePath)();
   });
 
@@ -85,7 +104,7 @@ def file(data):
     await temporaryCourse.cleanup();
   });
 
-  test('uses each draft author in activity, parsing, grading, rendered history, and generated files', async () => {
+  test('uses each draft author in activity, parsing, grading, rendered history, generated files, and AI prompts', async () => {
     const instructor = await getConfiguredUser();
     const authors = await generateAndEnrollUsers({
       count: 2,
@@ -258,6 +277,91 @@ def file(data):
     for (const row of rows) {
       expect(row.SubmitStudent).toBe(recoveredSubmissions.get(row.submission_id));
       expect(row['Recovered by']).toBe(instructor.uid);
+    }
+
+    const model = new MockLanguageModelV4({
+      doGenerate: {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              explanation: 'Incorrect sum',
+              feedback: 'Try again.',
+              score: 0,
+            }),
+          },
+        ],
+        finishReason: { unified: 'stop', raw: undefined },
+        usage: {
+          inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },
+          outputTokens: { total: 0, text: 0, reasoning: 0 },
+        },
+        warnings: [],
+      },
+    });
+    const resolveModel = vi.spyOn(aiGradingModel, 'resolveAiGradingModel').mockResolvedValue({
+      model,
+      provider: 'openai',
+      base_url: null,
+      credential_id: null,
+    });
+    const progressUpdate = vi.spyOn(progress, 'emitServerJobProgressUpdate').mockResolvedValue();
+    try {
+      const question = await selectQuestionByInstanceQuestionId(instanceQuestionId);
+      const jobId = await aiGrade({
+        course: await selectCourseByShortName('QA 101'),
+        course_instance: {
+          ...(await selectCourseInstanceById(courseInstanceId)),
+          ai_grading_use_custom_api_keys: true,
+        },
+        assessment,
+        question,
+        assessment_question: await selectAssessmentQuestionByQuestionId({
+          assessment_id: assessment.id,
+          question_id: question.id,
+        }),
+        urlPrefix: '/pl',
+        authn_user_id: instructor.id,
+        user_id: instructor.id,
+        mode: 'selected',
+        instance_question_ids: [instanceQuestionId],
+        model_id: 'gpt-6-sol',
+      });
+      await helperServer.waitForJobSequenceSuccess(jobId);
+      expect(model.doGenerateCalls).toHaveLength(1);
+      const parts = model.doGenerateCalls[0].prompt.flatMap((message) =>
+        message.role === 'user' ? message.content : [],
+      );
+      const textParts = parts.flatMap((part) => (part.type === 'text' ? [part.text] : []));
+      expect(
+        load(textParts.find((text) => text.startsWith('## Question\n'))!)(
+          '.author-question',
+        ).text(),
+      ).toBe(authors[1].uid);
+      expect(
+        load(textParts.find((text) => text.startsWith('## Instructor reference answer\n'))!)(
+          '.author-answer',
+        ).text(),
+      ).toBe(authors[1].uid);
+      const images = parts.filter((part) => part.type === 'file');
+      expect(images).toHaveLength(2);
+      const shade =
+        Array.from(authors[1].uid).reduce((sum, character) => sum + character.charCodeAt(0), 0) %
+        256;
+      for (const image of images) {
+        expect(image.mediaType).toBe('image/png');
+        assert(image.data.type === 'data');
+        assert(typeof image.data.data === 'string');
+        const pixel = await sharp(Buffer.from(image.data.data, 'base64'))
+          .extract({ left: 0, top: 0, width: 1, height: 1 })
+          .removeAlpha()
+          .raw()
+          .toBuffer();
+        expect([...pixel]).toEqual([shade, 0, 0]);
+      }
+    } finally {
+      resolveModel.mockRestore();
+      progressUpdate.mockRestore();
     }
   });
 });

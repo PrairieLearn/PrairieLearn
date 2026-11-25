@@ -39,10 +39,11 @@ import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import {
   selectOptionalUnsavedSubmissionForAssessment,
+  selectOptionalUnsavedSubmissionMetadataForAssessment,
   selectUnsavedSubmissionGeneration,
   upsertUnsavedSubmission,
 } from '../models/unsaved-submission.js';
-import { lockVariant } from '../models/variant.js';
+import { lockVariant, resetVariantsForInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
@@ -280,6 +281,72 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
         });
       });
     });
+  });
+
+  test('keeps reset drafts inspectable without rendering or promoting the invalidated variant', async () => {
+    const draft = await seedDraft();
+    const input = { unsaved_submission_id: draft.unsaved_submission.id, revision: draft.revision };
+    await withConfig(
+      {
+        features: {
+          'unsaved-submissions-ui': true,
+          'unsaved-submissions-instructor-promotion': true,
+        },
+      },
+      async () =>
+        withUser(editor, async () => {
+          const beforeReset = await helperClient.fetchCheerio(
+            previewUrl(input.unsaved_submission_id, input.revision),
+          );
+          const previewPrefix = beforeReset.$.html().match(/document\.urlPrefix = '([^']+)'/)![1];
+          await resetVariantsForInstanceQuestion({
+            assessment_instance_id: assessmentInstanceId,
+            unsafe_instance_question_id: instanceQuestionId,
+            authn_user_id: editor.id,
+          });
+          const invalidatedVariant = await queryRow(
+            sql.select_variant,
+            { variant_id: variantId },
+            VariantSchema,
+          );
+          expect(invalidatedVariant.broken_at).not.toBeNull();
+          expect(
+            await selectOptionalUnsavedSubmissionMetadataForAssessment({
+              unsaved_submission_id: input.unsaved_submission_id,
+              assessment_id: assessmentId,
+            }),
+          ).toMatchObject({ variant_invalidated: true });
+          const preview = await helperClient.fetchCheerio(
+            previewUrl(input.unsaved_submission_id, input.revision),
+          );
+          expect(preview.status).toBe(200);
+          expect(JSON.parse(preview.$('pre code').text())).toEqual(
+            draft.unsaved_submission.raw_submitted_answer,
+          );
+          expect(
+            (await fetch(`${siteUrl}${previewPrefix}/clientFilesCourse/data.txt`)).status,
+          ).toBe(404);
+          await expect(
+            createClient(editor).unsavedSubmissions.promote.mutate(input),
+          ).rejects.toMatchObject({
+            data: { code: 'BAD_REQUEST' },
+          });
+          expect(await selectLatestSubmission()).toBeNull();
+          expect(
+            await queryRow(sql.select_variant, { variant_id: variantId }, VariantSchema),
+          ).toEqual(invalidatedVariant);
+          expect(
+            await selectOptionalUnsavedSubmissionForAssessment({
+              unsaved_submission_id: input.unsaved_submission_id,
+              assessment_id: assessmentId,
+            }),
+          ).toMatchObject({
+            unsaved_submission: draft.unsaved_submission,
+            variant: invalidatedVariant,
+            revision: draft.revision,
+          });
+        }),
+    );
   });
 
   test('does not expose or promote drafts from another assessment or a student account', async () => {

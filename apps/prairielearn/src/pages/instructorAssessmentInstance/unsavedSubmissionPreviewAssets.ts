@@ -68,6 +68,7 @@ router.use(
     });
     if (
       !draftData ||
+      draftData.variant_invalidated ||
       draftData.revision !== scope.revision ||
       draftData.unsaved_submission.variant_id !== scope.variant_id
     ) {

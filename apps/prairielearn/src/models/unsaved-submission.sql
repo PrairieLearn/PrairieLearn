@@ -159,6 +159,7 @@ SELECT
     us.credit
   ) AS unsaved_submission,
   to_jsonb(u.*) AS user,
+  v.broken_at IS NOT NULL AS variant_invalidated,
   iq.assessment_instance_id,
   to_char(
     us.updated_at AT TIME ZONE 'UTC',
@@ -206,6 +207,7 @@ SELECT
     us.credit
   ) AS unsaved_submission,
   to_jsonb(u.*) AS user,
+  v.broken_at IS NOT NULL AS variant_invalidated,
   iq.assessment_instance_id,
   to_char(
     us.updated_at AT TIME ZONE 'UTC',

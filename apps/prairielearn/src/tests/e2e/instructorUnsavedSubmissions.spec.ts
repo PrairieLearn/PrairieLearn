@@ -205,3 +205,59 @@ test('shows captured file editor contents in the isolated read-only preview', as
     user_id: user.id,
   });
 });
+
+test('lets staff view captured answers after resetting question variants', async ({
+  page,
+  courseInstance,
+}) => {
+  const assessment = await selectAssessmentByTid({
+    course_instance_id: courseInstance.id,
+    tid: 'hw1-automaticTestSuite',
+  });
+  await page.goto(`/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}/`);
+  await page.getByRole('link', { name: 'Add two numbers' }).click();
+  const user = await getConfiguredUser();
+  const draftKey = {
+    instance_question_id: String(parseInstanceQuestionId(page.url())),
+    user_id: user.id,
+    variant_id: await page.locator('form.question-form input[name="__variant_id"]').inputValue(),
+  };
+  const capturedAnswer = { c: '17' };
+  await upsertUnsavedSubmission({
+    ...draftKey,
+    generation: await selectUnsavedSubmissionGeneration(draftKey),
+    credit: 100,
+    raw_submitted_answer: capturedAnswer,
+    uuid: randomUUID(),
+  });
+  const assessmentInstanceId = await queryScalar(
+    sql.select_assessment_instance_id,
+    { instance_question_id: draftKey.instance_question_id },
+    IdSchema,
+  );
+  await page.goto(
+    `/pl/course_instance/${courseInstance.id}/instructor/assessment_instance/${assessmentInstanceId}`,
+  );
+  const questionRow = page.getByRole('row').filter({ hasText: /I-\d+\.\s+addNumbers\s+\(/ });
+  await questionRow.getByRole('button', { name: 'Action', exact: true }).click();
+  await questionRow.getByRole('button', { name: 'Reset question variants', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: 'Confirm reset question variants' })
+    .getByRole('button', { name: 'Reset question variants', exact: true })
+    .click();
+  await questionRow.getByRole('button', { name: 'View', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Unsaved work' });
+  await expect(dialog.getByRole('alert')).toContainText('cannot be saved or graded');
+  await expect(dialog.getByRole('button', { name: 'Save and grade', exact: true })).toBeDisabled();
+  const preview = page.getByTitle('Unsaved work preview').contentFrame();
+  await expect(
+    preview.getByRole('region', { name: 'Captured answer' }).locator('pre code'),
+  ).toHaveText(JSON.stringify(capturedAnswer, null, 2));
+  expect((await selectOptionalUnsavedSubmission(draftKey))!.raw_submitted_answer).toEqual(
+    capturedAnswer,
+  );
+  await deleteUnsavedSubmissions({
+    instance_question_id: draftKey.instance_question_id,
+    user_id: user.id,
+  });
+});

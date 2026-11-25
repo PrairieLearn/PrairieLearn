@@ -611,6 +611,7 @@ export const StaffUnsavedSubmissionMetadataSchema = z.object({
   revision: z.string(),
   unsaved_submission: StaffUnsavedSubmissionSchema,
   user: StaffUserSchema,
+  variant_invalidated: z.boolean(),
 });
 export type StaffUnsavedSubmissionMetadata = z.infer<typeof StaffUnsavedSubmissionMetadataSchema>;
 

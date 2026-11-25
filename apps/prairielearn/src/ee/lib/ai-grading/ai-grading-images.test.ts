@@ -23,6 +23,7 @@ const context = {
   questionCourse: { id: '3' },
   variantCourse: { id: '4' },
   variant: { id: '2' },
+  submission: null,
   userId: '5',
   authnUserId: '6',
 } as QuestionImageContext;

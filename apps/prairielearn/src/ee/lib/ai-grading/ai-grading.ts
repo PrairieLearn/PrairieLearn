@@ -599,6 +599,7 @@ export async function aiGrade({
       const questionModule = questionServers.getModule(question.type);
       const aiCaller = {
         userId: variant.user_id,
+        unsavedSubmissionUserId: submission.recovered_from_user_id ?? undefined,
         groupId: variant.team_id,
         variantCourse: course,
       };
@@ -625,6 +626,7 @@ export async function aiGrade({
         questionCourse: question_course,
         variantCourse: course,
         variant,
+        submission: submission.recovered_from_user_id !== null ? submission : null,
         userId: user_id,
         authnUserId: authn_user_id,
       };

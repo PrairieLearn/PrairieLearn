@@ -177,6 +177,7 @@ const UnsavedSubmissionMetadataSchema = z.object({
     credit: true,
   }),
   user: UserSchema,
+  variant_invalidated: z.boolean(),
   assessment_instance_id: IdSchema,
   revision: z.string(),
 });

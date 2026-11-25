@@ -89,6 +89,13 @@ export async function renderUnsavedSubmissionPreview({
   locals: ResLocalsForPage<'assessment-instance'>;
 }) {
   const { question, unsaved_submission: draft } = draftData;
+  if (draftData.variant.broken_at !== null) {
+    return UnsavedSubmissionPreview({
+      resLocals: locals,
+      question,
+      preview: { rawSubmittedAnswer: draft.raw_submitted_answer },
+    });
+  }
   const { variant, submission, questionCourse, caller } = await parseUnsavedSubmissionForPreview({
     draftData,
     course: locals.course,
@@ -163,8 +170,6 @@ export async function renderUnsavedSubmissionPreview({
   return UnsavedSubmissionPreview({
     resLocals: locals,
     question,
-    rendered: data,
-    questionJsonBase64,
-    urlPrefix: previewUrl,
+    preview: { rendered: data, questionJsonBase64, urlPrefix: previewUrl },
   });
 }
