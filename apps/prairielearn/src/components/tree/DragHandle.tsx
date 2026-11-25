@@ -1,15 +1,20 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
+import type { CSSProperties } from 'react';
 
 export function DragHandle({
   attributes,
   listeners,
   disabled,
   ariaLabel = 'Drag to reorder',
+  className = 'me-2',
+  style,
 }: {
   attributes?: DraggableAttributes;
   listeners?: DraggableSyntheticListeners;
   disabled?: boolean;
   ariaLabel?: string;
+  className?: string;
+  style?: CSSProperties;
 }) {
   if (disabled || !listeners) {
     return null;
@@ -20,8 +25,8 @@ export function DragHandle({
     <span
       {...attributes}
       {...listeners}
-      className="me-2"
-      style={{ cursor: 'grab', touchAction: 'none' }}
+      className={className}
+      style={{ cursor: 'grab', touchAction: 'none', ...style }}
       aria-label={ariaLabel}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => {

@@ -271,3 +271,35 @@ export function rubricPointRange(rows: EditorTreeRow[]): { max: number; min: num
   };
   return range(0, rows.length, 0);
 }
+
+/**
+ * A problem with group `i` that the editor flags on its row, or null. Saving
+ * is still allowed: graders see the same problem as an unmet rule.
+ */
+export function groupWarning(
+  rows: EditorTreeRow[],
+  i: number,
+): { label: string; body: string } | null {
+  const { is_group, min_selections, max_selections } = rows[i].rubric_item;
+  if (!is_group) return null;
+  const end = subtreeEnd(rows, i);
+  if (end === i + 1) {
+    return { label: 'Empty group', body: 'Add items to this group, or delete it.' };
+  }
+  if (min_selections != null && max_selections != null && min_selections > max_selections) {
+    return {
+      label: 'Invalid rule',
+      body: `The minimum (${min_selections}) is more than the maximum (${max_selections}).`,
+    };
+  }
+  const itemCount = rows
+    .slice(i + 1, end)
+    .filter((row) => row.depth === rows[i].depth + 1 && !row.rubric_item.is_group).length;
+  if (min_selections != null && min_selections > itemCount) {
+    return {
+      label: 'Not enough items',
+      body: `The rule asks for at least ${min_selections} selected, but the group has ${itemCount} item${itemCount === 1 ? '' : 's'}.`,
+    };
+  }
+  return null;
+}
