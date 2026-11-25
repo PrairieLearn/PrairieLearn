@@ -42,7 +42,14 @@ ORDER BY
 
 -- BLOCK select_recovered_submission_for_grading
 SELECT
-  jsonb_build_object('id', s.id, 'auth_user_id', s.auth_user_id) AS submission,
+  jsonb_build_object(
+    'id',
+    s.id,
+    'auth_user_id',
+    s.auth_user_id,
+    'recovered_from_user_id',
+    s.recovered_from_user_id
+  ) AS submission,
   to_jsonb(v.*) AS variant,
   to_jsonb(q.*) AS question,
   to_jsonb(c.*) AS course

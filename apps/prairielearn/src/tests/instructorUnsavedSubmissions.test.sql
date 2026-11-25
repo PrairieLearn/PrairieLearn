@@ -120,6 +120,16 @@ SET
 WHERE
   id = $variant_id;
 
+-- BLOCK select_grading_issue_author
+SELECT
+  user_id,
+  authn_user_id
+FROM
+  issues
+WHERE
+  variant_id = $variant_id
+  AND instructor_message = $instructor_message;
+
 -- BLOCK select_recovery_retry_state
 SELECT
   count(gj.id)::integer AS grading_job_count,

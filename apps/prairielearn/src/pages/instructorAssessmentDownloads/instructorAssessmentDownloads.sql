@@ -289,6 +289,7 @@ WITH
       g.name AS group_name,
       teams_uid_list (g.id) AS uid_list,
       su.uid AS submission_user,
+      recovered_by.uid AS recovered_by,
       agu.uid AS assigned_grader,
       lgu.uid AS last_grader
     FROM
@@ -307,7 +308,13 @@ WITH
       JOIN questions AS q ON (q.id = aq.question_id)
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
-      LEFT JOIN users AS su ON (su.id = s.auth_user_id)
+      LEFT JOIN users AS su ON (
+        su.id = coalesce(s.recovered_from_user_id, s.auth_user_id)
+      )
+      LEFT JOIN users AS recovered_by ON (
+        s.recovered_from_user_id IS NOT NULL
+        AND recovered_by.id = s.auth_user_id
+      )
       LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
       LEFT JOIN users AS lgu ON (lgu.id = iq.last_grader)
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)

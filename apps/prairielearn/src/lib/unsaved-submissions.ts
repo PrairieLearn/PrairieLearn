@@ -31,7 +31,11 @@ import type { ResLocalsForPage } from './res-locals.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const RecoveredSubmissionForGradingSchema = z.object({
-  submission: SubmissionSchema.pick({ id: true, auth_user_id: true }),
+  submission: SubmissionSchema.pick({
+    id: true,
+    auth_user_id: true,
+    recovered_from_user_id: true,
+  }),
   variant: VariantSchema,
   question: QuestionSchema,
   course: CourseSchema,
@@ -124,7 +128,7 @@ export async function promoteUnsavedSubmission({
     check_submission_id: saved.submission_id,
     question: saved.draft.question,
     variant_course: course,
-    user_id: authn_user_id,
+    user_id: saved.draft.unsaved_submission.user_id,
     authn_user_id,
     ignoreGradeRateLimit: true,
     ignoreRealTimeGradingDisabled: true,
@@ -148,7 +152,7 @@ export async function retryPendingRecoveredSubmissions(): Promise<void> {
         check_submission_id: pending.submission.id,
         question: pending.question,
         variant_course: pending.course,
-        user_id: pending.submission.auth_user_id,
+        user_id: pending.submission.recovered_from_user_id,
         authn_user_id: pending.submission.auth_user_id,
         ignoreGradeRateLimit: true,
         ignoreRealTimeGradingDisabled: true,

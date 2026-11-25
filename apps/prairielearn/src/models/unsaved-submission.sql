@@ -158,7 +158,7 @@ SELECT
     'credit',
     us.credit
   ) AS unsaved_submission,
-  to_jsonb(u.*) AS "user",
+  to_jsonb(u.*) AS user,
   iq.assessment_instance_id,
   to_char(
     us.updated_at AT TIME ZONE 'UTC',
@@ -185,9 +185,9 @@ WHERE
   AND ci.deleted_at IS NULL
   AND c.deleted_at IS NULL
 ORDER BY
-  us.instance_question_id,
+  us.instance_question_id ASC,
   us.updated_at DESC,
-  us.id;
+  us.id ASC;
 
 -- BLOCK select_optional_unsaved_submission_metadata_for_assessment
 SELECT
@@ -205,7 +205,7 @@ SELECT
     'credit',
     us.credit
   ) AS unsaved_submission,
-  to_jsonb(u.*) AS "user",
+  to_jsonb(u.*) AS user,
   iq.assessment_instance_id,
   to_char(
     us.updated_at AT TIME ZONE 'UTC',
@@ -235,7 +235,7 @@ WHERE
 -- BLOCK select_optional_unsaved_submission_for_assessment
 SELECT
   to_jsonb(us.*) AS unsaved_submission,
-  to_jsonb(u.*) AS "user",
+  to_jsonb(u.*) AS user,
   to_jsonb(v.*) AS variant,
   to_jsonb(q.*) AS question,
   to_jsonb(iq.*) AS instance_question,

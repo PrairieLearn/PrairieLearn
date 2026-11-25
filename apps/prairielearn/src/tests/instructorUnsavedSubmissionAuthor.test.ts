@@ -3,6 +3,7 @@ import { appendFile, cp } from 'node:fs/promises';
 import path from 'node:path';
 
 import { load } from 'cheerio';
+import { parse as csvParse } from 'csv-parse/sync';
 import * as tmp from 'tmp-promise';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
@@ -138,6 +139,7 @@ def file(data):
     const variantId = initialPage
       .$('form.question-form input[name="__variant_id"]')
       .val() as string;
+    const recoveredSubmissions = new Map<string, string>();
 
     await withConfig(
       {
@@ -175,6 +177,7 @@ def file(data):
             unsaved_submission_id: draftId,
             revision: draft.revision,
           });
+          recoveredSubmissions.set(submission_id, draftAuthor.uid);
           const submission = await queryRow(
             sql.select_submission,
             { submission_id },
@@ -216,13 +219,26 @@ def file(data):
     expect(page.$('.author-question').text()).toBe(authors[1].uid);
     expect(page.$('.author-answer').text()).toBe(authors[1].uid);
     expect(page.$('.author-submission').text()).toBe(authors[1].uid);
+    expect(page.$('[data-testid="submission-block"] .card-header').first().text()).toContain(
+      `Answer by ${authors[1].uid}, recovered at`,
+    );
+    for (const [submissionId, authorUid] of recoveredSubmissions) {
+      const info = page.$(`#submissionInfoModal-${submissionId}`);
+      expect(info.find('tr:has(th:contains("Answer author")) td').text()).toBe(authorUid);
+      expect(info.find('tr:has(th:contains("Recovered by")) td').text()).toBe(instructor.uid);
+    }
     const olderSubmissionUrl = page
       .$('.js-submission-body.render-pending')
       .attr('data-dynamic-render-url')!;
     const olderSubmissionResponse = await fetch(new URL(olderSubmissionUrl, siteUrl));
     expect(olderSubmissionResponse.status).toBe(200);
     const olderPanels = await olderSubmissionResponse.json();
-    expect(load(olderPanels.submissionPanel)('.author-submission').text()).toBe(authors[0].uid);
+    const olderPanel = load(olderPanels.submissionPanel);
+    expect(olderPanel('.author-submission').text()).toBe(authors[0].uid);
+    expect(olderPanel('.card-header').text()).toContain(
+      `Answer by ${authors[0].uid}, recovered at`,
+    );
+    expect(olderPanel('tr:has(th:contains("Recovered by")) td').text()).toBe(instructor.uid);
     for (const url of [
       page.$('.author-question-file').attr('src')!,
       page.$('.author-answer-file').attr('href')!,
@@ -230,6 +246,18 @@ def file(data):
       const response = await fetch(new URL(url, siteUrl));
       expect(response.status).toBe(200);
       expect(await response.text()).toContain(`${authors[1].uid}|${authors[1].uid}`);
+    }
+    const downloads = await helperClient.fetchCheerio(
+      `${siteUrl}/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/downloads`,
+    );
+    const csvUrl = downloads.$('a[href$="_all_submissions.csv"]').attr('href')!;
+    const csvResponse = await fetch(new URL(csvUrl, siteUrl));
+    expect(csvResponse.status).toBe(200);
+    const rows = csvParse<Record<string, string>>(await csvResponse.text(), { columns: true });
+    expect(rows).toHaveLength(recoveredSubmissions.size);
+    for (const row of rows) {
+      expect(row.SubmitStudent).toBe(recoveredSubmissions.get(row.submission_id));
+      expect(row['Recovered by']).toBe(instructor.uid);
     }
   });
 });

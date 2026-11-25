@@ -22,7 +22,13 @@ import {
 } from '../lib/assessment.js';
 import { getAssessmentTrpcUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
-import { type Assessment, SubmissionSchema, type User, VariantSchema } from '../lib/db-types.js';
+import {
+  type Assessment,
+  IssueSchema,
+  SubmissionSchema,
+  type User,
+  VariantSchema,
+} from '../lib/db-types.js';
 import * as grading from '../lib/grading.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
@@ -37,6 +43,7 @@ import {
   upsertUnsavedSubmission,
 } from '../models/unsaved-submission.js';
 import { lockVariant } from '../models/variant.js';
+import * as questionServers from '../question-servers/index.js';
 import { createAssessmentTrpcClient } from '../trpc/assessment/client.js';
 
 import * as helperClient from './helperClient.js';
@@ -383,6 +390,53 @@ describe('Instructor unsaved submission recovery', { concurrent: false }, () => 
           }),
         ),
       ).toEqual({ assessment_open: false, question_open: false, variant_open: false });
+    },
+  );
+
+  test.each([false, true])(
+    'attributes recovery grading issues to the student and instructor (retry: %s)',
+    async (retry) => {
+      const draft = await seedDraft();
+      const questionModule = questionServers.getModule('Freeform');
+      const originalGrade = questionModule.grade;
+      const issue = new Error('Recovered submission grading issue');
+      const grade = vi.spyOn(questionModule, 'grade').mockImplementationOnce(async (...args) => {
+        const result = await originalGrade(...args);
+        result.courseIssues.push(issue);
+        return result;
+      });
+      const startGrading = vi.spyOn(grading, 'gradeVariant');
+      if (retry) startGrading.mockRejectedValueOnce(new Error('Interrupted before grading'));
+      try {
+        await withConfig(
+          {
+            features: {
+              'unsaved-submissions-ui': true,
+              'unsaved-submissions-instructor-promotion': true,
+            },
+          },
+          async () =>
+            withUser(editor, async () => {
+              const promotion = createClient(editor).unsavedSubmissions.promote.mutate({
+                unsaved_submission_id: draft.unsaved_submission.id,
+                revision: draft.revision,
+              });
+              const [result] = await Promise.allSettled([promotion]);
+              expect(result.status).toBe(retry ? 'rejected' : 'fulfilled');
+            }),
+        );
+        if (retry) await autoFinishExams();
+        expect(
+          await queryRow(
+            sql.select_grading_issue_author,
+            { variant_id: variantId, instructor_message: issue.toString() },
+            IssueSchema.pick({ user_id: true, authn_user_id: true }),
+          ),
+        ).toEqual({ user_id: student.id, authn_user_id: editor.id });
+      } finally {
+        grade.mockRestore();
+        startGrading.mockRestore();
+      }
     },
   );
 
