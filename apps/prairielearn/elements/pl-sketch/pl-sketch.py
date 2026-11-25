@@ -100,6 +100,7 @@ READ_ONLY_DEFAULT = False
 OVERLAY_SOLUTION_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 TAG_DEFAULTS: SketchTag = {
+    "mathjax": True,
     "xoffset": 5,
     "yoffset": -5,
     "align": "start",

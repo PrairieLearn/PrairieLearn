@@ -22,6 +22,7 @@ window.SketchInput = function (id, overlay_solution = false) {
             data-bs-toggle="tooltip"
             data-bs-placement="top"
             aria-label="Toggle solution display"
+            aria-pressed="true"
         >
             <i class="bi bi-layers-fill" aria-hidden="true"></i>
         </button>
@@ -30,16 +31,12 @@ window.SketchInput = function (id, overlay_solution = false) {
 
         const overlayButton = document.getElementById(id + '-overlay-toggle');
         overlayButton.addEventListener('click', function () {
-          const overlays = document.querySelectorAll(`#${id}-si-container .overlay`);
-          if (overlays.length > 0) {
-            overlays.forEach((overlay) => {
-              overlay.style.display = overlay.style.display === 'none' ? 'inherit' : 'none';
-            });
-            const icon = overlayButton.querySelector('i');
-            if (icon) {
-              icon.classList.toggle('bi-layers-half');
-              icon.classList.toggle('bi-layers-fill');
-            }
+          const visible = !container.classList.toggle('si-overlays-hidden');
+          overlayButton.setAttribute('aria-pressed', String(visible));
+          const icon = overlayButton.querySelector('i');
+          if (icon) {
+            icon.classList.toggle('bi-layers-half', !visible);
+            icon.classList.toggle('bi-layers-fill', visible);
           }
         });
       });

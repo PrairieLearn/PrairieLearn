@@ -220,7 +220,7 @@ to avoid the left and right hand side of the vertical asymptote being connected.
 
 `pl-sketch-initial` and `pl-sketch-solution` accept an optional `tag` string for every drawing tool. It labels the drawing on the canvas. The `label` attribute on `pl-sketch-tool` continues to name the toolbar button.
 
-A tagged initial drawing requires a read-only tool or a read-only canvas. Solutions are displayed read-only and may be tagged even when their tool is editable in the question panel. Student drawings do not receive default tags.
+A nonempty tag on an initial drawing requires a read-only tool or a read-only canvas; otherwise an authoring error is raised. Solutions are displayed read-only and may be tagged even when their tool is editable in the question panel. PrairieLearn leaves editable response tools without tag configuration, so student drawings do not receive default tags.
 
 Tags use PrairieLearn's host MathJax renderer and the normal math delimiters. A tag can mix text and mathematics, for example `tag="Reference \(f(x)\)"`. Different drawings on the same tool can independently contain plain text, math, or both; no formatting parameter is needed.
 

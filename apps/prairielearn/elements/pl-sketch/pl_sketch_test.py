@@ -188,6 +188,7 @@ def test_fixed_tags_use_existing_tool_presentation(
     config = _render_config(html, data)
     tool = next(tool for tool in config["plugins"] if tool.get("id") == "given")
     assert tool["readonly"] is True
+    assert tool["tag"]["mathjax"] is True
     assert "latex" not in tool["tag"]
     drawings = config["initialstate"]["given"]
     points = (
@@ -233,12 +234,14 @@ def test_fixed_references_persist_and_solutions_do_not_tag_student_tools(
         "plugins"
     ][0]
     assert "latex" not in reference["tag"]
+    assert reference["tag"]["mathjax"] is True
     response = next(tool for tool in config["plugins"] if tool.get("id") == "response")
     if panel == "answer":
         assert (
             config["initialstate"]["response"] == params["solution_state"]["response"]
         )
         assert "latex" not in response["tag"]
+        assert response["tag"]["mathjax"] is True
     else:
         assert config["initialstate"]["response"] == [{"x": 20, "y": 30}]
         assert "tag" not in response
@@ -259,6 +262,7 @@ def test_solution_overlays_keep_tags_separate_from_student_data(
     assert overlay["id"] == "response-solution-overlay"
     assert overlay["readonly"] is True
     assert "latex" not in overlay["tag"]
+    assert overlay["tag"]["mathjax"] is True
     assert config["initialstate"][overlay["id"]][0]["tag"] == r"Origin \(B_1\)"
     assert "tag" not in next(
         tool for tool in config["plugins"] if tool.get("id") == "response"
