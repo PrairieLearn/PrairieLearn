@@ -738,6 +738,19 @@ export async function aiGrade({
         safetyIdentifier: `course_${course.id}`,
       };
 
+      // Count each response toward the hourly usage cap as soon as it completes,
+      // before anything can reject it. Providers bill for rejected responses too
+      // (e.g. a blocked prompt's input tokens), and a later failed call shouldn't
+      // leave earlier calls in the same grading attempt uncounted.
+      const addToIntervalUsage = async (response: GenerateTextResult<any, any, any>) => {
+        if (!trackRateLimitAndCost) return;
+        await addAiGradingCostToIntervalUsage({
+          courseInstance: course_instance,
+          model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+          usage: response.usage,
+        });
+      };
+
       const generateGradingResponse = async <OBJECT>(
         schema: z.ZodType<OBJECT>,
         prompt: AiGradingPrompt,
@@ -749,20 +762,11 @@ export async function aiGrade({
           ...prompt,
           providerOptions: { openai: openaiProviderOptions },
         });
+        await addToIntervalUsage(response);
         try {
           return requireAiGradingOutput(response);
         } catch (err) {
-          // Providers still bill for rejected responses (e.g. a blocked prompt's
-          // input tokens), so count them toward the hourly usage cap. Successful
-          // responses are counted after grading completes.
           logResponseUsage({ response, logger });
-          if (trackRateLimitAndCost) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-              usage: response.usage,
-            });
-          }
           throw err;
         }
       };
@@ -847,6 +851,9 @@ export async function aiGrade({
             submittedImages,
             model,
           });
+          for (const { response } of Object.values(rotationCorrections)) {
+            await addToIntervalUsage(response);
+          }
 
           const rotationCorrected = Object.values(rotationCorrections).some(
             (correction) => correction.degreesRotated !== 0,
@@ -889,28 +896,8 @@ export async function aiGrade({
             ],
             logger,
           });
-          if (trackRateLimitAndCost) {
-            for (const response of [
-              ...Object.values(rotationCorrections).map((r) => r.response),
-              gradingResponseWithRotationIssue,
-              finalGradingResponse,
-            ]) {
-              await addAiGradingCostToIntervalUsage({
-                courseInstance: course_instance,
-                model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-                usage: response.usage,
-              });
-            }
-          }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
-          if (trackRateLimitAndCost) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-              usage: finalGradingResponse.usage,
-            });
-          }
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
@@ -1071,6 +1058,9 @@ export async function aiGrade({
             submittedImages,
             model,
           });
+          for (const { response } of Object.values(rotationCorrections)) {
+            await addToIntervalUsage(response);
+          }
 
           // Regenerate the prompt with the rotation-corrected images.
           gradingPrompt = await generatePrompt({
@@ -1107,28 +1097,8 @@ export async function aiGrade({
             ],
             logger,
           });
-          if (trackRateLimitAndCost) {
-            for (const response of [
-              ...Object.values(rotationCorrections).map((r) => r.response),
-              gradingResponseWithRotationIssue,
-              finalGradingResponse,
-            ]) {
-              await addAiGradingCostToIntervalUsage({
-                courseInstance: course_instance,
-                model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-                usage: response.usage,
-              });
-            }
-          }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
-          if (trackRateLimitAndCost) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
-              usage: finalGradingResponse.usage,
-            });
-          }
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
