@@ -119,7 +119,7 @@ window.PLFileEditor.prototype.getSettings = function () {
   return {
     theme: this.editor.getTheme(),
     fontSize: this.editor.getFontSize(),
-    keyboardHandler: this.editor.getKeyboardHandler()?.$id ?? null,
+    keyboardHandler: this.editor.getOption('keyboardHandler') ?? null,
   };
 };
 
