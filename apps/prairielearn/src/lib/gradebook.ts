@@ -28,12 +28,13 @@ async function applyModernAccessControl<
     modern_access_control: boolean;
     assessment_id: string;
     show_closed_assessment_score: boolean;
+    authorized?: boolean | null;
     assessment_instance: {
       open: boolean | null;
       date_limit: Date | null;
       points: number | null;
       score_perc: number | null;
-    };
+    } | null;
   },
 >(rows: T[], params: GetGradebookRowsParams): Promise<void> {
   const hasModern = rows.some((r) => r.modern_access_control);
@@ -49,6 +50,8 @@ async function applyModernAccessControl<
   for (const row of rows) {
     if (!row.modern_access_control) continue;
     const assessmentAccess = modernAccessByAssessment.get(row.assessment_id);
+    // Like the Assessments page, don't list an unstarted assessment with no resolved access.
+    if (!assessmentAccess && !row.assessment_instance) row.authorized = false;
     if (assessmentAccess) {
       const authzResult = resolverResultToAssessmentAuthzResultForInstance({
         result: assessmentAccess,
@@ -58,7 +61,9 @@ async function applyModernAccessControl<
         reqDate: params.reqDate,
       });
       row.show_closed_assessment_score = authzResult.show_closed_assessment_score;
-      if (params.auth === 'student' && !authzResult.show_closed_assessment_score) {
+      if (!row.assessment_instance) {
+        row.authorized = authzResult.authorized;
+      } else if (params.auth === 'student' && !authzResult.show_closed_assessment_score) {
         row.assessment_instance.points = null;
         row.assessment_instance.score_perc = null;
       }
@@ -86,6 +91,8 @@ async function getGradebookRows({
     user_id: userId,
     authz_data: authzData,
     req_date: reqDate,
+    // Only students see assessments they haven't started.
+    include_unstarted: auth === 'student',
   };
 
   if (auth === 'student') {
@@ -101,7 +108,11 @@ async function getGradebookRows({
       reqDate,
       auth,
     });
-    return rows;
+    // Unstarted assessments are listed only if currently available to the student. Unlike the
+    // Assessments page, this deliberately omits ones that are only visible before release
+    // (`beforeRelease.listed`): the gradebook reports work the student can act on or has done, and a
+    // student can't start those yet.
+    return rows.filter((row) => row.assessment_instance || row.authorized);
   }
 
   const rows = await queryRows(
