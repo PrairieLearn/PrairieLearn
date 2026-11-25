@@ -218,7 +218,7 @@ PrairieMQ uses Lua scripts so multi-step job changes happen as a single operatio
 
 A PrairieMQ queue is one atomic Redis slot-affinity domain. Every Redis key touched by a queue operation is derived from that queue's tagged base. The tag contains both the prefix and queue name, so different queues do not deliberately share an affinity domain; PrairieMQ has no cross-queue atomic operations. Distinct tags can still map to the same one of Redis's 16,384 physical slots by ordinary hash collision. Groups remain scheduling subdivisions within one queue rather than independent shards.
 
-The Lua scripts derive key names from the tagged base instead of declaring [every accessed key through `KEYS`](https://redis.io/docs/latest/commands/eval/), so general Redis Cluster slot migration is not supported.
+The Lua scripts derive key names from the tagged base instead of declaring [every accessed key through `KEYS`](https://redis.io/docs/latest/commands/eval/). Clients reject `ASK` redirects during slot migration to avoid splitting queue state; affected workers stop and must be restarted after migration.
 
 PrairieMQ intentionally has a focused API. It does not currently support cron-pattern schedulers, progress tracking, cross-process events, or waiting directly for a job to finish.
 

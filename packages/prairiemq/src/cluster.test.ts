@@ -6,7 +6,7 @@ import { type AddressInfo, createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { type Cluster, Redis } from 'ioredis';
+import { type Cluster, Redis, ReplyError } from 'ioredis';
 import { afterAll, afterEach, assert, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { Queue } from './queue.js';
@@ -124,6 +124,26 @@ describe('Redis Cluster', () => {
     queues.push(queue);
     return { name, queue };
   }
+
+  it('rejects ASK redirects without allocating a job', async () => {
+    const { queue } = createQueue();
+    await queue.add('warmup', { value: 0 });
+    const cluster = Reflect.get(queue, 'client') as Cluster<'legacy'>;
+    const [primary] = cluster.nodes('master');
+    const send = vi.spyOn(primary, 'sendCommand').mockImplementationOnce((command) => {
+      send.mockRestore();
+      command.reject(new ReplyError(`ASK ${command.getSlot()} 127.0.0.1:${primary.options.port}`));
+      return command.promise;
+    });
+
+    try {
+      await expect(queue.add('during migration', { value: 1 })).rejects.toThrow(/^ASK /);
+    } finally {
+      send.mockRestore();
+    }
+
+    expect((await queue.add('after migration', { value: 2 })).id).toBe('2');
+  });
 
   it('does not replay a job allocation after its connection loses the reply', async () => {
     const { queue } = createQueue();

@@ -43,6 +43,13 @@ export function createRedisClient({
       tls: url.protocol === 'rediss:' ? {} : undefined,
     },
   });
+  const handleError = client.handleError.bind(client);
+  client.handleError = (error, ttl, handlers: { defaults: () => void }) => {
+    // The declared queue base is not a stored key. Following ASK could run a
+    // script on the importing node before the queue's actual keys have moved.
+    if (error.message.startsWith('ASK ')) return handlers.defaults();
+    return handleError(error, ttl, handlers);
+  };
   client.on('+node', (node: Redis) => {
     // ioredis's pool overrides redisOptions.enableOfflineQueue and connects
     // lazily. Start primaries eagerly so PMQ can verify them before writing.
