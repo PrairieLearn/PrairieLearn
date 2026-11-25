@@ -1,6 +1,5 @@
 -- BLOCK select_workspace
 SELECT
-  w.version,
   c.id AS course_id,
   i.id AS institution_id
 FROM
@@ -113,7 +112,11 @@ FROM
   workspace_hosts AS wh
 WHERE
   w.id = $workspace_id
-  AND wh.instance_id = $instance_id;
+  AND wh.instance_id = $instance_id
+  AND w.workspace_host_id = wh.id
+  AND w.state = 'launching'
+RETURNING
+  w.version;
 
 -- BLOCK set_workspace_launch_port
 UPDATE workspaces AS w

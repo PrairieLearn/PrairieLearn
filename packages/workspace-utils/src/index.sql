@@ -22,6 +22,15 @@ WITH
       workspaces
     WHERE
       id = $workspace_id
+      AND (
+        $expected_launch_uuid::text IS NULL
+        OR (
+          launch_uuid = $expected_launch_uuid
+          AND version = $expected_version::bigint
+        )
+      )
+      -- Serialize state changes with relaunches/resets and read durations under the lock.
+    FOR NO KEY UPDATE
   ),
   deltas AS (
     SELECT
@@ -72,25 +81,25 @@ WITH
           deltas
       )
     WHERE
-      w.id = $workspace_id
+      w.id = (
+        SELECT
+          id
+        FROM
+          old_workspace
+      )
     RETURNING
       *
   )
 INSERT INTO
   workspace_logs (date, workspace_id, version, state, message)
-VALUES
-  (
-    now(),
-    $workspace_id,
-    (
-      SELECT
-        version
-      FROM
-        old_workspace
-    ),
-    $state,
-    $message
-  )
+SELECT
+  now(),
+  id,
+  version,
+  $state,
+  $message
+FROM
+  updated_workspace
 RETURNING
   (
     SELECT

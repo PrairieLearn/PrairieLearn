@@ -82,9 +82,9 @@ export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: b
       const workspace_id = res.locals.workspace_id;
 
       if (req.body.__action === 'reboot') {
-        await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Rebooting container');
-        await sqldb.execute(sql.update_workspace_rebooted_at_now, {
-          workspace_id,
+        await sqldb.runInTransactionAsync(async () => {
+          await sqldb.execute(sql.reboot_workspace, { workspace_id });
+          await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Rebooting container');
         });
         res.redirect(req.originalUrl);
       } else if (req.body.__action === 'reset') {
