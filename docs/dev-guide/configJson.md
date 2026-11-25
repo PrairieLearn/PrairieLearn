@@ -91,9 +91,32 @@ Set the directories used to store workspace files in your `config.json`:
 }
 ```
 
+#### Workspace file ownership
+
+Run PrairieLearn and the workspace host as your regular user, without `sudo`, and leave `workspaceJobsDirectoryOwnerUid` and `workspaceJobsDirectoryOwnerGid` at their defaults. Docker lets a regular user start containers that run as root (on Linux, your user must be in the `docker` group). If necessary, workspace images can change the owner of the workspace files to UID 1001, and then switch to that user.
+
+When PrairieLearn and the workspace host run as root, as they do in production and in the Docker-based installation, they also change the owner of the workspace files to `workspaceJobsDirectoryOwnerUid`/`workspaceJobsDirectoryOwnerGid` before starting the container. They skip this step when running as a regular user, since only root can change file ownership.
+
+On Linux and WSL, the workspace files on your machine end up owned by UID 1001, so you may need `sudo` to delete old workspace directories. If a student creates workspace files that only their owner can read, PrairieLearn may also be unable to collect them as graded files. If this is a problem, run both processes as root instead:
+
+```sh
+sudo make dev-workspace-host
+sudo make dev
+```
+
+#### Running natively on WSL
+
+If you are running workspaces on WSL, since Docker Desktop runs outside the specific WSL instance you are using, you may in some cases need to specify the `"workspaceDevContainerHostname"` in your `config.json` to be the IP address of your Windows host. You can find this by running `ip route` in the WSL instance. For example, if the output of `ip route` starts with `default via 172.30.112.1 dev ...`, you would set the following in your `config.json`:
+
+```json title="config.json"
+{
+  "workspaceDevContainerHostname": "172.30.112.1"
+}
+```
+
 #### Running natively on macOS
 
-On macOS, you may also need to change `"workspaceDevContainerHostname"` to `"localhost"`.
+On macOS, set `"workspaceDevContainerHostname"` to `"localhost"`:
 
 ```json title="config.json"
 {
@@ -101,28 +124,14 @@ On macOS, you may also need to change `"workspaceDevContainerHostname"` to `"loc
 }
 ```
 
-Certain images detect if you are running as root and try to chown the workspace files to the user 1001 before stepping down to the user 1001 (`pl-gosu-helper.sh`). On macOS, this will fail because bind mounts cannot be chown'd (FUSE-based filesystems). To fix this, you can set `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` to 1001 in your `config.json`.
-
-```json title="config.json"
-{
-  "workspaceJobsDirectoryOwnerUid": 1001,
-  "workspaceJobsDirectoryOwnerGid": 1001
-}
-```
-
-Many containers can only run as UID 1001 or 0. Make sure you run as root locally!
-
-```sh
-sudo make dev-workspace-host
-sudo make dev
-```
-
-If you don't run both of these commands, you will see errors like:
+Don't run PrairieLearn or the workspace host with `sudo` on macOS. Docker Desktop lets a container change the owner of bind-mounted files without changing their owner on your Mac, but only if your user owns them. Running with `sudo` creates root-owned workspace files, and workspaces then fail with errors like:
 
 ```text
 chown: changing ownership of '/home/coder/workspace': Permission denied
 chown: changing ownership of '/home/coder/workspace/fibonacci.py': Permission denied
 ```
+
+To fix this, delete your workspace directory (for example, `sudo rm -rf /tmp/workspace`) and restart PrairieLearn and the workspace host without `sudo`.
 
 ### Testing local Docker images
 
