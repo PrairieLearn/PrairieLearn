@@ -1981,8 +1981,9 @@ function TreeGuideLines({
   groupDepth: number | null;
 }) {
   const lineX = (level: number) => `calc(0.25rem + ${level * TREE_INDENT + TREE_INDENT / 2 - 1}px)`;
+  // Opaque, so the lines don't darken where they cross each other or the row borders.
   const lineColor = (level: number) =>
-    `color-mix(in srgb, ${nestingLevelColor(level)} 60%, transparent)`;
+    `color-mix(in srgb, ${nestingLevelColor(level)} 60%, var(--bs-body-bg))`;
   const line = (key: string, level: number, style: CSSProperties) => (
     <div
       key={key}
