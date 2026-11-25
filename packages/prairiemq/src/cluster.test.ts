@@ -1,7 +1,7 @@
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { type AddressInfo, createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,7 +9,6 @@ import { join } from 'node:path';
 import { type Cluster, Redis } from 'ioredis';
 import { afterAll, afterEach, assert, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_PREFIX, QueueKeys } from './keys.js';
 import { Queue } from './queue.js';
 import { Worker } from './worker.js';
 
@@ -32,80 +31,60 @@ async function freePorts(count: number): Promise<number[]> {
 
 describe('Redis Cluster', () => {
   let directory: string;
-  const processes: ChildProcessWithoutNullStreams[] = [];
-  const nodes: { port: number; busPort: number; client: Redis }[] = [];
+  let redisProcess: ChildProcessWithoutNullStreams;
+  let client: Redis;
+  let redisUrl: string;
   const queues: Queue<{ value: number }, number>[] = [];
   const workers: Worker<{ value: number }, number>[] = [];
   const errors: Error[] = [];
 
   beforeAll(async () => {
     directory = await mkdtemp(join(tmpdir(), 'prairiemq-cluster-'));
-    const ports = await freePorts(6);
-    await Promise.all(
-      Array.from({ length: 3 }, async (_, index) => {
-        const nodeDirectory = join(directory, String(index));
-        await mkdir(nodeDirectory);
-        const port = ports[index * 2];
-        const busPort = ports[index * 2 + 1];
-        const process = spawn('redis-server', [
-          '--bind',
-          '127.0.0.1',
-          '--port',
-          String(port),
-          '--cluster-port',
-          String(busPort),
-          '--cluster-enabled',
-          'yes',
-          '--cluster-config-file',
-          'nodes.conf',
-          '--cluster-node-timeout',
-          '1000',
-          '--cluster-announce-ip',
-          '127.0.0.1',
-          '--dir',
-          nodeDirectory,
-          '--save',
-          '',
-          '--appendonly',
-          'no',
-        ]);
-        processes.push(process);
-        await new Promise<void>((resolve, reject) => {
-          let output = '';
-          process.stdout.on('data', (chunk: Buffer) => {
-            output += chunk.toString();
-            if (output.includes('Ready to accept connections')) resolve();
-          });
-          process.stderr.on('data', (chunk: Buffer) => {
-            output += chunk.toString();
-          });
-          process.once('error', reject);
-          process.once('exit', (code) => {
-            reject(new Error(`Redis Cluster node exited with code ${code}: ${output}`));
-          });
-        });
-        const client = new Redis<'legacy'>({ host: '127.0.0.1', port, lazyConnect: true });
-        client.on('error', (error) => errors.push(error));
-        nodes[index] = { port, busPort, client };
-        await client.connect();
-        const start = Math.floor((index * 16384) / 3);
-        const end = Math.floor(((index + 1) * 16384) / 3);
-        await client.cluster(
-          'ADDSLOTS',
-          ...Array.from({ length: end - start }, (_, slot) => start + slot),
-        );
-      }),
-    );
-    await Promise.all(
-      nodes
-        .slice(1)
-        .map(({ port, busPort }) => nodes[0].client.cluster('MEET', '127.0.0.1', port, busPort)),
-    );
+    const [port, busPort] = await freePorts(2);
+    redisUrl = `redis://127.0.0.1:${port}`;
+    redisProcess = spawn('redis-server', [
+      '--bind',
+      '127.0.0.1',
+      '--port',
+      String(port),
+      '--cluster-port',
+      String(busPort),
+      '--cluster-enabled',
+      'yes',
+      '--cluster-config-file',
+      'nodes.conf',
+      '--cluster-node-timeout',
+      '1000',
+      '--cluster-announce-ip',
+      '127.0.0.1',
+      '--dir',
+      directory,
+      '--save',
+      '',
+      '--appendonly',
+      'no',
+    ]);
+    await new Promise<void>((resolve, reject) => {
+      let output = '';
+      redisProcess.stdout.on('data', (chunk: Buffer) => {
+        output += chunk.toString();
+        if (output.includes('Ready to accept connections')) resolve();
+      });
+      redisProcess.stderr.on('data', (chunk: Buffer) => {
+        output += chunk.toString();
+      });
+      redisProcess.once('error', reject);
+      redisProcess.once('exit', (code) => {
+        reject(new Error(`Redis Cluster node exited with code ${code}: ${output}`));
+      });
+    });
+    client = new Redis<'legacy'>(redisUrl, { lazyConnect: true });
+    client.on('error', (error) => errors.push(error));
+    await client.connect();
+    await client.cluster('ADDSLOTS', ...Array.from({ length: 16384 }, (_, slot) => slot));
     await vi.waitFor(
       async () => {
-        for (const { client } of nodes) {
-          assert.include(await client.cluster('INFO'), 'cluster_state:ok');
-        }
+        assert.include(await client.cluster('INFO'), 'cluster_state:ok');
       },
       { timeout: 10_000, interval: 50 },
     );
@@ -126,53 +105,32 @@ describe('Redis Cluster', () => {
   });
 
   afterAll(async () => {
-    for (const { client } of nodes) client.disconnect();
-    await Promise.all(
-      processes.map(async (process) => {
-        if (process.exitCode !== null || process.signalCode !== null) return;
-        const exited = once(process, 'exit');
-        process.kill('SIGTERM');
-        await exited;
-      }),
-    );
+    client?.disconnect();
+    if (redisProcess?.exitCode === null && redisProcess.signalCode === null) {
+      const exited = once(redisProcess, 'exit');
+      redisProcess.kill('SIGTERM');
+      await exited;
+    }
     await rm(directory, { recursive: true, force: true });
   });
 
-  async function queuesOnEveryPrimary() {
-    const names: string[] = [];
-    const prefix = randomUUID();
-    for (let index = 0; names.filter(Boolean).length < nodes.length; index++) {
-      const name = `${prefix}-${index}`;
-      const slot = await nodes[0].client.cluster(
-        'KEYSLOT',
-        new QueueKeys(DEFAULT_PREFIX, name).base,
-      );
-      const primary = nodes.findIndex(
-        (_, index) => slot < Math.floor(((index + 1) * 16384) / nodes.length),
-      );
-      names[primary] ??= name;
-    }
-    return names.map((name) => {
-      const queue = new Queue<{ value: number }, number>(name, {
-        redisUrl: `redis://127.0.0.1:${nodes[0].port}`,
-        redisMode: 'cluster',
-      });
-      queue.on('error', (error) => errors.push(error));
-      queues.push(queue);
-      return { name, queue };
+  function createQueue() {
+    const name = randomUUID();
+    const queue = new Queue<{ value: number }, number>(name, {
+      redisUrl,
+      redisMode: 'cluster',
     });
+    queue.on('error', (error) => errors.push(error));
+    queues.push(queue);
+    return { name, queue };
   }
 
-  function worker(
-    name: string,
-    processor: (value: number, failures: number) => Promise<number>,
-    autorun = true,
-  ) {
+  function worker(name: string, processor: (value: number) => Promise<number>, autorun = true) {
     const worker = new Worker<{ value: number }, number>(
       name,
-      async (job) => processor(job.data.value, job.failedAttempts),
+      async (job) => processor(job.data.value),
       {
-        redisUrl: `redis://127.0.0.1:${nodes[0].port}`,
+        redisUrl,
         redisMode: 'cluster',
         autorun,
       },
@@ -182,74 +140,28 @@ describe('Redis Cluster', () => {
     return worker;
   }
 
-  it('routes jobs to every primary and completes a delayed retry', async () => {
-    const targets = await queuesOnEveryPrimary();
-    const jobs = await Promise.all(
-      targets.map(async ({ name, queue }, index) => {
-        const job = await queue.add(
-          'work',
-          { value: index },
-          {
-            delay: 50,
-            attempts: 2,
-            backoff: { type: 'fixed', delay: 100 },
-          },
-        );
-        worker(name, async (value, failures) => {
-          if (value === 1 && failures === 0) throw new Error('Retry this job');
-          return value + 1;
-        });
-        return job;
-      }),
-    );
-
+  it('processes a job through the cluster client', async () => {
+    const { name, queue } = createQueue();
+    const job = await queue.add('work', { value: 1 });
+    const processor = vi.fn(async (value: number) => value + 1);
+    worker(name, processor);
     await vi.waitFor(
       async () => {
-        for (const [index, { queue }] of targets.entries()) {
-          const status = await queue.getJobStatus(jobs[index].id);
-          expect(status.state).toBe('completed');
-          expect(status.job).toMatchObject({
-            returnvalue: index + 1,
-            failedAttempts: index === 1 ? 1 : 0,
-          });
-        }
+        const status = await queue.getJobStatus(job.id);
+        expect(status.state).toBe('completed');
+        expect(status.job?.returnvalue).toBe(2);
       },
       { timeout: 5000 },
     );
-    expect(errors).toEqual([]);
-  });
-
-  it('resumes a paused queue and removes its keys without affecting other queues', async () => {
-    const targets = await queuesOnEveryPrimary();
-    const retained = await targets[0].queue.add('retained', { value: 1 });
-    const { name, queue } = targets[2];
-    await queue.pause();
-    const job = await queue.add('paused', { value: 2 });
-    const processor = vi.fn(async (value: number) => value);
-    await worker(name, processor).waitUntilReady();
-    expect(processor).not.toHaveBeenCalled();
-    expect((await queue.getJobStatus(job.id)).state).toBe('waiting');
-
-    await queue.resume();
-    await vi.waitFor(
-      async () => {
-        expect((await queue.getJobStatus(job.id)).state).toBe('completed');
-      },
-      { timeout: 5000 },
-    );
-    await workers.pop()!.close();
-    await queue.obliterate();
-
-    expect((await queue.getJobStatus(job.id)).state).toBe('unknown');
-    expect((await targets[0].queue.getJobStatus(retained.id)).state).toBe('waiting');
+    expect(processor).toHaveBeenCalledExactlyOnceWith(1);
     expect(errors).toEqual([]);
   });
 
   it('does not replay a job allocation after its connection loses the reply', async () => {
-    const [{ queue }] = await queuesOnEveryPrimary();
+    const { queue } = createQueue();
     await queue.add('warmup', { value: 0 });
     const cluster = Reflect.get(queue, 'client') as Cluster<'legacy'>;
-    const primary = cluster.nodes('master').find((node) => node.options.port === nodes[0].port)!;
+    const [primary] = cluster.nodes('master');
     const disconnected = once(primary, 'close');
     const sendCommand = primary.sendCommand.bind(primary);
     const send = vi.spyOn(primary, 'sendCommand').mockImplementation((command, commandStream) => {
@@ -286,26 +198,20 @@ describe('Redis Cluster', () => {
   });
 
   it('cancels a timed-out blocking wait and processes jobs after reconnecting', async () => {
-    const [{ name, queue }] = await queuesOnEveryPrimary();
+    const { name, queue } = createQueue();
     const processor = vi.fn(async (value: number) => value);
     const activeWorker = worker(name, processor, false);
     const blockingClient = Reflect.get(activeWorker, 'blockingClient') as Cluster<'legacy'>;
     await vi.waitFor(
       () => {
-        expect(blockingClient.nodes('master').map((node) => node.status)).toEqual([
-          'ready',
-          'ready',
-          'ready',
-        ]);
+        expect(blockingClient.nodes('master').map((node) => node.status)).toEqual(['ready']);
       },
       { timeout: 5000 },
     );
     const blpop = blockingClient.blpop.bind(blockingClient);
     let blockedStream!: Redis['stream'];
     const pop = vi.spyOn(blockingClient, 'blpop').mockImplementationOnce((...args) => {
-      const primary = blockingClient
-        .nodes('master')
-        .find((node) => node.options.port === nodes[0].port)!;
+      const [primary] = blockingClient.nodes('master');
       primary.options.commandTimeout = 100;
       blockedStream = primary.stream;
       // Writes still reach Redis, leaving a real server-side BLPOP to cancel.

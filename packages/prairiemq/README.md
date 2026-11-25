@@ -250,4 +250,4 @@ pnpm --filter @prairielearn/prairiemq test
 
 Use `createJob` to construct `Job` instances when unit testing processors without Redis. `MAX_TIMER_DELAY_MILLISECONDS` is the largest value accepted for timer-backed settings such as `stalledInterval` and `limiter.duration`.
 
-The tests use unique queue names and remove only those queues’ keys. Set `REDIS_URL` to use another standalone Redis server or database. Cluster integration tests start isolated `redis-server` processes on temporary ports, so the Redis server binary must be available. No PrairieLearn application server or PostgreSQL setup is needed.
+The tests use unique queue names and remove only those queues’ keys. Set `REDIS_URL` to use another standalone Redis server or database. Cluster integration tests start one isolated, cluster-enabled `redis-server` process on temporary ports, so the Redis server binary must be available. No PrairieLearn application server or PostgreSQL setup is needed.
