@@ -117,6 +117,7 @@ async function testDynamicFiles({
         userId: variant.user_id,
         groupId: variant.team_id,
         variantCourse: course,
+        courseInstanceId: variant.course_instance_id,
       },
     );
 
@@ -190,6 +191,7 @@ export async function createTestSubmissionData(
       userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
+      courseInstanceId: variant.course_instance_id,
     },
   );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);

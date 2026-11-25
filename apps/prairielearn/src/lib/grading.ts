@@ -260,6 +260,7 @@ export async function saveSubmission(
       userId: variant.user_id,
       groupId: variant.team_id,
       variantCourse: variant_course,
+      courseInstanceId: variant.course_instance_id,
     },
   );
 
@@ -444,6 +445,7 @@ export async function gradeVariant({
         userId: variant.user_id,
         groupId: variant.team_id,
         variantCourse: variant_course,
+        courseInstanceId: variant.course_instance_id,
       },
     );
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
