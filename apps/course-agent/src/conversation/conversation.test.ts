@@ -11,7 +11,7 @@ import {
 
 import { SandboxTurn } from '../sandbox/turn.js';
 
-import { Conversation, type MeteringState } from './conversation.js';
+import { Conversation, CourseContextSchema, type MeteringState } from './conversation.js';
 
 const sdk = vi.hoisted(() => ({
   finishTurn: () => {},
@@ -636,4 +636,13 @@ it('retries the turn-end report with backoff when PrairieLearn is unreachable', 
   await state.conversation.flushUsage({ attempt: 1 });
   expect(reports()[2]).toEqual(reports()[1]);
   expect(metering(state.saved)).toMatchObject({ pending: null, unreported: emptyUsage() });
+});
+
+it('keeps the course context when its timezone is not a zone name', () => {
+  const course = { courseTitle: 'Calculus', courseShortName: 'MATH 101' };
+  expect(CourseContextSchema.parse({ ...course, timezone: 'America/Chicago' })).toEqual({
+    ...course,
+    timezone: 'America/Chicago',
+  });
+  expect(CourseContextSchema.parse({ ...course, timezone: '../../etc/passwd' })).toEqual(course);
 });

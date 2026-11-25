@@ -799,6 +799,21 @@ export class CourseSandbox extends DurableObject<Env> {
     const hash = Array.from(new Uint8Array(digest), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
+    // Codex tells the model the date and zone of the system clock, and commands the agent runs
+    // print times in it. A missing zone, or one the image does not know, sets the clock to UTC,
+    // replacing an earlier runner's zone. The clock only affects how times read, so a failure to
+    // set it is reported rather than failing the turn.
+    try {
+      await this.exec([
+        'sh',
+        '-c',
+        'zone=$1; test -f "/usr/share/zoneinfo/$zone" || zone=Etc/UTC; ln -sfn "/usr/share/zoneinfo/$zone" /etc/localtime && echo "$zone" > /etc/timezone',
+        'sh',
+        request.headers.get('X-Course-Timezone') ?? 'Etc/UTC',
+      ]);
+    } catch (error) {
+      reportError(error, { step: 'set_timezone' });
+    }
     const started = Date.now();
     this.process = await this.container.exec(
       [

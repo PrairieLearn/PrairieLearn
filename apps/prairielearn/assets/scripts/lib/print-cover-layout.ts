@@ -14,8 +14,9 @@ export function layoutPrintGradingTable(source: HTMLElement, pageHeight: number)
     (question) => question.dataset.questionNumber!,
   );
   table.hidden = false;
+  // Paged.js places the shared footer outside the printable content height.
   const availableHeight = Math.floor(
-    cover.getBoundingClientRect().top + pageHeight - grid.getBoundingClientRect().top - 12,
+    pageHeight - (grid.getBoundingClientRect().top - cover.getBoundingClientRect().top) - 12,
   );
   const labels = [...questionNumbers, 'Total'];
   const rowsPerColumn = Math.min(labels.length, Math.floor(availableHeight / 28));

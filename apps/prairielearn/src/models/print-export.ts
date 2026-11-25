@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow, queryScalar } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRows,
+  queryScalar,
+} from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { type PrintExport, PrintExportSchema } from '../lib/db-types.js';
@@ -43,6 +49,19 @@ const PrintExportWithExpirySchema = PrintExportSchema.extend({
   expired: z.boolean(),
   overdue: z.boolean(),
 });
+const RecentPrintExportSchema = PrintExportSchema.pick({
+  id: true,
+  created_at: true,
+  status: true,
+  format: true,
+  filename: true,
+  label: true,
+  size_bytes: true,
+  failure_message: true,
+}).extend({
+  expired: z.boolean(),
+  overdue: z.boolean(),
+});
 
 /** Downloads expire 24 hours after the export was queued; pending exports are overdue after 30 minutes. */
 export async function selectOptionalPrintExport({
@@ -58,6 +77,21 @@ export async function selectOptionalPrintExport({
     sql.select_print_export,
     { id: printExportId, assessment_id: assessmentId, authn_user_id: authnUserId },
     PrintExportWithExpirySchema,
+  );
+}
+
+/** Recent exports are limited to their 24-hour download window. */
+export async function selectRecentPrintExportsForAssessment({
+  assessmentId,
+  authnUserId,
+}: {
+  assessmentId: string;
+  authnUserId: string;
+}) {
+  return await queryRows(
+    sql.select_recent_print_exports_for_assessment,
+    { assessment_id: assessmentId, authn_user_id: authnUserId },
+    RecentPrintExportSchema,
   );
 }
 

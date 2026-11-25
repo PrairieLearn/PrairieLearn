@@ -9,11 +9,11 @@ import { IdSchema, parseRequestParams } from '@prairielearn/zod';
 import { getPrintExportStream } from '../../lib/printing/print-exports.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { requirePrintableAssessments } from '../../middlewares/requirePrintableAssessments.js';
+import { requirePrintingAvailable } from '../../middlewares/requirePrintingAvailable.js';
 import { selectOptionalPrintExport } from '../../models/print-export.js';
 
 const router = Router();
-router.use(requirePrintableAssessments);
+router.use(requirePrintingAvailable);
 const ParamsSchema = z.object({ printExportId: IdSchema });
 
 router.get(

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   AssessmentQuestionSchema,
@@ -38,6 +39,20 @@ export async function selectPrintFormQuestions(printFormId: string) {
   );
 }
 
+export async function updatePrintFormQuestionVariants({
+  printFormId,
+  updates,
+}: {
+  printFormId: string;
+  updates: { id: string; previous_variant_id: string; variant_id: string }[];
+}) {
+  return await queryRows(
+    sql.update_print_form_question_variants,
+    { print_form_id: printFormId, updates: JSON.stringify(updates) },
+    PrintFormQuestionSchema,
+  );
+}
+
 export async function selectOptionalPrintFormQuestion({
   printFormId,
   printFormQuestionId,
@@ -49,5 +64,18 @@ export async function selectOptionalPrintFormQuestion({
     sql.select_optional_print_form_question,
     { print_form_id: printFormId, print_form_question_id: printFormQuestionId },
     PrintFormQuestionWithQuestionSchema,
+  );
+}
+
+export async function selectPrintFormQuestionViability(printFormIds: string[]) {
+  return await queryRows(
+    sql.select_print_form_question_viability,
+    { print_form_ids: printFormIds },
+    z.object({
+      print_form_id: IdSchema,
+      question_number: z.string(),
+      supported: z.boolean(),
+      broken: z.boolean(),
+    }),
   );
 }

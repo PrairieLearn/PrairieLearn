@@ -2,6 +2,13 @@ import { Semaphore } from 'async-mutex';
 
 import { HttpStatusError } from '@prairielearn/error';
 
+/** Thrown when too many renders are already waiting; nothing was started, so it is safe to retry. */
+export class RenderQueueFullError extends HttpStatusError {
+  constructor() {
+    super(503, 'Print rendering is busy. Try again shortly.');
+  }
+}
+
 interface RenderWaiter {
   queuedAt: number;
   resolve: (acquired: { queueWaitMs: number; release: () => void }) => void;
@@ -56,7 +63,7 @@ export class RenderQueue {
     }
 
     if (this.waiters.length >= this.maxWaiters) {
-      throw new HttpStatusError(503, 'Print rendering is busy. Try again shortly.');
+      throw new RenderQueueFullError();
     }
 
     // withTimeout() leaves expired acquisitions in async-mutex's queue until a permit is

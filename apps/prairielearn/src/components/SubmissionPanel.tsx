@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
+import { markdownToHtml } from '@prairielearn/markdown';
 
 import {
   type AssessmentQuestion,
@@ -37,7 +38,7 @@ const detailedSubmissionColumns = {
   true_answer: true,
 } as const;
 
-const SubmissionGradingJobSchema = GradingJobSchema.pick({
+export const SubmissionGradingJobSchema = GradingJobSchema.pick({
   id: true,
   grading_method: true,
   grading_requested_at: true,
@@ -51,18 +52,33 @@ const SubmissionGradingJobSchema = GradingJobSchema.pick({
 type SubmissionGradingJob = z.infer<typeof SubmissionGradingJobSchema>;
 
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
+  /** `feedback.manual`, which is shown even when `feedback` isn't loaded. */
+  feedback_manual: z.string().nullable(),
   grading_job: SubmissionGradingJobSchema.nullable(),
   user_uid: z.string().nullable(),
 });
 
-export const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
+export const SubmissionDetailedSchema = SubmissionSchema.pick({
+  id: true,
+  ...detailedSubmissionColumns,
+});
 
-export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
-  Partial<z.infer<typeof SubmissionDetailedSchema>> & {
-    feedback_manual_html?: string;
-    submission_number: number;
-    rubric_grading?: RubricGradingData | null;
-  };
+/**
+ * A submission with what its panel's header and staff feedback need (score,
+ * status, timestamps, and so on). Its large JSON columns aren't loaded, so the
+ * submission itself can't be rendered inside the panel; see
+ * {@link SubmissionWithDetails}.
+ */
+export type SubmissionSummary = z.infer<typeof SubmissionBasicSchema> & {
+  submission_number: number;
+  rubric_grading?: RubricGradingData | null;
+};
+
+/**
+ * A submission whose JSON columns are also loaded, so that the submission
+ * itself (the question's submission HTML) can be rendered inside its panel.
+ */
+export type SubmissionWithDetails = SubmissionSummary & z.infer<typeof SubmissionDetailedSchema>;
 
 export function SubmissionPanel({
   questionContext,
@@ -89,7 +105,7 @@ export function SubmissionPanel({
   variant_id: string;
   course_instance?: CourseInstance | null;
   course: Course;
-  submission: SubmissionForRender;
+  submission: SubmissionSummary;
   submissionHtml?: string | null;
   submissionCount: number;
   rubric_data?: RubricData | null;
@@ -123,7 +139,7 @@ export function SubmissionPanel({
       id="submission-${submission.id}"
     >
       ${
-        submission.feedback?.manual || submission.rubric_grading
+        submission.feedback_manual || submission.rubric_grading
           ? html`
               <div class="card mb-4 grading-block border-info">
                 <div
@@ -205,10 +221,10 @@ export function SubmissionPanel({
                         : ''
                     }
                     ${
-                      submission.feedback?.manual
+                      submission.feedback_manual
                         ? html`
                             <div data-testid="feedback-body">
-                              ${unsafeHtml(submission.feedback_manual_html ?? '')}
+                              ${unsafeHtml(markdownToHtml(submission.feedback_manual))}
                             </div>
                           `
                         : ''
@@ -319,7 +335,7 @@ function SubmissionStatusBadge({
   assessment_question,
   instance_question,
 }: {
-  submission: SubmissionForRender;
+  submission: SubmissionSummary;
   question: Question;
   isLatestSubmission: boolean;
   assessment_question?: AssessmentQuestion | null;
@@ -461,7 +477,7 @@ function SubmissionInfoModal({
   course_instance_id,
   formattedDate,
 }: {
-  submission: SubmissionForRender;
+  submission: SubmissionSummary;
   question: Question;
   assessment_question?: AssessmentQuestion | null;
   course_id: string;

@@ -158,11 +158,19 @@ function estimateUsage(body: string): Usage {
   };
 }
 
-const CourseContextSchema = z.object({
+export const CourseContextSchema = z.object({
   // Optional while a PrairieLearn deployment that does not send it may still connect.
   courseId: z.string().regex(/^\d+$/).optional(),
   courseTitle: z.string().max(500),
   courseShortName: z.string().max(100),
+  // Optional while a PrairieLearn deployment that does not send it may still connect. The sandbox
+  // uses it as a path under its zone files, so anything but a zone name counts as none.
+  timezone: z
+    .string()
+    .max(100)
+    .regex(/^[\w+-]+(\/[\w+-]+)*$/)
+    .optional()
+    .catch(undefined),
 });
 
 /**
@@ -754,18 +762,14 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
             if (usage) finish(usage);
           }
         }
-      } catch (error) {
-        // Turn completion aborts requests nothing reads anymore; that is not a failure. Handle it
-        // inside the callback: this runs from an RPC call with no Sentry scope, so Sentry's wrapper
-        // around the inherited keepAliveWhile() reports any rejection as unhandled. Once
-        // https://github.com/getsentry/sentry-javascript/issues/26673 is fixed, this can move back
-        // to a .catch() on keepAliveWhile().
-        if (!signal.aborted) this.reportError(error);
       } finally {
         // Charges the estimate unless the usage was recorded above.
         finish(null);
       }
-    }).catch((error: unknown) => this.reportError(error));
+    }).catch((error: unknown) => {
+      // Turn completion aborts requests nothing reads anymore; that is not a failure.
+      if (!signal.aborted) this.reportError(error);
+    });
     const headers = new Headers(response.headers);
     // fetch() decoded the body, so the provider's length and encoding no longer apply.
     headers.delete('Content-Length');
@@ -1054,6 +1058,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
         threadId: this.record.nativeThreadId,
         pages: this.record.pages ?? [],
       },
+      timezone: this.record.courseContext?.timezone,
       // Codex saves a new thread only with its first accepted input, so saving the ID earlier
       // would leave a thread that can never be resumed if submission fails.
       onThread: (id) => {

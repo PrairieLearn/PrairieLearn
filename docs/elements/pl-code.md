@@ -47,7 +47,7 @@ The `pl-code` element uses the _Pygments_ library for syntax highlighting. It su
 
 ### Common Pitfalls
 
-The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters with inline code may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute.
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters with inline code may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`), or load code snippets from external files into `pl-code` with `source-file-name` attribute.
 
 ## Accessibility
 

@@ -25,9 +25,10 @@ router.get(
 
     const code = req.query.code;
     if (code == null) {
-      throw new Error('No "code" query parameter for authCallbackOAuth2');
+      // Google omits the code when the user cancels or denies consent.
+      throw new HttpStatusError(400, 'Google login was not completed. Please try again.');
     } else if (typeof code !== 'string') {
-      throw new Error(`Invalid 'code' query parameter for authCallbackOAuth2: ${code.toString()}`);
+      throw new HttpStatusError(400, 'Invalid "code" query parameter for Google login');
     }
     // FIXME: should check req.query.state to avoid CSRF
     const oauth2Client = new OAuth2Client(

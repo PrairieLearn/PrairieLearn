@@ -53,6 +53,14 @@ overrides:
   # jsdom pins Undici exactly; require a patched release.
   'jsdom>undici': '^8.12.3'
 
+  # These only accept KaTeX 0.16, which has no fix for GHSA-238p-pmpm-9mq7.
+  # Remove once they ship releases that accept a patched KaTeX:
+  # https://github.com/micromark/micromark-extension-math/pull/14
+  # https://github.com/remarkjs/remark-math/pull/122
+  # Pinned exactly because 0.18.11 is deprecated.
+  'micromark-extension-math>katex': 0.18.10
+  'rehype-katex>katex': 0.18.10
+
 # Delay newly published npm packages for 3 days.
 minimumReleaseAge: 4320
 

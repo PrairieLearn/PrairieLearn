@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+import type { SubmissionSummary, SubmissionWithDetails } from '../components/SubmissionPanel.js';
 
 import { IssueSchema, type Variant } from './db-types.js';
 import type { RubricData } from './manualGrading.types.js';
@@ -46,8 +46,8 @@ export interface ResLocalsQuestionRenderAdded extends QuestionUrls {
   question_is_shared: boolean;
   variant: Variant;
   showCorrectAnswer: boolean;
-  submission: SubmissionForRender | null;
-  submissions: SubmissionForRender[];
+  submission: SubmissionWithDetails | null;
+  submissions: SubmissionSummary[];
   extraHeadersHtml: string;
   questionHtml: string;
   submissionHtmls: string[];
@@ -74,7 +74,7 @@ interface ResLocalsBuildLocals {
   hasAttemptsOtherVariants: boolean;
   variantAttemptsLeft: number;
   variantAttemptsTotal: number;
-  submissions: SubmissionForRender[];
+  submissions: SubmissionSummary[];
   variantToken: string;
   jobSequenceTokens: Record<string, string>;
 }
