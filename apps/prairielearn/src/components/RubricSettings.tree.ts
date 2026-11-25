@@ -200,6 +200,21 @@ export function isSortedHighestFirst(rows: EditorTreeRow[], i: number): boolean 
   return points.every((value, index) => index === 0 || points[index - 1] >= value);
 }
 
+/**
+ * Why a new subgroup can't be added to group `i`, or null if it can. A new
+ * subgroup comes with an item inside it, so it needs two more levels.
+ */
+export function subgroupBlocker(rows: EditorTreeRow[], i: number): string | null {
+  const { min_selections, max_selections } = rows[i].rubric_item;
+  if (min_selections != null || max_selections != null) {
+    return 'Groups with a selection rule can only contain items.';
+  }
+  if (rows[i].depth + 2 >= RUBRIC_MAX_DEPTH) {
+    return `Groups can be nested at most ${RUBRIC_MAX_DEPTH} levels deep.`;
+  }
+  return null;
+}
+
 export function removeSubtree<T extends EditorTreeRow>(rows: T[], i: number): T[] {
   return [...rows.slice(0, i), ...rows.slice(subtreeEnd(rows, i))];
 }

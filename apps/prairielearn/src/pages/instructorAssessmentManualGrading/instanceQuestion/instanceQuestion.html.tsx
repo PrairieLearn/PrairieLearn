@@ -379,7 +379,7 @@ export function InstanceQuestion({
                   `
                 : ''
             }
-            <div class="mb-3">
+            <div>
               ${hydrateHtml(
                 <RubricSettings
                   hasCourseInstancePermissionEdit={
@@ -391,6 +391,7 @@ export function InstanceQuestion({
                   rubricData={rubric_data}
                   csrfToken={__csrf_token}
                   aiGradingStats={aiGradingStats}
+                  openedFromGradingPanel
                   context={{
                     course_short_name: resLocals.course.short_name,
                     course_instance_short_name: resLocals.course_instance.short_name,
