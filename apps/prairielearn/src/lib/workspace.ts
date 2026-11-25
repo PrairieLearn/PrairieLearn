@@ -450,13 +450,18 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     targetPath: sourcePath,
   });
 
-  // Update permissions so that the directory and all contents are owned by the workspace user
-  for await (const file of klaw(sourcePath)) {
-    await fsPromises.chown(
-      file.path,
-      config.workspaceJobsDirectoryOwnerUid,
-      config.workspaceJobsDirectoryOwnerGid,
-    );
+  // Update permissions so that the directory and all contents are owned by the
+  // workspace user. Only root can change ownership; when running natively as a
+  // regular user, the container starts as root and the image's entrypoint
+  // handles ownership instead.
+  if (process.getuid?.() === 0) {
+    for await (const file of klaw(sourcePath)) {
+      await fsPromises.chown(
+        file.path,
+        config.workspaceJobsDirectoryOwnerUid,
+        config.workspaceJobsDirectoryOwnerGid,
+      );
+    }
   }
 
   if (fileGenerationErrors.length > 0) {
