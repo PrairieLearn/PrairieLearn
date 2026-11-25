@@ -5,9 +5,9 @@ PrairieMQ is a Redis-backed job queue for workloads that need fair scheduling ac
 ## Requirements
 
 - Node.js 24 or later.
-- Redis 6.2 or later.
-- A non-clustered Redis deployment. Redis Cluster is not supported.
-- Redis credentials that permit `INFO`, `TIME`, `SELECT` when using a nonzero database, `EVAL`/`EVALSHA`, `BLPOP`, `SCAN`, `UNLINK`, `MULTI`/`EXEC`, and the keyspace (`DEL`, `EXISTS`, and `PEXPIRE`), string, list, set, sorted-set, and hash commands PrairieMQ uses on its queue keys.
+- Redis 6.2 or later, or a compatible Valkey deployment.
+- Standalone Redis, Redis Cluster, or ElastiCache Serverless Valkey. Set `redisMode: 'cluster'` for clustered deployments; the default is `'standalone'`.
+- Redis credentials that permit `INFO`, `TIME`, `SELECT` when using a nonzero database, `EVAL`/`EVALSHA`, `BLPOP`, `SCAN`, `UNLINK`, `MULTI`/`EXEC`, and the keyspace (`DEL` and `EXISTS`), string, list, set, sorted-set, and hash commands PrairieMQ uses on its queue keys. Cluster connections also need the `CLUSTER` discovery commands.
 
 ## Basic usage
 
@@ -50,6 +50,17 @@ await queue.close();
 ```
 
 Redis connections must use a `redis://` or `rediss://` URL with a hostname and an optional numeric database path. Query parameters and fragments are not supported. Queue names may contain letters, numbers, underscores, periods, and hyphens. Every `Queue` and `Worker` for the same logical queue must use the same name and non-empty Redis key `prefix` (which defaults to `prairiemq`); prefixes cannot contain `{` or `}`.
+
+For ElastiCache Serverless, pass the existing primary endpoint as a `rediss://` URL and set `redisMode: 'cluster'` on both the queue and every worker. Allow network access to ports 6379 and 6380: topology discovery can contact the advertised reader endpoint even though queue operations use primary connections. Cluster connections use database zero and read from primaries so ownership and queue state remain consistent. Each queue's keys share one hash slot, allowing its Lua operations to remain atomic. Different queues can use different slots; a single queue does not spread its work across shards.
+
+```ts
+const connection = {
+  redisUrl: 'rediss://your-cache.serverless.use2.cache.amazonaws.com:6379',
+  redisMode: 'cluster',
+} as const;
+const queue = new Queue('exports', connection);
+const worker = new Worker('exports', processExport, connection);
+```
 
 ## Groups and concurrency
 
@@ -145,7 +156,7 @@ Scheduler template `data` is required. Use `getJobSchedulerIds()` to reconcile t
 
 PrairieMQ's at-least-once delivery semantics assume that Redis retains acknowledged queue writes. Redis replication is asynchronous, and persistence depends on the deployment configuration, so a primary failure can lose a recently acknowledged enqueue. Configure Redis persistence and failover for the required durability. Applications that cannot tolerate a lost job must also keep the intended work in a durable source of truth and reconcile or re-enqueue it.
 
-PrairieMQ assumes that Redis will not evict queue keys. Configure the Redis instance with `maxmemory-policy noeviction`. Removing only some of a queue's keys can make its state inconsistent. With `noeviction`, Redis rejects writes when it runs out of memory instead, so monitor memory usage and provision enough capacity for queued and retained jobs.
+PrairieMQ stores queue state and worker deadlines in keys without a Redis expiration. Use `maxmemory-policy noeviction` or a `volatile-*` policy, which only evicts keys with an expiration. ElastiCache Serverless's fixed `volatile-lru` policy is supported. Policies such as `allkeys-lru` can remove queue state and are not supported. Monitor memory usage and provision enough capacity for queued and retained jobs: Redis can reject writes when memory is full. Expired worker metadata is cleaned up in bounded batches using Redis server time.
 
 Completed and failed jobs are retained without a limit when `removeOnComplete` or `removeOnFail` is unset or `false`. Do not use unbounded retention in production. Set queue-wide `defaultJobOptions` so completed jobs are removed immediately or kept only for a bounded history, and do the same for failed jobs with a limit large enough for operational debugging:
 
@@ -185,7 +196,7 @@ To observe jobs handled by another process, poll `getJobStatus()`. Failure error
 
 ## Worker lifecycle and reliability
 
-Workers start automatically. Set `autorun: false` to attach listeners before calling `run()`. `waitUntilReady()` confirms that the worker has connected and successfully checked the queue. Permanent credential, permission, database, version, and unsupported-cluster errors emit `error`, close the worker, and reject readiness; transient connection and Redis availability errors are retried.
+Workers start automatically. Set `autorun: false` to attach listeners before calling `run()`. `waitUntilReady()` confirms that the worker has connected and successfully checked the queue. Permanent credential, permission, database, version, and queue-format errors emit `error`, close the worker, and reject readiness; transient connection and Redis availability errors are retried.
 
 `preflight()` is available before `run()` when a deployment must prove a worker is usable without taking work. It verifies both Redis connections, the configured database and Redis version, group-concurrency compatibility, a non-claiming fetch, and the blocking command used to wait for work. After it resolves, call `run()` normally.
 
@@ -212,13 +223,23 @@ All PrairieMQ connections also use a 10-second socket timeout while awaiting rep
 
 Each group has a FIFO waiting list for unprioritized jobs and a sorted waiting set for positive priorities. Workers rotate through groups when starting jobs. A companion Redis set tracks which groups are in the rotation without scanning the rotation list. Redis also stores active, delayed, completed, and failed jobs, along with locks and per-group active counts.
 
-PrairieMQ uses Lua scripts so multi-step job changes happen as a single operation. Workers coordinate through Redis, so they can safely run in different processes or on different hosts. Worker fetches use sequenced, idempotent Redis requests so a command whose reply is lost cannot claim additional jobs when it is retried. An expiring per-queue lease ensures only one worker scans active jobs for expired locks during each stalled-check interval.
+PrairieMQ uses Lua scripts so multi-step job changes happen as a single operation. Workers coordinate through Redis, so they can safely run in different processes or on different hosts. Worker fetches use sequenced, idempotent Redis requests so a command whose reply is lost cannot claim additional jobs when it is retried. A per-queue lease with a stored deadline ensures only one worker scans active jobs for expired locks during each stalled-check interval.
 
-A PrairieMQ queue is one atomic Redis slot-affinity domain. Every Redis key touched by a queue operation is derived from that queue's tagged base. The tag contains both the prefix and queue name, so different queues do not deliberately share an affinity domain; PrairieMQ has no cross-queue atomic operations. Distinct tags can still map to the same one of Redis's 16,384 physical slots by ordinary hash collision. Groups remain scheduling subdivisions within one queue rather than independent shards. Future Redis Cluster support may distribute different queues across slots, but it will not split one logical queue across slots.
+A PrairieMQ queue is one atomic Redis slot-affinity domain. Every Redis key touched by a queue operation is derived from that queue's tagged base. The tag contains both the prefix and queue name, so different queues do not deliberately share an affinity domain; PrairieMQ has no cross-queue atomic operations. Distinct tags can still map to the same one of Redis's 16,384 physical slots by ordinary hash collision. Groups remain scheduling subdivisions within one queue rather than independent shards. Cluster mode distributes different queues across slots but does not split one logical queue across slots.
 
-PrairieMQ still supports standalone Redis only. Tagged bases colocate a queue's keys, but do not add Cluster discovery, routing, retries, failover handling, or tests. The current Lua scripts dynamically construct key names from the tagged base supplied as `KEYS[1]`. Redis documents that scripts should receive [every accessed key explicitly through `KEYS`](https://redis.io/docs/latest/commands/eval/), so PrairieMQ's dynamic derivation is a portability constraint that future Cluster support must test and document.
+Lua scripts dynamically construct key names from the tagged base supplied as `KEYS[1]`, keeping every accessed key in that slot. This is covered by the cluster integration tests. Redis documents that scripts should receive [every accessed key explicitly through `KEYS`](https://redis.io/docs/latest/commands/eval/), so other Redis-compatible services may impose stricter scripting restrictions.
 
-PrairieMQ intentionally has a focused API. It does not currently support cron-pattern schedulers, progress tracking, Redis Cluster, cross-process events, or waiting directly for a job to finish.
+PrairieMQ intentionally has a focused API. It does not currently support cron-pattern schedulers, progress tracking, cross-process events, or waiting directly for a job to finish.
+
+## Upgrading from version 1
+
+Version 2 changes the storage format for worker ownership, fetch replay protection, and rate limits. Old and new clients must not share a running queue during the upgrade. A protocol marker detects unsupported versions and prevents an upgrade while legacy jobs are active, but version 1 clients do not honor that marker. In-progress rate-limit windows reset during the upgrade; the configured limits are preserved.
+
+1. Stop every old producer and stop workers from taking new jobs. Let active jobs finish and close all old workers.
+2. Upgrade all clients together, keeping the existing prefix and queue name. Waiting jobs and recurring schedules keep their existing keys.
+3. Start the new workers and producers. For ElastiCache Serverless, configure `redisMode: 'cluster'` on both.
+
+Changing the prefix starts a separate queue; it does not migrate waiting jobs or schedules. Downgrading requires the same coordinated stop and an explicit data migration or a separate queue namespace.
 
 ## Testing
 
@@ -231,4 +252,4 @@ pnpm --filter @prairielearn/prairiemq test
 
 Use `createJob` to construct `Job` instances when unit testing processors without Redis. `MAX_TIMER_DELAY_MILLISECONDS` is the largest value accepted for timer-backed settings such as `stalledInterval` and `limiter.duration`.
 
-The tests use unique queue names and remove only those queues’ keys. Set `REDIS_URL` to use another standalone Redis server or database. No PrairieLearn application server or PostgreSQL setup is needed.
+The tests use unique queue names and remove only those queues’ keys. Set `REDIS_URL` to use another standalone Redis server or database. Cluster integration tests start isolated `redis-server` processes on temporary ports, so the Redis server binary must be available. No PrairieLearn application server or PostgreSQL setup is needed.

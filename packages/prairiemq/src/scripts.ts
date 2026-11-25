@@ -1,15 +1,24 @@
-import { Redis } from 'ioredis';
+import { Cluster } from 'ioredis';
+
+import {
+  REDIS_COMMAND_TIMEOUT,
+  type RedisClient,
+  createRedisClient,
+  getRedisPrimaries,
+  onRedisConnectionChange,
+} from './redis.js';
+import type { QueueOptions } from './types.js';
 
 const MINIMUM_REDIS_VERSION = '6.2.0';
-export const REDIS_COMMAND_TIMEOUT = 10_000;
 const FETCH_SESSION_TTL = 24 * 60 * 60 * 1000;
 const DELAYED_SEQUENCE_WIDTH = 20;
 const PRIORITY_SEQUENCE_WIDTH = 20;
 const RETENTION_CLEANUP_BATCH_SIZE = 100;
+const FETCH_SESSION_CLEANUP_BATCH_SIZE = 100;
 
 export class RedisCompatibilityError extends Error {}
 
-function waitForRedisReady(client: Redis): Promise<void> {
+function waitForRedisReady(client: RedisClient): Promise<void> {
   if (client.status === 'ready') return Promise.resolve();
   if (client.status === 'end') return Promise.reject(new Error('Redis connection has closed'));
 
@@ -44,9 +53,7 @@ function waitForRedisReady(client: Redis): Promise<void> {
 
 // Every script receives the queue's tagged base (`<prefix>:{<prefix>:<queueName>}`)
 // as KEYS[1] and derives every key it touches from it. A queue is therefore one
-// atomic Redis slot-affinity domain. This does not add Redis Cluster support,
-// and deriving keys instead of declaring each one in KEYS is a deliberate
-// portability constraint that future Cluster support must test and document.
+// atomic Redis slot-affinity domain, including when the queue uses Redis Cluster.
 //
 // Wait queues are one sorted set per group, scored by a sequence number so
 // ready jobs in a group run in FIFO order. Positive priorities use a separate
@@ -58,14 +65,16 @@ function waitForRedisReady(client: Redis): Promise<void> {
 // served round-robin. A companion set provides constant-time rotation-list
 // membership checks when adding groups. LMOVE requires Redis 6.2.
 
-async function assertMinimumRedisVersion(client: Redis): Promise<void> {
-  const info = await client.info('server');
-  const match = info.match(/^redis_version:(\d+)\.(\d+)\.(\d+)/m);
+async function assertMinimumRedisVersion(client: RedisClient): Promise<void> {
+  // ElastiCache Serverless returns version metadata in unsectioned INFO,
+  // and may omit the patch component or identify itself as Valkey.
+  const info = await client.info();
+  const match = info.match(/^(?:redis|valkey)_version:(\d+)\.(\d+)(?:\.(\d+))?\r?$/m);
   if (!match) {
     throw new RedisCompatibilityError('PrairieMQ could not determine the Redis server version');
   }
 
-  const version = match.slice(1).map(Number);
+  const version = [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)];
   const minimum = MINIMUM_REDIS_VERSION.split('.').map(Number);
   for (let i = 0; i < minimum.length; i++) {
     if (version[i] > minimum[i]) return;
@@ -77,7 +86,8 @@ async function assertMinimumRedisVersion(client: Redis): Promise<void> {
   }
 }
 
-export async function ensureSelectedDatabase(client: Redis): Promise<void> {
+export async function ensureSelectedDatabase(client: RedisClient): Promise<void> {
+  if (client instanceof Cluster) return;
   const database = client.options.db ?? 0;
   if (database !== 0) {
     await client.select(database);
@@ -120,6 +130,67 @@ const addMarkerLua = `
 const redisTimeLua = `
 local serverTime = redis.call('TIME')
 local now = tonumber(serverTime[1]) * 1000 + math.floor(tonumber(serverTime[2]) / 1000)`;
+
+const assertQueueProtocolLua = `
+do
+  local protocolKey = KEYS[1] .. ':protocol-version'
+  local version = redis.call('GET', protocolKey)
+  if version and version ~= '2' then
+    return redis.error_reply('ERR PrairieMQ queue protocol version ' .. version .. ' is not supported by this client')
+  end
+  if not version then
+    if redis.call('LLEN', KEYS[1] .. ':active') > 0 then
+      return redis.error_reply('ERR PrairieMQ queue protocol upgrade requires all legacy active jobs to finish')
+    end
+    redis.call('SET', protocolKey, '2')
+  end
+end
+`;
+
+const ensureQueueProtocolLua = 'return 1';
+
+// Logical deadlines keep coordination state out of volatile eviction policies.
+const lockFunctionsLua = `
+local function lockToken(jobId)
+  local lock = redis.call('HMGET', prefix .. ':lock-v2:' .. jobId, 'token', 'expiresAt')
+  if lock[1] and tonumber(lock[2]) > now then
+    return lock[1]
+  end
+  return false
+end
+
+local function setLock(jobId, token, duration)
+  redis.call('HSET', prefix .. ':lock-v2:' .. jobId, 'token', token, 'expiresAt', now + duration)
+end
+`;
+
+const fetchSessionFunctionsLua = `
+local fetchDeadlinesKey = prefix .. ':fetch-deadlines'
+
+local function expireFetchSession(workerId)
+  local key = prefix .. ':fetch:' .. workerId
+  if tonumber(redis.call('HGET', key, 'expiresAt') or '0') > now then
+    return false
+  end
+  redis.call('DEL', key)
+  redis.call('ZREM', fetchDeadlinesKey, workerId)
+  return true
+end
+
+local function cleanExpiredFetchSessions()
+  local expired = redis.call('ZRANGEBYSCORE', fetchDeadlinesKey, '-inf', now, 'LIMIT', 0, ${FETCH_SESSION_CLEANUP_BATCH_SIZE})
+  for i = 1, #expired do
+    expireFetchSession(expired[i])
+  end
+end
+
+local function refreshFetchSession(workerId)
+  if expireFetchSession(workerId) then return end
+  local expiresAt = now + ${FETCH_SESSION_TTL}
+  redis.call('ZADD', fetchDeadlinesKey, expiresAt, workerId)
+  redis.call('HSET', prefix .. ':fetch:' .. workerId, 'expiresAt', expiresAt)
+end
+`;
 
 /** Drops a group from the rotation once it has no waiting and no active jobs. */
 function cleanupGroupLua(groupVar: string): string {
@@ -511,6 +582,8 @@ ${redisTimeLua}
 ${addJobFunctionLua}
 ${finishedJobsFunctionsLua}
 ${configureLimiterFunctionLua}
+${lockFunctionsLua}
+${fetchSessionFunctionsLua}
 local workerId = ARGV[1]
 local sessionStartedAt = tonumber(ARGV[2])
 local fetchSequence = tonumber(ARGV[3])
@@ -520,6 +593,8 @@ local limiterMax = tonumber(ARGV[9]) or 0
 local limiterDuration = tonumber(ARGV[10]) or 0
 local fetchKey = prefix .. ':fetch:' .. workerId
 local fetchClaim = workerId .. ':' .. ARGV[3]
+cleanExpiredFetchSessions()
+expireFetchSession(workerId)
 
 local function jobReply(jobKey)
   local reply = {'job'}
@@ -531,24 +606,18 @@ local function jobReply(jobKey)
 end
 
 local function cacheFetch(result, value, stalledCount)
+  local expiresAt = now + ${FETCH_SESSION_TTL}
+  redis.call('ZADD', fetchDeadlinesKey, expiresAt, workerId)
   redis.call(
     'HSET', fetchKey,
     'sessionStartedAt', sessionStartedAt,
     'sequence', fetchSequence,
     'token', token,
-    'result', result
+    'result', result,
+    'value', value or '',
+    'stalledCount', stalledCount or '',
+    'expiresAt', expiresAt
   )
-  if value then
-    redis.call('HSET', fetchKey, 'value', value)
-  else
-    redis.call('HDEL', fetchKey, 'value')
-  end
-  if stalledCount then
-    redis.call('HSET', fetchKey, 'stalledCount', stalledCount)
-  else
-    redis.call('HDEL', fetchKey, 'stalledCount')
-  end
-  redis.call('PEXPIRE', fetchKey, ${FETCH_SESSION_TTL})
 end
 
 local cachedSequence = tonumber(redis.call('HGET', fetchKey, 'sequence'))
@@ -559,13 +628,13 @@ if not cachedSequence then
 elseif tonumber(redis.call('HGET', fetchKey, 'sessionStartedAt')) ~= sessionStartedAt then
   return {'fetch-session-mismatch'}
 elseif fetchSequence < cachedSequence then
-  redis.call('PEXPIRE', fetchKey, ${FETCH_SESSION_TTL})
+  refreshFetchSession(workerId)
   return {'stale-fetch'}
 elseif fetchSequence > cachedSequence + 1 then
-  redis.call('PEXPIRE', fetchKey, ${FETCH_SESSION_TTL})
+  refreshFetchSession(workerId)
   return {'fetch-sequence-gap'}
 elseif fetchSequence == cachedSequence then
-  redis.call('PEXPIRE', fetchKey, ${FETCH_SESSION_TTL})
+  refreshFetchSession(workerId)
   if redis.call('HGET', fetchKey, 'token') ~= token then
     return {'fetch-token-mismatch'}
   end
@@ -582,17 +651,17 @@ elseif fetchSequence == cachedSequence then
     return {'group-concurrency-mismatch', cachedValue}
   elseif cachedResult == 'claim-lost' then
     return {'claim-lost'}
-  elseif cachedResult ~= 'job' or not cachedValue then
+  elseif cachedResult ~= 'job' or not cachedValue or cachedValue == '' then
     return {'fetch-state-invalid'}
   end
 
   local claimedJobKey = prefix .. ':job:' .. cachedValue
-  local claimedLockKey = prefix .. ':lock:' .. cachedValue
   local cachedStalledCount = redis.call('HGET', fetchKey, 'stalledCount')
-  if redis.call('LPOS', prefix .. ':active', cachedValue) and redis.call('HGET', claimedJobKey, 'fetchClaim') == fetchClaim and redis.call('HGET', claimedJobKey, 'stalledCount') == cachedStalledCount then
-    local claimedLock = redis.call('GET', claimedLockKey)
+  local claimedStalledCount = redis.call('HGET', claimedJobKey, 'stalledCount') or ''
+  if redis.call('LPOS', prefix .. ':active', cachedValue) and redis.call('HGET', claimedJobKey, 'fetchClaim') == fetchClaim and claimedStalledCount == cachedStalledCount then
+    local claimedLock = lockToken(cachedValue)
     if not claimedLock or claimedLock == token then
-      redis.call('SET', claimedLockKey, token, 'PX', lockDuration)
+      setLock(cachedValue, token, lockDuration)
       return jobReply(claimedJobKey)
     end
   end
@@ -662,13 +731,14 @@ for i = 1, #due do
   end
 end
 
-local limiterKey = prefix .. ':limiter'
-if limiterMax > 0 and tonumber(redis.call('GET', limiterKey) or '0') >= limiterMax then
-  local remaining = redis.call('PTTL', limiterKey)
-  if remaining > 0 then
-    cacheFetch('delayed', tostring(now + remaining))
-    return {'delayed', remaining}
-  end
+local limiterKey = prefix .. ':limiter-window-v2'
+local limiterWindow = redis.call('HMGET', limiterKey, 'count', 'expiresAt')
+local limiterExpiresAt = tonumber(limiterWindow[2]) or 0
+local limiterCount = limiterExpiresAt > now and (tonumber(limiterWindow[1]) or 0) or 0
+if limiterMax > 0 and limiterCount >= limiterMax then
+  local remaining = limiterExpiresAt - now
+  cacheFetch('delayed', tostring(limiterExpiresAt))
+  return {'delayed', remaining}
 end
 
 local limit = tonumber(configuredGroupConcurrency)
@@ -690,9 +760,10 @@ for i = 1, groupCount do
     if jobId then
       local jobKey = prefix .. ':job:' .. jobId
       if limiterMax > 0 then
-        if redis.call('INCR', limiterKey) == 1 then
-          redis.call('PEXPIRE', limiterKey, limiterDuration)
+        if limiterExpiresAt <= now then
+          limiterExpiresAt = now + limiterDuration
         end
+        redis.call('HSET', limiterKey, 'count', limiterCount + 1, 'expiresAt', limiterExpiresAt)
       end
       redis.call('HINCRBY', groupActiveKey, groupId, 1)
       redis.call('RPUSH', prefix .. ':active', jobId)
@@ -701,7 +772,7 @@ for i = 1, groupCount do
         'fetchClaim', fetchClaim,
         'claimMaxStalledCount', ARGV[7]
       )
-      redis.call('SET', prefix .. ':lock:' .. jobId, token, 'PX', lockDuration)
+      setLock(jobId, token, lockDuration)
       cacheFetch('job', jobId, redis.call('HGET', jobKey, 'stalledCount'))
       return jobReply(jobKey)
     elseif activeCount == 0 then
@@ -735,11 +806,13 @@ return nil
 // Returns 0 on success, -1 if the lock was lost.
 const moveToCompletedLua = `
 local prefix = KEYS[1]
+${redisTimeLua}
 ${finishedJobsFunctionsLua}
+${lockFunctionsLua}
 local jobId = ARGV[1]
 local jobKey = prefix .. ':job:' .. jobId
-local lockKey = prefix .. ':lock:' .. jobId
-if redis.call('GET', lockKey) ~= ARGV[2] then
+local lockKey = prefix .. ':lock-v2:' .. jobId
+if lockToken(jobId) ~= ARGV[2] then
   return -1
 end
 redis.call('DEL', lockKey)
@@ -768,10 +841,11 @@ const moveToFailedLua = `
 local prefix = KEYS[1]
 ${redisTimeLua}
 ${finishedJobsFunctionsLua}
+${lockFunctionsLua}
 local jobId = ARGV[1]
 local jobKey = prefix .. ':job:' .. jobId
-local lockKey = prefix .. ':lock:' .. jobId
-if redis.call('GET', lockKey) ~= ARGV[2] then
+local lockKey = prefix .. ':lock-v2:' .. jobId
+if lockToken(jobId) ~= ARGV[2] then
   return -1
 end
 redis.call('DEL', lockKey)
@@ -808,13 +882,15 @@ return requeued
 // Returns the ids of jobs whose locks were already lost.
 const extendLocksLua = `
 local prefix = KEYS[1]
-redis.call('PEXPIRE', prefix .. ':fetch:' .. ARGV[1], ${FETCH_SESSION_TTL})
+${redisTimeLua}
+${lockFunctionsLua}
+${fetchSessionFunctionsLua}
+refreshFetchSession(ARGV[1])
 local lost = {}
 for i = 3, #ARGV, 2 do
   local jobId = ARGV[i]
-  local lockKey = prefix .. ':lock:' .. jobId
-  if redis.call('GET', lockKey) == ARGV[i + 1] then
-    redis.call('PEXPIRE', lockKey, ARGV[2])
+  if lockToken(jobId) == ARGV[i + 1] then
+    setLock(jobId, ARGV[i + 1], tonumber(ARGV[2]))
   else
     lost[#lost + 1] = jobId
   end
@@ -822,7 +898,7 @@ end
 return lost
 `;
 
-// ARGV: current time in milliseconds, stalled-check interval in milliseconds.
+// ARGV: stalled-check interval in milliseconds.
 //
 // Only the worker that acquires the queue-wide, expiring lease scans active
 // jobs. Each job uses the limit recorded by the worker that claimed it. Jobs
@@ -832,16 +908,23 @@ return lost
 // limit use the default of 1.
 const checkStalledLua = `
 local prefix = KEYS[1]
+${redisTimeLua}
 ${finishedJobsFunctionsLua}
-if not redis.call('SET', prefix .. ':stalled-check', ARGV[1], 'PX', ARGV[2], 'NX') then
+${lockFunctionsLua}
+${fetchSessionFunctionsLua}
+cleanExpiredFetchSessions()
+local leaseKey = prefix .. ':stalled-check-v2'
+if tonumber(redis.call('GET', leaseKey) or '0') > now then
   return {{}, {}}
 end
+redis.call('SET', leaseKey, now + tonumber(ARGV[1]))
 local requeued = {}
 local failed = {}
 local activeJobs = redis.call('LRANGE', prefix .. ':active', 0, -1)
 for i = 1, #activeJobs do
   local jobId = activeJobs[i]
-  if redis.call('EXISTS', prefix .. ':lock:' .. jobId) == 0 then
+  if not lockToken(jobId) then
+    redis.call('DEL', prefix .. ':lock-v2:' .. jobId)
     redis.call('LREM', prefix .. ':active', 1, jobId)
     local jobKey = prefix .. ':job:' .. jobId
     local groupId = redis.call('HGET', jobKey, 'groupId')
@@ -916,6 +999,8 @@ return reply
 `;
 
 interface PrairieMQCommands {
+  pmqEnsureQueueProtocol(prefix: string): Promise<number>;
+  pmqGetTime(prefix: string): Promise<[string, string]>;
   pmqAddJob(
     prefix: string,
     jobId: string,
@@ -978,21 +1063,19 @@ interface PrairieMQCommands {
     duration: number,
     ...locks: string[]
   ): Promise<string[]>;
-  pmqCheckStalled(
-    prefix: string,
-    now: number,
-    stalledInterval: number,
-  ): Promise<[string[], string[]]>;
+  pmqCheckStalled(prefix: string, stalledInterval: number): Promise<[string[], string[]]>;
   pmqGetCounts(prefix: string): Promise<[number, number, number, number, number]>;
   pmqGetGroups(prefix: string): Promise<string[]>;
 }
 
-export type PrairieMQRedis = Redis &
+export type PrairieMQRedis = RedisClient &
   PrairieMQCommands & {
     ensureMinimumRedisVersion(): Promise<void>;
   };
 
 const scripts: Record<keyof PrairieMQCommands, string> = {
+  pmqEnsureQueueProtocol: ensureQueueProtocolLua,
+  pmqGetTime: "return redis.call('TIME')",
   pmqAddJob: addJobLua,
   pmqAddBulk: addBulkLua,
   pmqGetJobStatus: getJobStatusLua,
@@ -1010,31 +1093,22 @@ const scripts: Record<keyof PrairieMQCommands, string> = {
 
 export function createScriptedClient({
   redisUrl,
+  redisMode,
   role,
 }: {
   redisUrl: string;
+  redisMode?: QueueOptions['redisMode'];
   role: 'queue' | 'worker';
 }): PrairieMQRedis {
-  const client = new Redis<'legacy'>(redisUrl, {
-    // Every mutating script has an ambiguous outcome if its reply is lost.
-    // Callers may retry with a stable job ID; the client must never replay a
-    // command that can allocate a fresh ID or advance queue state.
-    autoResendUnfulfilledCommands: false,
-    commandTimeout: REDIS_COMMAND_TIMEOUT,
-    // Command timeouts reject callers but leave commands queued for replies.
-    // Close stalled sockets so those commands and their payloads are released.
-    socketTimeout: REDIS_COMMAND_TIMEOUT,
-    enableOfflineQueue: false,
-    maxRetriesPerRequest: role === 'worker' ? 0 : 1,
-  });
+  const client = createRedisClient({ redisUrl, redisMode, role });
   for (const [name, lua] of Object.entries(scripts)) {
-    client.defineCommand(name, { numberOfKeys: 1, lua });
+    client.defineCommand(name, { numberOfKeys: 1, lua: `${assertQueueProtocolLua}\n${lua}` });
   }
   const scriptedClient = client as PrairieMQRedis;
   let connectionGeneration = 0;
   let verifiedGeneration = -1;
   let versionCheck: { generation: number; promise: Promise<void> } | null = null;
-  client.on('close', () => {
+  onRedisConnectionChange(client, () => {
     connectionGeneration += 1;
     versionCheck = null;
   });
@@ -1045,9 +1119,15 @@ export function createScriptedClient({
       if (versionCheck?.generation !== generation) {
         versionCheck = {
           generation,
-          promise: waitForRedisReady(client)
-            .then(() => ensureSelectedDatabase(client))
-            .then(() => assertMinimumRedisVersion(client)),
+          promise: waitForRedisReady(client).then(async () => {
+            await Promise.all(
+              getRedisPrimaries(client).map(async (node) => {
+                await waitForRedisReady(node);
+                await ensureSelectedDatabase(node);
+                await assertMinimumRedisVersion(node);
+              }),
+            );
+          }),
         };
       }
       const check = versionCheck;
