@@ -7,6 +7,7 @@ import {
 
 interface CalculatorAtom {
   type: string;
+  command?: string;
   value?: string;
   leftDelim?: string;
   rightDelim?: string;
@@ -14,6 +15,7 @@ interface CalculatorAtom {
   body: CalculatorAtom[];
   siblings: CalculatorAtom[];
   parent: CalculatorAtom;
+  leftSibling?: CalculatorAtom;
   addChildrenAfter(children: CalculatorAtom[], after: CalculatorAtom): void;
   removeChild(child: CalculatorAtom): void;
   removeBranch(name: 'body'): CalculatorAtom[];
@@ -137,17 +139,22 @@ export function configureCalculatorParentheses(input: MathfieldElement) {
   return insertParenthesesAfterNumber;
 }
 
+const cancellableAutoDotFences = new WeakSet<CalculatorAtom>();
+
 /** Display LaTeX serializes a pending fence just like a closed one. Save only the missing edit information, not MathLive's private model or its undo history. */
 export function getPendingCalculatorFences(input: MathfieldElement) {
-  const fences = getMathLiveInternals(input).model.atoms.flatMap((atom, offset) =>
+  const { atoms } = getMathLiveInternals(input).model;
+  const fences = atoms.flatMap((atom, offset) =>
     atom.type === 'leftright' && atom.rightDelim === '?' ? [offset] : [],
   );
-  return fences.length > 0 ? { fences, position: input.position } : undefined;
+  if (fences.length === 0) return undefined;
+  const autoDotFence = fences.find((offset) => cancellableAutoDotFences.has(atoms[offset]));
+  return { fences, position: input.position, autoDotFence };
 }
 
 export function restorePendingCalculatorFences(
   input: MathfieldElement,
-  draft: { fences: number[]; position: number },
+  draft: { fences: number[]; position: number; autoDotFence?: number },
 ) {
   const field = getMathLiveInternals(input);
   for (const offset of draft.fences) {
@@ -155,6 +162,18 @@ export function restorePendingCalculatorFences(
     if (atom?.type !== 'leftright') continue;
     atom.rightDelim = '?';
     atom.isDirty = true;
+    if (offset === draft.autoDotFence && atom.leftSibling?.command === '\\cdot') {
+      onImmediateBackspace(input, atom, () => {
+        // Unwrap the pending fence, then delete its automatic dot as one undo step.
+        field.stopRecording();
+        try {
+          input.executeCommand('deleteBackward');
+          input.executeCommand('deleteBackward');
+        } finally {
+          field.startRecording();
+        }
+      });
+    }
   }
   input.position = draft.position;
   // setValue() recorded the parsed, closed fences before we restored the draft.
@@ -231,21 +250,34 @@ function wrapInMultiplicationParentheses(input: MathfieldElement) {
     input.position = model.offsetOf(group.body[0]);
   });
   field.snapshot();
-  const start = model.at(input.position);
+  onImmediateBackspace(input, model.at(input.position).parent, () => {
+    model.setState(before, { silenceNotifications: false });
+  });
+}
+
+function onImmediateBackspace(
+  input: MathfieldElement,
+  group: CalculatorAtom,
+  cancelPair: () => void,
+) {
+  const field = getMathLiveInternals(input);
+  const start = group.body[0];
+  cancellableAutoDotFences.add(group);
   // Backspace immediately after an automatic pair should reverse the whole edit,
   // including the dot, without deleting an explicitly typed multiplication sign.
   input.addEventListener(
     'beforeinput',
     (event) => {
+      cancellableAutoDotFences.delete(group);
       if (
         (event.inputType || event.data) !== 'deleteContentBackward' ||
         !input.selectionIsCollapsed ||
-        model.at(input.position) !== start
+        field.model.at(input.position) !== start
       ) {
         return;
       }
       event.preventDefault();
-      model.setState(before, { silenceNotifications: false });
+      cancelPair();
       field.snapshot();
     },
     { once: true },
