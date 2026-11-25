@@ -741,16 +741,31 @@ export async function aiGrade({
       const generateGradingResponse = async <OBJECT>(
         schema: z.ZodType<OBJECT>,
         prompt: AiGradingPrompt,
-      ) =>
-        requireAiGradingOutput(
-          await generateText({
-            model,
-            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-            output: Output.object({ schema }),
-            ...prompt,
-            providerOptions: { openai: openaiProviderOptions },
-          }),
-        );
+      ) => {
+        const response = await generateText({
+          model,
+          abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
+          output: Output.object({ schema }),
+          ...prompt,
+          providerOptions: { openai: openaiProviderOptions },
+        });
+        try {
+          return requireAiGradingOutput(response);
+        } catch (err) {
+          // Providers still bill for rejected responses (e.g. a blocked prompt's
+          // input tokens), so count them toward the hourly usage cap. Successful
+          // responses are counted after grading completes.
+          logResponseUsage({ response, logger });
+          if (trackRateLimitAndCost) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: z.enum(AI_GRADING_MODEL_IDS).parse(model_id),
+              usage: response.usage,
+            });
+          }
+          throw err;
+        }
+      };
 
       if (rubric_items.length > 0) {
         // Build the rubric schema with stringified-integer keys ("1".."N"). Each rubric
