@@ -53,7 +53,8 @@ export default defineConfig(({ mode }) => {
             ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
             : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
         passWithNoTests: true,
-        hookTimeout: 20_000,
+        // Cold server startup hashes assets and transforms dynamically loaded routes through Vite.
+        hookTimeout: 60_000,
         testTimeout: 10_000,
 
         coverage: {
