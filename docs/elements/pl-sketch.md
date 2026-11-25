@@ -185,6 +185,8 @@ For both read-only elements and ones that can be edited by students, initial and
 
 Initial and solution drawings refer to a tool that determines their type and styling. For initial drawings, if the tool has `read-only="true"` set, it does not appear in the toolbar and the added objects are fixed (e.g., as a given function that needs to be annotated). Otherwise, objects can be edited by students just like their own drawings.
 
+For editable initial splines and polylines, selecting the drawing tool and clicking the canvas starts a new curve. Students can use the Select tool to move or delete the pre-drawn curves or adjust their control points. See the [example question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/sketch) for an editable initial drawing with each tool.
+
 The following attributes apply to both initial and solution drawings:
 
 | Parameter     | Type   | Default | Description                                                                                                                                                                                                                                                           |
