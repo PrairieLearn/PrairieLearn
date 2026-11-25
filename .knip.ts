@@ -46,7 +46,6 @@ const AUTO_DETECTED_BUT_ALSO_IMPORTED = [
   'bootstrap',
   'jquery',
   'mathlive',
-  '@prairielearn/symbolic-input',
   'highlight.js',
   'web-tree-sitter',
   'ansi_up',
