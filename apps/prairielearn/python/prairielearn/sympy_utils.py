@@ -38,11 +38,22 @@ from sympy.printing.str import StrPrinter
 from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
-SET_NOTATION_OPERATORS = ("U", "&", "{ }", "[ , ]", "( , ]", "[ , )", "( , )")
+SET_NOTATION_OPERATORS = (
+    "U",
+    "&",
+    "\\",
+    "\u2216",
+    "{ }",
+    "[ , ]",
+    "( , ]",
+    "[ , )",
+    "( , )",
+)
 SYMPY_PARSE_ERROR_WITHOUT_LOCATION = (
     "Your answer has a syntax error. "
     "This issue might be caused by mismatched parentheses or some other misplaced symbol."
 )
+_SET_DIFFERENCE_TRANSLATION = str.maketrans({"\\": "-", "\u2216": "-"})
 
 SympyMapT = dict[str, sympy.Basic | complex]
 _FrozenSympyMapT = FrozenDict[str, sympy.Basic | complex]
@@ -1121,7 +1132,10 @@ def _evaluate_with_source(
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
-    normalized_expr, char_offsets = _normalize_expr(expr)
+    expr_to_normalize = (
+        expr.translate(_SET_DIFFERENCE_TRANSLATION) if allow_sets else expr
+    )
+    normalized_expr, char_offsets = _normalize_expr(expr_to_normalize)
     _validate_multiplication(expr, normalized_expr, char_offsets)
 
     # Check for escape and comment characters after normalization, since some
