@@ -158,14 +158,12 @@ export function InstructorAssessments({
                                           })
                                         : ''
                                   }
-                                  <a href="${urlPrefix}/assessment/${row.id}/">
-                                    ${row.title}
-                                    ${
-                                      row.team_work
-                                        ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                        : ''
-                                    }
-                                  </a>
+                                  <a href="${urlPrefix}/assessment/${row.id}/">${row.title}</a>
+                                  ${
+                                    row.team_work
+                                      ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                      : ''
+                                  }
                                   ${IssueBadgeHtml({
                                     count: row.open_issue_count,
                                     courseInstanceId: course_instance.id,
