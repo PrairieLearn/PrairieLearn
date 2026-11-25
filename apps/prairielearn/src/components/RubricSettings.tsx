@@ -24,6 +24,7 @@ import { z } from 'zod';
 
 import { downloadAsJSON, executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
 import { run } from '@prairielearn/run';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
@@ -1987,24 +1988,40 @@ function AddToGroupRow({
             </span>
             Add item
           </button>
-          {/* Disabled buttons don't show tooltips, so the reason goes on a wrapper. */}
-          <span title={subgroupBlocker ?? undefined}>
+          {subgroupBlocker == null ? (
             <button
               type="button"
               className={buttonClass}
               aria-label={`Add group ${target}`}
-              aria-describedby={subgroupBlocker != null ? blockerId : undefined}
-              disabled={subgroupBlocker != null}
               onClick={onAddGroup}
             >
               <i className="bi bi-collection me-1" aria-hidden="true" />
               Add group
             </button>
-          </span>
-          {subgroupBlocker != null && (
-            <span id={blockerId} className="visually-hidden">
-              {subgroupBlocker}
-            </span>
+          ) : (
+            <>
+              {/* Not `disabled`, which would block the hover and focus that show the reason. */}
+              <OverlayTrigger
+                trigger={['hover', 'focus']}
+                placement="top"
+                tooltip={{ body: subgroupBlocker, props: { id: `${blockerId}-tooltip` } }}
+              >
+                <button
+                  type="button"
+                  className={clsx(buttonClass, 'text-body-secondary opacity-75')}
+                  style={{ cursor: 'not-allowed' }}
+                  aria-label={`Add group ${target}`}
+                  aria-describedby={blockerId}
+                  aria-disabled="true"
+                >
+                  <i className="bi bi-collection me-1" aria-hidden="true" />
+                  Add group
+                </button>
+              </OverlayTrigger>
+              <span id={blockerId} className="visually-hidden">
+                {subgroupBlocker}
+              </span>
+            </>
           )}
         </div>
       </td>
