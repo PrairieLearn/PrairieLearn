@@ -145,9 +145,16 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
-  // A conversation keeps its own mode once it exists. Until then the choice waits here, and
-  // every new conversation starts by asking.
-  const [newApprovalMode, setNewApprovalMode] = useState<ApprovalMode>('approval_required');
+  // A conversation keeps its own mode once it exists. A new one starts in the mode the instructor
+  // last chose in this course, and its choice waits here until it exists.
+  const approvalModeKey = `course-agent:${authnUserId}:${courseId}:approval-mode`;
+  const lastApprovalMode = () =>
+    (typeof window === 'undefined'
+      ? undefined
+      : ApprovalModeSchema.safeParse(localStorage.getItem(approvalModeKey)).data) ??
+    'approval_required';
+  const [newApprovalMode, setNewApprovalMode] = useState<ApprovalMode>(lastApprovalMode);
+  const rememberApprovalMode = (mode: ApprovalMode) => localStorage.setItem(approvalModeKey, mode);
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -214,7 +221,7 @@ function ConversationPicker({
             disabled={create.isPending}
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
-              setNewApprovalMode('approval_required');
+              setNewApprovalMode(lastApprovalMode());
               setDraft('');
               drafts.clear();
               create.reset();
@@ -237,6 +244,7 @@ function ConversationPicker({
               ? { text: create.variables.text, attachments: initialAttachments }
               : undefined
           }
+          onApprovalModeChosen={rememberApprovalMode}
           onInitialMessageSent={create.reset}
         />
       ) : active ? (
@@ -260,7 +268,10 @@ function ConversationPicker({
             pending={create.isPending}
             attachments={drafts.attachments}
             approvalMode={newApprovalMode}
-            onApprovalModeChange={setNewApprovalMode}
+            onApprovalModeChange={(mode) => {
+              setNewApprovalMode(mode);
+              rememberApprovalMode(mode);
+            }}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
@@ -518,6 +529,7 @@ function Chat({
   onInitialMessageSent,
   showConversationStats,
   initialApprovalMode,
+  onApprovalModeChosen,
 }: {
   courseId: string;
   conversationId: string;
@@ -526,6 +538,8 @@ function Chat({
   initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
   /** The mode chosen before this conversation existed, which its first message gives it. */
   initialApprovalMode: ApprovalMode | undefined;
+  /** The instructor chose a mode, which their next new conversation starts in. */
+  onApprovalModeChosen: (mode: ApprovalMode) => void;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -571,6 +585,7 @@ function Chat({
   const changeApprovalMode = (mode: ApprovalMode) => {
     setChosenApprovalMode(mode);
     saveApprovalMode({ conversationId, approvalMode: mode });
+    onApprovalModeChosen(mode);
   };
   const [connectionFailed, setConnectionFailed] = useState(false);
   // Chat remounts per conversation, so this is the message that created it.
@@ -840,7 +855,6 @@ function Chat({
               conversationId={conversationId}
               uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
-              approvalMode={approvalMode ?? 'approval_required'}
               hiddenReviewId={hiddenReviewId}
               turnRunning={turnRunning && index === messages.length - 1}
               linkTransform={linkTransform}
@@ -1081,15 +1095,47 @@ function Composer({
 const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
   approval_required: {
     label: 'Ask first',
-    description: 'You review course changes before they are saved.',
+    description: 'You approve each change and each read of course data.',
     icon: 'bi-hand-index-thumb',
   },
   always_approve: {
     label: 'Always approve',
-    description: 'The agent saves course changes without your review.',
+    description: 'The course agent goes ahead without asking.',
     icon: 'bi-shield-exclamation',
   },
 };
+
+/**
+ * What the course agent can reach in a course. Each says what the agent does there in each mode,
+ * so the menu shows what the current mode allows.
+ */
+const ACCESS_AREAS: { label: string; icon: string; access: Record<ApprovalMode, string> }[] = [
+  {
+    label: 'Course files',
+    icon: 'bi-folder',
+    access: {
+      approval_required: 'Reads every file. Asks before saving changes.',
+      always_approve: 'Reads every file and saves changes without asking.',
+    },
+  },
+  {
+    label: 'Course data',
+    icon: 'bi-table',
+    access: {
+      approval_required: 'Asks before reading students, scores, or submissions.',
+      always_approve: 'Reads students, scores, and submissions without asking.',
+    },
+  },
+  {
+    label: 'Course actions',
+    icon: 'bi-lightning',
+    access: {
+      approval_required: 'Asks before changes like closing issues or regrading.',
+      always_approve:
+        'Makes changes like closing issues or regrading without asking, except ones that are hard to undo.',
+    },
+  },
+];
 
 function ApprovalModePicker({
   mode,
@@ -1112,7 +1158,20 @@ function ApprovalModePicker({
         <i className="bi bi-chevron-down" aria-hidden="true" />
       </Dropdown.Toggle>
       <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
-        <Dropdown.Header>Saving course changes</Dropdown.Header>
+        <Dropdown.Header>Course agent access</Dropdown.Header>
+        <ul className="list-unstyled mb-0">
+          {ACCESS_AREAS.map(({ label, icon, access }) => (
+            <li key={label} className="dropdown-item-text d-flex align-items-start gap-2 py-1">
+              <i className={clsx('bi lh-1 mt-1 text-body-secondary', icon)} aria-hidden="true" />
+              <span className="small">
+                <span className="d-block">{label}</span>
+                <span className="d-block text-body-secondary">{access[mode]}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <Dropdown.Divider />
+        <Dropdown.Header>Approval</Dropdown.Header>
         {ApprovalModeSchema.options.map((option) => {
           const { label, description, icon } = APPROVAL_MODES[option];
           return (
@@ -1161,7 +1220,6 @@ function Message({
   conversationId,
   uploadsUrl,
   awaitingReviewId,
-  approvalMode,
   onAlwaysApprove,
   hiddenReviewId,
   turnRunning,
@@ -1182,7 +1240,6 @@ function Message({
   uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
-  approvalMode: ApprovalMode;
   onAlwaysApprove: (mode: 'always_approve') => void;
   /** A review requested by the running turn, whose card waits for the turn to end. */
   hiddenReviewId: string | null;
@@ -1215,8 +1272,7 @@ function Message({
         conversationId={conversationId}
         reviewId={card.reviewId}
         canResume={awaitingReviewId === card.reviewId}
-        // Switching back to requiring approval also applies to a review already submitted.
-        autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
+        autoApprove={card.autoApprove === true}
         onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
     ) : (
