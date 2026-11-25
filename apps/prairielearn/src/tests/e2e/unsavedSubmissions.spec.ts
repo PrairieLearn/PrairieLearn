@@ -68,7 +68,7 @@ async function openRecoverableDraft(page: Page, courseInstance: CourseInstance) 
   return () => selectOptionalUnsavedSubmission(draftKey);
 }
 
-test('retries failed captures and uploads only changes since the last successful snapshot', async ({
+test('retries failed captures after a prevented save and uploads only changed snapshots', async ({
   page,
   courseInstance,
 }) => {
@@ -99,8 +99,19 @@ test('retries failed captures and uploads only changes since the last successful
   const isCapture = (response: Response) =>
     response.url().includes('/trpc/unsavedSubmissions.upsert');
   await page.locator('input[name="c"]').fill('first');
+  await page.locator('form.question-form').evaluate((form) => {
+    form.addEventListener('submit', (event) => event.preventDefault(), { once: true });
+  });
+  await page.getByRole('button', { name: 'Save only', exact: true }).click();
+  expect(
+    await page.evaluate(() => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }),
+  ).toBe(true);
   const failed = page.waitForResponse(isCapture);
-  await page.clock.fastForward(30_000);
+  await page.clock.runFor(30_000);
   expect((await failed).status()).toBe(503);
   await (await failed).finished();
 

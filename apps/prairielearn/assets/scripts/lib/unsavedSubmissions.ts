@@ -122,9 +122,10 @@ export function initializeUnsavedSubmissions(
     lifecycleVersion++;
     clearRecoveryDirtyTimeout();
     submitting = true;
-    queueMicrotask(() => {
-      if (event.defaultPrevented) submitting = false;
-    });
+    // Native event dispatch can run microtasks before later listeners cancel submission.
+    window.setTimeout(() => {
+      if (event.defaultPrevented) resetSubmitting();
+    }, 0);
   };
 
   // Legacy Calculation clients submit through jQuery, which can bypass native submit listeners.
@@ -136,9 +137,9 @@ export function initializeUnsavedSubmissions(
     lifecycleVersion++;
     clearRecoveryDirtyTimeout();
     submitting = true;
-    queueMicrotask(() => {
-      if (event.defaultPrevented) submitting = false;
-    });
+    window.setTimeout(() => {
+      if (event.defaultPrevented) resetSubmitting();
+    }, 0);
   };
 
   const resetSubmitting = () => {
