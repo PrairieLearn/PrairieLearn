@@ -2818,6 +2818,12 @@ describe('Worker', () => {
       [{ redisUrl: '' }, 'redisUrl'],
       [{ redisUrl: 'http://localhost:6379' }, 'redisUrl'],
       [{ redisUrl: 'redis://' }, 'redisUrl'],
+      [{ redisUrl, redisMode: 'redis' }, 'redisMode must be "standalone" or "cluster"'],
+      [{ redisUrl, redisMode: null }, 'redisMode must be "standalone" or "cluster"'],
+      [
+        { redisUrl: 'redis://localhost:6379/1', redisMode: 'cluster' },
+        'Cluster connections require Redis database zero',
+      ],
       [{ redisUrl, prefix: null }, 'prefix'],
       [{ redisUrl, prefix: '' }, 'prefix'],
       [{ redisUrl, prefix: 42 }, 'prefix'],
