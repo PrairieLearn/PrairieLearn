@@ -627,6 +627,42 @@ it('holds a requested course action in the review slot and delivers its result',
   expect(delivery.text).toContain('Closed 2 issues.');
 });
 
+it('asks PrairieLearn to approve a course action requested under "Always approve"', async () => {
+  stubFetch({
+    usage: async () => decision(),
+    model: async () => Response.json({ title: 'Close 2 issues' }),
+  });
+  vi.spyOn(CodexAppServerClient.prototype, 'streaming', 'get').mockReturnValue(true);
+  const emit = vi.spyOn(CodexAppServerClient.prototype, 'emit').mockImplementation(() => {});
+  const { saved } = fixture();
+  saved.set('conversation', {
+    ...(saved.get('conversation') as object),
+    courseContext: { courseId: '7', courseTitle: 'Test course', courseShortName: 'TEST 101' },
+  });
+  const { conversation } = fixture(saved);
+  await conversation.onStart();
+  conversation.setApprovalMode('always_approve');
+  await conversation.persistMessages([
+    { id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: 'Close them' }] },
+  ]);
+  await conversation.onChatMessage(undefined, { requestId: crypto.randomUUID() });
+  const options = vi.mocked(SandboxTurn).mock.calls.at(-1)![2];
+  await options.prepare();
+  options.onReady();
+  const { courseActions } = (
+    conversation as unknown as { native: { courseActions: CourseActionTools } }
+  ).native;
+  const reply = await courseActions.requestCourseAction({
+    action: 'issues_close',
+    input: { issue_ids: ['3'] },
+  });
+  expect(reply).toMatchObject({ success: true });
+  const reviewId = conversation.state.reviewId!;
+  const part = emit.mock.calls.map(([chunk]) => chunk).find((c) => c.type === 'data-action');
+  expect(part).toHaveProperty('data.autoApprove', true);
+  expect(conversation.schedule).toHaveBeenCalledWith(0, 'approveReview', { reviewId, attempt: 0 });
+});
+
 it('asks PrairieLearn to approve, retrying only while it is unreachable', async () => {
   const approvals: number[] = [];
   const { fetch } = stubFetch({

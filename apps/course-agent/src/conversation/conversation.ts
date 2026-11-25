@@ -757,9 +757,10 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /**
-   * Asks PrairieLearn to approve a review submitted under `always_approve`. PrairieLearn checks
-   * that the instructor can still edit the course and saves the changes as their approval, so no
-   * browser needs to be open. A refusal leaves the review for the instructor to decide.
+   * Asks PrairieLearn to approve a review or course action submitted under `always_approve`.
+   * PrairieLearn checks that the instructor can still use the course agent in the course and
+   * approves it as theirs, so no browser needs to be open. A refusal leaves it for the instructor
+   * to decide.
    */
   async approveReview({ reviewId, attempt }: { reviewId: string; attempt: number }) {
     const review = this.record.review;
@@ -1523,6 +1524,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       id,
       data: { actionId: id, ...(autoApprove ? { autoApprove } : {}) } satisfies ActionPart,
     });
+    if (autoApprove) this.scheduleAutoApproval(id, 0, 0);
     return { success: true, text: describeRequestedAction(reply.title, autoApprove) };
   }
 

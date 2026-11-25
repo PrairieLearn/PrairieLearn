@@ -387,6 +387,34 @@ describe('Course agent actions', { timeout: 60_000 }, () => {
     ).toBe(2);
   });
 
+  test('an automatic approval runs the action as the owner, with no browser involved', async () => {
+    const conversation = await createConversation(owner);
+    const issueIds = [await insertIssue()];
+    const id = crypto.randomUUID();
+    expect((await request(conversation, 'issues_close', { issue_ids: issueIds }, id)).status).toBe(
+      200,
+    );
+    const response = await fetch(
+      `${siteUrl}/pl/api/course-agent/conversations/${conversation.agent_conversation_id}/reviews/${id}/approve`,
+      { method: 'POST', headers: serviceHeaders(conversation), body: '{}' },
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ decision: 'approved' });
+    expect(await issuesOpen(issueIds)).toEqual([false]);
+    await waitForDeliveries(1);
+    expect(delivered[0]).toMatchObject({
+      path: `/conversations/${conversation.agent_conversation_id}/reviews/${id}/outcome`,
+      body: { decision: 'approved', outcome: { status: 'succeeded' } },
+    });
+    expect(
+      await queryScalar(
+        sql.select_issue_audit_log_count,
+        { issue_ids: issueIds, authn_user_id: owner.id },
+        z.number(),
+      ),
+    ).toBe(1);
+  });
+
   test('reopening undoes closing', async () => {
     const conversation = await createConversation(owner);
     const issueIds = [await insertIssue({ open: false })];

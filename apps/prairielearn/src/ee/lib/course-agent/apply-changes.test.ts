@@ -29,13 +29,13 @@ import {
 } from '../../models/course-agent-review.js';
 
 import {
-  approveReviewAutomatically,
   deliverUndeliveredReviewResults,
   getReview,
   getReviewJobResult,
   postReviewDecision,
   resumeConversation,
 } from './apply-changes.js';
+import { approveReviewAutomatically } from './auto-approve.js';
 import {
   deliverCourseAgentReviewResult,
   getCourseAgentReview,

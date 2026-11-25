@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from 'react-bootstrap';
 
 import type { CourseActionResult } from '@prairielearn/course-agent-types';
@@ -10,7 +10,7 @@ import { useTRPC } from '../../../trpc/course/context.js';
 import type { CourseAgentError } from '../../../trpc/course/course-agent.js';
 
 import { AgentCard } from './AgentCard.js';
-import { DecisionButtons, ResumeNotice } from './RequestChangesCard.js';
+import { AUTO_APPROVAL_WAIT_MS, DecisionButtons, ResumeNotice } from './RequestChangesCard.js';
 
 /**
  * A course action the agent requested, for the instructor to approve or deny. Everything shown
@@ -27,7 +27,7 @@ export function ActionCard({
   actionId: string;
   /** The agent is idle but has not received this request's result, for example after Stop. */
   canResume: boolean;
-  /** Approve the request once it loads, without waiting for the instructor. */
+  /** Requested under "Always approve", so the agent service asks PrairieLearn to approve it. */
   autoApprove: boolean;
   /** The instructor approved this request and asked not to be asked again. */
   onAlwaysApprove: () => void;
@@ -37,13 +37,19 @@ export function ActionCard({
   // The chat reads the same request with this query to decide what a new message does, so a
   // denial sent as a message updates the card too.
   const reviewInput = { conversationId, reviewId: actionId };
+  const [shownAt] = useState(Date.now);
   const action = useQuery({
     ...trpc.courseAgent.getReview.queryOptions(reviewInput),
     retry: false,
-    // An approval made in another tab, or still running, has a decision before it has a result.
+    // An approval made elsewhere, or still running, has a decision before it has a result. An
+    // automatic approval is polled for a while too, after which a refused one is left here.
     refetchInterval: (query) => {
       const data = query.state.data;
-      return data?.status === 'action' && data.decision === 'approved' && !data.result
+      if (data?.status !== 'action') return false;
+      if (data.decision === 'approved' && !data.result) return 2000;
+      return autoApprove &&
+        data.decision === null &&
+        query.state.dataUpdatedAt - shownAt < AUTO_APPROVAL_WAIT_MS
         ? 2000
         : false;
     },
@@ -76,15 +82,8 @@ export function ActionCard({
     alwaysApproveRef.current = always;
     decision.mutate({ conversationId, reviewId: actionId, decision: value });
   };
-  // Approves a pending request on the instructor's behalf once it has loaded. It tries once: if
-  // the approval fails, the card's buttons are left for the instructor to decide.
-  const autoApprovedRef = useRef(false);
-  const { mutate: mutateDecision } = decision;
-  useEffect(() => {
-    if (!autoApprove || !pending || autoApprovedRef.current) return;
-    autoApprovedRef.current = true;
-    mutateDecision({ conversationId, reviewId: actionId, decision: 'approved' });
-  }, [autoApprove, pending, mutateDecision, conversationId, actionId]);
+  const awaitingAutoApproval =
+    autoApprove && pending && action.dataUpdatedAt - shownAt < AUTO_APPROVAL_WAIT_MS;
   // Also true in a tab that did not make the approval, while the action is still running.
   const approving =
     (decision.isPending && decision.variables.decision === 'approved') ||
@@ -120,6 +119,10 @@ export function ActionCard({
       ) : approving ? (
         <p className="small text-muted mb-0" role="status">
           {autoApprove ? 'Approved automatically. Working…' : 'Working…'}
+        </p>
+      ) : awaitingAutoApproval ? (
+        <p className="small text-muted mb-0" role="status">
+          Approving automatically…
         </p>
       ) : (
         <DecisionButtons

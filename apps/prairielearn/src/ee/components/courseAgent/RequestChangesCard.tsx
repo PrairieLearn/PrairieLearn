@@ -263,7 +263,8 @@ export function DecisionButtons({
   );
 }
 
-const AUTO_APPROVAL_WAIT_MS = 60_000;
+/** How long a card marked for automatic approval waits for it before offering its buttons. */
+export const AUTO_APPROVAL_WAIT_MS = 60_000;
 
 function autoApproving(
   { data, dataUpdatedAt }: { data: { status: string } | undefined; dataUpdatedAt: number },

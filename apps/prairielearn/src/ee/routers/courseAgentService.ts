@@ -9,7 +9,7 @@ import { parseRequest } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { approveReviewAutomatically } from '../lib/course-agent/apply-changes.js';
+import { approveReviewAutomatically } from '../lib/course-agent/auto-approve.js';
 import { recordCourseAgentUsageReport } from '../lib/course-agent/usage.js';
 
 /** Requests from the course agent service, which authenticates with its service token. */
