@@ -1561,6 +1561,7 @@ export const RubricItemSchema = z.object({
   id: IdSchema,
   is_group: z.boolean(),
   key_binding: z.string().nullable(),
+  key_binding_is_custom: z.boolean(),
   max_selections: z.number().nullable(),
   min_selections: z.number().nullable(),
   number: z.number(),

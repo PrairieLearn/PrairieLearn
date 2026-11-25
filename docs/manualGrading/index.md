@@ -170,6 +170,8 @@ When updating rubric settings, a flag at the bottom of the settings dialog box g
 
 ### Grading a submission using a rubric
 
-To manually grade a submission using a rubric, a grader must select the items that apply to a particular submission and press Submit. Additionally, each rubric item (or each of the first 10 items, in long rubrics) is assigned a keyboard shortcut corresponding to a digit; pressing that digit on the keyboard causes that item to be selected (or cleared, if it is selected).
+To manually grade a submission using a rubric, a grader must select the items that apply to a particular submission and press Submit. Additionally, each rubric item can have a keyboard shortcut; pressing that key causes the item to be selected (or cleared, if it is selected).
+
+By default, items get the digits 1–9 and then 0, in order, so in long rubrics only the first 10 items have a shortcut. To choose an item's shortcut, type a letter or digit in the item's "Key" column in the rubric settings. Other items keep getting digits in order, skipping any digit chosen as a shortcut. Shortcuts must be unique within the rubric, and cannot be A, F, G or N, which the grading panel uses to add an adjustment, focus the feedback box, submit the grade and go to the next submission.
 
 Graders have the flexibility to apply a grading adjustment (positive or negative) on top of the rubric item. This may be used where instructors need to make judgment calls for unconventional submissions that don't apply to specific rubric items. This option is discouraged in cases where the issue is found in multiple submissions, as additional rubric items provide more flexibility in providing feedback and adjusting grades.

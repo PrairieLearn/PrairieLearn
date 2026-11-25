@@ -416,7 +416,7 @@ function RubricItemRow({
         />
         {keyBinding && (
           <kbd aria-hidden="true" className="pl-kbd kbd-semi-transparent me-2 mt-1">
-            {keyBinding}
+            {keyBinding.toUpperCase()}
           </kbd>
         )}
         <div className="flex-grow-1">

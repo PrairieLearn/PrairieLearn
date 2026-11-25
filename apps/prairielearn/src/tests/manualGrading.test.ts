@@ -62,6 +62,7 @@ interface RubricItem {
   is_group?: boolean;
   min_selections?: number;
   max_selections?: number;
+  key_binding?: string | null;
   description_render?: string;
   explanation_render?: string;
   grader_note_render?: string;
@@ -1303,6 +1304,58 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
             rubric_items.map((item, number) => [item.id, number, null, `${number + 1}`]),
           );
           assert.equal(await selectManualPoints(), manualPointsBefore);
+        });
+
+        test('custom keyboard shortcuts are kept and other items skip their digits', async () => {
+          assert.isDefined(rubric_items);
+          const [first, second, third, fourth, fifth] = rubric_items;
+          const response = await saveRubricItems([
+            { ...first, key_binding: 'X' },
+            second,
+            group('Group'),
+            { ...third, depth: 1, key_binding: '2' },
+            { ...fourth, depth: 1 },
+            fifth,
+          ]);
+          assert.isTrue(response.ok);
+
+          const rows = await sqldb.queryRows(sql.select_rubric_items, { iqId }, RubricItemSchema);
+          assert.deepEqual(
+            rows.map((row) => [row.description, row.key_binding, row.key_binding_is_custom]),
+            [
+              [first.description, 'x', true],
+              [second.description, '1', false],
+              ['Group', null, false],
+              [third.description, '2', true],
+              [fourth.description, '3', false],
+              [fifth.description, '4', false],
+            ],
+          );
+        });
+
+        test.each([
+          { case: 'a key the grading panel uses', keys: ['g', null] },
+          { case: 'the same key twice', keys: ['x', 'x'] },
+          { case: 'a key longer than one character', keys: ['xy', null] },
+        ])('rejects $case as a keyboard shortcut', async ({ keys }) => {
+          assert.isDefined(rubric_items);
+          const rowsBefore = await selectRubricRows();
+          const response = await saveRubricItems(
+            rubric_items.map((item, i) => ({ ...item, key_binding: keys[i] ?? null })),
+          );
+          assert.isFalse(response.ok);
+          assert.deepEqual(await selectRubricRows(), rowsBefore);
+        });
+
+        test('saving without custom keys numbers the items again', async () => {
+          assert.isDefined(rubric_items);
+          const response = await saveRubricItems(rubric_items);
+          assert.isTrue(response.ok);
+          const rows = await selectRubricRows();
+          assert.deepEqual(
+            rows.map((row) => row.key_binding),
+            rubric_items.map((_, i) => `${i + 1}`),
+          );
         });
 
         test('the assessment question page validates rubric items', async () => {

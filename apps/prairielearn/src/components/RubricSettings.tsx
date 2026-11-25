@@ -37,6 +37,11 @@ import { isSideNavExpanded, setSideNavExpandedTemporarily } from '../lib/client/
 import { verticalBoundaryCollision } from '../lib/client/vertical-boundary-collision.js';
 import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
+import {
+  assignKeyBindings,
+  customKeyBindingErrors,
+  normalizeKeyBinding,
+} from '../lib/rubric-key-bindings.js';
 
 import {
   type EditorTreeRow,
@@ -85,6 +90,8 @@ const ExportedRubricItemSchema = z.object({
   is_group: z.boolean().optional(),
   min_selections: z.number().int().nullable().optional(),
   max_selections: z.number().int().nullable().optional(),
+  /** Only custom keys are exported. */
+  key_binding: z.string().nullable().optional(),
 });
 
 const ExportedRubricDataSchema = z.object({
@@ -111,7 +118,8 @@ function rubricItemEquals(a: RubricItemData['rubric_item'], b: RubricItemData['r
     a.always_show_to_students === b.always_show_to_students &&
     a.is_group === b.is_group &&
     a.min_selections === b.min_selections &&
-    a.max_selections === b.max_selections
+    a.max_selections === b.max_selections &&
+    a.key_binding === b.key_binding
   );
 }
 
@@ -123,6 +131,11 @@ function toEditorRows(
   const depths = depthsFromParents(items.map((item) => item.rubric_item));
   return items.map((item, i) => ({
     ...item,
+    // The editor holds only custom keys; automatic ones are recomputed as rows move.
+    rubric_item: {
+      ...item.rubric_item,
+      key_binding: item.rubric_item.key_binding_is_custom ? item.rubric_item.key_binding : null,
+    },
     depth: depths[i],
     unique_key: `rubric-item-${item.rubric_item.id}`,
     disagreement_count:
@@ -139,6 +152,7 @@ function newRubricRow(depth: number, isGroup: boolean): RubricItemData {
       explanation: null,
       grader_note: null,
       key_binding: null,
+      key_binding_is_custom: false,
       points: isGroup ? 0 : 1,
       is_group: isGroup,
       min_selections: null,
@@ -381,6 +395,16 @@ export function RubricSettings({
     isCollapsedGroup: (idx) => idx === activeDragIdx,
   });
   const guides = treeGuides(displayRows);
+  const customKeys = rubricItems.map((it) =>
+    it.rubric_item.is_group ? null : it.rubric_item.key_binding,
+  );
+  const keyErrors = customKeyBindingErrors(customKeys);
+  const automaticKeys = assignKeyBindings(
+    rubricItems.map((it, idx) => ({
+      isGroup: it.rubric_item.is_group,
+      customKey: keyErrors[idx] == null ? customKeys[idx] : null,
+    })),
+  );
 
   const siblingCollisionDetection: CollisionDetection = (args) => {
     const { active, droppableContainers, droppableRects } = args;
@@ -487,6 +511,7 @@ export function RubricSettings({
         is_group: it.rubric_item.is_group,
         min_selections: it.rubric_item.min_selections,
         max_selections: it.rubric_item.max_selections,
+        key_binding: it.rubric_item.key_binding,
       })),
     };
 
@@ -573,7 +598,8 @@ export function RubricSettings({
           description: rubricItem.description,
           explanation: rubricItem.explanation,
           grader_note: rubricItem.grader_note,
-          key_binding: null,
+          key_binding: normalizeKeyBinding(rubricItem.key_binding),
+          key_binding_is_custom: false,
           points: roundPoints(rubricItem.points * scaleFactor),
           is_group: rubricItem.is_group ?? false,
           min_selections: rubricItem.min_selections ?? null,
@@ -647,6 +673,7 @@ export function RubricSettings({
           is_group: it.rubric_item.is_group,
           min_selections: it.rubric_item.min_selections,
           max_selections: it.rubric_item.max_selections,
+          key_binding: it.rubric_item.key_binding,
         })),
         tag_for_manual_grading: tagForGrading,
       };
@@ -1003,6 +1030,19 @@ export function RubricSettings({
                   <tr className="table-light fw-bold">
                     <td style={{ width: '1px' }} />
                     <td>Points</td>
+                    <td className="text-nowrap">
+                      Key
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost py-0 px-1"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        data-bs-title="The key that selects the item while grading. Leave blank to use the next free digit, shown in gray."
+                        aria-label="More information about keyboard shortcuts"
+                      >
+                        <i className="fas fa-circle-info" aria-hidden="true" />
+                      </button>
+                    </td>
                     <td>Description</td>
                     <td>Detailed explanation</td>
                     <td>Grader note</td>
@@ -1061,6 +1101,7 @@ export function RubricSettings({
                             canIndent={canIndent(rubricItems, idx)}
                             canOutdent={parentIndex(rubricItems, idx) != null}
                             ruleDisabled={it.rubric_item.is_group && hasSubgroup(rubricItems, idx)}
+                            keyBinding={{ automatic: automaticKeys[idx], error: keyErrors[idx] }}
                             deleteRow={() => requestDeleteRow(idx)}
                             moveUp={() => moveUp(idx)}
                             moveDown={() => moveDown(idx)}
@@ -1084,7 +1125,7 @@ export function RubricSettings({
                     </SortableContext>
                   ) : (
                     <tr>
-                      <td colSpan={7} className="text-muted py-3">
+                      <td colSpan={8} className="text-muted py-3">
                         This question does not have any rubric items.
                         {hasCourseInstancePermissionEdit && (
                           <>
@@ -1117,7 +1158,7 @@ export function RubricSettings({
                 </tbody>
                 <tfoot className="table-light">
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <div className="d-flex flex-wrap column-gap-4 row-gap-1 small">
                         <span>
                           <span className="fw-semibold">Max score from items:</span> {totalPositive}{' '}
@@ -1341,6 +1382,61 @@ export function RubricSettings({
   );
 }
 
+/**
+ * The key that selects an item while grading. Blank uses the automatic key,
+ * shown as the placeholder.
+ */
+function KeyBindingInput({
+  customKey,
+  automaticKey,
+  error,
+  disabled,
+  onChange,
+}: {
+  customKey: string | null;
+  automaticKey: string | null;
+  error: string | null;
+  disabled: boolean;
+  onChange: (key: string | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const errorId = useId();
+  // Use native validity too, so saving and exporting stop at an invalid key
+  // the same way they stop at other invalid fields.
+  useEffect(() => {
+    inputRef.current?.setCustomValidity(error ?? '');
+  }, [error]);
+  return (
+    <div className="position-relative">
+      <input
+        ref={inputRef}
+        type="text"
+        className={clsx('form-control text-center', error && 'is-invalid')}
+        // Bootstrap's invalid icon would cover the key in such a narrow box.
+        style={{ width: '3rem', paddingInline: '0.25rem', backgroundImage: 'none' }}
+        maxLength={1}
+        value={customKey?.toUpperCase() ?? ''}
+        placeholder={automaticKey?.toUpperCase() ?? '–'}
+        title={automaticKey ? undefined : 'No free digit is left. Choose a key for this item.'}
+        aria-label="Keyboard shortcut"
+        aria-invalid={error ? true : undefined}
+        aria-errormessage={error ? errorId : undefined}
+        disabled={disabled}
+        onChange={(e) => onChange(normalizeKeyBinding(e.currentTarget.value))}
+      />
+      {error && (
+        <div
+          id={errorId}
+          className="invalid-tooltip"
+          style={{ width: 'max-content', maxWidth: '16rem' }}
+        >
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InfoButton({ label, title }: { label: string; title: string }) {
   return (
     <button
@@ -1411,6 +1507,7 @@ function RubricRow({
   moveDown,
   indentRow,
   outdentRow,
+  keyBinding,
   sortByPoints,
   updateRubricItem,
   hasCourseInstancePermissionEdit,
@@ -1434,6 +1531,8 @@ function RubricRow({
   moveDown: () => void;
   indentRow: () => void;
   outdentRow: () => void;
+  /** The key the item gets if it has no custom key, and what's wrong with its custom key. */
+  keyBinding: { automatic: string | null; error: string | null };
   sortByPoints: { sortedHighestFirst: boolean; sort: () => void } | null;
   updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
   hasCourseInstancePermissionEdit: boolean;
@@ -1613,6 +1712,18 @@ function RubricRow({
                 points: currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
               })
             }
+          />
+        )}
+      </td>
+
+      <td className="align-middle">
+        {!isGroup && (
+          <KeyBindingInput
+            customKey={item.rubric_item.key_binding}
+            automaticKey={keyBinding.automatic}
+            error={keyBinding.error}
+            disabled={!hasCourseInstancePermissionEdit}
+            onChange={(key_binding) => updateRubricItem({ key_binding })}
           />
         )}
       </td>
@@ -1859,7 +1970,7 @@ function AddToGroupRow({
     'btn btn-sm btn-link text-decoration-none px-0 py-0 d-inline-flex align-items-center';
   return (
     <tr style={{ '--bs-table-bg': groupTint(groupDepth) } as CSSProperties}>
-      <td colSpan={7} className="position-relative py-0">
+      <td colSpan={8} className="position-relative py-0">
         <TreeGuideLines guides={guides} groupDepth={null} />
         <div
           className="d-flex align-items-center gap-3"
