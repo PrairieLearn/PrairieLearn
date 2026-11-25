@@ -1749,14 +1749,37 @@ function RubricRow({
 
       <td className="align-middle">
         {isGroup ? (
-          <SelectionRuleInput
-            item={item}
-            disabled={!hasCourseInstancePermissionEdit || ruleDisabled}
-            disabledReason={
-              ruleDisabled ? 'Rules can only be set on groups that contain only items.' : null
-            }
-            updateRubricItem={updateRubricItem}
-          />
+          <div className="d-flex align-items-start gap-1">
+            <SelectionRuleInput
+              item={item}
+              disabled={!hasCourseInstancePermissionEdit || ruleDisabled}
+              disabledReason={
+                ruleDisabled ? 'Rules can only be set on groups that contain only items.' : null
+              }
+              updateRubricItem={updateRubricItem}
+            />
+            {hasCourseInstancePermissionEdit && (
+              // Next to the rule because it orders the group's items by their points.
+              <button
+                type="button"
+                className={clsx('btn btn-sm border-0 text-muted', !isEditing && 'hover-show')}
+                aria-label={sortLabel}
+                title={sortByPoints ? sortLabel : 'Groups of two or more items can be sorted'}
+                disabled={!sortByPoints}
+                onClick={sortByPoints?.sort}
+              >
+                <i
+                  className={clsx(
+                    'bi',
+                    sortByPoints?.sortedHighestFirst
+                      ? 'bi-sort-numeric-down'
+                      : 'bi-sort-numeric-down-alt',
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+          </div>
         ) : (
           <input
             type="number"
@@ -1903,26 +1926,6 @@ function RubricRow({
         <td className="rubric-actions-cell align-middle text-nowrap text-end">
           {/* Shown while the row is hovered or being edited, like the assessment question editor. */}
           <div className={clsx('d-inline-flex', !isEditing && 'hover-show')}>
-            {isGroup && (
-              <button
-                type="button"
-                className="btn btn-sm border-0 text-muted"
-                aria-label={sortLabel}
-                title={sortByPoints ? sortLabel : 'Groups of two or more items can be sorted'}
-                disabled={!sortByPoints}
-                onClick={sortByPoints?.sort}
-              >
-                <i
-                  className={clsx(
-                    'bi',
-                    sortByPoints?.sortedHighestFirst
-                      ? 'bi-sort-numeric-down'
-                      : 'bi-sort-numeric-down-alt',
-                  )}
-                  aria-hidden="true"
-                />
-              </button>
-            )}
             <button
               type="button"
               className="btn btn-sm border-0 text-muted tree-delete-btn"
@@ -2083,10 +2086,10 @@ function AddToGroupRow({
   const target = groupName ? `to ${groupName}` : 'to group';
   const blockerId = useId();
   const buttonClass =
-    'btn btn-sm btn-link text-muted text-decoration-none px-0 py-0 d-inline-flex align-items-center';
+    'btn btn-sm btn-link text-muted text-decoration-none px-0 py-1 d-inline-flex align-items-center';
   return (
     <tr style={{ '--bs-table-bg': groupTint(groupDepth) } as CSSProperties}>
-      <td colSpan={columnCount} className="position-relative py-0">
+      <td colSpan={columnCount} className="position-relative py-1">
         <TreeGuideLines guides={guides} groupDepth={null} />
         <div
           className="d-flex align-items-center gap-3"
