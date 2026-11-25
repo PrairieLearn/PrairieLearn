@@ -18,6 +18,7 @@ import {
   RequestChangesResultSchema,
   type Review,
   type ReviewSnapshot,
+  type SteerInput,
   type Usage,
   UsageDecisionSchema,
   type UsageReport,
@@ -27,6 +28,7 @@ import {
   emptyUsage,
   isEmptyUsage,
   reviewTag,
+  steerTag,
 } from '@prairielearn/course-agent-types';
 
 import { logEvent, reportError } from '../monitoring.js';
@@ -56,6 +58,7 @@ import {
   messageTag,
   missedTurns,
   nextUserMessage,
+  steerMarker,
   summarizeReview,
   turnMarker,
 } from './catch-up.js';
@@ -96,9 +99,13 @@ const DECISION_TTL_MS = 60_000;
 // while the agent works.
 const USAGE_FLUSH_SECONDS = 30;
 const MAX_FLUSH_RETRY_SECONDS = 60 * 60;
-// Codex makes one provider request at a time; this bounds what a misbehaving sandbox can start
-// within one decision.
+// Codex makes one provider request at a time; this bounds how many a misbehaving sandbox can
+// have running at once.
 const MAX_PROVIDER_REQUESTS = 4;
+// A model reply can still be running when a turn ends: one the agent stopped reading because a
+// message arrived mid-turn. It gets this long to finish and report its real usage before it is
+// aborted and charged an estimate.
+const DROPPED_REPLY_SECONDS = 120;
 
 const OPENAI_API = 'https://api.openai.com';
 
@@ -239,6 +246,29 @@ type ConversationRecord = RecordData &
       }
   );
 
+interface ProviderRequest {
+  abort: AbortController;
+  kind: 'model' | 'search';
+  /**
+   * Codex reads one model reply at a time, so a newer model request means it dropped this one,
+   * as it does to deliver a message staff send during a turn. The Worker reads the rest of the
+   * reply only for its usage.
+   */
+  dropped: boolean;
+}
+
+/** Messages staff send while a turn runs, which Codex adds to that turn. */
+interface TurnSteers {
+  /** Whether Codex has accepted the turn's input, so there is a native turn to add to. */
+  accepted: boolean;
+  /** Messages sent before Codex accepted the turn, submitted in order once it does. */
+  waiting: Parameters<CodexAppServerClient['steer']>[0][];
+  /** A repeated request for a message this turn already has adds nothing. */
+  ids: Set<string>;
+  /** Submissions reach Codex one at a time, in the order staff sent them. */
+  order: Promise<unknown>;
+}
+
 interface ActiveTurn {
   /** Authorizes this turn's model requests; requests made outside a turn are refused. */
   executionId: string;
@@ -254,6 +284,7 @@ interface ActiveTurn {
   deliveringReviewId: string | null;
   /** Set once the turn's provider requests are aborted, so no new one starts. */
   finishing: boolean;
+  steers: TurnSteers;
 }
 
 const reviewFileKey = (reviewId: string, index: number) => `review-file:${reviewId}:${index}`;
@@ -284,11 +315,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   private allowedAt: number | null = null;
 
   /**
-   * The turn's provider requests. Turn completion aborts them, which charges their estimates. They
-   * are in memory only: a request running when the object restarts goes unrecorded, which deferred
-   * deploys make rare.
+   * Provider requests whose usage is not recorded yet. The Worker reads each reply to its end
+   * even if the agent stops reading it, since the provider bills all of it. Stop aborts them,
+   * which charges their estimates. They are in memory only: a request running when the object
+   * restarts goes unrecorded, which deferred deploys make rare.
    */
-  private readonly providerRequests = new Set<AbortController>();
+  private readonly providerRequests = new Set<ProviderRequest>();
 
   private _record: ConversationRecord | null = null;
   // Process connections and completion promises exist only in this DO instance.
@@ -562,19 +594,30 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   }
 
   /** Start tracking a provider request, or return null if too many are running. */
-  private startProviderRequest(estimate: Usage) {
-    if (this.providerRequests.size >= MAX_PROVIDER_REQUESTS) return null;
-    const abort = new AbortController();
-    this.providerRequests.add(abort);
+  private startProviderRequest(kind: ProviderRequest['kind'], estimate: Usage) {
+    if (kind === 'model') {
+      for (const request of this.providerRequests) {
+        if (request.kind === 'model') request.dropped = true;
+      }
+    }
+    if (this.providerRequests.size >= MAX_PROVIDER_REQUESTS) {
+      // A few messages in a row would otherwise fill the limit with dropped replies and fail
+      // the turn. The oldest gives way and is charged its estimate.
+      const dropped = [...this.providerRequests].find((request) => request.dropped);
+      if (!dropped) return null;
+      dropped.abort.abort();
+    }
+    const request: ProviderRequest = { abort: new AbortController(), kind, dropped: false };
+    this.providerRequests.add(request);
     /** Records the request's usage once; unknown usage is charged the estimate. */
     const finish = (usage: Usage | null) => {
-      if (!this.providerRequests.delete(abort)) return;
+      if (!this.providerRequests.delete(request)) return;
       if (!usage) logEvent('provider_usage_estimated', { conversationId: this.name });
       this.recordUsage(usage ?? estimate);
     };
     // Nothing reads an aborted request, so its usage will never arrive.
-    abort.signal.addEventListener('abort', () => finish(null));
-    return { finish, signal: abort.signal };
+    request.abort.signal.addEventListener('abort', () => finish(null));
+    return { finish, signal: request.abort.signal };
   }
 
   private recordUsage(usage: Usage) {
@@ -729,7 +772,9 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       return response;
     }
     if (!response.body) throw new Error('Provider returned no response body');
-    // The caller gets the provider's bytes unchanged; a copy is read for the final usage.
+    // The caller gets the provider's bytes unchanged; a copy is read for the final usage. That
+    // copy is read to its end even if the caller stops reading, since the provider then bills
+    // the whole reply.
     const [forwarded, metered] = response.body.tee();
     const streamed = response.headers.get('Content-Type')?.includes('text/event-stream');
     void this.keepAliveWhile(async () => {
@@ -806,7 +851,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       return new Response('Forbidden', { status: 403 });
     }
     const admission = await this.admit(executionId);
-    const request = admission === 'allowed' ? this.startProviderRequest(estimateUsage(body)) : null;
+    const request =
+      admission === 'allowed' ? this.startProviderRequest('model', estimateUsage(body)) : null;
     if (!request) {
       if (admission === 'limited') {
         return Response.json(
@@ -851,7 +897,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     }
     const admission = await this.admit(executionId);
     const usage = { ...emptyUsage(), webSearchCalls: operations };
-    const request = admission === 'allowed' ? this.startProviderRequest(usage) : null;
+    const request = admission === 'allowed' ? this.startProviderRequest('search', usage) : null;
     if (!request) {
       return Response.json({
         output: admission === 'allowed' ? SEARCH_BUSY : SEARCH_NOT_ADMITTED[admission],
@@ -1017,6 +1063,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
+    const steers: TurnSteers = {
+      accepted: false,
+      waiting: [],
+      ids: new Set(),
+      order: Promise.resolve(),
+    };
     const execution = new SandboxTurn(this.sandbox, native, {
       // A continuation is appended to the last assistant message; the SDK ignores this ID then.
       messageId: crypto.randomUUID(),
@@ -1076,6 +1128,12 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           native.emit(turnMarker(input.tag, summarizeReview(delivered.result)));
           this.settleReview(delivered.id);
         }
+        steers.accepted = true;
+        for (const waiting of steers.waiting.splice(0)) {
+          void this.keepAliveWhile(() => this.submitSteer(steers, native, waiting)).catch(
+            (error: unknown) => this.reportError(error),
+          );
+        }
       },
       log,
     });
@@ -1090,6 +1148,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       shutdown: false,
       deliveringReviewId: delivered?.id ?? null,
       finishing: false,
+      steers,
     };
     this.active = active;
     const abort = () => {
@@ -1113,6 +1172,71 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       })
       .finally(() => options.abortSignal?.removeEventListener('abort', abort));
     return createUIMessageStreamResponse({ stream: execution.stream });
+  }
+
+  /**
+   * RPC: add a message to the turn that is running, so staff do not wait for it to end. The
+   * agent reads it right away. Returns false when no turn can take it; nothing is recorded then,
+   * and the browser keeps the message for staff to send again.
+   */
+  async steer(steer: SteerInput): Promise<boolean> {
+    const active = this.active;
+    const native = this.native;
+    const status = this.record.lifecycle.status;
+    const tag = steerTag(steer.id);
+    // A request repeated after a lost reply adds nothing.
+    if (active?.steers.ids.has(steer.id)) return true;
+    // A review awaiting its result and the usage limit refuse input here as they do between
+    // turns. A turn that is stopping or whose response has closed can no longer show the message.
+    if (
+      !active ||
+      !native?.streaming ||
+      active.finishing ||
+      (status !== 'starting' && status !== 'waiting_for_agent') ||
+      this.record.review ||
+      this.metering.limitedUntil
+    ) {
+      // Not a refusal if this repeats a request whose turn has since ended.
+      return this.messages.some(({ parts }) =>
+        parts.some((part) => part.type === 'data-steer' && part.id === tag),
+      );
+    }
+    const { steers } = active;
+    steers.ids.add(steer.id);
+    const input = {
+      tag,
+      text: steer.text,
+      ...(steer.location ? { page: describePageLocation(steer.location) } : {}),
+    };
+    if (!steers.accepted) {
+      // Captured with the turn's input, like its prompt: submitted once Codex accepts the turn,
+      // and never submitted later if the turn ends first.
+      native.emit(steerMarker(steer));
+      steers.waiting.push(input);
+      return true;
+    }
+    // Stop can close the response while Codex takes the message. Chat can no longer show it
+    // then, so it counts as not sent and staff keep the text.
+    if (!(await this.submitSteer(steers, native, input)) || !native.streaming) {
+      steers.ids.delete(steer.id);
+      return false;
+    }
+    native.emit(steerMarker(steer));
+    return true;
+  }
+
+  private async submitSteer(
+    steers: TurnSteers,
+    native: CodexAppServerClient,
+    input: TurnSteers['waiting'][number],
+  ) {
+    const submitted = steers.order.then(() => native.steer(input));
+    steers.order = submitted.catch(() => {});
+    const refusal = await submitted;
+    if (refusal !== null) {
+      logEvent('steer_refused', { conversationId: this.name, tag: input.tag, reason: refusal });
+    }
+    return refusal === null;
   }
 
   /** Runs alongside sandbox startup, so the title adds no latency to the first turn. */
@@ -1177,10 +1301,21 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
     }
     await active.sdkFinished.promise;
-    // Nothing reads a provider request that is still running after Stop, so abort it rather than
-    // pay for the rest of its output; it is charged its estimate.
     active.finishing = true;
-    for (const abort of this.providerRequests) abort.abort();
+    const running = [...this.providerRequests].map(({ abort }) => abort);
+    if (result.stopped || result.error) {
+      // Nothing reads a provider request that is still running after Stop, so abort it rather
+      // than pay for the rest of its output; it is charged its estimate.
+      for (const abort of running) abort.abort();
+    } else if (running.length > 0) {
+      // The agent read every reply it kept, so these are replies Codex dropped. They finish
+      // within seconds and report their usage; aborting them here would charge each an estimate
+      // many times its cost.
+      void this.keepAliveWhile(async () => {
+        await scheduler.wait(DROPPED_REPLY_SECONDS * 1000);
+        for (const abort of running) abort.abort();
+      }).catch((error: unknown) => this.reportError(error));
+    }
     // Report the turn's remaining usage now, so Stats and the hourly limit include it. This also
     // runs when limited: a request can finish after the decision that limited the turn.
     void this.keepAliveWhile(() => this.flushUsage()).catch((error: unknown) =>

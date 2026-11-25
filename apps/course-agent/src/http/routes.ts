@@ -7,6 +7,7 @@ import {
   MAX_THUMBNAIL_BYTES,
   PageCatalogSchema,
   RequestChangesResultSchema,
+  SteerInputSchema,
   UUID_PATTERN,
 } from '@prairielearn/course-agent-types';
 
@@ -104,6 +105,18 @@ conversations.post('/:id/resume', async (c) => {
     reportError(error);
     return c.json({ error: 'Could not recover the course agent' }, 503);
   }
+});
+
+// A message for the turn that is running. Between turns the browser sends messages over the chat
+// socket instead.
+conversations.post('/:id/steer', async (c) => {
+  const steer = SteerInputSchema.safeParse(await c.req.json().catch(() => null));
+  if (!steer.success) return c.text('Invalid message', 400);
+  const conversation = await getAgentByName(c.env.Conversation, c.req.param('id'));
+  if (!(await conversation.steer(steer.data))) {
+    return c.text('No running turn can take this message', 409);
+  }
+  return c.json({ steered: true });
 });
 
 // The browser uploads each attachment before sending the message that refers to it by ID.

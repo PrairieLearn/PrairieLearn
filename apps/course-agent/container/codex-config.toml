@@ -48,6 +48,11 @@ remote_plugin = false
 shell_snapshot = false
 skill_mcp_dependency_install = false
 tool_suggest = false
+# `instant_interrupt` stays at its default, on: a message staff send during a turn cuts off the
+# model reply in progress, and Codex saves the message at once. With it off, Codex holds the message
+# in memory until that reply ends and discards it if the turn is stopped first. Naming the feature
+# here to pin it on makes Codex warn on every thread, so it is left out. See "Messages during a
+# turn" in CONTRACT.md.
 
 # Codex's bundled skills (image generation, skill installation, OpenAI docs, ...) don't apply to
 # course work or can't run in the offline sandbox. PrairieLearn's skills are in /etc/codex/skills.
