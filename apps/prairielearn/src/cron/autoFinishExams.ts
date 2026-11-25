@@ -6,6 +6,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { gradeAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { deleteExpiredAssessmentInstanceGraceSaves } from '../models/assessment-instance-grace-save.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -18,6 +19,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @see assessment.gradeAssessmentInstance
  */
 export async function run() {
+  await deleteExpiredAssessmentInstanceGraceSaves({ now: new Date() });
   const assessment_instances = await sqldb.queryRows(
     sql.select_assessments_to_auto_close,
     { age_minutes: config.autoFinishAgeMins },

@@ -166,7 +166,8 @@ INSERT INTO
     feedback,
     gradable,
     broken,
-    client_fingerprint_id
+    client_fingerprint_id,
+    grace_period
   )
 VALUES
   (
@@ -183,7 +184,8 @@ VALUES
     $feedback,
     $gradable,
     $broken,
-    $client_fingerprint_id
+    $client_fingerprint_id,
+    $grace_period
   )
 RETURNING
   id;

@@ -54,7 +54,7 @@ const VariantForSubmissionSchema = VariantSchema.extend({
 });
 
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
-  Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
+  Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id' | 'grace_period'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
     user_id: string;
   };
@@ -74,6 +74,7 @@ async function insertSubmission({
   user_id,
   auth_user_id,
   client_fingerprint_id,
+  grace_period,
   question,
 }: {
   submitted_answer: Record<string, any> | null;
@@ -90,6 +91,7 @@ async function insertSubmission({
   user_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
+  grace_period: boolean;
   question: Question;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
@@ -152,6 +154,7 @@ async function insertSubmission({
         gradable,
         broken,
         client_fingerprint_id,
+        grace_period,
       },
       IdSchema,
     );
@@ -281,6 +284,7 @@ export async function saveSubmission(
     ...data,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
+    grace_period: submissionData.grace_period ?? false,
     question,
   });
 }

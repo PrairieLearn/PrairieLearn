@@ -245,6 +245,23 @@ export async function updateAssessmentInstance(
   return updated;
 }
 
+/** The caller must hold the assessment instance lock in a transaction. */
+export async function closeAssessmentInstance({
+  assessment_instance_id,
+  authn_user_id,
+  client_fingerprint_id,
+}: {
+  assessment_instance_id: string;
+  authn_user_id: string | null;
+  client_fingerprint_id: string | null;
+}): Promise<void> {
+  await sqldb.execute(sql.close_assessment_instance, {
+    assessment_instance_id,
+    authn_user_id,
+    client_fingerprint_id,
+  });
+}
+
 /**
  * Grade all questions in an assessment instance and (optionally) close it.
  *
@@ -303,7 +320,7 @@ export async function gradeAssessmentInstance({
         // If we're supposed to close the assessment, do it *before* we
         // we start grading. This avoids a race condition where the student
         // makes an additional submission while grading is already in progress.
-        await sqldb.execute(sql.close_assessment_instance, {
+        await closeAssessmentInstance({
           assessment_instance_id,
           authn_user_id,
           client_fingerprint_id,

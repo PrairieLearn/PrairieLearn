@@ -453,6 +453,16 @@ export function getAssessmentTrpcUrl({
   return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/trpc`;
 }
 
+export function getAssessmentInstanceTrpcUrl({
+  courseInstanceId,
+  assessmentInstanceId,
+}: {
+  courseInstanceId: string;
+  assessmentInstanceId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/assessment_instance/${assessmentInstanceId}/trpc`;
+}
+
 export function getAssessmentQuestionTrpcUrl({
   courseInstanceId,
   assessmentId,

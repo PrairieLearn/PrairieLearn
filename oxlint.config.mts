@@ -15,6 +15,20 @@ export default defineConfig({
   ],
   overrides: [
     {
+      files: ['apps/prairielearn/src/trpc/assessmentInstance/**/*'],
+      rules: {
+        '@prairielearn/require-trpc-permission-middleware': [
+          'error',
+          {
+            additionalPermissionMiddlewareNames: [
+              'requireAssessmentInstanceAccess',
+              'requireExamGraceCapability',
+            ],
+          },
+        ],
+      },
+    },
+    {
       files: ['apps/prairielearn/elements/**/*.{js,mjs,cjs}'],
       rules: {
         'eslint-js/no-restricted-syntax': [

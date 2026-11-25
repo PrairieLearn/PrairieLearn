@@ -1,0 +1,19 @@
+columns
+    assessment_instance_id: bigint not null
+    credit: integer
+    deadline: timestamp with time zone not null
+    expires_at: timestamp with time zone not null
+    id: uuid not null
+    mode: enum_mode
+    user_id: bigint not null
+    variant_id: bigint not null
+
+indexes
+    assessment_instance_grace_saves_pkey: PRIMARY KEY (id) USING btree (id)
+    assessment_instance_grace_saves_expires_at_idx: USING btree (expires_at)
+    assessment_instance_grace_saves_instance_expires_at_idx: USING btree (assessment_instance_id, expires_at)
+
+foreign-key constraints
+    assessment_instance_grace_saves_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_instance_grace_saves_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_instance_grace_saves_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE

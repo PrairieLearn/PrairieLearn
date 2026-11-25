@@ -507,6 +507,18 @@ export type AssessmentInstanceCrossedLockpoint = z.infer<
   typeof AssessmentInstanceCrossedLockpointSchema
 >;
 
+export const AssessmentInstanceGraceSaveSchema = z.object({
+  assessment_instance_id: IdSchema,
+  credit: z.number().nullable(),
+  deadline: DateFromISOString,
+  expires_at: DateFromISOString,
+  id: z.string(),
+  mode: EnumModeSchema.nullable(),
+  user_id: IdSchema,
+  variant_id: IdSchema,
+});
+export type AssessmentInstanceGraceSave = z.infer<typeof AssessmentInstanceGraceSaveSchema>;
+
 export const AssessmentInstanceSchema = z.object({
   assessment_id: IdSchema,
   auth_user_id: IdSchema.nullable(),
@@ -1693,6 +1705,7 @@ export const SubmissionSchema = z.object({
   duration: IntervalSchema.nullable(),
   feedback: z.record(z.string(), z.any()).nullable(),
   format_errors: z.record(z.string(), z.any()).nullable(),
+  grace_period: z.boolean(),
   gradable: z.boolean().nullable(),
   graded_at: DateFromISOString.nullable(),
   grading_requested_at: DateFromISOString.nullable(),
@@ -1895,6 +1908,7 @@ export const TableNames = [
   'alternative_groups',
   'assessment_access_rules',
   'assessment_instance_crossed_lockpoints',
+  'assessment_instance_grace_saves',
   'assessment_instances',
   'assessment_modules',
   'assessment_question_role_permissions',
