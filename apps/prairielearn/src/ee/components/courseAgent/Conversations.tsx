@@ -140,9 +140,16 @@ function ConversationPicker({
   const selectedConversation = conversations.find((conversation) => conversation.id === selectedId);
 
   const [draft, setDraft] = useState('');
-  // A conversation keeps its own mode once it exists. Until then the choice waits here, and
-  // every new conversation starts by asking.
-  const [newApprovalMode, setNewApprovalMode] = useState<ApprovalMode>('approval_required');
+  // A conversation keeps its own mode once it exists. A new one starts in the mode the instructor
+  // last chose in this course, and its choice waits here until it exists.
+  const approvalModeKey = `course-agent:${authnUserId}:${courseId}:approval-mode`;
+  const lastApprovalMode = () =>
+    (typeof window === 'undefined'
+      ? undefined
+      : ApprovalModeSchema.safeParse(localStorage.getItem(approvalModeKey)).data) ??
+    'approval_required';
+  const [newApprovalMode, setNewApprovalMode] = useState<ApprovalMode>(lastApprovalMode);
+  const rememberApprovalMode = (mode: ApprovalMode) => localStorage.setItem(approvalModeKey, mode);
   const drafts = useDraftAttachments();
   // A new conversation's first message uploads its attachments once the conversation exists.
   const [initialAttachments, setInitialAttachments] = useState<DraftAttachment[]>([]);
@@ -209,7 +216,7 @@ function ConversationPicker({
             disabled={create.isPending}
             onClick={() => {
               setPickedId(NEW_CONVERSATION);
-              setNewApprovalMode('approval_required');
+              setNewApprovalMode(lastApprovalMode());
               setDraft('');
               drafts.clear();
               create.reset();
@@ -232,6 +239,7 @@ function ConversationPicker({
               ? { text: create.variables.text, attachments: initialAttachments }
               : undefined
           }
+          onApprovalModeChosen={rememberApprovalMode}
           onInitialMessageSent={create.reset}
         />
       ) : active ? (
@@ -257,7 +265,10 @@ function ConversationPicker({
             pending={create.isPending}
             attachments={drafts.attachments}
             approvalMode={newApprovalMode}
-            onApprovalModeChange={setNewApprovalMode}
+            onApprovalModeChange={(mode) => {
+              setNewApprovalMode(mode);
+              rememberApprovalMode(mode);
+            }}
             onAttach={drafts.add}
             onRemoveAttachment={drafts.remove}
             onDraftChange={setDraft}
@@ -296,6 +307,7 @@ function Chat({
   onInitialMessageSent,
   showConversationStats,
   initialApprovalMode,
+  onApprovalModeChosen,
 }: {
   courseId: string;
   conversationId: string;
@@ -304,6 +316,8 @@ function Chat({
   initialMessage: { text: string; attachments: DraftAttachment[] } | undefined;
   /** The mode chosen before this conversation existed, which its first message gives it. */
   initialApprovalMode: ApprovalMode | undefined;
+  /** The instructor chose a mode, which their next new conversation starts in. */
+  onApprovalModeChosen: (mode: ApprovalMode) => void;
   onInitialMessageSent: () => void;
 }) {
   const trpc = useTRPC();
@@ -349,6 +363,7 @@ function Chat({
   const changeApprovalMode = (mode: ApprovalMode) => {
     setChosenApprovalMode(mode);
     saveApprovalMode({ conversationId, approvalMode: mode });
+    onApprovalModeChosen(mode);
   };
   const [connectionFailed, setConnectionFailed] = useState(false);
   // Chat remounts per conversation, so this is the message that created it.
@@ -611,7 +626,6 @@ function Chat({
               conversationId={conversationId}
               uploadsUrl={uploadsUrl}
               awaitingReviewId={awaitingReviewId}
-              approvalMode={approvalMode ?? 'approval_required'}
               hiddenReviewId={hiddenReviewId}
               turnRunning={turnRunning && index === messages.length - 1}
               linkTransform={linkTransform}
@@ -924,7 +938,6 @@ function Message({
   conversationId,
   uploadsUrl,
   awaitingReviewId,
-  approvalMode,
   onAlwaysApprove,
   hiddenReviewId,
   turnRunning,
@@ -945,7 +958,6 @@ function Message({
   uploadsUrl: string;
   /** An idle conversation's review whose result the agent has not received. */
   awaitingReviewId: string | null;
-  approvalMode: ApprovalMode;
   onAlwaysApprove: (mode: 'always_approve') => void;
   /** A review requested by the running turn, whose card waits for the turn to end. */
   hiddenReviewId: string | null;
@@ -987,8 +999,7 @@ function Message({
         conversationId={conversationId}
         reviewId={card.reviewId}
         canResume={awaitingReviewId === card.reviewId}
-        // Switching back to requiring approval also applies to a review already submitted.
-        autoApprove={card.autoApprove === true && approvalMode === 'always_approve'}
+        autoApprove={card.autoApprove === true}
         onAlwaysApprove={() => onAlwaysApprove('always_approve')}
       />
     ) : (

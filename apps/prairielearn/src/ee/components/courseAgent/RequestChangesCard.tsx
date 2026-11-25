@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { type ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { type ReactNode, Suspense, lazy, useState } from 'react';
 import { Alert, Button, Modal, Spinner } from 'react-bootstrap';
 
 import type { RequestChangesResult } from '@prairielearn/course-agent-types';
@@ -38,7 +38,7 @@ export function RequestChangesCard({
   reviewId: string;
   /** The agent is idle but has not received this review's result, for example after Stop. */
   canResume: boolean;
-  /** Approve the review once its changes load, without waiting for the instructor. */
+  /** Submitted under "Always approve", so the agent service asks PrairieLearn to approve it. */
   autoApprove: boolean;
   /** The instructor approved this review and asked not to be asked again in this course. */
   onAlwaysApprove: () => void;
@@ -46,14 +46,17 @@ export function RequestChangesCard({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [showChanges, setShowChanges] = useState(false);
+  const [shownAt] = useState(Date.now);
   const reviewInput = { conversationId, reviewId };
   const review = useQuery({
     ...trpc.courseAgent.getReview.queryOptions(reviewInput),
     retry: false,
-    // Saving runs in the background; poll until it records a result.
+    // Saving runs in the background; poll until it records a result. An automatic approval is
+    // polled for a while too, after which a refused one is left for the instructor.
     refetchInterval: (query) => {
       const data = query.state.data;
-      return data?.status === 'decided' && !data.result ? 2000 : false;
+      if (data?.status === 'decided' && !data.result) return 2000;
+      return autoApprove && autoApproving(query.state, shownAt) ? 2000 : false;
     },
   });
   const invalidate = () =>
@@ -86,19 +89,9 @@ export function RequestChangesCard({
       { conversationId, reviewId, decision: 'approved' },
       { onSuccess: onAlwaysApprove },
     );
+  const autoApprovalPolled = autoApprove && autoApproving(review, shownAt);
   const actionsDisabled = !pending || decision.isPending;
   const canApprove = !!pending?.diff.files;
-  // Approves a pending review on the instructor's behalf once its changes have loaded. It tries
-  // once: if the approval fails, the card's buttons are left for the instructor to decide.
-  const autoApprovedRef = useRef(false);
-  const { mutate: mutateDecision } = decision;
-  useEffect(() => {
-    if (!autoApprove || !canApprove || autoApprovedRef.current) return;
-    autoApprovedRef.current = true;
-    mutateDecision({ conversationId, reviewId, decision: 'approved' });
-  }, [autoApprove, canApprove, mutateDecision, conversationId, reviewId]);
-  const approvingAutomatically =
-    autoApprove && decision.isPending && decision.variables.decision === 'approved';
   return (
     <div className="course-agent-review border rounded-3">
       {data?.status === 'decided' && data.result ? (
@@ -113,7 +106,8 @@ export function RequestChangesCard({
           onApproveAlways={approveAlways}
         />
       )}
-      {approvingAutomatically && (
+      {/* The buttons stay in case the automatic approval is refused. */}
+      {autoApprovalPolled && (
         <p className="small text-muted mt-2 mb-0" role="status">
           Approving automatically…
         </p>
@@ -183,6 +177,15 @@ export function RequestChangesCard({
       )}
     </div>
   );
+}
+
+const AUTO_APPROVAL_WAIT_MS = 60_000;
+
+function autoApproving(
+  { data, dataUpdatedAt }: { data: { status: string } | undefined; dataUpdatedAt: number },
+  shownAt: number,
+) {
+  return data?.status === 'pending' && dataUpdatedAt - shownAt < AUTO_APPROVAL_WAIT_MS;
 }
 
 function ReviewActions({
