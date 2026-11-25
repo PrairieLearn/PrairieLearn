@@ -11,6 +11,10 @@ import type { Course, CourseAgentConversation, User } from '../../../lib/db-type
 import { FileDeleteEditor, FileUploadEditor, type MultiEditor } from '../../../lib/editors.js';
 import { createServerJob, getJobSequence } from '../../../lib/server-jobs.js';
 import type { JobSequenceWithTokens } from '../../../lib/server-jobs.types.js';
+import {
+  insertCoursePermissionsByUserUid,
+  updateCoursePermissionsRole,
+} from '../../../models/course-permissions.js';
 import { selectCourseById, updateCourseColumn } from '../../../models/course.js';
 import * as helperCourse from '../../../tests/helperCourse.js';
 import * as helperDb from '../../../tests/helperDb.js';
@@ -25,6 +29,7 @@ import {
 } from '../../models/course-agent-review.js';
 
 import {
+  approveReviewAutomatically,
   deliverUndeliveredReviewResults,
   getReview,
   getReviewJobResult,
@@ -219,6 +224,42 @@ it.each(modes)('saves an approved $type snapshot and delivers its result', async
       result,
     });
   });
+});
+
+it('approves automatically as the owner, only while they can use the course agent', async () => {
+  await insertCoursePermissionsByUserUid({
+    course_id: '1',
+    uid: user.uid,
+    course_role: 'Editor',
+    authn_user_id: '1',
+  });
+  const approve = () =>
+    withConfig(
+      {
+        isEnterprise: true,
+        fileEditorUseGit: true,
+        courseAgentServiceUrl: 'http://agent.test',
+        courseAgentServiceToken: ['token'],
+        features: { 'course-agent': true },
+      },
+      () => approveReviewAutomatically(conversation.agent_conversation_id, review.id),
+    );
+  await expect(approve()).rejects.toMatchObject({ status: 403 });
+  expect(await storedReview()).toBeNull();
+
+  await updateCoursePermissionsRole({
+    course_id: '1',
+    user_id: user.id,
+    course_role: 'Owner',
+    authn_user_id: '1',
+  });
+  await expect(approve()).resolves.toEqual({ decision: 'approved' });
+  await vi.waitFor(async () => expect((await storedReview())?.result_delivered_at).toBeTruthy());
+  expect(FileUploadEditor).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      locals: expect.objectContaining({ user: expect.objectContaining({ id: user.id }) }),
+    }),
+  );
 });
 
 it('denies an unreadable review without starting a save job', async () => {
