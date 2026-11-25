@@ -93,8 +93,10 @@ XRANGE_DEFAULT = "-5,5"
 YRANGE_DEFAULT = "-5,5"
 X_AXIS_LABEL_DEFAULT = "x"
 Y_AXIS_LABEL_DEFAULT = "y"
-LABEL_OFF_AXIS_DEFAULT = 10
-LABEL_DOWN_AXIS_DEFAULT = 20
+X_LABEL_GAP_DEFAULT = 10
+X_LABEL_INSET_DEFAULT = 20
+Y_LABEL_GAP_DEFAULT = 10
+Y_LABEL_INSET_DEFAULT = 20
 WIDTH_DEFAULT = 800
 HEIGHT_DEFAULT = 450
 ENFORCE_BOUNDS_DEFAULT = False
@@ -112,8 +114,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "y-range",
         "x-axis-label",
         "y-axis-label",
-        "label-off-axis",
-        "label-down-axis",
+        "x-label-gap",
+        "x-label-inset",
+        "y-label-gap",
+        "y-label-inset",
         "width",
         "height",
         "enforce-bounds",
@@ -184,13 +188,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         tool_data["fd"] = fd
         toolbar.append(fd)
 
-    label_off_axis = pl.get_integer_attrib(
-        element, "label-off-axis", LABEL_OFF_AXIS_DEFAULT
-    )
-    label_down_axis = pl.get_integer_attrib(
-        element, "label-down-axis", LABEL_DOWN_AXIS_DEFAULT
-    )
-
     # Add axes/grid for the canvas (technically a "tool" on the client side)
     axes_plugins: AxesPlugin = {
         "name": "axes",
@@ -198,15 +195,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "value": pl.get_string_attrib(
                 element, "x-axis-label", X_AXIS_LABEL_DEFAULT
             ),
-            "dx": label_down_axis,
-            "dy": label_off_axis,
+            "dx": pl.get_integer_attrib(
+                element, "x-label-inset", X_LABEL_INSET_DEFAULT
+            ),
+            "dy": pl.get_integer_attrib(element, "x-label-gap", X_LABEL_GAP_DEFAULT),
         },
         "yaxisLabel": {
             "value": pl.get_string_attrib(
                 element, "y-axis-label", Y_AXIS_LABEL_DEFAULT
             ),
-            "dx": label_off_axis,
-            "dy": label_down_axis,
+            "dx": pl.get_integer_attrib(element, "y-label-gap", Y_LABEL_GAP_DEFAULT),
+            "dy": pl.get_integer_attrib(
+                element, "y-label-inset", Y_LABEL_INSET_DEFAULT
+            ),
         },
         "colors": {"xaxisLabel": "blue", "yaxisLabel": "blue"},
         "fontSize": {"xaxisLabel": 14, "yaxisLabel": 14},

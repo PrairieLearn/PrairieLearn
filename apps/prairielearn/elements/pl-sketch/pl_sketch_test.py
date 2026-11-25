@@ -159,8 +159,10 @@ def test_axis_labels_are_configurable() -> None:
             height="400"
             x-axis-label="Time (s)"
             y-axis-label="Distance (m)"
-            label-off-axis="7"
-            label-down-axis="13"
+            x-label-gap="7"
+            x-label-inset="13"
+            y-label-gap="17"
+            y-label-inset="23"
         ></pl-sketch>
     """
     data = _make_question_data()
@@ -175,18 +177,18 @@ def test_axis_labels_are_configurable() -> None:
     }
     assert axes_plugin["yaxisLabel"] == {
         "value": "Distance (m)",
-        "dx": 7,
-        "dy": 13,
+        "dx": 17,
+        "dy": 23,
     }
 
 
-def test_axis_label_defaults() -> None:
+def test_axis_label_defaults_preserve_existing_positions() -> None:
     data = _make_question_data()
 
     pl_sketch.prepare(POINT_SKETCH_HTML, data)
 
     axes_plugin = data["params"]["graph"]["config"]["plugins"][0]
-    assert axes_plugin["xaxisLabel"] == {"value": "x", "dx": 20, "dy": 10}
+    assert axes_plugin["xaxisLabel"] == {"value": "x", "dx": 10, "dy": 10}
     assert axes_plugin["yaxisLabel"] == {"value": "y", "dx": 10, "dy": 20}
 
 
