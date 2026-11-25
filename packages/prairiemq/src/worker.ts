@@ -29,7 +29,6 @@ import { type JobOptions, MAX_TIMER_DELAY_MILLISECONDS, type WorkerOptions } fro
 import {
   normalizeRedisUrl,
   validateOptionsObject,
-  validatePersistentMetadata,
   validatePrefix,
   validateRateLimiter,
   validateRedisMode,
@@ -44,7 +43,6 @@ const MINIMUM_LOCK_DURATION = REDIS_COMMAND_TIMEOUT * 3;
 const WORKER_OPTION_NAMES = new Set<keyof WorkerOptions>([
   'redisUrl',
   'redisMode',
-  'persistentMetadata',
   'prefix',
   'concurrency',
   'limiter',
@@ -96,7 +94,6 @@ function isPermanentRedisError(error: Error): boolean {
     /^ERR (?:unknown command|DB index is out of range|SELECT is not allowed)/i.test(
       error.message,
     ) ||
-    /^ERR PrairieMQ queue protocol\b/.test(error.message) ||
     /^ERR Script attempted to access a non local key/i.test(error.message) ||
     /^ERR Error running script\b.*(?:\bWRONGTYPE\b|(?:Lua )?script attempted to access a non local key\b)/i.test(
       error.message,
@@ -151,7 +148,6 @@ function validateWorkerOptions(options: unknown): string {
   const optionRecord = validateOptionsObject('Worker', options, WORKER_OPTION_NAMES);
   const redisUrl = normalizeRedisUrl(optionRecord.redisUrl);
   validateRedisMode(optionRecord.redisMode, redisUrl);
-  validatePersistentMetadata(optionRecord.persistentMetadata);
   validatePrefix(optionRecord.prefix);
 
   if (optionRecord.limiter !== undefined) {
@@ -306,7 +302,6 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     this.client = createScriptedClient({
       redisUrl,
       redisMode: options.redisMode,
-      persistentMetadata: options.persistentMetadata,
       role: 'worker',
     });
     this.blockingClient = createRedisClient({
@@ -567,7 +562,6 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     }
 
     await this.client.ensureMinimumRedisVersion();
-    await this.client.pmqEnsureQueueProtocol(this.keys.base);
     if (!this.groupConcurrencyConfigured) {
       const configured = await this.client.pmqConfigureGroupConcurrency(
         this.keys.base,
@@ -863,6 +857,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       await this.client.ensureMinimumRedisVersion();
       const [requeued, failed] = await this.client.pmqCheckStalled(
         this.keys.base,
+        Date.now(),
         this.stalledInterval,
       );
       for (const jobId of requeued) {

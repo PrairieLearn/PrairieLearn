@@ -51,7 +51,7 @@ await queue.close();
 
 Redis connections must use a `redis://` or `rediss://` URL with a hostname and an optional numeric database path. Query parameters and fragments are not supported. Queue names may contain letters, numbers, underscores, periods, and hyphens. Every `Queue` and `Worker` for the same logical queue must use the same name and non-empty Redis key `prefix` (which defaults to `prairiemq`); prefixes cannot contain `{` or `}`.
 
-For a new queue on ElastiCache Serverless, pass the primary endpoint as a `rediss://` URL and set both `redisMode: 'cluster'` and `persistentMetadata: true` on the queue and every worker. The latter stores coordination deadlines without Redis key expiration, protecting them from Serverless's volatile eviction policy. It is independent of the connection mode and defaults to `false` to preserve the format of existing queues. See [rolling upgrades and metadata format](#rolling-upgrades-and-metadata-format) before changing an existing queue's setting.
+For ElastiCache Serverless, pass the primary endpoint as a `rediss://` URL and set `redisMode: 'cluster'` on the queue and every worker. This changes connection handling; queue records and native Redis expiration remain unchanged. See [production readiness](#production-readiness) for the limitations of Serverless's eviction policy.
 
 Allow network access to ports 6379 and 6380: topology discovery can contact the advertised reader endpoint even though queue operations use primary connections. Cluster connections use database zero and read from primaries so ownership and queue state remain consistent. Each queue's keys share one hash slot, allowing its Lua operations to remain atomic. Different queues can use different slots; a single queue does not spread its work across shards.
 
@@ -59,7 +59,6 @@ Allow network access to ports 6379 and 6380: topology discovery can contact the 
 const connection = {
   redisUrl: 'rediss://your-cache.serverless.use2.cache.amazonaws.com:6379',
   redisMode: 'cluster',
-  persistentMetadata: true,
 } as const;
 const queue = new Queue('exports', connection);
 const worker = new Worker('exports', processExport, connection);
@@ -159,9 +158,9 @@ Scheduler template `data` is required. Use `getJobSchedulerIds()` to reconcile t
 
 PrairieMQ's at-least-once delivery semantics assume that Redis retains acknowledged queue writes. Redis replication is asynchronous, and persistence depends on the deployment configuration, so a primary failure can lose a recently acknowledged enqueue. Configure Redis persistence and failover for the required durability. Applications that cannot tolerate a lost job must also keep the intended work in a durable source of truth and reconcile or re-enqueue it.
 
-By default, PrairieMQ uses expiring coordination keys compatible with version 1. These queues require `maxmemory-policy noeviction` so locks, fetch records, and rate limits cannot be evicted early.
+PrairieMQ uses native Redis expiration for worker locks, fetch records, rate limits, and stalled-check leases. Configure `maxmemory-policy noeviction` to protect these records from early eviction. Monitor memory usage and provision enough capacity for queued and retained jobs: Redis can reject writes when memory is full.
 
-With `persistentMetadata: true`, queue state and worker deadlines have no Redis key expiration. These queues also support `volatile-*` policies, including ElastiCache Serverless's fixed `volatile-lru`, because those policies only evict keys with an expiration. Expired metadata is cleaned up in bounded batches using Redis server time. Policies such as `allkeys-lru` can remove queue state and are not supported in either mode. Monitor memory usage and provision enough capacity for queued and retained jobs: Redis can reject writes when memory is full.
+ElastiCache Serverless has a fixed `volatile-lru` policy. Connection support does not protect expiring coordination records from eviction under memory pressure: a live job can be treated as stalled, fetch replay protection can be lost, or a rate budget can reset early. Monitor cache memory and evictions and keep enough capacity available. Changing how PrairieMQ stores expiration deadlines is outside this release. Policies such as `allkeys-lru` can also remove job records and are not supported.
 
 Completed and failed jobs are retained without a limit when `removeOnComplete` or `removeOnFail` is unset or `false`. Do not use unbounded retention in production. Set queue-wide `defaultJobOptions` so completed jobs are removed immediately or kept only for a bounded history, and do the same for failed jobs with a limit large enough for operational debugging:
 
@@ -228,7 +227,7 @@ All PrairieMQ connections also use a 10-second socket timeout while awaiting rep
 
 Each group has a FIFO waiting list for unprioritized jobs and a sorted waiting set for positive priorities. Workers rotate through groups when starting jobs. A companion Redis set tracks which groups are in the rotation without scanning the rotation list. Redis also stores active, delayed, completed, and failed jobs, along with locks and per-group active counts.
 
-PrairieMQ uses Lua scripts so multi-step job changes happen as a single operation. Workers coordinate through Redis, so they can safely run in different processes or on different hosts. Worker fetches use sequenced, idempotent Redis requests so a command whose reply is lost cannot claim additional jobs when it is retried. A per-queue lease with a stored deadline ensures only one worker scans active jobs for expired locks during each stalled-check interval.
+PrairieMQ uses Lua scripts so multi-step job changes happen as a single operation. Workers coordinate through Redis, so they can safely run in different processes or on different hosts. Worker fetches use sequenced, idempotent Redis requests so a command whose reply is lost cannot claim additional jobs when it is retried. An expiring per-queue lease ensures only one worker scans active jobs for expired locks during each stalled-check interval.
 
 A PrairieMQ queue is one atomic Redis slot-affinity domain. Every Redis key touched by a queue operation is derived from that queue's tagged base. The tag contains both the prefix and queue name, so different queues do not deliberately share an affinity domain; PrairieMQ has no cross-queue atomic operations. Distinct tags can still map to the same one of Redis's 16,384 physical slots by ordinary hash collision. Groups remain scheduling subdivisions within one queue rather than independent shards. Cluster mode distributes different queues across slots but does not split one logical queue across slots.
 
@@ -236,13 +235,9 @@ Lua scripts dynamically construct key names from the tagged base supplied as `KE
 
 PrairieMQ intentionally has a focused API. It does not currently support cron-pattern schedulers, progress tracking, cross-process events, or waiting directly for a job to finish.
 
-## Rolling upgrades and metadata format
+## Rolling upgrades
 
-The default metadata format is unchanged from version 1. Existing producers and workers can be upgraded gradually while jobs remain active. Queue prefixes, jobs, schedules, locks, and rate-limit windows retain their existing representation. The new Redis connection and version-detection support does not require a metadata migration.
-
-`persistentMetadata: true` is an explicit choice for a new queue. Every producer and worker sharing a queue must use the same metadata format. New clients reject a persistent queue when configured for expiring metadata, and persistent clients refuse initialization while legacy jobs are active. Version 1 clients do not recognize the format marker, so it cannot protect a mixed-format deployment by itself.
-
-Do not enable persistent metadata one process at a time on an existing queue. A future change of metadata format needs a separate migration plan. Using a new prefix creates an independent queue so existing workers can keep serving the old queue while producers move over; jobs and recurring schedules are not automatically transferred. Connection mode and metadata format are separate settings: changing Redis clients does not implicitly change stored queue data.
+The queue storage format is unchanged from version 1. Existing producers and workers can be upgraded gradually while jobs remain active. Queue prefixes, jobs, schedules, locks, native expiration, and rate-limit windows retain their existing representation. The new Redis connection and version-detection support does not require a queue migration.
 
 ## Testing
 

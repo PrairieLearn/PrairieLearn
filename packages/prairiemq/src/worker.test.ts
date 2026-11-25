@@ -890,7 +890,10 @@ describe('Worker', () => {
     const retry = await claim(randomUUID());
     assert.equal(retry?.[retry.indexOf('id') + 1], high.id);
     await client.del(`${queueBase}:lock:${high.id}`);
-    assert.deepEqual(await client.pmqCheckStalled(queueBase, 30_000), [[high.id], []]);
+    assert.deepEqual(
+      await client.pmqCheckStalled(queueBase, await redisTimestamp(client), 30_000),
+      [[high.id], []],
+    );
     const recovered = await claim(randomUUID());
     assert.equal(recovered?.[recovered.indexOf('id') + 1], high.id);
     assert.equal((await queue.getJobStatus(low.id)).state, 'waiting');
@@ -2315,7 +2318,7 @@ describe('Worker', () => {
     await client.hdel(`${queueBase}:job:${job.id}`, 'claimMaxStalledCount');
     await client.del(`${queueBase}:lock:${job.id}`, `${queueBase}:stalled-check`);
 
-    assert.deepEqual(await client.pmqCheckStalled(queueBase, 100), [[job.id], []]);
+    assert.deepEqual(await client.pmqCheckStalled(queueBase, Date.now(), 100), [[job.id], []]);
     assert.equal((await queue.getJobStatus(job.id)).state, 'waiting');
   });
 
@@ -2334,22 +2337,32 @@ describe('Worker', () => {
     });
     interface StalledCheckClient {
       del: (...keys: string[]) => Promise<number>;
-      pmqCheckStalled: (prefix: string, stalledInterval: number) => Promise<[string[], string[]]>;
+      pmqCheckStalled: (
+        prefix: string,
+        now: number,
+        stalledInterval: number,
+      ) => Promise<[string[], string[]]>;
       pttl: (key: string) => Promise<number>;
     }
     const firstClient = Reflect.get(queue, 'client') as StalledCheckClient;
     const secondClient = Reflect.get(checker, 'client') as PrairieMQRedis;
     await waitForRedisConnection(secondClient);
     const stalledInterval = 100;
-    assert.deepEqual(await firstClient.pmqCheckStalled(queueBase, stalledInterval), [[], []]);
+    assert.deepEqual(await firstClient.pmqCheckStalled(queueBase, Date.now(), stalledInterval), [
+      [],
+      [],
+    ]);
     assert.isAbove(await firstClient.pttl(`${queueBase}:stalled-check`), 0);
 
     await firstClient.del(`${queueBase}:lock:${job.id}`);
-    assert.deepEqual(await secondClient.pmqCheckStalled(queueBase, stalledInterval), [[], []]);
+    assert.deepEqual(await secondClient.pmqCheckStalled(queueBase, Date.now(), stalledInterval), [
+      [],
+      [],
+    ]);
     assert.equal((await queue.getJobStatus(job.id)).state, 'active');
 
     await waitUntil(async () => (await secondClient.pttl(`${queueBase}:stalled-check`)) === -2);
-    assert.deepEqual(await secondClient.pmqCheckStalled(queueBase, stalledInterval), [
+    assert.deepEqual(await secondClient.pmqCheckStalled(queueBase, Date.now(), stalledInterval), [
       [job.id],
       [],
     ]);
@@ -2363,7 +2376,11 @@ describe('Worker', () => {
       stalledInterval: 50,
     });
     const client = Reflect.get(worker, 'client') as {
-      pmqCheckStalled: (prefix: string, stalledInterval: number) => Promise<[string[], string[]]>;
+      pmqCheckStalled: (
+        prefix: string,
+        now: number,
+        stalledInterval: number,
+      ) => Promise<[string[], string[]]>;
     };
     let markCheckStarted!: () => void;
     const checkStarted = new Promise<void>((resolve) => {
@@ -2756,7 +2773,7 @@ describe('Worker', () => {
       `${queueBase}:stalled-check`,
     );
 
-    assert.deepEqual(await client.pmqCheckStalled(queueBase, 100), [[], ids]);
+    assert.deepEqual(await client.pmqCheckStalled(queueBase, Date.now(), 100), [[], ids]);
     assert.equal((await queue.getJobStatus(ids[0])).state, 'unknown');
     assert.equal((await queue.getJobStatus(ids[1])).state, 'failed');
     assert.equal((await queue.getJobCounts()).failed, 1);
@@ -2838,104 +2855,5 @@ describe('Worker', () => {
     await waitForCompletedJobs(queue, 1);
     counts = await queue.getJobCounts();
     assert.equal(counts.completed, 1);
-  });
-});
-
-describe('Persistent worker metadata', () => {
-  let queue: Queue;
-  let queueBase: string;
-
-  beforeEach(async () => {
-    const queueName = `test-${randomUUID()}`;
-    queueBase = new QueueKeys(DEFAULT_PREFIX, queueName).base;
-    queue = new Queue(queueName, { redisUrl, persistentMetadata: true });
-    await queue.waitUntilReady();
-  });
-
-  afterEach(async () => {
-    await queue.obliterate();
-    await queue.close();
-  });
-
-  it('keeps coordination records outside volatile eviction policies', async () => {
-    const job = await queue.add('job', {});
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    const workerId = randomUUID();
-    const startedAt = await redisTimestamp(client);
-    const token = randomUUID();
-    const claim = () =>
-      client.pmqMoveToActive(
-        queueBase,
-        workerId,
-        startedAt,
-        1,
-        token,
-        30_000,
-        0,
-        1,
-        'claim',
-        1,
-        60_000,
-      );
-    const claimed = await claim();
-    await client.pmqCheckStalled(queueBase, 30_000);
-
-    for (const key of [
-      `${queueBase}:lock-v2:${job.id}`,
-      `${queueBase}:fetch:${workerId}`,
-      `${queueBase}:fetch-deadlines`,
-      `${queueBase}:limiter-window-v2`,
-      `${queueBase}:stalled-check-v2`,
-    ]) {
-      assert.equal(await client.pttl(key), -1);
-    }
-    assert.deepEqual(await claim(), claimed);
-    assert.equal((await queue.getJobCounts()).active, 1);
-  });
-
-  it('does not renew or complete a logically expired claim', async () => {
-    const job = await queue.add('job', {});
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    const workerId = randomUUID();
-    const startedAt = await redisTimestamp(client);
-    const token = randomUUID();
-    const claim = () =>
-      client.pmqMoveToActive(queueBase, workerId, startedAt, 1, token, 30_000, 0, 1, 'claim');
-    await claim();
-    await client.hset(`${queueBase}:lock-v2:${job.id}`, 'expiresAt', 0);
-
-    assert.deepEqual(await client.pmqExtendLocks(queueBase, workerId, 30_000, job.id, token), [
-      job.id,
-    ]);
-    assert.equal(await client.pmqMoveToCompleted(queueBase, job.id, token, 'null', 0), -1);
-    assert.deepEqual(await client.pmqCheckStalled(queueBase, 30_000), [[job.id], []]);
-    assert.deepEqual(await claim(), ['claim-lost']);
-    assert.equal(await client.exists(`${queueBase}:lock-v2:${job.id}`), 0);
-    assert.equal((await queue.getJobStatus(job.id)).state, 'waiting');
-  });
-
-  it('cleans expired fetch sessions in bounded batches without reviving them', async () => {
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    const expiredWorkerIds = Array.from({ length: 101 }, () => randomUUID());
-    const records = client.multi();
-    for (const workerId of expiredWorkerIds) {
-      records.hset(`${queueBase}:fetch:${workerId}`, 'expiresAt', 0);
-      records.zadd(`${queueBase}:fetch-deadlines`, 0, workerId);
-    }
-    await records.exec();
-
-    await client.pmqCheckStalled(queueBase, 30_000);
-    const remaining = await client.zcard(`${queueBase}:fetch-deadlines`);
-    assert.isAbove(remaining, 0);
-    assert.isBelow(remaining, expiredWorkerIds.length);
-    await client.pmqCheckStalled(queueBase, 30_000);
-    assert.equal(await client.zcard(`${queueBase}:fetch-deadlines`), 0);
-    assert.equal(
-      await client.exists(...expiredWorkerIds.map((id) => `${queueBase}:fetch:${id}`)),
-      0,
-    );
-    assert.deepEqual(await client.pmqExtendLocks(queueBase, expiredWorkerIds[0], 30_000), []);
-    assert.equal(await client.exists(`${queueBase}:fetch:${expiredWorkerIds[0]}`), 0);
-    assert.equal(await client.zcard(`${queueBase}:fetch-deadlines`), 0);
   });
 });

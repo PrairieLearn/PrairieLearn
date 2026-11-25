@@ -156,7 +156,6 @@ describe('Redis Cluster', () => {
       const queue = new Queue<{ value: number }, number>(name, {
         redisUrl: `redis://127.0.0.1:${nodes[0].port}`,
         redisMode: 'cluster',
-        persistentMetadata: true,
       });
       queue.on('error', (error) => errors.push(error));
       queues.push(queue);
@@ -175,7 +174,6 @@ describe('Redis Cluster', () => {
       {
         redisUrl: `redis://127.0.0.1:${nodes[0].port}`,
         redisMode: 'cluster',
-        persistentMetadata: true,
         autorun,
       },
     );
@@ -252,6 +250,7 @@ describe('Redis Cluster', () => {
     await queue.add('warmup', { value: 0 });
     const cluster = Reflect.get(queue, 'client') as Cluster<'legacy'>;
     const primary = cluster.nodes('master').find((node) => node.options.port === nodes[0].port)!;
+    const disconnected = once(primary, 'close');
     const sendCommand = primary.sendCommand.bind(primary);
     const send = vi.spyOn(primary, 'sendCommand').mockImplementation((command, commandStream) => {
       if (command.args.includes('lost-reply')) {
@@ -272,7 +271,13 @@ describe('Redis Cluster', () => {
     } finally {
       send.mockRestore();
     }
-    await vi.waitFor(() => queue.waitUntilReady(), { timeout: 5000 });
+    await disconnected;
+    await vi.waitFor(
+      async () => {
+        expect((await queue.getJobCounts()).waiting).toBe(2);
+      },
+      { timeout: 5000 },
+    );
     const next = await queue.add('next', { value: 2 });
 
     expect(next.id).toBe('3');

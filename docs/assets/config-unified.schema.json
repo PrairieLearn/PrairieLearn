@@ -441,10 +441,6 @@
       "type": "string",
       "enum": ["standalone", "cluster"]
     },
-    "printExportPersistentMetadata": {
-      "default": false,
-      "type": "boolean"
-    },
     "printExportQueuePrefix": {
       "default": null,
       "type": ["string", "null"]
