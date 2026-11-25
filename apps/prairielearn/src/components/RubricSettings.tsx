@@ -1977,7 +1977,9 @@ function TreeGuideLines({
   guides: TreeGuide[];
   groupDepth: number | null;
 }) {
-  const lineX = (level: number) => `calc(0.25rem + ${level * TREE_INDENT + TREE_INDENT / 2 - 1}px)`;
+  // The dots of `bi-grip-vertical` sit about half a pixel left of the middle of its box.
+  const lineX = (level: number) =>
+    `calc(0.25rem + ${level * TREE_INDENT + TREE_INDENT / 2 - 1.5}px)`;
   const lineColor = (level: number) =>
     `color-mix(in srgb, ${nestingLevelColor(level)} 60%, transparent)`;
   const line = (key: string, level: number, style: CSSProperties) => (
@@ -2003,13 +2005,21 @@ function TreeGuideLines({
           line(`h${level}`, level, {
             top: 'calc(50% - 1px)',
             height: '2px',
-            // Reaches to just before the child's grip, which is narrower than its handle.
-            width: `${TREE_INDENT / 2 + 7}px`,
+            // Reaches to just before the child's grip, which is narrower than its
+            // handle, and fades out instead of stopping abruptly.
+            width: `${TREE_INDENT / 2 + 8}px`,
+            background: `linear-gradient(to right, ${lineColor(level)} calc(100% - 8px), transparent)`,
           }),
         ];
       })}
       {groupDepth != null &&
-        line('group', groupDepth, { top: 'calc(50% + 0.6rem)', bottom: '-1px', width: '2px' })}
+        line('group', groupDepth, {
+          top: 'calc(50% + 0.5rem)',
+          bottom: '-1px',
+          width: '2px',
+          // Fades in below the group's grip.
+          background: `linear-gradient(to bottom, transparent, ${lineColor(groupDepth)} 0.75rem)`,
+        })}
     </>
   );
 }
