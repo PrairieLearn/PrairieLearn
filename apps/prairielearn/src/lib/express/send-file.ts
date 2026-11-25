@@ -30,8 +30,15 @@ export function sendCourseFile(
         const pathInCourse = path.normalize(path.join(directory, filename));
         reject(new HttpStatusError(404, `File not found: ${pathInCourse}`));
         return;
-      } else if (err && 'code' in err && CLIENT_DISCONNECT_CODES.has(err.code)) {
+      } else if (
+        err &&
+        'code' in err &&
+        CLIENT_DISCONNECT_CODES.has(err.code) &&
+        res.req.socket.destroyed
+      ) {
         // The client went away mid-transfer; there's no one left to respond to.
+        // The socket check ensures that we don't swallow file read errors that
+        // happen to share these codes (e.g. from network-backed storage).
         resolve();
         return;
       } else if (err) {
