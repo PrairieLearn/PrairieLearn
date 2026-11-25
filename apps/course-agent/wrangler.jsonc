@@ -12,7 +12,9 @@
     "USER_IDLE_SECONDS": "600",
     // A Cloudflare instance type: lite or standard-1 through standard-4.
     "SANDBOX_INSTANCE_TYPE": "standard-2",
-    "SENTRY_ENVIRONMENT": "development"
+    "SENTRY_ENVIRONMENT": "development",
+    // The PrairieLearn origin that receives usage reports and the Worker's other requests.
+    "PL_SERVICE_URL": "http://localhost:3000"
   },
   "version_metadata": {
     "binding": "VERSION_METADATA"
@@ -25,7 +27,7 @@
     "logs": { "enabled": true, "invocation_logs": false }
   },
   "secrets": {
-    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_SERVICE_URL"]
+    "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
   },
   "durable_objects": {
     // Let turns running at deploy time finish on the old code: 7 h covers AGENT_TURN_SECONDS
@@ -81,10 +83,11 @@
         "USER_IDLE_SECONDS": "600",
         // A Cloudflare instance type: lite or standard-1 through standard-4.
         "SANDBOX_INSTANCE_TYPE": "standard-2",
-        "SENTRY_ENVIRONMENT": "staging"
+        "SENTRY_ENVIRONMENT": "staging",
+        "PL_SERVICE_URL": "https://staging.prairielearn.com"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_SERVICE_URL"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
@@ -143,10 +146,11 @@
         "USER_IDLE_SECONDS": "600",
         // A Cloudflare instance type: lite or standard-1 through standard-4.
         "SANDBOX_INSTANCE_TYPE": "standard-2",
-        "SENTRY_ENVIRONMENT": "production"
+        "SENTRY_ENVIRONMENT": "production",
+        "PL_SERVICE_URL": "https://us.prairielearn.com"
       },
       "secrets": {
-        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN", "PL_SERVICE_URL"]
+        "required": ["PL_SERVICE_TOKEN", "OPENAI_API_KEY", "GITHUB_READ_TOKEN"]
       },
       "durable_objects": {
         "code_update_strategy": { "mode": "deferred", "max_delay": 25200 },
