@@ -858,15 +858,47 @@ function Composer({
 const APPROVAL_MODES: Record<ApprovalMode, { label: string; description: string; icon: string }> = {
   approval_required: {
     label: 'Ask first',
-    description: 'You review course changes before they are saved.',
+    description: 'You approve each change and each read of course data.',
     icon: 'bi-hand-index-thumb',
   },
   always_approve: {
     label: 'Always approve',
-    description: 'The agent saves course changes without your review.',
+    description: 'The course agent goes ahead without asking.',
     icon: 'bi-shield-exclamation',
   },
 };
+
+/**
+ * What the course agent can reach in a course. Each says what the agent does there in each mode,
+ * so the menu shows what the current mode allows.
+ */
+const ACCESS_AREAS: { label: string; icon: string; access: Record<ApprovalMode, string> }[] = [
+  {
+    label: 'Course files',
+    icon: 'bi-folder',
+    access: {
+      approval_required: 'Reads every file. Asks before saving changes.',
+      always_approve: 'Reads every file and saves changes without asking.',
+    },
+  },
+  {
+    label: 'Course data',
+    icon: 'bi-table',
+    access: {
+      approval_required: 'Asks before reading students, scores, or submissions.',
+      always_approve: 'Reads students, scores, and submissions without asking.',
+    },
+  },
+  {
+    label: 'Course actions',
+    icon: 'bi-lightning',
+    access: {
+      approval_required: 'Asks before changes like closing issues or regrading.',
+      always_approve:
+        'Makes changes like closing issues or regrading without asking, except ones that are hard to undo.',
+    },
+  },
+];
 
 function ApprovalModePicker({
   mode,
@@ -889,7 +921,20 @@ function ApprovalModePicker({
         <i className="bi bi-chevron-down" aria-hidden="true" />
       </Dropdown.Toggle>
       <Dropdown.Menu className="course-agent-approval-menu shadow-sm">
-        <Dropdown.Header>Saving course changes</Dropdown.Header>
+        <Dropdown.Header>Course agent access</Dropdown.Header>
+        <ul className="list-unstyled mb-0">
+          {ACCESS_AREAS.map(({ label, icon, access }) => (
+            <li key={label} className="dropdown-item-text d-flex align-items-start gap-2 py-1">
+              <i className={clsx('bi lh-1 mt-1 text-body-secondary', icon)} aria-hidden="true" />
+              <span className="small">
+                <span className="d-block">{label}</span>
+                <span className="d-block text-body-secondary">{access[mode]}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <Dropdown.Divider />
+        <Dropdown.Header>Approval</Dropdown.Header>
         {ApprovalModeSchema.options.map((option) => {
           const { label, description, icon } = APPROVAL_MODES[option];
           return (
