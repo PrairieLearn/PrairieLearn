@@ -42,6 +42,33 @@ WHERE
   iq.assessment_question_id = q.id
   AND iq.assessment_instance_id = $assessment_instance_id;
 
+-- BLOCK select_question_grade_state
+SELECT
+  id,
+  used_for_grade
+FROM
+  instance_questions
+WHERE
+  assessment_instance_id = $assessment_instance_id
+ORDER BY
+  id;
+
+-- BLOCK reset_pending_score
+UPDATE assessment_instances
+SET
+  grading_pending = FALSE,
+  score_perc_pending = 0
+WHERE
+  id = $assessment_instance_id;
+
+-- BLOCK count_score_logs
+SELECT
+  count(*)::integer
+FROM
+  assessment_score_logs
+WHERE
+  assessment_instance_id = $assessment_instance_id;
+
 -- BLOCK insert_pending_auto_submissions
 WITH
   selected_questions AS (

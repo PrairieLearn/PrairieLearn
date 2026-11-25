@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import z from 'zod';
 
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 
+import pendingScoreBackfill from '../batched-migrations/20261008010001_assessment_instances__pending_score__backfill.js';
 import { updateAssessmentInstancesScorePending } from '../lib/assessment-grading.js';
 import { makeAssessmentInstance, setAssessmentInstanceScore } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
@@ -73,6 +74,34 @@ describe('Pending assessment scores', { timeout: 60_000 }, () => {
       expect(pending.grading_pending).toBe(true);
       // The capped first zone contributes 7; the best potential second-zone question contributes 40.
       expect(pending.score_perc_pending).toBeCloseTo((15 / 57) * 100);
+
+      const questionsBefore = await queryRows(
+        sql.select_question_grade_state,
+        { assessment_instance_id: id },
+        z.object({ id: z.string(), used_for_grade: z.boolean().nullable() }),
+      );
+      const logsBefore = await queryScalar(
+        sql.count_score_logs,
+        { assessment_instance_id: id },
+        z.number(),
+      );
+      await execute(sql.reset_pending_score, { assessment_instance_id: id });
+      await pendingScoreBackfill.execute(BigInt(id), BigInt(id));
+      const backfilled = await selectAssessmentInstanceById(id);
+      expect(backfilled.points).toBe(pending.points);
+      expect(backfilled.score_perc).toBe(pending.score_perc);
+      expect(backfilled.grading_pending).toBe(true);
+      expect(backfilled.score_perc_pending).toBeCloseTo((15 / 57) * 100);
+      expect(
+        await queryRows(
+          sql.select_question_grade_state,
+          { assessment_instance_id: id },
+          z.object({ id: z.string(), used_for_grade: z.boolean().nullable() }),
+        ),
+      ).toEqual(questionsBefore);
+      expect(
+        await queryScalar(sql.count_score_logs, { assessment_instance_id: id }, z.number()),
+      ).toBe(logsBefore);
 
       await setAssessmentInstanceScore(id, 100, user.id);
       const capped = await selectAssessmentInstanceById(id);
