@@ -19,7 +19,6 @@ import {
   type AiImageGradingResponses,
   calculateResponseCost,
   logResponseUsage,
-  logResponsesUsage,
 } from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import {
@@ -738,11 +737,12 @@ export async function aiGrade({
         safetyIdentifier: `course_${course.id}`,
       };
 
-      // Count each response toward the hourly usage cap as soon as it completes,
-      // before anything can reject it. Providers bill for rejected responses too
-      // (e.g. a blocked prompt's input tokens), and a later failed call shouldn't
-      // leave earlier calls in the same grading attempt uncounted.
-      const addToIntervalUsage = async (response: GenerateTextResult<any, any, any>) => {
+      // Log and count each response toward the hourly usage cap as soon as it
+      // completes, before anything can reject it. Providers bill for rejected
+      // responses too (e.g. a blocked prompt's input tokens), and a later failed
+      // call shouldn't leave earlier calls in the same grading attempt unrecorded.
+      const recordUsage = async (response: GenerateTextResult<any, any, any>) => {
+        logResponseUsage({ response, logger });
         if (!trackRateLimitAndCost) return;
         await addAiGradingCostToIntervalUsage({
           courseInstance: course_instance,
@@ -762,13 +762,8 @@ export async function aiGrade({
           ...prompt,
           providerOptions: { openai: openaiProviderOptions },
         });
-        await addToIntervalUsage(response);
-        try {
-          return requireAiGradingOutput(response);
-        } catch (err) {
-          logResponseUsage({ response, logger });
-          throw err;
-        }
+        await recordUsage(response);
+        return requireAiGradingOutput(response);
       };
 
       if (rubric_items.length > 0) {
@@ -852,7 +847,7 @@ export async function aiGrade({
             model,
           });
           for (const { response } of Object.values(rotationCorrections)) {
-            await addToIntervalUsage(response);
+            await recordUsage(response);
           }
 
           const rotationCorrected = Object.values(rotationCorrections).some(
@@ -886,19 +881,6 @@ export async function aiGrade({
             finalGradingResponse: finalResponse,
           };
         })) satisfies AiImageGradingResponses;
-
-        if (rotationCorrectionApplied) {
-          logResponsesUsage({
-            responses: [
-              ...Object.values(rotationCorrections).map((r) => r.response),
-              gradingResponseWithRotationIssue,
-              finalGradingResponse,
-            ],
-            logger,
-          });
-        } else {
-          logResponseUsage({ response: finalGradingResponse, logger });
-        }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
         const { appliedRubricItems, appliedRubricDescription, unrecognizedKeys } =
@@ -1059,7 +1041,7 @@ export async function aiGrade({
             model,
           });
           for (const { response } of Object.values(rotationCorrections)) {
-            await addToIntervalUsage(response);
+            await recordUsage(response);
           }
 
           // Regenerate the prompt with the rotation-corrected images.
@@ -1087,19 +1069,6 @@ export async function aiGrade({
             finalGradingResponse: finalResponse,
           };
         })) satisfies AiImageGradingResponses;
-
-        if (rotationCorrectionApplied) {
-          logResponsesUsage({
-            responses: [
-              ...Object.values(rotationCorrections).map((correction) => correction.response),
-              gradingResponseWithRotationIssue,
-              finalGradingResponse,
-            ],
-            logger,
-          });
-        } else {
-          logResponseUsage({ response: finalGradingResponse, logger });
-        }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
         const score = finalGradingResponse.output.score;
