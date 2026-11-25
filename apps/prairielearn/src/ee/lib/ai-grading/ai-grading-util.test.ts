@@ -18,6 +18,7 @@ import {
   parseAiRubricItems,
   parseSubmission,
   prepareQuestionPrompt,
+  requireAiGradingOutput,
 } from './ai-grading-util.js';
 
 function makeRubricItem(overrides: Partial<RubricItem> & Pick<RubricItem, 'id'>): RubricItem {
@@ -533,6 +534,56 @@ describe('correctImagesOrientation', () => {
       ['image/png', 'image/png', 'image/png', 'image/png'],
       ['image/webp', 'image/webp', 'image/webp', 'image/webp'],
     ]);
+  });
+});
+
+describe('requireAiGradingOutput', () => {
+  function mockModel(
+    content: { type: 'text'; text: string }[],
+    finishReason: { unified: 'stop' | 'content-filter'; raw: string | undefined },
+  ) {
+    return new MockLanguageModelV3({
+      doGenerate: {
+        content,
+        finishReason,
+        usage: {
+          inputTokens: {
+            total: undefined,
+            noCache: undefined,
+            cacheRead: undefined,
+            cacheWrite: undefined,
+          },
+          outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+  }
+  const output = Output.object({ schema: z.object({ score: z.number() }) });
+
+  it('returns responses that have structured output', async () => {
+    const response = requireAiGradingOutput(
+      await generateText({
+        model: mockModel([{ type: 'text', text: '{"score":90}' }], {
+          unified: 'stop',
+          raw: undefined,
+        }),
+        output,
+        prompt: 'grade this',
+      }),
+    );
+    expect(response.output).toEqual({ score: 90 });
+  });
+
+  it('explains when the provider blocks the prompt', async () => {
+    const response = await generateText({
+      model: mockModel([], { unified: 'content-filter', raw: 'OTHER' }),
+      output,
+      prompt: 'grade this',
+    });
+    expect(() => requireAiGradingOutput(response)).toThrow(
+      "The AI provider's content filter blocked this submission (reason: OTHER)",
+    );
   });
 });
 

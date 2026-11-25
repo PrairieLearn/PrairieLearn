@@ -5,6 +5,7 @@ import {
   type LanguageModel,
   type LanguageModelUsage,
   type ModelMessage,
+  NoOutputGeneratedError,
   Output,
   type TextPart,
   type UserContent,
@@ -929,6 +930,30 @@ export async function addAiGradingCostToIntervalUsage({
 }
 
 /**
+ * Returns the response if it has structured output. Otherwise, throws an error
+ * that says why, since the AI SDK's own error ("No output generated") doesn't.
+ * For example, Gemini can refuse a prompt outright (`promptFeedback.blockReason`),
+ * which consistently fails grading for that submission.
+ */
+export function requireAiGradingOutput<
+  T extends { readonly output: unknown; finishReason: string; rawFinishReason: string | undefined },
+>(response: T): T {
+  try {
+    void response.output;
+    return response;
+  } catch (err) {
+    if (!NoOutputGeneratedError.isInstance(err)) throw err;
+  }
+  const reason = response.rawFinishReason ?? response.finishReason;
+  if (response.finishReason === 'content-filter') {
+    throw new Error(
+      `The AI provider's content filter blocked this submission (reason: ${reason}). Grade it manually or try a different model.`,
+    );
+  }
+  throw new Error(`The AI model returned no grading result (finish reason: ${reason}).`);
+}
+
+/**
  * Rotates a base64-encoded image by the specified counterclockwise rotation.
  *
  * @param base64Image - The base64-encoded image to rotate.
@@ -1007,17 +1032,19 @@ async function correctImageOrientation({
     text: 'Select the image that is closest to being upright.',
   });
 
-  const response = await generateText({
-    model,
-    abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-    instructions: formatPrompt([
-      'Of the four labeled images provided, select the one that is closest to being upright.',
-      'Upright (0 degrees): The handwriting is in a standard reading position already.',
-      "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
-    ]),
-    output: Output.object({ schema: RotationCorrectionOutputSchema }),
-    messages: [{ role: 'user', content }],
-  });
+  const response = requireAiGradingOutput(
+    await generateText({
+      model,
+      abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
+      instructions: formatPrompt([
+        'Of the four labeled images provided, select the one that is closest to being upright.',
+        'Upright (0 degrees): The handwriting is in a standard reading position already.',
+        "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
+      ]),
+      output: Output.object({ schema: RotationCorrectionOutputSchema }),
+      messages: [{ role: 'user', content }],
+    }),
+  );
 
   const index = Number.parseInt(response.output.upright_image) - 1;
 
