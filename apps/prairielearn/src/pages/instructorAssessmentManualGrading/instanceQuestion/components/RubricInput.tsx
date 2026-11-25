@@ -6,14 +6,13 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import { run } from '@prairielearn/run';
 
 import { subscribeToRubricEditorDirtyChange } from '../../../../lib/client/manual-grading-events.js';
-
 import {
-  type GradingPanelRubricItem,
-  type RubricTreeNode,
+  type RubricTreeNode as GenericRubricTreeNode,
   buildRubricTree,
   describeSelectionRule,
   leafItems,
-} from '../utils/rubricTree.js';
+} from '../../../../lib/rubric-tree.js';
+import type { GradingPanelRubricItem } from '../utils/rubricTree.js';
 
 import type {
   GradingPanelRubricData,
@@ -95,7 +94,10 @@ export function RubricInput({
       </div>
 
       <RubricTree
-        nodes={buildRubricTree(rubricData.items)}
+        nodes={buildRubricTree(rubricData.items, {
+          parentId: (item) => item.parentId,
+          isGroup: (item) => item.isGroup,
+        })}
         aiSelectedRubricItemIds={aiSelectedRubricItemIds}
         context={context}
         disabled={disabled}
@@ -200,6 +202,8 @@ interface RubricTreeProps {
   usePercentage: boolean;
 }
 
+type RubricTreeNode = GenericRubricTreeNode<GradingPanelRubricItem>;
+
 /** Opens the rubric editor, which is hidden on this page until a grader asks for it. */
 export function openRubricEditor() {
   // TODO: RubricSettings is a separate React island. Keep this DOM bridge until the
@@ -239,7 +243,7 @@ function RubricTree({ nodes, ...props }: RubricTreeProps & { nodes: RubricTreeNo
     parent: GradingPanelRubricItem | null,
     parentChildren: string[],
   ): ReactNode =>
-    node.item.isGroup ? (
+    node.isGroup ? (
       <RubricGroup
         key={node.item.id}
         node={node}
@@ -287,7 +291,7 @@ function RubricGroup({
   ) => ReactNode;
 }) {
   const { item } = node;
-  const rule = describeSelectionRule(item);
+  const rule = describeSelectionRule(item.minSelections, item.maxSelections);
   const childIds = node.children.map((child) => child.item.id);
   const selectedChildCount = childIds.filter((id) => selectedRubricItemIds.has(id)).length;
   const selectedLeaves = leafItems(node).filter((leaf) => selectedRubricItemIds.has(leaf.id));

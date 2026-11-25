@@ -121,3 +121,52 @@ export function resolveRubricTree(rows: RubricTreeNodeInput[]): ResolvedRubricTr
 
   return { parentIndex, leafIndex, childCount, leafCount };
 }
+
+export interface RubricTreeNode<T> {
+  item: T;
+  isGroup: boolean;
+  children: RubricTreeNode<T>[];
+}
+
+/**
+ * Builds the rubric tree from rows in depth-first order, which is the order
+ * the server returns them in. Rows come from different sources (database rows,
+ * grading panel props), so callers say how to read each row's parent and kind.
+ */
+export function buildRubricTree<T extends { id: string }>(
+  items: T[],
+  { parentId, isGroup }: { parentId: (item: T) => string | null; isGroup: (item: T) => boolean },
+): RubricTreeNode<T>[] {
+  const nodes = new Map<string, RubricTreeNode<T>>();
+  const roots: RubricTreeNode<T>[] = [];
+  for (const item of items) {
+    const node: RubricTreeNode<T> = { item, isGroup: isGroup(item), children: [] };
+    nodes.set(item.id, node);
+    const parentKey = parentId(item);
+    const parent = parentKey == null ? undefined : nodes.get(parentKey);
+    (parent?.children ?? roots).push(node);
+  }
+  return roots;
+}
+
+/** The selectable items under a node, or the node itself if it is an item. */
+export function leafItems<T>(node: RubricTreeNode<T>): T[] {
+  if (!node.isGroup) return [node.item];
+  return node.children.flatMap(leafItems);
+}
+
+/**
+ * Describes a group's selection rule, e.g. "Select one" or "Select at least 2".
+ * Returns null for groups without a rule.
+ */
+export function describeSelectionRule(
+  minSelections: number | null,
+  maxSelections: number | null,
+): string | null {
+  const min = minSelections ?? 0;
+  const count = (n: number) => (n === 1 ? 'one' : `${n}`);
+  if (maxSelections == null) return min > 0 ? `Select at least ${count(min)}` : null;
+  if (min === maxSelections) return `Select ${count(min)}`;
+  if (min === 0) return `Select up to ${count(maxSelections)}`;
+  return `Select ${min}–${maxSelections}`;
+}
