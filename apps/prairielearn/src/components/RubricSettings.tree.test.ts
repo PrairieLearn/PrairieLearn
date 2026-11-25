@@ -4,6 +4,7 @@ import {
   type EditorTreeRow,
   canIndent,
   depthsFromParents,
+  groupWarning,
   indent,
   isSortedHighestFirst,
   moveAmongSiblings,
@@ -154,5 +155,16 @@ describe('subgroupBlocker', () => {
     assert.isNull(subgroupBlocker(list, 0));
     assert.match(subgroupBlocker(list, 2) ?? '', /selection rule/);
     assert.match(subgroupBlocker(list, 5) ?? '', /at most 3 levels/);
+  });
+});
+
+describe('groupWarning', () => {
+  it('flags empty groups and rules the items cannot meet', () => {
+    const list = rows('G empty', 'G ok 1-1', '  a', '  b', 'G short 3-', '  c', 'G flipped 2-1', '  d');
+    assert.equal(groupWarning(list, 0)?.label, 'Empty group');
+    assert.isNull(groupWarning(list, 1));
+    assert.isNull(groupWarning(list, 2));
+    assert.match(groupWarning(list, 4)?.body ?? '', /at least 3 selected, but the group has 1 item\./);
+    assert.equal(groupWarning(list, 6)?.label, 'Invalid rule');
   });
 });
