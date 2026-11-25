@@ -6,7 +6,6 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import { run } from '@prairielearn/run';
 
 import { subscribeToRubricEditorDirtyChange } from '../../../../lib/client/manual-grading-events.js';
-
 import {
   type GradingPanelRubricItem,
   type RubricTreeNode,
@@ -391,34 +390,37 @@ function RubricItemRow({
         )}
         style={{ borderColor: selected ? undefined : 'transparent' }}
       >
-        {aiSelectedRubricItemIds && (
+        {/* One line tall, so the controls center on the description's first line. */}
+        <span className="rubric-item-controls d-flex align-items-center gap-2 flex-shrink-0 me-2">
+          {aiSelectedRubricItemIds && (
+            <input
+              type="checkbox"
+              className="ms-1"
+              name="rubric_item_selected_ai"
+              value={id}
+              checked={aiSelected}
+              title={aiSelected ? 'Selected by AI' : 'Not selected by AI'}
+              disabled
+              readOnly
+            />
+          )}
           <input
+            id={inputId}
             type="checkbox"
-            className="mx-2 mt-1"
-            name="rubric_item_selected_ai"
+            name="rubric_item_selected_manual"
+            className="js-selectable-rubric-item"
             value={id}
-            checked={aiSelected}
-            title={aiSelected ? 'Selected by AI' : 'Not selected by AI'}
-            disabled
-            readOnly
+            checked={selected}
+            disabled={disabled || selectionBlocked}
+            data-key-binding={keyBinding ?? undefined}
+            onChange={(event) => onRubricItemChange(id, event.target.checked)}
           />
-        )}
-        <input
-          id={inputId}
-          type="checkbox"
-          name="rubric_item_selected_manual"
-          className="js-selectable-rubric-item me-2 mt-1"
-          value={id}
-          checked={selected}
-          disabled={disabled || selectionBlocked}
-          data-key-binding={keyBinding ?? undefined}
-          onChange={(event) => onRubricItemChange(id, event.target.checked)}
-        />
-        {keyBinding && (
-          <kbd aria-hidden="true" className="pl-kbd kbd-semi-transparent me-2 mt-1">
-            {keyBinding}
-          </kbd>
-        )}
+          {keyBinding && (
+            <kbd aria-hidden="true" className="pl-kbd kbd-semi-transparent rubric-item-key">
+              <span>{keyBinding.toUpperCase()}</span>
+            </kbd>
+          )}
+        </span>
         <div className="flex-grow-1">
           <div
             data-testid="rubric-item-description"

@@ -271,11 +271,8 @@ SET
   description = COALESCE($description, description),
   explanation = COALESCE($explanation, explanation),
   grader_note = COALESCE($grader_note, grader_note),
-  key_binding = CASE
-    WHEN $leaf_number::integer IS NULL
-    OR $leaf_number::integer >= 10 THEN NULL
-    ELSE MOD($leaf_number::integer + 1, 10)
-  END,
+  key_binding = $key_binding,
+  key_binding_is_custom = $key_binding_is_custom,
   is_group = $is_group,
   parent_id = $parent_id,
   min_selections = $min_selections,
@@ -302,6 +299,7 @@ INSERT INTO
     explanation,
     grader_note,
     key_binding,
+    key_binding_is_custom,
     always_show_to_students,
     show_to_students,
     is_group,
@@ -317,11 +315,8 @@ VALUES
     $description,
     $explanation,
     $grader_note,
-    CASE
-      WHEN $leaf_number::integer IS NULL
-      OR $leaf_number::integer >= 10 THEN NULL
-      ELSE MOD($leaf_number::integer + 1, 10)
-    END,
+    $key_binding,
+    $key_binding_is_custom,
     $always_show_to_students,
     CASE
       WHEN $always_show_to_students THEN 'always'::enum_rubric_item_show_to_students

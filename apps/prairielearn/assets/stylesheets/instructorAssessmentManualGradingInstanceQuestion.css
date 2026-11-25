@@ -101,6 +101,26 @@
   cursor: pointer;
 }
 
+.rubric-item-controls {
+  height: 1lh;
+}
+
+.rubric-item-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  text-box: normal;
+}
+
+/* Trimmed to the glyph's cap height, so centering ignores descender space. */
+.rubric-item-key > span {
+  display: block;
+  text-box: trim-both cap alphabetic;
+}
+
 .rubric-tree-item:not(.bg-primary-subtle):hover:has(input:enabled) {
   background-color: var(--bs-tertiary-bg);
 }

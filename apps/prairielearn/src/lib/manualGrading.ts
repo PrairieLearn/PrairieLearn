@@ -37,6 +37,11 @@ import {
   SubmissionForScoreUpdateSchema,
 } from './manualGrading.types.js';
 import { safeMustacheRender } from './mustache.js';
+import {
+  assignKeyBindings,
+  customKeyBindingErrors,
+  normalizeKeyBinding,
+} from './rubric-key-bindings.js';
 import { type ResolvedRubricTree, resolveRubricTree } from './rubric-tree.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -301,6 +306,14 @@ export async function updateAssessmentQuestionRubric({
       throw new Error('The rubric must contain at least one item that is not a group.');
     }
 
+    const keyErrors = customKeyBindingErrors(
+      rubric_items.map((item) => (item.is_group ? null : normalizeKeyBinding(item.key_binding))),
+    );
+    const keyError = keyErrors.find((error) => error != null);
+    if (keyError) {
+      throw new Error(`Invalid keyboard shortcut for a rubric item: ${keyError}`);
+    }
+
     rubric_items.forEach((item) => {
       if (item.points == null && !item.is_group) {
         throw new Error('Rubric item provided without a points value.');
@@ -379,7 +392,16 @@ export async function updateAssessmentQuestionRubric({
       });
 
       assert(rubric_tree != null);
-      const { parentIndex, leafIndex } = rubric_tree;
+      const { parentIndex } = rubric_tree;
+      const customKeys = rubric_items.map((input) =>
+        input.is_group ? null : normalizeKeyBinding(input.key_binding),
+      );
+      const keyBindings = assignKeyBindings(
+        rubric_items.map((input, i) => ({
+          isGroup: Boolean(input.is_group),
+          customKey: customKeys[i],
+        })),
+      );
       // IDs of the saved rows, by position. Pre-order guarantees that a parent
       // is saved before its children, so its ID is always known here.
       const saved_ids: string[] = [];
@@ -397,8 +419,8 @@ export async function updateAssessmentQuestionRubric({
           points: is_group ? 0 : input.points,
           is_group,
           parent_id: parent == null ? null : saved_ids[parent],
-          // Key bindings follow leaf order, so groups don't use up a key.
-          leaf_number: leafIndex[number],
+          key_binding: keyBindings[number],
+          key_binding_is_custom: customKeys[number] != null,
           min_selections: is_group ? (input.min_selections ?? null) : null,
           max_selections: is_group ? (input.max_selections ?? null) : null,
         };

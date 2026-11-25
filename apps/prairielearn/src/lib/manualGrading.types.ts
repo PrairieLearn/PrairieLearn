@@ -115,6 +115,8 @@ export const RubricSettingsBodySchema = z.object({
         is_group: z.boolean().optional(),
         min_selections: z.coerce.number().int().nullable().optional(),
         max_selections: z.coerce.number().int().nullable().optional(),
+        /** The instructor's key for the item; blank or absent uses the automatic key. */
+        key_binding: z.string().nullable().optional(),
       }),
     )
     .default([]),
