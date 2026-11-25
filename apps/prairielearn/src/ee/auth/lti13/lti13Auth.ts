@@ -92,7 +92,13 @@ async function launchFlow(req: Request, res: Response) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
   // Can be POST or GET
 
-  const parameters = OIDCLaunchFlowSchema.loose().parse({ ...req.body, ...req.query });
+  const parsedParameters = OIDCLaunchFlowSchema.loose().safeParse({ ...req.body, ...req.query });
+  if (!parsedParameters.success) {
+    throw new HttpStatusError(400, 'Invalid LTI 1.3 login request', {
+      cause: parsedParameters.error,
+    });
+  }
+  const parameters = parsedParameters.data;
 
   // If the authentication request is coming from an iframe, intercept the parameters
   // and offer a small form to open in a new window.
@@ -179,6 +185,16 @@ router.post(
       );
     }
 
+    // The session state is missing if the session cookie wasn't sent back, e.g.
+    // because the browser blocked it or the callback was replayed.
+    const lti13_state = req.session.lti13_state;
+    if (!lti13_state) {
+      throw new HttpStatusError(
+        400,
+        'LTI 1.3 login session not found. Please relaunch PrairieLearn from your LMS.',
+      );
+    }
+
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
     const openidClientConfig = await getOpenidClientConfig(lti13_instance);
@@ -195,8 +211,8 @@ router.post(
     }).toString();
 
     const lti13_claims = Lti13ClaimSchema.parse(
-      await client.implicitAuthentication(openidClientConfig, url, req.session.lti13_state.nonce, {
-        expectedState: req.session.lti13_state.state,
+      await client.implicitAuthentication(openidClientConfig, url, lti13_state.nonce, {
+        expectedState: lti13_state.state,
       }),
     );
 

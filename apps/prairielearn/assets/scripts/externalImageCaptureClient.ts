@@ -35,6 +35,7 @@ onDocumentReady(() => {
     socket.disconnect();
   }, SOCKET_TIMEOUT_MS);
   let initialized = false;
+  let currentState: Parameters<typeof changeState>[0] = 'loading';
 
   socket.on('connect', () => {
     socket.emit(
@@ -47,6 +48,9 @@ onDocumentReady(() => {
       (msg: StatusMessage | null) => {
         if (!msg) {
           changeState('connection-failed');
+          // Stop reconnecting, since every attempt would reuse the same
+          // (likely expired) variant token.
+          socket.disconnect();
           throw new Error('Failed to join external image capture room');
         }
         clearTimeout(timeout);
@@ -62,6 +66,7 @@ onDocumentReady(() => {
   function changeState(
     state: 'loading' | 'form' | 'uploading' | 'success' | 'connection-failed' | 'upload-failed',
   ) {
+    currentState = state;
     const externalImageCaptureLoadingContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-loading-container',
     );
@@ -232,6 +237,13 @@ onDocumentReady(() => {
   });
 
   tryAgainButton.addEventListener('click', () => {
+    if (currentState === 'connection-failed') {
+      // The variant token in this page has likely expired, so reconnecting
+      // would be rejected again. Reloading renders a fresh token.
+      window.location.reload();
+      return;
+    }
+
     // Wait for the room join before allowing another upload.
     initialized = false;
     changeState('loading');
