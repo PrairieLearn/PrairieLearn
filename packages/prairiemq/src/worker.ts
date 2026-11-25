@@ -29,6 +29,7 @@ import { type JobOptions, MAX_TIMER_DELAY_MILLISECONDS, type WorkerOptions } fro
 import {
   normalizeRedisUrl,
   validateOptionsObject,
+  validatePersistentMetadata,
   validatePrefix,
   validateRateLimiter,
   validateRedisMode,
@@ -43,6 +44,7 @@ const MINIMUM_LOCK_DURATION = REDIS_COMMAND_TIMEOUT * 3;
 const WORKER_OPTION_NAMES = new Set<keyof WorkerOptions>([
   'redisUrl',
   'redisMode',
+  'persistentMetadata',
   'prefix',
   'concurrency',
   'limiter',
@@ -149,6 +151,7 @@ function validateWorkerOptions(options: unknown): string {
   const optionRecord = validateOptionsObject('Worker', options, WORKER_OPTION_NAMES);
   const redisUrl = normalizeRedisUrl(optionRecord.redisUrl);
   validateRedisMode(optionRecord.redisMode, redisUrl);
+  validatePersistentMetadata(optionRecord.persistentMetadata);
   validatePrefix(optionRecord.prefix);
 
   if (optionRecord.limiter !== undefined) {
@@ -303,6 +306,7 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
     this.client = createScriptedClient({
       redisUrl,
       redisMode: options.redisMode,
+      persistentMetadata: options.persistentMetadata,
       role: 'worker',
     });
     this.blockingClient = createRedisClient({
@@ -310,8 +314,12 @@ export class Worker<Data = unknown, Result = unknown> extends EventEmitter<
       redisMode: options.redisMode,
       role: 'blocking',
     });
-    this.client.on('error', (err) => this.handleRedisError(err));
-    this.blockingClient.on('error', (err) => this.handleRedisError(err));
+    for (const client of [this.client, this.blockingClient]) {
+      client.on('error', (err) => this.handleRedisError(err));
+      if (client instanceof Cluster) {
+        client.on('node error', (err) => this.handleRedisError(err));
+      }
+    }
     onRedisConnectionChange(this.blockingClient, () => {
       this.blockingConnectionGeneration += 1;
     });

@@ -72,6 +72,7 @@ function queueConnection(redisUrl: string) {
   return {
     redisUrl,
     redisMode: config.printExportRedisMode,
+    persistentMetadata: config.printExportPersistentMetadata,
     prefix:
       config.printExportQueuePrefix ??
       `prairielearn-print-exports-${createHash('sha256')

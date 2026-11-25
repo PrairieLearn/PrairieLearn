@@ -135,14 +135,18 @@ const assertQueueProtocolLua = `
 do
   local protocolKey = KEYS[1] .. ':protocol-version'
   local version = redis.call('GET', protocolKey)
-  if version and version ~= '2' then
-    return redis.error_reply('ERR PrairieMQ queue protocol version ' .. version .. ' is not supported by this client')
-  end
-  if not version then
-    if redis.call('LLEN', KEYS[1] .. ':active') > 0 then
-      return redis.error_reply('ERR PrairieMQ queue protocol upgrade requires all legacy active jobs to finish')
+  if persistentMetadata then
+    if version and version ~= '2' then
+      return redis.error_reply('ERR PrairieMQ queue protocol version ' .. version .. ' is not supported by this client')
     end
-    redis.call('SET', protocolKey, '2')
+    if not version then
+      if redis.call('LLEN', KEYS[1] .. ':active') > 0 then
+        return redis.error_reply('ERR PrairieMQ queue protocol requires a queue without legacy active jobs for persistent metadata')
+      end
+      redis.call('SET', protocolKey, '2')
+    end
+  elseif version then
+    return redis.error_reply('ERR PrairieMQ queue protocol requires persistentMetadata to be enabled')
   end
 end
 `;
@@ -151,8 +155,15 @@ const ensureQueueProtocolLua = 'return 1';
 
 // Logical deadlines keep coordination state out of volatile eviction policies.
 const lockFunctionsLua = `
+local function jobLockKey(jobId)
+  return prefix .. (persistentMetadata and ':lock-v2:' or ':lock:') .. jobId
+end
+
 local function lockToken(jobId)
-  local lock = redis.call('HMGET', prefix .. ':lock-v2:' .. jobId, 'token', 'expiresAt')
+  if not persistentMetadata then
+    return redis.call('GET', jobLockKey(jobId))
+  end
+  local lock = redis.call('HMGET', jobLockKey(jobId), 'token', 'expiresAt')
   if lock[1] and tonumber(lock[2]) > now then
     return lock[1]
   end
@@ -160,7 +171,11 @@ local function lockToken(jobId)
 end
 
 local function setLock(jobId, token, duration)
-  redis.call('HSET', prefix .. ':lock-v2:' .. jobId, 'token', token, 'expiresAt', now + duration)
+  if persistentMetadata then
+    redis.call('HSET', jobLockKey(jobId), 'token', token, 'expiresAt', now + duration)
+  else
+    redis.call('SET', jobLockKey(jobId), token, 'PX', duration)
+  end
 end
 `;
 
@@ -168,6 +183,7 @@ const fetchSessionFunctionsLua = `
 local fetchDeadlinesKey = prefix .. ':fetch-deadlines'
 
 local function expireFetchSession(workerId)
+  if not persistentMetadata then return false end
   local key = prefix .. ':fetch:' .. workerId
   if tonumber(redis.call('HGET', key, 'expiresAt') or '0') > now then
     return false
@@ -178,6 +194,7 @@ local function expireFetchSession(workerId)
 end
 
 local function cleanExpiredFetchSessions()
+  if not persistentMetadata then return end
   local expired = redis.call('ZRANGEBYSCORE', fetchDeadlinesKey, '-inf', now, 'LIMIT', 0, ${FETCH_SESSION_CLEANUP_BATCH_SIZE})
   for i = 1, #expired do
     expireFetchSession(expired[i])
@@ -185,10 +202,47 @@ local function cleanExpiredFetchSessions()
 end
 
 local function refreshFetchSession(workerId)
+  if not persistentMetadata then
+    redis.call('PEXPIRE', prefix .. ':fetch:' .. workerId, ${FETCH_SESSION_TTL})
+    return
+  end
   if expireFetchSession(workerId) then return end
   local expiresAt = now + ${FETCH_SESSION_TTL}
   redis.call('ZADD', fetchDeadlinesKey, expiresAt, workerId)
   redis.call('HSET', prefix .. ':fetch:' .. workerId, 'expiresAt', expiresAt)
+end
+`;
+
+const limiterFunctionsLua = `
+local limiterKey = prefix .. (persistentMetadata and ':limiter-window-v2' or ':limiter')
+
+local function limiterWindow()
+  if persistentMetadata then
+    local window = redis.call('HMGET', limiterKey, 'count', 'expiresAt')
+    local expiresAt = tonumber(window[2]) or 0
+    return expiresAt > now and (tonumber(window[1]) or 0) or 0, expiresAt
+  end
+  local count = tonumber(redis.call('GET', limiterKey) or '0')
+  return count, now + math.max(redis.call('PTTL', limiterKey), 0)
+end
+
+local function incrementLimiter(count, expiresAt, duration)
+  if persistentMetadata then
+    redis.call('HSET', limiterKey, 'count', count + 1, 'expiresAt', expiresAt > now and expiresAt or now + duration)
+  elseif redis.call('INCR', limiterKey) == 1 then
+    redis.call('PEXPIRE', limiterKey, duration)
+  end
+end
+`;
+
+const stalledLeaseFunctionLua = `
+local function acquireStalledLease(duration)
+  if not persistentMetadata then
+    return redis.call('SET', prefix .. ':stalled-check', now, 'PX', duration, 'NX')
+  end
+  local leaseKey = prefix .. ':stalled-check-v2'
+  if tonumber(redis.call('GET', leaseKey) or '0') > now then return false end
+  return redis.call('SET', leaseKey, now + duration)
 end
 `;
 
@@ -584,6 +638,7 @@ ${finishedJobsFunctionsLua}
 ${configureLimiterFunctionLua}
 ${lockFunctionsLua}
 ${fetchSessionFunctionsLua}
+${limiterFunctionsLua}
 local workerId = ARGV[1]
 local sessionStartedAt = tonumber(ARGV[2])
 local fetchSequence = tonumber(ARGV[3])
@@ -606,18 +661,30 @@ local function jobReply(jobKey)
 end
 
 local function cacheFetch(result, value, stalledCount)
-  local expiresAt = now + ${FETCH_SESSION_TTL}
-  redis.call('ZADD', fetchDeadlinesKey, expiresAt, workerId)
   redis.call(
     'HSET', fetchKey,
     'sessionStartedAt', sessionStartedAt,
     'sequence', fetchSequence,
     'token', token,
-    'result', result,
-    'value', value or '',
-    'stalledCount', stalledCount or '',
-    'expiresAt', expiresAt
+    'result', result
   )
+  if value then
+    redis.call('HSET', fetchKey, 'value', value)
+  else
+    redis.call('HDEL', fetchKey, 'value')
+  end
+  if stalledCount then
+    redis.call('HSET', fetchKey, 'stalledCount', stalledCount)
+  else
+    redis.call('HDEL', fetchKey, 'stalledCount')
+  end
+  if persistentMetadata then
+    local expiresAt = now + ${FETCH_SESSION_TTL}
+    redis.call('ZADD', fetchDeadlinesKey, expiresAt, workerId)
+    redis.call('HSET', fetchKey, 'expiresAt', expiresAt)
+  else
+    redis.call('PEXPIRE', fetchKey, ${FETCH_SESSION_TTL})
+  end
 end
 
 local cachedSequence = tonumber(redis.call('HGET', fetchKey, 'sequence'))
@@ -656,7 +723,7 @@ elseif fetchSequence == cachedSequence then
   end
 
   local claimedJobKey = prefix .. ':job:' .. cachedValue
-  local cachedStalledCount = redis.call('HGET', fetchKey, 'stalledCount')
+  local cachedStalledCount = redis.call('HGET', fetchKey, 'stalledCount') or ''
   local claimedStalledCount = redis.call('HGET', claimedJobKey, 'stalledCount') or ''
   if redis.call('LPOS', prefix .. ':active', cachedValue) and redis.call('HGET', claimedJobKey, 'fetchClaim') == fetchClaim and claimedStalledCount == cachedStalledCount then
     local claimedLock = lockToken(cachedValue)
@@ -731,11 +798,8 @@ for i = 1, #due do
   end
 end
 
-local limiterKey = prefix .. ':limiter-window-v2'
-local limiterWindow = redis.call('HMGET', limiterKey, 'count', 'expiresAt')
-local limiterExpiresAt = tonumber(limiterWindow[2]) or 0
-local limiterCount = limiterExpiresAt > now and (tonumber(limiterWindow[1]) or 0) or 0
-if limiterMax > 0 and limiterCount >= limiterMax then
+local limiterCount, limiterExpiresAt = limiterWindow()
+if limiterMax > 0 and limiterCount >= limiterMax and limiterExpiresAt > now then
   local remaining = limiterExpiresAt - now
   cacheFetch('delayed', tostring(limiterExpiresAt))
   return {'delayed', remaining}
@@ -760,10 +824,7 @@ for i = 1, groupCount do
     if jobId then
       local jobKey = prefix .. ':job:' .. jobId
       if limiterMax > 0 then
-        if limiterExpiresAt <= now then
-          limiterExpiresAt = now + limiterDuration
-        end
-        redis.call('HSET', limiterKey, 'count', limiterCount + 1, 'expiresAt', limiterExpiresAt)
+        incrementLimiter(limiterCount, limiterExpiresAt, limiterDuration)
       end
       redis.call('HINCRBY', groupActiveKey, groupId, 1)
       redis.call('RPUSH', prefix .. ':active', jobId)
@@ -811,7 +872,7 @@ ${finishedJobsFunctionsLua}
 ${lockFunctionsLua}
 local jobId = ARGV[1]
 local jobKey = prefix .. ':job:' .. jobId
-local lockKey = prefix .. ':lock-v2:' .. jobId
+local lockKey = jobLockKey(jobId)
 if lockToken(jobId) ~= ARGV[2] then
   return -1
 end
@@ -844,7 +905,7 @@ ${finishedJobsFunctionsLua}
 ${lockFunctionsLua}
 local jobId = ARGV[1]
 local jobKey = prefix .. ':job:' .. jobId
-local lockKey = prefix .. ':lock-v2:' .. jobId
+local lockKey = jobLockKey(jobId)
 if lockToken(jobId) ~= ARGV[2] then
   return -1
 end
@@ -912,19 +973,18 @@ ${redisTimeLua}
 ${finishedJobsFunctionsLua}
 ${lockFunctionsLua}
 ${fetchSessionFunctionsLua}
+${stalledLeaseFunctionLua}
 cleanExpiredFetchSessions()
-local leaseKey = prefix .. ':stalled-check-v2'
-if tonumber(redis.call('GET', leaseKey) or '0') > now then
+if not acquireStalledLease(tonumber(ARGV[1])) then
   return {{}, {}}
 end
-redis.call('SET', leaseKey, now + tonumber(ARGV[1]))
 local requeued = {}
 local failed = {}
 local activeJobs = redis.call('LRANGE', prefix .. ':active', 0, -1)
 for i = 1, #activeJobs do
   local jobId = activeJobs[i]
   if not lockToken(jobId) then
-    redis.call('DEL', prefix .. ':lock-v2:' .. jobId)
+    redis.call('DEL', jobLockKey(jobId))
     redis.call('LREM', prefix .. ':active', 1, jobId)
     local jobKey = prefix .. ':job:' .. jobId
     local groupId = redis.call('HGET', jobKey, 'groupId')
@@ -1094,15 +1154,20 @@ const scripts: Record<keyof PrairieMQCommands, string> = {
 export function createScriptedClient({
   redisUrl,
   redisMode,
+  persistentMetadata = false,
   role,
 }: {
   redisUrl: string;
   redisMode?: QueueOptions['redisMode'];
+  persistentMetadata?: boolean;
   role: 'queue' | 'worker';
 }): PrairieMQRedis {
   const client = createRedisClient({ redisUrl, redisMode, role });
   for (const [name, lua] of Object.entries(scripts)) {
-    client.defineCommand(name, { numberOfKeys: 1, lua: `${assertQueueProtocolLua}\n${lua}` });
+    client.defineCommand(name, {
+      numberOfKeys: 1,
+      lua: `local persistentMetadata = ${persistentMetadata}\n${assertQueueProtocolLua}\n${lua}`,
+    });
   }
   const scriptedClient = client as PrairieMQRedis;
   let connectionGeneration = 0;

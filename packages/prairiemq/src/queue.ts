@@ -19,6 +19,7 @@ import type {
 import {
   normalizeRedisUrl,
   validateOptionsObject,
+  validatePersistentMetadata,
   validatePrefix,
   validateRateLimiter,
   validateRedisMode,
@@ -28,6 +29,7 @@ const MAX_BULK_JOBS = 1000;
 const QUEUE_OPTION_NAMES = new Set<keyof QueueOptions>([
   'redisUrl',
   'redisMode',
+  'persistentMetadata',
   'prefix',
   'defaultJobOptions',
 ]);
@@ -157,6 +159,7 @@ function validateQueueOptions(options: QueueOptions): string {
   const optionRecord = validateOptionsObject('Queue', options, QUEUE_OPTION_NAMES);
   const redisUrl = normalizeRedisUrl(optionRecord.redisUrl);
   validateRedisMode(optionRecord.redisMode, redisUrl);
+  validatePersistentMetadata(optionRecord.persistentMetadata);
   validatePrefix(optionRecord.prefix);
   if (options.defaultJobOptions !== undefined) {
     validateDefaultJobOptions(options.defaultJobOptions);
@@ -205,6 +208,7 @@ export class Queue<Data = unknown, Result = unknown> extends EventEmitter<QueueE
     this.client = createScriptedClient({
       redisUrl,
       redisMode: options.redisMode,
+      persistentMetadata: options.persistentMetadata,
       role: 'queue',
     });
     this.client.on('error', (err) => this.emit('error', err));

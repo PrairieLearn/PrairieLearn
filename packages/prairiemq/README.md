@@ -7,7 +7,7 @@ PrairieMQ is a Redis-backed job queue for workloads that need fair scheduling ac
 - Node.js 24 or later.
 - Redis 6.2 or later, or a compatible Valkey deployment.
 - Standalone Redis, Redis Cluster, or ElastiCache Serverless Valkey. Set `redisMode: 'cluster'` for clustered deployments; the default is `'standalone'`.
-- Redis credentials that permit `INFO`, `TIME`, `SELECT` when using a nonzero database, `EVAL`/`EVALSHA`, `BLPOP`, `SCAN`, `UNLINK`, `MULTI`/`EXEC`, and the keyspace (`DEL` and `EXISTS`), string, list, set, sorted-set, and hash commands PrairieMQ uses on its queue keys. Cluster connections also need the `CLUSTER` discovery commands.
+- Redis credentials that permit `INFO`, `TIME`, `SELECT` when using a nonzero database, `EVAL`/`EVALSHA`, `BLPOP`, `SCAN`, `UNLINK`, `MULTI`/`EXEC`, and the keyspace (`DEL`, `EXISTS`, and `PEXPIRE`), string, list, set, sorted-set, and hash commands PrairieMQ uses on its queue keys. Cluster connections also need the `CLUSTER` discovery commands.
 
 ## Basic usage
 
@@ -51,12 +51,15 @@ await queue.close();
 
 Redis connections must use a `redis://` or `rediss://` URL with a hostname and an optional numeric database path. Query parameters and fragments are not supported. Queue names may contain letters, numbers, underscores, periods, and hyphens. Every `Queue` and `Worker` for the same logical queue must use the same name and non-empty Redis key `prefix` (which defaults to `prairiemq`); prefixes cannot contain `{` or `}`.
 
-For ElastiCache Serverless, pass the existing primary endpoint as a `rediss://` URL and set `redisMode: 'cluster'` on both the queue and every worker. Allow network access to ports 6379 and 6380: topology discovery can contact the advertised reader endpoint even though queue operations use primary connections. Cluster connections use database zero and read from primaries so ownership and queue state remain consistent. Each queue's keys share one hash slot, allowing its Lua operations to remain atomic. Different queues can use different slots; a single queue does not spread its work across shards.
+For a new queue on ElastiCache Serverless, pass the primary endpoint as a `rediss://` URL and set both `redisMode: 'cluster'` and `persistentMetadata: true` on the queue and every worker. The latter stores coordination deadlines without Redis key expiration, protecting them from Serverless's volatile eviction policy. It is independent of the connection mode and defaults to `false` to preserve the format of existing queues. See [rolling upgrades and metadata format](#rolling-upgrades-and-metadata-format) before changing an existing queue's setting.
+
+Allow network access to ports 6379 and 6380: topology discovery can contact the advertised reader endpoint even though queue operations use primary connections. Cluster connections use database zero and read from primaries so ownership and queue state remain consistent. Each queue's keys share one hash slot, allowing its Lua operations to remain atomic. Different queues can use different slots; a single queue does not spread its work across shards.
 
 ```ts
 const connection = {
   redisUrl: 'rediss://your-cache.serverless.use2.cache.amazonaws.com:6379',
   redisMode: 'cluster',
+  persistentMetadata: true,
 } as const;
 const queue = new Queue('exports', connection);
 const worker = new Worker('exports', processExport, connection);
@@ -156,7 +159,9 @@ Scheduler template `data` is required. Use `getJobSchedulerIds()` to reconcile t
 
 PrairieMQ's at-least-once delivery semantics assume that Redis retains acknowledged queue writes. Redis replication is asynchronous, and persistence depends on the deployment configuration, so a primary failure can lose a recently acknowledged enqueue. Configure Redis persistence and failover for the required durability. Applications that cannot tolerate a lost job must also keep the intended work in a durable source of truth and reconcile or re-enqueue it.
 
-PrairieMQ stores queue state and worker deadlines in keys without a Redis expiration. Use `maxmemory-policy noeviction` or a `volatile-*` policy, which only evicts keys with an expiration. ElastiCache Serverless's fixed `volatile-lru` policy is supported. Policies such as `allkeys-lru` can remove queue state and are not supported. Monitor memory usage and provision enough capacity for queued and retained jobs: Redis can reject writes when memory is full. Expired worker metadata is cleaned up in bounded batches using Redis server time.
+By default, PrairieMQ uses expiring coordination keys compatible with version 1. These queues require `maxmemory-policy noeviction` so locks, fetch records, and rate limits cannot be evicted early.
+
+With `persistentMetadata: true`, queue state and worker deadlines have no Redis key expiration. These queues also support `volatile-*` policies, including ElastiCache Serverless's fixed `volatile-lru`, because those policies only evict keys with an expiration. Expired metadata is cleaned up in bounded batches using Redis server time. Policies such as `allkeys-lru` can remove queue state and are not supported in either mode. Monitor memory usage and provision enough capacity for queued and retained jobs: Redis can reject writes when memory is full.
 
 Completed and failed jobs are retained without a limit when `removeOnComplete` or `removeOnFail` is unset or `false`. Do not use unbounded retention in production. Set queue-wide `defaultJobOptions` so completed jobs are removed immediately or kept only for a bounded history, and do the same for failed jobs with a limit large enough for operational debugging:
 
@@ -231,15 +236,13 @@ Lua scripts dynamically construct key names from the tagged base supplied as `KE
 
 PrairieMQ intentionally has a focused API. It does not currently support cron-pattern schedulers, progress tracking, cross-process events, or waiting directly for a job to finish.
 
-## Upgrading from version 1
+## Rolling upgrades and metadata format
 
-Version 2 changes the storage format for worker ownership, fetch replay protection, and rate limits. Old and new clients must not share a running queue during the upgrade. A protocol marker detects unsupported versions and prevents an upgrade while legacy jobs are active, but version 1 clients do not honor that marker. In-progress rate-limit windows reset during the upgrade; the configured limits are preserved.
+The default metadata format is unchanged from version 1. Existing producers and workers can be upgraded gradually while jobs remain active. Queue prefixes, jobs, schedules, locks, and rate-limit windows retain their existing representation. The new Redis connection and version-detection support does not require a metadata migration.
 
-1. Stop every old producer and stop workers from taking new jobs. Let active jobs finish and close all old workers.
-2. Upgrade all clients together, keeping the existing prefix and queue name. Waiting jobs and recurring schedules keep their existing keys.
-3. Start the new workers and producers. For ElastiCache Serverless, configure `redisMode: 'cluster'` on both.
+`persistentMetadata: true` is an explicit choice for a new queue. Every producer and worker sharing a queue must use the same metadata format. New clients reject a persistent queue when configured for expiring metadata, and persistent clients refuse initialization while legacy jobs are active. Version 1 clients do not recognize the format marker, so it cannot protect a mixed-format deployment by itself.
 
-Changing the prefix starts a separate queue; it does not migrate waiting jobs or schedules. Downgrading requires the same coordinated stop and an explicit data migration or a separate queue namespace.
+Do not enable persistent metadata one process at a time on an existing queue. A future change of metadata format needs a separate migration plan. Using a new prefix creates an independent queue so existing workers can keep serving the old queue while producers move over; jobs and recurring schedules are not automatically transferred. Connection mode and metadata format are separate settings: changing Redis clients does not implicitly change stored queue data.
 
 ## Testing
 

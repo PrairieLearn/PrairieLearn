@@ -54,6 +54,12 @@ export function validateRedisMode(value: unknown, redisUrl: string): void {
   }
 }
 
+export function validatePersistentMetadata(value: unknown): void {
+  if (value !== undefined && typeof value !== 'boolean') {
+    throw new Error('persistentMetadata must be a boolean');
+  }
+}
+
 export function validatePrefix(value: unknown): void {
   if (value !== undefined && (typeof value !== 'string' || value === '')) {
     throw new Error('prefix must be a non-empty string');

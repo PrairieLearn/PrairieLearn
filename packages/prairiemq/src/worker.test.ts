@@ -381,46 +381,6 @@ describe('Worker', () => {
     );
   });
 
-  it('refuses legacy active claims before upgrading queue coordination state', async () => {
-    const job = await queue.add('waiting', {});
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    await client.del(`${queueBase}:protocol-version`);
-    await client.rpush(`${queueBase}:active`, 'legacy-active-job');
-    const worker = makeWorker(queueName, async () => 'done', {
-      redisUrl,
-      autorun: false,
-    });
-    const errors: Error[] = [];
-    worker.on('error', (error) => errors.push(error));
-
-    try {
-      worker.run();
-      await expect(worker.waitUntilReady()).rejects.toThrow(
-        'PrairieMQ queue protocol upgrade requires all legacy active jobs to finish',
-      );
-      assert.lengthOf(errors, 1);
-      assert.isNull(await client.get(`${queueBase}:protocol-version`));
-    } finally {
-      await client.del(`${queueBase}:active`);
-    }
-
-    await queue.waitUntilReady();
-    assert.equal(await client.get(`${queueBase}:protocol-version`), '2');
-    assert.equal((await queue.getJobStatus(job.id)).state, 'waiting');
-  });
-
-  it('refuses a queue written by an unsupported protocol version', async () => {
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    await client.set(`${queueBase}:protocol-version`, '3');
-    try {
-      await expect(queue.waitUntilReady()).rejects.toThrow(
-        'PrairieMQ queue protocol version 3 is not supported by this client',
-      );
-    } finally {
-      await client.set(`${queueBase}:protocol-version`, '2');
-    }
-  });
-
   it('retries a transient Redis version check failure', async () => {
     const worker = makeWorker(queueName, async () => 'done', {
       redisUrl,
@@ -929,7 +889,7 @@ describe('Worker', () => {
     await client.zadd(`${queueBase}:delayed`, 0, retryMember);
     const retry = await claim(randomUUID());
     assert.equal(retry?.[retry.indexOf('id') + 1], high.id);
-    await client.del(`${queueBase}:lock-v2:${high.id}`);
+    await client.del(`${queueBase}:lock:${high.id}`);
     assert.deepEqual(await client.pmqCheckStalled(queueBase, 30_000), [[high.id], []]);
     const recovered = await claim(randomUUID());
     assert.equal(recovered?.[recovered.indexOf('id') + 1], high.id);
@@ -966,15 +926,12 @@ describe('Worker', () => {
     ]);
     assert.equal(results.filter((reply) => reply?.[0] === 'job').length, 1);
     assert.equal(results.filter((reply) => reply?.[0] === 'delayed').length, 2);
-    assert.equal(await client.hget(`${queueBase}:limiter-window-v2`, 'count'), '2');
-    assert.isAbove(
-      Number(await client.hget(`${queueBase}:limiter-window-v2`, 'expiresAt')),
-      await redisTimestamp(client),
-    );
+    assert.equal(await client.get(`${queueBase}:limiter`), '2');
+    assert.isAbove(await client.pttl(`${queueBase}:limiter`), 0);
     assert.equal((await queue.getJobCounts()).waiting, 2);
-    await client.hset(`${queueBase}:limiter-window-v2`, 'expiresAt', 0);
+    await client.pexpire(`${queueBase}:limiter`, 0);
     assert.equal((await claim(randomUUID(), 1, randomUUID()))?.[0], 'job');
-    assert.equal(await client.hget(`${queueBase}:limiter-window-v2`, 'count'), '1');
+    assert.equal(await client.get(`${queueBase}:limiter`), '1');
   });
 
   it('resumes workers after the shared rate limit expires', async () => {
@@ -989,63 +946,6 @@ describe('Worker', () => {
     }
     await waitForCompletedJobs(queue, 4);
     assert.isAtLeast(processedAt[2] - processedAt[0], 280);
-  });
-
-  it('keeps coordination records outside volatile eviction policies', async () => {
-    const job = await queue.add('job', {});
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    const workerId = randomUUID();
-    const startedAt = await redisTimestamp(client);
-    const token = randomUUID();
-    const claim = () =>
-      client.pmqMoveToActive(
-        queueBase,
-        workerId,
-        startedAt,
-        1,
-        token,
-        30_000,
-        0,
-        1,
-        'claim',
-        1,
-        60_000,
-      );
-    const claimed = await claim();
-    await client.pmqCheckStalled(queueBase, 30_000);
-
-    for (const key of [
-      `${queueBase}:lock-v2:${job.id}`,
-      `${queueBase}:fetch:${workerId}`,
-      `${queueBase}:fetch-deadlines`,
-      `${queueBase}:limiter-window-v2`,
-      `${queueBase}:stalled-check-v2`,
-    ]) {
-      assert.equal(await client.pttl(key), -1);
-    }
-    assert.deepEqual(await claim(), claimed);
-    assert.equal((await queue.getJobCounts()).active, 1);
-  });
-
-  it('does not renew or complete a logically expired claim', async () => {
-    const job = await queue.add('job', {});
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    const workerId = randomUUID();
-    const startedAt = await redisTimestamp(client);
-    const token = randomUUID();
-    const claim = () =>
-      client.pmqMoveToActive(queueBase, workerId, startedAt, 1, token, 30_000, 0, 1, 'claim');
-    await claim();
-    await client.hset(`${queueBase}:lock-v2:${job.id}`, 'expiresAt', 0);
-
-    assert.deepEqual(await client.pmqExtendLocks(queueBase, workerId, 30_000, job.id, token), [
-      job.id,
-    ]);
-    assert.equal(await client.pmqMoveToCompleted(queueBase, job.id, token, 'null', 0), -1);
-    assert.deepEqual(await client.pmqCheckStalled(queueBase, 30_000), [[job.id], []]);
-    assert.deepEqual(await claim(), ['claim-lost']);
-    assert.equal(await client.exists(`${queueBase}:lock-v2:${job.id}`), 0);
-    assert.equal((await queue.getJobStatus(job.id)).state, 'waiting');
   });
 
   it('updates the shared limiter without dropping jobs or resetting its current budget', async () => {
@@ -1068,23 +968,15 @@ describe('Worker', () => {
     assert.equal((await claim())?.[0], 'job');
     assert.equal((await claim())?.[0], 'delayed');
     await queue.setRateLimit({ max: 2, duration: 30_000 });
-    assert.isAbove(
-      Number(await client.hget(`${queueBase}:limiter-window-v2`, 'expiresAt')) -
-        (await redisTimestamp(client)),
-      30_000,
-    );
+    assert.isAbove(await client.pttl(`${queueBase}:limiter`), 30_000);
     assert.equal((await claim())?.[0], 'job');
     assert.equal((await claim())?.[0], 'delayed');
-    assert.equal(await client.hget(`${queueBase}:limiter-window-v2`, 'count'), '2');
+    assert.equal(await client.get(`${queueBase}:limiter`), '2');
     assert.equal((await queue.getJobCounts()).waiting, 3);
     assert.equal((await queue.getJobCounts()).active, 2);
-    await client.hset(`${queueBase}:limiter-window-v2`, 'expiresAt', 0);
+    await client.pexpire(`${queueBase}:limiter`, 0);
     assert.equal((await claim())?.[0], 'job');
-    assert.isAtMost(
-      Number(await client.hget(`${queueBase}:limiter-window-v2`, 'expiresAt')) -
-        (await redisTimestamp(client)),
-      30_000,
-    );
+    assert.isAtMost(await client.pttl(`${queueBase}:limiter`), 30_000);
     await queue.setRateLimit(null);
     assert.equal((await claim())?.[0], 'job');
     assert.equal((await claim())?.[0], 'job');
@@ -1669,10 +1561,7 @@ describe('Worker', () => {
     try {
       assert.isAtLeast(fetch.mock.calls.length, 2);
       assert.deepEqual(fetch.mock.calls[1].slice(1, 5), fetch.mock.calls[0].slice(1, 5));
-      assert.isAbove(
-        Number(await client.hget(`${queueBase}:lock-v2:${job.id}`, 'expiresAt')),
-        await redisTimestamp(client),
-      );
+      assert.isAbove(await client.pttl(`${queueBase}:lock:${job.id}`), 0);
     } finally {
       releaseProcessor();
     }
@@ -1792,8 +1681,7 @@ describe('Worker', () => {
         'claim',
       ),
     );
-    await client.hset(`${queueBase}:fetch:${workerId}`, 'expiresAt', 0);
-    await client.zadd(`${queueBase}:fetch-deadlines`, 0, workerId);
+    await client.del(`${queueBase}:fetch:${workerId}`);
 
     const job = await queue.add('job', {});
     assert.deepEqual(
@@ -1828,31 +1716,6 @@ describe('Worker', () => {
     assert.equal(claimed?.[claimed.indexOf('id') + 1], job.id);
   });
 
-  it('cleans expired fetch sessions in bounded batches without reviving them', async () => {
-    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
-    const expiredWorkerIds = Array.from({ length: 101 }, () => randomUUID());
-    const records = client.multi();
-    for (const workerId of expiredWorkerIds) {
-      records.hset(`${queueBase}:fetch:${workerId}`, 'expiresAt', 0);
-      records.zadd(`${queueBase}:fetch-deadlines`, 0, workerId);
-    }
-    await records.exec();
-
-    await client.pmqCheckStalled(queueBase, 30_000);
-    const remaining = await client.zcard(`${queueBase}:fetch-deadlines`);
-    assert.isAbove(remaining, 0);
-    assert.isBelow(remaining, expiredWorkerIds.length);
-    await client.pmqCheckStalled(queueBase, 30_000);
-    assert.equal(await client.zcard(`${queueBase}:fetch-deadlines`), 0);
-    assert.equal(
-      await client.exists(...expiredWorkerIds.map((id) => `${queueBase}:fetch:${id}`)),
-      0,
-    );
-    assert.deepEqual(await client.pmqExtendLocks(queueBase, expiredWorkerIds[0], 30_000), []);
-    assert.equal(await client.exists(`${queueBase}:fetch:${expiredWorkerIds[0]}`), 0);
-    assert.equal(await client.zcard(`${queueBase}:fetch-deadlines`), 0);
-  });
-
   it('does not reacquire a cached claim after its stalled generation changes', async () => {
     const job = await queue.add('job', {});
     const client = Reflect.get(queue, 'client') as PrairieMQRedis;
@@ -1876,12 +1739,12 @@ describe('Worker', () => {
     assert.equal(claimed?.[claimed.indexOf('id') + 1], job.id);
     await client
       .multi()
-      .del(`${queueBase}:lock-v2:${job.id}`)
+      .del(`${queueBase}:lock:${job.id}`)
       .hincrby(`${queueBase}:job:${job.id}`, 'stalledCount', 1)
       .exec();
 
     assert.deepEqual(await fetch(), ['claim-lost']);
-    assert.equal(await client.exists(`${queueBase}:lock-v2:${job.id}`), 0);
+    assert.equal(await client.exists(`${queueBase}:lock:${job.id}`), 0);
   });
 
   it('reconciles an ambiguous fetch before closing gracefully', async () => {
@@ -2402,7 +2265,7 @@ describe('Worker', () => {
 
     const redis = new Redis<'legacy'>(redisUrl);
     try {
-      await redis.del(`${queueBase}:lock-v2:${job.id}`);
+      await redis.del(`${queueBase}:lock:${job.id}`);
       await waitUntil(async () => errors.length > 0);
       releaseProcessor();
       await sleep(100);
@@ -2450,7 +2313,7 @@ describe('Worker', () => {
 
     const client = Reflect.get(queue, 'client') as PrairieMQRedis;
     await client.hdel(`${queueBase}:job:${job.id}`, 'claimMaxStalledCount');
-    await client.del(`${queueBase}:lock-v2:${job.id}`, `${queueBase}:stalled-check-v2`);
+    await client.del(`${queueBase}:lock:${job.id}`, `${queueBase}:stalled-check`);
 
     assert.deepEqual(await client.pmqCheckStalled(queueBase, 100), [[job.id], []]);
     assert.equal((await queue.getJobStatus(job.id)).state, 'waiting');
@@ -2472,7 +2335,6 @@ describe('Worker', () => {
     interface StalledCheckClient {
       del: (...keys: string[]) => Promise<number>;
       pmqCheckStalled: (prefix: string, stalledInterval: number) => Promise<[string[], string[]]>;
-      get: (key: string) => Promise<string | null>;
       pttl: (key: string) => Promise<number>;
     }
     const firstClient = Reflect.get(queue, 'client') as StalledCheckClient;
@@ -2480,17 +2342,13 @@ describe('Worker', () => {
     await waitForRedisConnection(secondClient);
     const stalledInterval = 100;
     assert.deepEqual(await firstClient.pmqCheckStalled(queueBase, stalledInterval), [[], []]);
-    assert.equal(await firstClient.pttl(`${queueBase}:stalled-check-v2`), -1);
+    assert.isAbove(await firstClient.pttl(`${queueBase}:stalled-check`), 0);
 
-    await firstClient.del(`${queueBase}:lock-v2:${job.id}`);
+    await firstClient.del(`${queueBase}:lock:${job.id}`);
     assert.deepEqual(await secondClient.pmqCheckStalled(queueBase, stalledInterval), [[], []]);
     assert.equal((await queue.getJobStatus(job.id)).state, 'active');
 
-    await waitUntil(
-      async () =>
-        Number(await secondClient.get(`${queueBase}:stalled-check-v2`)) <=
-        (await redisTimestamp(secondClient)),
-    );
+    await waitUntil(async () => (await secondClient.pttl(`${queueBase}:stalled-check`)) === -2);
     assert.deepEqual(await secondClient.pmqCheckStalled(queueBase, stalledInterval), [
       [job.id],
       [],
@@ -2894,8 +2752,8 @@ describe('Worker', () => {
       assert.equal(reply?.[reply.indexOf('id') + 1], jobId);
     }
     await client.del(
-      ...ids.map((jobId) => `${queueBase}:lock-v2:${jobId}`),
-      `${queueBase}:stalled-check-v2`,
+      ...ids.map((jobId) => `${queueBase}:lock:${jobId}`),
+      `${queueBase}:stalled-check`,
     );
 
     assert.deepEqual(await client.pmqCheckStalled(queueBase, 100), [[], ids]);
@@ -2980,5 +2838,104 @@ describe('Worker', () => {
     await waitForCompletedJobs(queue, 1);
     counts = await queue.getJobCounts();
     assert.equal(counts.completed, 1);
+  });
+});
+
+describe('Persistent worker metadata', () => {
+  let queue: Queue;
+  let queueBase: string;
+
+  beforeEach(async () => {
+    const queueName = `test-${randomUUID()}`;
+    queueBase = new QueueKeys(DEFAULT_PREFIX, queueName).base;
+    queue = new Queue(queueName, { redisUrl, persistentMetadata: true });
+    await queue.waitUntilReady();
+  });
+
+  afterEach(async () => {
+    await queue.obliterate();
+    await queue.close();
+  });
+
+  it('keeps coordination records outside volatile eviction policies', async () => {
+    const job = await queue.add('job', {});
+    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
+    const workerId = randomUUID();
+    const startedAt = await redisTimestamp(client);
+    const token = randomUUID();
+    const claim = () =>
+      client.pmqMoveToActive(
+        queueBase,
+        workerId,
+        startedAt,
+        1,
+        token,
+        30_000,
+        0,
+        1,
+        'claim',
+        1,
+        60_000,
+      );
+    const claimed = await claim();
+    await client.pmqCheckStalled(queueBase, 30_000);
+
+    for (const key of [
+      `${queueBase}:lock-v2:${job.id}`,
+      `${queueBase}:fetch:${workerId}`,
+      `${queueBase}:fetch-deadlines`,
+      `${queueBase}:limiter-window-v2`,
+      `${queueBase}:stalled-check-v2`,
+    ]) {
+      assert.equal(await client.pttl(key), -1);
+    }
+    assert.deepEqual(await claim(), claimed);
+    assert.equal((await queue.getJobCounts()).active, 1);
+  });
+
+  it('does not renew or complete a logically expired claim', async () => {
+    const job = await queue.add('job', {});
+    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
+    const workerId = randomUUID();
+    const startedAt = await redisTimestamp(client);
+    const token = randomUUID();
+    const claim = () =>
+      client.pmqMoveToActive(queueBase, workerId, startedAt, 1, token, 30_000, 0, 1, 'claim');
+    await claim();
+    await client.hset(`${queueBase}:lock-v2:${job.id}`, 'expiresAt', 0);
+
+    assert.deepEqual(await client.pmqExtendLocks(queueBase, workerId, 30_000, job.id, token), [
+      job.id,
+    ]);
+    assert.equal(await client.pmqMoveToCompleted(queueBase, job.id, token, 'null', 0), -1);
+    assert.deepEqual(await client.pmqCheckStalled(queueBase, 30_000), [[job.id], []]);
+    assert.deepEqual(await claim(), ['claim-lost']);
+    assert.equal(await client.exists(`${queueBase}:lock-v2:${job.id}`), 0);
+    assert.equal((await queue.getJobStatus(job.id)).state, 'waiting');
+  });
+
+  it('cleans expired fetch sessions in bounded batches without reviving them', async () => {
+    const client = Reflect.get(queue, 'client') as PrairieMQRedis;
+    const expiredWorkerIds = Array.from({ length: 101 }, () => randomUUID());
+    const records = client.multi();
+    for (const workerId of expiredWorkerIds) {
+      records.hset(`${queueBase}:fetch:${workerId}`, 'expiresAt', 0);
+      records.zadd(`${queueBase}:fetch-deadlines`, 0, workerId);
+    }
+    await records.exec();
+
+    await client.pmqCheckStalled(queueBase, 30_000);
+    const remaining = await client.zcard(`${queueBase}:fetch-deadlines`);
+    assert.isAbove(remaining, 0);
+    assert.isBelow(remaining, expiredWorkerIds.length);
+    await client.pmqCheckStalled(queueBase, 30_000);
+    assert.equal(await client.zcard(`${queueBase}:fetch-deadlines`), 0);
+    assert.equal(
+      await client.exists(...expiredWorkerIds.map((id) => `${queueBase}:fetch:${id}`)),
+      0,
+    );
+    assert.deepEqual(await client.pmqExtendLocks(queueBase, expiredWorkerIds[0], 30_000), []);
+    assert.equal(await client.exists(`${queueBase}:fetch:${expiredWorkerIds[0]}`), 0);
+    assert.equal(await client.zcard(`${queueBase}:fetch-deadlines`), 0);
   });
 });

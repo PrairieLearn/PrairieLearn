@@ -1,7 +1,7 @@
 ---
-'@prairielearn/prairiemq': major
+'@prairielearn/prairiemq': minor
 ---
 
-Support Redis Cluster and ElastiCache Serverless Valkey, including Serverless version metadata and connection recovery. Store worker ownership, fetch replay protection, and rate-limit deadlines without key expiration so volatile eviction policies cannot remove them early.
+Support Redis Cluster and ElastiCache Serverless Valkey, including Serverless version metadata and connection recovery. Existing queues keep their storage format by default and can be upgraded with old and new clients running together.
 
-The queue storage format has changed. Stop all old queue producers and workers and let active jobs finish before upgrading; rolling upgrades with old and new clients on the same queue are not supported. Waiting jobs and recurring schedules retain their existing keys.
+New queues can opt into `persistentMetadata` to store worker ownership, fetch replay protection, and rate-limit deadlines without key expiration, protecting them from volatile eviction policies. Every producer and worker for that queue must use the same setting. Enabling persistent metadata on an existing queue is a separate storage migration, not part of a normal library upgrade.

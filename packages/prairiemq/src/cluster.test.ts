@@ -156,6 +156,7 @@ describe('Redis Cluster', () => {
       const queue = new Queue<{ value: number }, number>(name, {
         redisUrl: `redis://127.0.0.1:${nodes[0].port}`,
         redisMode: 'cluster',
+        persistentMetadata: true,
       });
       queue.on('error', (error) => errors.push(error));
       queues.push(queue);
@@ -171,7 +172,12 @@ describe('Redis Cluster', () => {
     const worker = new Worker<{ value: number }, number>(
       name,
       async (job) => processor(job.data.value, job.failedAttempts),
-      { redisUrl: `redis://127.0.0.1:${nodes[0].port}`, redisMode: 'cluster', autorun },
+      {
+        redisUrl: `redis://127.0.0.1:${nodes[0].port}`,
+        redisMode: 'cluster',
+        persistentMetadata: true,
+        autorun,
+      },
     );
     worker.on('error', (error) => errors.push(error));
     workers.push(worker);
