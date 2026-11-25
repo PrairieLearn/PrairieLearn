@@ -14,6 +14,7 @@ import { insertSharedQuestionUsagesForSubmission } from '../models/shared-questi
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { updateAssessmentInstancesScorePending } from './assessment-grading.js';
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
@@ -177,6 +178,10 @@ async function insertSubmission({
         InstanceQuestionSchema,
       );
       await updateInstanceQuestionStats({ instanceQuestion });
+      await updateAssessmentInstancesScorePending(
+        [instanceQuestion.assessment_instance_id],
+        auth_user_id,
+      );
     }
 
     return { submission_id, variant };
