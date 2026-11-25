@@ -2,14 +2,10 @@ import { assert, describe, it } from 'vitest';
 
 import {
   type EditorTreeRow,
-  canIndent,
   depthsFromParents,
   groupWarning,
-  indent,
   isSortedHighestFirst,
-  moveAmongSiblings,
-  moveToSibling,
-  outdent,
+  projectDrop,
   removeSubtree,
   rubricPointRange,
   sortChildrenByPoints,
@@ -57,44 +53,8 @@ describe('depthsFromParents', () => {
   });
 });
 
-describe('indent and outdent', () => {
-  const list = rows('a', 'G g', '  b', 'c', 'G h', '  G i', '    d');
-
-  it('moves a row into the group above it as the last child', () => {
-    assert.deepEqual(shape(indent(list, 3)), ['a', 'g', '  b', '  c', 'h', '  i', '    d']);
-  });
-
-  it('only indents under a group, and not past the maximum depth', () => {
-    assert.isFalse(canIndent(list, 0));
-    assert.isFalse(canIndent(list, 1));
-    assert.isFalse(canIndent(rows('G g', 'G h', '  G i', '    d'), 1));
-  });
-
-  it('moves a row out of its group to just after the group', () => {
-    const before = rows('G g', '  a', '  b', '  c', 'd');
-    assert.deepEqual(shape(outdent(before, 1)), ['g', '  b', '  c', 'a', 'd']);
-  });
-
-  it('moves a group together with its children', () => {
-    assert.deepEqual(shape(outdent(list, 5)), ['a', 'g', '  b', 'c', 'h', 'i', '  d']);
-  });
-});
-
-describe('moving rows', () => {
+describe('sorting and removing rows', () => {
   const list = rows('a', 'G g', '  b', '  c', 'd');
-
-  it('swaps a row with its sibling, keeping subtrees together', () => {
-    assert.deepEqual(shape(moveAmongSiblings(list, 0, 1)), ['g', '  b', '  c', 'a', 'd']);
-    assert.deepEqual(shape(moveAmongSiblings(list, 4, -1)), ['a', 'd', 'g', '  b', '  c']);
-    assert.strictEqual(moveAmongSiblings(list, 3, 1), list);
-  });
-
-  it('drags only between siblings', () => {
-    const result = moveToSibling(list, 0, 4);
-    assert.deepEqual(shape(result?.rows ?? []), ['g', '  b', '  c', 'd', 'a']);
-    assert.equal(result?.index, 4);
-    assert.isNull(moveToSibling(list, 0, 2));
-  });
 
   it('sorts only the items inside a group by points', () => {
     const group = rows('a:5', 'G g', '  b:1', '  c:3', '  d:-2', '  e:3', 'f:4');
@@ -160,11 +120,90 @@ describe('subgroupBlocker', () => {
 
 describe('groupWarning', () => {
   it('flags empty groups and rules the items cannot meet', () => {
-    const list = rows('G empty', 'G ok 1-1', '  a', '  b', 'G short 3-', '  c', 'G flipped 2-1', '  d');
+    const list = rows(
+      'G empty',
+      'G ok 1-1',
+      '  a',
+      '  b',
+      'G short 3-',
+      '  c',
+      'G flipped 2-1',
+      '  d',
+    );
     assert.equal(groupWarning(list, 0)?.label, 'Empty group');
     assert.isNull(groupWarning(list, 1));
     assert.isNull(groupWarning(list, 2));
-    assert.match(groupWarning(list, 4)?.body ?? '', /at least 3 selected, but the group has 1 item\./);
+    assert.match(
+      groupWarning(list, 4)?.body ?? '',
+      /at least 3 selected, but the group has 1 item\./,
+    );
     assert.equal(groupWarning(list, 6)?.label, 'Invalid rule');
+  });
+});
+
+describe('projectDrop', () => {
+  const none = () => false;
+  const drop = (
+    list: Row[],
+    activeIdx: number,
+    overIdx: number,
+    depthOffset = 0,
+    isCollapsed: (i: number) => boolean = none,
+  ) => {
+    const result = projectDrop(list, { activeIdx, overIdx, depthOffset, isCollapsed });
+    return result && shape(result.rows);
+  };
+
+  it('reorders rows at their own depth', () => {
+    const list = rows('a', 'b', 'c');
+    assert.deepEqual(drop(list, 0, 2), ['b', 'c', 'a']);
+    assert.deepEqual(drop(list, 2, 0), ['c', 'a', 'b']);
+  });
+
+  it('moves a row into the group above when dragged right, and out when dragged left', () => {
+    const list = rows('G g', '  a', 'b');
+    assert.deepEqual(drop(list, 2, 2, 1), ['g', '  a', '  b']);
+    assert.deepEqual(drop(list, 1, 1, -1), ['g', 'a', 'b']);
+  });
+
+  it('keeps a row inside a group when dropped between two of its items', () => {
+    const list = rows('G g', '  a', '  b', 'c');
+    assert.deepEqual(drop(list, 3, 2, -5), ['g', '  a', '  c', '  b']);
+  });
+
+  it('moves a group with its contents', () => {
+    const list = rows('a', 'G g', '  b', 'c');
+    assert.deepEqual(drop(list, 1, 3), ['a', 'c', 'g', '  b']);
+  });
+
+  it('respects the depth limit and selection rules', () => {
+    const deep = rows('G g', '  G h', '    a', 'G i', '  b');
+    // Inside `h`, the item in `i` would be 4 levels deep, so `i` stops in `g`.
+    assert.deepEqual(drop(deep, 3, 3, 2), ['g', '  h', '    a', '  i', '    b']);
+    assert.isNull(
+      projectDrop(deep, { activeIdx: 3, overIdx: 2, depthOffset: 0, isCollapsed: none }),
+    );
+    const ruled = rows('G r 1-1', '  a', 'G g', '  b');
+    assert.deepEqual(drop(ruled, 2, 2, 1), ['r', '  a', 'g', '  b']);
+    assert.deepEqual(drop(rows('G r 1-1', '  a', 'b'), 2, 2, 1), ['r', '  a', '  b']);
+  });
+
+  it("doesn't drop into a collapsed group", () => {
+    const list = rows('a', 'G g', '  b', 'c');
+    assert.deepEqual(
+      drop(list, 0, 1, 1, (i) => i === 1),
+      ['g', '  b', 'a', 'c'],
+    );
+  });
+
+  it('rejects dropping a row inside itself', () => {
+    assert.isNull(
+      projectDrop(rows('G g', '  a'), {
+        activeIdx: 0,
+        overIdx: 1,
+        depthOffset: 0,
+        isCollapsed: none,
+      }),
+    );
   });
 });

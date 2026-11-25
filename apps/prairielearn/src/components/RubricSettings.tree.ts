@@ -1,3 +1,5 @@
+import { run } from '@prairielearn/run';
+
 import { RUBRIC_MAX_DEPTH } from '../lib/rubric-tree.js';
 
 /**
@@ -32,14 +34,6 @@ export function subtreeEnd(rows: EditorTreeRow[], i: number): number {
   return end;
 }
 
-function previousSibling(rows: EditorTreeRow[], i: number): number | null {
-  for (let j = i - 1; j >= 0; j--) {
-    if (rows[j].depth === rows[i].depth) return j;
-    if (rows[j].depth < rows[i].depth) return null;
-  }
-  return null;
-}
-
 function nextSibling(rows: EditorTreeRow[], i: number): number | null {
   const end = subtreeEnd(rows, i);
   return end < rows.length && rows[end].depth === rows[i].depth ? end : null;
@@ -66,74 +60,6 @@ function subtreeHeight(rows: EditorTreeRow[], i: number): number {
 
 function shiftDepth<T extends EditorTreeRow>(rows: T[], delta: number): T[] {
   return rows.map((row) => ({ ...row, depth: row.depth + delta }));
-}
-
-/** A row can be indented into the group directly above it, if depth allows. */
-export function canIndent(rows: EditorTreeRow[], i: number): boolean {
-  const sibling = previousSibling(rows, i);
-  return (
-    sibling != null &&
-    rows[sibling].rubric_item.is_group &&
-    rows[i].depth + subtreeHeight(rows, i) + 1 < RUBRIC_MAX_DEPTH
-  );
-}
-
-/** Moves a row into the group directly above it, as that group's last child. */
-export function indent<T extends EditorTreeRow>(rows: T[], i: number): T[] {
-  if (!canIndent(rows, i)) return rows;
-  const end = subtreeEnd(rows, i);
-  return [...rows.slice(0, i), ...shiftDepth(rows.slice(i, end), 1), ...rows.slice(end)];
-}
-
-/** Moves a row out of its group, placing it right after that group. */
-export function outdent<T extends EditorTreeRow>(rows: T[], i: number): T[] {
-  const parent = parentIndex(rows, i);
-  if (parent == null) return rows;
-  const end = subtreeEnd(rows, i);
-  const moved = shiftDepth(rows.slice(i, end), -1);
-  const rest = [...rows.slice(0, i), ...rows.slice(end)];
-  const insertAt = subtreeEnd(rest, parent);
-  return [...rest.slice(0, insertAt), ...moved, ...rest.slice(insertAt)];
-}
-
-/** Swaps a row (and its descendants) with its previous or next sibling. */
-export function moveAmongSiblings<T extends EditorTreeRow>(
-  rows: T[],
-  i: number,
-  direction: -1 | 1,
-): T[] {
-  const sibling = direction === -1 ? previousSibling(rows, i) : nextSibling(rows, i);
-  if (sibling == null) return rows;
-  const [first, second] = direction === -1 ? [sibling, i] : [i, sibling];
-  const secondEnd = subtreeEnd(rows, second);
-  return [
-    ...rows.slice(0, first),
-    ...rows.slice(second, secondEnd),
-    ...rows.slice(first, second),
-    ...rows.slice(secondEnd),
-  ];
-}
-
-/**
- * Moves row `from` to the position of its sibling `to`, for drag and drop.
- * Returns null if the rows are not siblings.
- */
-export function moveToSibling<T extends EditorTreeRow>(
-  rows: T[],
-  from: number,
-  to: number,
-): { rows: T[]; index: number } | null {
-  if (from === to || parentIndex(rows, from) !== parentIndex(rows, to)) return null;
-  if (rows[from].depth !== rows[to].depth) return null;
-  const end = subtreeEnd(rows, from);
-  const moved = rows.slice(from, end);
-  const rest = [...rows.slice(0, from), ...rows.slice(end)];
-  const target = to < from ? to : to - moved.length;
-  const insertAt = to < from ? target : subtreeEnd(rest, target);
-  return {
-    rows: [...rest.slice(0, insertAt), ...moved, ...rest.slice(insertAt)],
-    index: insertAt,
-  };
 }
 
 /**
@@ -302,4 +228,88 @@ export function groupWarning(
     };
   }
   return null;
+}
+
+/**
+ * Where a dragged row lands, for drag and drop that can also move rows into
+ * and out of groups. The row (with its contents) goes before or after the
+ * visible row `overIdx`, following dnd-kit's sortable order, at the depth
+ * closest to its own depth plus `depthOffset` that the rows around it allow.
+ * Rows inside collapsed groups are hidden, so nothing is dropped into those.
+ * Returns null if the row can't go there at any depth.
+ */
+export function projectDrop<T extends EditorTreeRow>(
+  rows: T[],
+  {
+    activeIdx,
+    overIdx,
+    depthOffset,
+    isCollapsed,
+  }: {
+    activeIdx: number;
+    overIdx: number;
+    depthOffset: number;
+    isCollapsed: (i: number) => boolean;
+  },
+): { rows: T[]; depth: number } | null {
+  const activeEnd = subtreeEnd(rows, activeIdx);
+  if (overIdx > activeIdx && overIdx < activeEnd) return null;
+  const moved = rows.slice(activeIdx, activeEnd);
+  const rest = [...rows.slice(0, activeIdx), ...rows.slice(activeEnd)];
+  const toRest = (i: number) => (i < activeIdx ? i : i - moved.length);
+  const restCollapsed = (i: number) => isCollapsed(i < activeIdx ? i : i + moved.length);
+
+  const insertAt = run(() => {
+    if (overIdx === activeIdx) return activeIdx;
+    const over = toRest(overIdx);
+    if (overIdx < activeIdx) return over;
+    return restCollapsed(over) ? subtreeEnd(rest, over) : over + 1;
+  });
+
+  // The visible rows just above and below the drop position.
+  let prev: number | null = null;
+  for (let i = insertAt - 1; i >= 0; i--) {
+    const parent = parentIndex(rest, i);
+    let hidden = false;
+    for (let a = parent; a != null; a = parentIndex(rest, a)) {
+      if (restCollapsed(a)) hidden = true;
+    }
+    if (!hidden) {
+      prev = i;
+      break;
+    }
+  }
+  const next = insertAt < rest.length ? insertAt : null;
+  const maxDepth =
+    prev == null
+      ? 0
+      : rest[prev].depth + (rest[prev].rubric_item.is_group && !restCollapsed(prev) ? 1 : 0);
+  const minDepth = next == null ? 0 : rest[next].depth;
+
+  const activeRow = rows[activeIdx];
+  const height = subtreeHeight(rows, activeIdx);
+  const fits = (depth: number) => {
+    if (depth + height >= RUBRIC_MAX_DEPTH) return false;
+    if (!activeRow.rubric_item.is_group || depth === 0) return true;
+    // A group can't go inside a group with a selection rule.
+    let parent = insertAt - 1;
+    while (rest[parent].depth >= depth) parent--;
+    const { min_selections, max_selections } = rest[parent].rubric_item;
+    return min_selections == null && max_selections == null;
+  };
+  const wanted = Math.min(Math.max(activeRow.depth + depthOffset, minDepth), maxDepth);
+  const candidates = [
+    ...Array.from({ length: wanted - minDepth + 1 }, (_, k) => wanted - k),
+    ...Array.from({ length: maxDepth - wanted }, (_, k) => wanted + k + 1),
+  ];
+  const depth = candidates.find(fits);
+  if (depth == null) return null;
+  return {
+    rows: [
+      ...rest.slice(0, insertAt),
+      ...shiftDepth(moved, depth - activeRow.depth),
+      ...rest.slice(insertAt),
+    ],
+    depth,
+  };
 }

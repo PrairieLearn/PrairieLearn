@@ -1,23 +1,16 @@
 import {
-  type CollisionDetection,
   DndContext,
   type DragEndEvent,
   DragOverlay,
-  KeyboardSensor,
   MeasuringStrategy,
   PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
-import { type CSSProperties, useEffect, useId, useRef, useState } from 'react';
+import { type CSSProperties, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Alert, Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -41,16 +34,12 @@ import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.
 import {
   type EditorTreeRow,
   type TreeGuide,
-  canIndent,
   depthsFromParents,
   groupWarning,
   hasSubgroup,
-  indent,
   isSortedHighestFirst,
-  moveAmongSiblings,
-  moveToSibling,
-  outdent,
   parentIndex,
+  projectDrop,
   removeSubtree,
   rubricPointRange,
   sortChildrenByPoints,
@@ -214,6 +203,10 @@ export function RubricSettings({
   );
 
   const [activeDragKey, setActiveDragKey] = useState<string | null>(null);
+  const [overDragKey, setOverDragKey] = useState<string | null>(null);
+  const [dragOffsetX, setDragOffsetX] = useState(0);
+  const [isKeyboardDrag, setIsKeyboardDrag] = useState(false);
+  const focusHandleKeyRef = useRef<string | null>(null);
   const [collapsedKeys, setCollapsedKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -361,15 +354,15 @@ export function RubricSettings({
     }
   };
 
+  // The keyboard drags rows with `onDragHandleKeyDown` instead of dnd-kit's
+  // keyboard sensor, which loses track of rows when the grading page's panel
+  // scrolls to follow the dragged row.
   const dragSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Dragging reorders a row among its siblings; the indent buttons move rows
-  // into or out of groups. The dragged row's own contents are hidden while it
-  // is dragged, and each sibling counts as one block (a group together with
-  // its contents) when deciding where the row lands.
+  // A dragged group's contents are hidden while it is dragged, and collapsed
+  // groups hide theirs.
   const activeDragIdx = rubricItems.findIndex((it) => it.unique_key === activeDragKey);
   const isCollapsedGroup = (idx: number) =>
     idx === activeDragIdx ||
@@ -383,16 +376,6 @@ export function RubricSettings({
     return hidden;
   });
   const isHidden = (idx: number) => hiddenRows[idx];
-  const parentKeys = rubricItems.map((_, idx) => {
-    const parent = parentIndex(rubricItems, idx);
-    return parent == null ? null : rubricItems[parent].unique_key;
-  });
-  // The last row of each block that is on screen, used to measure the block when dragging.
-  const lastKeys = rubricItems.map((_, idx) => {
-    let last = subtreeEnd(rubricItems, idx) - 1;
-    while (last > idx && isHidden(last)) last--;
-    return rubricItems[last].unique_key;
-  });
   const displayRows = buildDisplayRows(rubricItems, {
     withAddRows: hasCourseInstancePermissionEdit,
     isHidden,
@@ -404,66 +387,101 @@ export function RubricSettings({
       if (!next.delete(key)) next.add(key);
       return next;
     });
-  const expandGroup = (key: string) =>
-    setCollapsedKeys((prev) => {
-      if (!prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
   const guides = treeGuides(displayRows);
   const columnCount = hasCourseInstancePermissionEdit ? 8 : 7;
 
-  const siblingCollisionDetection: CollisionDetection = (args) => {
-    const { active, droppableContainers, droppableRects } = args;
-    const siblings = droppableContainers.filter(
-      (container) => container.data.current?.parentKey === active.data.current?.parentKey,
-    );
-    const blockRects = new Map(
-      siblings.flatMap((container) => {
-        const first = droppableRects.get(container.id);
-        if (!first) return [];
-        const last = droppableRects.get(container.data.current?.lastKey) ?? first;
-        const height = last.top + last.height - first.top;
-        return [[container.id, { ...first, height, bottom: first.top + height }] as const];
-      }),
-    );
-    const hits = verticalBoundaryCollision({
-      ...args,
-      droppableContainers: siblings,
-      droppableRects: blockRects,
+  // Dragging moves a row (with its contents) up and down, and dragging it
+  // sideways by one indent moves it into or out of a group. The rows around
+  // the drop decide which depths are possible; see `projectDrop`.
+  const projectDragTo = (activeKey: string | null, overKey: string | null, offsetX: number) => {
+    const activeIdx = rubricItems.findIndex((it) => it.unique_key === activeKey);
+    const overIdx = rubricItems.findIndex((it) => it.unique_key === overKey);
+    if (activeIdx === -1 || overIdx === -1) return null;
+    return projectDrop(rubricItems, {
+      activeIdx,
+      overIdx,
+      depthOffset: Math.round(offsetX / TREE_INDENT),
+      isCollapsed: (idx) =>
+        rubricItems[idx].rubric_item.is_group && collapsedKeys.has(rubricItems[idx].unique_key),
     });
-    if (hits.length === 0) return [];
-    const hit = hits[0];
-    // When moving down past a group, report its last row so that the whole
-    // group slides up to make room.
-    const hitIdx = rubricItems.findIndex((it) => it.unique_key === hit.id);
-    const activeIdx = rubricItems.findIndex((it) => it.unique_key === active.id);
-    return [{ id: hitIdx > activeIdx ? lastKeys[hitIdx] : hit.id }];
   };
-
-  const onDragEnd = ({ active, over }: DragEndEvent) => {
+  const dropProjection = projectDragTo(activeDragKey, overDragKey, dragOffsetX);
+  const describeDrop = () => {
+    if (activeDragIdx === -1) return '';
+    const name = rubricItems[activeDragIdx].rubric_item.description || 'Untitled row';
+    if (!dropProjection) return `${name} can't be dropped here.`;
+    const { rows, depth } = dropProjection;
+    const at = rows.findIndex((it) => it.unique_key === activeDragKey);
+    const parent = parentIndex(rows, at);
+    const siblings = rows
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row, idx }) => row.depth === depth && parentIndex(rows, idx) === parent);
+    const position = `position ${siblings.findIndex(({ idx }) => idx === at) + 1} of ${siblings.length}`;
+    const where =
+      parent == null
+        ? 'at the top level'
+        : `in ${rows[parent].rubric_item.description || 'an untitled group'}`;
+    return `${name} will be dropped ${where}, ${position}.`;
+  };
+  const endDrag = () => {
     setActiveDragKey(null);
-    if (!over || active.id === over.id) return;
-    const from = rubricItems.findIndex((it) => it.unique_key === active.id);
-    // `over` may be the last row inside a sibling group; drop next to that group.
-    let to: number | null = rubricItems.findIndex((it) => it.unique_key === over.id);
-    while (to != null && parentKeys[to] !== parentKeys[from]) {
-      to = parentIndex(rubricItems, to);
+    setOverDragKey(null);
+    setDragOffsetX(0);
+    setIsKeyboardDrag(false);
+  };
+  const visibleKeys = rubricItems.filter((_, idx) => !isHidden(idx)).map((it) => it.unique_key);
+  const onDragHandleKeyDown = (key: string, event: KeyboardEvent<HTMLElement>) => {
+    const isDropKey = event.key === ' ' || event.key === 'Enter';
+    if (!isKeyboardDrag) {
+      if (!isDropKey || activeDragKey != null) return;
+      event.preventDefault();
+      setActiveDragKey(key);
+      setOverDragKey(key);
+      setDragOffsetX(0);
+      setIsKeyboardDrag(true);
+      return;
     }
-    if (to == null) return;
-    const moved = moveToSibling(rubricItems, from, to);
-    if (moved) setRubricItems(moved.rows);
+    if (key !== activeDragKey) return;
+    event.preventDefault();
+    if (isDropKey) {
+      if (dropProjection) {
+        setRubricItems(dropProjection.rows);
+        // The row's handle moves in the page, so focus it again once it's there.
+        focusHandleKeyRef.current = key;
+      }
+      endDrag();
+    } else if (event.key === 'Escape') {
+      endDrag();
+    } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      const next = visibleKeys.indexOf(overDragKey ?? key) + (event.key === 'ArrowDown' ? 1 : -1);
+      if (next >= 0 && next < visibleKeys.length) setOverDragKey(visibleKeys[next]);
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      // Step one level from where the row would land now, so that extra
+      // presses past the deepest or shallowest level don't need undoing.
+      const activeDepth = rubricItems[activeDragIdx].depth;
+      const current = dropProjection?.depth ?? activeDepth;
+      const wanted = current + (event.key === 'ArrowRight' ? 1 : -1);
+      setDragOffsetX((wanted - activeDepth) * TREE_INDENT);
+    }
+  };
+  useEffect(() => {
+    // Return focus to a row's drag handle after it was moved with the keyboard.
+    const key = focusHandleKeyRef.current;
+    if (key == null) return;
+    focusHandleKeyRef.current = null;
+    document
+      .querySelector<HTMLElement>(`tr[data-rubric-key="${key}"] [aria-label="Drag to reorder"]`)
+      ?.focus();
+  }, [rubricItems]);
+
+  // Uses the event's own position: with quick key presses, the drop can
+  // arrive before the last move has been rendered.
+  const onDragEnd = ({ active, over, delta }: DragEndEvent) => {
+    const projection = projectDragTo(String(active.id), over ? String(over.id) : null, delta.x);
+    if (projection) setRubricItems(projection.rows);
+    endDrag();
   };
 
-  const moveUp = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, -1));
-  const moveDown = (idx: number) => setRubricItems((prev) => moveAmongSiblings(prev, idx, 1));
-  const indentRow = (idx: number) => {
-    // Open the group the row moves into, so the row stays on screen.
-    const target = parentIndex(indent(rubricItems, idx), idx);
-    if (target != null) expandGroup(rubricItems[target].unique_key);
-    setRubricItems((prev) => indent(prev, idx));
-  };
   // Sorting a group that is already highest-first flips it to lowest-first.
   const sortGroupByPoints = (idx: number) =>
     setRubricItems((prev) =>
@@ -473,7 +491,6 @@ export function RubricSettings({
         isSortedHighestFirst(prev, idx) ? 'lowest-first' : 'highest-first',
       ),
     );
-  const outdentRow = (idx: number) => setRubricItems((prev) => outdent(prev, idx));
 
   const updateRubricItem = (idx: number, patch: Partial<RubricItemData['rubric_item']>) => {
     setRubricItems((prev) => {
@@ -1027,14 +1044,43 @@ export function RubricSettings({
           <div className="table-responsive">
             <DndContext
               sensors={dragSensors}
-              collisionDetection={siblingCollisionDetection}
+              collisionDetection={verticalBoundaryCollision}
               // Rows are hidden when a drag starts, so keep measuring the rows
               // that are left instead of using their positions from before.
               measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-              onDragStart={({ active }) => setActiveDragKey(String(active.id))}
+              accessibility={{
+                screenReaderInstructions: {
+                  draggable:
+                    'To pick up a rubric row, press space or enter. Use the up and down arrow keys to move it, and the right and left arrow keys to move it into or out of a group. Press space or enter again to drop it, or escape to cancel.',
+                },
+                // Where the row will land is announced by the live region below,
+                // which follows the latest drag position.
+                announcements: {
+                  onDragStart: () => undefined,
+                  onDragMove: () => undefined,
+                  onDragOver: () => undefined,
+                  onDragEnd: () => 'Dropped.',
+                  onDragCancel: () => 'Moving cancelled.',
+                },
+              }}
+              onDragStart={({ active }) => {
+                setActiveDragKey(String(active.id));
+                setOverDragKey(String(active.id));
+              }}
+              onDragOver={({ over }) => setOverDragKey(over ? String(over.id) : null)}
+              onDragMove={({ delta }) => setDragOffsetX(delta.x)}
               onDragEnd={onDragEnd}
-              onDragCancel={() => setActiveDragKey(null)}
+              onDragCancel={endDrag}
             >
+              <div
+                className={clsx('small text-primary mb-2', !isKeyboardDrag && 'visually-hidden')}
+                aria-live="assertive"
+                data-testid="rubric-drop-status"
+              >
+                {describeDrop()}
+                {isKeyboardDrag &&
+                  ' Use the arrow keys to move it, space or enter to drop it, or escape to cancel.'}
+              </div>
               <table className="table table-sm border-bottom mb-3" aria-label="Rubric items">
                 <thead>
                   <tr className="table-light fw-bold">
@@ -1087,8 +1133,23 @@ export function RubricSettings({
                           <RubricRow
                             key={it.unique_key}
                             item={it}
-                            parentKey={parentKeys[idx]}
-                            lastKey={lastKeys[idx]}
+                            isKeyboardDragging={isKeyboardDrag && idx === activeDragIdx}
+                            dropIndicator={
+                              isKeyboardDrag &&
+                              it.unique_key === overDragKey &&
+                              overDragKey !== activeDragKey
+                                ? idx < activeDragIdx
+                                  ? 'before'
+                                  : 'after'
+                                : null
+                            }
+                            dragState={
+                              idx !== activeDragIdx
+                                ? null
+                                : dropProjection
+                                  ? { depth: dropProjection.depth }
+                                  : 'invalid'
+                            }
                             guides={guides[position]}
                             hasChildren={(displayRows.at(position + 1)?.depth ?? -1) > it.depth}
                             collapse={
@@ -1115,14 +1176,8 @@ export function RubricSettings({
                             showAiGradingStats={showAiGradingStats}
                             submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                             hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-                            canIndent={canIndent(rubricItems, idx)}
-                            canOutdent={parentIndex(rubricItems, idx) != null}
                             ruleDisabled={it.rubric_item.is_group && hasSubgroup(rubricItems, idx)}
                             deleteRow={() => requestDeleteRow(idx)}
-                            moveUp={() => moveUp(idx)}
-                            moveDown={() => moveDown(idx)}
-                            indentRow={() => indentRow(idx)}
-                            outdentRow={() => outdentRow(idx)}
                             sortByPoints={
                               // Only groups of two or more items, without subgroups, can be sorted.
                               it.rubric_item.is_group &&
@@ -1135,6 +1190,7 @@ export function RubricSettings({
                                 : null
                             }
                             updateRubricItem={(patch) => updateRubricItem(idx, patch)}
+                            onHandleKeyDown={(event) => onDragHandleKeyDown(it.unique_key, event)}
                           />
                         );
                       })}
@@ -1446,8 +1502,10 @@ function RubricRowTextarea({
 
 function RubricRow({
   item,
-  parentKey,
-  lastKey,
+  dragState,
+  onHandleKeyDown,
+  isKeyboardDragging,
+  dropIndicator,
   guides,
   hasChildren,
   collapse,
@@ -1455,23 +1513,19 @@ function RubricRow({
   warning,
   showAiGradingStats,
   submissionCount,
-  canIndent,
-  canOutdent,
   ruleDisabled,
   deleteRow,
-  moveUp,
-  moveDown,
-  indentRow,
-  outdentRow,
   sortByPoints,
   updateRubricItem,
   hasCourseInstancePermissionEdit,
 }: {
   item: RubricItemData;
-  /** The parent group's `unique_key`, so that rows are only dropped among siblings. */
-  parentKey: string | null;
-  /** `unique_key` of the last row inside this row's group, or of this row itself. */
-  lastKey: string;
+  /** While this row is dragged: the depth it will land at, or 'invalid' if it can't be dropped here. */
+  dragState: { depth: number } | 'invalid' | null;
+  onHandleKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  isKeyboardDragging: boolean;
+  /** While dragging with the keyboard: the row lands just before or after this one. */
+  dropIndicator: 'before' | 'after' | null;
   guides: TreeGuide[];
   hasChildren: boolean;
   /** For groups: whether the contents are hidden (collapsed, or while dragging the group). */
@@ -1481,14 +1535,8 @@ function RubricRow({
   warning: { label: string; body: string } | null;
   showAiGradingStats: boolean;
   submissionCount: number;
-  canIndent: boolean;
-  canOutdent: boolean;
   ruleDisabled: boolean;
   deleteRow: () => void;
-  moveUp: () => void;
-  moveDown: () => void;
-  indentRow: () => void;
-  outdentRow: () => void;
   sortByPoints: { sortedHighestFirst: boolean; sort: () => void } | null;
   updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
   hasCourseInstancePermissionEdit: boolean;
@@ -1496,9 +1544,10 @@ function RubricRow({
   const isGroup = item.rubric_item.is_group;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.unique_key,
-    data: { parentKey, lastKey },
     disabled: !hasCourseInstancePermissionEdit,
   });
+  // While dragged, the row is drawn at the depth it will land at.
+  const depth = dragState != null && dragState !== 'invalid' ? dragState.depth : item.depth;
   const [isEditing, setIsEditing] = useState(false);
   const sortLabel = sortByPoints?.sortedHighestFirst
     ? 'Sort items by points, lowest first'
@@ -1509,15 +1558,20 @@ function RubricRow({
       style={{
         // Group rows are tinted with their level's color.
         ...(isGroup && {
-          '--bs-table-bg': groupTint(item.depth),
+          '--bs-table-bg': groupTint(depth),
         }),
-        opacity: isDragging ? 0.4 : undefined,
+        opacity: isDragging ? 0.5 : undefined,
+        ...(dragState === 'invalid' && { '--bs-table-bg-state': 'var(--bs-danger-bg-subtle)' }),
         // Use Translate, not Transform: dnd-kit's full transform includes scaleX/scaleY,
         // which visually warps variable-height rows.
         transform: CSS.Translate.toString(transform),
         transition,
       }}
-      className={clsx('tree-row', isEditing && 'tree-row-selected')}
+      className={clsx(
+        'tree-row rubric-editor-row',
+        dropIndicator && `rubric-drop-${dropIndicator}`,
+      )}
+      data-rubric-key={item.unique_key}
       data-testid={isGroup ? 'rubric-editor-group' : 'rubric-editor-item'}
       // Highlight the whole row while one of its fields has focus.
       onFocus={() => setIsEditing(true)}
@@ -1531,37 +1585,28 @@ function RubricRow({
           warning && 'tree-row-warning-indicator',
         )}
       >
-        <TreeGuideLines
-          guides={guides}
-          groupDepth={isGroup && hasChildren && !collapse?.isCollapsed ? item.depth : null}
-        />
+        {dragState == null && (
+          <TreeGuideLines
+            guides={guides}
+            groupDepth={isGroup && hasChildren && !collapse?.isCollapsed ? item.depth : null}
+          />
+        )}
         <div
           className="d-flex align-items-center"
-          style={{ paddingLeft: `${item.depth * TREE_INDENT}px` }}
+          style={{ paddingLeft: `${depth * TREE_INDENT}px` }}
         >
           {hasCourseInstancePermissionEdit ? (
-            <>
-              <DragHandle
-                attributes={attributes}
-                listeners={listeners}
-                // The handle is as wide as one indent level, so that the guide
-                // lines run down from the middle of a group's handle.
-                className="d-inline-flex justify-content-center"
-                style={{ width: `${TREE_INDENT}px` }}
-              />
-              <button
-                type="button"
-                className="visually-hidden"
-                aria-label="Move up"
-                onClick={moveUp}
-              />
-              <button
-                type="button"
-                className="visually-hidden"
-                aria-label="Move down"
-                onClick={moveDown}
-              />
-            </>
+            <DragHandle
+              attributes={{
+                ...attributes,
+                'aria-pressed': isKeyboardDragging || attributes['aria-pressed'],
+              }}
+              listeners={{ ...listeners, onKeyDown: onHandleKeyDown }}
+              // The handle is as wide as one indent level, so that the guide
+              // lines run down from the middle of a group's handle.
+              className="d-inline-flex justify-content-center"
+              style={{ width: `${TREE_INDENT}px` }}
+            />
           ) : (
             <span className="d-inline-block" style={{ width: `${TREE_INDENT}px` }} />
           )}
@@ -1641,10 +1686,7 @@ function RubricRow({
       </td>
 
       <td className="align-middle">
-        <div
-          className="d-flex align-items-center gap-2"
-          style={{ paddingLeft: `${item.depth}rem` }}
-        >
+        <div className="d-flex align-items-center gap-2" style={{ paddingLeft: `${depth}rem` }}>
           <input
             type="text"
             className={clsx('form-control', isGroup && 'fw-semibold')}
@@ -1756,26 +1798,6 @@ function RubricRow({
         <td className="rubric-actions-cell align-middle text-nowrap text-end">
           {/* Shown while the row is hovered or being edited, like the assessment question editor. */}
           <div className={clsx('d-inline-flex', !isEditing && 'hover-show')}>
-            <button
-              type="button"
-              className="btn btn-sm border-0 text-muted"
-              aria-label="Move out of group"
-              title="Move out of group"
-              disabled={!canOutdent}
-              onClick={outdentRow}
-            >
-              <i className="bi bi-text-indent-right" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm border-0 text-muted"
-              aria-label="Move into group above"
-              title="Move into group above"
-              disabled={!canIndent}
-              onClick={indentRow}
-            >
-              <i className="bi bi-text-indent-left" aria-hidden="true" />
-            </button>
             {isGroup && (
               <button
                 type="button"
@@ -1873,7 +1895,8 @@ function TreeGuideLines({
           line(`h${level}`, level, {
             top: 'calc(50% - 1px)',
             height: '2px',
-            width: `${TREE_INDENT / 2}px`,
+            // Reaches to just before the child's grip, which is narrower than its handle.
+            width: `${TREE_INDENT / 2 + 7}px`,
           }),
         ];
       })}
@@ -2017,6 +2040,7 @@ function AddToGroupRow({
 }
 
 const TREE_INDENT = 24;
+
 const NESTING_LEVEL_COLORS = ['var(--bs-primary)', 'var(--bs-purple)'];
 
 function nestingLevelColor(level: number) {
