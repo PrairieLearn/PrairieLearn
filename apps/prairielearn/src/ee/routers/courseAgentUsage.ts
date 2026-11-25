@@ -14,7 +14,7 @@ import { recordCourseAgentUsageReport } from '../lib/course-agent/usage.js';
 const router = Router();
 const PostRequestSchemas = {
   params: z.strictObject({ agentId: z.uuid() }),
-  query: z.strictObject({}),
+  query: z.object({}),
   body: UsageReportSchema,
 };
 

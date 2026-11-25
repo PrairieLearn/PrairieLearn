@@ -7,7 +7,7 @@ const Count = z.number().int().min(0);
  * `inputTokens`, and reasoning tokens are part of `outputTokens`.
  */
 export const UsageSchema = z
-  .strictObject({
+  .object({
     inputTokens: Count,
     cachedInputTokens: Count,
     cacheWriteInputTokens: Count,
@@ -26,7 +26,7 @@ export type Usage = z.infer<typeof UsageSchema>;
  * The usage since the previous report, answered with PrairieLearn's decision on further model
  * requests. A retry resends the same report ID, so the usage is recorded once.
  */
-export const UsageReportSchema = z.strictObject({
+export const UsageReportSchema = z.object({
   reportId: z.uuid(),
   model: z.string().min(1),
   usage: UsageSchema,
@@ -34,8 +34,8 @@ export const UsageReportSchema = z.strictObject({
 export type UsageReport = z.infer<typeof UsageReportSchema>;
 
 export const UsageDecisionSchema = z.discriminatedUnion('status', [
-  z.strictObject({ status: z.literal('allowed') }),
-  z.strictObject({ status: z.literal('limited'), retryAt: z.iso.datetime() }),
+  z.object({ status: z.literal('allowed') }),
+  z.object({ status: z.literal('limited'), retryAt: z.iso.datetime() }),
 ]);
 export type UsageDecision = z.infer<typeof UsageDecisionSchema>;
 
