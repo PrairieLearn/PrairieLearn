@@ -158,8 +158,11 @@ export function InstructorAssessments({
                                           })
                                         : ''
                                   }
-                                  <a href="${urlPrefix}/assessment/${row.id}/">
-                                    ${row.title}
+                                  <a
+                                    href="${urlPrefix}/assessment/${row.id}/"
+                                    class="text-decoration-none"
+                                  >
+                                    <span class="text-decoration-underline">${row.title}</span>
                                     ${
                                       row.team_work
                                         ? html` <i class="fas fa-users" aria-hidden="true"></i> `
