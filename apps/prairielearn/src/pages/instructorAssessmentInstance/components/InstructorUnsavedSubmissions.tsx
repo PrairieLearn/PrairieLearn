@@ -137,7 +137,7 @@ function DraftPreview({
               </>
             )}
             {selected.unsaved_submission.credit !== null &&
-              `Attainable credit: ${selected.unsaved_submission.credit}%.`}
+              `Applicable credit: ${selected.unsaved_submission.credit}%.`}
           </p>
           <AppErrorAlert
             error={error}
