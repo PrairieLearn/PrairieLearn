@@ -738,6 +738,20 @@ export async function aiGrade({
         safetyIdentifier: `course_${course.id}`,
       };
 
+      const generateGradingResponse = async <OBJECT>(
+        schema: z.ZodType<OBJECT>,
+        prompt: AiGradingPrompt,
+      ) =>
+        requireAiGradingOutput(
+          await generateText({
+            model,
+            abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
+            output: Output.object({ schema }),
+            ...prompt,
+            providerOptions: { openai: openaiProviderOptions },
+          }),
+        );
+
       if (rubric_items.length > 0) {
         // Build the rubric schema with stringified-integer keys ("1".."N"). Each rubric
         // item is identified by its 1-indexed position in the prompt; using numbers
@@ -786,31 +800,17 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: requireAiGradingOutput(
-                await generateText({
-                  model,
-                  abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-                  output: Output.object({ schema: RubricGradingResultSchema }),
-                  ...gradingPrompt,
-                  providerOptions: {
-                    openai: openaiProviderOptions,
-                  },
-                }),
+              finalGradingResponse: await generateGradingResponse(
+                RubricGradingResultSchema,
+                gradingPrompt,
               ),
               rotationCorrectionApplied: false,
             };
           }
 
-          const initialResponse = requireAiGradingOutput(
-            await generateText({
-              model,
-              abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-              output: Output.object({ schema: RubricImageGradingResultSchema }),
-              ...gradingPrompt,
-              providerOptions: {
-                openai: openaiProviderOptions,
-              },
-            }),
+          const initialResponse = await generateGradingResponse(
+            RubricImageGradingResultSchema,
+            gradingPrompt,
           );
 
           if (
@@ -852,16 +852,9 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = requireAiGradingOutput(
-            await generateText({
-              model,
-              abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-              output: Output.object({ schema: RubricImageGradingResultSchema }),
-              ...gradingPrompt,
-              providerOptions: {
-                openai: openaiProviderOptions,
-              },
-            }),
+          const finalResponse = await generateGradingResponse(
+            RubricImageGradingResultSchema,
+            gradingPrompt,
           );
 
           return {
@@ -1036,31 +1029,17 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: requireAiGradingOutput(
-                await generateText({
-                  model,
-                  abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-                  output: Output.object({ schema: GradingResultSchema }),
-                  ...gradingPrompt,
-                  providerOptions: {
-                    openai: openaiProviderOptions,
-                  },
-                }),
+              finalGradingResponse: await generateGradingResponse(
+                GradingResultSchema,
+                gradingPrompt,
               ),
               rotationCorrectionApplied: false,
             };
           }
 
-          const initialResponse = requireAiGradingOutput(
-            await generateText({
-              model,
-              abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-              output: Output.object({ schema: ImageGradingResultSchema }),
-              ...gradingPrompt,
-              providerOptions: {
-                openai: openaiProviderOptions,
-              },
-            }),
+          const initialResponse = await generateGradingResponse(
+            ImageGradingResultSchema,
+            gradingPrompt,
           );
 
           if (
@@ -1091,16 +1070,9 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = requireAiGradingOutput(
-            await generateText({
-              model,
-              abortSignal: AbortSignal.timeout(AI_GRADING_INFERENCE_TIMEOUT_MS),
-              output: Output.object({ schema: ImageGradingResultSchema }),
-              ...gradingPrompt,
-              providerOptions: {
-                openai: openaiProviderOptions,
-              },
-            }),
+          const finalResponse = await generateGradingResponse(
+            ImageGradingResultSchema,
+            gradingPrompt,
           );
 
           return {
