@@ -1,0 +1,26 @@
+<pl-question-panel>
+  <p>Mark the origin with the red point. The tagged drawings are fixed reference material.</p>
+</pl-question-panel>
+<pl-sketch answers-name="tags" x-range="-4,4" y-range="-3,3">
+  <pl-sketch-tool id="f" type="spline" read-only="true" tag-latex="true"></pl-sketch-tool>
+  <pl-sketch-tool id="g" type="free-draw" read-only="true" color="royalblue"></pl-sketch-tool>
+  <pl-sketch-tool id="path" type="polyline" read-only="true"></pl-sketch-tool>
+  <pl-sketch-tool id="region" type="polygon" read-only="true"></pl-sketch-tool>
+  <pl-sketch-tool id="given-point" type="point" read-only="true" tag-latex="true"></pl-sketch-tool>
+  <pl-sketch-tool id="segment" type="line" read-only="true"></pl-sketch-tool>
+  <pl-sketch-tool id="horizontal" type="horizontal-line" read-only="true"></pl-sketch-tool>
+  <pl-sketch-tool id="vertical" type="vertical-line" read-only="true"></pl-sketch-tool>
+  <pl-sketch-tool id="response" type="point" label="Student point" color="red" tag-latex="true"></pl-sketch-tool>
+  <pl-sketch-initial tool-id="f" function="x**2-2" x-range="-1,1" tag="f(x)"></pl-sketch-initial>
+  <pl-sketch-initial tool-id="g" function="x" x-range="1,2" tag="g(x)"></pl-sketch-initial>
+  <pl-sketch-initial tool-id="path" coordinates="(-3,-2),(-2,-1)" tag="Polyline"></pl-sketch-initial>
+  <pl-sketch-initial tool-id="region" coordinates="(1,-2),(2,-2),(2,-1)" tag="Region"></pl-sketch-initial>
+  <pl-sketch-initial tool-id="given-point" coordinates="(-3,1)" tag="A_1"></pl-sketch-initial>
+  <pl-sketch-initial tool-id="given-point" coordinates="(-2.5,1)"></pl-sketch-initial>
+  <pl-sketch-initial tool-id="segment" coordinates="(-1,2),(1,2)" tag="Segment"></pl-sketch-initial>
+  <pl-sketch-initial tool-id="horizontal" coordinates="2.7" tag="Horizontal"></pl-sketch-initial>
+  <pl-sketch-initial tool-id="vertical" coordinates="-3.5" tag="Vertical"></pl-sketch-initial>
+  <pl-sketch-grade type="match" tool-id="response" x="0" y="0"></pl-sketch-grade>
+  <pl-sketch-grade type="count" tool-id="response" count="1"></pl-sketch-grade>
+  <pl-sketch-solution tool-id="response" coordinates="(0,0)" tag="B_1"></pl-sketch-solution>
+</pl-sketch>
