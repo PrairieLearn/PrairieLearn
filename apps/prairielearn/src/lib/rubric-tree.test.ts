@@ -147,6 +147,7 @@ describe('buildRubricTree', () => {
     is_group,
   });
   const accessors = {
+    id: (item: { id: string }) => item.id,
     parentId: (item: { parent_id: string | null }) => item.parent_id,
     isGroup: (item: { is_group: boolean }) => item.is_group,
   };

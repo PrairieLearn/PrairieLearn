@@ -1250,6 +1250,68 @@ describe('Manual Grading', { timeout: 80_000, concurrent: false }, function () {
           assert.equal(await selectManualPoints(), manualPointsBefore);
         });
 
+        test('students see groups as headings around their items', async () => {
+          assert.isDefined(rubric_items);
+          const [first, second, third, fourth, fifth] = rubric_items;
+          // Same nesting as above, plus a group whose only item is neither
+          // always shown nor selected, so students shouldn't see it.
+          const response = await saveRubricItems([
+            first,
+            group('Select one', { max_selections: 1 }),
+            { ...second, depth: 1 },
+            { ...third, depth: 1 },
+            group('Outer'),
+            group('Inner', { depth: 1 }),
+            { ...fourth, depth: 2 },
+            { ...fifth, depth: 1 },
+            group('Hidden group'),
+            {
+              points: -1,
+              description: 'Hidden item',
+              always_show_to_students: false,
+              depth: 1,
+            },
+          ]);
+          assert.isTrue(response.ok);
+
+          const rows = await selectRubricRows();
+          const idOf = (description: string) => {
+            const row = rows.find((candidate) => candidate.description === description);
+            assert.isDefined(row);
+            return row.id;
+          };
+
+          setUser(mockStudents[0]);
+          const $page = cheerio.load(await (await fetch(iqUrl)).text());
+          const feedback = $page('[data-testid="submission-with-feedback"]').first();
+          const groupBlock = (description: string) =>
+            feedback.find(`[data-testid="rubric-group-${idOf(description)}"]`);
+          const itemsIn = (description: string) =>
+            groupBlock(description)
+              .find('[data-testid^="rubric-item-container-"]')
+              .map((_, el) => $page(el).attr('data-testid'))
+              .get();
+          const container = (item: RubricItem) => `rubric-item-container-${idOf(item.description)}`;
+
+          assert.sameMembers(itemsIn('Select one'), [container(second), container(third)]);
+          assert.sameMembers(itemsIn('Outer'), [container(fourth), container(fifth)]);
+          assert.sameMembers(itemsIn('Inner'), [container(fourth)]);
+          assert.equal(groupBlock('Hidden group').length, 0);
+          assert.equal(feedback.find(`[data-testid="${container(first)}"]`).length, 1);
+          assert.equal(
+            groupBlock('Select one')
+              .find('[data-testid="rubric-group-points"]')
+              .first()
+              .text()
+              .trim(),
+            '[-4]',
+          );
+          assert.equal(
+            groupBlock('Outer').find('[data-testid="rubric-group-points"]').first().text().trim(),
+            '[+1.6]',
+          );
+        });
+
         test('a group cannot be applied as a grading item', async () => {
           const rows = await sqldb.queryRows(sql.select_rubric_items, { iqId }, RubricItemSchema);
           const groupRow = rows.find((row) => row.is_group);

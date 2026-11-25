@@ -131,17 +131,25 @@ export interface RubricTreeNode<T> {
 /**
  * Builds the rubric tree from rows in depth-first order, which is the order
  * the server returns them in. Rows come from different sources (database rows,
- * grading panel props), so callers say how to read each row's parent and kind.
+ * grading panel props), so callers say how to read each row's ID, parent and kind.
  */
-export function buildRubricTree<T extends { id: string }>(
+export function buildRubricTree<T>(
   items: T[],
-  { parentId, isGroup }: { parentId: (item: T) => string | null; isGroup: (item: T) => boolean },
+  {
+    id,
+    parentId,
+    isGroup,
+  }: {
+    id: (item: T) => string;
+    parentId: (item: T) => string | null;
+    isGroup: (item: T) => boolean;
+  },
 ): RubricTreeNode<T>[] {
   const nodes = new Map<string, RubricTreeNode<T>>();
   const roots: RubricTreeNode<T>[] = [];
   for (const item of items) {
     const node: RubricTreeNode<T> = { item, isGroup: isGroup(item), children: [] };
-    nodes.set(item.id, node);
+    nodes.set(id(item), node);
     const parentKey = parentId(item);
     const parent = parentKey == null ? undefined : nodes.get(parentKey);
     (parent?.children ?? roots).push(node);

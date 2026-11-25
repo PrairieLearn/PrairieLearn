@@ -95,6 +95,7 @@ export function RubricInput({
 
       <RubricTree
         nodes={buildRubricTree(rubricData.items, {
+          id: (item) => item.id,
           parentId: (item) => item.parentId,
           isGroup: (item) => item.isGroup,
         })}
