@@ -181,7 +181,7 @@ function ConversationPicker({
   const createError = getAppError<CourseAgentError['Create']>(create.error);
   return (
     <div className="d-flex flex-column flex-grow-1 overflow-hidden">
-      <div className="d-flex gap-2 align-items-center border-bottom px-3 py-2">
+      <div className="d-flex gap-2 align-items-center border-bottom p-3">
         <Dropdown className="flex-grow-1" style={{ minWidth: 0 }}>
           <Dropdown.Toggle
             variant="light"
@@ -252,9 +252,7 @@ function ConversationPicker({
                 <PendingStatus label="Starting sandbox…" />
               </div>
             ) : (
-              <p className="text-muted text-center my-4">
-                Ask the course agent about your course or about PrairieLearn.
-              </p>
+              <EmptyConversation onStart={setDraft} />
             )}
             {create.isError && (
               <AppErrorAlert error={createError} render={{ UNKNOWN: ({ message }) => message }} />
@@ -278,6 +276,67 @@ function ConversationPicker({
         </FileDropArea>
       ) : null}
     </div>
+  );
+}
+
+/** Requests staff can send as they are, for those who are not sure what to ask. */
+const STARTER_PROMPTS = [
+  { icon: 'bi-pencil-square', text: 'Help me write a new question' },
+  { icon: 'bi-bar-chart', text: 'Find and fix variants with wide score disparities' },
+  { icon: 'bi-share', text: 'Share a set of questions with another course' },
+  { icon: 'bi-calendar-plus', text: 'Set up next semester from this course instance' },
+];
+
+function EmptyConversation({ onStart }: { onStart: (text: string) => void }) {
+  return (
+    <div className="my-3">
+      <h3 className="h5 mb-3">What can I help with?</h3>
+      <div className="course-agent-starters">
+        {STARTER_PROMPTS.map(({ icon, text }) => (
+          <StarterPromptButton key={text} icon={icon} text={text} onStart={onStart} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StarterPromptButton({
+  icon,
+  text,
+  onStart,
+}: {
+  icon: string;
+  text: string;
+  onStart: (text: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="course-agent-starter btn border rounded-3 p-2 d-flex flex-column gap-2 small text-start"
+      onClick={(event) => {
+        onStart(text);
+        // The request goes to the message box, not straight to the agent, so staff can change it
+        // first. The pulse shows where it went.
+        const composer = event.currentTarget
+          .closest('.course-agent-panel')
+          ?.querySelector<HTMLElement>('.course-agent-composer');
+        composer?.querySelector('textarea')?.focus();
+        composer?.classList.add('course-agent-composer-pulse');
+        composer?.addEventListener(
+          'animationend',
+          () => composer.classList.remove('course-agent-composer-pulse'),
+          { once: true },
+        );
+      }}
+    >
+      <span
+        className="course-agent-starter-icon rounded-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+        aria-hidden="true"
+      >
+        <i className={clsx('bi', icon)} />
+      </span>
+      {text}
+    </button>
   );
 }
 
@@ -610,14 +669,13 @@ function Chat({
         role="region"
         aria-label="Conversation"
       >
-        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3">
+        {/* Extra room under the last message keeps it from sitting against the message box. */}
+        <div ref={stickToBottom.contentRef} className="d-flex flex-column gap-3 p-3 pb-5">
           {!showInitialText && !historyReady && !connectionError && !connectionFailed && (
             <Loading />
           )}
           {historyReady && !showInitialText && messages.length === 0 && (
-            <p className="text-muted text-center my-4">
-              Ask the course agent about your course or about PrairieLearn.
-            </p>
+            <EmptyConversation onStart={setDraft} />
           )}
           {messages.map((message, index) => (
             <Message

@@ -273,6 +273,43 @@ textarea.course-agent-composer-input {
   margin-bottom: 0;
 }
 
+.course-agent-starters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.course-agent-starter {
+  --bs-btn-font-size: 0.875rem;
+  --bs-btn-line-height: 1.4;
+
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+
+.course-agent-starter:hover,
+.course-agent-starter:focus-visible {
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-primary) !important;
+}
+
+.course-agent-starter-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+/* Draws the eye to the message box when a starter fills it. */
+.course-agent-composer-pulse {
+  animation: course-agent-composer-pulse 400ms ease-out;
+}
+
+@keyframes course-agent-composer-pulse {
+  50% {
+    transform: scale(1.02);
+  }
+}
+
 /* Wide display math scrolls instead of widening the panel. */
 .course-agent-panel .katex-display {
   overflow-x: auto;
@@ -394,6 +431,10 @@ body:has(.course-agent-panel-animate) .app-main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .course-agent-composer-pulse {
+    animation: none;
+  }
+
   .course-agent-panel-animate,
   body:has(.course-agent-panel-animate) .app-main {
     transition: none;
