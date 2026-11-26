@@ -82,10 +82,22 @@ export function reportError(error: unknown, tags?: Record<string, string>) {
 /** Sentry rejects feedback longer than this many characters. */
 const FEEDBACK_CHARS = 4096;
 
+interface Feedback {
+  task: string;
+  kind: string;
+  impact: string;
+  description: string;
+  subject?: string;
+}
+
 /**
  * What the agent reports with `report_feedback` goes to Sentry's User Feedback, next to the
- * failures it often explains. Unlike error reports, this is text the agent wrote, and
- * `beforeSend` does not run for feedback, so credentials are redacted here.
+ * failures it often explains, with the conversation attached so developers can read what led to
+ * it. Unlike error reports, this is text the agent wrote and the chat itself, and `beforeSend` does
+ * not run for feedback, so credentials are redacted here.
+ *
+ * The agent gets the feedback's ID when it reports, but the feedback is sent when the turn ends:
+ * only then is the turn's own part of the conversation, with the tool calls that went wrong, saved.
  *
  * Codex's tool calls arrive as WebSocket messages, outside the Durable Object handlers that Sentry
  * instruments, where no client is in scope. The reporter keeps the client in scope when it is
@@ -94,37 +106,54 @@ const FEEDBACK_CHARS = 4096;
 export function feedbackReporter(context: () => { conversationId: string; courseId?: string }) {
   const scope = new Sentry.Scope();
   scope.setClient(Sentry.getClient());
-  return (feedback: {
-    task: string;
-    kind: string;
-    impact: string;
-    description: string;
-    subject?: string;
-  }) => {
-    const { conversationId, courseId } = context();
-    logEvent('agent_feedback', { conversationId, kind: feedback.kind, impact: feedback.impact });
-    const message = [
-      `Task: ${feedback.task}`,
-      ...(feedback.subject ? [`About: ${feedback.subject}`] : []),
-      '',
-      feedback.description,
-    ].join('\n');
-    return Sentry.captureFeedback(
-      {
-        source: 'course_agent',
-        name: 'Course agent',
-        // Sentry counts code points; slicing the string could split a surrogate pair.
-        message: [...redactSecrets(message)].slice(0, FEEDBACK_CHARS).join(''),
-        tags: {
-          'feedback.kind': feedback.kind,
-          'feedback.impact': feedback.impact,
-          ...(feedback.subject ? { 'feedback.subject': feedback.subject } : {}),
-          'course_agent.conversation': conversationId,
-          ...(courseId ? { 'course_agent.course': courseId } : {}),
-        },
-      },
-      {},
-      scope,
-    );
+  const queued: { eventId: string; feedback: Feedback }[] = [];
+  return {
+    /** Holds the feedback until `send`, returning the ID Sentry will file it under. */
+    queue(feedback: Feedback) {
+      const eventId = crypto.randomUUID().replaceAll('-', '');
+      logEvent('agent_feedback', {
+        conversationId: context().conversationId,
+        eventId,
+        kind: feedback.kind,
+        impact: feedback.impact,
+      });
+      queued.push({ eventId, feedback });
+      return eventId;
+    },
+    /** Sends the queued feedback with the conversation's saved messages attached. */
+    send(messages: unknown) {
+      if (queued.length === 0) return;
+      const { conversationId, courseId } = context();
+      const conversation = {
+        filename: 'conversation.json',
+        contentType: 'application/json',
+        data: redactSecrets(JSON.stringify(messages, null, 2)),
+      };
+      for (const { eventId, feedback } of queued.splice(0)) {
+        const message = [
+          `Task: ${feedback.task}`,
+          ...(feedback.subject ? [`About: ${feedback.subject}`] : []),
+          '',
+          feedback.description,
+        ].join('\n');
+        Sentry.captureFeedback(
+          {
+            source: 'course_agent',
+            name: 'Course agent',
+            // Sentry counts code points; slicing the string could split a surrogate pair.
+            message: [...redactSecrets(message)].slice(0, FEEDBACK_CHARS).join(''),
+            tags: {
+              'feedback.kind': feedback.kind,
+              'feedback.impact': feedback.impact,
+              ...(feedback.subject ? { 'feedback.subject': feedback.subject } : {}),
+              'course_agent.conversation': conversationId,
+              ...(courseId ? { 'course_agent.course': courseId } : {}),
+            },
+          },
+          { event_id: eventId, attachments: [conversation] },
+          scope,
+        );
+      }
+    },
   };
 }

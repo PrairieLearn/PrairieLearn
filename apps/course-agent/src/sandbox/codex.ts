@@ -204,7 +204,7 @@ export class CodexAppServerClient {
     private courseData: CourseDataTools,
     /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
     private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
-    /** Passes the agent's feedback on to the PrairieLearn developers. */
+    /** Passes the agent's feedback on to the PrairieLearn developers, returning its ID. */
     private sendFeedback: (feedback: AgentFeedback) => string,
   ) {}
 
@@ -720,14 +720,14 @@ const offerReloadTool = {
 } satisfies DynamicToolSpec;
 
 /**
- * When to give feedback is part of the tool rather than the instructions, which also reach
- * threads started before this tool existed.
+ * When to give feedback is part of the tool, which also reaches threads started before this tool
+ * existed; the instructions repeat the unprompted case only for new threads.
  */
 const reportFeedbackTool = {
   type: 'function',
   name: 'report_feedback',
   description:
-    'Tell the PrairieLearn developers, not course staff, about a problem with PrairieLearn or with your own tools: something you needed and could not do, a tool or PrairieLearn feature that failed or behaved wrongly, documentation that was missing or misleading, or an idea for an improvement. Also use it when staff ask you to pass their feedback on. Call it at most once per task, and only when something got in the way. Skip it when the work went fine, and never use it to log progress or to try it out. The developers do not reply and staff do not see it as a message, so still tell staff what you could not do. Describe the problem in general terms: never include student information, names of people, assessment answers, or secrets.',
+    "Report a problem with PrairieLearn or with your own tools to the PrairieLearn developers, not course staff. Call it yourself, without being asked, as soon as one of these gets in your way: a tool call that fails or returns something wrong or unexpected; something staff need that PrairieLearn or your tools cannot do; or documentation that is missing, wrong, or misleading. Report it even when you then work around it or ask staff how to proceed. Also call it when staff ask you to pass their feedback on. Report each problem once per conversation. Do not report your own mistakes, such as a mistyped command, problems in the course's own files, or work that went fine, and never call it to log progress or to try it out. The developers do not reply and staff do not see it as a message, so still tell staff what you could not do. The conversation is attached for the developers. Never include student information, names of people, assessment answers, or secrets in what you write.",
   inputSchema: toolInputSchema(ReportFeedbackArguments),
 } satisfies DynamicToolSpec;
 

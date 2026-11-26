@@ -294,6 +294,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
   // Process connections and completion promises exist only in this DO instance.
   private active: ActiveTurn | null = null;
   private native: CodexAppServerClient | null = null;
+  /** Outlives `native`, which a failed turn drops before its feedback is sent. */
+  private feedback: ReturnType<typeof feedbackReporter> | null = null;
   private recovering = false;
   /** Shared by every shutdown caller; delivery waits for it to finish. */
   private sandboxShutdown: Promise<void> | null = null;
@@ -1006,6 +1008,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       unsentMessageIds: [],
     });
     log('turn_started', { startup });
+    const feedback = (this.feedback ??= feedbackReporter(() => this.prairieLearnContext()));
     const native = (this.native ??= new CodexAppServerClient(
       this.sandbox,
       {
@@ -1014,7 +1017,7 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
           getCourseData({ ...this.prairieLearnContext(), sandbox: this.sandbox, request }),
       },
       (target) => resolveNavigation(this.prairieLearnContext(), target),
-      feedbackReporter(() => this.prairieLearnContext()),
+      (report) => feedback.queue(report),
     ));
     let nativeThreadId = this.record.nativeThreadId;
     const executionId = crypto.randomUUID();
@@ -1183,6 +1186,8 @@ export class Conversation extends AIChatAgent<Env, ConversationState> {
       this.block(result.phase === 'startup' ? 'startup_failed' : 'runtime_failed');
     }
     await active.sdkFinished.promise;
+    // The SDK has saved the turn's reply, so the attached conversation includes it.
+    this.feedback?.send(this.messages);
     // Nothing reads a provider request that is still running after Stop, so abort it rather than
     // pay for the rest of its output; it is charged its estimate.
     active.finishing = true;
