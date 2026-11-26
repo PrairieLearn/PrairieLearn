@@ -73,10 +73,15 @@ export function AssessmentSwitcher({
                       })
                     : ''
               }
-              <a href="${assessmentUrl}" class="${isActive ? 'text-white' : ''}">
-                ${row.title}
-                ${row.team_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
-              </a>
+              <a href="${assessmentUrl}" class="${isActive ? 'text-white' : ''}">${row.title}</a>
+              ${
+                row.team_work
+                  ? html`<i
+                      class="fas fa-users ${isActive ? 'text-white' : ''}"
+                      aria-hidden="true"
+                    ></i>`
+                  : ''
+              }
               ${IssueBadgeHtml({
                 count: row.open_issue_count,
                 courseInstanceId,

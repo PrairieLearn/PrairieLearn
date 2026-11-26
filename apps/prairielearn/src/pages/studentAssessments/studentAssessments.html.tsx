@@ -111,14 +111,12 @@ export function StudentAssessments({
                                   (!row.authz_result.active && row.assessment_instance_id == null)
                                 ? row.title
                                 : html`
-                                    <a href="${urlPrefix}${row.link}">
-                                      ${row.title}
-                                      ${
-                                        row.team_work
-                                          ? html`<i class="fas fa-users" aria-hidden="true"></i>`
-                                          : ''
-                                      }
-                                    </a>
+                                    <a href="${urlPrefix}${row.link}">${row.title}</a>
+                                    ${
+                                      row.team_work
+                                        ? html`<i class="fas fa-users" aria-hidden="true"></i>`
+                                        : ''
+                                    }
                                   `
                           }
                         </td>
