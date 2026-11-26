@@ -82,7 +82,7 @@ function runner({
         subtitle: 'Assessment · Fa25 / hw1',
       };
     },
-    (report) => feedback.push(report),
+    (report) => `feedback-${feedback.push(report)}`,
   );
   return { sandbox, native, commands, emit, feedback, disconnect: () => socket.close() };
 }
@@ -423,15 +423,20 @@ describe('course agent turns', () => {
       description: 'No image tool was available, so the figure was drawn with pl-drawing instead.',
     };
     call(10, { ...report, description: 'N/A' });
-    call(11, { ...report, task: ` ${report.task} ` });
+    call(11, { ...report, task: 'x'.repeat(201) });
+    call(12, { ...report, task: ` ${report.task} ` });
     const replies = () => commands.filter((command) => 'result' in command);
-    await vi.waitFor(() => expect(replies()).toHaveLength(2));
+    await vi.waitFor(() => expect(replies()).toHaveLength(3));
     const byId = Object.fromEntries(replies().map((reply) => [reply.id, reply.result]));
     expect(byId[10]).toMatchObject({
       success: false,
       contentItems: [{ text: expect.stringContaining('skip this tool') }],
     });
-    expect(byId[11]).toMatchObject({ success: true });
+    expect(byId[11]).toMatchObject({ success: false });
+    expect(byId[12]).toMatchObject({
+      success: true,
+      contentItems: [{ text: expect.stringContaining('feedback-1') }],
+    });
     expect(feedback).toEqual([report]);
   });
 

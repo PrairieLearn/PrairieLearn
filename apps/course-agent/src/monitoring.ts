@@ -79,33 +79,52 @@ export function reportError(error: unknown, tags?: Record<string, string>) {
   Sentry.captureException(error, { tags });
 }
 
-/** Sentry rejects feedback longer than this. */
+/** Sentry rejects feedback longer than this many characters. */
 const FEEDBACK_CHARS = 4096;
 
 /**
  * What the agent reports with `report_feedback` goes to Sentry's User Feedback, next to the
  * failures it often explains. Unlike error reports, this is text the agent wrote, and
  * `beforeSend` does not run for feedback, so credentials are redacted here.
+ *
+ * Codex's tool calls arrive as WebSocket messages, outside the Durable Object handlers that Sentry
+ * instruments, where no client is in scope. The reporter keeps the client in scope when it is
+ * made, which is the isolate's cached client.
  */
-export function reportFeedback(
-  feedback: { task: string; kind: string; impact: string; description: string; subject?: string },
-  conversationId: string,
-) {
-  logEvent('agent_feedback', { conversationId, kind: feedback.kind, impact: feedback.impact });
-  const message = [
-    `Task: ${feedback.task}`,
-    ...(feedback.subject ? [`About: ${feedback.subject}`] : []),
-    '',
-    feedback.description,
-  ].join('\n');
-  Sentry.captureFeedback({
-    source: 'course_agent',
-    name: 'Course agent',
-    message: redactSecrets(message).slice(0, FEEDBACK_CHARS),
-    tags: {
-      'feedback.kind': feedback.kind,
-      'feedback.impact': feedback.impact,
-      'course_agent.conversation': conversationId,
-    },
-  });
+export function feedbackReporter(context: () => { conversationId: string; courseId?: string }) {
+  const scope = new Sentry.Scope();
+  scope.setClient(Sentry.getClient());
+  return (feedback: {
+    task: string;
+    kind: string;
+    impact: string;
+    description: string;
+    subject?: string;
+  }) => {
+    const { conversationId, courseId } = context();
+    logEvent('agent_feedback', { conversationId, kind: feedback.kind, impact: feedback.impact });
+    const message = [
+      `Task: ${feedback.task}`,
+      ...(feedback.subject ? [`About: ${feedback.subject}`] : []),
+      '',
+      feedback.description,
+    ].join('\n');
+    return Sentry.captureFeedback(
+      {
+        source: 'course_agent',
+        name: 'Course agent',
+        // Sentry counts code points; slicing the string could split a surrogate pair.
+        message: [...redactSecrets(message)].slice(0, FEEDBACK_CHARS).join(''),
+        tags: {
+          'feedback.kind': feedback.kind,
+          'feedback.impact': feedback.impact,
+          ...(feedback.subject ? { 'feedback.subject': feedback.subject } : {}),
+          'course_agent.conversation': conversationId,
+          ...(courseId ? { 'course_agent.course': courseId } : {}),
+        },
+      },
+      {},
+      scope,
+    );
+  };
 }

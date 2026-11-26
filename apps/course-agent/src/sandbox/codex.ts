@@ -91,7 +91,12 @@ const PLACEHOLDERS = new Set([
   'undefined',
 ]);
 const ReportFeedbackArguments = z.strictObject({
-  task: z.string().trim().min(1).describe('A short phrase naming what staff asked you to do.'),
+  task: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .describe('A short phrase naming what staff asked you to do.'),
   kind: z
     .enum(['missing', 'broken', 'confusing', 'idea'])
     .describe(
@@ -105,6 +110,7 @@ const ReportFeedbackArguments = z.strictObject({
   description: z
     .string()
     .trim()
+    .max(4000)
     .refine(
       (text) => !PLACEHOLDERS.has(text.toLowerCase().replaceAll(/[^\p{L}\p{N}]/gu, '')),
       'Describe what you tried and what went wrong, or skip this tool if there is nothing to report.',
@@ -115,6 +121,7 @@ const ReportFeedbackArguments = z.strictObject({
   subject: z
     .string()
     .trim()
+    .max(100)
     .optional()
     .describe(
       'The tool, PrairieLearn feature, element, or documentation page the feedback is about, if any.',
@@ -198,7 +205,7 @@ export class CodexAppServerClient {
     /** Resolves a navigation target to the part the chat shows, failing with a message for the agent. */
     private resolveNavigation: (target: NavigationTarget) => Promise<NavigationPart>,
     /** Passes the agent's feedback on to the PrairieLearn developers. */
-    private sendFeedback: (feedback: AgentFeedback) => void,
+    private sendFeedback: (feedback: AgentFeedback) => string,
   ) {}
 
   beginTurn(messageId: string, onReview?: (call: DynamicToolCallParams) => Promise<ToolReply>) {
@@ -359,10 +366,10 @@ export class CodexAppServerClient {
       case reportFeedbackTool.name: {
         const feedback = ReportFeedbackArguments.safeParse(call.data.arguments);
         if (!feedback.success) return invalidArguments(feedback.error);
-        this.sendFeedback(feedback.data);
+        const feedbackId = this.sendFeedback(feedback.data);
         return {
           success: true,
-          text: 'Feedback sent to the PrairieLearn developers, who do not reply to it.',
+          text: `Feedback ${feedbackId} sent to the PrairieLearn developers, who do not reply to it.`,
         };
       }
       default:

@@ -77,7 +77,7 @@ vi.mock('@cloudflare/ai-chat', () => ({
 vi.mock('../monitoring.js', () => ({
   logEvent: vi.fn(),
   reportError: vi.fn(),
-  reportFeedback: vi.fn(),
+  feedbackReporter: vi.fn(() => vi.fn(() => 'feedback')),
 }));
 
 // Title generation calls the provider directly; model requests here are the agent's own.
