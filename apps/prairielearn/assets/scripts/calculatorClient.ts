@@ -18,7 +18,13 @@ import {
   parseCalculatorExpression,
 } from '../../src/lib/client/calculatorRestrictions.js';
 
-import { configureCalculatorInput, guardCalculatorInput } from './lib/calculatorInput.js';
+import {
+  configureCalculatorInput,
+  configureCalculatorParentheses,
+  getPendingCalculatorFences,
+  guardCalculatorInput,
+  restorePendingCalculatorFences,
+} from './lib/calculatorInput.js';
 
 interface DrawerElements {
   drawer: HTMLElement;
@@ -43,6 +49,7 @@ interface CalculatorLocalData {
   variable: CalculatorDefinition[];
   history: HistoryItem[];
   temp_input: string | null;
+  temp_edit?: ReturnType<typeof getPendingCalculatorFences>;
   isOpen: boolean;
 }
 
@@ -229,10 +236,26 @@ export function initCalculator(
   });
 
   let typingTimer: ReturnType<typeof setTimeout>;
+  let draftChanged = false;
   const delay = 200;
+
+  function saveDraft() {
+    if (!draftChanged) return;
+    const data = getCalculatorData(storageKey, storage);
+    data.temp_input = calculatorInputElement.value;
+    data.temp_edit = getPendingCalculatorFences(calculatorInputElement);
+    setCalculatorData(storageKey, data, storage);
+    draftChanged = false;
+  }
+  window.addEventListener('pagehide', saveDraft);
+  calculatorInputElement.addEventListener('selection-change', () => {
+    draftChanged = true;
+  });
   calculatorInputElement.addEventListener('input', () => {
+    draftChanged = true;
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => {
+      saveDraft();
       calculate(false);
     }, delay);
   });
@@ -260,6 +283,9 @@ export function initCalculator(
 
     if (data.temp_input) {
       calculatorInputElement.value = data.temp_input;
+      if (data.temp_edit && calculatorInputElement.value === data.temp_input) {
+        restorePendingCalculatorFences(calculatorInputElement, data.temp_edit);
+      }
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     }
   }
@@ -557,9 +583,10 @@ export function initCalculator(
 
       calculatorInputElement.value = '';
       calculatorOutput.value = '';
+      data.temp_input = null;
+      delete data.temp_edit;
+      setCalculatorData(storageKey, data, storage);
     }
-    data.temp_input = calculatorInputElement.value;
-    setCalculatorData(storageKey, data, storage);
   }
 
   // Clear history button
@@ -571,6 +598,7 @@ export function initCalculator(
     data.history = [];
     data.variable = [];
     data.temp_input = null;
+    delete data.temp_edit;
     setCalculatorData(storageKey, data, storage);
 
     ce.popScope();
@@ -726,6 +754,8 @@ export function initCalculator(
   });
 
   /** Keyboard handling */
+  const insertParenthesesAfterNumber = configureCalculatorParentheses(calculatorInputElement);
+
   function handleKeyPress(ev: KeyboardEvent) {
     switch (ev.key) {
       case 'Enter':
@@ -834,6 +864,15 @@ export function initCalculator(
                 calculatorInputElement.insert('\\operatorname{ans}');
                 calculatorInputElement.insert(action);
               }
+            } else if (action === '(' || action === ')') {
+              if (action !== '(' || !insertParenthesesAfterNumber()) {
+                // A keystroke completes a pending fence; insert(')') adds a literal one.
+                calculatorInputElement.executeCommand([
+                  'typedText',
+                  action,
+                  { simulateKeystroke: true },
+                ]);
+              }
             } else {
               calculatorInputElement.insert(action);
             }
@@ -847,6 +886,7 @@ export function initCalculator(
   // Previews can be replaced when their panel composition changes.
   return () => {
     clearTimeout(typingTimer);
+    window.removeEventListener('pagehide', saveDraft);
     disposeDrawer();
   };
 
